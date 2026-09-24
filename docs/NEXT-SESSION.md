@@ -23,6 +23,14 @@
   `o_valve`/`o_valve_turn`. Shots: tools/shoot-rooms.mjs on d3,0,2,3 and
   d4,0,1,3 at tide 1 and 2, with and without --bellows.
 - The human: leave bubble/beamos/barnacle unkillable.
+- (c) fidelity pass 1, also on the human's word: `waterD0..3` (lakes,
+  rivers, reefs, dungeon pools) and `seaD0..3` (`openSea`) are the Ages
+  strip's own frames (rows y=2869 and y=2886, identified by the map's
+  placeholder swatches). Hand-drawn waterD0..2 removed. replay re-recorded
+  for d5-overthrow and tide-steps-split: probe pixels on water only.
+- The human sent Ages footage for (d): https://youtu.be/ZE5K58TFzlI.
+  youtube.com is refused by the environment's network policy (403); the
+  human was told to allow it. NEXT-PROMPT carries the plan.
 
 ### Noticed for later areas (not chased)
 - (d) feel: the source games show a hit as a PALETTE FLASH, not a pose;

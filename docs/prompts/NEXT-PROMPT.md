@@ -1,47 +1,49 @@
-# Next session — the water, from the source's frames
+# Next session — measure feel against Ages footage
 
 ## Read first
-- `docs/prompts/STATE.md` — objective 11 polish, area (c) fidelity, pass 1.
-- `docs/prompts/QUEUE.md`'s "POLISH ROTATION", stub (c).
-- `docs/ART-DIRECTION.md`, and `docs/briefs/AGENTS.md` section J.
-- `tools/rip-terrain.py`'s header, the `waterS0` PICK and the S146
-  current-tile PICKs (the same strip this task reads).
+- `docs/prompts/STATE.md` — objective 11 polish, area (d) feel, pass 1.
+- `docs/prompts/QUEUE.md`'s "POLISH ROTATION", stub (d).
+- `docs/FEEL-SPEC.md`: "Provenance", "How to earn a `measured`", "The
+  sword is three verbs", "Knockback".
+- `src/data/feel.js` — the constants you will re-tag, and their comments.
 - `docs/NEXT-SESSION.md`, the S146 entry only.
 
 ## Why this, now
-(a) and (b) had their first pass at S146. The water the game draws on
-nearly every screen — `waterD0/1/2`, `openSea`, the `foam*` edges — is
-hand-drawn, and rip-terrain's note that the sheets hold "no second
-phase" of water is wrong: `oracle-ages-overworld.png`'s loose-tile strip
-(bottom-left, from y 2852, 17 px pitch, 4 frames a row) holds the
-source's animated water with every frame. S146 took the currents from it.
+Areas (a)-(c) had a first pass at S146. `feel.js` has 0 of ~250
+constants `measured`, because no reference footage was ever in hand. The
+human has now given one: an Oracle of Ages playthrough,
+https://youtu.be/ZE5K58TFzlI. At S146 the environment's network policy
+refused youtube.com (proxy 403); the human was told how to allow it.
 
 ## The task
-Replace the hand-drawn deep water with the strip's own frames.
-1. Run `python3 tools/rip-terrain.py` once; confirm byte-identical.
-2. Crop and name every row of the strip's first two blocks (x 0..160):
-   which is deep water, which shallow, which foam/shore, which whirlpool.
-3. Add the deep-water row as `waterD0..3` PICKs; bind the `deep` tiles in
-   `src/data/tiles-core.js` (`waterD`, `openSea`, the riptides' still
-   neighbours) to the four frames in order, keeping `pal: 'deep'`.
-4. If the strip's shallow water is a better four-frame set than the
-   shifted `waterS0`, do the same for `waterS`, and drop the SHIFT
-   transforms. Correct the ripper's "no second phase" notes.
-Target: no hand-drawn water tile left where the strip has one.
+1. Fetch the footage: `pip install yt-dlp`, then download at the highest
+   frame rate offered (`-F` lists formats; prefer 60 fps). If the host is
+   still refused, ask the human to allow `youtube.com` and
+   `googlevideo.com`, or to drop the file in the repo, and stop there.
+2. Extract frames with `ffmpeg` (install if missing) around: plain
+   walking, a sword swing, a spin, Link taking a hit (knockback distance
+   and frames, invuln blink), an enemy taking a hit (flash beats — check
+   S146's `hitflash` colours and `ENEMY_HIT_FLASH_BEAT`), a room scroll,
+   a chest opening, text printing.
+3. For each, count frames (convert from video fps to the GBC's ~59.73)
+   and pixels against a 16px tile. Where the footage settles a number,
+   set it in `feel.js`, tag it `measured`, and name the video, timestamp
+   and what was counted in the comment. Where it only brackets it, say so
+   and leave the tag.
+Target: at least ten constants honestly `measured`.
 
 ## Done means
-- `node tools/check-rippers.mjs`, `node tools/check-ground.mjs`,
-  `node tools/test.mjs` green.
-- `node tools/replay.mjs` green, or re-recorded only for the water
-  pixels, with the reason in the commit.
-- `node tools/check-playthrough.mjs` green to THE END.
-- `node tools/check-drift.mjs` OK; `npm run build` with `dist/` committed.
-- Shots of a sea screen, a lake screen and a dungeon pool at LOW, MID
-  and HIGH, before and after, sent to the human.
+- `node tools/check-feel.mjs` green (it checks every `measured` names
+  its source); `node tools/check-drift.mjs` shows the new count.
+- `node tools/replay.mjs --record-all`, then `node tools/replay.mjs`
+  green, committed in the same change (FEEL-SPEC's rule 4).
+- `node tools/check-playthrough.mjs` green to THE END; if a changed
+  number costs the run a fight, say so rather than un-measuring it.
+- `npm run build` with `dist/` committed; the human plays it.
 
 ## Out of scope
-- The Maku Tree and Great Fairy — pass 2 of (c).
-- The item icons: surveyed S36-38 and settled.
-- Changing what water DOES (depth, flags, which tide floods what).
-- A different blue for any water (ART-DIRECTION).
-- The keese's weak hit flash noted at S146 — (b) pass 2.
+- Any constant the footage does not show; leave it `guessed`.
+- Music and sound (area e), even if the video has audio.
+- Changing what any item or enemy does.
+- The shallow-water swap noted at S146 — (c) pass 2.
+- Upgrading `derived` to `measured` without a frame count.

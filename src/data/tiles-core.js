@@ -202,57 +202,10 @@ const HAND_ART = {
     0000001100001100
     1111111111111111`,
 
-  waterD0: `
-    1111111111111111
-    1121111111112111
-    1111111111111111
-    0111111001111110
-    1111111111111111
-    1111112111211111
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    1121111111112111
-    1111111111111111
-    0111111001111110
-    1111111111111111
-    1111112111211111
-    1111111111111111
-    1111111111111111`,
-  waterD1: `
-    1111111111111111
-    1111211111121111
-    1111111111111111
-    1001111110011111
-    1111111111111111
-    1112111112111111
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    1111211111121111
-    1111111111111111
-    1001111110011111
-    1111111111111111
-    1112111112111111
-    1111111111111111
-    1111111111111111`,
-  waterD2: `
-    1111111111111111
-    2111111121111111
-    1111111111111111
-    1110011111100111
-    1111111111111111
-    1211111211111121
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    2111111121111111
-    1111111111111111
-    1110011111100111
-    1111111111111111
-    1211111211111121
-    1111111111111111
-    1111111111111111`,
+  // waterD0..3 — SUPERSEDED by the extracted Ages lake-and-river water in
+  // tiles-terrain.js (tools/rip-terrain.py, the loose-tile strip of
+  // oracle-ages-overworld.png), all four of the source's own frames. The
+  // hand-drawn three that stood here were removed rather than left shadowed.
 
   // Water meeting land: a foam edge, one per side.
   foamN: `
@@ -1983,10 +1936,10 @@ export function installCoreTiles() {
       anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11,
       edgeAgainst: 'shore', edgeArt: WATER_RIM_ART,
     },
-    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
-    waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
-    waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 16 },
+    waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
+    waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 16 },
     // THE OPEN SEA. Thalassia is an archipelago and had no coastline: the whole
     // rim of the world was cliff, and so was the wall round every one of the
     // 120 screens, which is why solid sits at a flat 33% at every tide while
@@ -2003,7 +1956,7 @@ export function installCoreTiles() {
     //
     // It is NOT a substitute for real sea inside the world. Anywhere the player
     // can reach, use `waterD` and let the Flippers mean something.
-    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    openSea: { art: ART.seaD0, pal: 'deep', flags: F.DEEP | F.SOLID, family: 'water', anim: ['seaD0', 'seaD1', 'seaD2', 'seaD3'], animRate: 13 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
 
     // --- riptides ---------------------------------------------------------
@@ -2117,7 +2070,7 @@ export function installCoreTiles() {
     // it. What tells the three states apart is the flags, not the drawing.
     coralStep: { art: ART.rockFloor, pal: 'coral' },
     coralWall: { art: ART.rock, pal: 'coral', flags: F.SOLID | F.RING },
-    coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
 
     // --- metal the Resonance Rod answers ----------------------------------
@@ -2786,7 +2739,7 @@ export function installCoreTiles() {
     digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
     dWaterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
-    dWaterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    dWaterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
 
     // Dungeon tide tiles: the same three-state trick indoors.
     dSluice: { tide: ['dFloorWet', 'dWaterS', 'dWaterD'] },

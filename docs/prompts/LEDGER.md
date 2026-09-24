@@ -933,6 +933,13 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   of an enemy's flicker draws in `hitflash` (white, and the enemy sheet's
   own tan and red). Link keeps the on/off blink. The three hazards stay
   unkillable (human's call).
+- AGES' LOOSE-TILE STRIP (oracle-ages-overworld.png, x 1..160, y
+  2852..2971, 17 px pitch, fifth cell of each row a swatch = the map's
+  placeholder colour for that tile): y2852 flowers, y2869 lake/river water
+  (cyan), y2886 ocean (blue), y2903 pool water (lavender), y2920
+  waterfall (yellow), y2937 falls on sand, y2954/2971 rocks in water;
+  second block x90..141: currents S, W, N, E, then a pit edge and a
+  whirlpool. Used: y2869, y2886, and the currents.
 - (b) pass 1 closed: the Ages current tile for every torrent and riptide;
   a drowned wheel in `deep`; a turning wheel alternates two frames.
 

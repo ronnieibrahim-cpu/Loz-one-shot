@@ -270,7 +270,7 @@
     2
    ],
    "pp": [
-    1473627973,
+    2835929413,
     723502597
    ]
   },
@@ -287,7 +287,7 @@
     2
    ],
    "pp": [
-    1473627973,
+    2835929413,
     723502597
    ]
   }
@@ -311,12 +311,34 @@
   "essences": [],
   "beaten": {},
   "heartPieces": 0,
+  "charmsOwned": [],
+  "charmCases": {
+   "low": [
+    null,
+    null
+   ],
+   "mid": [
+    null,
+    null
+   ],
+   "high": [
+    null,
+    null
+   ]
+  },
+  "blanks": 0,
   "items": [
    "anchor",
    "conch",
    "shield",
    "sword"
   ],
+  "itemLevels": {
+   "sword": 1,
+   "conch": 1,
+   "shield": 1,
+   "anchor": 1
+  },
   "dungeonMap": false,
   "chartstone": false,
   "dungeonMaps": {},
@@ -331,7 +353,7 @@
    2
   ],
   "probePix": [
-   1473627973,
+   2835929413,
    723502597
   ],
   "mode": "play",

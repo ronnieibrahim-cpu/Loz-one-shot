@@ -210,6 +210,24 @@ PICKS = [
     # only: the dashes land on 0 and the water on 1, the same two slots
     # `waterD0` draws its body and its highlights in, so under `deep` they
     # read as the same water, moving.
+    # DEEP WATER AND THE OPEN SEA, FROM THE SOURCE'S OWN ANIMATION. The same
+    # strip's first block (x 1..52, the fifth cell of each row a colour
+    # swatch) holds every animated water tile Ages draws, all four frames. The
+    # swatch is the colour the big map paints where that tile goes, which is
+    # how each row was identified rather than guessed: row y=2869 (swatch
+    # cyan) fills the lakes and rivers, row y=2886 (swatch pure blue, 45k
+    # samples, the most common placeholder on the sheet) fills the ocean.
+    # Two colours each, water on 1 and its cream lines on 0 — the slots the
+    # hand-drawn `waterD0..2` used, so every palette that wears deep water
+    # (`deep`, `reef`, `abyss`, `coral`) keeps working.
+    ('waterD0',     AG,    1, 2869, 'lake and river water, frame 1 of 4'),
+    ('waterD1',     AG,   18, 2869, 'lake and river water, frame 2 of 4'),
+    ('waterD2',     AG,   35, 2869, 'lake and river water, frame 3 of 4'),
+    ('waterD3',     AG,   52, 2869, 'lake and river water, frame 4 of 4'),
+    ('seaD0',       AG,    1, 2886, 'open ocean, frame 1 of 4'),
+    ('seaD1',       AG,   18, 2886, 'open ocean, frame 2 of 4'),
+    ('seaD2',       AG,   35, 2886, 'open ocean, frame 3 of 4'),
+    ('seaD3',       AG,   52, 2886, 'open ocean, frame 4 of 4'),
     ('currentS0',   AG,   90, 2852, 'current running down, frame 1 of 4'),
     ('currentS1',   AG,  107, 2852, 'current running down, frame 2 of 4'),
     ('currentS2',   AG,  124, 2852, 'current running down, frame 3 of 4'),
@@ -285,7 +303,11 @@ TRANSFORMS = [
     # IMPLIED. The sheets are stitched MAPS, so every lake on them is captured
     # in one animation phase — 1376,168 and 1680,200 look like two frames and
     # are provably the same tile at two crop offsets (one is a cyclic shift of
-    # the other). There is no second phase to extract.
+    # the other). No second phase exists IN THE MAP. (S146: the loose-tile
+    # strip at the sheet's bottom-left does hold every frame of Ages' shallow
+    # pool water — row y=2903, swatch lavender — but it is sparse dashes on a
+    # regular grid, the "ladder" this pick was chosen to get away from. Not
+    # swapped; a person should compare the two on screen first.)
     #
     # So the frames are the extracted tile shifted a pixel or two. That is
     # legitimate for THIS tile and would not be for most: the pick was chosen

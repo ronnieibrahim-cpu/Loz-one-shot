@@ -35,15 +35,18 @@ tide-gauge fixture); the Keep's mooring ring reads as a block. Pass 1: the
 torrents and the wheel. Every change is shown to a person, who says whether
 the room now reads without being swept out of it once.
 
-**(c) fidelity.** Hand-drawn art that a sheet already holds. Pass 1 (from
-S146): the WATER — `waterD0/1/2`, `openSea`, the `foam*` edges are
+**(c) fidelity.** Hand-drawn art that a sheet already holds. Pass 1 DONE
+S146 (deep water and the open sea from Ages' strip). Was: the WATER — `waterD0/1/2`, `openSea`, the `foam*` edges are
 hand-drawn, and `oracle-ages-overworld.png`'s bottom-left strip holds the
 source's own animated water with every frame (the current tiles came from
 the same strip at S146). Pass 2: the Maku Tree and Great Fairy, drawn 16x16
 beside a whole `oracle-seasons-maku-tree.png` and the fairies sheet (use
 `expectedSize`, as `link_hold_*` does). The item icons were surveyed S36-38
 and are SETTLED (ART-BACKLOG): the gear grid's other cells are Oracle items
-this game does not have. Extract through a ripper; check-rippers green.
+this game does not have. Also pass 2: Ages' shallow pool water (strip row
+y=2903) against the current `waterS0`, by eye on screen; the strip's surf
+(y=2937) and waterfalls (y=2920) against the hand-drawn `foam*`. Extract
+through a ripper; check-rippers green.
 
 **(d) feel.** Walk, sword (three verbs), knockback, hit-stop, pickup and
 chest timing, text speed, door and room-scroll timing, against FEEL-SPEC.md
