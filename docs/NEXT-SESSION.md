@@ -81,8 +81,40 @@
   36/44 (was 21). Over 13 seeds: Nereth 12/13, Tideshade 13/13 (27 qh
   left), Brinehulk 9/13 — unchanged.
 
+### The Shrine grown to 40 screens (third commit of S142)
+- REQUIRED WEST WING off the Silt Cell's opened west wall; its key opens
+  Thornvine's door (the Long Ford's east door is now a key door; keys 20):
+  - `0,0,2` The Knotted Pool: a two-stake chain DOWN a fenced pool, snarl in
+    its floor. Stake 1 (HIGH from 7,3 over the bole at 7,4) is stood on by
+    swimming onto it at HIGH and sounding the conch round to LOW.
+  - `0,0,3` The Root Ford: THE FIRST PUSH-BLOCK-OVER-A-PILLAR ROOM, the
+    idea the Shrine's header was always about and no room ever used. One
+    stake at 7,5; the block on the islet crosses it at LOW into the pocket;
+    two held plates (block + Link); the key falls on the bank.
+- OPTIONAL: `0,0,4` Ferry Pocket (vertical ford, opens the way down),
+  `0,0,5` Ferry Cellar (Riptide Fin), `0,0,6` Knot Garden (grove, rupee100),
+  `0,6,5` Bower Spring (two fairies + seeds, off the Bower Cell's opened east
+  wall), `0,7,4` The Long Root [1,2] (three-stake chain, Strandwalker),
+  `0,7,6` Root Cellar (fight, Lamplighter's Wick), `0,5,6` Seedwarden's
+  Ferry [2,1] (two-screen ford, Anemone's Gift), `0,6,3` Warden's Walk [2,1]
+  (chain, Dunerunner). All proved by check-reefseed; the fords tried
+  in-engine with try-room (now `TRACE=1` prints each step).
+- CHECKERS: check-reefseed's block clause (block/target/pushFrom) is now
+  asserted — it was written into the header and never implemented; its
+  flood is `cycleReach` (the conch wraps HIGH -> LOW), except clause 6,
+  which keeps the per-level flood (what a player who never sounds the conch
+  can build). solve-switches sets a ferried block on its declared target
+  (its road is check-reefseed's proof) and checks the plates open the room.
+- BUG FIXED: Reefseeds never refilled. Seed sprigs (`seeds5`, `life: 1e9`,
+  back on every entry) in the Silt Cell, Grove Crossing and Bower Spring.
+- Route: the wing is routed (the Root Ford's pushes are 26-frame holds —
+  40 pushes twice); the King's fight needed a re-roll (one step back out of
+  the Stairhead and in), see HANDOFF. check-playthrough 41/41, 225346
+  frames. Over 13 seeds: Rootmaw 8/13, Thornvine 13/13, Nereth 12/13 —
+  unchanged.
+
 ### Open
-- Grow D5 (>=40, is 27), D4 (>=36, is 27), D3 (>=32, is 25), in that order.
+- Grow D4 (>=36, is 27), then D3 (>=32, is 25).
 - The optional rooms are not in the route; a human play of them is the
   proof that the Stews' pull-and-flop fight feels right.
 - Brinehulk's 9/13 is the robot's; watch it if the island changes again.

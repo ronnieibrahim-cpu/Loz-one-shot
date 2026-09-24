@@ -125,7 +125,22 @@ for (const r of rooms) {
     const notStandable = [];
     // Push each block exactly ONCE, toward the switch it is seated beside, and
     // through the engine's own entry point — tryPushBlock takes the BLOCK's tile.
+    // A BLOCK THAT CROSSES A PILLAR (the Root Ford and its kin, S142) is not
+    // a one-push block, and pushing it once proves nothing: its whole road —
+    // every push, from a tile the player can reach, over a stake that is only
+    // ground at LOW — is proved by tools/check-reefseed.mjs's block clause.
+    // What is left to prove here is only that the room's plates, with that
+    // block on its declared target and the player on the other, open it; so
+    // the block is set down on its target and the one-push loop skips it.
+    const ferry = room.def.reefseedRoom && room.def.reefseedRoom.block && room.def.reefseedRoom.target;
+    if (ferry) {
+      const [bx0, by0] = room.def.reefseedRoom.block, [tx0, ty0] = room.def.reefseedRoom.target;
+      const bl = blocks.find(e => Math.floor(e.cx / 16) === bx0 && Math.floor(e.cy / 16) === by0);
+      if (bl) { bl.x = tx0 * 16; bl.y = ty0 * 16; bl.ferried = true; }
+      await new Promise(r2 => { const s = g.frame; const t = () => (g.frame - s >= 10 ? r2() : requestAnimationFrame(t)); t(); });
+    }
     for (const bl of blocks) {
+      if (bl.ferried) continue;
       const bx = Math.floor(bl.cx / 16), by = Math.floor(bl.cy / 16);
       let dir = null;
       for (const sw of switches) {

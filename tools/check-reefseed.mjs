@@ -45,6 +45,7 @@
 //   reefseedRoom: {
 //     stakes: [{ at:[x,y], from:[x,y], face, sea }, ...],   // in order
 //     block:  [x,y], target: [x,y],       // optional: a block that must cross
+//     pushFrom: [x,y],                    // optional: where the pushing starts
 //     opens:  [[x,y], ...], gives: 'key', // optional
 //   }
 //
@@ -257,6 +258,41 @@ function flood(board, level, mode, seeds) {
 }
 
 /** Everywhere the player can get to at this level, in any mode they own. */
+/**
+ * Everywhere the player gets to from these seeds, at each of the three seas,
+ * WITH THE CONCH IN HAND. A per-level flood misses the one move this dungeon
+ * is built on: swim out over something at HIGH, sound the conch — which goes
+ * round HIGH -> LOW, not back down through MID — and the sea drops away with
+ * the player standing where they were floating. On a pillar that is how a
+ * stake behind a drowned bole is stood on at all (the Knotted Pool, the Root
+ * Ford, S142). So a state is a tile and a sea, the conch moves the sea one
+ * step round from any tile the player can still occupy at the next one, and
+ * the flood runs to a fixpoint. A tile that turns SOLID under the player is
+ * not followed: the engine shoves him off it to wherever it finds room,
+ * which is not a move anyone should plan a room around.
+ */
+function cycleReach(board, seeds) {
+  const out = LEVELS.map(() => new Set());
+  const grow = (l, from) => {
+    let added = false;
+    for (const mode of MODES) {
+      for (const k of flood(board, l, mode, from)) if (!out[l].has(k)) { out[l].add(k); added = true; }
+    }
+    return added;
+  };
+  for (const l of LEVELS) grow(l, seeds);
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const l of LEVELS) {
+      const n = (l + 1) % LEVELS.length;
+      const carry = [...out[l]].filter(k => !out[n].has(k)).map(k => k.split(',').map(Number))
+        .filter(([x, y]) => MODES.some(m => occupiable(board.def(x, y, n), m)));
+      if (carry.length && grow(n, carry)) changed = true;
+    }
+  }
+  return out;
+}
+
 function reachable(board, level) {
   const out = new Set();
   for (const mode of MODES) for (const k of flood(board, level, mode)) out.add(k);
@@ -494,6 +530,12 @@ for (const r of rooms) {
   // for "can I get there from here".
   const nearReach = (board, l) => {
     if (!r.R.entry) return reachable(board, l);
+    return cycleReach(board, [r.R.entry])[l];
+  };
+  // And the same WITHOUT the conch, for the one clause whose question is what
+  // a player who never sounds it can build.
+  const fixedReach = (board, l) => {
+    if (!r.R.entry) return reachable(board, l);
     const out = new Set();
     for (const mode of MODES) for (const k of flood(board, l, mode, [r.R.entry])) out.add(k);
     return out;
@@ -561,6 +603,10 @@ for (const r of rooms) {
   // decoration and the bole is scenery; if LOW does not, the room has cost the
   // player a trip up the tide and back, whichever other sea they chose.
   //
+  // The flood here is the per-level one, not `cycleReach`: the question is
+  // what a player who NEVER sounds the conch can build, and swimming out at
+  // HIGH to be set down at LOW is sounding it.
+  //
   // So: fix LOW, plant every stake that can be thrown at LOW from dry footing
   // the player can reach, then do it again with those pillars in place, and
   // again, until nothing new appears. If the closure ever contains every
@@ -582,7 +628,7 @@ for (const r of rooms) {
       const planted = new Set();
       for (let pass = 0; pass < REEFSEED_CAPACITY; pass++) {
         let grew = false;
-        for (const k of nearReach(b, l)) {
+        for (const k of fixedReach(b, l)) {
           const [x, y] = k.split(',').map(Number);
           if (!canThrowFrom(b.def(x, y, l))) continue;
           for (const dir of Object.keys(DIR_VEC)) {
@@ -596,6 +642,7 @@ for (const r of rooms) {
         }
         if (!grew) break;
       }
+      if (process.env.SEED_DEBUG && r.key === process.env.SEED_DEBUG) console.log("       LOW closure:", [...planted].join(" "));
       if (got.size === r.R.stakes.length) bad.push(LEVEL_NAME[l]);
     }
     check(`${where}: LOW does not build the room`, bad.length === 0,
@@ -647,6 +694,33 @@ for (const r of rooms) {
     if (VERBOSE) console.log(`       ${spots.size} tile(s) a seed can come to rest on`);
   }
 
+  // THE BLOCK CROSSES ON THE STAKES AND ON NOTHING ELSE.
+  //
+  // Written into this file's header from the start and never asserted until
+  // S142, when the first room to use it arrived (the Root Ford). With every
+  // stake grown, at LOW, the block walks from where it stands to its target one
+  // tile per push, each push made from a tile the player can reach; with no
+  // stake grown it reaches the target at no sea at all; and at MID and HIGH
+  // the stakes are no road either. `pushFrom` names where the player starts
+  // pushing — in the Root Ford that is an islet reached by swimming at HIGH
+  // and standing on when the conch brings the sea back round to LOW, which is
+  // a sequence the per-level flood below cannot see on its own, so the room
+  // says it and the claim that the player can get there is asserted too.
+  if (r.R.block && r.R.target) {
+    const B = r.R.block, T = r.R.target;
+    const from = r.R.pushFrom || r.R.entry;
+    check(`${where}: the pushing position ${from.join(',')} can be got to at some sea`,
+      LEVELS.some(l => nearReach(built, l).has(from.join(','))), 'nothing reaches it');
+    check(`${where}: with the stakes grown, the block reaches ${T.join(',')} at LOW`,
+      blockRoute(built, B, T, 0, [from]), 'no sequence of pushes gets it there');
+    const withoutAt = LEVELS.filter(l => blockRoute(base, B, T, l, [from]));
+    check(`${where}: and without them it reaches it at no sea`, withoutAt.length === 0,
+      'it gets there at ' + withoutAt.map(l => LEVEL_NAME[l]).join('/') + ' — the stakes are decoration');
+    const aboveAt = [1, 2].filter(l => blockRoute(built, B, T, l, [from]));
+    check(`${where}: and the stakes are no road at MID or HIGH`, aboveAt.length === 0,
+      'it gets there at ' + aboveAt.map(l => LEVEL_NAME[l]).join('/'));
+  }
+
   // 8, 9, 10. the snarl, and that the stake is the only blade that reaches it
   //
   // EVERY CLAIM BELOW IS MADE FROM THE DOOR THE ROOM IS ENTERED BY, not from
@@ -658,11 +732,7 @@ for (const r of rooms) {
     const [sx, sy] = r.R.snarl;
     const cut = r.R.cutFrom;
     const entry = r.R.entry;
-    const nearSide = (board, l) => {
-      const out = new Set();
-      for (const mode of MODES) for (const k of flood(board, l, mode, [entry])) out.add(k);
-      return out;
-    };
+    const nearSide = (board, l) => cycleReach(board, [entry])[l];
     // The room as it is (snarl standing) and as it ends up (snarl cut), with
     // every stake grown in both.
     const shut = built.clone();

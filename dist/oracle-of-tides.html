@@ -34269,14 +34269,21 @@ function installDungeonsB() {
   // the same spacing — set into a bigger room so its doors are in the middle
   // of their walls.
   //
-  // Intended route (26 rooms, one floor, the Reefseed at room 14):
+  // GROWN AT S142 to 36 rooms, 40 screens: a required west wing off the
+  // Silt Cell (the Knotted Pool, the Root Ford — the first room where a push
+  // block crosses a pillar) holds the key to Thornvine's door; eight optional
+  // rooms east and west hold five charms. Seed sprigs grow back in the Silt
+  // Cell, the Grove Crossing and the Bower Spring.
+  //
+  // Intended route (the Reefseed at room 14):
   //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
   //   -> 3,5 the Standing Grove (key door north) -> 2,5 Chartstone
   //   -> 1,5 heart piece -> 4,5 charm -> 5,5 -> 4,4 Small Key 2 -> 3,4
   //   -> 2,4 (key door west) -> 1,4 REEFSEED -> 1,3 the First Stake (grove 1)
   //   -> 2,3 the Bole Walk (grove 2) -> 2,2 the Sunken Nave (grove 3, Small
-  //      Key 3) -> 1,2 -> 3,3 Grove Crossing (key door west) -> 4,3 the Long
-  //      Ford (grove 4) -> 5,3 Thornvine (miniboss) -> 4,2 the Shrine Ford
+  //      Key 3) -> 1,2 -> 0,2 the Knotted Pool -> 0,3 the Root Ford (Small
+  //      Key 4) -> 3,3 Grove Crossing (key door west) -> 4,3 the Long
+  //      Ford (grove 4, key door east) -> 5,3 Thornvine (miniboss) -> 4,2 the Shrine Ford
   //      (grove 5, three screens, Boss Key) -> 3,2 boss door -> 3,1 Rootmaw
   registerMap({
     id: 'd5',
@@ -34494,7 +34501,7 @@ function installDungeonsB() {
           '####.##.......#',
           '####0##.......#',
           '#...0.........#',
-          '..............#',
+          '...............',
           '#.............#',
           '#.............#',
           '#.............#',
@@ -34703,7 +34710,7 @@ function installDungeonsB() {
           '#.U.........U.#',
           '#.............#',
           '#....,,,,,....#',
-          '#....,,,,,....L',
+          '.....,,,,,....L',
           '#....,,,,,....#',
           '#.............#',
           '#.U.........U.#',
@@ -34728,6 +34735,380 @@ function installDungeonsB() {
       // Read in order: throw at HIGH, because the bole is only gone at HIGH.
       // Sound the conch to LOW, because the pillar is only ground at LOW. Climb
       // out of the water onto what you threw, and cut.
+      // ---------------------------------------------------- the west wing (S142)
+      //
+      // THE KEY TO THORNVINE'S DOOR, and the Reefseed asked two new ways. The
+      // Knotted Pool builds the chain from the water up; the Root Ford is the
+      // first room in the game where a push block crosses a pillar — the
+      // road the whole dungeon is built on, which is only road at LOW — and
+      // the first where the player stands on a pillar by swimming onto it at
+      // HIGH and sounding the conch round to LOW.
+      '0,0,2': {
+        name: 'The Knotted Pool',
+        // GROVE 6, the chain grown downward: the first stake at HIGH from the
+        // bank over the drowned bole, the second at LOW from the first, and
+        // the snarl in the floor of the pool cut from the second. The pool is
+        // walled on both sides and the boles close it at LOW and MID, so the
+        // first stake is stood on the Root Ford's way: swim out onto it at
+        // HIGH and sound the conch round to LOW.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#...###5###...#',
+          '#...#WWWWW#....',
+          '#...#WWWWW#...#',
+          '#...#WWWWW#...#',
+          '#######k#######',
+          '#######.#######',
+          '#######.#######',
+        ],
+        reefseedRoom: {
+          entry: [14, 5],
+          stakes: [
+            { at: [7, 5], from: [7, 3], face: 'down', sea: 2 },
+            { at: [7, 7], from: [7, 5], face: 'down', sea: 0 },
+          ],
+          snarl: [7, 8], cutFrom: [7, 7],
+        },
+        entities: [
+          ['tektite', 11, 2],
+          ['keese', 2, 7],
+        ],
+        readable: [
+          [2, 3, 'Knotted into a rope on the wall: "One from the\nbank at flood. One from the first at slack."'],
+        ],
+      },
+      '0,0,3': {
+        name: 'The Root Ford',
+        // THE BLOCK AND THE PILLAR. The block on the islet has to reach the
+        // plate in the west pocket, and between them is one square of deep
+        // water at 7,5. Grow a stake there — at HIGH, over the drowned bole
+        // from the bank — and the block crosses it at LOW and at no other sea.
+        // The islet and the pocket are cut off from the bank by stone except
+        // through that square, so the way out to them is to swim over the
+        // bole at HIGH and sound the conch round to LOW; the way back is to
+        // sound it round to HIGH and swim.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######5#######',
+          '###....W..#####',
+          '###...#.....###',
+          '######......###',
+          '######......###',
+          '######....U.###',
+          '###############',
+        ],
+        reefseedRoom: {
+          entry: [7, 0],
+          stakes: [
+            { at: [7, 5], from: [7, 3], face: 'down', sea: 2 },
+          ],
+          block: [8, 5], target: [4, 5], pushFrom: [9, 5],
+        },
+        entities: [
+          ['block', 8, 5, { once: false }],
+          // TWO PLATES, BOTH HELD AT ONCE: one for the block and one for the
+          // player. A plate answers to Link's own feet, so a single one would
+          // be answered by walking onto it and the block would be scenery.
+          ['switch', 4, 5],
+          ['switch', 3, 6],
+          ['tektite', 11, 2],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_rootford',
+          reward: {
+            spawn: [['pickup', 3, 2, { kind: 'key' }]],
+            say: 'Something rattles loose above the ford.',
+          },
+        },
+        readable: [
+          [12, 3, 'A ferryman\'s mark: "The road is only there\nwhen the water is not."'],
+        ],
+      },
+
+      // ------------------------------------------ the optional rooms (S142)
+      //
+      // Nothing below is needed to finish the Shrine; everything below is a
+      // grove, a ford or a fight the Reefseed makes possible, and each pays
+      // out something worth the trip. West of the Reefseed Vault: a ford
+      // where the block crosses north to south, a cellar with a charm in it,
+      // and a grove entered from above. East of the Bower Cell: a spring to
+      // rest at, the longest chain in the Shrine, a cellar fight, a ford the
+      // width of two screens, and a chain that ends in a charm.
+      '0,0,4': {
+        name: 'The Ferry Pocket',
+        // The Root Ford turned on its side. The stake at 7,5 is thrown from
+        // the east over the bole at HIGH; the block on the north islet
+        // crosses it at LOW onto the plate in the south pocket, and the
+        // plate opens the way down. The islet and pocket are stone-bound but
+        // for that square, so they are reached the Root Ford's way.
+        map: [
+          '###############',
+          '##########....#',
+          '#######..#..U.#',
+          '#######..#....#',
+          '#######..#....#',
+          '#######W5......',
+          '######..#.....#',
+          '######...#....#',
+          '######...#..U.#',
+          '#######.##....#',
+          '#######D#######',
+        ],
+        reefseedRoom: {
+          entry: [14, 5],
+          stakes: [
+            { at: [7, 5], from: [9, 5], face: 'left', sea: 2 },
+          ],
+          block: [7, 4], target: [7, 7], pushFrom: [7, 3],
+        },
+        entities: [
+          ['block', 7, 4, { once: false }],
+          ['switch', 7, 7],
+          ['switch', 6, 8],
+          ['tektite', 12, 5],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_ferrypocket',
+          reward: { openDoors: [[7, 10]], say: 'The south door grinds open.' },
+        },
+      },
+      '0,0,5': {
+        name: 'The Ferry Cellar',
+        // What the Ferry Pocket was keeping.
+        map: [
+          '#######D#######',
+          '#.............#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['chest', 7, 5, { charm: 'riptideFin' }],
+          ['jellyfish', 3, 2],
+          ['jellyfish', 11, 8],
+        ],
+      },
+      '0,0,6': {
+        name: 'The Knot Garden',
+        // GROVE 1 again, entered from above and handed the other way: bank
+        // 5,5, bole 4,5, stake 3,5, snarl 2,5. What is behind the snarl is a
+        // purse, not a way on.
+        map: [
+          '#######.#######',
+          '####..........#',
+          '####..........#',
+          '#.##..........#',
+          '#.#W..........#',
+          '#.kW5.........#',
+          '#.#W..........#',
+          '#.#0..........#',
+          '#.##........U.#',
+          '####..........#',
+          '###############',
+        ],
+        reefseedRoom: {
+          entry: [7, 0],
+          stakes: [
+            { at: [3, 5], from: [5, 5], face: 'left', sea: 2 },
+          ],
+          snarl: [2, 5], cutFrom: [3, 5],
+        },
+        entities: [
+          ['pickup', 1, 4, { kind: 'rupee100' }],
+          ['keese', 10, 7],
+        ],
+      },
+      '0,6,5': {
+        name: 'The Bower Spring',
+        // A spring to rest at, off the Bower Cell: two fairies over the pool
+        // and a sprig of seed on the rim, all of them back every time.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#....22222....#',
+          '#....2WWW2....#',
+          '.....2WWW2.....',
+          '#....2WWW2....#',
+          '#....22222....#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['pickup', 5, 5, { kind: 'fairy', life: 1e9 }],
+          ['pickup', 9, 5, { kind: 'fairy', life: 1e9 }],
+          ['pickup', 7, 8, { kind: 'seeds5', life: 1e9 }],
+        ],
+        readable: [
+          [7, 1, 'Carved round the rim of the pool: "Rest here,\nand take what grows back."'],
+        ],
+      },
+      '0,7,4': {
+        name: 'The Long Root',
+        // THE LONGEST CHAIN IN THE SHRINE, up a fenced shaft of water: the
+        // first stake at HIGH from 10,17 over the bole, then swim out onto it
+        // and sound the conch round to LOW; the second from the first and the
+        // third from the second, both at LOW; and the snarl at the top cut
+        // from the third. The alcove behind it keeps a charm.
+        size: [1, 2],
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#..U..........#',
+          '#.............#',
+          '#.......#####.#',
+          '#.......#...#.#',
+          '#.......#...#.#',
+          '#.......#...#.#',
+          '#.......#...#.#',
+          '#.......##k##.#',
+          '#.......#WWW#.#',
+          '#.......#WWW#.#',
+          '#.......#WWW#.#',
+          '#.......#WWW#.#',
+          '#.......#WWW#.#',
+          '........##5##.#',
+          '#.............#',
+          '#..U..........#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
+        ],
+        reefseedRoom: {
+          entry: [0, 16],
+          stakes: [
+            { at: [10, 15], from: [10, 17], face: 'up', sea: 2 },
+            { at: [10, 13], from: [10, 15], face: 'up', sea: 0 },
+            { at: [10, 11], from: [10, 13], face: 'up', sea: 0 },
+          ],
+          snarl: [10, 10], cutFrom: [10, 11],
+        },
+        entities: [
+          ['chest', 10, 7, { charm: 'strandwalker' }],
+          ['tektite', 4, 8],
+          ['keese', 3, 15],
+        ],
+        readable: [
+          [12, 18, 'Cut into the shaft\'s foot: "Once at flood.\nTwice at slack. Then the knife."'],
+        ],
+      },
+      '0,7,6': {
+        name: 'The Root Cellar',
+        // A fight, and the chest that the quiet after it leaves.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#..22.....22..#',
+          '#..22.....22..#',
+          '..............#',
+          '#..22.....22..#',
+          '#..22.....22..#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['urchin', 4, 5],
+          ['tektite', 10, 2],
+          ['tektite', 10, 8],
+          ['jellyfish', 3, 3],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd5_rootcellar',
+          reward: { spawn: [['chest', 7, 5, { charm: 'lamplighter' }]], say: 'Something settles in the middle of the room.' },
+        },
+      },
+      '0,5,6': {
+        name: "The Seedwarden's Ferry",
+        // THE ROOT FORD, TWO SCREENS LONG. The stake at 22,5 goes in at HIGH
+        // over the bole from the bank above; the block on the east islet
+        // crosses it at LOW into the long west hall and has to be pushed the
+        // length of it to the plate at 12,5.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#............................#',
+          '#..U........U.....U..........#',
+          '#............................#',
+          '######################5####..#',
+          '#.....................W...#...',
+          '#....................#....####',
+          '#....U.........U......#...####',
+          '#.....................#...####',
+          '#.....................########',
+          '##############################',
+        ],
+        reefseedRoom: {
+          entry: [29, 5],
+          stakes: [
+            { at: [22, 5], from: [22, 3], face: 'down', sea: 2 },
+          ],
+          block: [23, 5], target: [12, 5], pushFrom: [24, 5],
+        },
+        entities: [
+          ['block', 23, 5, { once: false }],
+          ['switch', 12, 5],
+          ['switch', 12, 8],
+          ['tektite', 8, 2],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_seedwarden',
+          reward: { spawn: [['chest', 4, 7, { charm: 'anemonesGift' }]], say: 'Something settles at the end of the hall.' },
+        },
+      },
+      '0,6,3': {
+        name: "The Warden's Walk",
+        // The Shrine Ford's chain at its plainest, in the open: the first
+        // stake at HIGH from 19,5 over the bole, the second from the first at
+        // LOW, and the snarl in the wall across the pool cut from the second.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#.............#####..........#',
+          '#.............#####.....U....#',
+          '#.............#####..........#',
+          '#.............#WWW#..........#',
+          '#.............kWWW5..........#',
+          '#.............#WWW#..........#',
+          '#.............#####..........#',
+          '#.............#####.....U....#',
+          '#.............#####..........#',
+          '######################.#######',
+        ],
+        reefseedRoom: {
+          entry: [22, 9],
+          stakes: [
+            { at: [17, 5], from: [19, 5], face: 'left', sea: 2 },
+            { at: [15, 5], from: [17, 5], face: 'left', sea: 0 },
+          ],
+          snarl: [14, 5], cutFrom: [15, 5],
+        },
+        entities: [
+          ['chest', 4, 5, { charm: 'dunerunner' }],
+          ['tektite', 25, 4],
+          ['keese', 8, 7],
+        ],
+      },
+
       '0,1,3': {
         name: 'The First Stake',
         // GROVE 1, on the east-west axis and the fixture at its plainest. The
@@ -34840,7 +35221,7 @@ function installDungeonsB() {
           '#.............#',
           '#....99.......#',
           '#....99.......#',
-          '#..............',
+          '...............',
           '#.............#',
           '#.......99....#',
           '#.......99....#',
@@ -34849,6 +35230,11 @@ function installDungeonsB() {
         ],
         entities: [
           ['pickup', 11, 8, { kind: 'rupee20' }],
+          // A SEED SPRIG, and it comes back every time the room is entered.
+          // The Reefseed Vault's chest fills the satchel once and nothing in
+          // the game refilled it after that, so a player who threw three
+          // seeds wide was locked out of the Boss Key for good (S142).
+          ['pickup', 3, 3, { kind: 'seeds5', life: 1e9 }],
           ['keese', 3, 8],
         ],
       },
@@ -34868,6 +35254,7 @@ function installDungeonsB() {
           '###############',
         ],
         entities: [
+          ['pickup', 7, 2, { kind: 'seeds5', life: 1e9 }],
           ['stalfos', 9, 3],
           ['keese', 11, 7],
         ],
@@ -34885,7 +35272,7 @@ function installDungeonsB() {
           '#..........#..#',
           '#..........#..#',
           '#......5...#..#',
-          '.....0WWW0.#...',
+          '.....0WWW0.#..L',
           '#######k####..#',
           '#.............#',
           '#.............#',
@@ -34912,7 +35299,7 @@ function installDungeonsB() {
           '#.............#',
           '#...2222222...#',
           '#..222222222..#',
-          '...222222222..#',
+          'L..222222222..#',
           '#..222222222..#',
           '#...2222222...#',
           '#.............#',

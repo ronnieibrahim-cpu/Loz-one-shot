@@ -45,5 +45,12 @@ for (let i = 0; i < 4000; i++) {
   if (r.done || r.error) { if (r.error) err = r.error; break; }
 }
 const st = await page.evaluate(() => { const g = window.__game, p = g.player; return { room: g.mapId + ' ' + (g.room && g.room.key), x: p && p.x, y: p && p.y, hp: g.progress.hearts, max: g.progress.maxHearts, pc: g.progress.heartPieces, tide: g.tide.level, mode: g.mode, frozen: p && p.frozen, dlg: g.dialogue.active, show: !!g.itemShow, items: Object.keys(g.progress.items).join('+'), A: g.progress.equipA, B: g.progress.equipB, ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + (e.kind && e.type ? ":" + e.kind : "") + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' ') }; });
+// TRACE=1 prints where each step left the player, the same line the full
+// route prints, which is what a failed step in the middle wants.
+if (process.env.TRACE) {
+  const tr = await page.evaluate(() => (window.__rp._trace || []).map(t =>
+    `${String(t.step).padStart(3)} ${t.kind.padEnd(9)} f${t.frame} ${t.room} ${t.x},${t.y} hp ${t.hp} tide ${t.tide} foes ${t.foes}`));
+  for (const l of tr) console.log(l);
+}
 console.log(JSON.stringify(st), err ? 'ERR ' + err : '');
 await browser.close(); server.close();

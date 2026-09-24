@@ -931,6 +931,11 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   line before the stair (key in the Hauling Pit, hauled at HIGH); six
   optional rooms hold four charms. The line HAULS: `dredgeRoom.hauls` is
   proved by check-dredge. A `dDrain` brace makes a MID-only crossing.
+- The Shrine is 40 screens. A required west wing (the Knotted Pool, the
+  Root Ford) holds the key to Thornvine's door; eight optional rooms hold
+  five charms. A push block crosses a pillar at LOW (two held plates); the
+  conch wraps HIGH -> LOW and checkers model it. Seed sprigs refill the
+  satchel.
 
 ## Settled at S141 — the Drowned Wood Shrine is an Oracle dungeon
 

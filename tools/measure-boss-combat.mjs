@@ -158,19 +158,20 @@ const MINIS = {
                 at: [7, 81], facing: 'right', maxQh: 32, settle: 90, frame: 105042 },
   // S140, after D5's rebuild at Oracle size: step 927 (`hold right` in
   // through the west door of his room) f147504: `34,81 hp 30/40 tide 0
-  // [thornvine]`. Straight in, no settle.
+  // [thornvine]`. Straight in, no settle. S142, after the Shrine's west
+  // wing: step 979 f152463, `38,81 hp 30/40`.
   thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 30,
                items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1 },
-               at: [34, 81], facing: 'right', maxQh: 40, settle: 0, frame: 147504 },
+               at: [38, 81], facing: 'right', maxQh: 40, settle: 0, frame: 152463 },
   // d6 1,4,5, S142 at Oracle size: step 1294 (`travel`) f198171: `7,79 hp
   // 36/44 tide 0 [tideshade]`, after the east wing. NO CHARMS — the route does not put one on until step 1326,
   // two rooms later, so this is the last fight in the game fought bare.
-  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 36,
+  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 35,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                opts: { breakContact: true },
-               at: [7, 79], facing: 'right', maxQh: 44, settle: 0, frame: 198171 },
+               at: [7, 79], facing: 'right', maxQh: 44, settle: 0, frame: 203784 },
   // d6 1,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
   // [brinehulk+beamos+keese]`. THE ONE ROW WHOSE FRAME IS NOT A ROOM ENTRY:
   // the Crossed Shafts are entered thousands of frames earlier and both
@@ -180,11 +181,11 @@ const MINIS = {
   // a beamos and a keese still in the room, and both charms on.
   // S142, the Keep at Oracle size with the far island widened: step 1364
   // (`tide` up, on the landing) f209346: `305,95 hp 46/48 tide 2`.
-  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 46,
+  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 48,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                charms: { mid: 'coilrope', high: 'gillcarve' },
-               at: [305, 95], facing: 'right', maxQh: 48, settle: 8, frame: 209346 },
+               at: [305, 95], facing: 'right', maxQh: 48, settle: 8, frame: 214906 },
 };
 
 // THE FIGHT THE ROUTE ACTUALLY PLAYS.
@@ -280,7 +281,8 @@ const ROUTE_ARENA = {
   // S140: D5 IS AN ORACLE DUNGEON NOW. Walked in through the boss door in
   // Rootmaw Arch's north wall at step 961 (`hold up`), f150199: `113,149 hp
   // 28/40 tide 0 [rootmaw]`, then `wait 120`.
-  d5: { at: [113, 149], facing: 'up', qh: 28, maxQh: 40, settle: 120, frame: 150199 },
+  // S142, after the Shrine grew: step 1013 f155154, `113,149 hp 28/40`.
+  d5: { at: [113, 149], facing: 'up', qh: 28, maxQh: 40, settle: 120, frame: 155154 },
   // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is
@@ -302,7 +304,8 @@ const ROUTE_ARENA = {
   // entered from the Stairhead through the boss door in its south wall:
   // step 1445 (`exit up`) f214007, `111,150 hp 48/48 tide 1 [nereth]` (with the
   // east wing in the route).
-  d6: { at: [111, 150], facing: 'up', qh: 48, maxQh: 48, settle: 24, frame: 214007,
+  // After the Shrine grew (S142): step 1501 f219836.
+  d6: { at: [111, 150], facing: 'up', qh: 48, maxQh: 48, settle: 24, frame: 219836,
         charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 

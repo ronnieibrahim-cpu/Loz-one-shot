@@ -1703,6 +1703,67 @@ export const ROUTE = [
   ['dialogue', 600],
   ['loot', 1200],
   ['dialogue', 600],
+
+  // ------------------------------------------------ THE WEST WING (S142)
+  // Out through the Silt Cell's west door for the key to Thornvine's door.
+  // THE KNOTTED POOL: the first stake over the bole at HIGH; then swim out
+  // onto it and sound the conch round to LOW, which sets the sea down with
+  // Link standing on it; the second stake from the first; cut the snarl.
+  ['goto', 1, 5, 900],
+  ['exit', 'left', 600],
+  ['goto', 1, 5, 1500],
+  ['exit', 'left', 600],
+  ['fight', 3000, 1500],
+  ['loot', 600],
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 7, 5, 900],
+  ['goto', 7, 5, 900],
+  ['tide', 0, 140, 600],
+  ['reefseed', 7, 7, 900],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 7, 7, 900],
+  ['wait', 30],
+  ['hold', ['down'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 7, 9, 900],
+  ['exit', 'down', 600],
+  // THE ROOT FORD: the stake at HIGH over the bole, swim out to the islet
+  // and sound the sea round to LOW, then push the block west across the
+  // pillar onto the plate. The key falls on the bank; the way back is HIGH.
+  ['fight', 3000, 1200],
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 7, 5, 900],
+  ['goto', 9, 5, 900],
+  ['tide', 0, 140, 600],
+  // One push per hold: PUSH_DELAY_FRAMES of leaning and a few to spare, not
+  // so long that the lean starts again behind the block and shoves it twice.
+  ['hold', ['left'], 26],
+  ['goto', 8, 5, 400],
+  ['hold', ['left'], 26],
+  ['goto', 7, 5, 400],
+  ['hold', ['left'], 26],
+  ['goto', 6, 5, 400],
+  ['hold', ['left'], 26],
+  // The block holds one plate; Link holds the other.
+  ['goto', 3, 6, 400],
+  ['wait', 60],
+  ['tide', 1, 140, 600],
+  ['tide', 2, 140, 600],
+  ['goto', 7, 3, 900],
+  ['goto', 3, 2, 900],
+  ['loot', 600],
+  ['goto', 7, 1, 900],
+  ['exit', 'up', 600],
+  ['goto', 7, 3, 1200],
+  ['goto', 13, 5, 1200],
+  ['exit', 'right', 600],
+  ['tide', 0, 140, 600],
+  ['goto', 13, 5, 1200],
+  ['exit', 'right', 600],
+  ['equip', 'sword', 'A', 400],
   ['goto', 7, 9, 2000],
   ['hold', ['down'], 90],
 
@@ -1740,7 +1801,11 @@ export const ROUTE = [
   ['hold', ['down'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
+  // Thornvine's door is locked since S142: the Root Ford's key.
   ['goto', 13, 5, 2000],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 300],
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,5,3
@@ -2648,6 +2713,17 @@ export const ROUTE = [
   // from the old doorway; re-read it if the fight turns).
   ['goto', 2, 5, 900],
   ['loot', 900],
+  // ONE STEP BACK OUT AND IN AGAIN, and it is a re-roll, said plainly. The
+  // King is won twelve times in thirteen from this doorway (S142's thirteen
+  // seeds), and S142's Shrine rooms moved this run onto the thirteenth: the
+  // first four hits land identically and a pixel of drift decides it. No
+  // wait before the door changes anything — the fight's clock starts on
+  // entry — but a room walked through does. A player who lost would try
+  // again; the run is allowed the same.
+  ['goto', 7, 9, 900],
+  ['exit', 'down', 600],
+  ['goto', 7, 1, 900],
+  ['exit', 'up', 600],
   ['wait', 95],
   ['goto', 7, 1, 900],
   ['hold', ['up'], 24],
@@ -2745,6 +2821,6 @@ export const GOAL = {
   // game.
   room: 'd6/1,3,0',
   needsVerb: null,
-  keysNeeded: 19,
-  keysObtainable: 19,
+  keysNeeded: 20,
+  keysObtainable: 20,
 };

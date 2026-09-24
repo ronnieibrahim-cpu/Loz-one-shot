@@ -447,6 +447,25 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A floor plate answers to Link's own feet, and to any enemy.** A room
+  that wants a block on a plate needs TWO held plates (block on one, Link on
+  the other), or the block is scenery. Keep hoppers and fliers away from
+  plates (S142, the Root Ford).
+- **The conch goes round: LOW, MID, HIGH, then LOW.** So a player swimming
+  over a pillar at HIGH who sounds it is set down STANDING on it at LOW,
+  never passing MID where the pillar is a wall. check-reefseed models it
+  (`cycleReach`); the Knotted Pool and every Shrine ford are built on it.
+- **Never let a push block be the only way onto its own islet.** At HIGH the
+  pillar under the road is water, but the block is still solid, and the
+  player cannot get behind it. Two of three first-cut fords had this (S142).
+- **Reefseeds never refilled.** The Vault's chest filled the satchel once;
+  a player who wasted three seeds could not reach the Boss Key. The Silt
+  Cell, Grove Crossing and Bower Spring now hold seed sprigs that come back
+  on every entry (S142).
+- **A fight's randomness is seeded on room entry from the run's stream**, so
+  a wait before the door changes nothing; walking through one more room
+  does. That is how the King's fight is re-rolled when an unrelated change
+  moves the run onto a losing seed (S142).
 - **A Seasons sheet's rooms may start one pixel below where the pitch says.**
   The Poison Moth's Lair sits on the 241x177 pitch from 1216,10, not 1216,9:
   the ripper's green grid line is at y=1248. Every first cut came out with a
