@@ -44,7 +44,7 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE; ORACLE SIZE** | `d655d1f`; rebuilt at 15x11 S137 (`91cc5c7`) |
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE, AND PLAYED; ORACLE SIZE** | authored `0a3776f`; played end to end S41; rebuilt at 15x11 S138 |
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE, AND PLAYED; ORACLE SIZE** | `a9eb63e`; rebuilt at 15x11 S139 (`08a4e74`) |
-| 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE, AND PLAYED; ORACLE SIZE** | `5fd7301`; rebuilt at 15x11 S140 (`4d61f0e`) |
+| 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE, AND PLAYED; ORACLE SIZE** | `5fd7301`; rebuilt at 15x11 S140 (`4d61f0e`); grown to 36 screens S143 |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE, AND PLAYED; ORACLE SIZE** | `0db0eab`; rebuilt at 15x11 S141 (`ef1b1ea`); grown to 40 screens S142 |
 | 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END; ORACLE SIZE** | authored `84d14e5`; played to the end S121; rebuilt at 15x11 and grown to 47 screens S142 |
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |

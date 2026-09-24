@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A sill can ask for the conch to be sounded FROM the stand (S143).** Every
+  earlier sill was one sea; the Ebb Cell is entered at HIGH and worked at LOW,
+  and check-bellows needed its own clause (`enter`) because its per-level
+  floods cannot see "was already standing there when the sea changed". A
+  divider wall across a [1,2] room must not sit on the seam row (row 10/11):
+  check-wide-rooms reads that as two rooms wearing one key.
+- **A small-key chest pops the key out as a drop.** Open it, `wait 30`, then
+  `loot`, or the run leaves with the key still hovering over the chest.
+
 - **A floor plate answers to Link's own feet, and to any enemy.** A room
   that wants a block on a plate needs TWO held plates (block on one, Link on
   the other), or the block is scenery. Keep hoppers and fliers away from

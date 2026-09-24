@@ -1257,6 +1257,43 @@ export const ROUTE = [
   ['goto', 4, 1, 1200],
   ['bellows', 1, 1, 2500],
   ['equip', 'sword', 'A', 400],
+
+  // ------------------------------------------- d4 0,0,3 -> 0,0,4 -> 0,1,5
+  // THE SPILLWAY, AND THE KEY TO THE LONG RACE (S143). Off the Loft's west
+  // wall. The Ebb Cell is the first sill that cannot be worked at one sea:
+  // its cell is behind drown-wall, so it is swum into at HIGH, and its wheel
+  // is in a well two levels deep at HIGH, where the cone takes one. So the
+  // conch is sounded STANDING IN THE CELL — the wall comes up as stone round
+  // Link, the well goes shallow — and the wheel is blown at LOW. Then the
+  // flood again to swim out, and the shutter it opened is the Spill Vault.
+  //
+  // Both rooms are cleared at LOW first, where their wells are wading water
+  // and nothing in them is out of the sword's reach.
+  ['travel', 0, 3, 4000],
+  ['tide', 0, 140, 600],
+  ['fight', 3000, 1200],
+  ['travel', 0, 4, 4000],
+  ['fight', 4000, 1500],
+  ['tide', 2, 140, 900],
+  ['goto', 10, 19, 2500],
+  ['tide', 0, 140, 600],
+  ['equip', 'bellows', 'A', 400],
+  ['bellows', 13, 19, 3000],
+  ['equip', 'sword', 'A', 400],
+  ['tide', 2, 140, 900],
+  ['goto', 13, 16, 2000],
+  ['exit', 'right', 300],
+  ['wait', 60],
+  ['goto', 8, 5, 900],
+  ['hold', ['left'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 600],
+  // A small-key chest pops the key out above itself: it is a drop to collect.
+  ['wait', 30],
+  ['loot', 600],
+  ['travel', 0, 4, 4000],
+  ['travel', 0, 3, 4000],
+  ['travel', 1, 3, 4000],
   ['travel', 2, 3, 4000],
 
   // ---------------------------------------------------------------- d4 0,2,3
@@ -1301,7 +1338,12 @@ export const ROUTE = [
   ['travel', 2, 3, 4000],
   ['travel', 3, 3, 4000],
   ['fight', 3000, 1200],
-  ['travel', 4, 3, 4000],
+  // The Long Race's west door is a key door since S143: the Spillway's key.
+  ['goto', 13, 5, 900],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 30],
+  ['hold', ['right'], 40],
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d4 0,4,3
   // SILLS 4a AND 4b — THE LONG RACE, and the second wheel is behind the
@@ -2719,7 +2761,12 @@ export const ROUTE = [
   // first four hits land identically and a pixel of drift decides it. No
   // wait before the door changes anything — the fight's clock starts on
   // entry — but a room walked through does. A player who lost would try
-  // again; the run is allowed the same.
+  // again; the run is allowed the same. S143's Spillway moved the stream
+  // again: none and one walk-round both lose, two win (and three).
+  ['goto', 7, 9, 900],
+  ['exit', 'down', 600],
+  ['goto', 7, 1, 900],
+  ['exit', 'up', 600],
   ['goto', 7, 9, 900],
   ['exit', 'down', 600],
   ['goto', 7, 1, 900],

@@ -1,3 +1,51 @@
+## S143 — the Cliffside Cistern grows to 36 screens
+
+### What landed (first commit of S143)
+- REQUIRED WEST WING, the Spillway, off the Squall Loft's opened west wall;
+  its key opens the Long Race's west door (now a key door; the Winding
+  Stair's east wall carries the other side). Keys: Gauge + Spill Vault
+  cover the Long Race and the Cliff Walk.
+  - `0,0,3` Spill Gate: a well hall, a plate that says the rule.
+  - `0,0,4` The Ebb Cell [1,2]: THE NEW WAY. A two-square cell behind
+    drown-wall (reached only at HIGH) with its wheel in a `3` well (deep at
+    MID and HIGH). At HIGH the cone makes the well MID and it is still under,
+    so the conch is sounded FROM INSIDE THE CELL: the wall rises as stone,
+    the well goes shallow, blow at LOW, flood again to swim out. The wheel
+    opens the ring shutter at 14,16 into the Spill Vault.
+  - `0,1,5` Spill Vault: the key chest (a key chest pops the key out as a
+    drop: `wait 30`, `loot`).
+- NEW CHECKER CLAUSE, check-bellows claim 9: a sill may declare `enter: L`
+  beside `at`. It replaces claims 2, 3, 5: the stand is reachable at
+  `enter`; the wheel is still drowned under the cone at `enter`; at `at` the
+  stand is pumpable and the cone covers and frees the wheel; the stand is
+  reachable at no level but `enter`. Goes red with the wheel on `1` and with
+  one drown-wall tile made stone. The flood now counts key and boss doors
+  as ways in (the Long Race's only way in is one).
+- OPTIONAL, each proved by check-bellows and tried in-engine with try-room:
+  `0,0,1` The Siphon Stair [1,2] (an Ebb cell opens the middle gate, then a
+  sump shelf at MID opens the alcove: Salt-Etched); `0,6,5` Gull Roost [2,1]
+  off the Cliffside Cell's opened east wall (pits and fliers, a HIGH
+  drown-wall sill: Gull's Tally); `0,6,2` Wind Gallery off the Cliff Walk's
+  opened east wall (stand at the top of a `4` drain, WADED to at MID: Sea-
+  Wolf's Tooth).
+- Route: Loft (MID) -> Spill Gate and Ebb Cell cleared at LOW -> HIGH to the
+  cell -> LOW, blow -> HIGH out -> Spill Vault key -> back to the Loft and
+  on to the Drowned Sill at HIGH. The Long Race key door opened from the
+  Winding Stair. Wyverna met on 23 of 32 and won.
+- The King's re-roll (see HANDOFF, S142) now walks out of the Stairhead and
+  back TWICE: zero and one walk-rounds lose on this stream, two and three
+  win. check-playthrough 41/41, no deaths.
+
+### Open
+- Grow D3 (>=32, is 25) — NEXT-PROMPT.md.
+- OFF-PLAN: the Bellows' combat verb "pushes light enemies into pits" is
+  claimed in ITEMS.md and the Cliff Walk's comment, and does nothing: the
+  gust moves ground enemies through `moveEntity`, which refuses pits by
+  their `avoidFlags`, and no enemy ever falls. A small engine change
+  (src/game/player.js `gust`), outside this objective's allowlist.
+- Nereth's margin from the Stairhead is thin on this stream (two re-rolls
+  needed). Measure over 13 seeds before anyone touches D5/D6 again.
+
 ## S142 — the Abyssal Keep is rebuilt at Oracle room size
 
 (Same working session as S140/S141.)

@@ -59,6 +59,20 @@
 //      it `after` would be a comment; with it, the second wheel provably
 //      cannot be worked until the first one has been (the Long Race, S140).
 //
+//   9. AND A SILL ENTERED AT ONE SEA AND WORKED AT ANOTHER REALLY IS (S143).
+//      A sill may declare `enter: L` beside `at`: the stand is only reachable
+//      at `enter`, and the player sounds the conch STANDING ON IT to bring the
+//      sea to `at`. For such a sill claims 2, 3 and 5 are replaced by: the
+//      stand is reachable at `enter`; the wheel is drowned at `enter` even
+//      under the cone, so the sea you came in on cannot work it; at `at` the
+//      stand is still somewhere to pump from and its cone covers the wheel
+//      and frees it; and the stand is reachable at NO level but `enter`, so
+//      the only way to be there at `at` is to have been there when the sea
+//      changed. Claims 1, 4, 6 and 7 are made exactly as for any sill. The
+//      Ebb Cell (S143): in at HIGH over drown-wall, work at LOW once the wall
+//      has risen round you, and a wheel in a well that is two levels deep at
+//      the flood, where one level of cone is not enough.
+//
 // And globally: every `wheel` entity in the game stands on the tile its room
 // declares, every declared Bellows room is in the dungeon that hands the
 // Bellows over, and the cone's reach is read out of feel.js rather than
@@ -166,11 +180,17 @@ function occupiable(d, mode) {
  */
 const canPumpFrom = (d) => walkableDef(d);
 
+// A key door is a way in once a key is spent on it — the Long Race's only way
+// in is one (S143) — and counting it open is the generous direction every
+// unreachability claim here has to err in.
+const KEYED = new Set(['dDoorLocked', 'dDoorBoss']);
+
 /** Every tile reachable in one room at one level in one mode, from every way in. */
 function flood(room, level, mode, open = room.open) {
   const { grid, legend, W, H } = room;
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null
-    : open && open.has(x + ',' + y) ? getTileDef('dDoorOpen') : defAt(legend, grid[y][x], level));
+    : (open && open.has(x + ',' + y)) || KEYED.has(legend[grid[y][x]]) ? getTileDef('dDoorOpen')
+      : defAt(legend, grid[y][x], level));
   const ok = (x, y) => occupiable(at(x, y), mode);
   const seen = new Set(), q = [];
   const push = (x, y) => { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } };
@@ -354,8 +374,28 @@ for (const r of rooms) {
       'stood beside it at ' + bad.join(', '));
   }
 
+  // 9. entered at one sea, worked at another (replaces 2, 3 and 5)
+  const enter = r.B.enter;
+  if (enter != null) {
+    const [dx, dy] = DIR_VEC[face] || [0, 0];
+    const under = (l) => tileAt(wheel, l > 0 ? l - 1 : 0);
+    check(`${where}: the stand is reachable at ${LEVEL_NAME[enter]}`, reach[enter].has(S), 'nothing gets to ' + S);
+    check(`${where}: the sea it is entered at cannot work the wheel`,
+      isDeep(tileAt(wheel, enter)) && isDeep(under(enter)),
+      `under the cone at ${LEVEL_NAME[enter]} the wheel stands in ${under(enter).name}`);
+    check(`${where}: at ${LEVEL_NAME[at]} the stand is still somewhere to pump from`,
+      canPumpFrom(tileAt(stand, at)), `${tileAt(stand, at).name} at ${S}`);
+    check(`${where}: and from it the cone reaches the wheel and frees it`,
+      coneCovers(stand[0], stand[1], dx, dy, wheel[0], wheel[1], solidAtLevel(at))
+        && !isDeep(under(at)) && !(under(at).flags & (F.SOLID | F.VOID)),
+      `${S} facing ${face} at ${LEVEL_NAME[at]}: ${under(at).name} under the cone`);
+    const other = LEVELS.filter(l => l !== enter && reach[l].has(S));
+    check(`${where}: the stand is reachable only at ${LEVEL_NAME[enter]}`, other.length === 0,
+      'also reachable at ' + other.map(l => LEVEL_NAME[l]).join('/'));
+  }
+
   // 2 & 3. the wheel is drowned where the room is played, and one level down it is not
-  {
+  if (enter == null) {
     const now = tileAt(wheel, at), down = at > 0 ? tileAt(wheel, at - 1) : null;
     check(`${where}: the wheel is drowned at ${LEVEL_NAME[at]}`, isDeep(now),
       `it stands in ${now ? now.name : 'nothing'} — a plain gust would turn it`);
@@ -383,7 +423,7 @@ for (const r of rooms) {
   }
 
   // 5. there is a place to stand, and it is the one the room names
-  {
+  if (enter == null) {
     const d = tileAt(stand, at);
     const [dx, dy] = DIR_VEC[face] || [0, 0];
     check(`${where}: the stand is reachable at ${LEVEL_NAME[at]}`, reach[at].has(S),
@@ -445,6 +485,7 @@ for (const r of rooms) {
     console.log(`       wheel ${W} ${LEVELS.map(l => `${LEVEL_NAME[l]}:${tileAt(wheel, l).name}`).join(' ')}`);
     console.log(`       stand ${S} reachable at ${LEVELS.filter(l => reach[l].has(S)).map(l => LEVEL_NAME[l]).join('/') || 'nowhere'}`);
   } else {
+    if (enter != null) console.log(`       entered at ${LEVEL_NAME[enter]}, worked at ${LEVEL_NAME[at]}`);
     console.log(`       ${W} is ${tileAt(wheel, at).name} at ${LEVEL_NAME[at]} and `
       + `${at > 0 ? tileAt(wheel, at - 1).name : '—'} inside the cone; `
       + `pumped from ${S} facing ${face}`);

@@ -2174,7 +2174,16 @@ export function installDungeonsA() {
   // Dungeon's (`x*` picks in tools/rip-dungeon-themes.py) — grey stone, green
   // floor, and more standing water than any other dungeon in Seasons.
   //
-  // Intended route (24 rooms, one floor, the Bellows at room 12):
+  // GROWN TO 36 SCREENS (S143). A required west wing, the Spillway (Spill
+  // Gate, the Ebb Cell, the Spill Vault), holds the key to the Long Race's
+  // west door, and it asks the dungeon's question a new way: the Ebb Cell's
+  // stand is only reached at HIGH and its wheel is two levels under at HIGH,
+  // so the conch is sounded from INSIDE the cell. Three optional rooms (the
+  // Siphon Stair off the Spill Gate, the Gull Roost off the Cliffside Cell,
+  // the Wind Gallery off the Cliff Walk) each hold a charm behind a sill.
+  //
+  // Intended route (24 rooms before S143, one floor, the Bellows at room 12;
+  // the Spillway comes after the Squall Loft and before the Drowned Sill):
   //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
   //   -> 3,5 the Weir: 2,5 Chartstone, 4,5 rungs (Piece of Heart at HIGH),
   //      5,5 charm -> 4,4 the Cistern Floor (Small Key 2) -> 3,4 -> 2,4 winch
@@ -2379,7 +2388,7 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          '..............#',
+          '...............',
           '#....,,,,,....#',
           '#....,,,,,....#',
           '#.U.........U.#',
@@ -2512,7 +2521,7 @@ export function installDungeonsA() {
           '####.##.......#',
           '####0##.......#',
           '#...0.........#',
-          '#.............D',
+          '..............D',
           '#.............#',
           '#.....U...U...#',
           '#.............#',
@@ -2650,7 +2659,7 @@ export function installDungeonsA() {
           '#..22222222...#',
           '#..2......2...#',
           '#..2..U...2...#',
-          '...............',
+          '..............L',
           '#.............#',
           '#...1111111...#',
           '#...1111111...#',
@@ -2680,7 +2689,7 @@ export function installDungeonsA() {
           '####.#####1####',
           '####0#####O####',
           '#...0..#.#O#..#',
-          '.......#.#.#..D',
+          'L......#.#.#..D',
           '#......#..9...#',
           '#......D......#',
           '#......#......#',
@@ -2758,7 +2767,7 @@ export function installDungeonsA() {
           '#..OO.....OO..#',
           '#..OO.....OO..#',
           '#.............#',
-          'L.............#',
+          'L..............',
           '#.............#',
           '#..OO.....OO..#',
           '#..OO.....OO..#',
@@ -2865,6 +2874,236 @@ export function installDungeonsA() {
           ['pickup', 1, 3, { kind: 'heartPiece' }],
         ],
       },
+      // ------------------------------------------ the spillway (S143, required)
+      //
+      // THE SPILLWAY WING, off the Squall Loft's west wall, and the key to the
+      // Long Race is in it. Every sill before this one is worked at ONE sea:
+      // pick it, walk to the stand, blow. This one cannot be. The stand is a
+      // cell behind drown-wall, so you only get in on the flood — and the wheel
+      // stands in a well two levels deep at the flood, and the cone takes one.
+      // So you swim in, and sound the conch STANDING IN THE CELL: the sea goes
+      // out, the drown-wall comes up round you as stone, and the wheel is in a
+      // shallow puddle three tiles away. Blow. Then bring the flood back to
+      // swim out. `enter` in the declaration is check-bellows' clause for it.
+      '0,0,3': {
+        name: 'Spill Gate',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.......U...#',
+          '#....33333....#',
+          '#....33333....#',
+          '#....33333.....',
+          '#....33333....#',
+          '#.............#',
+          '#.U.......U...#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['jellyfish', 7, 5],
+          ['keese', 11, 8],
+        ],
+        readable: [
+          [2, 8, 'A plate over the spillway: "The cell below\nis only open to the flood, and the wheel in\nit only turns at the ebb."'],
+        ],
+      },
+      '0,0,4': {
+        name: 'The Ebb Cell',
+        // Two screens: a well hall to cross, then the cell. The cell is two
+        // squares of floor in the south-east corner, walled by drown-wall on
+        // the landward side and by a pit on the other, and the wheel is at the
+        // end of it in `3` — deep at MID and HIGH, shallow at LOW. At HIGH the
+        // cone makes it MID and it is still under; the player sees it bubble.
+        size: [1, 2],
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#...3333333...#',
+          '#...3333333...#',
+          '#...3333333...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#..U..........#',
+          '#.............#',
+          '#.............#',
+          '#.............D',
+          '#.............#',
+          '#.........99###',
+          '#........9..O3#',
+          '#........######',
+          '###############',
+        ],
+        bellowsRoom: {
+          wheel: [13, 19], stand: [10, 19], face: 'right', enter: 2, at: 0, opens: [[14, 16]],
+        },
+        entities: [
+          ['wheel', 13, 19, { needTurns: 40 }],
+          ['jellyfish', 5, 5],
+          ['jellyfish', 9, 4],
+          ['keese', 11, 12],
+          ['tektite', 5, 15],
+        ],
+        readable: [
+          [3, 13, 'Cut beside the cell: "The well is two floods\ndeep, and wind lifts only one. Come in on the\nflood, and let the sea go out around you."'],
+        ],
+        script: {
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[14, 16]] });
+          },
+        },
+      },
+      '0,1,5': {
+        name: 'Spill Vault',
+        map: [
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          'D....,,,,,....#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 7, 5, { pickup: 'key' }],
+        ],
+      },
+
+      // ---------------------------------------------- optional rooms (S143)
+      '0,0,1': {
+        name: 'The Siphon Stair',
+        // Optional, off the Spill Gate's north door: the Ebb Cell's lesson
+        // asked again, and then the Loft's, in order. The lower cell (enter at
+        // the flood, work at the ebb) opens the gate in the middle wall; the
+        // upper wheel is a sump shelf at MID and opens the alcove with the
+        // charm in it.
+        size: [1, 2],
+        map: [
+          '###############',
+          '#,,,######.OO3#',
+          '#,,,######.####',
+          '#,,,######0####',
+          '##D#######0####',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....33333....#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######D#######',
+          '#.U.........U.#',
+          '#.............#',
+          '#..3333333....#',
+          '#..3333333....#',
+          '#.........99###',
+          '#........9..O3#',
+          '#........######',
+          '#.............#',
+          '#######.#######',
+        ],
+        bellowsRoom: [
+          { wheel: [13, 18], stand: [10, 18], face: 'right', enter: 2, at: 0, opens: [[7, 12]] },
+          { wheel: [13, 1], stand: [10, 1], face: 'right', at: 1, opens: [[2, 4]], after: [[7, 12]] },
+        ],
+        entities: [
+          ['wheel', 13, 18, { needTurns: 40 }],
+          ['wheel', 13, 1, { needTurns: 40 }],
+          ['chest', 2, 2, { charm: 'saltEtched' }],
+          ['tektite', 5, 13],
+          ['keese', 11, 7],
+          ['jellyfish', 7, 8],
+        ],
+        script: {
+          onEvent(game, name, data) {
+            if (name !== 'valve' || !data || !data.open) return;
+            game.applyReward({ openDoors: [data.y >= 11 * 16 ? [7, 12] : [2, 4]] });
+          },
+        },
+      },
+      '0,6,5': {
+        name: 'Gull Roost',
+        // Optional, off the Cliffside Cell. Pits and light things over them —
+        // the gust shoves what it can — and at the far end a drown-wall cell
+        // worked at HIGH, whose wheel opens the alcove in the corner.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#........................#,,,#',
+          '#.U.OO....OO....OO...U...#,,,#',
+          '#...OO....OO....OO.......#,,,#',
+          '#........................##D##',
+          '.............................#',
+          '#............................#',
+          '#...OO....OO....OO..........##',
+          '#.U.OO....OO....OO...U..#9####',
+          '#.......................9.OO1#',
+          '##############################',
+        ],
+        bellowsRoom: {
+          wheel: [28, 9], stand: [25, 9], face: 'right', at: 2, opens: [[27, 4]],
+        },
+        entities: [
+          ['wheel', 28, 9, { needTurns: 40 }],
+          ['chest', 27, 2, { charm: 'gullsTally' }],
+          ['keese', 7, 2],
+          ['keese', 13, 8],
+          ['keese', 19, 3],
+          ['zol', 14, 5],
+        ],
+        readable: [
+          [21, 8, 'Scratched by the cell: "Gulls nest where the\nwind is. The wheel in the corner turns only\nwhen the sea is at the top."'],
+        ],
+        script: {
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[27, 4]] });
+          },
+        },
+      },
+      '0,6,2': {
+        name: 'Wind Gallery',
+        // Optional, off the Cliff Walk. The stand is at the top of a drain —
+        // an open pit at LOW, a wade at MID, over your head at HIGH — so at MID
+        // you WALK up to it, the only sill in the Cistern you do not swim to.
+        map: [
+          '###############',
+          '#.......#.OO3##',
+          '#.U.....#4#####',
+          '#.......#4#####',
+          '#.............#',
+          '..............#',
+          '#.........##D##',
+          '#.........#,,,#',
+          '#.U...U...#,,,#',
+          '#.........#,,,#',
+          '###############',
+        ],
+        bellowsRoom: {
+          wheel: [12, 1], stand: [9, 1], face: 'right', at: 1, opens: [[12, 6]],
+        },
+        entities: [
+          ['wheel', 12, 1, { needTurns: 40 }],
+          ['chest', 12, 8, { charm: 'seawolfsTooth' }],
+          ['keese', 4, 3],
+          ['gel', 6, 7],
+        ],
+        script: {
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[12, 6]] });
+          },
+        },
+      },
+
       '0,3,2': {
         name: 'Cistern Gate',
         // The east door is a shutter, and it is the Crossed Sluices' to open:

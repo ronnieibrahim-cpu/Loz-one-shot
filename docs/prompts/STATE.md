@@ -8,7 +8,7 @@ jambs, doors, floors, block, pot) cut by tools/rip-dungeon-themes.py.
 Puzzles deepened, never made obscure. S141 (the human): dungeons GROW, as
 the Oracle games' do, and new rooms get less creative restraint. Size
 ladder in screens (today in brackets): D1 25 [25], D2 27 [27], D3 >=32 [25],
-D4 >=36 [27], D5 >=40 [40], D6 >=46 [47]. New rooms are new ideas with the
+D4 >=36 [36], D5 >=40 [40], D6 >=46 [47]. New rooms are new ideas with the
 dungeon's item and tide theme, each proved by its item's checker. The engine,
 every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
 `cellTiles`), and D1 Tidewash Grotto is rebuilt and played to THE END.
@@ -17,8 +17,8 @@ DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
 Seasons kit, each meets its size ladder, and `node tools/check-playthrough.mjs`
 is green end to end.
 PROGRESS: D1 done (S137). D2 done (S138). D3 done (S139). D4 done (S140).
-D5 done (S141). D6 and D5 done and grown (S142). All six are Oracle size. Next:
-grow D4, then D3, to the ladder (their Oracle rebuilds are done, their size is not).
+D5 done (S141). D6 and D5 done and grown (S142). All six are Oracle size. D4
+grown to 36 (S143). Next: grow D3 to the ladder (>=32).
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
@@ -27,6 +27,7 @@ ROTATION (retired S112, kept for the record):
 
 FILE ALLOWLIST for the current objective (grow D4, D3):
   src/data/dungeons-a.js + dungeons-b.js (the d3-d5 blocks), src/data/tiles-core.js,
+  tools/check-bellows.mjs, tools/check-cleats.mjs, tools/check-playthrough.mjs,
   src/data/legends.js, src/data/tiles-dungeon-themes.js (regenerated only),
   tools/rip-dungeon-themes.py, tools/playthrough-route.mjs,
   tools/replay-plans.mjs + tools/replays/d6-*.json, src/data/bosses.js (d6's
@@ -37,8 +38,6 @@ FILE ALLOWLIST for the current objective (grow D4, D3):
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S122 | objective | Closed the last two red checks in the project, and neither of them was a fault in the game. The charm that is supposed to let you breathe on the seafloor was reported broken for several sessions; it works, and the test was standing on dry sand while pretending to be underwater. And the world was reported to be one Piece of Heart short of a whole number of hearts; it is not — the counter simply could not see the one the Drowned Wood Shrine pays out of its drowned wheel. Adding the piece the last prompt asked for would have broken a different check.
-S123 | objective | Taught the test robot to wear a charm — thirty of them exist, the whole system is proved piece by piece, and no run had ever put one on in a hundred and seventy thousand frames. The run now wears one. Also fixed a real fault found on the way: the robot used to walk up to a trader, and then keep talking to the patch of ground the trader had been standing on, so the coast trade only ever worked because the timing happened to line up. Could not get the charm this run actually wants — one free hit in every room — because picking it up changes every fight that follows and loses the third boss; that is written up with the measurements for whoever takes it next.
 S124 | objective | Gave the final fight some room to breathe. Link used to walk in on four hearts against a boss that takes one a hit, and win by a quarter of a heart — which is not winning, it is luck: every single thing changed anywhere earlier in the game turned that win into a death. The salt colossus that guards the Boss Key now has a fairy in its hoard, taken on the way back out, and Link goes through the throne room door on nine hearts. Found and wrote down why the obvious health fix — the charm that soaks one hit per room — actually makes every fight worse rather than better.
 S125 | objective | Got the last dungeon's one optional room into the run. There is a grate in the Abyssal Keep with a bone charm behind it, and the only thing in the game that opens a grate is the rod you get for walking the whole coast trade — so that room is the game asking whether you did it. Nobody had ever answered it in a real playthrough. Link now picks the charm up and wears it for the rest of the game. The other wing of that floor still cannot be afforded: the shadow that guards it costs more than Link has when he gets there, whichever order the two wings are done in, and that is now measured both ways round rather than guessed.
 S126 | objective | Every room of the last dungeon has now been played. The flooded hall, the vault behind it with the better diving boots, and the riddle of the two arches had never been entered by anything; they are in the run now, and the shadow that guards them costs three quarter-hearts instead of the twenty-five it cost last session. Two things were wrong and only one of them was the fight: the test robot had been trying to kill the thing by blowing a conch at it, because the sword was not on a button and nothing anywhere says so out loud.
@@ -58,3 +57,4 @@ S139 | objective | The third dungeon, the Bogwater Sanctum, is rebuilt at real O
 S140 | objective | The fourth dungeon, the Cliffside Cistern, is rebuilt at real Oracle room size in the grey stone and green floor of the Seasons Dancing Dragon Dungeon, with that dungeon's own locked doors, shutters and horned boss door. The Long Race now has two wind-wheels, and the second is behind the first at a different tide. A plate beside the Boss Key's room opens a shortcut to the boss door. Fixed: pumping the Bellows used to let Link walk for a moment, straight into the pit in front of every wheel, and a Piece of Heart that had popped into a wall. The whole game still plays to the end.
 S141 | objective | The fifth dungeon, the Drowned Wood Shrine, is rebuilt at real Oracle room size in the brown stone and gold floor of the Seasons Ancient Ruins, with that dungeon's own doors. Every seed grove works exactly as before in the bigger rooms. Fixed: the salt colossus in the last dungeon used to leave its beetles behind when it died, and they could knock Link into a pit. The whole game still plays to the end, and the last boss is now met on a full health bar.
 S142 | objective | The last dungeon, the Abyssal Keep, is rebuilt at real Oracle room size in the dark stone of the Seasons Sword & Shield Maze, with its own locked doors and boss door. Nereth's stair now has an antechamber with the fairy and the boss door, and the throne-room door shuts behind you until the King is dead. The salt colossus has the whole east side of its room to fight on. Then the Keep grew to 47 screens, the biggest dungeon in the game: a new wing where you must fish the stair key off a pillar, and six optional rooms with four charms. The Shrine grew to 40: the first room where a block crosses a seed pillar, and eight optional rooms with five charms; seeds now grow back. All six dungeons are now Oracle size, and the whole game still plays to the end.
+S143 | objective | The fourth dungeon, the Cliffside Cistern, grew to 36 screens. A new required wing off the first wind-wheel room holds the key to the Long Race, and it asks the dungeon's question a new way: the wheel in the Ebb Cell is under too much water for the Bellows at high tide, and you can only get into its cell at high tide, so you swim in and lower the sea while standing inside — the walls rise round you — and then blow. Three optional rooms each hide a charm behind a wind-wheel. The whole game still plays to the end.

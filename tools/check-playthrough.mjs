@@ -386,14 +386,15 @@ check('the run walked out of the Bogwater Sanctum on its own feet',
 check('the run bombed the Deep Cut open and crossed the Cliffs of Kell',
   ['overworld/0,3,4', 'overworld/0,2,3', 'overworld/0,1,3'].every(r => a.rooms.includes(r)),
   `rooms ${['overworld/0,3,4', 'overworld/0,2,3', 'overworld/0,1,3'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
-// THE BELLOWS WERE HELD, NOT CARRIED. Six wheels stand where no hand reaches
-// and each is drowned at the sea its own room is played at; the only thing
-// that takes the water off one is the gust that has to turn it. A run that
-// reached Wyverna turned all six, because the Boss Key is behind the last two.
-check('the run turned all six of the Cistern\'s drowned wheels',
+// THE BELLOWS WERE HELD, NOT CARRIED. Eight wheels on the route stand where no
+// hand reaches and each is drowned at the sea its own room is entered at; the
+// only thing that takes the water off one is the gust that has to turn it. A
+// run that reached Wyverna turned all eight, because the Boss Key is behind
+// the last two and the Long Race's key behind the Ebb Cell's (S143).
+check('the run turned all eight of the Cistern\'s route wheels',
   s.items.includes('bellows')
-    && ['d4/0,1,3', 'd4/0,2,3', 'd4/0,2,2', 'd4/0,4,3', 'd4/0,4,2'].every(r => a.rooms.includes(r)),
-  `rooms ${['d4/0,1,3', 'd4/0,2,3', 'd4/0,2,2', 'd4/0,4,3', 'd4/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+    && ['d4/0,1,3', 'd4/0,0,4', 'd4/0,2,3', 'd4/0,2,2', 'd4/0,4,3', 'd4/0,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d4/0,1,3', 'd4/0,0,4', 'd4/0,2,3', 'd4/0,2,2', 'd4/0,4,3', 'd4/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 // THE BOMBS OPENED A REGION, AND THAT IS A CLAIM NO EARLIER RUN COULD MAKE.
 // Every dungeon before this one is reached across open coast; the Sunken
 // Marsh is behind a cracked cliff on the Bog road, so the walk to the

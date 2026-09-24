@@ -916,6 +916,17 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S143 — the Cistern grows to 36 screens
+
+- D4 is 30 rooms, 36 screens. The Spillway (Spill Gate, Ebb Cell, Spill
+  Vault) is required: its key opens the Long Race's west key door.
+- check-bellows claim 9, `enter: L`: a sill entered at one sea and worked at
+  another from the same square. The conch is sounded standing in the cell.
+- check-bellows' flood counts key and boss doors as ways in.
+- Charms placed: saltEtched (Siphon Stair), gullsTally (Gull Roost),
+  seawolfsTooth (Wind Gallery).
+- The Nereth re-roll is two walk-rounds of the Stairhead on this stream.
+
 ## Settled at S142 — the Abyssal Keep is an Oracle dungeon
 
 - D6 is `cell: [15, 11]` with the Sword & Shield Maze kit (`k*` picks; ring
