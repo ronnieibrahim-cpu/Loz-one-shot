@@ -34,7 +34,7 @@ import {
   JUMP_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   GAP_HOP_MAX_SPAN,
-  FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
+  FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
   LENS_FADE_FRAMES,
   BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
   BELLOWS_RAFT_SCALE,
@@ -1310,6 +1310,7 @@ export class Player extends Entity {
       this.x = safe.x; this.y = safe.y;
       this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES;
     }
   }
 
@@ -1333,6 +1334,7 @@ export class Player extends Entity {
       this.z = 0;
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES;
       game.say('The tide swept you back!');
     }
   }
@@ -1359,7 +1361,11 @@ export class Player extends Entity {
     this.flipX = this.dir === 'left';
     const key = side ? 'side' : this.dir;
 
-    if (this.falling > 0) return 'link_fall_' + Math.min(2, Math.floor((FALL_FRAMES - this.falling) / 8));
+    if (this.falling > 0) {
+      const t = FALL_FRAMES - this.falling;
+      const [a, b] = FALL_ANIM_FRAMES;
+      return 'link_fall_' + (t < a ? 0 : t < a + b ? 1 : 2);
+    }
     if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.bellowsT > 0) return 'link_push_' + key;

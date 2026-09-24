@@ -277,8 +277,16 @@ export const PLAYER_FLICKER_FRAMES = 33;
 export const PLAYER_HURT_FLASH_BEAT = 4;
 
 /** f — invulnerability after a pit fall or a wash-out, which is longer than an
- *  ordinary hit because the player has just been teleported. guessed. */
+ *  ordinary hit because the player has just been put back. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/link.s,
+ *  linkState02 (LINK_STATE_RESPAWNING) @substate2, invincibilityCounter $3c.
+ *  The guess was already right. */
 export const PLAYER_RECOVER_INVULN_FRAMES = 60;
+
+/** f — how long Link stands still after he is put back from a pit or the
+ *  water, before he can walk. derived: linkState02 @substate2 sets counter1
+ *  $10 and @substate3 waits it out before LINK_STATE_NORMAL. */
+export const RESPAWN_HOLD_FRAMES = 16;
 
 /** f — how long Link is shoved and cannot walk after a hit. derived: equal to
  *  PLAYER_KNOCK_FRAMES, because the cartridge's normal state skips Link's
@@ -418,11 +426,15 @@ export const BOSS_KNOCK_SCALE = 0.4;
 /** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
 export const HAZARD_DAMAGE = 2;
 
-/** qh — damage from falling into a pit. guessed. */
-export const PIT_DAMAGE = 2;
+/** qh — damage from falling into a pit: one heart. derived from the
+ *  cartridge: linkState02 @substate2 applies damageToApply $fc (-4 quarter
+ *  hearts; the Gold Luck Ring halves it). Was a guessed half heart. */
+export const PIT_DAMAGE = 4;
 
-/** qh — damage from being washed out by water you cannot swim in. guessed. */
-export const WASH_DAMAGE = 2;
+/** qh — damage from being washed out by water you cannot swim in: one heart,
+ *  Seasons' drowning. derived: drowning ends in the same linkState02
+ *  @respawn -> @substate2 as a pit, so it costs the same $fc. */
+export const WASH_DAMAGE = 4;
 
 /** qh — damage from standing in your own explosion. guessed. */
 export const EXPLOSION_SELF_DAMAGE = 2;
@@ -674,11 +686,22 @@ export const SHAKE_BOSS_BREAK_FRAMES = 16;
 // Player states other than walking
 // ---------------------------------------------------------------------------
 
-/** f — length of a pit fall before the player is replaced on solid ground. guessed. */
-export const FALL_FRAMES = 34;
+/** f — how long each of Link's three falling-in-a-hole frames is shown. derived
+ *  from the cartridge: oracles-disasm data/seasons/specialObjectAnimationData.s,
+ *  animationData19c59 (LINK_ANIM_MODE_FALLINHOLE): 16, 10, 10. */
+export const FALL_ANIM_FRAMES = [16, 10, 10];
 
-/** f — length of being washed back to shore by water. guessed. */
-export const WASH_FRAMES = 30;
+/** f — length of a pit fall before the player is replaced on solid ground.
+ *  derived: the FALL_ANIM_FRAMES animation, then linkState02 @respawn's two
+ *  invisible frames (counter1 $02). Was a guessed 34. */
+export const FALL_FRAMES = FALL_ANIM_FRAMES.reduce((a, b) => a + b, 0) + 2;
+
+/** f — length of being washed back to shore by water: Seasons' drowning.
+ *  derived from the cartridge: animationData19c40 (LINK_ANIM_MODE_DROWN,
+ *  6 + 16 frames to its end marker) and the same two invisible frames as a
+ *  pit. It agrees with the ~24-frame drowning fade read off the footage
+ *  (assets/footage/README.md, 4469-4493). Was a guessed 30. */
+export const WASH_FRAMES = 6 + 16 + 2;
 
 /** f — how long Link holds the conch, and is frozen for. guessed. */
 export const CONCH_FRAMES = 46;
