@@ -13,7 +13,7 @@ a done-condition, and scope explicitly.
 
 ## POLISH ROTATION (objective 11, named by the human after S145)
 
-One area per session, in order a..f, then round again (STATE.md). Each stub
+One area per session, in order a..i, then round again (STATE.md). Each stub
 below is expanded into NEXT-PROMPT.md when its turn comes: verify every
 number here against the current tree first, name a target, scope it.
 
@@ -26,30 +26,54 @@ enemies against its ENEMIES.md role (one tide consequence each, no room of
 three of a kind by accident, no enemy parked on a pit edge or a doorway);
 fix the worst, check-placement/ground/playthrough green.
 
-**(b) feel.** Walk, sword (three verbs), knockback, hit-stop, pickup and
+**(b) legible.** The player cannot see several things the puzzles depend
+on (ART-BACKLOG.md): a torrent is still water that animates a little faster
+(its own entry calls it the highest-value job in the file — directional foam,
+never a different blue); a drowned wheel looks like a working one; the Lens's
+fork is three near-identical blues; no room shows how high the sea is (the
+tide-gauge fixture); the Keep's mooring ring reads as a block. Pass 1: the
+torrents and the wheel. Every change is shown to a person, who says whether
+the room now reads without being swept out of it once.
+
+**(c) fidelity.** Hand-drawn art that a sheet already holds, which CLAUDE.md
+calls the largest remaining violation of its first art rule: the usable
+item icons (the HUD sheet has 29 — ART-BACKLOG "THE USABLE ITEMS ARE
+HAND-DRAWN"), and the Maku Tree and Great Fairy, drawn 16x16 beside a whole
+`oracle-seasons-maku-tree.png` and the races sheet (use `expectedSize`, as
+`link_hold_*` does). Extract through a ripper; check-rippers green. Also
+count drift's 196 untagged sprite-provenance entries down.
+
+**(d) feel.** Walk, sword (three verbs), knockback, hit-stop, pickup and
 chest timing, text speed, door and room-scroll timing, against FEEL-SPEC.md
 and a person's hands. `measured` is BLOCKED without an emulator capture —
 ask the human for one at the start of the session; without it, changes are
 `derived`/`guessed` and every one goes to a person to play. replay.mjs will
 move: re-record deliberately, never to make a test pass.
 
-**(c) music.** List every place the game can be (six regions, the village,
+**(e) music.** List every place the game can be (six regions, the village,
 six dungeons, caves, houses, every boss, title, ending) against the track it
 plays; find shared or missing tracks; write the missing ones in the Game Boy
 register (check-music's frequency and channel rules). Each track loops
 without a seam. check-sfx: every verb makes a sound. A person listens.
 
-**(d) side content.** Count what exists (heart pieces, charms, the Coastwise
+**(f) side content.** Count what exists (heart pieces, charms, the Coastwise
 Chain, optional rooms, secret caves) per region; find the regions with
 nothing to find. Design at least one ORIGINAL mini-game (tide-themed, not a
 port of an Oracle game) and one side quest — PROPOSE BOTH TO THE HUMAN
 BEFORE BUILDING. Every new reward is proved by check-items/check-hearts.
 
-**(e) fairness.** The thinnest fight left (the Brinehulk, 10/13 at S144),
+**(g) dungeons.** Every checker proves the six dungeons can be finished;
+none says whether they are good (DUNGEON-STATUS "What no dungeon has yet").
+Compare them in one table: screens, keys, fights, damage taken on the run,
+time to clear, optional rewards. Does difficulty rise D1..D6? Fix the
+outliers. Make the two rooms whose signs may not explain them (the Ebb Cell,
+the Two Weights, S143) clear, and a person plays each one cold.
+
+**(h) fairness.** The thinnest fight left (the Brinehulk, 10/13 at S144),
 by the S145 method: read the losses, route and opt-in robot habits first,
 damage only with 13 seeds either side.
 
-**(f) play pass.** The human plays a stretch and writes notes; the session
+**(i) play pass.** The human plays a stretch and writes notes; the session
 fixes them in order. If there are no notes, ask for them — do not invent a
 pass.
 

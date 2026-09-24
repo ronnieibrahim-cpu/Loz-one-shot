@@ -1,23 +1,23 @@
 OBJECTIVE OF RECORD: 11 polish — named by the human after S145.
 
 11 polish: the game plays to the end; make every part of it feel finished.
-Six areas, ONE PER SESSION, in this order, then round again. A session works
-the area whose turn it is and nothing else; the area's stub is in QUEUE.md.
-  a enemies   — art and placement. Pass: drift's "complete animation set"
-                count up (extract before drawing); every enemy's rooms read
-                against its ENEMIES.md role; check-placement/ground green.
-  b feel      — sword, walk, knockback, hit-stop, pickups, text, doors,
-                against FEEL-SPEC.md. `measured` stays BLOCKED (no capture);
-                changes are `derived`/`guessed` and go to a person to play.
-  c music     — every region, dungeon, boss and cave has a track that fits
-                it and loops cleanly; sfx cover every verb. check-music,
-                check-sfx, check-audio-render green; a person listens.
-  d side      — side quests, optional items, heart pieces, charms, and at
-                least one ORIGINAL mini-game. Propose any new quest or game
-                to the human BEFORE building it (a design change).
-  e fairness  — the thinnest fight in LEDGER S144/S145 to 11/13 (next up:
-                the Brinehulk, 10/13), the S145 method.
-  f play pass — a person's play notes, fixed in order; no notes, no pass.
+Nine areas, ONE PER SESSION, in this order, then round again. A session works
+the area whose turn it is and nothing else; its stub is in QUEUE.md.
+  a enemies   — art (hurt/death for all 22), then placement (pass 2).
+  b legible   — what the player cannot read: torrents look like still water,
+                a drowned wheel like a working one, the Lens's three blues,
+                no tide gauge (ART-BACKLOG). A person reads each room cold.
+  c fidelity  — hand-drawn art a sheet already has: 29 item icons, the Maku
+                Tree and Great Fairy (whole sheets never opened). Extract.
+  d feel      — timing and impact against FEEL-SPEC.md. `measured` BLOCKED
+                without a capture: ask the human for one; else a person plays.
+  e music     — a fitting, seamless track everywhere; every verb has a sound.
+  f side      — side quests, optional items, heart pieces, charms, and an
+                ORIGINAL mini-game. Propose new quests/games to the human first.
+  g dungeons  — the six compared: difficulty curve, puzzle clarity (the Ebb
+                Cell, the Two Weights), keys and rewards per dungeon.
+  h fairness  — the thinnest fight to 11/13 (next: the Brinehulk, 10/13).
+  i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
 Rotation position: next is (a) enemies, pass 1.
 

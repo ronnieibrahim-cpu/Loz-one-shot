@@ -2,7 +2,7 @@
 
 ## Read first
 - `docs/prompts/STATE.md` — objective 11 polish, area (a) enemies, pass 1.
-- `docs/prompts/QUEUE.md`'s "POLISH ROTATION" — this area and the five after.
+- `docs/prompts/QUEUE.md`'s "POLISH ROTATION" — this area and the eight after.
 - `docs/ENEMIES.md`'s "Idle states" section, and `docs/ART-DIRECTION.md`.
 - `docs/briefs/AGENTS.md` section J (the extraction workflow).
 - `docs/NEXT-SESSION.md`, the S145 entry only.
@@ -38,6 +38,7 @@ Target: drift reads 22 of 22 for hurt and 22 of 22 for death.
 ## Out of scope
 - Enemy placement in rooms — that is pass 2 of this area, next time round.
 - Idle or attack frames for the 13 enemies that never stand still.
-- Feel, music, side content, fairness: their turns come (QUEUE.md b..f).
+- Legibility, fidelity art, feel, music, side content, dungeon quality,
+  fairness: their turns come (QUEUE.md b..i). Note, do not chase.
 - Boss art (settled S75) and any change to what an enemy does.
 - Hand-drawing anything the enemies sheet already has.
