@@ -1,3 +1,36 @@
+## S149 — the sword hits like Seasons' sword
+
+The human: "swinging next to an enemy often results in a miss that doesn't
+match the source games". It did not: the blade was one box straight out in
+front, live only on frames 2-9 of 14. Now it is the cartridge's own, read from
+github.com/Stewmath/oracles-disasm (cloned read-only for the session):
+
+- `SWING_PHASE_FRAMES` [3,3,8,3] (Link's LINK_ANIM_MODE_22 animation,
+  animationData19d1e/19d21) and `SWORD_ARC` (postUpdate.s `swordArcData`
+  through `updateSwingableItemAnimation`'s phase x facing table): side,
+  diagonal, full reach, drawn back. Live every frame. SWING_FRAMES is 17.
+  Tagged `derived` naming the disassembly — not frame-stepped, so not
+  `measured`; feel.js's header now says a derived value may name the
+  cartridge's data.
+- `ENEMY_HURT_RADIUS` 6: the sword tests a 12x12 box on the middle of an
+  ordinary enemy's sprite (`enemyHurtRect`, player.js); a spec may declare
+  `hurtBox`; anything bigger than a cell keeps its `hb`. Enemy `hb` (walls,
+  contact damage) is UNCHANGED — contact damage against Link still uses the
+  old footprint. If the human wants contact to match the cartridge too, that
+  is the next step, and it will move every recorded baseline.
+- Tiles are cut on the full-reach phase only, as the cartridge does.
+- Drawn with two new extracted cells (`fx_blade_ur`, `fx_blade_dl`, the spin
+  band's diagonals, rip-link.py) for the diagonal phase.
+- `tools/check-sword.mjs` (20 assertions): 19 placements around Link, hit or
+  miss as the cartridge's arc gives it. The old sword failed 11 of them.
+- The actor: `dFight`'s standoff 16..21 -> 18..26; `dBoss` takes
+  `{ reachSwing: true }` (swing as soon as the engine's own full-reach box
+  overlaps the boss, lined up) — used for the Clawcrab only, which now ends
+  on 10/12 instead of 1/12. Gohmaraq fought that way got charged round its
+  arena (ENEMY_CHARGE_MIN_RANGE is 40 and the reach swing stands just inside
+  it), so it stays opt-in. d1-descent replay re-recorded. Playthrough 42/42,
+  0 deaths, low-water 2 qh (was 1).
+
 ## S148 — the overworld plays Seasons' own overworld theme
 
 At the human's request the overworld track is now Oracle of Seasons' Holodrum

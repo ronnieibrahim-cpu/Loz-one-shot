@@ -17,6 +17,12 @@
 //                 it derives from.
 //       guessed   somebody typed a plausible number and it shipped.
 //
+//     A `derived` value may instead name the CARTRIDGE'S OWN DATA as its
+//     ancestor: the sword (S149) is read straight out of the Oracle of
+//     Seasons disassembly (github.com/Stewmath/oracles-disasm), and each such
+//     comment names the file and table. That is not a frame-stepped reading,
+//     so it is not `measured`; it is the number the game itself uses.
+//
 //   * `measured` values came from ONE reference: a frame-exact recording of
 //     Oracle of Seasons, assets/footage/seasons-tas-rooster-adventure.mp4
 //     (59.73 fps, 4x scale, one video frame = one game frame; S147). Each one
@@ -142,15 +148,43 @@ export const TIDE_DRIFT_PER_LEVEL = 32;
 // Sword
 // ---------------------------------------------------------------------------
 
-/** f — total length of a sword swing; the player is rooted for all of it. guessed. */
-export const SWING_FRAMES = 14;
+/** f — how long each of the swing's four phases lasts, in order: blade out to
+ *  the side, blade on the diagonal, blade at full reach along the facing,
+ *  blade drawn back to a short reach along the facing. derived from the
+ *  cartridge: oracles-disasm data/seasons/specialObjectAnimationData.s,
+ *  animationData19d1e/19d21 (LINK_ANIM_MODE_22, the sword swing), whose
+ *  frame lengths are 3, 3, 8 and 3; the phase is the animation's parameter
+ *  0/2/4/6 halved, as object_code/common/items/postUpdate.s
+ *  (updateSwingableItemAnimation) reads it. */
+export const SWING_PHASE_FRAMES = [3, 3, 8, 3];
 
-/** f — first frame of the swing on which the blade can hit. guessed. */
-export const SWING_HIT_START = 2;
+/** f — total length of a sword swing; the player is rooted for all of it.
+ *  derived: the sum of SWING_PHASE_FRAMES. Link's movement is disabled when
+ *  the swing starts and given back when the animation ends
+ *  (object_code/common/itemParents/swordParent.s). */
+export const SWING_FRAMES = SWING_PHASE_FRAMES.reduce((a, b) => a + b, 0);
 
-/** f — last frame of the swing on which the blade can hit. guessed.
- *  The active window is therefore 8 frames out of 14. */
-export const SWING_HIT_END = 9;
+/** px — where the blade can hit on each phase of a swing, per facing:
+ *  [radiusY, radiusX, offsetY, offsetX] from Link's centre, one row per
+ *  SWING_PHASE_FRAMES entry. The blade can hit on EVERY frame of the swing,
+ *  the first included: on phase 0 it is out to Link's SIDE, which is why a
+ *  foe standing beside him is struck by a swing aimed past it. derived from
+ *  the cartridge: oracles-disasm object_code/common/items/postUpdate.s,
+ *  swordArcData (the sixteen rows) indexed through updateSwingableItemAnimation's
+ *  @data table (phase x facing -> row). */
+export const SWORD_ARC = {
+  up:    [[9, 6, -2, 16], [7, 7, -11, 13], [9, 6, -17, -4], [9, 6, -10, -4]],
+  right: [[6, 9, -14, 0], [7, 7, -11, 13], [6, 9, 2, 19], [4, 9, 2, 12]],
+  down:  [[9, 6, 0, -15], [7, 7, 17, -13], [9, 6, 21, 3], [9, 6, 16, 3]],
+  left:  [[6, 9, -14, 0], [7, 7, -11, -13], [6, 9, 2, -19], [6, 9, 2, -12]],
+};
+
+/** px — radius of an ordinary enemy's hit area, centred on its sprite. Most of
+ *  Seasons' small enemies use 6 by 6 (a 12x12 box on the middle of the 16x16
+ *  cell). derived from the cartridge: oracles-disasm data/seasons/enemyData.s,
+ *  extraEnemyData, rows 0x01/0x03/0x08 onward. The sword tests against this;
+ *  an enemy's own `hb` stays its footprint for walls and floors. */
+export const ENEMY_HURT_RADIUS = 6;
 
 /** f — how long the sword button must be held before a spin is charged. guessed. */
 export const CHARGE_FRAMES = 42;
@@ -163,9 +197,6 @@ export const SPIN_FRAMES = 26;
 
 /** px — how far in front of Link the blade reaches. guessed. */
 export const SWORD_REACH = 13;
-
-/** px — the blade's extent across the facing axis. guessed. */
-export const SWORD_SPAN = 14;
 
 /** px — gap between Link's centre and the near edge of the sword box. guessed. */
 export const SWORD_GAP = 3;
@@ -1265,7 +1296,7 @@ export const DEADWEIGHT_FACTOR = 0.85;
 export const KELP_BRAID_FACTOR = 0.5;
 
 /** px — extra span on the sword's sweep with the Split Fang, added to
- *  SWORD_SPAN. guessed; one tile's worth of blade split across both sides, so
+ *  the sword's hit area across the facing. guessed; one tile's worth of blade split across both sides, so
  *  a swing catches a foe standing off the axis of the one you meant to hit. */
 export const SPLIT_FANG_SPAN = 8;
 
@@ -1372,20 +1403,11 @@ export const MENU_DESC_DWELL = 96;
  *  as a jitter rather than as a sentence starting again. */
 export const MENU_DESC_HOLD = 48;
 
-/** px — how far out from Link the blade is drawn during the WIND-UP and the
- *  FOLLOW-THROUGH, the frames either side of the active swing. guessed. The
- *  sword starts and finishes the arc across Link's body rather than out at
- *  arm's length, so the blade is drawn tucked in at both ends and only reaches
- *  BLADE_REACH_PX while it is actually pointing where he is facing. Without
- *  this the sword simply appears fully extended on the frame the button is
- *  pressed, which is the one thing the source games never do. */
-export const BLADE_TUCK_PX = 5;
-
-/** f — frames of follow-through after the blade stops being able to hit,
- *  during which the sword is still drawn sweeping past the facing. guessed;
- *  the same length as the wind-up (SWING_HIT_START) so the arc is symmetric,
- *  and short enough to finish inside SWING_FRAMES. */
-export const SWING_RECOVER_FRAMES = 3;
+/** px — how far out from Link the blade is drawn on the swing's last phase,
+ *  when it is drawn back from full reach. derived: BLADE_REACH_PX less the 7
+ *  px the cartridge's own hit area steps back between those two phases
+ *  (SWORD_ARC, e.g. right: 19 -> 12). */
+export const BLADE_TUCK_PX = 4;
 
 // ---------------------------------------------------------------------------
 // Cutscenes — the `show` step (S10)

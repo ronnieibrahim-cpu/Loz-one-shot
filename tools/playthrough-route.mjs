@@ -292,7 +292,7 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d1 0,5,3
   // THE CLAWCRAB, fought at MID in its own long den, then the third key on
   // the den's west door.
-  ['boss', 6000, 'clawcrab'],
+  ['boss', 6000, 'clawcrab', { reachSwing: true }],
   ['dialogue', 600],
   ['loot', 1500],
   ['dialogue', 400],

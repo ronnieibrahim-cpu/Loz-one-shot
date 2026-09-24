@@ -191,6 +191,12 @@ FRAMES = {
     'fx_blade_up':      (895, 428, False),
     'fx_blade_down':    (1008, 460, False),
     'fx_blade_side':    (961, 444, False),
+    # The diagonal, the swing's second phase (S149). Same band, same reason:
+    # the spin draws its four diagonals as their own cells, each a blade with
+    # its swoosh already on it. Up-right serves the up and right swings (and,
+    # mirrored, the left); down-left serves the down swing.
+    'fx_blade_ur':      (928, 431, False),
+    'fx_blade_dl':      (1025, 456, False),
 }
 
 

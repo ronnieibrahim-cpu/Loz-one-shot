@@ -24,9 +24,9 @@ import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
-  SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, BLADE_TUCK_PX,
-  SWING_RECOVER_FRAMES, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
-  SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
+  SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, ENEMY_HURT_RADIUS,
+  BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
+  SPIN_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES,
@@ -50,21 +50,47 @@ import {
   HITSTOP_HURT_FRAMES,
 } from '../data/feel.js';
 
-// The two ends of the sword's arc, as directions. A swing is a half-turn: the
-// blade begins one quarter-turn back from the facing and finishes one
-// quarter-turn past it, so what is drawn is a sweep rather than a sword that
-// is suddenly there.
-//
-// These are NOT a uniform rotation, and that is on purpose. The side swing is
-// the same swing facing either way — sword up over the shoulder, down through
-// the facing, ending at the ground — because the engine draws left by
-// MIRRORING the right-facing frames, and a mirror does not turn a downward
-// chop into an upward one. Facing the viewer he sweeps across himself
-// left-to-right, and facing away, right-to-left, which is the same arc seen
-// from behind. These are directions, not timings, so they live here rather
-// than in feel.js.
+// Which way the blade points on the swing's first phase: out to one side.
+// Facing down it starts on Link's left, facing up on his right, and facing
+// either side it starts overhead — the cartridge's own arc (SWORD_ARC) puts
+// its first hit area there, and the side swing is the same chop either way
+// because the engine draws left by mirroring right. A direction, not a timing.
 const SWING_START_DIR = { down: 'left', up: 'right', right: 'up', left: 'up' };
-const SWING_END_DIR = { down: 'right', up: 'left', right: 'down', left: 'down' };
+
+// The swing's diagonal phase is drawn with the sheet's own diagonal blade
+// cells, which carry their swoosh. Each is placed where the sheet's spin band
+// places it against Link's cell: [sprite, x, y, flipX].
+const SWING_DIAG = {
+  up:    ['fx_blade_ur', 16, -13, false],
+  right: ['fx_blade_ur', 16, -13, false],
+  left:  ['fx_blade_ur', -16, -13, true],
+  down:  ['fx_blade_dl', -13, 12, false],
+};
+
+/** Which of the swing's four phases frame `t` (0-based) of it falls in. */
+export function swingPhase(t) {
+  let end = 0;
+  for (let i = 0; i < SWING_PHASE_FRAMES.length; i++) {
+    end += SWING_PHASE_FRAMES[i];
+    if (t < end) return i;
+  }
+  return SWING_PHASE_FRAMES.length - 1;
+}
+
+/**
+ * An enemy's hit area for the sword: a box of ENEMY_HURT_RADIUS either way
+ * of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
+ * is the footprint it walks on and sits two pixels low. An enemy whose spec
+ * declares its own `hurtBox` keeps it; anything bigger than one cell with
+ * none (a boss) falls back to its `hb`.
+ */
+export function enemyHurtRect(e) {
+  const hb = e.spec && e.spec.hurtBox;
+  if (hb) return { x: e.x + hb.x, y: e.y + hb.y, w: hb.w, h: hb.h };
+  if (e.w > 16 || e.h > 16) return e.rect();
+  const r = ENEMY_HURT_RADIUS;
+  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r, w: r * 2, h: r * 2 };
+}
 
 export class Player extends Entity {
   constructor(x, y) {
@@ -700,7 +726,7 @@ export class Player extends Entity {
     const box = this.swordBox(game);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
-      if (!rectOverlap(box, e.rect())) continue;
+      if (!rectOverlap(box, enemyHurtRect(e))) continue;
       e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD);
     }
     // Walking a held blade through undergrowth cuts it, as it does in Seasons.
@@ -738,51 +764,39 @@ export class Player extends Entity {
   }
 
   updateSwing(game) {
-    this.swinging--;
     const t = SWING_FRAMES - this.swinging;
-    if (t < SWING_HIT_START || t > SWING_HIT_END) return;
-    const box = this.swordBox(game);
-    // enemies
+    this.swinging--;
+    // The blade is live on every frame of the swing, the first included: on
+    // phase 0 it is out to Link's side, on phase 1 on the diagonal, then along
+    // the facing. That is the cartridge's arc, and it is why a foe standing
+    // beside him is struck by a swing he aimed past it.
+    const phase = swingPhase(t);
+    const box = this.swordBox(game, phase);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
-      if (rectOverlap(box, e.rect())) {
+      if (rectOverlap(box, enemyHurtRect(e))) {
         this.swingHit.add(e.id);
         e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_SWORD));
       }
     }
-    // tiles (bushes, signs)
-    game.checkTileAction(box, 'cut');
+    // Bushes and grass are cut by the blade at full reach, as the cartridge
+    // breaks tiles only on that phase's animation frame.
+    if (phase === 2) game.checkTileAction(box, 'cut');
   }
 
   /**
-   * Where the blade is, this frame of the swing.
-   *
-   * The sword is a separate sprite from Link (see the draw notes below), so
-   * unless something moves it, it simply blinks into existence pointing where
-   * he faces — which is what this used to do, and it is the one thing the
-   * Oracles never do: there, the sword travels. It starts across his body,
-   * sweeps through the facing, and finishes on the far side, and the frames
-   * where it is not yet pointing forward are the frames that make a press read
-   * as a SWING rather than as a blade appearing.
-   *
-   * So: wind-up (before SWING_HIT_START) draws it tucked in on the near side,
-   * the active window draws it out at full reach along the facing, and the
-   * follow-through carries it tucked in again on the far side. The arc effect
-   * is suppressed for the wind-up, because a swoosh belongs to a blade that is
-   * already moving.
-   *
-   * Returns null once the follow-through is spent, even though `swinging` runs
-   * a few frames longer — those last frames are the recovery Link is rooted
-   * for, with the sword back at his side.
+   * How the blade is drawn, this frame of the swing: the phase it is in, and
+   * for the straight phases the direction and reach of the blade cell. The
+   * diagonal phase is drawn from SWING_DIAG instead. Null once the swing is
+   * spent.
    */
   bladePose() {
-    const t = SWING_FRAMES - this.swinging;
-    if (t < SWING_HIT_START) return { dir: SWING_START_DIR[this.dir], reach: BLADE_TUCK_PX, arc: -1 };
-    if (t <= SWING_HIT_END) return { dir: this.dir, reach: BLADE_REACH_PX, arc: 0 };
-    if (t <= SWING_HIT_END + SWING_RECOVER_FRAMES) {
-      return { dir: SWING_END_DIR[this.dir], reach: BLADE_TUCK_PX, arc: 1 };
-    }
-    return null;
+    if (this.swinging <= 0) return null;
+    const phase = swingPhase(SWING_FRAMES - this.swinging - 1);
+    if (phase === 0) return { phase, dir: SWING_START_DIR[this.dir], reach: BLADE_REACH_PX, arc: -1 };
+    if (phase === 1) return { phase, dir: this.dir, reach: 0, arc: -1 };
+    if (phase === 2) return { phase, dir: this.dir, reach: BLADE_REACH_PX, arc: 0 };
+    return { phase, dir: this.dir, reach: BLADE_TUCK_PX, arc: -1 };
   }
 
   /**
@@ -801,17 +815,18 @@ export class Player extends Entity {
     return game.charm('seawolfsTooth') ? base * SEAWOLF_KNOCK_FACTOR : base;
   }
 
-  swordBox(game) {
-    const [dx, dy] = DIR_VEC[this.dir];
-    const reach = SWORD_REACH;
-    const span = SWORD_SPAN + (game && game.charm('splitFang') ? SPLIT_FANG_SPAN : 0);
-    const w = dx !== 0 ? reach : span;
-    const h = dy !== 0 ? reach : span;
-    return {
-      x: this.cx - w / 2 + dx * (reach / 2 + SWORD_GAP),
-      y: this.cy - h / 2 + dy * (reach / 2 + SWORD_GAP),
-      w, h,
-    };
+  /**
+   * Where the blade can hit on phase `phase` of a swing (SWORD_ARC). With no
+   * phase it is the blade drawn back along the facing — the last phase, and
+   * the pose it is held out in. The Split Fang widens it across the facing.
+   * `dir` asks the question for a facing Link is not yet in, which is how the
+   * test harness decides whether a swing from here would reach.
+   */
+  swordBox(game, phase = 3, dir = this.dir) {
+    let [ry, rx, oy, ox] = SWORD_ARC[dir][phase];
+    const fang = game && game.charm('splitFang') ? SPLIT_FANG_SPAN / 2 : 0;
+    if (dir === 'up' || dir === 'down') rx += fang; else ry += fang;
+    return { x: this.cx + ox - rx, y: this.cy + oy - ry, w: rx * 2, h: ry * 2 };
   }
 
   startSpin(game) {
@@ -833,7 +848,7 @@ export class Player extends Entity {
     const box = { x: this.cx - SPIN_BOX / 2, y: this.cy - SPIN_BOX / 2, w: SPIN_BOX, h: SPIN_BOX };
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
-      if (rectOverlap(box, e.rect())) {
+      if (rectOverlap(box, enemyHurtRect(e))) {
         this.spinHit.add(e.id);
         e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN));
       }
@@ -1398,7 +1413,10 @@ export class Player extends Entity {
     // Drawn before the arc so the white swoosh reads as coming off the edge of
     // the blade rather than sitting under it.
     const pose = this.swinging > 0 ? this.bladePose() : null;
-    if (pose) {
+    if (pose && pose.phase === 1) {
+      const [name, bx, by, flip] = SWING_DIAG[this.dir];
+      sprites.draw(ctx, name, ox + this.x + bx, dy + by, { pal, flipX: flip });
+    } else if (pose) {
       const side = pose.dir === 'left' || pose.dir === 'right';
       const key = side ? 'side' : pose.dir;
       const [bdx, bdy] = DIR_VEC[pose.dir];
@@ -1407,9 +1425,8 @@ export class Player extends Entity {
         { pal, flipX: pose.dir === 'left' });
     }
 
-    // Sword arc. It is the swoosh coming OFF the blade, so it only exists once
-    // the blade is moving — never on the wind-up frames, where the sword is
-    // still being drawn back.
+    // Sword arc: the swoosh off the blade as it arrives at full reach. The
+    // diagonal cell carries its own.
     if (pose && pose.arc >= 0) {
       const side = pose.dir === 'left' || pose.dir === 'right';
       const key = side ? 'side' : pose.dir;

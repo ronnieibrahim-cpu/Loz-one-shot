@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The disassembly answers what the footage cannot (S149).** The TAS footage
+  could never show a full sword swing (it re-presses every four frames), so
+  the sword stayed `guessed` for the project's life — and was wrong in the way
+  a player feels at once: nothing beside Link could be hit. The Oracle of
+  Seasons disassembly (github.com/Stewmath/oracles-disasm, public, clonable
+  through the session's git proxy) has the swing's frame lengths and its
+  per-frame hit boxes as plain tables. Look there before guessing any
+  geometry or timing the footage cannot isolate. And a name clash cost an
+  hour: an entity field called `hurt` is the `hurt()` METHOD, so a "hurt box"
+  read as `e.hurt` is a function and every swing missed — the new checker
+  caught it on its first run.
+
 - **A boss's fight is seeded by its ROOM, not by the run (S145).** The room
   stream is a hash of the save seed, the map and the room key. Walk-rounds
   and waits outside Rootmaw's arena gave the same fight to the pixel; only

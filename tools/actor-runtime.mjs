@@ -836,8 +836,8 @@ export async function installRuntime() {
    * Close on the nearest live enemy and swing at it.
    *
    * The naive version — walk at it, press B — loses. Contact damage lands the
-   * moment the hitboxes touch, and the sword's box starts about eleven pixels
-   * in front of Link and reaches to about twenty-two, so walking all the way
+   * moment the hitboxes touch, and the blade at full reach is out around
+   * twenty pixels in front of Link's middle (SWORD_ARC), so walking all the way
    * onto an enemy trades a hit for every hit. This lines up on one axis, holds
    * a standoff inside sword range but outside contact range, and swings from
    * there. On three hearts that is the difference between clearing Tidewash
@@ -1205,7 +1205,11 @@ export async function installRuntime() {
     // landed and is WORSE: standing further out means walking further in, and
     // the extra approach frames cost more health than the extra swings win. The
     // narrow band plus a longer patience is what gets through the Crab Pit.
-    const NEAR = 16, FAR = 21, LINED = 4, BACKOFF = 26, EDGE = 12;
+    // S149 moved it out by a couple of pixels (16..21 -> 18..26) when the
+    // sword took the cartridge's own arc, which reaches about a dozen pixels
+    // further than the old box did (SWORD_ARC); the old band walked in closer
+    // than the blade needs and the crab by the D1 Crab Pit door got its hit in.
+    const NEAR = 18, FAR = 26, LINED = 4, BACKOFF = 26, EDGE = 12;
     // A `fight` directive means "clear THIS room", and `fence` below is the
     // main defence of that. This is the backstop for when the fence is not
     // enough — a transition can still fire from a corner the fence does not
@@ -1440,6 +1444,7 @@ export async function installRuntime() {
     const sword = () => swordBit('boss');
     sword();                                 // up front, for the reason dFight gives
     bossDiagRetreat = !!(opts && opts.diagRetreat);
+    const reachSwing = !!(opts && opts.reachSwing);
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
@@ -2028,7 +2033,22 @@ export async function installRuntime() {
         // approach — full speed both axes, per CLAUDE.md — and alignment is
         // only checked in the final stretch, where an off-axis stop actually
         // matters.
-        if (!nearContact(p, b)) {
+        // WOULD THE BLADE REACH FROM HERE? `['boss', N, type, { reachSwing:
+        // true }]` swings as soon as the engine's own sword (the full-reach
+        // phase of the cartridge's arc, S149) overlaps the boss's own box for
+        // the facing the swing would take, lined up square, instead of walking
+        // on to `nearContact`. The Clawcrab needs it: it was already won on
+        // one quarter-heart, and once the swing roots Link for Seasons' 17
+        // frames the walk-in is where it lands its snips. It is opt-in
+        // because swinging from further out is exactly the range a CHARGER
+        // is built to punish (ENEMY_CHARGE_MIN_RANGE), and Gohmaraq, fought
+        // that way, charged the actor round its arena until the clock ran out.
+        const reachDir = axisX ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        const sb = p.swordBox(g, 2, reachDir), br = b.rect();
+        const reaches = reachSwing
+          && sb.x < br.x + br.w && br.x < sb.x + sb.w && sb.y < br.y + br.h && br.y < sb.y + sb.h
+          && Math.abs(axisX ? dy : dx) <= 8;
+        if (!nearContact(p, b) && !reaches) {
           if (adx + ady > NEAR + 6) { yield safe(towardDiag(dx, dy)); f++; continue; }
           const LINED_TOL = 8;
           const perp = axisX ? dy : dx;
