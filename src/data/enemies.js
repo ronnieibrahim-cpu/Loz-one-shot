@@ -16,6 +16,10 @@ export function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
   defineEnemy('octorok', {
     hp: 2, damage: 2, pal: 'enemyg', speed: 0.42, rate: 11,
+    // The sea octorok's flinch, shared: the two draw from the same four
+    // sheet frames, so the land one squints the same way. hp 2 means a
+    // level-1 sword kills it outright; a chain or a held blade shows it.
+    hurtFrame: 'octorokSea_hurt',
     frames: {
       down: ['octorok_d0', 'octorok_d1'],
       up: ['octorok_u0', 'octorok_u1'],
@@ -75,6 +79,7 @@ export function installEnemies() {
   defineEnemy('crab', {
     hp: 2, damage: 2, pal: 'enemyr', speed: 0.62, rate: 8,
     frames: ['crab_0', 'crab_1'],
+    hurtFrame: 'crab_hurt',
     deathFrame: 'crab_death',
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
@@ -92,6 +97,7 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
     frames: ['zol_0', 'zol_1'],
+    hurtFrame: 'zol_hurt',
     deathFrame: 'zol_death',
     // Reuses zol's own zol_1 as its attackFrame — a real shape change from
     // zol_0 (short and wide vs. tall and narrow), already described in
@@ -122,6 +128,9 @@ export function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
+    // Present for completeness and never drawn today: at hp 1 every hit is
+    // the killing one, and the death pose outranks the flinch.
+    hurtFrame: 'gel_hurt',
     // hp 1, deliberately: deathFrame has no hp-vs-swordDamage() constraint
     // (unlike hurtFrame, which gel was ruled out for in S12) — die() defers
     // removal on the hit that reaches hp 0 regardless of how many hits that
@@ -139,6 +148,8 @@ export function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
+    // Never drawn today, for the same hp-1 reason as gel's.
+    hurtFrame: 'keese_hurt',
     deathFrame: 'keese_death',
     // Reuses keese's own keese_0 as its attackFrame — the sheet's "wings
     // spread" pose vs. keese_1's "wings folded" (rip-enemies.py's own
@@ -174,6 +185,7 @@ export function installEnemies() {
   defineEnemy('leever', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.5, rate: 9,
     frames: ['leever_0', 'leever_1'],
+    hurtFrame: 'leever_hurt',
     deathFrame: 'leever_death',
     terrain: 'land',
     drops: 'common',
@@ -193,6 +205,10 @@ export function installEnemies() {
     light: true,
     hp: 999, damage: 2, pal: 'spark', speed: 1.0, rate: 6, terrain: 'air',
     frames: ['bubble_0', 'bubble_1'],
+    // Shown only when the Resonance Rod has rung it and a blow gets through;
+    // the death pose is ready but unreachable while hp is 999.
+    hurtFrame: 'bubble_hurt',
+    deathFrame: 'bubble_death',
     shield: 'all',
     drops: 'none',
     z: 6,
@@ -203,6 +219,9 @@ export function installEnemies() {
   defineEnemy('beamos', {
     hp: 999, damage: 2, pal: 'stonedk', speed: 0, rate: 12,
     frames: ['beamos_0', 'beamos_1'],
+    // Same as bubble: the flinch needs the Rod, the death pose waits.
+    hurtFrame: 'beamos_hurt',
+    deathFrame: 'beamos_death',
     attackFrame: 'beamos_atk',
     shield: 'all',
     terrain: 'any',
@@ -268,6 +287,7 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
+    hurtFrame: 'tektite_hurt',
     deathFrame: 'tektite_death',
     // Reuses tektite's own tektite_1 as its attackFrame — a real shape
     // change from tektite_0 (compact body, short tucked legs) to legs
@@ -303,6 +323,7 @@ export function installEnemies() {
   defineEnemy('urchin', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
+    hurtFrame: 'urchin_hurt',
     deathFrame: 'urchin_death',
     // First idleFrame in the roster (docs/ENEMIES.md's idle scoping
     // section). Hand-drawn — src/data/sprites-enemies-hurt.js's own comment
@@ -455,6 +476,9 @@ export function installEnemies() {
   defineEnemy('barnacle', {
     hp: 999, damage: 2, pal: 'enemyk', speed: 0, rate: 22, terrain: 'any',
     frames: ['barnacle_0', 'barnacle_1'],
+    // Same as bubble: the flinch needs the Rod, the death pose waits.
+    hurtFrame: 'barnacle_hurt',
+    deathFrame: 'barnacle_death',
     attackFrame: 'barnacle_atk',
     shield: 'all',
     drops: 'none',
@@ -471,6 +495,7 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
     frames: ['jellyfish_0', 'jellyfish_1'],
+    hurtFrame: 'jellyfish_hurt',
     deathFrame: 'jellyfish_death',
     hb: { x: 3, y: 4, w: 10, h: 10 },
     drops: 'common',

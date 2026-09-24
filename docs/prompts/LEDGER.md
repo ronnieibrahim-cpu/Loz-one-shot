@@ -916,6 +916,20 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S146 — every enemy has a hurt frame and a death pose
+
+- 22/22 `hurtFrame`, 22/22 `deathFrame` (check-drift). Sheet re-audited
+  plate by plate for the fifteen missing: only three held a usable pose
+  (Spiny Beetle box 294, Bari box 15, Like Like box 142). Octorok, Sand
+  Crab, Zol, Gel, Keese, Leever, Anti-Fairy, Beamos and Tektite have no
+  recoil or collapse frame on the sheet — do not look again.
+- UNREACHABLE BY DESIGN, NOT BUGS: gel/keese hurt (hp 1 — every hit
+  kills, and `dying` outranks `flicker` in `spriteName`); bubble/beamos/
+  barnacle death (hp 999). Their hurt frames DO draw once the Rod sets
+  `rodLock` and a blow lands.
+- A hurt frame does not move replay or the playthrough: it only changes
+  which sprite draws during the flicker window.
+
 ## Settled at S145 — Rootmaw's margin, from the route and the robot
 
 Thirteen seeds each (the default and 1..12) in Rootmaw's route arena:

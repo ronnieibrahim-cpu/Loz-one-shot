@@ -1,3 +1,31 @@
+## S146 — every enemy flinches and dies (polish (a), pass 1)
+
+### What landed
+- All 22 enemies declare `hurtFrame` and `deathFrame`; drift reads 22/22
+  for both. Three extracted through `rip-enemies.py` (urchin 294,
+  jellyfish 15, barnacle 142); octorok reuses `octorokSea_hurt`; eleven
+  drawn in `sprites-enemies-hurt.js` (crab/zol/gel/keese/leever/tektite/
+  bubble/beamos hurt, bubble/beamos/barnacle death).
+- Proved in-engine with a scratch probe: a 1-damage hit with the shield
+  rung open shows each hurtFrame; a killing hit shows each deathFrame.
+- Five are unreachable by design: gel/keese hurt (hp 1), bubble/beamos/
+  barnacle death (hp 999). Recorded in ENEMIES.md and LEDGER S146.
+- check-playthrough 42/42, never died; replay 51/51 unchanged (hurt
+  frames only draw during the flicker, and nothing baselined sits there).
+
+### Noticed for later areas (not chased)
+- (d) feel: the source games show a hit as a PALETTE FLASH, not a pose;
+  this engine blinks the sprite out instead. The flinch frames are ours;
+  a palette flash on hit would be the fidelity move. Ask the human.
+- (a) pass 2 / (c): `octorokSea_hurt` differs from its walk frame by 2
+  pixels and barely reads; `urchin_death` is really the Spiny Beetle
+  hiding under a rock, not "spines retracted" as its comment says.
+- (h)/(g): at sword level 1 every hp-2 enemy dies in one hit, so nine
+  of the 22 never flinch from a plain swing — only the chain, a held
+  blade or a burn show it. Fine, but worth a person's eye.
+- Design question for the human (not asked yet): should the three
+  unkillable hazards ever die (e.g. to the Rod plus a blow)?
+
 ## S145 — Rootmaw's margin, from the route and the robot
 
 ### What landed

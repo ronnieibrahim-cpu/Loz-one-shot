@@ -110,6 +110,24 @@ export const ENEMY_ART = {
     .33333111133333.
     ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  barnacle_hurt: { pal: 'barnacle_hurt', art: `
+    .....333333.....
+    ....30000003....
+    ...3100330013...
+    ...3001331003...
+    ..310003300013..
+    ..311000000113..
+    ..311310013113..
+    ..311311113113..
+    ..331311113133..
+    ..303331133303..
+    ..300133331003..
+    ..310000000013..
+    ..311310013113..
+    ..331311113133..
+    ...3333113333...
+    .....333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beamos_0: { pal: 'beamos_0', art: `
     .....333333.....
     ....31033013....
@@ -487,6 +505,24 @@ export const ENEMY_ART = {
     .33331233213333.
     ....313..313....
     .....3....3.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  jellyfish_hurt: { pal: 'jellyfish_hurt', art: `
+    ................
+    ......1111......
+    ....11333311....
+    ...1232222321...
+    ...1112332111...
+    .11213133131211.
+    1312123113212131
+    1112211221122111
+    .13132222223131.
+    1211233333321121
+    1101123333211011
+    .11311111111311.
+    .12101311310121.
+    .11113211231111.
+    ....131..131....
+    .....1....1.....` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   keese_0: { pal: 'keese_0', art: `
     ................
@@ -1064,6 +1100,24 @@ export const ENEMY_ART = {
     303332322323223.
     .3...3222233303.` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  urchin_hurt: { pal: 'urchin_hurt', art: `
+    ................
+    ................
+    ................
+    ......3333......
+    .....31111333...
+    ...33100001313..
+    ..3310111101313.
+    .31301111110313.
+    313111000011133.
+    33311033330113..
+    31300311113003..
+    311333311333313.
+    303331311313113.
+    .3...3111133303.
+    ......3333..303.
+    .............3..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wisp_0: { pal: 'wisp_0', art: `
     ....03300330....
     ..300333333003..
@@ -1198,6 +1252,7 @@ export const ENEMY_ART_PALETTES = {
   barnacle_0: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   barnacle_1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   barnacle_atk: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  barnacle_hurt: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   beamos_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beamos_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beamos_atk: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
@@ -1219,6 +1274,7 @@ export const ENEMY_ART_PALETTES = {
   jellyfish_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_death: ['#ffffff', '#ffd68c', '#1984ff', '#000000'],
+  jellyfish_hurt: ['#ffffff', '#73adff', '#0000ff', '#000000'],
   keese_0: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   keese_1: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   leever_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
@@ -1251,6 +1307,7 @@ export const ENEMY_ART_PALETTES = {
   urchin_0: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
   urchin_1: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
   urchin_death: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
+  urchin_hurt: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   wisp_0: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   wisp_1: ['#ffb531', '#ffb531', '#ffb531', '#000000'],
   wizzrobe_0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],

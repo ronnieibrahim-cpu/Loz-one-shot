@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract the 56 enemy sprites from the Oracle of Seasons enemy sheet.
+"""Extract the enemy sprites from the Oracle of Seasons enemy sheet.
 
 Sprites ripped by Mister Mike via spriters-resource.com; the original artwork
 is Nintendo's. Fan-work use only.
@@ -186,6 +186,12 @@ FRAMES = {
     'urchin_0': (292, 0.5, 0.5, False),
     'urchin_1': (293, 0.5, 0.5, False),
     'urchin_death': (295, 0.5, 0.5, False),
+    # Box 294, between the bush pair and the rock pair on the same plate: the
+    # beetle itself with its cover gone — the red body and legs, no spines.
+    # Used as the hurtFrame: struck, the spines are knocked clear for a beat
+    # and the soft creature underneath shows, which is what the source game
+    # does to this same creature when you strike its cover away.
+    'urchin_hurt': (294, 0.5, 0.5, False),
 
     # Moblin: idle frame, then the same angle with its spear raised.
     'moblin_d0': (163, 0.5, 0.5, False),
@@ -245,6 +251,10 @@ FRAMES = {
     'barnacle_0': (140, 0.5, 0.5, False),
     'barnacle_1': (143, 0.5, 0.5, False),
     'barnacle_atk': (144, 0.5, 0.5, False),
+    # Box 142, the gape cycle's narrowest frame: the tube squeezed tall and
+    # thin with its mouth drawn in. Used as the hurtFrame — the barnacle
+    # clenching shut on a hit, the opposite of barnacle_atk's wide spit.
+    'barnacle_hurt': (142, 0.5, 0.5, False),
 
     # Jellyfish. SUBSTITUTION in name only: this is Bari, which already is one.
     # The "Bari & Biri" plate has four Bari frames, not two: box 14 sits right
@@ -258,6 +268,11 @@ FRAMES = {
     'jellyfish_0': (12, 0.5, 0.5, False),
     'jellyfish_1': (13, 0.5, 0.5, False),
     'jellyfish_death': (14, 0.5, 0.5, False),
+    # Box 15 is box 14's exact outline redrawn in a crackling blue with a
+    # halo round it — the Bari's own electrified frame, the flash it gives
+    # when struck. (The Biri proper is the smaller creature further right.)
+    # Used as the hurtFrame: struck, the jellyfish crackles.
+    'jellyfish_hurt': (15, 0.5, 0.5, False),
 
     # Siren — "mermaid-like singer". SUBSTITUTION: original to this game, so it
     # borrows River Zora, which surfaces and sings a shot at you.

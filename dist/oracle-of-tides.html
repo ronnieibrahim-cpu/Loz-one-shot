@@ -29311,6 +29311,10 @@ function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
   defineEnemy('octorok', {
     hp: 2, damage: 2, pal: 'enemyg', speed: 0.42, rate: 11,
+    // The sea octorok's flinch, shared: the two draw from the same four
+    // sheet frames, so the land one squints the same way. hp 2 means a
+    // level-1 sword kills it outright; a chain or a held blade shows it.
+    hurtFrame: 'octorokSea_hurt',
     frames: {
       down: ['octorok_d0', 'octorok_d1'],
       up: ['octorok_u0', 'octorok_u1'],
@@ -29370,6 +29374,7 @@ function installEnemies() {
   defineEnemy('crab', {
     hp: 2, damage: 2, pal: 'enemyr', speed: 0.62, rate: 8,
     frames: ['crab_0', 'crab_1'],
+    hurtFrame: 'crab_hurt',
     deathFrame: 'crab_death',
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
@@ -29387,6 +29392,7 @@ function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
     frames: ['zol_0', 'zol_1'],
+    hurtFrame: 'zol_hurt',
     deathFrame: 'zol_death',
     // Reuses zol's own zol_1 as its attackFrame — a real shape change from
     // zol_0 (short and wide vs. tall and narrow), already described in
@@ -29417,6 +29423,9 @@ function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
+    // Present for completeness and never drawn today: at hp 1 every hit is
+    // the killing one, and the death pose outranks the flinch.
+    hurtFrame: 'gel_hurt',
     // hp 1, deliberately: deathFrame has no hp-vs-swordDamage() constraint
     // (unlike hurtFrame, which gel was ruled out for in S12) — die() defers
     // removal on the hit that reaches hp 0 regardless of how many hits that
@@ -29434,6 +29443,8 @@ function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
+    // Never drawn today, for the same hp-1 reason as gel's.
+    hurtFrame: 'keese_hurt',
     deathFrame: 'keese_death',
     // Reuses keese's own keese_0 as its attackFrame — the sheet's "wings
     // spread" pose vs. keese_1's "wings folded" (rip-enemies.py's own
@@ -29469,6 +29480,7 @@ function installEnemies() {
   defineEnemy('leever', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.5, rate: 9,
     frames: ['leever_0', 'leever_1'],
+    hurtFrame: 'leever_hurt',
     deathFrame: 'leever_death',
     terrain: 'land',
     drops: 'common',
@@ -29488,6 +29500,10 @@ function installEnemies() {
     light: true,
     hp: 999, damage: 2, pal: 'spark', speed: 1.0, rate: 6, terrain: 'air',
     frames: ['bubble_0', 'bubble_1'],
+    // Shown only when the Resonance Rod has rung it and a blow gets through;
+    // the death pose is ready but unreachable while hp is 999.
+    hurtFrame: 'bubble_hurt',
+    deathFrame: 'bubble_death',
     shield: 'all',
     drops: 'none',
     z: 6,
@@ -29498,6 +29514,9 @@ function installEnemies() {
   defineEnemy('beamos', {
     hp: 999, damage: 2, pal: 'stonedk', speed: 0, rate: 12,
     frames: ['beamos_0', 'beamos_1'],
+    // Same as bubble: the flinch needs the Rod, the death pose waits.
+    hurtFrame: 'beamos_hurt',
+    deathFrame: 'beamos_death',
     attackFrame: 'beamos_atk',
     shield: 'all',
     terrain: 'any',
@@ -29563,6 +29582,7 @@ function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
+    hurtFrame: 'tektite_hurt',
     deathFrame: 'tektite_death',
     // Reuses tektite's own tektite_1 as its attackFrame — a real shape
     // change from tektite_0 (compact body, short tucked legs) to legs
@@ -29598,6 +29618,7 @@ function installEnemies() {
   defineEnemy('urchin', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
+    hurtFrame: 'urchin_hurt',
     deathFrame: 'urchin_death',
     // First idleFrame in the roster (docs/ENEMIES.md's idle scoping
     // section). Hand-drawn — src/data/sprites-enemies-hurt.js's own comment
@@ -29750,6 +29771,9 @@ function installEnemies() {
   defineEnemy('barnacle', {
     hp: 999, damage: 2, pal: 'enemyk', speed: 0, rate: 22, terrain: 'any',
     frames: ['barnacle_0', 'barnacle_1'],
+    // Same as bubble: the flinch needs the Rod, the death pose waits.
+    hurtFrame: 'barnacle_hurt',
+    deathFrame: 'barnacle_death',
     attackFrame: 'barnacle_atk',
     shield: 'all',
     drops: 'none',
@@ -29766,6 +29790,7 @@ function installEnemies() {
     light: true,
     hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
     frames: ['jellyfish_0', 'jellyfish_1'],
+    hurtFrame: 'jellyfish_hurt',
     deathFrame: 'jellyfish_death',
     hb: { x: 3, y: 4, w: 10, h: 10 },
     drops: 'common',
@@ -43110,6 +43135,24 @@ const ENEMY_ART = {
     .33333111133333.
     ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  barnacle_hurt: { pal: 'barnacle_hurt', art: `
+    .....333333.....
+    ....30000003....
+    ...3100330013...
+    ...3001331003...
+    ..310003300013..
+    ..311000000113..
+    ..311310013113..
+    ..311311113113..
+    ..331311113133..
+    ..303331133303..
+    ..300133331003..
+    ..310000000013..
+    ..311310013113..
+    ..331311113133..
+    ...3333113333...
+    .....333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beamos_0: { pal: 'beamos_0', art: `
     .....333333.....
     ....31033013....
@@ -43487,6 +43530,24 @@ const ENEMY_ART = {
     .33331233213333.
     ....313..313....
     .....3....3.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  jellyfish_hurt: { pal: 'jellyfish_hurt', art: `
+    ................
+    ......1111......
+    ....11333311....
+    ...1232222321...
+    ...1112332111...
+    .11213133131211.
+    1312123113212131
+    1112211221122111
+    .13132222223131.
+    1211233333321121
+    1101123333211011
+    .11311111111311.
+    .12101311310121.
+    .11113211231111.
+    ....131..131....
+    .....1....1.....` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   keese_0: { pal: 'keese_0', art: `
     ................
@@ -44064,6 +44125,24 @@ const ENEMY_ART = {
     303332322323223.
     .3...3222233303.` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  urchin_hurt: { pal: 'urchin_hurt', art: `
+    ................
+    ................
+    ................
+    ......3333......
+    .....31111333...
+    ...33100001313..
+    ..3310111101313.
+    .31301111110313.
+    313111000011133.
+    33311033330113..
+    31300311113003..
+    311333311333313.
+    303331311313113.
+    .3...3111133303.
+    ......3333..303.
+    .............3..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wisp_0: { pal: 'wisp_0', art: `
     ....03300330....
     ..300333333003..
@@ -44198,6 +44277,7 @@ const ENEMY_ART_PALETTES = {
   barnacle_0: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   barnacle_1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   barnacle_atk: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  barnacle_hurt: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   beamos_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beamos_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beamos_atk: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
@@ -44219,6 +44299,7 @@ const ENEMY_ART_PALETTES = {
   jellyfish_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_death: ['#ffffff', '#ffd68c', '#1984ff', '#000000'],
+  jellyfish_hurt: ['#ffffff', '#73adff', '#0000ff', '#000000'],
   keese_0: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   keese_1: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   leever_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
@@ -44251,6 +44332,7 @@ const ENEMY_ART_PALETTES = {
   urchin_0: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
   urchin_1: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
   urchin_death: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
+  urchin_hurt: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   wisp_0: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   wisp_1: ['#ffb531', '#ffb531', '#ffb531', '#000000'],
   wizzrobe_0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
@@ -45320,6 +45402,243 @@ const ENEMY_HURT_ART = {
     322333322333323.
     303332322323223.
     .3...3222233303.` ,
+  // Crab hurt — drawn: the sheet's "Sand Crab" plate has exactly its two
+  // scuttling frames (crab_0/crab_1). crab_0's grid unchanged except its two
+  // eye stalks: both light eye pixels shut to the outline shade, 4 pixels.
+  crab_hurt: `
+    ................
+    ..333......333..
+    .30003....30003.
+    300033....330003
+    3000303..3030003
+    3000303..3030003
+    3000303..3030003
+    3103013..3103013
+    .31013333331013.
+    ..313333333313..
+    ..333333333333..
+    ..331313313133..
+    .30310311301303.
+    3003110000113003
+    3033311111133303
+    3333333333333333` ,
+
+  // Zol hurt — drawn: the "Zol & Gel" plate has only the round rest frame
+  // and the tall hop frame, both already zol_0/zol_1. zol_0 unchanged except
+  // its two upright eye strokes, turned into a screwed-shut ">  <" wince.
+  zol_hurt: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    .....333333.....
+    ....31111113....
+    ...3111001113...
+    ..311100001113..
+    ..311110011113..
+    ..311311113113..
+    ..311131131113..
+    ..311311113113..
+    ..331111111133..
+    ...3311111133...
+    ....33333333....` ,
+
+  // Gel hurt — drawn: the Color-Changing Gel strip is one blob in three
+  // colours, no recoil. gel_0 unchanged except its two eyes, squeezed from
+  // upright dots into flat shut dashes. Never seen from a sword: gel has one
+  // hit point, so its death pose always wins the frame — it is here so a
+  // future weaker hit or tougher gel has it waiting.
+  gel_hurt: `
+    ................
+    ................
+    ................
+    ................
+    ....10011.......
+    ...1101111......
+    ...1111111......
+    ...1331331......
+    ...1111111......
+    ....11111.......
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................` ,
+
+  // Keese hurt — drawn: the Keese plate has only wings-spread and
+  // wings-folded (keese_0/keese_1). keese_0 with its eyes narrowed to single
+  // pixels and its four wingtips pulled in — the wings jerking shut on a hit.
+  // Like gel_hurt, one hit point means this does not show on a sword kill.
+  keese_hurt: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ..33..3..3..33..
+    ..33333..33333..
+    .33333333333333.
+    .33333033033333.
+    3333330330333333
+    333..333333..333
+    .......33.......
+    ................
+    ................
+    ................
+    ................` ,
+
+  // Leever hurt — drawn: the Leever plate is a sand mound, a half-risen
+  // frame (leever_death) and two risen frames (leever_0/leever_1), no recoil.
+  // leever_0 with the pale insides of its two side claws shut dark: the
+  // claws clench on a hit. Silhouette untouched.
+  leever_hurt: `
+    .......33.......
+    .33...3003...33.
+    .333..3003..333.
+    .33333333333333.
+    .33333300333333.
+    .33333300333333.
+    .31333300333313.
+    ..313330033313..
+    ..333331133333..
+    3313333333333133
+    0313333333333130
+    0331133333311330
+    3333311001133333
+    0033333333333300
+    .00333333333300.
+    ..003003300300..` ,
+
+  // Tektite hurt — drawn: the Tektite plate is its two hop frames only.
+  // tektite_0 with its one big eye shut — the pupil lidded over and a closed
+  // dark line across the middle. 4 pixels.
+  tektite_hurt: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ..33........33..
+    .30033333333003.
+    3010331111330103
+    3130311111130313
+    3031313333131303
+    3131313333131313
+    3031311331131303
+    3133331111333313
+    3033333333333303
+    3113330330333113
+    .333..3333..333.` ,
+
+  // Bubble hurt — drawn: the Anti-Fairy plate is its two spinning frames,
+  // nothing else. bubble_0 with the skull's eye sockets squeezed to shut
+  // slits. The bubble cannot be hurt by an ordinary blow at all; this only
+  // shows once the Resonance Rod has rung it and a blow lands.
+  bubble_hurt: `
+    ......3333......
+    .00003333333000.
+    .00003333330000.
+    .00003333330000.
+    .00033000033000.
+    .33330000003333.
+    3333000000003333
+    3333033003303333
+    3333000330003333
+    3333000000003333
+    .33333000033333.
+    .30033033033003.
+    .00003033030000.
+    .00003333330000.
+    .00003333333000.
+    ......3333......` ,
+
+  // Bubble death — drawn: no snuffed-out frame on the plate. The skull alone
+  // with its ring of sparks gone and its eyes shut, centred in the cell (it
+  // flies, so it fizzles where it hangs, the way wisp_death does), with
+  // four last sparks flying off the corners. The bubble cannot die in this
+  // game; the pose is ready for the day something is allowed to kill it.
+  bubble_death: `
+    ................
+    ..2..........2..
+    ................
+    ................
+    ......3333......
+    .....300003.....
+    ....30000003....
+    ....30000003....
+    ....30330333....
+    ....30003003....
+    ....30000003....
+    .....303303.....
+    .....333333.....
+    ................
+    ..2..........2..
+    ................` ,
+
+  // Beamos hurt — drawn: the Beamos plate is eight eye positions and its
+  // beam, no recoil. beamos_1 with the eye lidded over and shut to one dark
+  // line. Like the bubble, it only takes a hit once the Rod has rung it.
+  beamos_hurt: `
+    ................
+    ................
+    ......3333......
+    ....33333333....
+    ...3333113333...
+    ...3333113333...
+    ...3333333333...
+    ..331113333333..
+    .33111113333313.
+    .33333333333313.
+    .33111111333313.
+    .33111111333313.
+    .31311113333113.
+    .33133333331133.
+    ..331100001133..
+    ...3333333333...` ,
+
+  // Beamos death — drawn: the sheet has no broken statue. beamos_1 with its
+  // eye gone dark and a crack running from the cap down through the socket.
+  // Unkillable here, like the bubble: ready, not reachable.
+  beamos_death: `
+    ................
+    ................
+    ......3333......
+    ....33331333....
+    ...3333311333...
+    ...3333313333...
+    ...3333331333...
+    ..332223313333..
+    .33222223133313.
+    .33222222313313.
+    .33222223133313.
+    .33222222313313.
+    .31322223133113.
+    .33133333331133.
+    ..331100001133..
+    ...3333333333...` ,
+
+  // Barnacle death — drawn: the Like Like plate is five gape frames and no
+  // collapse. barnacle_atk's squat shell sunk lower still, its mouth closed
+  // to one dark line — a husk. Unkillable here too: ready, not reachable.
+  barnacle_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ....33333333....
+    ..331111111133..
+    .31113333331113.
+    3111311111131113
+    3033331111333303
+    3000113333110003
+    3100000000000013
+    3311310000131133
+    .33333333333333.` ,
 };
 
 function installEnemyHurtSprites() {

@@ -58,6 +58,21 @@ all, purely to deny a swing — a zoner versus an evader. `zol`/`gel` and
 the tide-linked pair `urchin`/`jellyfish` are similarly built to be read
 together rather than alone.
 
+## Hurt and death: all 22 (S146)
+
+Every enemy now declares both `hurtFrame` and `deathFrame`. Three hurt
+frames came off the sheet (`urchin_hurt` box 294, the bare beetle under
+its cover; `jellyfish_hurt` box 15, the Bari's electrified frame;
+`barnacle_hurt` box 142, the gape cycle's clenched frame). `octorok`
+shares `octorokSea_hurt`. The rest are drawn in
+`sprites-enemies-hurt.js`, each a few pixels off its own walk frame.
+
+Five of those frames exist and cannot be seen today, and that is a design
+fact, not a gap: `gel` and `keese` have 1 hp, so every hit kills and the
+death pose outranks the flinch; `bubble`, `beamos` and `barnacle` have
+999 hp, so their death poses wait for a design that lets them die. Their
+flinches DO show — once the Resonance Rod rings the shield open.
+
 ## Idle states: scoped, then piloted on one enemy
 
 `Enemy.spriteName()` (`src/game/enemy.js`) has no concept of "idle" at
@@ -100,9 +115,9 @@ own comments already identified nearby has already been claimed:
 | Enemy | Spare frame the ripper found | Already spent on |
 |---|---|---|
 | `beamos` | box 20 | `beamos_atk` |
-| `barnacle` | box 144 | `barnacle_atk` |
+| `barnacle` | boxes 144, 142 | `barnacle_atk`, `barnacle_hurt` (S146) |
 | `wizzrobe` | box 338 | `wizzrobe_death` |
-| `urchin` | box 295 | `urchin_death` |
+| `urchin` | boxes 295, 294 | `urchin_death`, `urchin_hurt` (S146) |
 | `pincer` | boxes 232, 235 | `pincer_death`, `pincer_hurt` |
 | `keese`, `zol`, `tektite`, `siren` | none found | both of their only 2 frames are already walk-cycle + `attackFrame` |
 
