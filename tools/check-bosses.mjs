@@ -140,10 +140,13 @@ for (const f of FIGHTS) {
     const { dungeons } = await import('/src/world/maps.js');
     const d = dungeons().find(x => x.id === id);
     // Where the Essence appears: the middle of the arena, which is 4,3 in a
-    // Game Boy screen and 7,4 in an Oracle room (Game.onBossDefeated).
+    // Game Boy screen and the middle column, row 4, of an Oracle room — 7,4
+    // in one screen, 15,4 in Nereth's two (Game.onBossDefeated).
     const oracle = !!(d.cell && d.cell[0] === 15);
+    const [f0, bx, by] = d.dungeon.bossRoom.split(',').map(Number);
+    const sz = (d.roomDefs[`${f0},${bx},${by}`] || {}).size || [1, 1];
     return { room: d.dungeon.bossRoom, index: d.dungeon.index, name: d.name,
-             essence: d.dungeon.essence, ex: oracle ? 7 : 4, ey: oracle ? 4 : 3,
+             essence: d.dungeon.essence, ex: oracle ? Math.floor(sz[0] * 15 / 2) : 4, ey: oracle ? 4 : 3,
              px: oracle ? 112 : 72, py: oracle ? 120 : 80 };
   }, f.id);
   const [fl, rx, ry] = info.room.split(',').map(Number);

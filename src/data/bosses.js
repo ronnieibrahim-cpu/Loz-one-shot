@@ -713,6 +713,11 @@ export function installBosses() {
     // payout is the fairy placed beside its chest in `dungeons-b.js`, which is
     // worth more than a drop table and does not move a single roll.
     intro: 90, shell: true, terrain: 'any', drops: 'none',
+    // Read by the test actor only (`dBoss`), in the function form Nereth's
+    // uses: the colossus drains the vault to LOW on a timer to set its crust
+    // again, and the answer — the one the room's own inscription gives — is to
+    // sound the sea back off that level (S142).
+    tideEscape: () => LOW,
     // IT IS A MINIBOSS, AND NOTHING SAID SO UNTIL SOMETHING KILLED IT. The
     // six-dungeon fold left the Brinehulk homeless and it was re-housed in the
     // Crossed Shafts, two doors short of Nereth, keeping the Boss Key — but it

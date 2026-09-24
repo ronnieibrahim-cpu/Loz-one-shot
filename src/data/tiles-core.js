@@ -1519,24 +1519,6 @@ const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
 // landed (see PORTALS below) — a framed opening in the cliff, not a tile laid
 // into it. The inside now answers it at the same width.
 //
-// `dStairs` carries a dark rail down BOTH its edges, which is right for a
-// stair one tile wide and wrong for two side by side: the two inner rails meet
-// as a black seam down the middle and read as two narrow staircases rather
-// than one wide one. So each half drops the rail on its inner edge and keeps
-// the one on its outer, and the treads run unbroken across the seam. The top
-// row of `dStairs` is already dark all the way across and becomes the lintel.
-//
-// DERIVED FROM `dStairs` RATHER THAN DRAWN. It is the same staircase at twice
-// the width, and a second hand-drawn copy is a second thing to keep in step —
-// re-tune the stair and both halves follow.
-const stairHalf = (dropRail) => ART.dStairs.trim().split('\n').map((row) => {
-  const c = row.trim().split('');
-  const i = dropRail === 'right' ? c.length - 1 : 0;
-  c[i] = c[dropRail === 'right' ? c.length - 2 : 1];   // the row's own fill
-  return c.join('');
-}).join('\n');
-ART.dStairsL = stairHalf('right');   // keeps its left jamb, opens to the right
-ART.dStairsR = stairHalf('left');
 
 // --------------------------------------------------------------------------
 // THE TOWN KIT: what each extracted building DOES.
@@ -2704,13 +2686,56 @@ export function installCoreTiles() {
     dBlockPalace: { art: ART.vaultBlock, pal: 'gold', flags: F.SOLID },
     dUrnPalace: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorPalace' },
 
-    // d8 Abyssal Keep — studded violet-black tiling, violet masonry.
-    dFloorAbyss: { art: ART.abyssFloor, pal: 'abyssFloor' },
-    dFloorAbyssAlt: { art: ART.abyssFloor, pal: 'abyss' },
-    dWallAbyss: { art: ART.cryptWall, pal: 'cryptWall', flags: F.SOLID },
-    dWallAbyssX: { art: ART.dWallCracked, pal: 'cryptWall', flags: F.SOLID | F.BOMBABLE },
-    dBlockAbyss: { art: ART.cryptBlock, pal: 'cryptBlock', flags: F.SOLID },
-    dUrnAbyss: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorAbyss' },
+    // d6 (map d6, theme "Abyss") Abyssal Keep.
+    // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &
+    // Shield Maze's (`k*` picks in rip-dungeon-themes.py) — Seasons' own last
+    // dungeon for this game's last one: a rough red-brown rock ring round
+    // bone and olive tiled floors, the blue block, the yellow pot, the green
+    // sprout statue, and the maze's own key doors, shutters and horned boss
+    // door. It draws jambs on all four sides of a doorway.
+    dFloorAbyss: { art: ART.kFloor, pal: 'kFloor' },
+    dFloorAbyssAlt: { art: ART.kFloorAlt, pal: 'kFloorAlt' },
+    dWallAbyss: { art: ART.kFill, pal: 'kFill', flags: F.SOLID, ring: {
+      TL: 'kRingTL', TR: 'kRingTR', BL: 'kRingBL', BR: 'kRingBR',
+      N: 'kRingN', S: 'kRingS', W: 'kRingW', E: 'kRingE',
+      jNW: 'kJambNW', jNE: 'kJambNE', jSW: 'kJambSW', jSE: 'kJambSE',
+      jWN: 'kJambWN', jWS: 'kJambWS', jEN: 'kJambEN', jES: 'kJambES',
+      lockN: 'kKeyN', lockS: 'kKeyS', lockE: 'kKeyE', lockW: 'kKeyW',
+      shutN: 'kShutN', shutS: 'kShutS', shutE: 'kShutE', shutW: 'kShutW',
+      bossN: 'kBossN', bossS: 'kShutS',
+      // The maze walls its rock round every block that cuts into a room.
+      faces: true,
+    } },
+    dWallAbyssX: { art: ART.dWallCracked, pal: 'kRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockAbyss: { art: ART.kBlock, pal: 'kBlock', flags: F.SOLID },
+    dUrnAbyss: { art: ART.kStatue, pal: 'kStatue', flags: F.SOLID, underArt: 'dFloorAbyss' },
+    // The way out: a gap in the ring you walk down through, carrying the warp.
+    dExitAbyss: { art: ART.kFloor, pal: 'kFloor', flags: F.WARP },
+    kRingTL: { art: ART.kRingTL, pal: 'kRingTL', flags: F.SOLID },
+    kRingTR: { art: ART.kRingTR, pal: 'kRingTR', flags: F.SOLID },
+    kRingBL: { art: ART.kRingBL, pal: 'kRingBL', flags: F.SOLID },
+    kRingBR: { art: ART.kRingBR, pal: 'kRingBR', flags: F.SOLID },
+    kRingN: { art: ART.kRingN, pal: 'kRingN', flags: F.SOLID },
+    kRingS: { art: ART.kRingS, pal: 'kRingS', flags: F.SOLID },
+    kRingW: { art: ART.kRingW, pal: 'kRingW', flags: F.SOLID },
+    kRingE: { art: ART.kRingE, pal: 'kRingE', flags: F.SOLID },
+    kJambNW: { art: ART.kJambNW, pal: 'kJambNW', flags: F.SOLID },
+    kJambNE: { art: ART.kJambNE, pal: 'kJambNE', flags: F.SOLID },
+    kJambSW: { art: ART.kJambSW, pal: 'kJambSW', flags: F.SOLID },
+    kJambSE: { art: ART.kJambSE, pal: 'kJambSE', flags: F.SOLID },
+    kJambWN: { art: ART.kJambWN, pal: 'kJambWN', flags: F.SOLID },
+    kJambWS: { art: ART.kJambWS, pal: 'kJambWS', flags: F.SOLID },
+    kJambEN: { art: ART.kJambEN, pal: 'kJambEN', flags: F.SOLID },
+    kJambES: { art: ART.kJambES, pal: 'kJambES', flags: F.SOLID },
+    kKeyN: { art: ART.kKeyN, pal: 'kKeyN', flags: F.SOLID | F.DOOR },
+    kKeyS: { art: ART.kKeyS, pal: 'kKeyS', flags: F.SOLID | F.DOOR },
+    kKeyE: { art: ART.kKeyE, pal: 'kKeyE', flags: F.SOLID | F.DOOR },
+    kKeyW: { art: ART.kKeyW, pal: 'kKeyW', flags: F.SOLID | F.DOOR },
+    kShutN: { art: ART.kShutN, pal: 'kShutN', flags: F.SOLID | F.DOOR },
+    kShutS: { art: ART.kShutS, pal: 'kShutS', flags: F.SOLID | F.DOOR },
+    kShutE: { art: ART.kShutE, pal: 'kShutE', flags: F.SOLID | F.DOOR },
+    kShutW: { art: ART.kShutW, pal: 'kShutW', flags: F.SOLID | F.DOOR },
+    kBossN: { art: ART.kBossN, pal: 'kBossN', flags: F.SOLID | F.DOOR },
 
     // THEMED SCENERY. `M` and `U` in the dungeon legend; the urn is themed per
     // dungeon just as the floor and wall are, so `U` in a Coral Spire room is a
@@ -2754,8 +2779,6 @@ export function installCoreTiles() {
     // The two halves of a dungeon mouth. Exactly `dStairs`' flags — the width
     // is the whole change, and a mouth that walked differently from a stair
     // would be a second rule to prove.
-    dStairsL: { art: ART.dStairsL, pal: 'stonedk', flags: F.WARP | F.STAIRS },
-    dStairsR: { art: ART.dStairsR, pal: 'stonedk', flags: F.WARP | F.STAIRS },
     dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
@@ -2854,6 +2877,7 @@ export function installCoreTiles() {
     dDrownCistern: { tide: ['dWallCistern', 'dWallCistern', 'dWaterD'] },
     // And the Shrine's, for the same reason: its own stone, not a cliff.
     dDrownWood: { tide: ['dWallWood', 'dWallWood', 'dWaterD'] },
+    dDrownAbyss: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
 
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
@@ -2893,9 +2917,9 @@ export function installCoreTiles() {
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
       art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
-        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : ART.pot,
+        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
-        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : 'pot',
+        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot' : 'pot',
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
     };
   }
@@ -2905,10 +2929,6 @@ export function installCoreTiles() {
   const townDefs = installTownBlocks();
   Object.assign(TILE_DEFS, townDefs);
   Object.assign(TILE_DEFS, installDungeonPortals());
-  // The dungeon mouth, spelled `EE` in a room grid and expanded by
-  // `Room.expandBlocks` — one legend character, so widening every dungeon's
-  // door was one edit per grid and not a hand-placed pair of tiles six times.
-  registerBlocks({ dMouth: { w: 2, h: 1, tiles: [['dStairsL', 'dStairsR']] } });
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark

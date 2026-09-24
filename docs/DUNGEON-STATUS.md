@@ -31,9 +31,9 @@ the health, not because the rooms do not work.
 doors, key doors in the ring) — commits `91cc5c7` and `50d8419`. **S138: D2 is
 rebuilt too**, with the Explorer's Crypt kit. **S139: D3**, with the Poison
 Moth's Lair kit (`08a4e74`). **S140: D4**, with the Dancing Dragon kit
-(`4d61f0e`). **S141: D5**, with the Ancient Ruins kit (`ef1b1ea`). D6 is
-still 10x8 and are rebuilt one per session under objective 10 in
-`docs/prompts/STATE.md`. A dungeon rebuilt at Oracle size is not "done" until
+(`4d61f0e`). **S141: D5**, with the Ancient Ruins kit (`ef1b1ea`). **S142: D6**, with the
+Sword & Shield Maze kit. All six are Oracle size; growing them to the size
+ladder is objective 10's remaining work in `docs/prompts/STATE.md`. A dungeon rebuilt at Oracle size is not "done" until
 its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 `check-playthrough.mjs` is green through it.
 
@@ -46,7 +46,7 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE, AND PLAYED; ORACLE SIZE** | `a9eb63e`; rebuilt at 15x11 S139 (`08a4e74`) |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE, AND PLAYED; ORACLE SIZE** | `5fd7301`; rebuilt at 15x11 S140 (`4d61f0e`) |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE, AND PLAYED; ORACLE SIZE** | `0db0eab`; rebuilt at 15x11 S141 (`ef1b1ea`) |
-| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END** | authored `84d14e5`; played to Nereth's death and the sixth Essence, `check-playthrough.mjs` 37/37, S121 |
+| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END; ORACLE SIZE** | authored `84d14e5`; played to the end S121; rebuilt at 15x11 S142 |
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 

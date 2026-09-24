@@ -163,14 +163,14 @@ const MINIS = {
                items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1 },
                at: [34, 81], facing: 'right', maxQh: 40, settle: 0, frame: 147504 },
-  // d6 1,4,5, step 1272 (`travel`) f152861: `11,48 hp 26/44 tide 0
-  // [tideshade]`. NO CHARMS — the route does not put one on until step 1326,
+  // d6 1,4,5, S142 at Oracle size: step 1247 (`travel`) f188154: `7,79 hp
+  // 21/44 tide 0 [tideshade]`. NO CHARMS — the route does not put one on until step 1326,
   // two rooms later, so this is the last fight in the game fought bare.
-  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 29,
+  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 21,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                opts: { breakContact: true },
-               at: [11, 48], facing: 'right', maxQh: 44, settle: 0, frame: 166772 },
+               at: [7, 79], facing: 'right', maxQh: 44, settle: 0, frame: 188154 },
   // d6 1,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
   // [brinehulk+beamos+keese]`. THE ONE ROW WHOSE FRAME IS NOT A ROOM ENTRY:
   // the Crossed Shafts are entered thousands of frames earlier and both
@@ -178,11 +178,13 @@ const MINIS = {
   // instant the boss directive begins and the settle is nominal. He is fought
   // on the FAR ISLAND at HIGH, which is the only sea he can be hurt at, with
   // a beamos and a keese still in the room, and both charms on.
-  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 36,
+  // S142, the Keep at Oracle size with the far island widened: step 1364
+  // (`tide` up, on the landing) f199380: `305,95 hp 45/48 tide 2`.
+  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 45,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                charms: { mid: 'coilrope', high: 'gillcarve' },
-               at: [227, 97], facing: 'right', maxQh: 44, settle: 30, frame: 176895 },
+               at: [305, 95], facing: 'right', maxQh: 48, settle: 8, frame: 199380 },
 };
 
 // THE FIGHT THE ROUTE ACTUALLY PLAYS.
@@ -296,7 +298,10 @@ const ROUTE_ARENA = {
   // case this fight is played at — and no measurement of Nereth had ever had
   // it on. A charm is not an item and `setup.items` cannot grant one; see the
   // stamp below.
-  d6: { at: [63, 101], facing: 'up', qh: 44, maxQh: 44, settle: 24, frame: 179934,
+  // S142: THE KEEP IS AN ORACLE DUNGEON NOW, and the throne room is 1,3,0,
+  // entered from the Stairhead through the boss door in its south wall:
+  // step 1398 (`exit up`) f203980, `111,150 hp 48/48 tide 1 [nereth]`.
+  d6: { at: [111, 150], facing: 'up', qh: 48, maxQh: 48, settle: 24, frame: 203980,
         charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 

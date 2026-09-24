@@ -582,11 +582,11 @@ section('Dredge Line');
 // Dredge Line's whole second half and it is the one thing in the game that
 // wants the water UP, so it is asserted here in both directions rather than
 // once. `dragBack` skips a tile carrying neither F.WET nor F.SLOW.
-await park({ map: 'd6', rx: 5, ry: 3, tx: 4, ty: 6, dir: 'up', tide: 0, items: { dredge: 1 }, equipB: 'dredge' });
+await park({ map: 'd6', rx: 5, ry: 3, tx: 7, ty: 7, dir: 'up', tide: 0, items: { dredge: 1 }, equipB: 'dredge' });
 await step(4);
 r = await read(() => {
   const g = window.__game;
-  return { buried: (g.room.def.buried || []).length, dry: g.room.tile(4, 4, g.tide).name };
+  return { buried: (g.room.def.buried || []).length, dry: g.room.tile(7, 5, g.tide).name };
 });
 check('the pan has something in its floor', r.buried > 0);
 check('...and at LOW the ring is dry crust', r.dry === 'dSiltDry', r.dry);
@@ -595,7 +595,7 @@ const dragOnce = async () => page.evaluate(async () => {
   const g = window.__game;
   const { DredgeLine } = await import('/src/game/items.js');
   g.entities = g.entities.filter(e => e === g.player);
-  g.player.x = 4 * 16; g.player.y = 6 * 16; g.player.dir = 'up';
+  g.player.x = 7 * 16; g.player.y = 7 * 16; g.player.dir = 'up';
   const line = new DredgeLine(g.player.cx - 5, g.player.cy - 5, { dir: 'up', level: 1, owner: g.player });
   g.player.dredge = line; g.addEntity(line);
   for (let i = 0; i < 90; i++) g.update();
@@ -689,12 +689,12 @@ section('Resonance Rod');
 
 // The Colonnade of the Drowned: the Keep's one optional reward, the Coilrope,
 // sits in an alcove behind a grate. Metal, and only the Rod retracts metal.
-await park({ map: 'd6', floor: 1, rx: 2, ry: 4, tx: 4, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
+await park({ map: 'd6', floor: 1, rx: 2, ry: 4, tx: 7, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
 await step(4);
 r = await read(() => ({
-  name: window.__game.room.baseName(4, 3),
-  stand: window.__standable(4, 3),
-  chest: window.__standable(4, 2),
+  name: window.__game.room.baseName(7, 3),
+  stand: window.__standable(7, 3),
+  chest: window.__standable(7, 2),
 }));
 check('the boss key alcove is behind a grate', r.name === 'grate' && r.stand === false, `${r.name}`);
 
@@ -703,7 +703,7 @@ r = await page.evaluate(async () => {
   const { ringResonance } = await import('/src/game/items.js');
   ringResonance(g, g.player, 1);
   for (let i = 0; i < 4; i++) g.update();
-  return { name: g.room.baseName(4, 3), stand: window.__standable(4, 3) };
+  return { name: g.room.baseName(7, 3), stand: window.__standable(7, 3) };
 });
 check('the Rod retracts a grate', r.name === 'grateOpen' && r.stand === true, `${r.name} stand=${r.stand}`);
 

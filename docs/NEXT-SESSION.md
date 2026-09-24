@@ -1,3 +1,55 @@
+## S142 — the Abyssal Keep is rebuilt at Oracle room size
+
+(Same working session as S140/S141.)
+
+### What landed
+- D6 at `cell: [15, 11]`: 29 rooms, 34 screens, same graph on both floors,
+  same item placement. Every Dredge Line crossing and cache is the 10x8
+  fixture set whole into a bigger room at a fixed offset (Drowned Stand 3,1;
+  Sunken Bar 3,1; Drowned Sill 3,0; Crossed Shafts 5,1; Slack Water 3,1;
+  Garden 3,1; West Crypt 3,2; Two Arches 2,1); check-dredge, check-lens and
+  check-trade green.
+- Kit: the Seasons Sword & Shield Maze (`k*` picks; ring room 2661,2159;
+  door key strip 2034,2517 on a 17px pitch — key doors all four walls,
+  brown shutters all four, boss door north only at 2227,1628). `ring.faces`
+  on. `abyssFloor`, `cryptWall`, `cryptBlock` picks removed. `9` is
+  `dDrownAbyss`, `C` is `dExitAbyss`. The old generic two-tile dungeon mouth
+  (`dMouth`, `dStairsL/R`) is deleted: every dungeon now has its own exit
+  tile and nothing placed it.
+- DESIGN CALLS the human may veto:
+  - NEW ROOM `1,3,1` The Stairhead: an antechamber at the foot of Nereth's
+    stair with the fairy (S134) and the boss door in its north wall.
+  - The throne is `1,3,0`, size [2,1], but its playing field is the OLD 20x8
+    hall set into rock at offset 3,3. Nereth lost 0/9 to the robot in a full
+    30x11 hall and in a 15x11 room; the old hall wins.
+  - The throne's south door SHUTS behind Link once he is clear of the
+    doorway, and opens when Nereth dies (the real run died retreating into
+    the open doorway pocket).
+  - The Crossed Shafts' far island runs the whole east screen (to column 28),
+    Brinehulk at 25,5: a five-tile ledge made the fight a knockback lottery.
+- Brinehulk carries `tideEscape: () => LOW`, a hint read ONLY by the route
+  robot (it drains the sea on a timer; the robot now raises it again).
+- Checkers updated for the new coordinates: check-items (Slack Water ring at
+  7,5 from 7,7; Colonnade grate row 3, x5-9, chest 7,2), check-trade (scans
+  the whole room, stands at 7,4), check-bosses (Essence spot from room size).
+- Route: D6 converted room by room; the Keep Lock cleared with the Rod; the
+  Stairhead picks up its fairy; Brinehulk fought with `openRetreat`. GOAL is
+  `d6/1,3,0`. check-playthrough 41/41 to THE END, no deaths, 209457 frames.
+  `d6-mooring` re-planned (+3,+1) and re-recorded: same story, 20 rupees,
+  never leaves the room.
+- Measured over 13 seeds from the route arena: Nereth 12/13 (seed 7 dead);
+  Tideshade 13/13 on 12 qh; Brinehulk 9/13 (6, 8, 10, 13 dead — all four won
+  on the old 5-wide island). Every loss is the robot pinned against the
+  island's north wall by beetles; the real run wins. Not retuned.
+
+### Open
+- D6 is 34 screens; the ladder wants >=46. Planned wings: floor 0 east past
+  the Slack Water (a 2x1 hall at 0,6,3-0,7,3, rooms 0,7,2 and 0,7,1);
+  floor 1 west (1,1,3-1,1,5) and east (1,5,3). Each must be a dredge room
+  proved by check-dredge. Heart Pieces must stay 24 in total.
+- Then grow D3 (>=32), D4 (>=36), D5 (>=40).
+- Brinehulk's 9/13 is the robot's; watch it if the island changes again.
+
 ## S141 — the Drowned Wood Shrine is rebuilt at Oracle room size
 
 (Same working session as S140; the human asked for the charter to keep going.)

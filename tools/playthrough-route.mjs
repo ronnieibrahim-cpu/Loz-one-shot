@@ -2086,7 +2086,7 @@ export const ROUTE = [
   ['goto', 2, 4, 900],
   ['hold', ['up'], 180],
   ['wait', 60],
-  ['goto', 7, 5, 900],
+  ['goto', 12, 8, 900],
   ['wait', 120],
   ['loot', 900],
 
@@ -2106,11 +2106,11 @@ export const ROUTE = [
   ['equip', 'kilnshell', 'B', 400],
   ['goto', 2, 3, 900], ['hold', ['up'], 2],
   ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
-  ['goto', 7, 3, 900], ['hold', ['up'], 2],
+  ['goto', 12, 3, 900], ['hold', ['up'], 2],
   ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
-  ['goto', 2, 4, 900], ['hold', ['down'], 2],
+  ['goto', 2, 7, 900], ['hold', ['down'], 2],
   ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
-  ['goto', 7, 4, 900], ['hold', ['down'], 2],
+  ['goto', 12, 7, 900], ['hold', ['down'], 2],
   ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
   ['wait', 180],
   ['loot', 900],
@@ -2132,8 +2132,8 @@ export const ROUTE = [
   ['tide', 1, 140, 900],
   ['travel', 2, 4, 4000],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 5, 2, 1500],
-  ['bellows', 2, 2, 2500],
+  ['goto', 8, 4, 1500],
+  ['bellows', 5, 4, 2500],
   ['equip', 'sword', 'A', 400],
   ['loot', 900],
 
@@ -2142,7 +2142,7 @@ export const ROUTE = [
   // is CROSSED AND NOT CLEARED — a darknut and a wizzrobe in one room cost
   // twenty-four quarter-hearts to clear and the room holds nothing.
   ['travel', 3, 4, 4000],
-  ['goto', 4, 3, 1200],
+  ['goto', 7, 1, 1200],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 300],
@@ -2153,15 +2153,26 @@ export const ROUTE = [
   ['hold', ['up'], 12],
   ['tap', 'a', 30],
   ['dialogue', 300],
-  ['goto', 4, 1, 900],
+  ['goto', 7, 1, 900],
   ['exit', 'up', 600],
-  ['goto', 5, 3, 1500],
+  // THE KEEP LOCK IS CLEARED, NOT CROSSED (S142). At Oracle size it is one
+  // open hall, and its knight and wizard stand across every line the run
+  // walks through it — three times, out to the Dredge Vault, back, and west
+  // to the stair. Cleared once, with the Rod ringing the knight's armour, the
+  // room is quiet for the other two passes.
+  ['equip', 'rod', 'B', 400],
+  ['fight', 6000, 2000, { ring: true }],
+  ['wait', 60],
+  ['fight', 3000, 1200, { ring: true }],
+  ['loot', 900],
+  ['equip', 'conch', 'B', 400],
+  ['goto', 13, 5, 1500],
   ['hold', ['right'], 24],
   ['tap', 'a', 30],
   ['dialogue', 300],
-  ['goto', 8, 3, 900],
+  ['goto', 13, 5, 900],
   ['exit', 'right', 600],
-  ['goto', 4, 4, 1200],
+  ['goto', 7, 6, 1200],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
@@ -2181,7 +2192,7 @@ export const ROUTE = [
   ['equip', 'conch', 'B', 400],
   ['travel', 5, 3, 4000],
   ['tide', 1, 140, 600],
-  ['dredge', 4, 6, 'up', 'fish', 2400],
+  ['dredge', 7, 7, 'up', 'fish', 2400],
   ['loot', 900],
 
   // UP THE KEEP STAIR. The warp is the tile at 8,1 and `travel` cannot plan a
@@ -2189,7 +2200,7 @@ export const ROUTE = [
   ['travel', 4, 3, 4000],
   ['travel', 3, 3, 4000],
   ['travel', 2, 3, 4000],
-  ['goto', 8, 1, 1500],
+  ['goto', 12, 2, 1500],
   ['wait', 120],
 
   // ------------------------------------------------------- THE EAST WING
@@ -2227,9 +2238,9 @@ export const ROUTE = [
 
   // THE MERMAID VAULT, through the door the kill opened: the level-2 Cleats,
   // which are unlimited breath on the seafloor.
-  ['goto', 4, 1, 1500],
+  ['goto', 7, 1, 1500],
   ['exit', 'up', 600],
-  ['goto', 4, 4, 1500],
+  ['goto', 7, 6, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
@@ -2250,31 +2261,31 @@ export const ROUTE = [
   // THE HOP LANDS AT 1,5 AND THE CLIMB IS UP COLUMN 1, not column 2: the
   // chamber's escape warp sits at 2,4, and a path that squares the corner
   // walks onto it and is put back in the vault with the valve still unturned.
-  ['goto', 2, 5, 1500],
+  ['goto', 3, 8, 1500],
   ['wait', 120],
   ['equip', 'lens', 'B', 400],
-  ['goto', 4, 5, 1500],
+  ['goto', 6, 6, 1500],
   ['use', 'lens', 1, 90],
   ['hold', ['left'], 40],
   ['wait', 60],
-  ['goto', 1, 4, 1200],
-  ['goto', 1, 2, 1200],
+  ['goto', 3, 5, 1200],
+  ['goto', 3, 3, 1200],
   ['hold', ['right'], 24],
   ['tap', 'a', 30],
   ['wait', 240],
-  ['goto', 1, 1, 1200],
-  ['goto', 1, 0, 1200],
-  ['goto', 3, 0, 1200],
-  ['goto', 5, 0, 1200],
+  ['goto', 3, 2, 1200],
+  ['goto', 3, 1, 1200],
+  ['goto', 5, 1, 1200],
+  ['goto', 7, 1, 1200],
   ['loot', 600],
-  ['goto', 7, 0, 1200],
+  ['goto', 9, 1, 1200],
   ['wait', 180],
   ['equip', 'conch', 'B', 400],
 
   // Back down the vault's stair, out through the hall, and west. The Dredge
   // Line goes back on A on the way, because the three shaft crossings below
   // expect to find it there.
-  ['goto', 4, 6, 1200],
+  ['goto', 7, 9, 1200],
   ['exit', 'down', 600],
   ['travel', 3, 5, 4000],
   ['equip', 'dredge', 'A', 400],
@@ -2313,9 +2324,9 @@ export const ROUTE = [
   ['wait', 120],
   ['loot', 900],
   ['travel', 2, 4, 4000],
-  ['goto', 4, 5, 1500],
+  ['goto', 7, 5, 1500],
   ['use', 'rod', 1, 60],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 3, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
@@ -2342,7 +2353,7 @@ export const ROUTE = [
   // ground rather than in the hole.
   ['travel', 3, 4, 4000],
   ['tide', 0, 140, 900],
-  ['dredge', 5, 6, 'up', [5, 3], 2400],
+  ['dredge', 8, 7, 'up', [8, 4], 2400],
   ['wait', 60],
   ['loot', 600],
 
@@ -2367,26 +2378,26 @@ export const ROUTE = [
   // the other's sea. The whole room costs NOTHING — measured: in on twenty,
   // out on twenty.
   ['travel', 2, 3, 4000],
-  ['goto', 7, 4, 1500],
+  ['goto', 10, 5, 1500],
   ['tide', 2, 140, 900],
-  ['dredge', 7, 4, 'left', [4, 4], 2400],
+  ['dredge', 10, 5, 'left', [7, 5], 2400],
   ['wait', 60],
   ['tide', 1, 140, 900],
-  ['dredge', 2, 2, 'up', 'fish', 2400],
+  ['dredge', 5, 3, 'up', 'fish', 2400],
   ['loot', 900],
-  ['dredge', 3, 2, 'up', 'fish', 2400],
+  ['dredge', 6, 3, 'up', 'fish', 2400],
   ['loot', 900],
   ['tide', 2, 140, 900],
-  ['dredge', 4, 4, 'right', [7, 4], 2400],
+  ['dredge', 7, 5, 'right', [10, 5], 2400],
   ['wait', 60],
-  ['goto', 9, 3, 1500],
+  ['goto', 13, 5, 1500],
   ['exit', 'right', 600],
 
-  ['goto', 6, 5, 1500],
+  ['goto', 13, 5, 1500],
   ['hold', ['right'], 24],
   ['tap', 'a', 30],
   ['dialogue', 300],
-  ['goto', 9, 5, 900],
+  ['goto', 13, 5, 900],
   ['exit', 'right', 600],
 
   // THE DROWNED SILL — CROSSING 3, and the one that asks for both seas. The
@@ -2396,7 +2407,7 @@ export const ROUTE = [
   // so it has to go back down. Three tide states for one room, and the key is
   // in the middle one.
   ['tide', 0, 140, 900],
-  ['dredge', 2, 4, 'right', [5, 4], 2400],
+  ['dredge', 5, 4, 'right', [8, 4], 2400],
   ['wait', 60],
   // THE SIREN ON THE FAR BANK, AND THE SWORD IS PUT BACK FIRST. This fight has
   // been thrown bare-handed since the leg was written: the Slack Water leaves
@@ -2409,20 +2420,20 @@ export const ROUTE = [
   ['fight', 2500, 900, { ring: true }],
   ['equip', 'dredge', 'A', 400],
   ['tide', 1, 140, 900],
-  ['dredge', 8, 4, 'up', 'fish', 2400],
+  ['dredge', 11, 4, 'up', 'fish', 2400],
   ['loot', 900],
   ['tide', 0, 140, 900],
-  ['dredge', 5, 4, 'left', [2, 4], 2400],
+  ['dredge', 8, 4, 'left', [5, 4], 2400],
   ['wait', 60],
 
   // AND THE NORTH DOOR, with the key the sill gave up.
-  ['goto', 0, 5, 900],
+  ['goto', 1, 5, 900],
   ['exit', 'left', 600],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 1, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 300],
-  ['goto', 4, 1, 900],
+  ['goto', 7, 1, 900],
   ['exit', 'up', 600],
 
   // ---------------------------------------------------- THE KEEP GATE
@@ -2487,13 +2498,13 @@ export const ROUTE = [
   // signed.
   ['equip', 'dredge', 'A', 400],
   ['equip', 'conch', 'B', 400],
-  ['goto', 9, 4, 1500],
+  ['goto', 13, 5, 1500],
   ['exit', 'right', 600],
   ['tide', 2, 140, 900],
-  ['dredge', 4, 2, 'right', [7, 2], 2400],
+  ['dredge', 9, 3, 'right', [12, 3], 2400],
   ['wait', 60],
   ['tide', 0, 140, 900],
-  ['dredge', 11, 5, 'right', [14, 5], 2400],
+  ['dredge', 16, 6, 'right', [19, 6], 2400],
   ['wait', 60],
 
   // THE BRINEHULK, AND THE JOKE THE ROOM IS BUILT ON. Brine dissolves salt:
@@ -2506,7 +2517,7 @@ export const ROUTE = [
   // frames for six quarter-hearts.
   ['tide', 2, 140, 900],
   ['equip', 'sword', 'A', 400],
-  ['boss', 12000, 'brinehulk'],
+  ['boss', 12000, 'brinehulk', { openRetreat: true }],
   ['wait', 240],
 
   // THE BOSS KEY. The chest on the far island, and the last locked thing in
@@ -2516,7 +2527,7 @@ export const ROUTE = [
   // pits, with no line cast and the chest out of reach (S140, after D5's
   // rebuild moved the fight's clock). The loot after the chest picks up what
   // is on the island.
-  ['goto', 17, 4, 1500],
+  ['goto', 22, 5, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
@@ -2526,7 +2537,7 @@ export const ROUTE = [
   // THE COLOSSUS'S HOARD, drunk here and not at the door. Seventeen
   // quarter-hearts of the Keep Gate's fairy were spent getting to this island
   // and the fight on it; what is left would not pay for the King.
-  ['goto', 15, 2, 1500],
+  ['goto', 20, 3, 1500],
   ['loot', 1200],
 
   // AND BACK, which is the same two crossings in reverse and at the same two
@@ -2534,12 +2545,12 @@ export const ROUTE = [
   // as well, so nothing here is one-way.
   ['equip', 'dredge', 'A', 400],
   ['tide', 0, 140, 900],
-  ['dredge', 14, 5, 'left', [11, 5], 2400],
+  ['dredge', 19, 6, 'left', [16, 6], 2400],
   ['wait', 60],
   ['tide', 2, 140, 900],
-  ['dredge', 7, 2, 'left', [4, 2], 2400],
+  ['dredge', 12, 3, 'left', [9, 3], 2400],
   ['wait', 60],
-  ['goto', 0, 4, 1500],
+  ['goto', 5, 5, 1500],
   ['exit', 'left', 600],
 
   // STEP CLEAR OF THE DOOR BEFORE DOING ANYTHING ELSE. `Game.doorwayPull`
@@ -2549,7 +2560,7 @@ export const ROUTE = [
   // and the pull puts you straight back into the Crossed Shafts — which is
   // what happened, with the next directive addressing a room the player was no
   // longer standing in.
-  ['goto', 6, 5, 1200],
+  ['goto', 11, 5, 1200],
 
   // ================= NERETH, THE DROWNED KING ==============================
 
@@ -2567,22 +2578,23 @@ export const ROUTE = [
   ['equip', 'conch', 'B', 400],
   ['tide', 1, 140, 900],
   ['equip', 'sword', 'A', 400],
-  ['goto', 4, 3, 1500],
+  // North, into the Stairhead: at Oracle size the boss door is in the ring,
+  // so the chamber that held the stairhead fairy is a room of its own at the
+  // foot of the King's stair (S142).
+  ['goto', 7, 1, 1500],
+  ['exit', 'up', 600],
+
+  // THE STAIRHEAD FAIRY, drunk at the foot of the stair — the last moment in
+  // the game where a heal is worth anything. The run climbs the stair on a
+  // full bar. The wait is also the King's entry clock (S138: 70..140 all won
+  // from the old doorway; re-read it if the fight turns).
+  ['goto', 2, 5, 900],
+  ['loot', 900],
+  ['wait', 95],
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
-
-  // THE STAIRHEAD FAIRY, drunk between the lock and the stair. The north
-  // chamber of this room is sealed by the `B` that was just opened, so this is
-  // the first moment in the run it can be walked into at all — and the last
-  // one in the game where a heal is worth anything. The run climbs the stair
-  // on forty-eight of forty-eight instead of twenty-eight.
-  // The wait is also the King's entry clock. Re-swept at S138 when the Glass
-  // Cell's Lens fight moved every frame after it: 20..60 lose, 70..140 all
-  // win, 80..110 leave the most standing; 95 is the middle of that.
-  ['goto', 1, 1, 900],
-  ['wait', 95],
-  ['goto', 4, 1, 900],
   ['exit', 'up', 900],
 
   // AND THE KING. `nerethIntro` plays on the way in — the first cutscene in
@@ -2601,7 +2613,7 @@ export const ROUTE = [
   // it is claimed by WALKING INTO IT. Nothing had ever had to do that in a run
   // before — the five before this were all taken in a shooter.
   ['wait', 240],
-  ['goto', 4, 3, 2400],
+  ['goto', 15, 4, 2400],
   ['wait', 240],
 
   // AND THE ENDING, which chains off the sixth claim (`Game.claimEssence`
@@ -2673,7 +2685,7 @@ export const GOAL = {
   // The room the run finishes in: the throne room, with Nereth dead, the
   // sixth Essence claimed and the ending playing. This is the end of the
   // game.
-  room: 'd6/1,3,1',
+  room: 'd6/1,3,0',
   needsVerb: null,
   keysNeeded: 18,
   keysObtainable: 18,

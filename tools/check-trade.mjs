@@ -402,13 +402,13 @@ section('the consumer: the Abyssal Keep grate');
     const g = window.__game;
     const { F } = await import('/src/world/tileset.js');
     g.mode = 'play';
-    g.enterMap('d6', 1, 2, 4, 4 * 16, 5 * 16, 'up', { instant: true });
+    g.enterMap('d6', 1, 2, 4, 7 * 16, 4 * 16, 'up', { instant: true });
     g.mode = 'play';
     g.progress.items.rod = 1;
     g.progress.equipB = 'rod';
-    g.player.x = 4 * 16; g.player.y = 5 * 16; g.player.invuln = 100000;
+    g.player.x = 7 * 16; g.player.y = 4 * 16; g.player.invuln = 100000;
     const grates = [];
-    for (let y = 0; y < 8; y++) for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < g.room.th; y++) for (let x = 0; x < g.room.tw; x++) {
       if (g.room.flagsAt(x, y, g.tide) & F.RING) grates.push([x, y]);
     }
     const before = grates.map(([x, y]) => g.room.tile(x, y, g.tide.level).name);

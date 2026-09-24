@@ -49,6 +49,18 @@ await page.evaluate(async () => {
     return r;
   };
 });
+if (process.env.TIDEHOOK) {
+  await page.evaluate((from) => {
+    const t = window.__game.tide, orig = t.setLevel.bind(t);
+    window.__tides = [];
+    t.setLevel = (n, o) => {
+      const g = window.__game;
+      if (g.frame >= from) window.__tides.push(`f${g.frame} ${g.mapId} ${g.room && g.room.key} ${t.level}->${n} ` + new Error().stack.split('\n').slice(2, 5).map(x => x.trim()).join(' | '));
+      return orig(n, o);
+    };
+  }, Number(process.env.TIDEHOOK));
+}
+// TIDEHOOK=<frame> lists every tide change from that frame on, with who made it.
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE.slice(0, end));
 let r; let err = null;
 for (let i = 0; i < 4000; i++) {
@@ -57,7 +69,8 @@ for (let i = 0; i < 4000; i++) {
 }
 const res = await page.evaluate(() => window.__rp.result());
 for (const t of res.trace.filter(t => t.step >= start)) console.log(`${String(t.step).padStart(4)} ${t.kind.padEnd(9)} f${String(t.frame).padStart(6)} ${t.room.padEnd(12)} ${String(t.x).padStart(4)},${String(t.y).padStart(3)} hp ${t.hp}/${t.maxHp} tide ${t.tide} foes ${t.foes} keys ${t.keys} ${t.foeKinds ? '[' + t.foeKinds + ']' : ''}`);
-const hits = await page.evaluate(() => window.__hits); if (process.env.HITS) for (const h of hits) if (h.includes(process.env.HITS)) console.log('HIT', h);
+const hits = await page.evaluate(() => window.__hits);
+if (process.env.TIDEHOOK) for (const x of await page.evaluate(() => window.__tides)) console.log('TIDE', x); if (process.env.HITS) for (const h of hits) if (h.includes(process.env.HITS)) console.log('HIT', h);
 const st = await page.evaluate(() => { const g = window.__game; return { ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + (e.pressed ? '*' : '') + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' '), flags: Object.keys(g.progress.flags).filter(k => k.startsWith(g.mapId)).join(','), map: g.mapId, room: g.room && g.room.key, x: g.player.x, y: g.player.y, tide: g.tide.level, mode: g.mode, progress: g.progress }; });
 if (process.argv[4]) await writeFile(process.argv[4], JSON.stringify(st));
 console.log('ENTS', st.ents, 'FLAGS', st.flags); console.log('END', st.map, st.room, st.x, st.y, 'tide', st.tide, 'mode', st.mode, 'hp', st.progress.hearts, '/', st.progress.maxHearts, err ? 'ERR ' + err : '', 'frames', res.frames);

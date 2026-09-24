@@ -81,7 +81,7 @@ PICKS = [
     ('ruinFloorAlt', 756, 1290, 'x94 the same flagstone, worn smooth'),
     ('paleFloor',  1986,   42, 'x1244 pale mottled flagstone, the commonest floor on the map'),
     ('reefFloor',   659,   42, 'x201 pale blue flagstone with a scored ring'),
-    ('abyssFloor',   81, 2799, 'x1038 dark tiling, studded — the deepest floors'),
+    # (`abyssFloor` 81,2799 was the Keep's floor until S142.)
     # (`brickFloor` 547,1434 and `forgeFloor` 579,621 were the Drowned Wood
     # Shrine's until S140 gave it the Ancient Ruins' kit; nothing else drew them.)
     # A pale panelled flagstone was wanted here and there is no clean copy of
@@ -115,7 +115,7 @@ PICKS = [
     ('coralWall',      17,   58, 'x266 rose-bevelled block grid'),
     # (`emberWall` 499,1274, brown brick in courses, was the Shrine's wall
     # until S140.)
-    ('cryptWall',    2114,  428, 'x22 violet masonry with pale capstones'),
+    # (`cryptWall` 2114,428 was the Keep's wall until S142.)
     ('studWall',      225,  396, 'x16 blue-grey wall banded with gold studs'),
     # DIRECTIONAL. A horizontal run, for the top course of a room. Never a fill.
     ('hatchWall',       1,   42, 'x196 pale wall RUN, lit face and hatched base'),
@@ -136,7 +136,7 @@ PICKS = [
     ('laceWall',     1280, 1492, 'ornate lattice, tiles in both axes', 'ruins'),
 
     # ---- blocks and props --------------------------------------------------
-    ('cryptBlock',      1, 1370, 'x31 violet block, pale-capped, to match cryptWall'),
+    # (`cryptBlock` 1,1370 was the Keep's and the Shrine's block until S141-S142.)
     ('vaultBlock',   2066, 1467, 'x324 deeply bevelled block — also tiles as a wall'),
     ('lionHead',      129,  412, 'x10 a gilded lion mask'),
     ('urn',           900,   42, 'x80 a wide-bellied urn'),
@@ -391,6 +391,54 @@ PICKS = [
     ('rArch1',   1794,  2498, 'entrance pillar, west', 'ruins'),
     ('rArch2',   1810,  2498, 'entrance, the lit way out', 'ruins'),
     ('rArch3',   1826,  2498, 'entrance pillar, east', 'ruins'),
+
+    # ---- THE ORACLE ROOM KIT: the Abyssal Keep's ---------------------------
+    #
+    # Cut from the Sword & Shield Maze on the backgrounds sheet's True Colors
+    # half — Seasons' own last dungeon for this game's last dungeon: a rough
+    # red-brown rock ring round olive and bone tiled floors. Its rooms sit on
+    # the 241x177 pitch from 1456,1274 (the plain room is 2661,2159). It draws
+    # jambs on all four sides of a doorway: north ones from 1938,2336, south
+    # from 1938,2159, east from 1938,2336, west from 2179,2336. It has no lit
+    # entrance step on this sheet, so the Keep leaves by a gap in the ring,
+    # the way the Grotto does. Its solid masonry is the flat orange it shows
+    # where rock cuts into a room.
+    #
+    # THE DOORS: the maze's door key at 2034,2517 (17px pitch) draws key doors
+    # for all four walls, and shutters twice — in olive and in brown; the
+    # brown ones are the ring's. The boss door is the horned skull standing
+    # in the north wall of the room at 2179,1628.
+    ('kRingTL',  2661,  2159, 'ring corner, north-west'),
+    ('kRingN',   2677,  2159, 'ring run, north wall'),
+    ('kRingTR',  2885,  2159, 'ring corner, north-east'),
+    ('kRingW',   2661,  2175, 'ring run, west wall'),
+    ('kRingE',   2885,  2175, 'ring run, east wall'),
+    ('kRingBL',  2661,  2319, 'ring corner, south-west'),
+    ('kRingS',   2677,  2319, 'ring run, south wall'),
+    ('kRingBR',  2885,  2319, 'ring corner, south-east'),
+    ('kJambNW',  2018,  2336, 'north wall ends, doorway to its east'),
+    ('kJambNE',  2082,  2336, 'north wall ends, doorway to its west'),
+    ('kJambSW',  2018,  2319, 'south wall ends, doorway to its east'),
+    ('kJambSE',  2082,  2319, 'south wall ends, doorway to its west'),
+    ('kJambEN',  2162,  2416, 'east wall ends, doorway to its south'),
+    ('kJambES',  2162,  2448, 'east wall ends, doorway to its north'),
+    ('kJambWN',  2179,  2416, 'west wall ends, doorway to its south'),
+    ('kJambWS',  2179,  2448, 'west wall ends, doorway to its north'),
+    ('kFill',    1986,  1628, 'the flat orange of solid rock'),
+    ('kFloor',   1970,  2368, 'the bone diamond floor'),
+    ('kFloorAlt', 2709, 2191, 'the olive ring tile'),
+    ('kBlock',   2002,  2400, 'the blue block'),
+    ('kPot',     2195,  2352, 'the yellow pot, on its own floor'),
+    ('kStatue',  2677,  2175, 'the green sprout statue'),
+    ('kKeyN',    2034, 2534, 'key door in a north wall'),
+    ('kKeyS',    2034, 2551, 'key door in a south wall'),
+    ('kKeyW',    2068, 2534, 'key door in a west wall'),
+    ('kKeyE',    2068, 2551, 'key door in an east wall'),
+    ('kShutN',   2034, 2602, 'shutter in a north wall, teeth into the room'),
+    ('kShutS',   2034, 2619, 'shutter in a south wall, teeth into the room'),
+    ('kShutW',   2068, 2602, 'shutter in a west wall, teeth into the room'),
+    ('kShutE',   2068, 2619, 'shutter in an east wall, teeth into the room'),
+    ('kBossN',   2227, 1628, 'boss door in a north wall'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -411,7 +459,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue'}
+KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue'}
 
 
 def lum(c):

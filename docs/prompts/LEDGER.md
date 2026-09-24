@@ -916,6 +916,18 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S142 — the Abyssal Keep is an Oracle dungeon
+
+- D6 is `cell: [15, 11]` with the Sword & Shield Maze kit (`k*` picks; ring
+  room 2661,2159; door key strip 2034,2517, 17px). All six dungeons are now
+  Oracle size, each with its own Seasons kit.
+- Every Dredge Line fixture kept its 10x8 spacing, set whole at an offset.
+- Nereth's arena is the old 20x8 hall set into a 2x1 room; bigger arenas
+  lost 0/9. The door behind Link shuts until he wins. Antechamber `1,3,1`
+  holds the fairy and the boss door.
+- Nothing places the generic dungeon mouth any more; it is deleted.
+- Nereth 12/13, Tideshade 13/13, Brinehulk 9/13 over 13 route seeds.
+
 ## Settled at S141 — the Drowned Wood Shrine is an Oracle dungeon
 
 - D5 is `cell: [15, 11]` with the Ancient Ruins kit (`r*` picks). Rooms at

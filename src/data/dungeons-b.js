@@ -886,39 +886,45 @@ export function installDungeonsB() {
   // at the Coilrope's, because the charm that lengthens it is hand-placed in
   // this dungeon. Walked in-engine by the `d6-mooring` replay.
   //
-  // Intended route (26 rooms, two floors, the Dredge Line at room 13):
+  // AN ORACLE DUNGEON (S142), built like the other five: 15x11 rooms with a
+  // wall ring, a scrolling camera, one-tile doors, and key, shutter and boss
+  // doors in the ring between two rooms. The kit is the Sword & Shield
+  // Maze's (`k*` picks in tools/rip-dungeon-themes.py) — Seasons' own last
+  // dungeon. Every crossing, cache, grove, sill and fork is the fixture it
+  // was at 10x8, set whole into a bigger room of rock so its doors sit in the
+  // middle of their walls; check-dredge, check-reefseed, check-bellows and
+  // check-lens prove them as before.
+  //
+  // Intended route (29 rooms, two floors, the Dredge Line at room 13):
   //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
   //   -> 3,5 Drowned Hall (hub) -> 2,5 Chartstone -> 4,5 Small Key 2
-  //   -> 3,4 Three Heights (lock 1) -> 2,4 rest / 4,4 Small Key 3
-  //   -> 3,3 Keep Lock (lock 2) -> 4,3 DREDGE LINE -> 5,3 the Slack Water
-  //   -> 2,3 stair up
+  //   -> 3,4 Three Heights (key door north) -> 2,4 wheel / 4,4 Small Key 3
+  //   -> 3,3 Keep Lock (key door east) -> 4,3 DREDGE LINE -> 5,3 the Slack
+  //   Water -> 2,3 stair up
   //   -> 1F 3,5 Upper Keep -> 2,5 -> 2,4 the Coilrope
   //      -> 4,5 Tideshade (miniboss) -> 4,4 the Mermaid Suit
   //      -> 3,4 the Drowned Stand -> 3,3 Keep Crossing
-  //      -> 2,3 the Sunken Bar (lock 3) -> 4,3 the Drowned Sill (Small Key 4)
-  //      -> 3,2 (lock 4) -> 4,2 the Crossed Shafts (Boss Key)
-  //      -> 3,1 Nereth
+  //      -> 2,3 the Sunken Bar -> 4,3 the Drowned Sill (key door; Small Key 4)
+  //      -> 3,2 Keep Gate (key door) -> 4,2 the Crossed Shafts (Boss Key)
+  //      -> 3,1 the Stairhead -> 3,0 Nereth
   registerMap({
     id: 'd6',
     kind: 'dungeon',
     name: 'Abyssal Keep',
     w: 8, h: 8, floors: 2,
+    cell: [15, 11],
     legend: 'dungeonAbyss',
     music: 'dungeon2',
     tint: 'cave',
-    scroll: false,
     dungeon: {
       index: 6,
       item: 'dredge', itemLevel: 1,
       essence: 6,
       boss: 'nereth',
       // The Drowned King gets his own theme. `updateMusic` has always read a
-      // per-dungeon `bossMusic` and NO dungeon has ever set one, so every boss
-      // in the game — Nereth included — fought to the generic `boss` track and
-      // `finalBoss` was played by nothing. (It was unreachable twice over: the
-      // `nerethIntro` cutscene that ends on it had no trigger either.)
+      // per-dungeon `bossMusic`, and the Keep is the dungeon that sets one.
       bossMusic: 'finalBoss',
-      bossRoom: '1,3,1',
+      bossRoom: '1,3,0',
       startRoom: '3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32 },
     },
@@ -927,47 +933,49 @@ export function installDungeonsB() {
       '0,3,7': {
         name: 'Keep Door',
         map: [
-          '####..####',
-          '#........#',
-          '#.p....p.#',
-          '#........#',
-          '#.19..91.#',
-          '#........#',
-          '#........#',
-          '####CC####',
+          '#######.#######',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '#...19...91...#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######C#######',
         ],
         warps: [
-          // BOTH HALVES WARP. A two-tile arch whose right half is
-          // scenery is a door the player bumps into — the same rule
-          // the dungeon portals outside have carried since they landed.
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
-          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 3, 'Cut in black stone: "Everything the sea takes, it keeps. Everything it keeps, it puts down."'],
+          [2, 6, 'Cut in black stone: "Everything the sea takes,\nit keeps. Everything it keeps, it puts down."'],
         ],
       },
       '0,3,6': {
         name: 'Keep Landing',
         map: [
-          '####..####',
-          '#.1....1.#',
-          '#.9....9.#',
-          '..........',
-          '..........',
-          '#.9____9.#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#..1.......1..#',
+          '#..9.......9..#',
+          '#.............#',
+          '...............',
+          '#.............#',
+          '#..9.......9..#',
+          '#..1.......1..#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['darknut', 3, 3],
-          ['keese', 6, 4],
+          ['darknut', 5, 4],
+          ['keese', 10, 6],
         ],
         puzzle: {
           enemies: true,
           flag: 'd6_landing',
           reward: {
-            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
+            spawn: [['pickup', 7, 3, { kind: 'heart' }]],
             say: 'Water drains out of a niche in the wall.',
           },
         },
@@ -975,114 +983,129 @@ export function installDungeonsB() {
       '0,2,6': {
         name: 'Map Crypt',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##..12....',
-          '##..21....',
-          '##......##',
-          '##########',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.....12......#',
+          '#.....21.......',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['stalfos', 6, 2],
+          ['pickup', 9, 4, { kind: 'dungeonMap' }],
+          ['stalfos', 10, 7],
         ],
       },
       '0,4,6': {
         name: 'Bone Cell',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...4444.##',
-          '...4444.##',
-          '##......##',
-          '##########',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...4444444...#',
+          '#...4444444...#',
+          '....4444444...#',
+          '#...4444444...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
           ['stalfos', 2, 2],
-          ['stalfos', 7, 2],
-          ['darknut', 4, 5],
+          ['stalfos', 12, 2],
+          ['darknut', 7, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd6_bone',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
+          reward: { spawn: [['pickup', 7, 8, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
         },
       },
       '0,3,5': {
         name: 'Drowned Hall',
         map: [
-          '####..####',
-          '#..M..M..#',
-          '#.191919.#',
-          '..........',
-          '..........',
-          '#.919191.#',
-          '#..M..M..#',
-          '####..####',
+          '#######.#######',
+          '#..M.......M..#',
+          '#.............#',
+          '#..1919.9191..#',
+          '#.............#',
+          '...............',
+          '#.............#',
+          '#..9191.1919..#',
+          '#.............#',
+          '#..M.......M..#',
+          '#######.#######',
         ],
         entities: [
-          ['wizzrobe', 4, 2],
-          ['darknut', 2, 6],
-          ['siren', 7, 2],
+          ['wizzrobe', 7, 3],
+          ['darknut', 3, 8],
+          ['siren', 11, 3],
           ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
+          ['torch', 13, 1],
+          ['torch', 1, 9],
         ],
         puzzle: {
           torches: 'all',
           flag: 'd6_hall',
           reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
+            spawn: [['pickup', 7, 5, { kind: 'rupee20' }]],
             say: 'A catch lets go under the floor.',
           },
         },
         readable: [
-          [8, 4, 'A mooring plate, worn smooth: "The rings in this house were for hauling. They will haul anything that takes hold."'],
+          [13, 4, 'A mooring plate, worn smooth: "The rings in\nthis house were for hauling. They will haul\nanything that takes hold."'],
         ],
       },
       '0,2,5': {
         name: 'Chartstone Crypt',
         map: [
-          '####..####',
-          '####..####',
-          '##..99..##',
-          '##........',
-          '##........',
-          '##..99..##',
-          '####..####',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#....99.99....#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#....99.99....#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['darknut', 6, 4],
+          ['chest', 7, 5, { pickup: 'chartstone' }],
+          ['darknut', 11, 6],
         ],
       },
       '0,4,5': {
         name: 'Drain Court',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...4..4.##',
-          '........##',
-          '##......##',
-          '####..####',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#....4...4....#',
+          '.....4...4....#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
           ['switch', 2, 2],
-          ['switch', 7, 5],
+          ['switch', 12, 8],
           ['block', 2, 3],
-          ['beamos', 6, 2],
+          ['beamos', 11, 2],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd6_drain',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
+          reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
         },
       },
       '0,3,4': {
@@ -1092,241 +1115,230 @@ export function installDungeonsB() {
         // sea swims you over, `4` is a hole the sea fills. Three tiles, three
         // different answers to the same conch, and the walk round them is free.
         map: [
-          '####..####',
-          '#.11..11.#',
-          '####L#####',
-          '..9....9..',
-          '..9.44.9..',
-          '#.9.44.9.#',
-          '#.22..22.#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#..111...111..#',
+          '#.............#',
+          '#..9...4...9..#',
+          '...9..444..9...',
+          '#..9...4...9..#',
+          '#.............#',
+          '#..22.....22..#',
+          '#.U...........#',
+          '#######.#######',
         ],
         entities: [
-          ['wizzrobe', 4, 4],
-          ['jellyfish', 2, 3],
+          ['wizzrobe', 7, 2],
+          ['jellyfish', 7, 5],
         ],
         readable: [
-          [1, 6, 'Scratched low, where the water reaches it: "Three heights. One way through."'],
+          [2, 9, 'Scratched low, where the water reaches it:\n"Three heights. One way through."'],
         ],
       },
       '0,2,4': {
         name: 'West Crypt',
-        // D6's own Bellows sill, item-reuse's second (docs/prompts/LEDGER.md,
-        // S93/S94) — the same wheel-boxed-by-wall-and-pit fixture as D5's
-        // Bower Cell, folded to fit this room's narrower 4-row band instead
-        // of stretched across a full 8-row one. The fairy that used to sit
-        // in the open now waits behind the wheel instead.
+        // D6's own Bellows sill — the Squall Loft's fixture, wheel boxed by
+        // wall and pit, the stand across the pit, a sump the only way up. The
+        // fairy waits behind the wheel.
         map: [
-          '##########',
-          '##########',
-          '##3OO.####',
-          '####.0....',
-          '##........',
-          '##......##',
-          '##########',
-          '##########',
+          '###############',
+          '###############',
+          '###############',
+          '###############',
+          '#####3OO.######',
+          '#######.0......',
+          '#####........##',
+          '#####......####',
+          '###############',
+          '###############',
+          '###############',
         ],
         bellowsRoom: {
-          wheel: [2, 2], stand: [5, 2], face: 'left', at: 1, gives: 'fairy',
+          wheel: [5, 4], stand: [8, 4], face: 'left', at: 1, gives: 'fairy',
         },
         entities: [
-          ['wheel', 2, 2, { needTurns: 30 }],
-          ['stalfos', 6, 4],
+          ['wheel', 5, 4, { needTurns: 30 }],
+          ['stalfos', 9, 6],
         ],
         script: {
           // Put the fairy back if it was released and never collected — the
           // Cistern Gauge's soft lock, same as Bower Cell.
           onEnter(game) {
             if (game.progress.flags.d6CryptWheel && !game.progress.secrets.d6CryptFairy) {
-              game.spawnPickup(80, 32, 'fairy', { grabDelay: 14, saveKey: 'd6CryptFairy' });
+              game.spawnPickup(128, 80, 'fairy', { grabDelay: 14, saveKey: 'd6CryptFairy' });
             }
           },
           onEvent(game, name, data) {
             if (name !== 'valve' || !data || !data.open) return;
             game.progress.flags.d6CryptWheel = true;
             if (game.progress.secrets.d6CryptFairy) return;
-            game.spawnPickup(80, 32, 'fairy', { grabDelay: 14, saveKey: 'd6CryptFairy' });
+            game.spawnPickup(128, 80, 'fairy', { grabDelay: 14, saveKey: 'd6CryptFairy' });
           },
         },
       },
       '0,4,4': {
         name: 'Black Kiln',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...4444.##',
-          '...4444.##',
-          '##......##',
-          '##########',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...4444444...#',
+          '#...4444444...#',
+          '....4444444...#',
+          '#...4444444...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
           ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 2, 5],
-          ['torch', 7, 5],
-          ['darknut', 4, 5],
+          ['torch', 12, 2],
+          ['torch', 2, 8],
+          ['torch', 12, 8],
+          ['darknut', 7, 8],
         ],
         puzzle: {
           torches: 'all',
           flag: 'd6_kiln',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
+          reward: { spawn: [['pickup', 7, 2, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
         },
       },
       '0,3,3': {
         name: 'Keep Lock',
         map: [
-          '##########',
-          '#.....#..#',
-          '#.....#..#',
-          '......L...',
-          '#.....#..#',
-          '#.....#..#',
-          '#..M..#..#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#....#...#....#',
+          '#.............#',
+          '..............L',
+          '#.............#',
+          '#....#...#....#',
+          '#.............#',
+          '#..M.......M..#',
+          '#######L#######',
         ],
         entities: [
-          ['darknut', 2, 4],
-          ['wizzrobe', 3, 5],
+          ['darknut', 4, 5],
+          ['wizzrobe', 10, 8],
         ],
       },
       '0,2,3': {
         name: 'Keep Stair',
         map: [
-          '##########',
-          '##....../#',
-          '##......##',
-          '#.........',
-          '##........',
-          '##...<..##',
-          '####..####',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.........../.#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         warps: [
-          { x: 8, y: 1, to: { map: 'd6', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
+          { x: 12, y: 2, to: { map: 'd6', floor: 1, rx: 3, ry: 5, px: 192, py: 48 } },
         ],
         entities: [
-          ['stalfos', 3, 4],
+          ['stalfos', 5, 6],
         ],
       },
       '0,4,3': {
         name: 'Dredge Vault',
-        // North wall opened (cols 4-5, the standard gap) onto the new Reefseed
-        // grove at '0,4,2' — item-reuse (docs/prompts/STATE.md). Nothing else
-        // about this room moved.
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '..........',
-          '..........',
-          '##......##',
-          '##########',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          'L....,,,,,.....',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'dredge', level: 1 }],
+          ['chest', 7, 5, { big: true, item: 'dredge', level: 1 }],
         ],
       },
       '0,4,2': {
         name: 'The Drowned Garden',
-        // The Keep's own Reefseed grove — item-reuse (docs/prompts/STATE.md).
-        // D6 is the only dungeon after D5 the tool allows (check-reefseed.mjs
-        // filters `r.index < 5`), so this is the whole reachable ceiling for
-        // this rotation item, not a shortfall.
-        //
-        // The Shrine's GRAMMAR, in the Keep's own MATERIALS — and the second
-        // half of that is not decoration, it is the fix for how this room
-        // first shipped. It was built with `dSnag` and `dSnarl` lifted
-        // straight out of the Drowned Wood, and both are drawn in an oak
-        // palette with a brown trunk in it (the bole over the Wood's own
-        // flagstones besides), so a black stone hall came out with a green
-        // forest tree and a green shrub standing in it. It validated clean and
-        // check-reefseed passed it 102/102: no checker in the table looks at
-        // colour, which is what `tools/shoot-rooms.mjs` is for, and nobody ran
-        // it. See docs/prompts/LEDGER.md.
-        //
-        // So the bar across the pool is `7`/`dLintel`, the Keep's OWN masonry,
-        // which already carries the exact tide shape the fixture needs —
-        // stone at LOW and MID, open water at HIGH — and which the Sunken Bar
-        // on floor 1 has already taught the player to read. The kelp is
-        // `dSnarlAbyss`, the same snarl in the reef's sea-plant ramp. Nothing
-        // was drawn for this room; both tiles are ones the game already had.
-        //
-        // The fixture itself is the Shrine's, unchanged: the lintel at 4,4
-        // stops the throw until HIGH drowns it; the stake at 4,3 is open water
-        // at every sea until a pillar is grown on it; the snarl at 4,2 sits in
-        // the one gap of the north wall, directly above where the pillar
-        // lands, so standing on it is what puts a blade in reach. Cut it and
-        // the alcove above opens for good — nothing beyond it is needed for
-        // anything, it is a find, the shape Grove 1 and Grove 2 already have.
+        // The Keep's own Reefseed grove, in the Keep's own materials: the bar
+        // across the pool is `7`/`dLintel`, the Keep's masonry, stone at LOW
+        // and MID and open water at HIGH; the kelp is `dSnarlAbyss`. The
+        // fixture is the Shrine's, unchanged: the lintel stops the throw until
+        // HIGH drowns it, the stake is open water at every sea until a pillar
+        // is grown on it, and the snarl sits in the one gap of the wall above.
+        // Cut it and the alcove opens for good — a find, not a need.
         map: [
-          '##########',
-          '#........#',
-          '####k#####',
-          '#.0WWW0..#',
-          '#...7....#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '###############',
+          '####........###',
+          '#######k#######',
+          '####.0WWW0..###',
+          '####...7....###',
+          '####........###',
+          '####........###',
+          '#######.#######',
+          '#######.#######',
+          '#######.#######',
         ],
         reefseedRoom: {
-          entry: [4, 7],
+          entry: [7, 10],
           stakes: [
-            { at: [4, 3], from: [4, 5], face: 'up', sea: 2 },
+            { at: [7, 4], from: [7, 6], face: 'up', sea: 2 },
           ],
-          snarl: [4, 2], cutFrom: [4, 3],
+          snarl: [7, 3], cutFrom: [7, 4],
         },
         entities: [
-          ['keese', 6, 5],
-          ['pickup', 4, 1, { kind: 'rupee20' }],
+          ['keese', 9, 6],
+          ['pickup', 7, 2, { kind: 'rupee20' }],
         ],
         readable: [
-          [2, 5, 'A gardener\'s plate, green with age: "The course drowns at the flood. Sow then, and stand when the sea goes out."'],
+          [5, 6, 'A gardener\'s plate, green with age: "The course\ndrowns at the flood. Sow then, and stand when the\nsea goes out."'],
         ],
       },
 
       // ---------------------------------------------------- the Slack Water
       '0,5,3': {
         name: 'The Slack Water',
-        // THE TEACHING ROOM, and it is here because four dungeons in a row
-        // shipped a mechanic that was legible when it worked and silent when it
-        // did not. This one is a flat pan you can walk all the way round at any
+        // THE TEACHING ROOM: a flat pan you can walk all the way round at any
         // sea, with one silted ring in the middle of it and a bell that hums at
         // the ring. Drag the line over it on the dry crust and the weight comes
         // home with nothing. Sound the conch one step and drag the same line
         // over the same tile and a Piece of Heart comes up out of it.
-        //
-        // Nothing here is needed and nothing here can be lost, which is what
-        // `teaches: true` says to check-dredge.mjs — and what it makes the
-        // checker enforce, so a later session cannot quietly hang a key on it.
+        // `teaches: true`: nothing here is needed and nothing can be lost.
         map: [
-          '##########',
-          '#........#',
-          '#.111111.#',
-          '..111111.#',
-          '..116111.#',
-          '#.111111.#',
-          '#........#',
-          '##########',
+          '###############',
+          '###############',
+          '####........###',
+          '####.111111.###',
+          '####.111111.###',
+          '.....116111.###',
+          '####.111111.###',
+          '####........###',
+          '###############',
+          '###############',
+          '###############',
         ],
-        buried: [[4, 4, 'heartPiece']],
+        buried: [[7, 5, 'heartPiece']],
         dredgeRoom: {
-          entry: [0, 4],
+          entry: [0, 5],
           teaches: true,
           caches: [
-            { at: [4, 4], from: [4, 6], face: 'up', sea: 1 },
+            { at: [7, 5], from: [7, 7], face: 'up', sea: 1 },
           ],
         },
         entities: [
-          // Rung, it points at the ring in the floor. A direction and never a
-          // distance — see docs/ITEMS.md.
-          ['bell', 8, 6, { points: [4, 4], say: 'The bell hums flat at the middle of the pan.' }],
-          ['anglerfry', 7, 2],
+          ['bell', 11, 7, { points: [7, 5], say: 'The bell hums flat at the middle of the pan.' }],
+          ['anglerfry', 10, 3],
         ],
         readable: [
-          [1, 1, 'A dredger\'s tally, half scoured away: "Dry pan, dry line. We only ever worked it with the water in."'],
+          [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
         ],
       },
 
@@ -1334,125 +1346,118 @@ export function installDungeonsB() {
       '1,3,5': {
         name: 'Upper Keep',
         map: [
-          '####..####',
-          '##....../#',
-          '##......##',
-          '..........',
-          '..........',
-          '##......##',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.........../.#',
+          '#.............#',
+          '#.............#',
+          '...............',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         warps: [
-          { x: 8, y: 1, to: { map: 'd6', floor: 0, rx: 2, ry: 3, px: 112, py: 40 } },
+          { x: 12, y: 2, to: { map: 'd6', floor: 0, rx: 2, ry: 3, px: 192, py: 48 } },
         ],
         entities: [
-          ['keese', 3, 4],
+          ['keese', 4, 6],
         ],
       },
       '1,2,5': {
         name: 'Shade Cell',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '#.........',
-          '#.___.....',
-          '##......##',
-          '##########',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...M.....M...#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#...M.....M...#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['wizzrobe', 3, 3],
-          ['darknut', 6, 4],
-          ['keese', 4, 2],
+          ['wizzrobe', 4, 5],
+          ['darknut', 10, 6],
+          ['keese', 7, 2],
         ],
         puzzle: {
           enemies: true,
           flag: 'd6_shade',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'heart' }]], say: 'The shadows thin out.' },
+          reward: { spawn: [['pickup', 7, 5, { kind: 'heart' }]], say: 'The shadows thin out.' },
         },
       },
       '1,2,4': {
         name: 'Colonnade of the Drowned',
-        // The hand-placed charm, and it is the one this dungeon is about: the
-        // Coilrope adds a tile to every cast. It is a MID charm and the player
-        // holds five essences here, so all three cases are open and the case is
-        // not the gate — which is why check-dredge.mjs proves every closure
-        // clause at the Coilrope's reach as well as the bare line's. A charm
-        // that makes the item longer is a charm that can answer a room from a
-        // tile the room was built to keep you off.
-        //
-        // It sits behind a GRATE, which is metal, and the only thing in the game
-        // that retracts metal is the Resonance Rod — the trading reward. So the
-        // one optional thing in the Keep is the one thing that asks whether the
-        // player went and did the trade. The grate seals an alcove and nothing
-        // else, because a grate across a corridor would strand the room and
-        // still validate.
+        // The hand-placed charm, the Coilrope, which adds a tile to every cast.
+        // It sits behind a GRATE, and the only thing in the game that retracts
+        // metal is the Resonance Rod — the trading reward. So the one optional
+        // thing in the Keep is the one thing that asks whether the player went
+        // and did the trade. The grate seals an alcove and nothing else.
         map: [
-          '##########',
-          '##########',
-          '###....###',
-          '###GGGG###',
-          '##.=..=.##',
-          '##......##',
-          '####..####',
-          '####..####',
+          '###############',
+          '###############',
+          '#####.....#####',
+          '#####GGGGG#####',
+          '#.............#',
+          '#..=.......=..#',
+          '#.............#',
+          '#..=.......=..#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['chest', 4, 2, { charm: 'coilrope' }],
-          ['beamos', 2, 5],
+          ['chest', 7, 2, { charm: 'coilrope' }],
+          ['beamos', 2, 8],
         ],
         readable: [
-          [7, 4, 'A chandler\'s note nailed to the column: "More rope is more room. It is not more sea."'],
+          [11, 5, 'A chandler\'s note nailed to the column: "More\nrope is more room. It is not more sea."'],
         ],
       },
       '1,4,5': {
         name: 'Tideshade Hall',
-        // Four screens now, and the only miniboss arena in the game that is.
-        // The tideshade phases with the water and the room is `1` throughout —
-        // dry at LOW, wading at MID, swimming at HIGH — so the fight is a
-        // different fight at each sea and the player picks which one they want
-        // before they walk in. Its north door opens on the kill.
-        //
-        // THE 2x2: the fight was two 1111 basins side by side with nowhere to
-        // fall back to; a tideshade that phases with the tide wants room to
-        // give ground into, not just room to walk around in. The south half
-        // is the same fixture repeated — a second pair of basins reached
-        // through the same open floor the original room already had at its
-        // south wall (row 7 was solid; it is now the seam into the new half,
-        // same shape as every other floor row here, per check-wide-rooms.mjs's
-        // "crossable by some verb" rule). It owns map cells 5,5 and 4,6 and
-        // 5,6 as well as its own; nothing else may be keyed there. Cells
-        // 3,6 / 4,7 / 5,7 / 6,6 have no neighbouring room, so the new half's
-        // west, south and east walls stay solid — nothing to open onto.
+        // Four screens, and the only miniboss arena in the game that is. The
+        // tideshade phases with the water and the room's basins are `1` — dry
+        // at LOW, wading at MID, swimming at HIGH — so the fight is a different
+        // fight at each sea. Its north door opens on the kill.
         size: [2, 2],
         map: [
-          '####D###############',
-          '#........##........#',
-          '#.1111....1111....##',
-          '..1111....1111....##',
-          '#.1111....1111....##',
-          '#........##........#',
-          '#........##........#',
-          '#........##........#',
-          '#........##........#',
-          '#.1111....1111....##',
-          '#.1111....1111....##',
-          '#.1111....1111....##',
-          '#........##........#',
-          '#........##........#',
-          '#........##........#',
-          '####################',
+          '#######D######################',
+          '#............................#',
+          '#............................#',
+          '#...11111..........11111.....#',
+          '#...11111..........11111.....#',
+          '....11111..........11111.....#',
+          '#...11111..........11111.....#',
+          '#............................#',
+          '#............................#',
+          '#............................#',
+          '#............................#',
+          '#............................#',
+          '#............................#',
+          '#............................#',
+          '#............................#',
+          '#...11111..........11111.....#',
+          '#...11111..........11111.....#',
+          '#...11111..........11111.....#',
+          '#...11111..........11111.....#',
+          '#............................#',
+          '#............................#',
+          '##############################',
         ],
         entities: [
-          ['tideshade', 9, 3],
+          ['tideshade', 14, 5],
         ],
         puzzle: {
           enemies: true,
           flag: 'd6_tideshade',
           reward: {
-            openDoors: [[4, 0]],
+            openDoors: [[7, 0]],
             say: 'The shade unravels into water and is gone. Something gives above.',
           },
         },
@@ -1460,73 +1465,66 @@ export function installDungeonsB() {
       '1,4,4': {
         name: 'Mermaid Vault',
         map: [
-          '##########',
-          '##########',
-          '##......##',
-          '##......##',
-          '##......##',
-          '##/.....##',
-          '####.#####',
-          '####.#####',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#../..........#',
+          '#.............#',
+          '#######D#######',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'cleats', level: 2 }],
+          ['chest', 7, 5, { big: true, item: 'cleats', level: 2 }],
         ],
         warps: [
           // Down to the Two Arches. The vault is the only way in and the only
-          // way back out of it, so the fork below can never strand anyone: a
-          // wrong guess there costs the climb back up these stairs.
-          { x: 2, y: 5, to: { map: 'd6', floor: 1, rx: 5, ry: 4, px: 72, py: 104, dir: 'down' } },
+          // way back out of it, so the fork below can never strand anyone.
+          { x: 3, y: 8, to: { map: 'd6', floor: 1, rx: 5, ry: 4, px: 104, py: 120, dir: 'down' } },
         ],
       },
 
       // ---------------------------------------------------- the two arches
       //
-      // THE KEEP'S LENS FORK, and the first one outside the Coral Spire. The
-      // Spire's two forks ask the player to read which SHAFT fills; this one
-      // asks which WALL opens, which is the same verb read off the one tile
-      // the Keep already teaches — `7`/`dLintel`, masonry that stands until
-      // the flood covers it, taught by the Sunken Bar two rooms away.
-      //
-      // At MID the two arches are a blank stretch of the Keep's own wall, and
-      // they are the same tile, not a lookalike: a `7` lintel and a plain `#`
-      // both draw `dWallAbyss`. One level up, one of them is open water and
-      // the other is still stone — and the water is only a way through
-      // because the player is wearing the Cleats by now, which is exactly the
-      // thing tools/check-lens.mjs could not ask before and can now.
-      //
-      // The room pins the tide to MID, so the conch cannot preview it; the
-      // only thing that moves the water is a valve, and both valves are
-      // INSIDE the chambers, past the one-way ledges. You choose first.
+      // THE KEEP'S LENS FORK. At MID the two arches are a blank stretch of the
+      // Keep's own wall, the same tile, not a lookalike: a `7` lintel and a
+      // plain `#` both draw the Keep's masonry. One level up, one of them is
+      // open water and the other is still stone. The room pins the tide to
+      // MID; both valves are INSIDE the chambers, past the one-way ledges. You
+      // choose first. The fork at 10x8, set into the rock under the vault.
       '1,5,4': {
         name: 'The Two Arches',
         map: [
-          '#....../.#',
-          '#7########',
-          '#..####..#',
-          '#..####..#',
-          '#./####/.#',
-          '#.<....>.#',
-          '##.../..##',
-          '##########',
+          '###############',
+          '###....../.####',
+          '###7###########',
+          '###..####..####',
+          '###..####..####',
+          '###./####/.####',
+          '###.<....>.####',
+          '####.../..#####',
+          '###############',
+          '###############',
+          '###############',
         ],
         tideForce: 1,
         entities: [
-          ['valve', 2, 2],
-          ['valve', 7, 2],
-          ['pickup', 3, 0, { kind: 'rupee20' }],
-          ['pickup', 5, 0, { kind: 'rupee20' }],
+          ['valve', 4, 3],
+          ['valve', 9, 3],
+          ['pickup', 5, 1, { kind: 'rupee20' }],
+          ['pickup', 7, 1, { kind: 'rupee20' }],
         ],
         warps: [
           // The way back up, from the shelf you arrive on.
-          { x: 5, y: 6, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
-          // The climb out of each chamber. The wrong one is a walk, not a
-          // lock — the whole point of the fork is that being wrong costs you
-          // the trip and nothing else.
-          { x: 2, y: 4, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
-          { x: 7, y: 4, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
+          { x: 7, y: 7, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          // The climb out of each chamber. The wrong one is a walk, not a lock.
+          { x: 4, y: 5, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 9, y: 5, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
           // And out of the gallery above, once you have got into it.
-          { x: 7, y: 0, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
+          { x: 9, y: 1, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
         ],
         script: {
           onEvent(game, name) {
@@ -1534,13 +1532,13 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [4, 6, 'Cut above the drop:\n"Both arches are shut.\nOnly one of them is stone."'],
+          [6, 7, 'Cut above the drop:\n"Both arches are shut.\nOnly one of them is stone."'],
         ],
         lensRoom: {
-          pin: 1, reveals: 2, decide: [4, 5],
+          pin: 1, reveals: 2, decide: [6, 6],
           branches: [
-            { name: 'the west arch', land: [1, 5], probe: [1, 1], onward: [1, 0], escape: [2, 4] },
-            { name: 'the east arch', land: [8, 5], probe: [8, 1], onward: [8, 0], escape: [7, 4] },
+            { name: 'the west arch', land: [3, 6], probe: [3, 2], onward: [3, 1], escape: [4, 5] },
+            { name: 'the east arch', land: [10, 6], probe: [10, 2], onward: [10, 1], escape: [9, 5] },
           ],
         },
       },
@@ -1549,342 +1547,294 @@ export function installDungeonsB() {
       //
       // THE FIXTURE, and the three rooms below are it. A shaft of `O` that no
       // sea fills and no Cleat crosses; a mooring `q` one tile inside the far
-      // bank, so the pull comes to rest on ground rather than in the hole; and
-      // ONE of the two tide tiles deciding whether the cast can happen — a `3`
-      // shelf you brace on, which drowns above LOW, or a `7` lintel in the way,
-      // which is stone below HIGH. Every crossing carries a mooring on the near
-      // side as well, so nothing here is one-way and no room can be walked into
-      // and not out of.
-      //
-      // Read in order: cross at the sea that opens the shaft, then move the sea
-      // to the one that wets the floor, and fish.
+      // bank; and ONE of the two tide tiles deciding whether the cast can
+      // happen — a `3` shelf you brace on, which drowns above LOW, or a `7`
+      // lintel in the way, which is stone below HIGH. Every crossing carries a
+      // mooring on the near side as well, so nothing here is one-way.
       '1,3,4': {
         name: 'The Drowned Stand',
-        // CROSSING 1, at LOW, and the fixture at its plainest. The shelf at
-        // 3..6,6 is `dWell` — wading at LOW, over your head above it — so the
-        // only sea you can brace at is the only sea the room is crossed at. The
-        // ledge is walled off at both ends on purpose: a dry tile beside it is a
-        // dry tile the cast could be taken from at any sea, and the doorway at
-        // 4,7 is a whole tile further out than the line reaches even with the
-        // Coilrope on.
+        // CROSSING 1, at LOW, and the fixture at its plainest. The shelf is
+        // `dWell` — wading at LOW, over your head above it — so the only sea
+        // you can brace at is the only sea the room is crossed at.
         map: [
-          '####.#####',
-          '#......6.#',
-          '#....q...#',
-          '#........#',
-          '#OOOOOOOO#',
-          '#OOOOOOOO#',
-          '#OO3333OO#',
-          '####.#q###',
+          '#######.#######',
+          '#######.#######',
+          '####......6.###',
+          '####....q...###',
+          '####........###',
+          '####OOOOOOOO###',
+          '####OOOOOOOO###',
+          '####OO3333OO###',
+          '#######.#q#####',
+          '#######.#######',
+          '#######.#######',
         ],
-        buried: [[7, 1, 'rupee20']],
+        buried: [[10, 2, 'rupee20']],
         dredgeRoom: {
-          entry: [4, 7],
+          entry: [7, 10],
           moorings: [
-            { post: [5, 2], from: [5, 6], land: [5, 3], face: 'up', sea: 0 },
+            { post: [8, 3], from: [8, 7], land: [8, 4], face: 'up', sea: 0 },
           ],
           returns: [
-            { post: [6, 7], from: [6, 3], land: [6, 6], face: 'down', sea: 0 },
+            { post: [9, 8], from: [9, 4], land: [9, 7], face: 'down', sea: 0 },
           ],
           caches: [
-            { at: [7, 1], from: [7, 3], face: 'up', sea: 1 },
+            { at: [10, 2], from: [10, 4], face: 'up', sea: 1 },
           ],
         },
         entities: [
-          ['keese', 2, 2],
-          ['anglerfry', 3, 6],
+          ['keese', 5, 3],
+          ['anglerfry', 6, 7],
         ],
         readable: [
-          [1, 3, 'Cut into the coping: "Stand while you can stand. The ledge is only a ledge at low water."'],
+          [4, 4, 'Cut into the coping: "Stand while you can\nstand. The ledge is only a ledge at low water."'],
         ],
       },
       '1,3,3': {
         name: 'Keep Crossing',
         map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '.......#.#',
-          '#......#.#',
-          '#......L..',
-          '#......#.#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#....#...#....#',
+          '#.............#',
+          '..............L',
+          '#.............#',
+          '#....#...#....#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['darknut', 6, 5],
-          ['keese', 7, 1],
+          ['darknut', 10, 6],
+          ['keese', 11, 2],
         ],
       },
       '1,2,3': {
         name: 'The Sunken Bar',
-        // CROSSING 2, at HIGH, and the Drowned Stand inside out. The mooring at
-        // 3,4 is in plain sight from the doorway and the lintel at 6,4 is what
-        // stops the line — stone at LOW and at MID, open water at HIGH. So the
-        // sea has to come UP to cross, and the cache at 2,1 is fished off a
-        // `1` shelf that is over your head at HIGH, so the sea has to go back
-        // DOWN to collect. Neither half can be bought at the other's sea and
-        // the order cannot be reversed.
+        // CROSSING 2, at HIGH, and the Drowned Stand inside out. The mooring is
+        // in plain sight from the doorway and the lintel is what stops the
+        // line — stone at LOW and at MID, open water at HIGH. So the sea has to
+        // come UP to cross, and the cache is fished off a `1` shelf that is
+        // over your head at HIGH, so the sea has to go back DOWN to collect.
         map: [
-          '##########',
-          '#.66.#...#',
-          '#.11.#...#',
-          '#....#....',
-          '#..q.O9.q#',
-          '#....#...#',
-          '#....#...#',
-          '##########',
+          '###############',
+          '###############',
+          '####.66.#...###',
+          '####.11.#...###',
+          '####....#.....#',
+          '####..q.O9.q#..',
+          '####....#...###',
+          '####....#...###',
+          '###############',
+          '###############',
+          '###############',
         ],
-        buried: [[2, 1, 'heartPiece'], [3, 1, 'rupee20']],
+        buried: [[5, 2, 'heartPiece'], [6, 2, 'rupee20']],
         dredgeRoom: {
-          entry: [9, 3],
+          entry: [14, 5],
           moorings: [
-            { post: [3, 4], from: [7, 4], land: [4, 4], face: 'left', sea: 2 },
+            { post: [6, 5], from: [10, 5], land: [7, 5], face: 'left', sea: 2 },
           ],
           returns: [
-            { post: [8, 4], from: [4, 4], land: [7, 4], face: 'right', sea: 2 },
+            { post: [11, 5], from: [7, 5], land: [10, 5], face: 'right', sea: 2 },
           ],
           caches: [
-            { at: [2, 1], from: [2, 2], face: 'up', sea: 1 },
-            { at: [3, 1], from: [3, 2], face: 'up', sea: 1 },
+            { at: [5, 2], from: [5, 3], face: 'up', sea: 1 },
+            { at: [6, 2], from: [6, 3], face: 'up', sea: 1 },
           ],
         },
         entities: [
-          ['keese', 7, 5],
+          ['keese', 10, 6],
         ],
         readable: [
-          [8, 5, 'A tide board: "The bar is down at slack and up at flood. Everything in this room follows from that."'],
+          [11, 6, 'A tide board: "The bar is down at slack and up\nat flood. Everything in this room follows from\nthat."'],
         ],
       },
       '1,4,3': {
         name: 'The Drowned Sill',
         // CROSSING 3, at LOW, the Drowned Stand turned through a right angle
-        // and handed the other way — and the first one where what is across the
-        // shaft is a Small Key rather than a corridor. The cache at 8,2 is six
-        // tiles from the nearest tile a body can stand on on this side, and
-        // check-dredge caught it at five: the Coilrope reaches exactly that far,
-        // so the room was answered from the near bank by anyone wearing the bone
-        // this dungeon hands out.
+        // and handed the other way — and what is across the shaft is a Small
+        // Key rather than a corridor. The cache is out of reach of the near
+        // bank even with the Coilrope on.
         map: [
-          '##########',
-          '#..OO....#',
-          '#..OO...6#',
-          '#..OO....#',
-          '#q3OO.q..#',
-          '...OO....#',
-          '#..OO....#',
-          '##########',
+          '###############',
+          '####..OO....###',
+          '####..OO...6###',
+          '####..OO....###',
+          '####q3OO.q..###',
+          'L.....OO....###',
+          '####..OO....###',
+          '###############',
+          '###############',
+          '###############',
+          '###############',
         ],
-        buried: [[8, 2, 'key']],
+        buried: [[11, 2, 'key']],
         dredgeRoom: {
-          entry: [0, 5],
+          entry: [1, 5],
           moorings: [
-            { post: [6, 4], from: [2, 4], land: [5, 4], face: 'right', sea: 0 },
+            { post: [9, 4], from: [5, 4], land: [8, 4], face: 'right', sea: 0 },
           ],
           returns: [
-            { post: [1, 4], from: [5, 4], land: [2, 4], face: 'left', sea: 0 },
+            { post: [4, 4], from: [8, 4], land: [5, 4], face: 'left', sea: 0 },
           ],
           caches: [
-            { at: [8, 2], from: [8, 4], face: 'up', sea: 1 },
+            { at: [11, 2], from: [11, 4], face: 'up', sea: 1 },
           ],
         },
         entities: [
-          ['siren', 8, 2],
+          ['siren', 11, 2],
         ],
       },
 
       // ---------------------------------------------------- the way out
       '1,3,2': {
         name: 'Keep Gate',
-        // THE LAST ROOM BEFORE THE KING, AND IT HOLDS THE KEEP'S SECOND FAIRY.
-        // Every other dungeon in the game has a fairy standing in it — D1 and
-        // D2 twice over — and this floor had none: six rooms of shaft
-        // crossings, an armoured colossus and then Nereth, with nothing on it
-        // to heal on at all. The Keep's only fairy is the West Crypt's, two
-        // floors and half a dungeon back, and it is spent long before here.
-        //
-        // The number, measured rather than guessed. The run steps into this
-        // room on thirteen of forty-four; the Crossed Shafts and the Brinehulk
-        // cost eleven; Nereth costs twenty-nine
-        // (`node tools/measure-boss-combat.mjs d6 --qh=32`, and he cannot be
-        // beaten at any other sea than MID). Thirteen against forty is not a
-        // margin, it is a wall — and every route answer was measured and worse
-        // (floor 1's two wings cost more than the floor pays back, and a trip
-        // back down the stair for the crypt's own fairy KILLED the run at the
-        // Three Heights, twice).
-        //
-        // It stands in the corner, off both the way in from the south and the
-        // way east to the shafts, so it is taken deliberately and not walked
-        // over — the same placement rule Shell Beach's fairy follows.
-        //
-        // IT IS TAKEN ONCE AND IT IS GONE. This comment used to claim the
-        // opposite — that a placed fairy comes back when the room is re-entered
-        // — and the route file has said the measured thing since S120: a room
-        // outlives the visit, so a pickup collected here is not there when the
-        // Boss Key comes back through. That is what the north chamber's fairy
-        // below is for.
+        // THE LAST HALL BEFORE THE KING, AND IT HOLDS THE KEEP'S SECOND FAIRY,
+        // in the corner, off both the way in from the south and the way east
+        // to the shafts, so it is taken deliberately. It is taken once.
         map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '#........#',
-          '#.19..9...',
-          '#........#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#...19...91...#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######L#######',
         ],
         entities: [
-          ['wizzrobe', 6, 5],
-          ['pickup', 1, 6, { kind: 'fairy' }],
-          // THE STAIRHEAD FAIRY, AND IT IS BEHIND THE BOSS DOOR ON PURPOSE.
-          // The fairy above stands in the south half of this room and is drunk
-          // on the way OUT to the Crossed Shafts; it is gone by the time the
-          // Boss Key comes back through, and the run used to climb Nereth's
-          // stair on twenty-eight of forty-eight against a King who costs up
-          // to thirty-nine. Three seeds in five died on him and no win had
-          // more than two hearts left in it.
-          //
-          // This one is in the north chamber, which is on the far side of the
-          // `B` at 4,2 — so nothing can reach it until the Boss Key is spent,
-          // which is exactly the moment the heal is worth anything. It is the
-          // last room in the game and there is nowhere further down the line
-          // to put one: with it, the King is met on forty-eight of forty-eight,
-          // the cap, and that is the most the Keep can ever pay out.
-          //
-          // `life` is not decoration. A pickup burns PICKUP_LIFE_FRAMES of its
-          // room being on screen whether or not anybody can reach it, and this
-          // room is on screen for the whole of the outbound visit — the fairy
-          // above, the scrimshaw case and the walk east — so without it this
-          // one is dust before the door it stands behind is ever unlocked.
-          ['pickup', 1, 1, { kind: 'fairy', life: 1e9 }],
+          ['wizzrobe', 10, 7],
+          ['pickup', 1, 9, { kind: 'fairy' }],
+        ],
+      },
+      '1,3,1': {
+        name: 'The Stairhead',
+        // THE ANTECHAMBER, and the fairy in it is behind nothing but the hall
+        // it opens off — it used to stand behind the boss door, in a pocket of
+        // the Keep Gate, and at Oracle size the boss door is in the ring. So it
+        // has a room of its own at the foot of the King's stair, which is where
+        // the Oracle games put the last breath before a boss. `life` keeps it
+        // there while the rest of the floor is walked.
+        map: [
+          '#######B#######',
+          '#.............#',
+          '#.M.........M.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.M.........M.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['pickup', 2, 5, { kind: 'fairy', life: 1e9 }],
         ],
       },
       '1,4,2': {
         name: 'The Crossed Shafts',
         // THE ROOM THAT SAYS IT OUT LOUD, and the only one in the dungeon that
-        // holds both crossings. Two screens wide because it has to be: a lintel
-        // crossing and a shelf crossing are four tiles each and the islands
-        // between them are the room. In at HIGH over the bar, down to LOW to
-        // brace on the shelf, and the Boss Key is on the far island — so the
-        // sea that gets you in is the sea that stops you going on, and there is
-        // no arrangement of the conch that holds both. It owns the cell at 5,2
-        // as well as its own; nothing else may be keyed there.
+        // holds both crossings. In at HIGH over the bar, down to LOW to brace
+        // on the shelf, and the Boss Key is on the far island — so the sea that
+        // gets you in is the sea that stops you going on. It owns the cell at
+        // 5,2 as well as its own. At Oracle size the far island runs the whole
+        // east screen: the colossus is fought there, and a five-tile ledge
+        // between it and the pits was a fight decided by knockback (S142).
         size: [2, 1],
         map: [
-          '####################',
-          '#....#O.....OO.....#',
-          '#..q.7O.q...OO.....#',
-          '#....#O.....OO.....#',
-          '.....#O.....OO.....#',
-          '#....#O...q3OO.q...#',
-          '#....#O.....OO.....#',
-          '####################',
+          '##############################',
+          '##############################',
+          '######....#O.....OO..........#',
+          '######..q.7O.q...OO..........#',
+          '######....#O.....OO..........#',
+          '..........#O.....OO..........#',
+          '######....#O...q3OO.q........#',
+          '######....#O.....OO..........#',
+          '####################.........#',
+          '####################.........#',
+          '##############################',
         ],
         dredgeRoom: {
-          entry: [0, 4],
+          entry: [0, 5],
           moorings: [
-            { post: [8, 2], from: [4, 2], land: [7, 2], face: 'right', sea: 2 },
-            { post: [15, 5], from: [11, 5], land: [14, 5], face: 'right', sea: 0, entry: [7, 2] },
+            { post: [13, 3], from: [9, 3], land: [12, 3], face: 'right', sea: 2 },
+            { post: [20, 6], from: [16, 6], land: [19, 6], face: 'right', sea: 0, entry: [12, 3] },
           ],
           returns: [
-            { post: [3, 2], from: [7, 2], land: [4, 2], face: 'left', sea: 2 },
-            { post: [10, 5], from: [14, 5], land: [11, 5], face: 'left', sea: 0, entry: [7, 2] },
+            { post: [8, 3], from: [12, 3], land: [9, 3], face: 'left', sea: 2 },
+            { post: [15, 6], from: [19, 6], land: [16, 6], face: 'left', sea: 0, entry: [12, 3] },
           ],
         },
         entities: [
-          ['chest', 17, 3, { pickup: 'bossKey' }],
-          // THE COLOSSUS'S HOARD, and the last thing to heal on in the game.
-          // The far island is the only place a heal can go and still be
-          // SPENT: the Keep Gate's fairy is drunk on the way out here and
-          // seventeen quarter-hearts of it go on the two crossings and the
-          // Brinehulk before the throne room is even opened. Measured, the
-          // run used to walk through Nereth's door on seventeen of
-          // forty-eight against a fight that costs twenty-nine
-          // (`tools/measure-boss-combat.mjs d6 --qh=32`) — it won, and it won
-          // by ONE quarter-heart, which is not a margin, it is a coin. Every
-          // change made upstream of it this session flipped that coin: a
-          // charm slotted, a chest opened two dungeons back, sixteen frames
-          // of menu. A final boss whose fight is decided by what the route
-          // did in the Coral Spire is not a fight, and no amount of routing
-          // fixes it from outside.
-          //
-          // It sits past the chest rather than beside the landing, so it is
-          // taken on the way back with the Boss Key and not on the way in.
-          //
-          // `life` IS NOT DECORATION HERE. A placed pickup fades after
-          // PICKUP_LIFE_FRAMES of its room being on screen — 460 frames, which
-          // is fine for a fairy you walk up to and useless for one you have to
-          // fight a colossus in front of. The Brinehulk takes thousands, and
-          // the first cut of this sat there, timed out during the fight, and
-          // left the route looting an empty island. A fairy the colossus is
-          // guarding does not swim off while you are busy with it.
-          ['pickup', 15, 1, { kind: 'fairy', life: 1e9 }],
-          // The Brinehulk keeps the Boss Key, and where it stands is the joke
-          // the room is built on. Brine dissolves salt: it is ARMOURED AT LOW
-          // and comes apart at HIGH — and LOW is the only sea the shelf lets
-          // you cross on. So you arrive at the one sea it cannot be hurt at,
-          // and the sea that opens it is the sea that shuts the way you came.
-          //
-          // It is here because the six-dungeon fold left it homeless: the Salt
-          // Pan Vault was its arena and the Vault is a cave now. A hand-drawn
-          // boss with no room in the game is content thrown away, and the
-          // consolidation should not cost the game anything it already had.
-          ['brinehulk', 17, 4],
-          ['beamos', 9, 1],
-          ['keese', 16, 5],
+          ['chest', 22, 4, { pickup: 'bossKey' }],
+          // THE COLOSSUS'S HOARD, and the last thing to heal on before the
+          // King's stair, taken on the way back with the Boss Key. `life`
+          // keeps it through the fight in front of it.
+          ['pickup', 20, 2, { kind: 'fairy', life: 1e9 }],
+          // Brine dissolves salt: the Brinehulk is ARMOURED AT LOW and comes
+          // apart at HIGH — and LOW is the only sea the shelf lets you cross on.
+          ['brinehulk', 25, 5],
+          ['beamos', 14, 2],
+          ['keese', 21, 6],
         ],
         readable: [
-          [2, 5, 'A king\'s inscription, and the only one in the Keep that is signed: "You cannot hold two seas. Nereth."'],
+          [7, 6, 'A king\'s inscription, and the only one in the\nKeep that is signed: "You cannot hold two seas.\nNereth."'],
         ],
       },
-      '1,3,1': {
+      '1,3,0': {
         name: 'Nereth, the Drowned King',
         // The boss keeps the mechanic: `noTide` pins the arena at whatever sea
         // was brought through the door, and Nereth's own phases pin it again.
-        // NO LEDGE DOWN THE MIDDLE OF THE ARENA. There was one — a three-tile
-        // run of `>` at x=5 — and Nereth stood on top of it: a one-way drop
-        // splitting the throne room in two, with the final boss occupying it.
-        // tools/check-placement.mjs is what found it, by asking the engine
-        // whether the boss can be where the boss is put. Removing the run frees
-        // his tile and opens the floor; it cannot make the fight harder,
-        // because all it ever did was stand between the player and him.
-        //
-        // WIDENED TO size:[2,1] (docs/NEXT-SESSION.md S66): the single-screen
-        // hall pinned every real-combat fight's retreat against the east wall
-        // during Nereth's phase-1 tell — measured identical, seed-independent,
-        // at local (139,105) on every one of the standard 6 seeds, win or
-        // lose (S65). Four attempts to fix the retreat logic itself all
-        // traded one winnable seed for another (S62-S65) because the room
-        // simply did not have enough floor for a straight-line retreat to
-        // clear before hitting a wall. Doubling the hall removes the
-        // precondition instead of patching the symptom — this is now the
-        // only boss room in the game wider than one screen, a deliberate,
-        // known trade against the "boss fights don't scroll" convention
-        // every other fight here keeps, made because the alternative
-        // (patching `dBoss`'s movement logic) had already failed four times
-        // for a structural reason no movement-layer fix could address.
-        // Door stays at local cols 4-5, UNCHANGED, because Keep Gate below
-        // (`'1,3,2'`) has its own matching north gap at the same local
-        // columns and transitions are computed by local column position
-        // (`entryPos`, src/game/game.js) — moving the door here without
-        // moving Keep Gate's would sever the dungeon's own route.
+        // THE THRONE ROOM IS THE 20x8 HALL S66 MEASURED, carved whole into
+        // two Oracle screens of rock: the same floor, the same door column,
+        // the same spawn. Measured from the route's door, a full-size 15x11
+        // arena lost nine seeds in nine with the actor pinned in its corner,
+        // and so did a full 30x11 one; this hall wins (S142).
         size: [2, 1],
         map: [
-          '####################',
-          '#..................#',
-          '#.9..............9.#',
-          '#..................#',
-          '#..................#',
-          '#.9..............9.#',
-          '#..................#',
-          '####..##############',
+          '##############################',
+          '##############################',
+          '##############################',
+          '##############################',
+          '####..................########',
+          '####.9..............9.########',
+          '####..................########',
+          '####..................########',
+          '####.9..............9.########',
+          '####..................########',
+          '#######B######################',
         ],
         noTide: true,
         entities: [
-          ['nereth', 9, 2],
+          ['nereth', 12, 5],
         ],
         script: {
+          // THE DOOR SHUTS BEHIND YOU, as it does on every Oracle boss. Left
+          // open it was a one-tile pocket in the ring, and a knight Nereth
+          // summons pinned Link in it until he died — the run lost every
+          // entry timing tried while a rig with the door shut won eight in
+          // nine (S142). It shuts once Link is clear of the doorway, is not
+          // saved, and opens again when the King falls.
+          onEnter(game, room) {
+            if (game.progress.beaten[game.mapId]) return;
+            const shut = () => {
+              const p = game.player;
+              if (!p || game.room !== room) return;
+              if (p.y > 144) { game.frameLater(10, shut); return; }
+              room.setTile(7, 10, 'dDoorBoss');
+            };
+            game.frameLater(10, shut);
+          },
           onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(160, 40, 'heartContainer', { grabDelay: 30 });
+            if (name !== 'bossDead') return;
+            game.room.setTile(7, 10, 'dDoorOpen');
+            game.spawnPickup(208, 88, 'heartContainer', { grabDelay: 30 });
           },
         },
       },
