@@ -10,6 +10,8 @@ own art (tools/rip-objects.py) and republished the guide as a link. The
 human chose "boss art for three bosses" next.
 
 ## The task
+0. The human's town-size answer (NEXT-SESSION S156, "Later the same session")
+   and approval to merge the illustrated-guide branch come first.
 1. ASK once more about the Coastwise Chain (clearer in-game hints, more
    distinct traders, or nothing), now they have the guide link
    (https://claude.ai/artifact/Tu2aquFgGryNkxY9z6Pxrb). Build what they choose.

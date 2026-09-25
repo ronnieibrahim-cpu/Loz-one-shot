@@ -42,6 +42,25 @@ claude/oracle-tides-side-content-iqiosb; S154, S155 and S156 are NOT on main).
 - Verified: extracted chest/torch/button/block are pixel-identical to the
   Poison Moth's Lair map sheet. Whole table green; playthrough 43/43.
 
+### Later the same session
+- MAIN: S154, S155, S156 fast-forwarded onto main (6f00495) at the human's
+  request; the Pages deploy (run 203) succeeded. Game URL:
+  https://ronnieibrahim-cpu.github.io/Loz-one-shot/ (this sandbox cannot
+  reach github.io; the deploy's own gate, check-build, passed).
+- THE GUIDE THE HUMAN LIKES is the illustrated one, "Oracle of Tides Player's
+  Guide", https://claude.ai/artifact/NoB5f92jjjavWAoZgykKeN — NOT
+  docs/GUIDE.html. Its source is the UNMERGED branch
+  claude/oracle-tides-guide-hb01hp (docs/guide/, tools/guide/). Merging that
+  branch was refused by the permission classifier; ask the human to approve
+  it. Meanwhile the ARTIFACT was edited directly (version 2): six heart
+  entries replaced by the side-quest ones with fresh pictures, a Side quests
+  section, chapter 12's trading chain in plain words. Those edits are NOT in
+  tools/guide/guide.html on that branch; carry them over when it is merged.
+- TOWNS: the human asked to make towns larger, "to let them breathe", after
+  Seasons. Compared Horon Village (about five screens by two, dirt paths, a
+  plaza with a fountain, one building a screen, fences and flowerbeds) with
+  Tidewatch (four screens, twelve townsfolk). Proposal sent; awaiting choice.
+
 ### Noticed, not chased
 - The Grotto's push block is pink (the ice maze's palette 6), beside the
   room's grey static block tiles. That is the source's colour; if it reads
