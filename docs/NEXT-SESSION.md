@@ -1,3 +1,83 @@
+## S151 — Seasons' white, Seasons' enemies, Seasons' music
+
+The human's brief: apply S150's parked fades-and-chest patch, add the menu
+and drowning white fades and the dungeon-entrance reveal (pictures first),
+port Seasons' enemy behaviour one enemy per commit (octorok first, with a
+side-by-side), re-record and re-route until green; add an action item for the
+boss art. Mid-session they sent five soundtrack recordings (Title Screen,
+Main Menu, Overworld, Select File, Get Item) "to include in the game".
+Disassembly cloned read-only to the scratchpad, as in S149/S150.
+
+### What landed
+- FADES (feel.js, all `measured`, frames named): stairs 27/31/27 to white;
+  menu open 10/20/8 and close 9/13/9 through white; EVERY door and cave mouth
+  (not only dungeon entrances) cuts to white 16 f, shows the HUD over a blank
+  parchment field 5 f (4-6 in the footage: loading), then opens the room one
+  8 px column a frame, right then left, from x=72, 20 f (`DOOR_REVEAL_*`,
+  `Game.drawReveal`, `Game.veiled()`). S150 had misread the reveal as a 20 f
+  fade in. The parked patch's white hold never happened (enterMap asked to
+  fade in first) — fixed. DROWNING HAS NO FADE on the cartridge
+  (linkState02 @substate5); the footage stretch read as one (4468-4495) is a
+  staircase. Not added; README corrected.
+- CHEST: whatever is in it (item, rupees, charm) rises out of it
+  (`Game.chestShow`) and the text opens 36 f after the lid.
+- ENEMIES PORTED (spec `port: '<file>.s'`, every number in feel.js tagged
+  `derived` with its table): octorok, sand crab, zol + gel, keese, leever,
+  bubble, beamos, spiked beetle, tektite, whisp (movement only; its rings are
+  ours), moblin, stalfos, darknut, wizzrobe, pincer. Helpers in enemy.js:
+  walkOn, randomCardinal, cardinalToward, angleToward (32-step compass),
+  dirOfAngle, moveAngle, bounceAngle, flyAngle, launch/fall (z), centeredWith,
+  linkWithin (across+down), nudgeAngle. Ported enemies are off the lattice;
+  their walk cycle holds while they stand (`Enemy.still`, `animTick`).
+  Our own (urchin, jellyfish, anglerfry, barnacle, siren, sea octorok) are
+  unchanged. Damage and health unchanged (the human's NO).
+- HEIGHT RULE (entity.js enemyHurtRect): an enemy 7 px or more above the
+  ground (over its drawn hover) neither touches Link nor can be struck, its
+  box on the ground under it (`ENEMY_CONTACT_Z`, collisionEffects.s).
+- check-motion: ported enemies must be off the lattice, walk and stand, and
+  move exactly their cartridge speed (one axis, or a 32-angle within
+  rounding); CLAUDE.md's row updated.
+- MUSIC (the human's recordings): tools/rip-music.py rips the cartridge's
+  channel scripts (assets/music/oracles-disasm/, credited) into
+  src/data/music-seasons.js; src/core/gbsound.js runs the sound engine
+  (code/audio.s: envelopes, vibrato, rests, the wave channel's waveforms,
+  the drum table) and the hardware (pulse duty, 64 Hz envelope, wave, LFSR
+  noise, the output capacitor), renders a track once into a buffer and loops
+  it at the cartridge's own loop point. `title`, `fileSelect` (new: the file
+  select has its own song, as in Seasons), `overworld` (S148's transcription
+  retired) and the `itemGet` jingle are `{ seasons: name }` in TRACKS.
+  Pitch-class match to the recordings: overworld 0.93, file select 0.89,
+  title 0.85 ("Main Menu" is the title's second half). Loudness
+  `GB_MIX_LEVEL` is guessed — ask the human.
+- ROBOT: waits for the menu fade; no step into a pit in a fight; a Seasons
+  stalfos is stood off inside the blade's reach, swung at to make it leap,
+  and met coming down. ROUTE: reach swing for Bogmaw, Gloomtide, Wyverna;
+  the Grove Crossing walked; the darknuts at Keep Lock and the Keep Crossing
+  cut down before their doors. check-playthrough 42/42, never died,
+  low-water 6 qh. Replays 51/51 (d5-overthrow waits 240 f at the start: its
+  keese flies over the snarl now).
+
+### Waiting on the human
+- THE OCTOROK SIDE-BY-SIDE was sent; the rest were ported without waiting
+  (one commit each, revertable) — confirm or name what is wrong.
+- NOT PORTED, asked: the GEL clings to Link and slows him, no sword (gel.s
+  gel_stateC/D); the BUBBLE takes Link's sword away for 180 f on touch
+  (bubble.s); the SPIKED BEETLE flips over when a shield turns it and is
+  only vulnerable flipped (spikedBeetle.s) — ours keeps its front shield.
+  Each is a mechanic, not a movement; yes or no to each.
+- "GET ITEM": the recording opens with sfx/getItem.s's four rising notes but
+  runs six and lands on B-flat; getItem.s lands on A-flat. The cartridge's
+  plays; is the recording from another edition?
+- Music loudness against our own tracks, by ear.
+- ACTION ITEM (the human's): the bosses' art is a pixelated mess next to the
+  extracted enemies. Task 1 of docs/prompts/NEXT-PROMPT.md.
+
+### Noticed, not chased
+- The wizzrobe, leever and pincer have no rise/phase frames of their own;
+  they reuse their standing frames while untouchable.
+- Old verbs (`hop`, `charge`, `patrol`, the lattice) now serve only our own
+  enemies and bosses.
+
 ## S150 — Seasons' hit rules, timing tables, one theme per dungeon
 
 The human's brief: contact damage on the cartridge's collision boxes, then

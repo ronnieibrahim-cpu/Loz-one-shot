@@ -1,58 +1,56 @@
-# Next session — Seasons' white fades, and Seasons' enemies
+# Next session — the bosses' art, then the human's open questions
 
 ## Read first
 - CLAUDE.md, all of it.
-- `docs/NEXT-SESSION.md`, the S150 entry only (and its "human's answers").
-- `assets/footage/README.md`, the S147 readings (fades, chest).
-- `docs/patches/white-fades-and-chest.patch` — S150's parked change.
+- `docs/NEXT-SESSION.md`, the S151 entry only (and its "Waiting on the human").
+- `docs/ART-DIRECTION.md` and `docs/briefs/AGENTS.md` section J (the rip
+  workflow) — the boss task below is an art task.
 
 ## Why this, now
-S150 put Seasons' own collision boxes, knockback, text speed and pit timing
-into the game, read from the disassembly (github.com/Stewmath/oracles-disasm;
-clone read-only with `GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1`). The human
-then approved three things: the white fades and the chest rise, more white
-fades (menu, drowning, the dungeon entrance), and porting Seasons' enemy
-behaviour. They said NO to Seasons' enemy damage — keep our damage ladder.
+S151 finished S150's list: Seasons' white fades and door reveal, the chest
+rise, sixteen enemies moving as Seasons' do (read from the disassembly),
+Seasons' height rule for leaping enemies, and — at the human's request —
+Seasons' own title, file-select, overworld and item-get music, ripped from
+the cartridge's channel scripts and played by a Game Boy sound model. The
+run is played to the end again (42/42, never died).
+
+The human then asked for an ACTION ITEM: **the boss art is a pixelated mess**.
+Every enemy on screen is extracted Seasons art now; the bosses and minibosses
+are hand-drawn and the difference shows at a glance, which is a Goal 1 failure
+("a screen mixing an extracted Octorok and a hand-drawn boss must not betray
+which is which").
 
 ## The task
-1. Apply `docs/patches/white-fades-and-chest.patch` (stairs fade to white
-   27/31/27 f; doors and caves cut to white, 16 f, in over 20; the chest item
-   rises out of the chest and the text opens 36 f after the lid). Delete the
-   patch file once it is in.
-2. The menu opens and closes through a 10-frame white fade each way (footage
-   1744-1754); drowning fades to white over ~24 f (4469-4493). Read the
-   frames, tag the numbers `measured` with the frames named.
-3. The dungeon entrance: Seasons opens the first room from a vertical strip
-   in the middle outward (footage 3676-3696). Frame-step it, then build it.
-   Show the human side-by-side pictures (Seasons / ours) of 1-3 before
-   calling any of it done.
-4. Port Seasons' enemy behaviour for every enemy that has a Seasons
-   counterpart (octorok, sand crab, zol, gel, keese, leever, bubble, beamos,
-   beetle, tektite, whisp, moblin, stalfos, darknut, wizzrobe, pincer):
-   `object_code/common/enemies/<name>.s` — speeds, walk and stand counters,
-   when it turns toward Link, when it shoots, its projectile's speed. Every
-   number goes in `src/data/feel.js` tagged `derived` with the file and table.
-   Our own enemies (urchin, jellyfish, anglerfry, barnacle, siren, sea
-   octorok) keep their design but may borrow a counterpart's movement feel.
-   Do NOT change damage or health values.
-   The 8 px lattice rule goes for ported enemies: update
-   `tools/check-motion.mjs` and CLAUDE.md's table row to say what it now
-   proves, rather than deleting the check.
-   Do one enemy per commit, octorok first, and show the human one
-   side-by-side (Seasons footage vs ours) of an octorok walking and shooting
-   before doing the rest.
-5. Re-record replays and re-route the playthrough until green. S150's
-   method: `route-prefix.mjs` with `PATCH=` to sweep a fight's options in
-   parallel, `FRAMES=` to see what happened (docs/HANDOFF.md lessons).
+1. BOSS ART, first and before anything else. For each of the six bosses
+   (gohmaraq, anemos, gloomtide, wyverna, rootmaw, nereth, and thalassor /
+   brinehulk as the data names them) and the minibosses (clawcrab, reefguard,
+   bogmaw, ironknight, thornvine, saltwraith, gustharpy, tideshade):
+   a. Photograph it in its own arena (`tools/shoot-rooms.mjs` or a scratch
+      shooter; S151's pattern is in NEXT-SESSION) next to an extracted enemy.
+   b. Look in `assets/sheets/` for a Seasons or Ages boss sheet. If none has
+      what is needed, ASK THE HUMAN for one (e.g. a Spriters Resource boss
+      sheet) rather than drawing from memory. A boss that is ours in DESIGN
+      can still be built from extracted parts (a Seasons boss's shell, eye,
+      claw) through a ripper — that is the preferred route.
+   c. What must be drawn follows CLAUDE.md's art rules exactly: three colours
+      plus transparency, a hard 1 px outline, no anti-aliasing or gradients,
+      the silhouette first. Multi-cell bosses are assembled from 16x16 cells
+      the way Seasons' are.
+   d. Show the human before/after pictures (ours old / ours new / a Seasons
+      boss beside them) and get a yes before moving to the next boss.
+   Boss HITBOXES and fights must not change (check-bosses, check-playthrough).
+2. The human's open questions from S151 (NEXT-SESSION "Waiting on the
+   human"): the gel's cling, the bubble's sword lock, the spiked beetle's
+   flip, and the "Get Item" recording. Do what they answer.
+3. Art the ported enemies now need (only through rippers): the beamos's
+   eight eye facings, the pincer's body segments, the leever's rise/sink
+   frames, the darknut's sword.
 
 ## Done means
-- Every checker in CLAUDE.md's table green, `check-sword` and
-  `check-playthrough` (42/42, to THE END, never died) included.
-- `node tools/check-feel.mjs`, `node tools/check-rippers.mjs` green.
-- `npm run build` with `dist/` committed; NEXT-SESSION.md updated.
+- Every checker in CLAUDE.md's table green, `check-playthrough` 42/42, to
+  THE END, never died; `check-rippers` covers any new ripper.
+- `npm run build`, `dist/` committed, NEXT-SESSION.md updated.
 
 ## Out of scope
-- Enemy damage and health (the human said no).
-- Music (every dungeon has its own track since S150).
-- Enemy ART: extraction is already the rule; a ported enemy that needs a
-  frame the sheets have goes through its ripper, never by hand.
+- Enemy damage and health (the human said no in S150).
+- Music beyond the four Seasons tracks, unless the human asks for more.

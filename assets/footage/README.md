@@ -71,6 +71,17 @@ READ BUT NOT APPLIED:
 - Pit fall, feather jump: none on foot in the run (the cucco carries Link
   over every gap: 2262-2290, 8836-8916, 9350-9460 are flights, NOT walks).
 
+## S151 readings (tagged `measured` in feel.js)
+
+| What | Reading | Frames |
+|---|---|---|
+| Menu open | field to white 10 f, white 20, page in 8 | 1744-1782 |
+| Menu close | page to white 9 f, white 13, field in 9 | 1791-1822 |
+| Door / cave / dungeon | cut to white 16 f; HUD over a blank parchment field 4-6 f; the room opened one 8 px column a frame, right then left, from x=72, 20 f | 3660-3701 (into D?), 8599-8639 (out), 14171-14211 (a cave) |
+| Octorok walk | 0.5 px/f (= the disassembly's SPEED_80) | 15526-15552 |
+
+4468-4495 is a staircase, not drowning (S147's reading was wrong).
+
 ## S148 — the overworld theme, transcribed
 
 `src/data/audio.js` `TRACKS.overworld` is Seasons' Holodrum theme read off

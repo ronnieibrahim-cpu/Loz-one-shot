@@ -447,6 +447,23 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A mean-brightness curve is not a reading (S151).** S150 read a door's
+  return from white as a 20-frame fade in; it is a blank field and a strip
+  reveal, which averages to the same curve. And a stretch labelled
+  "drowning" was a staircase. Look at the frames, not the graph.
+- **Port an enemy and the robot's fights change with it (S151).** A Seasons
+  stalfos leaps from any swing within 44 px and cannot be hit going up; the
+  robot's standoff-and-swing never hurt it and lost 40 quarter-hearts. The
+  keese flying over pits walked the robot into four of them. Each needed a
+  general actor rule, not a route patch.
+- **The cartridge's sound is data you can play (S151).** oracles-disasm has
+  every track as channel scripts and code/audio.s says what each command
+  does; a small engine + hardware model (src/core/gbsound.js) plays them
+  note-exact. Check a render against a recording by pitch class
+  (chroma cosine), and check the bass octave separately — a DC filter set
+  25x too strong (0.998943 read as per-clock) ate the bass and chroma could
+  not see it.
+
 - **Sweep a boss fight's options before touching the robot (S150).** After
   the cartridge's contact boxes landed, six boss and miniboss fights lost.
   Every one came back by trying the `boss` directive's existing options
