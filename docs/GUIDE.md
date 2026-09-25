@@ -78,7 +78,7 @@ layouts, item locations, puzzle solutions and boss patterns in full.
 
 | Input | Does |
 |---|---|
-| Arrow keys / D-pad | Move. Diagonals are **faster** than cardinals — that is deliberate. |
+| Arrow keys / D-pad | Move. A diagonal is the same speed as a straight line, as in Oracle of Seasons. |
 | `X` or `K` | **A** button |
 | `Z` or `J` | **B** button |
 | `Enter` | Start — pause menu, item screen, quest screen |
@@ -2167,24 +2167,10 @@ torch-gated key is ever the only key standing between a player and the room it
 opens — the Coral Spire's Torch Cell key is deliberately redundant with Rising
 Chamber's for exactly that reason.
 
-### Two honest caveats, because a guide that overclaims is worse than a short one
+### Played to the end
 
-1. **No automated run has yet played this game from the title screen to Nereth.**
-   `check-playthrough.mjs` is the only tool in the project that plays rather than
-   models, and it currently drives 18 of the game's 144 dungeon rooms, all in
-   Dungeon 1, ending in `d1/0,5,2` after crossing the Iron Pipe with the Anchor.
-   Every model says the world is completable and none of them fights a boss or
-   spends a key. The walkthrough above is therefore *derived correctly from the
-   data* and, past that point, not yet *walked* — treat it as a confident route,
-   not as a claim that anyone has taken it end to end.
-2. **The ending cutscene is written and is not wired up.** `ending` exists in
-   `src/data/story.js` in full — the Bell rings, the sea goes back where it
-   belongs, Farore signs off, the credits roll — and nothing in `src/` starts it.
-   What actually happens when Nereth dies is the Heart Container, then the
-   `essence6` scene, and then you are standing in the arena with a whole Tide
-   Bell and no curtain.
-
-Neither is a fault in the *world* this guide describes — the rooms, the items,
-the puzzles and the bosses are all there and all consistent, structurally
-verified end to end. They are things you should know before you set out to see
-the end of it.
+`check-playthrough.mjs` plays a new game from the title screen to the ending
+in the real engine, with nothing granted from outside: all six dungeons in
+order, every key earned and spent, the Coastwise Chain walked, every boss beaten
+in real combat, Nereth killed, the sixth Essence claimed and the ending cutscene
+played. The route above is the route it takes.
