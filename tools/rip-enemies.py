@@ -143,6 +143,10 @@ FRAMES = {
     'leever_0': (138, 0.5, 1.0, False),
     'leever_1': (139, 0.5, 1.0, False),
     'leever_death': (137, 0.5, 1.0, False),
+    # Rising and sinking (S152): the plain sand mound, then the half-risen
+    # frame, as leever.s shows it coming up and going down.
+    'leever_rise0': (136, 0.5, 1.0, False),
+    'leever_rise1': (137, 0.5, 1.0, False),
 
     # Anti-Fairy, the skull-in-a-bubble hazard.
     'bubble_0': (1, 0.5, 0.5, False),
@@ -156,6 +160,19 @@ FRAMES = {
     # eyeballing a resize. Used as the attackFrame: the eye fully focused
     # right before it fires, distinct from beamos_1's ordinary "looking at
     # you" scan pose.
+    # The eight boxes 16-23 are its eye going ROUND, anticlockwise on the
+    # sheet from straight up (16) — up-left, left, down-left, down (20), and
+    # back up the right side. beamos_eN is the eye on the cartridge's own
+    # compass, N steps of 45 degrees clockwise from up, which is how the
+    # engine's 32-step angle reads (S152).
+    'beamos_e0': (16, 0.5, 0.5, False),
+    'beamos_e1': (23, 0.5, 0.5, False),
+    'beamos_e2': (22, 0.5, 0.5, False),
+    'beamos_e3': (21, 0.5, 0.5, False),
+    'beamos_e4': (20, 0.5, 0.5, False),
+    'beamos_e5': (19, 0.5, 0.5, False),
+    'beamos_e6': (18, 0.5, 0.5, False),
+    'beamos_e7': (17, 0.5, 0.5, False),
     'beamos_0': (16, 0.5, 0.5, False),
     'beamos_1': (19, 0.5, 0.5, False),
     'beamos_atk': (20, 0.5, 0.5, False),
@@ -223,6 +240,9 @@ FRAMES = {
     'darknut_s0': (58, 0.5, 0.5, False),
     'darknut_s1': (59, 0.5, 0.5, False),
     'darknut_death': (57, 0.5, 0.5, False),
+    # Its sword held out sideways (box 60 points LEFT on the sheet; flipped so
+    # `_s` art faces right), drawn in front of darknut_s0/s1 (S152).
+    'darknut_sword_s': (60, 0.5, 0.5, True),
 
     # Wizzrobe: hood-only as it phases in, then the full sorcerer. The plate
     # has a third frame (box 338) right after the two used — same green
@@ -294,11 +314,24 @@ FRAMES = {
     'pincer_1': (234, 0.5, 0.5, False),
     'pincer_hurt': (235, 0.5, 0.5, False),
     'pincer_death': (232, 0.5, 0.5, False),
+    # The same box is the pincer's body bead (pincer.s pincer_body, animation
+    # 9), three of which string out behind the head as it lunges (S152).
+    'pincer_body': (232, 0.5, 0.5, False),
 }
 
 # Frames taken from an explicit sheet rectangle instead of a detected box,
 # because the sprite is smaller than the detector's minimum.
 #   name -> (x, y, w, h)
+# Frames kept at the box's own size rather than cut to a 16x16 cell: the
+# darknut facing down holds its sword below it and facing up holds it above,
+# past the edge of the cell, as the sheet draws them (boxes 82-85, S152).
+TALL = {
+    'darknut_down0': 82,
+    'darknut_down1': 83,
+    'darknut_up0': 84,
+    'darknut_up1': 85,
+}
+
 RECTS = {
     # Gel: two frames of the red Color-Changing Gel, 8px blobs the box finder
     # discards along with the label text.
@@ -473,6 +506,13 @@ def main():
             continue
         rows, pal = normalise_ramp(rows, pal)
         art[name] = seal_holes(pad_to_cell(rows))
+        pals[name] = pal
+
+    for name, idx in TALL.items():
+        x, y, w, h = boxes[idx]
+        rows, pal = quantise(px, x, y, w, h, bg)
+        rows, pal = normalise_ramp(rows, pal)
+        art[name] = seal_holes(rows)
         pals[name] = pal
 
     for name, src in HAND_ART.items():

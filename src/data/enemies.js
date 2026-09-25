@@ -12,6 +12,8 @@ import { spawnEntity, canOccupy } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
+import { sprites } from '../gfx/art.js';
+import { toPx } from '../core/fixed.js';
 import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.js';
 import {
   OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK,
@@ -384,6 +386,9 @@ export function installEnemies() {
   defineEnemy('leever', {
     hp: 2, damage: 2, pal: 'enemyp', rate: 8,
     frames: ['leever_0', 'leever_1'],
+    // Coming up: the sand mound, then half out; going down, the same backwards.
+    pose: (e) => e.aiState === 'rise' ? (e.aiTimer > (LEEVER_RISE_FRAMES >> 1) ? 'leever_rise0' : 'leever_rise1')
+      : e.aiState === 'sink' ? (e.aiTimer > (LEEVER_SINK_FRAMES >> 1) ? 'leever_rise1' : 'leever_rise0') : null,
     hurtFrame: 'leever_hurt',
     deathFrame: 'leever_death',
     terrain: 'land',
@@ -479,7 +484,9 @@ export function installEnemies() {
     // Same as bubble: the flinch needs the Rod, the death pose waits.
     hurtFrame: 'beamos_hurt',
     deathFrame: 'beamos_death',
-    attackFrame: 'beamos_atk',
+    // Its eye shows where it is looking, eight ways round (the cartridge's
+    // animation follows its angle, beamos.s): the angle's nearest 45 degrees.
+    pose: (e) => e.aiState ? 'beamos_e' + (((e.angle + 2) >> 2) & 7) : null,
     shield: 'all',
     terrain: 'any',
     drops: 'none',
@@ -814,10 +821,20 @@ export function installEnemies() {
   // --- Darknut: armoured knight, only vulnerable from behind ------------
   defineEnemy('darknut', {
     hp: 6, damage: 3, pal: 'enemyr', rate: 10,
+    // Its sword as the sheet draws it: held down below it facing Link, up
+    // above it facing away (frames taller than the cell, anchored on the
+    // body), and out in front sideways, where the cartridge draws the blade
+    // as its own object (S152).
     frames: {
-      down: ['darknut_d0', 'darknut_d1'],
-      up: ['darknut_d0', 'darknut_d1'],
+      down: ['darknut_down0', 'darknut_down1'],
+      up: ['darknut_up0', 'darknut_up1'],
       side: ['darknut_s0', 'darknut_s1'],
+    },
+    drawOffset: (e, name) => name.startsWith('darknut_up') ? [0, 16 - sprites.size(name).h] : null,
+    drawOver(e, g, ctx, ox, oy) {
+      if (e.dying || (e.dir !== 'left' && e.dir !== 'right')) return;
+      const left = e.dir === 'left';
+      sprites.draw(ctx, 'darknut_sword_s', ox + e.x + (left ? -12 : 12), oy + e.y - e.z, { flipX: left });
     },
     hurtFrame: 'darknut_hurt',
     deathFrame: 'darknut_death',
@@ -1020,6 +1037,20 @@ export function installEnemies() {
   defineEnemy('pincer', {
     hp: 3, damage: 3, pal: 'enemyr', speed: 0, rate: 10, terrain: 'any',
     frames: ['pincer_0', 'pincer_1'], hurtFrame: 'pincer_hurt',
+    // Three beads string out behind the head, at 3/4, 2/4 and 1/4 of how far
+    // it has lunged (pincer.s pincer_body_updateExtendedAmount), shown while
+    // it is out of its hole (head state $0b and on).
+    drawUnder(e, g, ctx, ox, oy) {
+      if (!['out', 'hold', 'back'].includes(e.aiState)) return;
+      const r = e.angle / 32 * 2 * Math.PI;
+      const q = Math.floor(Math.max(0, e.reach) / 4);
+      for (const k of [3, 2, 1]) {
+        const d = q * k;
+        sprites.draw(ctx, 'pincer_body',
+          ox + toPx(e.homeFx + Math.round(d * 256 * Math.sin(r))),
+          oy + toPx(e.homeFy - Math.round(d * 256 * Math.cos(r))));
+      }
+    },
     deathFrame: 'pincer_death',
     // Reuses pincer's own pincer_1 as its attackFrame — a real shape
     // change from pincer_0's symmetric front-on stance to a curled, turned

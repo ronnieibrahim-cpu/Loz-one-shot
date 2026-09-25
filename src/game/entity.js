@@ -239,7 +239,9 @@ export class Entity {
     if (!name) return;
     // `shakeX`: a whole-pixel shiver an enemy's ai sets (the flipped spiked
     // beetle's last second); drawing only, the entity does not move.
-    sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0), oy + this.y - this.z, {
+    const off = this.drawOffset ? this.drawOffset(game, name) : null;
+    sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0) + (off ? off[0] : 0),
+      oy + this.y - this.z + (off ? off[1] : 0), {
       pal, flipX: this.flipX, alpha: this.alpha,
     });
   }

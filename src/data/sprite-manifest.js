@@ -174,6 +174,10 @@ export function expectedSize(name) {
   // cropping it back to 16x16 would remove the sword. The engine derives the
   // draw anchor from these dimensions (see Player.draw), so if the ripper's
   // crop changes, this must change with it — that is what the assert is for.
+  // The darknut holding its sword past its cell, down or up, at the size the
+  // sheet draws it (tools/rip-enemies.py TALL, S152).
+  const darknut = { darknut_down0: [16, 23], darknut_down1: [16, 25], darknut_up0: [16, 24], darknut_up1: [16, 26] }[name];
+  if (darknut) return darknut;
   if (name === 'link_hold_down') return [16, 30];
   if (name === 'link_hold_up') return [16, 28];
   if (name === 'link_hold_side') return [28, 16];

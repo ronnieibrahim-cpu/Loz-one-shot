@@ -175,6 +175,9 @@ export class Enemy extends Entity {
     // `hurtFrame` — so most of the roster has none and falls through to the
     // walk cycle exactly as before.
     if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
+    // A pose the enemy's own state picks (the beamos's eye, the leever
+    // rising): after the flinch, before everything else (S152).
+    if (this.spec.pose) { const n = this.spec.pose(this); if (n) { this.flipX = false; return n; } }
     // Attack pose: checked after hurtFrame on purpose — a hit landing mid-
     // attack should show the flinch, not the attack telegraph, the same way
     // getting hit already interrupts everything else an enemy is doing.
@@ -360,8 +363,15 @@ export class Enemy extends Entity {
 
   draw(ctx, game, ox, oy) {
     if (this.dormant) return;
+    // Parts the cartridge draws as separate objects around the body — the
+    // pincer's beads behind it, the darknut's sword before it (S152).
+    if (this.spec.drawUnder && !this.hidden) this.spec.drawUnder(this, game, ctx, ox, oy);
     super.draw(ctx, game, ox, oy);
+    if (this.spec.drawOver && !this.hidden) this.spec.drawOver(this, game, ctx, ox, oy);
   }
+
+  /** Where a frame taller than the cell sits: spec.drawOffset, else nowhere else. */
+  drawOffset(game, name) { return this.spec.drawOffset ? this.spec.drawOffset(this, name) : null; }
 }
 
 export function defineEnemy(name, spec) {
