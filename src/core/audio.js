@@ -82,6 +82,8 @@
 //
 // The noise channel is percussion only and takes none of the above.
 
+import { renderSeasons } from './gbsound.js';
+import { GB_RENDER_RATE } from '../data/feel.js';
 import { Stream } from './rng.js';
 import { VIBRATO_DELAY_FRAMES, VIBRATO_STEP_FRAMES, VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } from '../data/feel.js';
 
@@ -252,6 +254,13 @@ export class Audio {
       this.tone.connect(this.master);
       this._noise = noiseBuffer(this.ctx);
       this.ok = true;
+      // Render Seasons' own tracks ahead of need, one per idle beat, so the
+      // first overworld step does not wait a tenth of a second for its song.
+      if (!ctxOverride && typeof setTimeout === 'function') {
+        const names = [...this.tracks.values()].filter((t) => t.seasons).map((t) => t.seasons);
+        const next = () => { const n = names.shift(); if (!n) return; renderSeasons(n, GB_RENDER_RATE); setTimeout(next, 50); };
+        setTimeout(next, 50);
+      }
     } catch (e) {
       console.warn('[audio] unavailable', e);
       this.ok = false;
@@ -280,6 +289,14 @@ export class Audio {
     if (this.trackName === name && !restart) return;
     const t = this.tracks.get(name);
     this.trackName = name;
+    if (t && t.seasons) {
+      // Oracle of Seasons' own track, rendered by its own engine (gbsound.js)
+      // and looped where the cartridge loops it.
+      this.track = null;
+      this._releaseAll();
+      this._startGb(t.seasons);
+      return;
+    }
     this.track = t || null;
     this._row = 0;
     this._orderIdx = 0;
@@ -298,6 +315,20 @@ export class Audio {
     if (!this.ok) return;
     const t = this.tracks.get(name);
     if (!t) return;
+    if (t.seasons) {
+      const resume = this._jingle ? this._jingle.resume : this.trackName;
+      this.track = null;
+      this._releaseAll();
+      this._jingle = { resume, track: t };
+      this.trackName = '$jingle:' + name;
+      this._startGb(t.seasons, () => {
+        if (this.trackName !== '$jingle:' + name) return;
+        this._jingle = null;
+        this.trackName = null;
+        if (resume) this.play(resume, { restart: true });
+      });
+      return;
+    }
     this._jingle = { resume: this.trackName, track: t };
     this.trackName = '$jingle:' + name;
     this.track = t;
@@ -307,7 +338,30 @@ export class Audio {
     this._releaseAll();
   }
 
+  /**
+   * Play a Seasons track through a buffer source on the music bus: looped at
+   * the cartridge's own loop points, or once (a jingle) with `onEnd` after.
+   */
+  _startGb(name, onEnd) {
+    const r = renderSeasons(name, GB_RENDER_RATE);
+    if (!r) return;
+    const buf = this.ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
+    buf.getChannelData(0).set(r.data);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    if (r.loopEnd) { src.loop = true; src.loopStart = r.loopStart; src.loopEnd = r.loopEnd; }
+    src.connect(this.musicBus);
+    if (onEnd) src.onended = () => { if (this._gbSrc === src) { this._gbSrc = null; onEnd(); } };
+    src.start(this.ctx.currentTime + 0.02);
+    this._gbSrc = src;
+  }
+
   _releaseAll() {
+    if (this._gbSrc) {
+      const src = this._gbSrc;
+      this._gbSrc = null;
+      try { src.onended = null; src.stop(); } catch (e) { /* already stopped */ }
+    }
     for (const ch of ['p1', 'p2', 'wav']) {
       const v = this._voices[ch];
       if (v) { this._endVoice(v); this._voices[ch] = null; }

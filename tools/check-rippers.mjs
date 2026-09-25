@@ -51,6 +51,7 @@ const RIPPERS = [
   ['rip-fairies.py',         'src/data/sprites-fairies.js'],
   ['rip-maku.py',            'src/data/tiles-maku.js'],
   ['rip-screens.py',         'src/data/screens-seasons.js'],
+  ['rip-music.py',           'src/data/music-seasons.js'],   // S151: Seasons' own music data
   ['rip-terrain.py',         'src/data/tiles-terrain.js'],
   ['rip-dungeon-themes.py',  'src/data/tiles-dungeon-themes.js'],
 ];

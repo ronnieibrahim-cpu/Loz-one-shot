@@ -7,16 +7,29 @@ not `g.boss`, so they keep the dungeon's own track. Tracks live in
 `src/data/audio.js`; `check-music`, `check-sfx` and `check-audio-render` guard
 them.
 
-The overworld track is Oracle of Seasons' own Holodrum theme, transcribed from
-the footage at the human's request (S148). Every other track is ours.
+FOUR ARE ORACLE OF SEASONS' OWN (S151, at the human's request, with the
+soundtrack recordings they sent to check against): `title` (the title screen;
+the soundtrack's "Title Screen" and "Main Menu" are its two halves),
+`fileSelect`, `overworld` (Holodrum; S148's transcription by ear is retired)
+and the `itemGet` jingle. They are not transcriptions: tools/rip-music.py rips
+the cartridge's channel scripts from Stewmath's oracles-disasm (copied into
+assets/music/oracles-disasm/) into src/data/music-seasons.js, and
+src/core/gbsound.js plays them the way the cartridge's sound engine and the
+Game Boy's sound hardware do, looped at the cartridge's own loop points.
+Checked against the recordings by pitch-class match: overworld 0.93, file
+select 0.89, title 0.85, each lined up from its first note. The "Get Item"
+recording opens with the same four rising notes as sfx/getItem.s but runs two
+further steps and lands on a different chord, so it may be a different
+edition's jingle — the cartridge's is what plays. Every other track is ours.
 
 ## Places
 
 | Place | Track | Status |
 |---|---|---|
-| Title screen, file select | `title` | own |
+| Title screen | `title` | Seasons' own |
+| File select | `fileSelect` | Seasons' own |
 | Intro cutscene | none, then `village` / `overworld` (story.js steps) | own |
-| Coast: Tidewatch Village, dunes, strands, Grotto approach (overworld screens) | `overworld` | shared with the Kell cliffs and the Drowned Wood |
+| Coast: Tidewatch Village, dunes, strands, Grotto approach (overworld screens) | `overworld` | Seasons' own; shared with the Kell cliffs and the Drowned Wood |
 | The Kell cliffs (Kell Head .. Cistern Mouth) | `overworld` | shared |
 | The Drowned Wood (Wood Edge .. Shrine Mouth) | `overworld` | shared |
 | The Reef (24 screens, Coral Gate .. Spire Mouth) | `reef` | own |

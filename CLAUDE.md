@@ -111,11 +111,12 @@ ripper credit in the header. The current set:
 | `src/data/tiles-dungeon-themes.js` | `tools/rip-dungeon-themes.py` |
 | `src/data/tiles-maku.js` | `tools/rip-maku.py` |
 | `src/data/screens-seasons.js` | `tools/rip-screens.py` (title sheet + still screens cut from the footage by `tools/grab-footage-frames.py`) |
+| `src/data/music-seasons.js` | `tools/rip-music.py` (Seasons' own channel scripts, from oracles-disasm copied into `assets/music/`; played by `src/core/gbsound.js`) |
 
 This cuts both ways: **removing** an extracted icon means removing its entry
 from the ripper's coordinate map and re-emitting, not deleting lines from the
 output. `pip install pillow` first, and run the ripper once before you change
-anything to confirm it reproduces byte-identically. **`node tools/check-rippers.mjs` now proves that for all ten**, by re-running each one and comparing — which catches a hand-edit AND a ripper that has quietly stopped being deterministic, the second being the one that does not look like a mistake.
+anything to confirm it reproduces byte-identically. **`node tools/check-rippers.mjs` now proves that for all eleven**, by re-running each one and comparing — which catches a hand-edit AND a ripper that has quietly stopped being deterministic, the second being the one that does not look like a mistake.
 
 **This binds the art, not the design.** Goal 2 is unchanged and is not
 negotiable by this rule: mechanics, items, dungeons and story are ours. We

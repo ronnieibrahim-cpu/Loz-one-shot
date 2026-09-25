@@ -2013,3 +2013,29 @@ export const PINCER_REST_FRAMES = 30;
  *  it. derived: code/collisionEffects.s, the z test before checkHitLink and
  *  before each item ("Check if Z positions are within 7 pixels"). */
 export const ENEMY_CONTACT_Z = 7;
+
+// ---------------------------------------------------------------------------
+// THE GAME BOY'S SOUND, for Seasons' own tracks (src/core/gbsound.js, S151).
+// ---------------------------------------------------------------------------
+
+/** frames/s — the rate the cartridge's sound engine steps at: once a frame,
+ *  4194304 / 70224. derived: the Game Boy's clock and frame length (Pan Docs);
+ *  every note length in the channel scripts counts these. */
+export const GB_FRAME_RATE = 4194304 / 70224;
+
+/** x — how loud one channel at full volume is in our mix, against the rest of
+ *  the game's sound. guessed: set against the tracker's own channel levels
+ *  (a pulse lead at 0.16), so a Seasons track and one of ours sit at about
+ *  the same loudness; a person should confirm it by ear. */
+export const GB_MIX_LEVEL = 0.12;
+
+/** x — the output capacitor's charge factor per 4.19 MHz clock, which is what
+ *  takes the DC out of the console's sound: a first-order high-pass near
+ *  30 Hz. derived: Pan Docs, "Audio details" (0.999958 per clock, so 0.996 a
+ *  sample at 44.1 kHz). */
+export const GB_HPF_CHARGE = 0.999958;
+
+/** Hz — the rate Seasons' tracks are rendered at before Web Audio resamples
+ *  them to the device. guessed: well above the highest note's fundamental,
+ *  and small enough to render the overworld in a blink on a phone. */
+export const GB_RENDER_RATE = 32768;

@@ -38,12 +38,22 @@
 //     channel in the same pattern — an authored token always wins in the
 //     engine, so a track carrying both is a track whose author does not know
 //     which one is actually going to play
+//   * a SEASONS track (S151: `{ seasons: name }`, the cartridge's own channel
+//     scripts played by src/core/gbsound.js) names a track the ripper emitted;
+//     every goto lands inside its stream; every note is inside the engine's
+//     frequency table (or, on the noise channel, in its drum table); every
+//     waveform the wave channel selects exists; a looped track finds its loop
+//     on every channel and every channel loops in the SAME length (the buffer
+//     loops them together, so a mismatch would drift a channel a little more
+//     each time round); and the render is not silence
 //
 // Usage: node tools/check-music.mjs
 
 import { TRACKS, SFX } from '../src/data/audio.js';
 import { Audio, noteFreq, DEFAULT_CFG, vibratoRange } from '../src/core/audio.js';
 import { mockCtx } from './lib/mock-audio-ctx.mjs';
+import { SEASONS_MUSIC, GB_FREQ, GB_WAVEFORMS, GB_NOISE } from '../src/data/music-seasons.js';
+import { renderSeasons, runEngine, loopOf } from '../src/core/gbsound.js';
 
 const PULSE_MIN = 64, PULSE_MAX = 131072;
 const WAVE_MIN = 32, WAVE_MAX = 65536;
@@ -56,7 +66,70 @@ function tokens(s) {
   return s ? s.trim().split(/\s+/) : [];
 }
 
+let seasonsCount = 0;
+function checkSeasons(name, t) {
+  seasonsCount++;
+  const tr = SEASONS_MUSIC[t.seasons];
+  if (!tr) { problems.push(`${name}: seasons track '${t.seasons}' was not ripped`); return; }
+  const ev = tr.events;
+  const kind = (k) => (k <= 3 ? 'sq' : k <= 5 ? 'wave' : k === 6 ? 'noise' : 'raw');
+  for (const [k, start] of Object.entries(tr.ch)) {
+    // Walk every event this channel can reach.
+    const seen = new Set(), todo = [start];
+    while (todo.length) {
+      let pc = todo.pop();
+      while (pc < ev.length && !seen.has(pc)) {
+        seen.add(pc);
+        const e = ev[pc];
+        if (e[0] === 7) break;
+        if (e[0] === 6) {
+          if (!(e[1] >= 0 && e[1] < ev.length)) problems.push(`${name}: ch${k} goto ${e[1]} outside the stream`);
+          else todo.push(e[1]);
+          break;
+        }
+        if (e[0] === 0) {
+          const kk = kind(Number(k));
+          if (kk === 'noise' && !GB_NOISE[e[1]]) problems.push(`${name}: ch${k} noise note $${e[1].toString(16)} not in the drum table`);
+          if (kk === 'sq' && !(e[1] - 12 >= 0 && e[1] - 12 < GB_FREQ.length)) problems.push(`${name}: ch${k} note ${e[1]} off the frequency table`);
+          if (kk === 'wave' && !(e[1] >= 0 && e[1] < GB_FREQ.length)) problems.push(`${name}: ch${k} note ${e[1]} off the frequency table`);
+          if (!(e[2] > 0)) problems.push(`${name}: ch${k} note of length ${e[2]}`);
+        }
+        if (e[0] === 4 && kind(Number(k)) === 'wave' && !GB_WAVEFORMS[e[1]]) {
+          problems.push(`${name}: ch${k} selects waveform $${e[1].toString(16)}, which was not ripped`);
+        }
+        pc++;
+      }
+    }
+  }
+  const jingle = t.seasons === 'getItem';
+  const loop = loopOf(tr);
+  if (!jingle && !loop) problems.push(`${name}: no loop found on every channel`);
+  if (loop) {
+    // Every channel's own loop must be the same length.
+    const lens = [];
+    for (const [k, start] of Object.entries(tr.ch)) {
+      let pc = start, target = null;
+      for (let i = 0; i < 100000 && pc < ev.length; i++) {
+        const e = ev[pc];
+        if (e[0] === 7) break;
+        if (e[0] === 6) { if (e[1] <= pc) { target = e[1]; break; } pc = e[1]; continue; }
+        pc++;
+      }
+      if (target == null) continue;
+      const { firstVisit } = runEngine(tr, loop.intro + loop.length + 1);
+      const a = firstVisit[k].get(target), b = firstVisit[k].get(pc);
+      if (a != null && b != null) lens.push(b - a);
+    }
+    if (new Set(lens).size > 1) problems.push(`${name}: channels loop in different lengths ${lens.join('/')}`);
+  }
+  const r = renderSeasons(t.seasons, 8192);
+  let peak = 0;
+  for (const x of r.data) peak = Math.max(peak, Math.abs(x));
+  if (!(peak > 0.01)) problems.push(`${name}: renders as silence`);
+}
+
 for (const [name, t] of Object.entries(TRACKS)) {
+  if (t.seasons) { checkSeasons(name, t); continue; }
   if (!t.patterns || !Object.keys(t.patterns).length) {
     problems.push(`${name}: no patterns`);
     continue;
@@ -245,7 +318,7 @@ function checkSfxFreqs(name, d) {
 for (const [name, d] of Object.entries(SFX)) checkSfxFreqs(name, d);
 
 const introCount = Object.values(TRACKS).filter(t => Array.isArray(t.intro) && t.intro.length).length;
-console.log(`check-music: ${Object.keys(TRACKS).length} tracks (${introCount} with an intro), ` +
+console.log(`check-music: ${Object.keys(TRACKS).length} tracks (${seasonsCount} of them Seasons' own, ${introCount} with an intro), ` +
   `${Object.keys(SFX).length} sfx`);
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):`);

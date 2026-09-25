@@ -62,7 +62,10 @@ function renderTrace(trackName) {
   return trace;
 }
 
-const names = Object.keys(TRACKS).sort();
+// Seasons' own tracks (S151) are not scheduled row by row: they are rendered
+// whole by src/core/gbsound.js and played from a buffer, and check-music.mjs
+// checks them. Only the tracker's tracks are traced here.
+const names = Object.keys(TRACKS).filter((n) => !TRACKS[n].seasons).sort();
 const current = {};
 for (const name of names) current[name] = renderTrace(name);
 
@@ -100,7 +103,7 @@ for (const name of names) {
     `want ${JSON.stringify(want[i])}, got ${JSON.stringify(got[i])}`);
 }
 for (const name of Object.keys(baseline)) {
-  if (!TRACKS[name]) problems.push(`${name}: in baseline but no longer a track (stale baseline entry)`);
+  if (!TRACKS[name] || TRACKS[name].seasons) problems.push(`${name}: in baseline but no longer a tracker track (stale baseline entry)`);
 }
 
 console.log(`check-audio-render: ${names.length} tracks traced against baseline`);

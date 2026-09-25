@@ -171,135 +171,16 @@ const SFX = {
 // --------------------------------------------------------------------------
 
 const TRACKS = {
-  title: {
-    bpm: 96, rowsPerBeat: 4, loop: true,
-    // Every note in this track is held for at least half a bar, which is
-    // precisely the note vibrato exists for — the wobble is something a
-    // sustained tone earns (see VIBRATO_DELAY_FRAMES). Nothing here is short
-    // enough to be wobbled by accident.
-    cfg: {
-      p1: { duty: 0.5, vol: 0.15, decay: 0.3, vibrato: {} },
-      p2: { duty: 0.25, vol: 0.09, decay: 0.35 },
-      wav: { vol: 0.2, decay: 0.4 },
-    },
-    patterns: {
-      // Intro: three struck tones under one crash, the wave channel holding
-      // the tonic triad as a single arpeggiated chord, ending on a held
-      // dominant that A resolves. Played once and never returned to — the
-      // card is struck, then the theme begins.
-      I: {
-        p1: 'G4 .  .  .  C5 .  .  .  E5 -  -  -  -  -  -  .  .  .  .  .  G5 -  -  -  -  -  -  -  -  -  -  -',
-        p2: 'E4 .  .  .  G4 .  .  .  C5 -  -  -  -  -  -  .  .  .  .  .  D5 -  -  -  -  -  -  -  -  -  -  -',
-        wav: 'C3+E3+G3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  G2+B2+D3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
-        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
-      },
-      A: {
-        p1: 'C5 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -',
-        p2: 'E4 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -',
-        wav: 'C3 -  -  -  -  -  -  -  E3 -  -  -  -  -  -  -  F3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -',
-      },
-      B: {
-        p1: 'F5 -  -  -  E5 -  -  -  D5 -  -  -  C5 -  -  -  D5 -  -  -  E5 -  -  -  G5 -  -  -  -  -  -  -',
-        p2: 'A4 -  -  -  G4 -  -  -  F4 -  -  -  E4 -  -  -  F4 -  -  -  G4 -  -  -  B4 -  -  -  -  -  -  -',
-        wav: 'F3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -  A3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -',
-      },
-      // Bridge: the melody thins to one held tone at a time, climbing back
-      // toward the opening, with a single soft tick on the pickup into A.
-      C: {
-        p1: 'E4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  B4 .  C5 .  .  .  .  .',
-        p2: '.  .  .  .  .  .  .  .  A3 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .  G3 .  .  .  .  .  .  .',
-        wav: 'C3 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -',
-        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
-      },
-    },
-    intro: ['I'],
-    order: ['A', 'B', 'A', 'C'],
-  },
-
-  // Oracle of Seasons' own Holodrum overworld theme, transcribed (S148) from
-  // assets/footage/seasons-tas-rooster-adventure.mp4. The overworld plays it six
-  // times in that video; the six plays were lined up to the sample, their
-  // spectra took the median (which removes the sword, the enemies and every
-  // other sound effect), and each note was read off at a resolution of four
-  // frames. assets/footage/README.md records the method and the frames.
-  //
-  // What the recording says about it: a loop of 768 frames (12.86 s), eight
-  // bars of four beats with three eighths to the beat -- the lilt is triplet,
-  // not straight -- so one bar is 96 frames and one row here is 4 frames
-  // (half an eighth), which is fine enough to hold the quick runs up to each
-  // held note (A4 B4 C5 D5) that sit between the eighths. Two pulse voices,
-  // a melody and a harmony that mostly moves with it, over a bouncing bass on
-  // beats 1, 3 and 4 of each bar. No drums: the original has none here.
-  //
-  // What is approximate: the bass. On the cartridge it wobbles by up to half
-  // a semitone either side of its note, so each bass note here is the chord
-  // tone nearest what was measured. Where the original stacks a third tone
-  // under the two pulses (bars 1, 2, 3 and 7) the inner line was kept and the
-  // doubled note dropped -- three melodic channels cannot hold four notes.
-  overworld: {
-    // 149.32 bpm x 6 rows a beat = one row every 4 frames at 59.73 fps.
-    bpm: 149.32, rowsPerBeat: 6, loop: true,
-    cfg: {
-      p1: { duty: 0.5, vol: 0.16, decay: 0.3, vibrato: {} },
-      p2: { duty: 0.25, vol: 0.11, decay: 0.3 },
-      wav: { vol: 0.24, decay: 0.12 },
-    },
-    patterns: {
-      // The pickup: the G the tune opens on, heard once before bar 1 (the loop
-      // carries its own copy at the end of bar 8).
-
-      P: {
-        p1: 'G4  -   -   -   -   -',
-        p2: 'B3  -   .   .   .   .',
-        wav: 'G2  -   .   .   .   .',
-      },
-      // Bars 1-8, one pattern a bar, 24 rows each.
-
-      A: {
-        p1: 'D4  -   -   -   -   -   -   -   .   .   G4  -   -   -   A4  B4  -   C5  D5  -   -   -   -   G4',
-        p2: 'C4  -   B3  -   A3  -   B3  -   -   C4  B3  -   -   -   C4  D4  -   E4  F4  -   -   -   .   .',
-        wav: 'G2  -   G2  -   F2  -   G2  -   .   .   .   .   G2  -   .   .   .   .   F2  -   .   .   .   .',
-      },
-      B: {
-        p1: 'G4  -   A4  B4  -   C5  D5  -   -   -   D5  -   -   -   D#5 -   F5  -   G5  -   -   -   D#4 -',
-        p2: 'C4  -   C4  -   A#3 -   C4  -   .   .   .   .   F4  -   G4  -   A4  -   A#4 -   -   -   .   .',
-        wav: 'F2  -   F2  -   D#2 -   F2  -   .   .   .   .   F2  -   .   .   .   .   D#2 -   .   .   .   .',
-      },
-      C: {
-        p1: 'D#4 -   F4  G4  -   A4  A#4 -   -   -   G5  -   -   -   F5  -   D#5 -   F5  -   -   -   D#5 -',
-        p2: 'A#3 -   A#3 -   A3  -   A#3 -   .   .   A#4 -   -   -   A4  -   G4  -   A#4 -   -   -   F4  -',
-        wav: 'D#2 -   D#2 -   D2  -   D#2 -   .   .   .   .   D#2 -   .   .   .   .   A#2 -   .   .   .   .',
-      },
-      D: {
-        p1: 'D5  -   -   -   D#4 -   F4  -   -   -   F4  -   D5  -   D#5 -   D5  -   C5  -   -   -   -   D5',
-        p2: 'F4  -   -   -   .   .   .   .   .   .   .   .   F4  -   D#4 -   F4  -   D#4 -   -   -   -   D4',
-        wav: 'A#2 -   A#2 -   G#2 -   A#2 -   .   .   .   .   A#2 -   .   .   .   .   G#2 -   .   .   .   .',
-      },
-      E: {
-        p1: 'D#5 -   -   -   -   -   -   .   .   .   .   .   D5  -   -   C5  -   -   A#4 -   -   -   -   C5',
-        p2: 'D#4 -   -   D#4 -   F4  -   G4  .   .   .   G4  F4  -   -   -   -   D#4 D4  -   -   -   -   C4',
-        wav: 'G#2 -   G#2 -   G#2 -   G#2 -   .   .   .   .   G#2 -   G#2 -   G#2 -   G2  -   .   .   .   .',
-      },
-      F: {
-        p1: 'D5  -   -   -   -   -   B4  D5  F5  G5  .   .   C5  -   -   A#4 -   -   A4  -   -   -   -   B4',
-        p2: 'D4  -   -   -   -   -   D4  -   .   .   .   .   D4  -   -   .   .   .   C#4 -   -   -   .   .',
-        wav: 'G2  -   G2  -   F2  -   G2  -   .   .   .   .   G2  -   G2  -   G2  -   A2  -   .   .   .   .',
-      },
-      G: {
-        p1: 'C#5 -   -   -   -   -   -   -   .   .   .   .   E5  -   -   -   -   -   D5  -   -   -   -   -',
-        p2: 'E4  -   -   -   -   D4  E4  -   -   -   -   F4  .   .   A4  B4  -   C5  A4  -   -   -   -   -',
-        wav: 'A2  -   A2  -   A2  -   A2  -   .   .   .   .   A2  -   A2  -   A2  -   D3  -   .   .   .   .',
-      },
-      H: {
-        p1: 'E5  -   -   -   -   -   -   -   -   -   -   -   B4  -   .   C#5 -   -   G4  -   -   -   -   -',
-        p2: 'C4  -   -   -   -   -   D4  -   -   -   -   -   F#4 -   .   .   .   .   B3  -   .   .   .   .',
-        wav: 'G3  -   -   -   -   -   A3  -   -   -   -   -   E3  -   .   F#3 -   -   G2  -   .   .   .   .',
-      },
-    },
-    intro: ['P'],
-    order: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
-  },
-
+  // THE TITLE SCREEN, the file select, the overworld and the item jingle are
+  // Oracle of Seasons' own (S151, at the human's word): the cartridge's
+  // channel scripts, ripped by tools/rip-music.py and played by its own sound
+  // engine in src/core/gbsound.js. Every other track is ours.
+  title: { seasons: 'titlescreen' },
+  fileSelect: { seasons: 'fileSelect' },
+  // The Holodrum overworld theme. S148 transcribed it by ear from the footage;
+  // S151 replaced the transcription with the cartridge's own data, which the
+  // human's soundtrack recording matches note for note.
+  overworld: { seasons: 'overworld' },
   village: {
     bpm: 112, rowsPerBeat: 4, loop: true,
     cfg: {
@@ -1026,18 +907,8 @@ const TRACKS = {
     order: ['A'],
   },
   // Held overhead: a rising arpeggio that lands an octave up.
-  itemGet: {
-    bpm: 132, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.22 }, p2: { duty: 0.25, vol: 0.1, decay: 0.25 }, wav: { vol: 0.21, decay: 0.2 } },
-    patterns: {
-      A: {
-        p1: 'G4 .  C5 .  E5 .  G5 .  C6 -  -  -  -  -  -  -  -  .  .  .',
-        p2: 'E4 .  G4 .  C5 .  E5 .  G5 -  -  -  -  -  -  -  -  .  .  .',
-        wav: 'C3 -  -  -  C3 -  -  -  C3 -  -  -  -  -  -  -  -  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
+  // Held overhead: Seasons' own item jingle (sfx/getItem.s).
+  itemGet: { seasons: 'getItem' },
   // Something opened that should not have: the six-note discovery phrase.
   secret: {
     bpm: 144, rowsPerBeat: 4, loop: false,

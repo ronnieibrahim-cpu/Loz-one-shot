@@ -38,6 +38,7 @@ export class Title {
         this.stage = 'files';
         this.saves = listSaves();
         g.audio.sfx('confirm');
+        g.audio.play('fileSelect');      // Seasons has a song of its own here
       }
       return;
     }
@@ -46,7 +47,7 @@ export class Title {
       const n = 4;   // 3 slots + erase
       if (i.pressed('up')) { this.cursor = (this.cursor + n - 1) % n; g.audio.sfx('cursor'); }
       if (i.pressed('down')) { this.cursor = (this.cursor + 1) % n; g.audio.sfx('cursor'); }
-      if (i.pressed('b')) { this.stage = 'logo'; g.audio.sfx('cursor'); return; }
+      if (i.pressed('b')) { this.stage = 'logo'; g.audio.sfx('cursor'); g.audio.play('title'); return; }
       // SELECT on a file slot copies or pastes a save code — the escape hatch
       // for storage Safari can evict on its own schedule (see progress.js).
       // A slot with a save exports it; an empty slot offers to import into it.
