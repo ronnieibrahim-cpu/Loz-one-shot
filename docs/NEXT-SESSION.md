@@ -18585,3 +18585,14 @@ a harness that fights the fight the ROUTE fights — same arena contents, same
 entry — rather than an empty room. That is the honest successor to "the
 playthrough is one sample", and it is now a specific, small piece of work
 rather than a complaint.
+
+
+## Side session: the illustrated player's guide (not a charter session)
+
+`docs/guide/index.html` is a phone-first illustrated walkthrough built from
+real frames of the playthrough route (`docs/guide/README.md` says how to
+regenerate it; tools in `tools/guide/`). No game code was changed and the
+objective of record is untouched. No game bugs were found while writing it.
+Two things a future session should know: the shot list is keyed to ROUTE
+indices, so re-routing any dungeon moves its pictures; and `docs/GUIDE.md`
+(the old text guide) still describes the pre-S137 dungeon layouts.
