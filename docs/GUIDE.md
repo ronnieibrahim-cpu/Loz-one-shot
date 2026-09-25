@@ -1308,14 +1308,52 @@ the Rod is what makes the rest of the map exist.
 
 ## 13. Interlude: the Coastwise Chain, end to end
 
-Eleven links, eleven objects, one reward. There is **exactly one live deal in the
-world at any moment**: a trader two links ahead has nothing to say to you yet
-even if you are already holding what they will eventually want. Everyone keeps a
-flavour line for when it is not their turn, so the coast sounds the same to a
-player who never starts it.
+**What it is.** A trading game. The sea keeps taking things off one person on
+this coast and leaving them with somebody else, and eleven people are each
+holding something that belongs to the next one along. You carry one thing at a
+time from person to person, all the way round the coast, and the last trade
+gets you the **Resonance Rod** from the Maku Tree.
 
-The only item gate on the whole chain is **bombs**, because Yarrow is in the
-Marsh. You have had bombs since Dungeon 2.
+**The one rule.** Only the *next* person in line will trade. Everybody else
+just says their usual line, even if you are holding the thing they will want
+later — so if someone is not interested, you have simply not reached them yet.
+Press START and look at the **Quest screen** to see what you are carrying now.
+
+**What you need.** Bombs (for the Marsh, where trade 9 is), which you have from
+Dungeon 2 on, and **one Essence** for the last trade. Nothing else.
+
+**The walk, in order** (the village square is the middle of the map; the
+village's shore is the screen directly south of it):
+
+1. **Ossa, the net-mender** — in her cottage on the village shore (the door on
+   the screen south of the square). Talk to her to start: she gives you a
+   **Cracked Float**.
+2. **Pell**, a small boy — on the same shore screen, just outside, near the top.
+   Float for a **Crab Claw**.
+3. **Hulla**, a Salter in a hood — one screen east, among the driftwood on
+   Driftwood Strand. Claw for a **Salt Brick**.
+4. **Mirren**, a fisher — one screen north of that, by the tide pool in front of
+   the shop. Brick for a **Smoked Eel**.
+5. **Dov**, the man from the wreck — the long walk: east along the south coast
+   three screens to the Grotto Mouth, then south to Wrecked Hull. He stands by
+   the wreck's posts. Eel for a **Sounding Lead**.
+6. **Sennit**, in a blue hood — north again and one screen east, on Sandpiper
+   Row. Lead for a **Ringing Whelk**.
+7. **Corriwig**, a diver of the reef people — three screens north up the east
+   coast, in Coral Hollow. Whelk for a **Slackwater Pearl**.
+8. **Wick**, a Kelper in a blue hood — back west into the Drowned Wood: from the
+   village, east to Village East, north through The Wading to Wood Heart. Pearl
+   for a **Bogwood Cup**.
+9. **Yarrow, the bog witch** — far south-west, in Witch's Hollow in the Marsh
+   (bomb your way in). Cup for a **Jar of Brine-Jelly**.
+10. **Teel**, a fisher — on the Fishing Stones, the screen south of the village
+    shore. Jar for a **Cold Kettle**.
+11. **Ossa again** — back in her cottage. Kettle (it is hers!) for the old Tide
+    Bell's **Bell-Rope**.
+12. **The Maku Tree** — in her hollow at the top of the village square. With at
+    least one Essence, the Bell-Rope becomes the **Resonance Rod**.
+
+For the exact screens and tiles, the same twelve in a table:
 
 | # | Who | Where | Takes | Gives |
 |---|---|---|---|---|
@@ -1325,19 +1363,12 @@ Marsh. You have had bombs since Dungeon 2.
 | 4 | Mirren, a fisher | `overworld/0,5,7` (6,3) | Salt Brick | Smoked Eel |
 | 5 | Dov, off the wreck | `overworld/0,8,9` (2,2) | Smoked Eel | Sounding Lead |
 | 6 | Sennit | `overworld/0,9,8` (4,6) | Sounding Lead | Ringing Whelk |
-| 7 | Corriwig, a diver | `overworld/0,9,5` (4,2) | Ringing Whelk | Slackwater Pearl |
+| 7 | Corriwig, a diver | `overworld/0,9,5` (4,3) | Ringing Whelk | Slackwater Pearl |
 | 8 | Wick, a Kelper | `overworld/0,5,5` (2,2) | Slackwater Pearl | Bogwood Cup |
-| 9 | Yarrow, the bog witch | `overworld/0,1,9` (5,2) | Bogwood Cup | Jar of Brine-Jelly |
+| 9 | Yarrow, the bog witch | `overworld/0,1,9` (5,3) | Bogwood Cup | Jar of Brine-Jelly |
 | 10 | Teel, off the stones | `overworld/0,4,9` (2,2) | Jar of Brine-Jelly | **Cold Kettle** |
 | 11 | Ossa again | `houseNets/0,0,0` | Cold Kettle | **Bell-Rope** |
 | 12 | The Maku Tree | `houseMaku/0,0,0` | Bell-Rope **and one Essence** | **Resonance Rod** |
-
-You are carrying one trade object at a time and the **Quest screen** is the only
-place to look up which. It is never in your item grid — putting it there would
-offer to equip it.
-
-Take the Bell-Rope to the Maku Tree (`makuTree`) and she hands over the
-**Resonance Rod** (`rod`).
 
 **How it works.** Strike it and **every metal and crystal thing in earshot
 answers at once**: grates retract, submerged bells chime and lean toward what
@@ -1842,6 +1873,34 @@ table. The short version, as a checklist:
 
 A spent link cannot be run twice, and a link whose turn has not come trades
 nothing but still speaks.
+
+## Side quests
+
+Seven things to do off the main road. Five pay a Piece of Heart (they are
+numbered in the heart list above); they are all optional.
+
+- **The Hollow Den** (Heart Piece 19). In Bluff Hollow, the tree-lined clearing
+  north-west of the village square, a short cliff face stands in the trees with
+  a crack in it. Bomb the crack; a cave opens with the piece inside.
+- **The Slackwater Cave** (Heart Piece 18). Up on the Cliffs of Kell, the Wind
+  Shelf has a cave mouth in its top cliff that is under the sea except at **LOW
+  tide**. Sound the sea down, wade the channel and walk in.
+- **The shopkeeper's ledger** (Heart Piece 17). He lost his ledger in a wind.
+  It is on the South Sands, two screens south of the shop. Bring it back.
+- **The child's kite** (Heart Piece 11). The child in the house on the square
+  lost a kite up a tree in Bluff Hollow, just east of the cracked cliff. Stand
+  under it facing up and blow it down with the **Squall Bellows**.
+- **The netmaker's bog water** (100 rupees). The child's mum, in the same house,
+  wants the jar her husband left filling at Bog Head, in the Marsh.
+- **The tide-pool race** (Heart Piece 23; 20 rupees on later wins). The kid on
+  South Bluff (south-west of the village shore) dares you to race to Pip, who
+  waits on a sand islet out in the sea two screens east. Only at **LOW tide**
+  does a sand path through the sea reach the islet. A clock counts down in the
+  corner: about six and a half seconds, so do not stop.
+- **The salvage dive** (Heart Piece 14). Dov, at Wrecked Hull, lost five casks
+  in the deep pool behind the wreck. Set the **Kelp-Soled Cleats** to walk the
+  sea floor and bring up all five **in one breath** — surface early and they
+  sink back.
 
 ## Every item, and where it is
 
