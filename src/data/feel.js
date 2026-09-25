@@ -1847,3 +1847,26 @@ export const BEAMOS_BEAM_SPEED = 8;
 /** f — after firing, the beamos cannot fire again for this long. derived:
  *  beamos.s @state9, counter2 40. */
 export const BEAMOS_COOLDOWN = 40;
+
+/** px/f — a spiked beetle wandering, and where its charge starts. derived:
+ *  spikedBeetle.s @state_uninitialized and @chargeLink, SPEED_40. */
+export const BEETLE_WALK_SPEED = 0.25;
+
+/** [f] — how long it keeps one direction wandering. derived: spikedBeetle.s
+ *  @setRandomAngleAndCounter1, $30 + (random & $30). */
+export const BEETLE_WALK_FRAMES = [48, 64, 80, 96];
+
+/** px — it charges when Link is within this of its row or column. derived:
+ *  spikedBeetle.s @state8, objectCheckCenteredWithLink with b = $08. */
+export const BEETLE_SEE_PX = 8;
+
+/** count, px/f, px/f — its charge counts down from COUNT and, every fourth
+ *  count, gains GAIN until it reaches MAX. derived: spikedBeetle.s @chargeLink
+ *  (counter2 150) and @incSpeed (SPEED_20 a step up to SPEED_180). */
+export const BEETLE_CHARGE_COUNT = 150;
+export const BEETLE_CHARGE_GAIN = 0.125;
+export const BEETLE_CHARGE_MAX = 1.5;
+
+/** f — stopped by a wall, it stands this long. derived: spikedBeetle.s
+ *  @state9, counter1 30. */
+export const BEETLE_STAND_FRAMES = 30;

@@ -1093,6 +1093,12 @@ export function walkOn(e, g, speed) {
 /** ecom_setRandomCardinalAngle. */
 export function randomCardinal(e, g) { e.dir = randDir(g); }
 
+/** objectCheckCenteredWithLink: Link within `b` px of this row or column. */
+export function centeredWith(e, g, b) {
+  const p = g.player;
+  return !!p && (Math.abs(p.cy - e.cy) <= b || Math.abs(p.cx - e.cx) <= b);
+}
+
 /** ecom_updateCardinalAngleTowardTarget: face Link along the greater gap. */
 export function cardinalToward(e, g) { if (g.player) e.dir = dirTo(e, g.player); }
 

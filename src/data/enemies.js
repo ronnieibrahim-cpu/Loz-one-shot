@@ -6,7 +6,7 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith,
 } from '../game/enemy.js';
 import { spawnEntity, canOccupy } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
@@ -24,6 +24,8 @@ import {
   LEEVER_SPEED, LEEVER_UNDER_FRAMES, LEEVER_SURFACE_TILES, LEEVER_RISE_FRAMES, LEEVER_SINK_FRAMES,
   LEEVER_CHASE_BASE, LEEVER_CHASE_MASK,
   BUBBLE_SPEED, BUBBLE_TURN_ODDS,
+  BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
+  BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
   BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
 } from './feel.js';
@@ -470,7 +472,7 @@ export function installEnemies() {
   // --- Spiked Beetle: charges in straight lines -------------------------
   defineEnemy('beetle', {
     light: true,
-    hp: 3, damage: 2, pal: 'enemyk', speed: 0.4, rate: 9,
+    hp: 3, damage: 2, pal: 'enemyk', rate: 9,
     frames: {
       down: ['beetle_d0', 'beetle_d1'],
       up: ['beetle_d0', 'beetle_d1'],
@@ -500,8 +502,42 @@ export function installEnemies() {
     attackFrame: 'beetle_s0',
     shield: 'front',
     drops: 'good',
+    // Seasons' spiked beetle (spikedBeetle.s): wanders slowly; the moment Link
+    // is on its row or column it turns on him and charges, gathering speed,
+    // until a wall stops it; stands a moment, then wanders on. (The
+    // cartridge's flips over when a shield turns it; here the shield on its
+    // front stays ours.)
+    port: 'spikedBeetle.s',
+    speed: BEETLE_WALK_SPEED,
     ai(e, g) {
-      charge(e, g, { speed: 1.9, tell: 16, range: 88, shake: true, idle: (e2, g2) => wander(e2, g2, { decide: 4 }) });
+      const wander = () => {
+        e.dir = randDir(g);
+        e.aiTimer = BEETLE_WALK_FRAMES[g.rng.int(BEETLE_WALK_FRAMES.length)];
+      };
+      const charge = () => {
+        cardinalToward(e, g);
+        e.aiState = 'charge'; e.cnt = BEETLE_CHARGE_COUNT; e.speed = BEETLE_WALK_SPEED;
+        e.attackTime = ENEMY_ATTACK_FRAMES;
+      };
+      switch (e.aiState) {
+        case 0: wander(); e.aiState = 'walk'; return;
+        case 'walk':                              // @state8
+          e.still = false;
+          if (centeredWith(e, g, BEETLE_SEE_PX)) { charge(); return; }
+          if (--e.aiTimer <= 0 || !walkOn(e, g, BEETLE_WALK_SPEED)) wander();
+          return;
+        case 'charge':                            // @state9
+          e.cnt--;
+          if ((e.cnt & 3) === 0 && e.speed < BEETLE_CHARGE_MAX) e.speed += BEETLE_CHARGE_GAIN;
+          if (walkOn(e, g, e.speed)) return;
+          e.aiState = 'stand'; e.aiTimer = BEETLE_STAND_FRAMES;
+          return;
+        case 'stand':                             // @stateA
+          if (centeredWith(e, g, BEETLE_SEE_PX)) { charge(); return; }
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'walk'; e.speed = BEETLE_WALK_SPEED; wander();
+          return;
+      }
     },
   });
 
