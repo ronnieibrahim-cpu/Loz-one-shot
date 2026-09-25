@@ -705,8 +705,35 @@ const SWORD_ARC = {
  *  an enemy's own `hb` stays its footprint for walls and floors. */
 const ENEMY_HURT_RADIUS = 6;
 
-/** f — how long the sword button must be held before a spin is charged. guessed. */
-const CHARGE_FRAMES = 42;
+/** px — radius of LINK'S OWN collision area, centred on his sprite: a 12x12
+ *  box. An enemy touching Link hurts him when this box and the enemy's
+ *  (ENEMY_HURT_RADIUS, or its spec's `hurtBox`) overlap — the same test,
+ *  centre to centre with the two radii summed, that the cartridge makes.
+ *  Link's `hb` stays his feet for walls and floors. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/link.s,
+ *  linkState00 ("Set collisionRadiusY,X" = $06, $06), tested in
+ *  code/collisionEffects.s enemyCheckCollisions (@checkHitLink) through
+ *  code/bank0.s checkObjectsCollidedFromVariables. */
+const LINK_HURT_RADIUS = 6;
+
+/** px — radius of an enemy's shot as it meets Link: a 4x4 box on the middle
+ *  of the shot, against his LINK_HURT_RADIUS box. derived from the cartridge:
+ *  oracles-disasm data/seasons/partData.s, PART_OCTOROK_PROJECTILE ($18),
+ *  PART_ZORA_FIRE, PART_ENEMY_ARROW and PART_STALFOS_BONE all $22 (radius
+ *  2 by 2). A shot may declare its own (`radius` on `shoot`). */
+const ENEMY_SHOT_RADIUS = 2;
+
+/** px — radius of a beamos's beam, the one shot here the cartridge makes
+ *  bigger. derived: oracles-disasm data/seasons/partData.s, PART_BEAM ($29),
+ *  $33. */
+const BEAM_SHOT_RADIUS = 3;
+
+/** f — how long the sword button must be held, after the swing ends, before a
+ *  spin is charged. derived from the cartridge: oracles-disasm
+ *  object_code/common/itemParents/swordParent.s, @state6 sets counter1 $28
+ *  when the swing ends with the button still down, and @state2 takes one off
+ *  it a frame and charges when it passes zero — the 41st frame. */
+const CHARGE_FRAMES = 41;
 
 /** f — interval between charge sparkles once charged. guessed. */
 const CHARGE_SPARKLE_EVERY = 6;
@@ -724,9 +751,10 @@ const SWORD_GAP = 3;
 const SPIN_BOX = 30;
 
 /** f — frames after a swing ends before the still-held button becomes a hold
- *  rather than the tail of the swing. guessed; small enough that the blade
- *  never visibly drops between the two poses. */
-const SWORD_HOLD_DELAY = 2;
+ *  rather than the tail of the swing. derived from the cartridge: swordParent.s
+ *  @state6 turns the blade into the held blade (ITEMCOLLISION_SWORD_HELD) on
+ *  the frame the swing's animation ends, so the first frame after it. */
+const SWORD_HOLD_DELAY = 1;
 
 /** qh — damage the extended blade deals on contact. guessed; half a swing's,
  *  because walking into something with the sword out is meant to be worth less
@@ -734,10 +762,11 @@ const SWORD_HOLD_DELAY = 2;
  *  rate-limits it, so this is damage per enemy-invuln period, not per frame. */
 const SWORD_HOLD_DAMAGE = 1;
 
-/** px — knockback dealt by the extended blade. guessed; weaker than
- *  KNOCK_SWORD so a held blade shoves rather than launches. A distance, like
- *  every other KNOCK_* — see the note above them. */
-const KNOCK_HOLD = 9;
+/** px — knockback dealt by the extended blade. derived: ENEMY_HIT_TIERS' low
+ *  hit (objectCollisionTable ENEMYCOLLISION_STANDARD_ENEMY, column
+ *  ITEMCOLLISION_SWORD_HELD = COLLISIONEFFECT_SWORD_LOW_KNOCKBACK). A
+ *  distance, like every other KNOCK_* — see the note above them. */
+const KNOCK_HOLD = 16;
 
 /** f — how long after a clink off a wall the blade may clink again. guessed;
  *  without it the sfx retriggers every frame you lean on the wall. */
@@ -747,8 +776,12 @@ const SWORD_CLINK_COOLDOWN = 20;
 // Damage, invulnerability and knockback
 // ---------------------------------------------------------------------------
 
-/** f — invulnerability after Link takes a hit. guessed. */
-const PLAYER_INVULN_FRAMES = 46;
+/** f — invulnerability after Link takes a hit from an enemy. derived from the
+ *  cartridge: oracles-disasm code/collisionEffects.s, applyDamageToLink's
+ *  @damageTypeTable, LINKDMG_04 (COLLISIONEFFECT_DAMAGE_LINK, what an
+ *  ordinary enemy's body and shot do to Link): invincibilityCounter $22.
+ *  It agrees with the 33-frame flash measured below: the flash IS the window. */
+const PLAYER_INVULN_FRAMES = 34;
 
 /** f — how long Link flashes after a hit. measured: 33 frames, from the frame
  *  the heart drains to the last red frame. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
@@ -768,31 +801,61 @@ const PLAYER_FLICKER_FRAMES = 33;
 const PLAYER_HURT_FLASH_BEAT = 4;
 
 /** f — invulnerability after a pit fall or a wash-out, which is longer than an
- *  ordinary hit because the player has just been teleported. guessed. */
+ *  ordinary hit because the player has just been put back. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/link.s,
+ *  linkState02 (LINK_STATE_RESPAWNING) @substate2, invincibilityCounter $3c.
+ *  The guess was already right. */
 const PLAYER_RECOVER_INVULN_FRAMES = 60;
 
-/** f — how long Link is shoved and unable to act after a hit. guessed. */
-const PLAYER_HURT_FRAMES = 12;
+/** f — how long Link stands still after he is put back from a pit or the
+ *  water, before he can walk. derived: linkState02 @substate2 sets counter1
+ *  $10 and @substate3 waits it out before LINK_STATE_NORMAL. */
+const RESPAWN_HOLD_FRAMES = 16;
 
-/** px — how far Link is shoved by a hit, in total. guessed.
- *  A GB Zelda's knockback is a scripted displacement, not a physics impulse:
- *  a fixed distance over a fixed frame count, at a constant speed, so it always
- *  ends the same distance from the thing that hit you and you can plan around
- *  it. This number and PLAYER_KNOCK_FRAMES are the whole of it. Chosen to match
- *  the total travel of the exponential decay it replaces (3.2 px/f decaying by
- *  0.84 over 12 frames covers ~17.6px), so the change is a change of shape
- *  rather than of reach. See docs/FEEL-SPEC.md. */
-const PLAYER_KNOCK_DIST = 18;
+/** f — how long Link is shoved and cannot walk after a hit. derived: equal to
+ *  PLAYER_KNOCK_FRAMES, because the cartridge's normal state skips Link's
+ *  own movement for exactly as long as knockbackCounter runs
+ *  (object_code/common/specialObjects/link.s, linkState01 @notInAir). */
+const PLAYER_HURT_FRAMES = 15;
 
-/** f — how long that shove takes. guessed; kept equal to PLAYER_HURT_FRAMES so
- *  Link regains control on the frame he stops sliding. */
-const PLAYER_KNOCK_FRAMES = 12;
+/** f — how long that shove takes. derived from the cartridge:
+ *  oracles-disasm code/collisionEffects.s, applyDamageToLink's
+ *  @damageTypeTable, LINKDMG_04: knockbackCounter $0f, taken down one a
+ *  frame by linkUpdateKnockback (object_code/common/specialObjects/link.s). */
+const PLAYER_KNOCK_FRAMES = 15;
 
-/** f — invulnerability after an ordinary enemy takes a hit. guessed. */
-const ENEMY_INVULN_FRAMES = 24;
+/** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
+ *  knockback is a scripted displacement, not a physics impulse — a fixed
+ *  speed for a fixed frame count, so it always ends the same distance from
+ *  the thing that hit you (it was a guessed 18 px over 12 frames). derived
+ *  from the cartridge:
+ *  linkUpdateKnockback moves Link at SPEED_140 (1.25 px/f;
+ *  constants/common/objectSpeeds.s, SPEED_100 = 1 px/f). */
+const PLAYER_KNOCK_SPEED = 320;
 
-/** f — how long an ordinary enemy flickers after a hit. guessed. */
-const ENEMY_FLICKER_FRAMES = 24;
+/** f — invulnerability after an ordinary enemy takes a hit that names no tier
+ *  in ENEMY_HIT_TIERS (no knockback, or an item of ours). derived from the
+ *  cartridge: oracles-disasm code/collisionEffects.s, applyDamageToEnemyOrPart's
+ *  @damageTypeTable, ENEMYDMG_04 (an L2 sword's hit): invincibilityCounter $15. */
+const ENEMY_INVULN_FRAMES = 21;
+
+/** [px, f] — the cartridge's three strengths of hit on an ordinary enemy: how
+ *  far it is thrown and how long it is then invulnerable. Low 16 px / 16 f
+ *  (the L1 sword, the held blade), normal 22 px / 21 f (the L2 and L3 sword,
+ *  seeds, thrown things), high 30 px / 26 f (the spin, a bomb). A hit of some
+ *  other distance takes the invulnerability of the first tier at least as far.
+ *  derived from the cartridge: oracles-disasm code/collisionEffects.s,
+ *  applyDamageToEnemyOrPart's @damageTypeTable, ENEMYDMG_00/04/08
+ *  (invincibilityCounter $10/$15/$1a, knockbackCounter $08/$0b/$0f) times
+ *  ENEMY_KNOCK_SPEED; which item gets which is data/seasons/
+ *  objectCollisionTable.s, ENEMYCOLLISION_STANDARD_ENEMY. */
+const ENEMY_HIT_TIERS = [[16, 16], [22, 21], [30, 26]];
+
+/** f — how long an ordinary enemy flashes after a hit. derived: the cartridge
+ *  flashes an enemy for exactly as long as its invincibilityCounter runs, so
+ *  the flash is whatever ENEMY_HIT_TIERS / ENEMY_INVULN_FRAMES gave the hit;
+ *  this is the value when nothing else names one. */
+const ENEMY_FLICKER_FRAMES = ENEMY_INVULN_FRAMES;
 
 /** f — how many frames each beat of an enemy's hit flash lasts: the
  *  `hitflash` palette for this many, its own colours for this many, and so on
@@ -820,45 +883,56 @@ const ENEMY_DEATH_FRAMES = 16;
  *  `Entity.hurt()`'s own hitstop already uses. */
 const ENEMY_ATTACK_FRAMES = 16;
 
-/** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
- *  the KNOCK_* distances below this is the fixed frame count half of the
- *  fixed-distance-over-fixed-frames rule; nothing decays.
+/** sp/f — how fast an ordinary enemy is thrown by a hit: 2 px/f, for as many
+ *  frames as the hit's KNOCK_* distance takes, straight AWAY from whatever hit
+ *  it (not along Link's facing), and cut short the frame it stops moving.
+ *  derived from the cartridge: oracles-disasm object_code/common/enemies/
+ *  commonCode.s, ecom_updateKnockback_common ("Speed is 200 or 300 based on
+ *  knockback duration"; SPEED_200 for every ordinary hit, and "Enemy stopped
+ *  moving; stop knockback early"); the angle is code/collisionEffects.s
+ *  @handleCollision, Link's position to the enemy's, flipped.
  *
- *  Worth knowing when tuning it: contact damage does not care that an enemy is
- *  mid-knockback, so these are frames the enemy is travelling away and can
- *  still hurt you. The exponential decay this replaces covered most of its
- *  distance in the first two frames, so shortening this is the lever that
- *  restores that snap. Trying 5 instead of 8 changed nothing measurable in
- *  either committed replay, so it is left where it was. */
-const ENEMY_KNOCK_FRAMES = 8;
-
+ *  Worth knowing: contact damage does not care that an enemy is
+ *  mid-knockback, in the cartridge or here. */
+const ENEMY_KNOCK_SPEED = 512;
 // The KNOCK_* values below are DISTANCES IN PIXELS, not speeds. A hit shoves
-// its target KNOCK_x pixels over ENEMY_KNOCK_FRAMES frames at a constant
-// speed. They were speeds until P4; the numbers are the total travel the old
-// exponential decay produced from the old speeds, so a sword still throws an
-// enemy about as far as it used to, in a straight predictable line instead of
-// an asymptote. All guessed.
+// its target KNOCK_x pixels at ENEMY_KNOCK_SPEED, so each is an even number:
+// the cartridge counts knockback in frames at 2 px a frame. Where Seasons has
+// the same kind of hit the distance is its tier from ENEMY_HIT_TIERS.
 
-/** px — default knockback dealt when a hit does not name its own. guessed. */
-const KNOCK_DEFAULT = 13;
+/** px — default knockback dealt when a hit does not name its own. derived:
+ *  ENEMY_HIT_TIERS' normal hit, what most of Seasons' items deal. */
+const KNOCK_DEFAULT = 22;
 
-/** px — knockback dealt by a sword swing. guessed. */
-const KNOCK_SWORD = 18;
+/** px — knockback dealt by a swing of the L1 sword. derived: ENEMY_HIT_TIERS'
+ *  low hit (objectCollisionTable ENEMYCOLLISION_STANDARD_ENEMY, column
+ *  ITEMCOLLISION_L1_SWORD = COLLISIONEFFECT_SWORD_LOW_KNOCKBACK). */
+const KNOCK_SWORD = 16;
 
-/** px — knockback dealt by a spin attack. guessed. */
-const KNOCK_SPIN = 22;
+/** px — knockback dealt by a swing of the L2 sword or better. derived:
+ *  ENEMY_HIT_TIERS' normal hit (columns ITEMCOLLISION_L2/L3_SWORD =
+ *  COLLISIONEFFECT_SWORD). */
+const KNOCK_SWORD_L2 = 22;
 
-/** px — knockback dealt by a projectile. guessed. */
-const KNOCK_PROJECTILE = 13;
+/** px — knockback dealt by a spin attack. derived: ENEMY_HIT_TIERS' high hit
+ *  (column ITEMCOLLISION_SWORDSPIN = COLLISIONEFFECT_SWORD_HIGH_KNOCKBACK). */
+const KNOCK_SPIN = 30;
 
-/** px — knockback dealt by an explosion. guessed. */
-const KNOCK_EXPLOSION = 9;
+/** px — knockback dealt by a projectile. derived: ENEMY_HIT_TIERS' normal hit
+ *  (the sword beam's and the seeds' columns). */
+const KNOCK_PROJECTILE = 22;
 
-/** px — knockback dealt by a thrown or dropped object. guessed. */
-const KNOCK_THROWN = 9;
+/** px — knockback dealt by an explosion. derived: ENEMY_HIT_TIERS' high hit
+ *  (column ITEMCOLLISION_BOMB). */
+const KNOCK_EXPLOSION = 30;
 
-/** px — knockback dealt by a stunning tool. guessed. */
-const KNOCK_TOOL = 5;
+/** px — knockback dealt by a thrown or dropped object. derived:
+ *  ENEMY_HIT_TIERS' normal hit (column ITEMCOLLISION_THROWN_OBJECT). */
+const KNOCK_THROWN = 22;
+
+/** px — knockback dealt by a stunning tool. guessed (our items); 6 rather
+ *  than 5 since the S150 knockback moves in 2 px frames. */
+const KNOCK_TOOL = 6;
 
 /** f — invulnerability after a boss takes a hit. guessed; shorter than an
  *  ordinary enemy's so a boss can be combo'd. */
@@ -876,11 +950,15 @@ const BOSS_KNOCK_SCALE = 0.4;
 /** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
 const HAZARD_DAMAGE = 2;
 
-/** qh — damage from falling into a pit. guessed. */
-const PIT_DAMAGE = 2;
+/** qh — damage from falling into a pit: one heart. derived from the
+ *  cartridge: linkState02 @substate2 applies damageToApply $fc (-4 quarter
+ *  hearts; the Gold Luck Ring halves it). Was a guessed half heart. */
+const PIT_DAMAGE = 4;
 
-/** qh — damage from being washed out by water you cannot swim in. guessed. */
-const WASH_DAMAGE = 2;
+/** qh — damage from being washed out by water you cannot swim in: one heart,
+ *  Seasons' drowning. derived: drowning ends in the same linkState02
+ *  @respawn -> @substate2 as a pit, so it costs the same $fc. */
+const WASH_DAMAGE = 4;
 
 /** qh — damage from standing in your own explosion. guessed. */
 const EXPLOSION_SELF_DAMAGE = 2;
@@ -940,11 +1018,16 @@ const LAND_SETTLE_RATE = 128;
  *  A run is cleared in one hop so a two-tile drop reads as one movement. */
 const LEDGE_MAX_SPAN = 3;
 
-/** f — duration of a one-way ledge hop, start to landing. guessed. */
-const LEDGE_HOP_FRAMES = 18;
+/** f — duration of a one-way ledge hop, start to landing. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/link.s, the
+ *  cliff check before linkState12 (LINK_STATE_JUMPING_DOWN_LEDGE) launches
+ *  Link at speedZ -$1c0 and @substate1 pulls it back at $20 a frame:
+ *  2 x 448 / 32 = 28 frames aloft. Was a guessed 18. */
+const LEDGE_HOP_FRAMES = 28;
 
-/** px — peak height of the ledge-hop arc. guessed. */
-const LEDGE_HOP_HEIGHT = 7;
+/** px — peak height of the ledge-hop arc. derived: the same launch and
+ *  gravity, 448^2 / (2 x 32) = 3136 subpixels, 12.25 px. Was a guessed 7. */
+const LEDGE_HOP_HEIGHT = 12;
 
 /** px — how far in front of Link the ledge lip is probed for. guessed. */
 const LEDGE_PROBE_REACH = 10;
@@ -1132,20 +1215,44 @@ const SHAKE_BOSS_BREAK_FRAMES = 16;
 // Player states other than walking
 // ---------------------------------------------------------------------------
 
-/** f — length of a pit fall before the player is replaced on solid ground. guessed. */
-const FALL_FRAMES = 34;
+/** f — how long each of Link's three falling-in-a-hole frames is shown. derived
+ *  from the cartridge: oracles-disasm data/seasons/specialObjectAnimationData.s,
+ *  animationData19c59 (LINK_ANIM_MODE_FALLINHOLE): 16, 10, 10. */
+const FALL_ANIM_FRAMES = [16, 10, 10];
 
-/** f — length of being washed back to shore by water. guessed. */
-const WASH_FRAMES = 30;
+/** f — length of a pit fall before the player is replaced on solid ground.
+ *  derived: the FALL_ANIM_FRAMES animation, then linkState02 @respawn's two
+ *  invisible frames (counter1 $02). Was a guessed 34. */
+const FALL_FRAMES = FALL_ANIM_FRAMES.reduce((a, b) => a + b, 0) + 2;
+
+/** f — length of being washed back to shore by water: Seasons' drowning.
+ *  derived from the cartridge: animationData19c40 (LINK_ANIM_MODE_DROWN,
+ *  6 + 16 frames to its end marker) and the same two invisible frames as a
+ *  pit. It agrees with the ~24-frame drowning fade read off the footage
+ *  (assets/footage/README.md, 4469-4493). Was a guessed 30. */
+const WASH_FRAMES = 6 + 16 + 2;
 
 /** f — how long Link holds the conch, and is frozen for. guessed. */
 const CONCH_FRAMES = 46;
 
-/** f — how long the player must lean on a block before it moves. guessed. */
-const PUSH_DELAY_FRAMES = 18;
+/** f — how long the player must lean on a block before it moves. derived from
+ *  the cartridge: oracles-disasm code/interactableTiles.s, nextToPushableBlock
+ *  counts wPushingAgainstTileCounter down from 20 (resetPushingAgainstTileCounter)
+ *  and pushes when it reaches zero. Was a guessed 18. */
+const PUSH_DELAY_FRAMES = 20;
 
-/** f — how long a Pegasus Seed's speed boost lasts. guessed. */
-const PEGASUS_FRAMES = 300;
+/** sp/f — how fast a pushed block slides its one tile: half a pixel a frame,
+ *  32 frames for the tile. derived from the cartridge: oracles-disasm
+ *  object_code/common/interactions/pushblock.s, SPEED_80 for counter1 $20.
+ *  It was a bare one-pixel step inside PushBlock.update. */
+const BLOCK_SLIDE_SPEED = 128;
+
+/** f — how long a Pegasus Seed's speed boost lasts. derived from the
+ *  cartridge: oracles-disasm object_code/common/itemParents/seedsParent.s,
+ *  @pegasusSeeds sets wPegasusSeedCounter to $03c0 and code/bank0.s
+ *  decPegasusSeedCounter takes two off it a frame (one with the Pegasus
+ *  Ring): 480 frames. Was a guessed 300. */
+const PEGASUS_FRAMES = 480;
 
 /** f — how long Link holds a new item overhead. derived from the `itemGet`
  *  jingle, which is what the pose exists to sit under: 20 rows at bpm 132 and
@@ -1188,30 +1295,21 @@ const LOW_HEART_EVERY = 40;
 // text cadence is the timing constant a player is exposed to more often than
 // any other except walking, and it was not in this file.
 
-/** chars/f — how fast a dialogue page reveals itself. guessed, and the single
- *  most-felt number in the game after WALK_SPEED. 1.6 is what the game has
- *  always read at; it is preserved here rather than re-guessed.
- *
- *  WRITTEN DOWN AND DELIBERATELY NOT APPLIED: both source games look closer to
- *  one character every other frame in ordinary dialogue — around 0.5 here,
- *  which would be roughly three times slower. That is an impression, not a
- *  measurement, and per R3/T4 a number nobody has frame-stepped does not get to
- *  move the whole game's dialogue pacing. Now that it is one named constant it
- *  is a one-line experiment for whoever does step a reference. */
-const TEXT_SPEED = 1.6;
+/** f — how long each character of dialogue takes to appear. derived from the
+ *  cartridge: oracles-disasm code/textbox.s, textSpeedData, the third byte of
+ *  text speed 3 — the speed a new file starts on (code/fileManagement.s,
+ *  initialFileVariables: wTextSpeed $02) — is $04. It was a guessed 1.6
+ *  characters a FRAME, six times faster than Seasons.
+ *  (The footage README's two-frames-a-step reading is the TAS's speed 5.) */
+const TEXT_FRAMES_PER_CHAR = 4;
 
-/** x — multiplier on TEXT_SPEED while A or B is held. guessed. Held-button
- *  fast-forward is a source-game behaviour; 3x makes a long page skimmable
- *  without skipping it outright. */
-const TEXT_FAST_SCALE = 3;
-
-/** chars — one text blip per this many revealed characters. guessed. It used
- *  to be `floor(chars) % 3 === 0`, tested against the running total rather than
- *  counting characters, so at a non-integer TEXT_SPEED the blip fired on an
- *  irregular beat that changed with the speed — the click was not a rhythm, it
- *  was an artefact. Counting revealed characters makes the cadence a rhythm
- *  again and keeps it one at any speed. */
-const TEXT_BEEP_EVERY = 3;
+/** f — the least time between two text blips. Every character that is not a
+ *  space blips, unless one blipped this recently. derived from the cartridge:
+ *  code/textbox.s, w7TextSoundCooldownCounter set to $04 on each blip and the
+ *  space test beside it. At TEXT_FRAMES_PER_CHAR that is one blip a letter.
+ *  Pressing A or B mid-line shows the rest of the LINE at once (@skipToLineEnd)
+ *  with one blip; there is no held-button fast-forward in Seasons. */
+const TEXT_BEEP_COOLDOWN = 4;
 
 /** px — how far in front of Link an A-button context action reaches. guessed. */
 const CONTEXT_REACH = 12;
@@ -1490,8 +1588,17 @@ const PROJECTILE_Z = 4;
 // Pickups and drops
 // ---------------------------------------------------------------------------
 
-/** f — how long a dropped pickup lingers before vanishing. guessed. */
-const PICKUP_LIFE_FRAMES = 460;
+/** f — how long a dropped pickup lingers, once it has landed, before vanishing.
+ *  derived from the cartridge: oracles-disasm object_code/common/parts/
+ *  itemDrop.s — counter1 240 when it stops bouncing, taken down on every
+ *  other frame (itemDrop_countdownToDisappear), 480 frames. Was a guessed
+ *  460 counted from the moment it appeared. */
+const PICKUP_LIFE_FRAMES = 480;
+
+/** f — for how much of the end of that life the pickup blinks, two frames
+ *  shown and two hidden. derived: itemDrop_countdownToDisappear toggles its
+ *  visibility each time it counts once counter1 is under 60 — 120 frames. */
+const PICKUP_BLINK_FRAMES = 120;
 
 /** sp/f — the little upward pop a drop makes when it appears. guessed;
  *  -1.25 px/f, snapped to the grid from -1.2. */
@@ -2020,6 +2127,9 @@ __exports["SWING_PHASE_FRAMES"] = SWING_PHASE_FRAMES;
 __exports["SWING_FRAMES"] = SWING_FRAMES;
 __exports["SWORD_ARC"] = SWORD_ARC;
 __exports["ENEMY_HURT_RADIUS"] = ENEMY_HURT_RADIUS;
+__exports["LINK_HURT_RADIUS"] = LINK_HURT_RADIUS;
+__exports["ENEMY_SHOT_RADIUS"] = ENEMY_SHOT_RADIUS;
+__exports["BEAM_SHOT_RADIUS"] = BEAM_SHOT_RADIUS;
 __exports["CHARGE_FRAMES"] = CHARGE_FRAMES;
 __exports["CHARGE_SPARKLE_EVERY"] = CHARGE_SPARKLE_EVERY;
 __exports["SPIN_FRAMES"] = SPIN_FRAMES;
@@ -2034,17 +2144,20 @@ __exports["PLAYER_INVULN_FRAMES"] = PLAYER_INVULN_FRAMES;
 __exports["PLAYER_FLICKER_FRAMES"] = PLAYER_FLICKER_FRAMES;
 __exports["PLAYER_HURT_FLASH_BEAT"] = PLAYER_HURT_FLASH_BEAT;
 __exports["PLAYER_RECOVER_INVULN_FRAMES"] = PLAYER_RECOVER_INVULN_FRAMES;
+__exports["RESPAWN_HOLD_FRAMES"] = RESPAWN_HOLD_FRAMES;
 __exports["PLAYER_HURT_FRAMES"] = PLAYER_HURT_FRAMES;
-__exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
 __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
+__exports["PLAYER_KNOCK_SPEED"] = PLAYER_KNOCK_SPEED;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
+__exports["ENEMY_HIT_TIERS"] = ENEMY_HIT_TIERS;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
 __exports["ENEMY_HIT_FLASH_BEAT"] = ENEMY_HIT_FLASH_BEAT;
 __exports["ENEMY_DEATH_FRAMES"] = ENEMY_DEATH_FRAMES;
 __exports["ENEMY_ATTACK_FRAMES"] = ENEMY_ATTACK_FRAMES;
-__exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
+__exports["ENEMY_KNOCK_SPEED"] = ENEMY_KNOCK_SPEED;
 __exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
 __exports["KNOCK_SWORD"] = KNOCK_SWORD;
+__exports["KNOCK_SWORD_L2"] = KNOCK_SWORD_L2;
 __exports["KNOCK_SPIN"] = KNOCK_SPIN;
 __exports["KNOCK_PROJECTILE"] = KNOCK_PROJECTILE;
 __exports["KNOCK_EXPLOSION"] = KNOCK_EXPLOSION;
@@ -2095,10 +2208,12 @@ __exports["SHAKE_RUMBLE"] = SHAKE_RUMBLE;
 __exports["SHAKE_RUMBLE_FRAMES"] = SHAKE_RUMBLE_FRAMES;
 __exports["SHAKE_BOSS_BREAK"] = SHAKE_BOSS_BREAK;
 __exports["SHAKE_BOSS_BREAK_FRAMES"] = SHAKE_BOSS_BREAK_FRAMES;
+__exports["FALL_ANIM_FRAMES"] = FALL_ANIM_FRAMES;
 __exports["FALL_FRAMES"] = FALL_FRAMES;
 __exports["WASH_FRAMES"] = WASH_FRAMES;
 __exports["CONCH_FRAMES"] = CONCH_FRAMES;
 __exports["PUSH_DELAY_FRAMES"] = PUSH_DELAY_FRAMES;
+__exports["BLOCK_SLIDE_SPEED"] = BLOCK_SLIDE_SPEED;
 __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
 __exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
 __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
@@ -2106,9 +2221,8 @@ __exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
 __exports["THE_END_HOLD_FRAMES"] = THE_END_HOLD_FRAMES;
 __exports["LOW_HEART_THRESHOLD"] = LOW_HEART_THRESHOLD;
 __exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
-__exports["TEXT_SPEED"] = TEXT_SPEED;
-__exports["TEXT_FAST_SCALE"] = TEXT_FAST_SCALE;
-__exports["TEXT_BEEP_EVERY"] = TEXT_BEEP_EVERY;
+__exports["TEXT_FRAMES_PER_CHAR"] = TEXT_FRAMES_PER_CHAR;
+__exports["TEXT_BEEP_COOLDOWN"] = TEXT_BEEP_COOLDOWN;
 __exports["CONTEXT_REACH"] = CONTEXT_REACH;
 __exports["LIFT_REACH"] = LIFT_REACH;
 __exports["THROW_SPEED"] = THROW_SPEED;
@@ -2165,6 +2279,7 @@ __exports["ENEMY_SHOT_LIFE"] = ENEMY_SHOT_LIFE;
 __exports["RING_SHOT_LIFE"] = RING_SHOT_LIFE;
 __exports["PROJECTILE_Z"] = PROJECTILE_Z;
 __exports["PICKUP_LIFE_FRAMES"] = PICKUP_LIFE_FRAMES;
+__exports["PICKUP_BLINK_FRAMES"] = PICKUP_BLINK_FRAMES;
 __exports["PICKUP_POP_SPEED"] = PICKUP_POP_SPEED;
 __exports["PICKUP_GRAVITY"] = PICKUP_GRAVITY;
 __exports["PICKUP_SETTLE_FRAMES"] = PICKUP_SETTLE_FRAMES;
@@ -5938,7 +6053,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT } = __require("data/feel.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT } = __require("data/feel.js");
 
 const ENTITY_TYPES = new Map();
 
@@ -5968,6 +6083,51 @@ function dirTo(a, b) {
 }
 
 let nextId = 1;
+
+/**
+ * An enemy's collision area — what the sword must reach and what hurts Link
+ * when it touches his own (playerHurtRect): a box of ENEMY_HURT_RADIUS either
+ * way of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
+ * is the footprint it walks on and sits two pixels low. An enemy whose spec
+ * declares its own `hurtBox` keeps it; anything bigger than one cell with
+ * none (a boss) falls back to its `hb`.
+ */
+function enemyHurtRect(e) {
+  // A hoverer (keese, bubble, wisp) is drawn `z` pixels up, and the box goes
+  // with the sprite: the cartridge's keese and bubble fly at z 0, so their box
+  // is where they are drawn, and ours are drawn higher.
+  const lift = e.z > 0 ? e.z : 0;
+  const hb = e.spec && e.spec.hurtBox;
+  if (hb) return { x: e.x + hb.x, y: e.y + hb.y - lift, w: hb.w, h: hb.h };
+  if (e.w > 16 || e.h > 16) return e.rect();
+  const r = ENEMY_HURT_RADIUS;
+  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r - lift, w: r * 2, h: r * 2 };
+}
+
+/** How long a hit of `knock` pixels leaves an ordinary enemy invulnerable. */
+function hitInvulnFrames(knock) {
+  if (!knock) return ENEMY_INVULN_FRAMES;
+  for (const [px, f] of ENEMY_HIT_TIERS) if (knock <= px) return f;
+  return ENEMY_HIT_TIERS[ENEMY_HIT_TIERS.length - 1][1];
+}
+
+/**
+ * The per-frame step, in sp/f, of a knockback at `speed`: away from `from`'s
+ * middle when there is one, snapped to one of 32 angles as the cartridge's
+ * angles are; else along `dir`. Null if there is no direction at all.
+ */
+function knockVector(e, dir, from, speed) {
+  if (from) {
+    const dx = e.cx - from.cx, dy = e.cy - from.cy;
+    if (dx || dy) {
+      const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 16)) * (Math.PI / 16);
+      return [Math.round(Math.cos(a) * speed), Math.round(Math.sin(a) * speed)];
+    }
+  }
+  const v = dir && DIR_VEC[dir];
+  if (!v) return null;
+  return [v[0] * speed, v[1] * speed];
+}
 
 class Entity {
   constructor(x, y, opts = {}) {
@@ -6026,6 +6186,15 @@ class Entity {
     return { x: this.x + this.hb.x, y: this.y + this.hb.y, w: this.hb.w, h: this.hb.h };
   }
 
+  /**
+   * The box this thing HURTS and IS HURT with, as opposed to `rect()`, the
+   * footprint it walks on. The same for most entities; an enemy, Link and an
+   * enemy shot use the cartridge's collision radii (enemyHurtRect,
+   * Player.contactRect, Projectile.contactRect). Contact damage asks this, and
+   * so does every tool that models contact — never a copy of it.
+   */
+  contactRect() { return this.rect(); }
+
   overlaps(o) {
     const a = this.rect(), b = o.rect();
     return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -6037,28 +6206,25 @@ class Entity {
   }
 
   /**
-   * Take damage. `dir` is the direction the hit came *from* the attacker's
-   * view, and `knock` is a DISTANCE IN PIXELS, not a speed. It comes from data
-   * and from call sites that pass a bare number, and is converted to the
-   * engine's subpixel step here.
+   * Take damage. `knock` is a DISTANCE IN PIXELS, not a speed; the target is
+   * thrown it at ENEMY_KNOCK_SPEED (2 px a frame, the cartridge's) and stops
+   * early if something stops it. `from`, when given, is what struck it — the
+   * throw goes straight away from its middle, as Seasons' does, on the nearest
+   * of the cartridge's 32 angles. Without one it goes along `dir`, the
+   * direction the hit travelled.
    *
-   * Knockback is a scripted displacement, the way the GB Zeldas do it: the
-   * target travels `knock` pixels over ENEMY_KNOCK_FRAMES frames at a constant
-   * speed and stops. It used to be an impulse that decayed by 0.82 a frame,
-   * which made the distance a function of the initial speed and put a strong
-   * hit and a weak hit in unrelated places. See docs/FEEL-SPEC.md.
+   * How long the target is then invulnerable (and flashing) follows the hit's
+   * strength: ENEMY_HIT_TIERS.
    */
-  hurt(game, dmg, dir, knock = KNOCK_DEFAULT) {
+  hurt(game, dmg, dir, knock = KNOCK_DEFAULT, from = null) {
     if (this.invuln > 0 || this.dead) return false;
     this.hp -= dmg;
-    this.invuln = ENEMY_INVULN_FRAMES;
-    this.flicker = ENEMY_FLICKER_FRAMES;
-    if (knock && dir) {
-      const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      // sp/f: the whole distance divided across the whole window, once.
-      const per = sp(knock) / ENEMY_KNOCK_FRAMES;
-      this.knockX = Math.round(dx * per); this.knockY = Math.round(dy * per);
-      this.knockTime = ENEMY_KNOCK_FRAMES;
+    this.invuln = hitInvulnFrames(knock);
+    this.flicker = this.invuln;
+    const v = knockVector(this, dir, from, ENEMY_KNOCK_SPEED);
+    if (knock && v) {
+      this.knockX = v[0]; this.knockY = v[1];
+      this.knockTime = Math.max(1, Math.round(knock / (ENEMY_KNOCK_SPEED / 256)));
     }
     // The freeze goes on the hit CONNECTING, not on the sword specifically:
     // this is the one funnel every damage source in the game passes through,
@@ -6312,6 +6478,9 @@ __exports["DIRS"] = DIRS;
 __exports["DIR_VEC"] = DIR_VEC;
 __exports["dirFromVec"] = dirFromVec;
 __exports["dirTo"] = dirTo;
+__exports["enemyHurtRect"] = enemyHurtRect;
+__exports["hitInvulnFrames"] = hitInvulnFrames;
+__exports["knockVector"] = knockVector;
 __exports["Entity"] = Entity;
 __exports["moveEntity"] = moveEntity;
 __exports["canOccupy"] = canOccupy;
@@ -7014,7 +7183,7 @@ const { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } = __require("game
 const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE } = __require("data/feel.js");
+const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE, ENEMY_SHOT_RADIUS } = __require("data/feel.js");
 
 class Projectile extends Entity {
   constructor(x, y, o = {}) {
@@ -7042,6 +7211,21 @@ class Projectile extends Entity {
     this.onImpact = o.onImpact || null;
     this.hitFx = o.hitFx || 'spark';
     this.z = o.z || PROJECTILE_Z;
+    // How big the shot is to LINK: a box this far either way of the middle
+    // of the sprite as drawn, against his own 12x12 — the cartridge's rule.
+    this.radius = o.radius || ENEMY_SHOT_RADIUS;
+  }
+
+  /** The shot's collision box: `radius` either way of its middle as drawn. */
+  contactRect() {
+    const r = this.radius;
+    return { x: this.cx - r, y: this.cy - this.z - r, w: r * 2, h: r * 2 };
+  }
+
+  /** True if this enemy shot is touching Link's collision area. */
+  touchesPlayer(pl) {
+    const a = this.contactRect(), b = pl.contactRect();
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
   }
 
   update(game) {
@@ -7078,10 +7262,10 @@ class Projectile extends Entity {
         if (!this.overlaps(e)) continue;
         const dir = Math.abs(this.vx) > Math.abs(this.vy)
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE) && !this.pierce) { this.expire(game); return; }
+        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE, this) && !this.pierce) { this.expire(game); return; }
       }
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
-      if (this.overlaps(game.player)) {
+      if (this.touchesPlayer(game.player)) {
         game.player.takeDamage(game, this.damage, this);
         if (!this.pierce) { this.expire(game); return; }
       }
@@ -7254,7 +7438,7 @@ class Explosion extends Entity {
       game.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
       for (const e of game.entities) {
         if (e === this || e.dead) continue;
-        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, KNOCK_EXPLOSION);
+        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, KNOCK_EXPLOSION, this);
         if (e.bombable && this.overlaps(e) && e.onBombed) e.onBombed(game);
       }
       if (game.player && this.overlaps(game.player)) {
@@ -7648,7 +7832,7 @@ class ThrownObject extends Entity {
     if (r.hitX || r.hitY) { this.shatter(game); return; }
     for (const e of game.entities) {
       if (e.isEnemy && !e.dead && this.overlaps(e)) {
-        e.hurt(game, this.power, null, KNOCK_THROWN);
+        e.hurt(game, this.power, null, KNOCK_THROWN, this);
         this.shatter(game);
         return;
       }
@@ -8470,14 +8654,15 @@ __define("game/player.js", function (__exports, __require) {
 //   link_hold_down/up/side (blade held out, walking with it)
 //   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
 
-const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS } = __require("game/entity.js");
+const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, enemyHurtRect } = __require("game/entity.js");
+
 const { F, transformFor } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, ENEMY_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
 
 // Which way the blade points on the swing's first phase: out to one side.
 // Facing down it starts on Link's left, facing up on his right, and facing
@@ -8506,22 +8691,21 @@ function swingPhase(t) {
   return SWING_PHASE_FRAMES.length - 1;
 }
 
+
 /**
- * An enemy's hit area for the sword: a box of ENEMY_HURT_RADIUS either way
- * of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
- * is the footprint it walks on and sits two pixels low. An enemy whose spec
- * declares its own `hurtBox` keeps it; anything bigger than one cell with
- * none (a boss) falls back to its `hb`.
+ * Link's own collision area: a box of LINK_HURT_RADIUS either way of the
+ * middle of his sprite, as the cartridge has it. It is what an enemy has to
+ * touch to hurt him; his `hb` is his feet, and only walls and floors read it.
  */
-function enemyHurtRect(e) {
-  const hb = e.spec && e.spec.hurtBox;
-  if (hb) return { x: e.x + hb.x, y: e.y + hb.y, w: hb.w, h: hb.h };
-  if (e.w > 16 || e.h > 16) return e.rect();
-  const r = ENEMY_HURT_RADIUS;
-  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r, w: r * 2, h: r * 2 };
+function playerHurtRect(p) {
+  const r = LINK_HURT_RADIUS;
+  return { x: p.cx - r, y: p.cy - r, w: r * 2, h: r * 2 };
 }
 
 class Player extends Entity {
+  /** What an enemy has to touch to hurt him: playerHurtRect. */
+  contactRect() { return playerHurtRect(this); }
+
   constructor(x, y) {
     super(x, y);
     this.w = 16; this.h = 16;
@@ -9156,7 +9340,7 @@ class Player extends Entity {
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
-      e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD);
+      e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD, this);
     }
     // Walking a held blade through undergrowth cuts it, as it does in Seasons.
     game.checkTileAction(box, 'cut');
@@ -9205,7 +9389,8 @@ class Player extends Entity {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.swingHit.add(e.id);
-        e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_SWORD));
+        e.hurt(game, this.swordHit(game), this.dir,
+          this.swordKnock(game, this.swordLevel >= 2 ? KNOCK_SWORD_L2 : KNOCK_SWORD), this);
       }
     }
     // Bushes and grass are cut by the blade at full reach, as the cartridge
@@ -9279,7 +9464,7 @@ class Player extends Entity {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.spinHit.add(e.id);
-        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN));
+        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
       }
     }
     game.checkTileAction(box, 'cut');
@@ -9612,8 +9797,14 @@ class Player extends Entity {
       // just killed in D1's Tide Gallery and died to it.
       if (!e.isEnemy || e.dead || e.dying || e.harmless || e.dormant || e.hidden) continue;
       if (e.damage <= 0) continue;
+      // A stunned enemy does not hurt to touch: the cartridge skips Link's
+      // check while its stunCounter runs (code/collisionEffects.s,
+      // enemyCheckCollisions @checkHitLink).
+      if (e.stun > 0) continue;
       if (this.z > 6 && !e.flying) continue;      // jumped over it
-      if (!this.overlaps(e)) continue;
+      // The cartridge's rule: Link's 12x12 against the enemy's own box, both
+      // on the middle of the sprite — not the two walking footprints.
+      if (!rectOverlap(this.contactRect(), e.contactRect())) continue;
       // "Sea creature" is the enemy's own terrain field, not where it happens
       // to be standing: a crab hauled onto dry land by the tide is still what
       // the Anemone's Gift protects you from.
@@ -9679,12 +9870,13 @@ class Player extends Entity {
     if (!o.noKnockDir && source && !this.underwater) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
-      // sp/f: the whole distance divided across the whole window, once.
-      const dist = game.charm('ballastHeart') ? PLAYER_KNOCK_DIST / 2 : PLAYER_KNOCK_DIST;
-      const per = sp(dist) / PLAYER_KNOCK_FRAMES;
+      // The cartridge's shove: a fixed speed for a fixed count of frames.
+      // The Ballast Heart halves the count, as Seasons' Steadfast Ring halves
+      // knockbackCounter — half the distance at the same speed.
+      const per = PLAYER_KNOCK_SPEED;
       this.knockX = Math.round(dx / d * per);
       this.knockY = Math.round(dy / d * per);
-      this.knockTime = PLAYER_KNOCK_FRAMES;
+      this.knockTime = game.charm('ballastHeart') ? PLAYER_KNOCK_FRAMES >> 1 : PLAYER_KNOCK_FRAMES;
     } else {
       this.knockX = 0; this.knockY = 0; this.knockTime = 0;
     }
@@ -9716,6 +9908,7 @@ class Player extends Entity {
       this.x = safe.x; this.y = safe.y;
       this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES;
     }
   }
 
@@ -9739,6 +9932,7 @@ class Player extends Entity {
       this.z = 0;
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES;
       game.say('The tide swept you back!');
     }
   }
@@ -9765,7 +9959,11 @@ class Player extends Entity {
     this.flipX = this.dir === 'left';
     const key = side ? 'side' : this.dir;
 
-    if (this.falling > 0) return 'link_fall_' + Math.min(2, Math.floor((FALL_FRAMES - this.falling) / 8));
+    if (this.falling > 0) {
+      const t = FALL_FRAMES - this.falling;
+      const [a, b] = FALL_ANIM_FRAMES;
+      return 'link_fall_' + (t < a ? 0 : t < a + b ? 1 : 2);
+    }
     if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.bellowsT > 0) return 'link_push_' + key;
@@ -9933,10 +10131,11 @@ function dirFromDelta(dx, dy) {
   return dy < 0 ? 'up' : 'down';
 }
 __exports["swingPhase"] = swingPhase;
-__exports["enemyHurtRect"] = enemyHurtRect;
+__exports["playerHurtRect"] = playerHurtRect;
 __exports["Player"] = Player;
 __exports["swordDamage"] = swordDamage;
 __exports["roomHasDryGround"] = roomHasDryGround;
+__exports["enemyHurtRect"] = enemyHurtRect;
 });
 
 /* ===== src/game/objects.js ===== */
@@ -9953,7 +10152,7 @@ const { drawText } = __require("gfx/font.js");
 const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
 
 // --------------------------------------------------------------------------
 // Pickups
@@ -10138,7 +10337,8 @@ class Pickup extends Entity {
         Math.round(Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y));
     }
     if (this.grabDelay > 0) this.grabDelay--;
-    if (this.life !== Infinity && --this.life <= 0) { this.remove = true; return; }
+    // The clock starts when it has landed, as the cartridge's does.
+    if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
@@ -10151,7 +10351,7 @@ class Pickup extends Entity {
 
   draw(ctx, game, ox, oy) {
     // Blink out as the timer runs down.
-    if (this.life !== Infinity && this.life < 90 && (this.life >> 2) % 2 === 0) return;
+    if (this.life !== Infinity && this.life < PICKUP_BLINK_FRAMES && (this.life >> 1) % 2 === 0) return;
     const bob = this.spec.persistent ? Math.round(Math.sin(this.frame * 0.08) * 1.5) : 0;
     // A pickup with `frames` cycles them; everything else draws its one sprite.
     // `frame` already ticks in update(), so this costs no new state and no new
@@ -10861,7 +11061,7 @@ class PushBlock extends Entity {
 
   update(game) {
     if (!this.slide) return;
-    const step = FP_ONE;      // one pixel a frame, on the grid
+    const step = BLOCK_SLIDE_SPEED;   // Seasons' half a pixel a frame
     this.fx += Math.sign(this.slide.fx - this.fx) * step;
     this.fy += Math.sign(this.slide.fy - this.fy) * step;
     if (this.fx === this.slide.fx && this.fy === this.slide.fy) {
@@ -11555,7 +11755,7 @@ __define("game/dialogue.js", function (__exports, __require) {
 const { SCREEN_W, SCREEN_H, HUD_H, VIEW_H } = __require("core/screen.js");
 const { drawText, textWidth, paginate } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
-const { TEXT_SPEED, TEXT_FAST_SCALE, TEXT_BEEP_EVERY } = __require("data/feel.js");
+const { TEXT_FRAMES_PER_CHAR, TEXT_BEEP_COOLDOWN } = __require("data/feel.js");
 
 const BOX_X = 4;
 const BOX_W = SCREEN_W - 8;
@@ -11582,8 +11782,9 @@ class Dialogue {
     this.active = false;
     this.pages = [];
     this.page = 0;
-    this.chars = 0; this.beeped = 0;
-    this.speed = TEXT_SPEED;   // chars/f; see src/data/feel.js
+    this.chars = 0;
+    this.charT = 0;            // frames until the next character; see feel.js
+    this.beepCool = 0;
     this.done = false;
     this.onClose = null;
     this.choices = null;       // { options:[...], index, onPick }
@@ -11601,7 +11802,7 @@ class Dialogue {
     if (this.active) { this.queue.push([text, opts]); return; }
     this.pages = paginate(String(text), BOX_W - PAD * 2 - 2, LINES);
     this.page = 0;
-    this.chars = 0; this.beeped = 0;
+    this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
     this.active = true;
     this.done = false;
     this.onClose = opts.onClose || null;
@@ -11652,18 +11853,23 @@ class Dialogue {
     if (!this.active) return;
     const i = this.game.input;
 
+    if (this.beepCool > 0) this.beepCool--;
     if (this.chars < this.pageLen) {
-      const fast = i.down('a') || i.down('b');
-      this.chars = Math.min(this.pageLen, this.chars + this.speed * (fast ? TEXT_FAST_SCALE : 1));
-      // Click as characters appear, but not on every single one. Counted off
-      // the characters actually revealed, not off the running total: testing
-      // `floor(chars) % N` made the blip's beat an artefact of a non-integer
-      // TEXT_SPEED rather than a rhythm.
-      const shown = Math.floor(this.chars);
-      if (shown - this.beeped >= TEXT_BEEP_EVERY) {
-        this.beeped = shown - (shown % TEXT_BEEP_EVERY);
-        this.game.audio.sfx('text', { vol: 0.4 });
+      // Seasons' text: one character every TEXT_FRAMES_PER_CHAR frames, and A
+      // or B shows the rest of the current LINE at once — not the page.
+      const text = this.currentText;
+      if (i.pressed('a') || i.pressed('b')) {
+        const nl = text.indexOf('\n', this.chars);
+        this.chars = nl < 0 ? this.pageLen : nl + 1;
+        this.charT = TEXT_FRAMES_PER_CHAR;
+        this.blip(true);
+        return;
       }
+      if (--this.charT > 0) return;
+      this.charT = TEXT_FRAMES_PER_CHAR;
+      const ch = text[this.chars];
+      this.chars++;
+      if (ch !== ' ' && ch !== '\n') this.blip(false);
       return;
     }
 
@@ -11695,13 +11901,20 @@ class Dialogue {
     if (i.pressed('a') || i.pressed('b')) {
       if (this.page < this.pages.length - 1) {
         this.page++;
-        this.chars = 0; this.beeped = 0;
+        this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
         this.game.audio.sfx('textNext');
       } else {
         this.game.audio.sfx('textNext');
         this.close();
       }
     }
+  }
+
+  /** A text blip, unless one sounded within TEXT_BEEP_COOLDOWN frames. */
+  blip(force) {
+    if (this.beepCool > 0 && !force) return;
+    this.beepCool = TEXT_BEEP_COOLDOWN;
+    this.game.audio.sfx('text', { vol: 0.4 });
   }
 
   draw(ctx) {
@@ -31496,13 +31709,13 @@ __define("game/enemy.js", function (__exports, __require) {
 //
 // Bosses use defineBoss, which adds phase handling and a health bar.
 
-const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect } = __require("game/entity.js");
 const { fire } = __require("game/projectile.js");
 const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, ENEMY_ATTACK_FRAMES, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, ENEMY_ATTACK_FRAMES, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -31513,6 +31726,9 @@ const TERRAIN_AVOID = {
 };
 
 class Enemy extends Entity {
+  /** The cartridge's collision box on the middle of the sprite: enemyHurtRect. */
+  contactRect() { return enemyHurtRect(this); }
+
   constructor(x, y, spec, opts = {}) {
     super(x, y, opts);
     this.spec = spec;
@@ -31710,7 +31926,10 @@ class Enemy extends Entity {
     // last frame of it puts the enemy back on.
     if (this.knockTime > 0) {
       this.knockTime--;
-      moveEntity(game, this, this.knockX, this.knockY);
+      const hit = moveEntity(game, this, this.knockX, this.knockY);
+      // Stopped dead against something: the throw ends here, as the
+      // cartridge's does (ecom_updateKnockback_common).
+      if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
       if (this.knockTime === 0) {
         this.step = null; this.stepping = false;
         realign(this, game);
@@ -31730,16 +31949,16 @@ class Enemy extends Entity {
     }
   }
 
-  hurt(game, dmg, dir, knock) {
+  hurt(game, dmg, dir, knock, from) {
     // A creature flopping on the bank cannot raise its shield and cannot take
     // a hit lightly. This is the Dredge Line's combat verb, and it is the
     // whole answer to an aquatic enemy you could otherwise never corner.
     if (this.dredged > 0) {
-      return super.hurt(game, Math.round(dmg * DREDGE_FLOP_DAMAGE_SCALE), dir, knock);
+      return super.hurt(game, Math.round(dmg * DREDGE_FLOP_DAMAGE_SCALE), dir, knock, from);
     }
     // Rung. Armour that is ringing is armour that is not blocking — locking a
     // darknut rigid would be a stun, and a stun is not an answer to armour.
-    if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock);
+    if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock, from);
     if (this.shield && dir) {
       // A shielded enemy blocks hits arriving at its facing side.
       const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -31751,7 +31970,7 @@ class Enemy extends Entity {
       if (this.shield === 'all') { game.audio.sfx('block'); return false; }
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
-    return super.hurt(game, dmg, dir, knock);
+    return super.hurt(game, dmg, dir, knock, from);
   }
 
   /**
@@ -32518,6 +32737,7 @@ function shoot(e, g, o = {}) {
     at: o.aim === false ? null : (o.aim ? g.player : null),
     life: o.life || ENEMY_SHOT_LIFE,
     w: o.w, h: o.h,
+    radius: o.radius,
     overWater: o.overWater,
     bounces: o.bounces,
   });
@@ -32599,7 +32819,7 @@ const { wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge, s
 const { spawnEntity } = __require("game/entity.js");
 const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
-const { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES } = __require("data/feel.js");
+const { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } = __require("data/feel.js");
 
 function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
@@ -32727,6 +32947,10 @@ function installEnemies() {
     deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
+    // The cartridge's gel is 2x2 either way of its middle (oracles-disasm
+    // data/seasons/enemyData.s, ENEMY_GEL -> extraEnemyData row 0x06), set
+    // on the middle of the blob as the sheet draws it in this cell.
+    hurtBox: { x: 4, y: 5, w: 4, h: 4 },
     terrain: 'any',
     drops: 'none',
     ai(e, g) { chase(e, g, { speed: 0.42 }); },
@@ -32750,6 +32974,10 @@ function installEnemies() {
     // naturally as "about to move", the same telegraph grammar.
     attackFrame: 'keese_0',
     hb: { x: 3, y: 4, w: 10, h: 8 },
+    // The cartridge's keese is 4 tall and 6 wide either way of its middle
+    // (oracles-disasm data/seasons/enemyData.s, ENEMY_KEESE -> extraEnemyData
+    // row 0x07): a wide, shallow target, wings and all.
+    hurtBox: { x: 2, y: 4, w: 12, h: 8 },
     z: 8,
     drops: 'common',
     ai(e, g) {
@@ -32828,7 +33056,7 @@ function installEnemies() {
       // probe placing the player diagonally off-axis, which still took a
       // hit before this fix. See docs/prompts/LEDGER.md.
       if (every(e, 44) && aligned(e, g, 14) && distToPlayer(e, g) < 80) {
-        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, damage: 2 });
+        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, damage: 2, radius: BEAM_SHOT_RADIUS });
       }
     },
   });
