@@ -1,3 +1,73 @@
+## S153 — the bosses filmed; the spin attack's sword and sound; the title in green
+
+The brief (NEXT-PROMPT S152): film every boss fight, check the tall ones for
+camera crop, ask the human what next. Done, then their own list.
+
+### What landed (branch claude/oracle-tides-boss-footage-my84qk)
+- FILMING TOOL: `tools/film-bosses.mjs` plays the real playthrough route
+  (same seed, ~12 s headless) and writes a PNG every N frames while a
+  boss-class entity is alive, plus fights.json with how far each boss's drawn
+  art (Boss.draw's rig placement) runs above the play area, scrolled and with
+  the camera at its top. `tools/film-bosses.py` makes real-speed GIFs and
+  12-frame strips. CLAUDE.md table row added. Drawing mid-run is safe
+  (draw() consumes no randomness); the run still finishes at frame 185486.
+- CROP FINDINGS: Wyverna up to 52 px cut (25 px even with the camera at the
+  top: she flies, z up to 11, and rises over the top wall under the HUD),
+  Anemos 30 px (only when scrolled), Rootmaw 21 px (12 at top), Gloomtide
+  3 px; Nereth and everyone else 0. HUMAN'S ANSWER: LEAVE IT — the camera
+  follows Link as in Seasons' big rooms. Do not add a boss-framing camera.
+- SPIN ATTACK (human: "holds nothing when he spins, no sound"):
+  - Sound: `spin` sfx is now `{ seasons: 'swordSpin' }`, the cartridge's
+    sfx/swordSpin.s (noise channel, 33 frames) ripped by rip-music.py (7
+    tracks now) and played through gbsound.js on the SFX bus
+    (`Audio._renderSfx` handles `d.seasons`, buffer cached per name). The old
+    synth spin was ~0.2 s and quiet under the music; the call itself always fired.
+  - Sword: rip-link.py now cuts the Ages sheet's Spin Attack band: bodies
+    link_spin_0..7 and blades fx_spin_0..7 (clockwise from up, odd = the
+    diagonal after each cardinal; the left-side cells are the sheet's own, not
+    mirrors). Player.spinPos() and SPIN_BLADE (offsets as the band lays them
+    out) in player.js. feel.js: SPIN_STEP_FRAMES [3,2] and SPIN_FRAMES 25 (was
+    26 guessed), both derived (specialObjectAnimationData.s
+    animationData19d66..19d78; swordParent.s counter1 $05). Hit box unchanged.
+    replay 51/51, check-playthrough 42/42, check-sword 20/20 all green after.
+- TITLE: human asked for green ("Seasons is red, Ages blue, Tides = Farore
+  green"). rip-screens.py step 5 swaps the logo's one red #a50000 (ZELDA +
+  TIDES plaque) for RGB555 (0,17,6). Nothing else changed.
+- Build committed (dist/). test.mjs once failed "frame rate is healthy fps=35"
+  right after heavy runs, green on re-run alone: a wall-clock perf check, not
+  a seeded run — note, not chased.
+
+### The human's decisions this session (bind the next one)
+1. Boss heads cut off by the camera: leave as is.
+2. DUNGEON LOCKS: "One key item per dungeon", Seasons' way. Each dungeon
+   mouth sealed; each opens with its own key object, handed over by a story
+   beat after the previous dungeon (D1's by the Maku Tree on first meeting,
+   the Gnarled Key's role), so D1-D6 are played in order. Today D1, D2 and D5
+   (Drowned Wood) are walk-in from the start, D3/D4 need bombs, D6 is the
+   `keepSeal` story gate (Maku Tree at five Essences) — fold that into the
+   same key scheme. Keys, givers and beats are OURS (Goal 2). NOT YET
+   DESIGNED IN DETAIL: propose all six (who, when, what it looks like) and get
+   a yes before building. The robot's route must learn each key; check-
+   progression, check-overworld, check-gates, check-exits, check-playthrough.
+3. SIDE CONTENT: yes to (a) a minigame or two built around the tide, (b)
+   townsfolk quests paying heart pieces/rupees, (c) more secret caves
+   (bombable walls, tide-only openings) with prizes. Propose before building.
+   Not chosen: a collectible set.
+4. TRADING: the human did not know the Coastwise Chain was finished — the
+   guide's chapter 13 is too technical to notice. It was explained in chat
+   (Ossa -> ... -> Maku Tree -> Resonance Rod). They will say what, if
+   anything, to change (clearer hints, distinct trader sprites, a plainer
+   guide section were offered).
+5. Not taken up from the offered list: art for Thalassor/Gustharpy/
+   Saltwraith, dropping darknut_atk, the robot buying the shield, more
+   Seasons music. Still open for later.
+
+### Noticed, not chased
+- The vines crossing the ZELDA letters are a little closer in colour to the
+  new green than to the old red; readable, the human approved the picture.
+- `tools/shots/` (gitignored) holds this session's throwaway scripts
+  (spintest, spinshots, sfxrender, sfxwav, titleshot).
+
 ## S152 — every boss wears Seasons art; the gel, bubble and beetle mechanics
 
 The human's brief (NEXT-PROMPT S151): boss art first, one boss at a time with
