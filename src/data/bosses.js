@@ -584,6 +584,7 @@ export function installBosses() {
     hp: 52, damage: 4, pal: 'treedk', speed: 0, rate: 12,
     w: 32, h: 32, hb: { x: 4, y: 8, w: 24, h: 22 },
     frames: ['boss_rootmaw_0', 'boss_rootmaw_1', 'boss_rootmaw_2'],
+    openFrames: ['boss_rootmaw_open_0', 'boss_rootmaw_open_1'],
     hurtFrame: 'boss_rootmaw_hurt',
     intro: 90, shell: true, terrain: 'any', drops: 'none',
     // Read by `tools/actor-runtime.mjs`'s `dBoss`. `rootmawTide`'s HIGH
