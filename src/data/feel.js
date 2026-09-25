@@ -1762,6 +1762,16 @@ export const GEL_INCH_FRAMES = 8;
 /** f — a gel shivers this long before it hops. derived: gel.s gel_state8,
  *  counter1 $30. */
 export const GEL_SHAKE_FRAMES = 48;
+/** f — how long a gel that touches Link clings to him. derived: gel.s
+ *  gel_stateC, counter2 120. */
+export const GEL_CLING_FRAMES = 120;
+/** f — what each button press shakes off a clinging gel's time. derived:
+ *  gel.s gel_stateD, `sub $03` on wGameKeysJustPressed. */
+export const GEL_CLING_SHAKE_FRAMES = 3;
+/** px/f — a gel shaken off hops away at SPEED_100 with speedZ -$200.
+ *  derived: gel.s gel_beginHop (1 px/f; 2 px/f upward). */
+export const GEL_HOPOFF_SPEED = 1;
+export const GEL_HOPOFF_LAUNCH = 2;
 
 /** px/f — a keese in flight. derived: keese.s keese_subid00_state8, SPEED_c0. */
 export const KEESE_SPEED = 0.75;
@@ -1829,6 +1839,9 @@ export const BUBBLE_SPEED = 0.75;
 /** 1-in-n — a bubble's chance to turn each frame it is square on the grid or
  *  stopped. derived: bubble.s @chooseNewDirection (random & 7 == 0). */
 export const BUBBLE_TURN_ODDS = 8;
+/** f — a bubble's touch takes Link's sword away for this long. derived:
+ *  bubble.s enemyCode15, `ld a,180` into wSwordDisabledCounter. */
+export const BUBBLE_SWORD_LOCK_FRAMES = 180;
 
 /** f — the beamos's eye moves one step of 32 this often: a full turn in 160.
  *  derived: beamos.s @updateAngle, counter1 $05. */
@@ -1870,6 +1883,24 @@ export const BEETLE_CHARGE_MAX = 1.5;
 /** f — stopped by a wall, it stands this long. derived: spikedBeetle.s
  *  @state9, counter1 30. */
 export const BEETLE_STAND_FRAMES = 30;
+/** f — a spiked beetle turned over by Link's shield lies on its back this
+ *  long. derived: spikedBeetle.s enemyCode14, counter1 180. */
+export const BEETLE_FLIP_FRAMES = 180;
+/** f — for the last of those it shakes before it rights itself. derived:
+ *  spikedBeetle.s @stateB, `cp 60`. */
+export const BEETLE_FLIP_SHAKE_FRAMES = 60;
+/** px/f — the flip throws it up at speedZ -$180. derived: spikedBeetle.s
+ *  (1.5 px/f). */
+export const BEETLE_FLIP_LAUNCH = 1.5;
+/** px/f/f — the flipped beetle's fall, objectUpdateSpeedZAndBounce with
+ *  c = $18. derived: spikedBeetle.s @knockback. */
+export const BEETLE_FLIP_GRAVITY = 0x18 / 256;
+/** px/f — it skids away from the shield while it is in the air, SPEED_e0.
+ *  derived: spikedBeetle.s @knockback. */
+export const BEETLE_FLIP_SKID = 0xe0 / 256;
+/** px/f — righting itself it hops off at SPEED_c0. derived: spikedBeetle.s
+ *  @stateB. */
+export const BEETLE_RIGHT_SPEED = 0xc0 / 256;
 
 /** px/f — a tektite's leap along the ground. derived: tektite.s
  *  @state_uninitialized, SPEED_140. */

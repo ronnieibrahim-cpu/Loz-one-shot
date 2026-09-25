@@ -19,13 +19,14 @@ import {
   CRAB_SPEED_SIDE, CRAB_SPEED_UPDOWN, CRAB_WALK_FRAMES,
   HOP_ODDS_MASK, SLIME_HOP_SPEED, SLIME_HOP_LAUNCH, SLIME_HOP_GRAVITY,
   ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET,
-  GEL_HOLD_FRAMES, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES,
+  GEL_HOLD_FRAMES, GEL_CLING_FRAMES, GEL_CLING_SHAKE_FRAMES, GEL_HOPOFF_SPEED, GEL_HOPOFF_LAUNCH, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES,
   KEESE_SPEED, KEESE_FIRST_REST, KEESE_FLIGHT_BASE, KEESE_FLIGHT_SPAN, KEESE_VEER_ODDS,
   LEEVER_SPEED, LEEVER_UNDER_FRAMES, LEEVER_SURFACE_TILES, LEEVER_RISE_FRAMES, LEEVER_SINK_FRAMES,
   LEEVER_CHASE_BASE, LEEVER_CHASE_MASK,
-  BUBBLE_SPEED, BUBBLE_TURN_ODDS,
+  BUBBLE_SPEED, BUBBLE_SWORD_LOCK_FRAMES, BUBBLE_TURN_ODDS,
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
-  BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
+  BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES, BEETLE_FLIP_FRAMES, BEETLE_FLIP_SHAKE_FRAMES, BEETLE_FLIP_LAUNCH,
+  BEETLE_FLIP_GRAVITY, BEETLE_FLIP_SKID, BEETLE_RIGHT_SPEED,
   WHISP_SPEED,
   PINCER_SEE_PX, PINCER_WARN_FRAMES, PINCER_OUT_SPEED, PINCER_REACH, PINCER_HOLD_FRAMES,
   PINCER_BACK_SPEED, PINCER_REST_FRAMES,
@@ -246,12 +247,43 @@ export function installEnemies() {
     terrain: 'any',
     drops: 'none',
     // Seasons' gel (gel.s): stands, then inches at Link; one time in eight it
-    // shivers and hops at him. (The cartridge's gel also clings to Link and
-    // slows him; not ported — see docs/NEXT-SESSION.md S151.)
+    // shivers and hops at him. Touching him, it CLINGS (gel_stateC/D): it
+    // rides on him for GEL_CLING_FRAMES, he cannot draw his sword and moves
+    // only every other frame (Player.swordLocked, Player.clungBy), every
+    // button he presses shakes a little of the time off, and then it hops
+    // off the way he is not facing. Its damage is ours (the human's S150 no).
     port: 'gel.s',
     speed: GEL_INCH_SPEED,
+    onTouchLink(e, g, p) {
+      if (e.aiState === 'cling' || e.aiState === 'hopoff' || e.dying || p.clungBy) return;
+      e.aiState = 'cling'; e.aiTimer = GEL_CLING_FRAMES;
+      p.clungBy = e;
+    },
     ai(e, g) {
       switch (e.aiState) {
+        case 'cling': {                           // gel_stateD
+          const p = g.player;
+          e.harmless = true;
+          e.x = p.x + ((p.w - e.w) >> 1); e.y = p.y + ((p.h - e.h) >> 1);
+          if (--e.aiTimer > 0) {
+            const inp = g.input;
+            if (inp && Object.keys(inp.held).some(b => inp.pressed(b))) {
+              e.aiTimer = Math.max(1, e.aiTimer - GEL_CLING_SHAKE_FRAMES);
+            }
+            return;
+          }
+          // Hop off away from Link: opposite his facing, as the cartridge
+          // reverses his angle (gel_setAngleAwayFromLink).
+          e.angle = { up: 16, down: 0, left: 8, right: 24 }[p.dir] ?? 16;
+          e.aiState = 'hopoff';
+          launch(e, GEL_HOPOFF_LAUNCH);
+          if (g.audio) g.audio.sfx('hop');
+          return;
+        }
+        case 'hopoff':                            // gel_stateB after a cling
+          moveAngle(e, g, e.angle, GEL_HOPOFF_SPEED);
+          if (!fall(e, SLIME_HOP_GRAVITY)) { e.harmless = false; e.aiState = 'hold'; e.aiTimer = GEL_HOLD_FRAMES; }
+          return;
         case 0: e.aiState = 'hold'; e.aiTimer = GEL_HOLD_FRAMES; return;
         case 'hold':                              // gel_state8
           e.speed = GEL_INCH_SPEED;

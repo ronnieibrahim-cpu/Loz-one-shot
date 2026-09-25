@@ -3444,6 +3444,18 @@ export async function installRuntime() {
           const r = this._it.next();
           if (r.done) { this._done = true; break; }
           mask = r.value | 0;
+          // A GEL ON HIM IS SHAKEN OFF, as a player shakes it: every button
+          // press takes GEL_CLING_SHAKE_FRAMES off its hold (gel.s
+          // gel_stateD), so the d-pad is let go every other frame and pressed
+          // again the next. With no direction wanted, he taps the way he
+          // faces. The sword cannot be drawn while it clings, so there is
+          // nothing better to be doing with the hands.
+          const pl = window.__game.player;
+          if (pl && pl.clungBy) {
+            const DIRS = BIT.up | BIT.down | BIT.left | BIT.right;
+            if (!(mask & DIRS)) mask |= BIT[pl.dir] || 0;
+            if (this._frames & 1) mask &= ~DIRS;
+          }
         } else {
           mask = this._nextReplayMask();
           if (mask === null) { this._done = true; break; }

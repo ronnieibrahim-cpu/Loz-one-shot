@@ -104,6 +104,10 @@ export class Player extends Entity {
     this.depth = 0;
 
     this.swinging = 0;
+    // Seasons' two ways to lose the sword for a while: a bubble's touch
+    // (wSwordDisabledCounter, frames) and a gel clinging to him.
+    this.swordLock = 0;
+    this.clungBy = null;
     this.charge = 0;
     this.spinning = 0;
     this.holding = false;         // blade out, walking with it
@@ -168,6 +172,9 @@ export class Player extends Entity {
     if (this.clinkCool > 0) this.clinkCool--;
     if (this.rodCool > 0) this.rodCool--;
     if (this.rodRing > 0) this.rodRing--;
+    if (this.swordLock > 0) this.swordLock--;
+    if (this.clungBy && (this.clungBy.dead || this.clungBy.remove || this.clungBy.aiState !== 'cling'
+      || !game.entities.includes(this.clungBy))) this.clungBy = null;
 
     if (this.falling > 0) { this.updateFalling(game); return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
@@ -343,7 +350,7 @@ export class Player extends Entity {
     // Sword hold: keeping the button down after the swing keeps the blade out
     // (see updateSwordHold) and, past a threshold, charges a spin.
     const slot = this.swordSlot(game);
-    if (slot && hasItem(game.progress, 'sword') && !this.inDeep) {
+    if (slot && hasItem(game.progress, 'sword') && !this.inDeep && !this.swordLocked()) {
       if (i.down(slot) && this.swinging === 0) {
         this.charge++;
         if (this.charge === CHARGE_FRAMES) game.audio.sfx('charged');
@@ -490,6 +497,9 @@ export class Player extends Entity {
     if ((dx || dy) && this.tryLedgeHop(game, dx, dy)) { this.animT++; return; }
     if ((dx || dy) && this.tryGapHop(game, dx, dy)) { this.animT++; return; }
 
+    // A clinging gel lets him move only every other frame (gel.s gel_stateD,
+    // wLinkImmobilized on odd frames).
+    if ((dx || dy) && this.clungBy && (this.frame & 1)) { this.animT++; return; }
     if (dx || dy) {
       const res = moveEntity(game, this, dx * speed, dy * speed);
       this.animT++;
@@ -717,7 +727,7 @@ export class Player extends Entity {
     const slot = this.swordSlot(game);
     const out = !!slot && hasItem(game.progress, 'sword') && game.input.down(slot)
       && this.swinging === 0 && this.spinning === 0
-      && !this.inDeep && !this.carrying && !this.hookPulling
+      && !this.inDeep && !this.carrying && !this.hookPulling && !this.swordLocked()
       && this.charge >= SWORD_HOLD_DELAY;
     if (!out) { this.holding = false; this.holdT = 0; return; }
 
@@ -748,8 +758,12 @@ export class Player extends Entity {
     game.spawnEffect('spark', tx - 8, ty - 8);
   }
 
+  /** The sword is out of reach: a bubble touched him, or a gel is on him. */
+  swordLocked() { return this.swordLock > 0 || !!this.clungBy; }
+
   startSwing(game, level) {
     if (this.swinging > 0 || this.spinning > 0 || this.carrying) return true;
+    if (this.swordLocked()) return true;
     // Deep water keeps the blade sheathed — unless you are WALKING down there
     // with a Ballast Lung, which is the whole of what that charm buys. Note it
     // does not licence swinging while SWIMMING: the charm is about having your
@@ -1196,6 +1210,11 @@ export class Player extends Entity {
       // "Sea creature" is the enemy's own terrain field, not where it happens
       // to be standing: a crab hauled onto dry land by the tide is still what
       // the Anemone's Gift protects you from.
+      // What touching it does besides hurt: a gel latches on, a bubble takes
+      // the sword. Called whether or not the hit lands, as the cartridge
+      // reacts to the collision itself (var2a = ITEMCOLLISION_LINK).
+      if (e.spec && e.spec.onTouchLink) e.spec.onTouchLink(e, game, this);
+      if (e.harmless) break;
       this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });
       break;
     }
@@ -1210,6 +1229,14 @@ export class Player extends Entity {
     if (this.shielding && source) {
       const dir = dirFromDelta(source.cx - this.cx, source.cy - this.cy);
       if (dir === this.dir) {
+        // Something the shield TURNS rather than stops: Seasons' spiked
+        // beetle flips over on any shield (spikedBeetle.s, ITEMCOLLISION_L1-
+        // L3_SHIELD), whatever the shield's level.
+        if (!source.isProjectile && source.spec && source.spec.onShielded) {
+          game.audio.sfx('block');
+          source.spec.onShielded(source, game, this);
+          return false;
+        }
         const lv = itemLevel(p, 'shield');
         const blocks = source.isProjectile ? lv >= 1 : lv >= 2;
         if (blocks) {
