@@ -705,6 +705,7 @@ export function installBosses() {
     hp: 60, damage: 4, pal: 'marble', speed: 0.4, rate: 13,
     w: 32, h: 32, hb: { x: 4, y: 8, w: 24, h: 22 },
     frames: ['boss_brinehulk_0', 'boss_brinehulk_1', 'boss_brinehulk_2'],
+    openFrames: ['boss_brinehulk_open_0', 'boss_brinehulk_open_1'],
     hurtFrame: 'boss_brinehulk_hurt',
     // `drops: 'none'` AND IT STAYS THAT WAY, which is the odd one out in the
     // roster and is deliberate now rather than left over. It kept a boss's
