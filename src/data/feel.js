@@ -209,8 +209,12 @@ export const ENEMY_SHOT_RADIUS = 2;
  *  $33. */
 export const BEAM_SHOT_RADIUS = 3;
 
-/** f — how long the sword button must be held before a spin is charged. guessed. */
-export const CHARGE_FRAMES = 42;
+/** f — how long the sword button must be held, after the swing ends, before a
+ *  spin is charged. derived from the cartridge: oracles-disasm
+ *  object_code/common/itemParents/swordParent.s, @state6 sets counter1 $28
+ *  when the swing ends with the button still down, and @state2 takes one off
+ *  it a frame and charges when it passes zero — the 41st frame. */
+export const CHARGE_FRAMES = 41;
 
 /** f — interval between charge sparkles once charged. guessed. */
 export const CHARGE_SPARKLE_EVERY = 6;
@@ -228,9 +232,10 @@ export const SWORD_GAP = 3;
 export const SPIN_BOX = 30;
 
 /** f — frames after a swing ends before the still-held button becomes a hold
- *  rather than the tail of the swing. guessed; small enough that the blade
- *  never visibly drops between the two poses. */
-export const SWORD_HOLD_DELAY = 2;
+ *  rather than the tail of the swing. derived from the cartridge: swordParent.s
+ *  @state6 turns the blade into the held blade (ITEMCOLLISION_SWORD_HELD) on
+ *  the frame the swing's animation ends, so the first frame after it. */
+export const SWORD_HOLD_DELAY = 1;
 
 /** qh — damage the extended blade deals on contact. guessed; half a swing's,
  *  because walking into something with the sword out is meant to be worth less
@@ -494,11 +499,16 @@ export const LAND_SETTLE_RATE = 128;
  *  A run is cleared in one hop so a two-tile drop reads as one movement. */
 export const LEDGE_MAX_SPAN = 3;
 
-/** f — duration of a one-way ledge hop, start to landing. guessed. */
-export const LEDGE_HOP_FRAMES = 18;
+/** f — duration of a one-way ledge hop, start to landing. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/link.s, the
+ *  cliff check before linkState12 (LINK_STATE_JUMPING_DOWN_LEDGE) launches
+ *  Link at speedZ -$1c0 and @substate1 pulls it back at $20 a frame:
+ *  2 x 448 / 32 = 28 frames aloft. Was a guessed 18. */
+export const LEDGE_HOP_FRAMES = 28;
 
-/** px — peak height of the ledge-hop arc. guessed. */
-export const LEDGE_HOP_HEIGHT = 7;
+/** px — peak height of the ledge-hop arc. derived: the same launch and
+ *  gravity, 448^2 / (2 x 32) = 3136 subpixels, 12.25 px. Was a guessed 7. */
+export const LEDGE_HOP_HEIGHT = 12;
 
 /** px — how far in front of Link the ledge lip is probed for. guessed. */
 export const LEDGE_PROBE_REACH = 10;
@@ -706,8 +716,17 @@ export const WASH_FRAMES = 6 + 16 + 2;
 /** f — how long Link holds the conch, and is frozen for. guessed. */
 export const CONCH_FRAMES = 46;
 
-/** f — how long the player must lean on a block before it moves. guessed. */
-export const PUSH_DELAY_FRAMES = 18;
+/** f — how long the player must lean on a block before it moves. derived from
+ *  the cartridge: oracles-disasm code/interactableTiles.s, nextToPushableBlock
+ *  counts wPushingAgainstTileCounter down from 20 (resetPushingAgainstTileCounter)
+ *  and pushes when it reaches zero. Was a guessed 18. */
+export const PUSH_DELAY_FRAMES = 20;
+
+/** sp/f — how fast a pushed block slides its one tile: half a pixel a frame,
+ *  32 frames for the tile. derived from the cartridge: oracles-disasm
+ *  object_code/common/interactions/pushblock.s, SPEED_80 for counter1 $20.
+ *  It was a bare one-pixel step inside PushBlock.update. */
+export const BLOCK_SLIDE_SPEED = 128;
 
 /** f — how long a Pegasus Seed's speed boost lasts. guessed. */
 export const PEGASUS_FRAMES = 300;
@@ -753,30 +772,21 @@ export const LOW_HEART_EVERY = 40;
 // text cadence is the timing constant a player is exposed to more often than
 // any other except walking, and it was not in this file.
 
-/** chars/f — how fast a dialogue page reveals itself. guessed, and the single
- *  most-felt number in the game after WALK_SPEED. 1.6 is what the game has
- *  always read at; it is preserved here rather than re-guessed.
- *
- *  WRITTEN DOWN AND DELIBERATELY NOT APPLIED: both source games look closer to
- *  one character every other frame in ordinary dialogue — around 0.5 here,
- *  which would be roughly three times slower. That is an impression, not a
- *  measurement, and per R3/T4 a number nobody has frame-stepped does not get to
- *  move the whole game's dialogue pacing. Now that it is one named constant it
- *  is a one-line experiment for whoever does step a reference. */
-export const TEXT_SPEED = 1.6;
+/** f — how long each character of dialogue takes to appear. derived from the
+ *  cartridge: oracles-disasm code/textbox.s, textSpeedData, the third byte of
+ *  text speed 3 — the speed a new file starts on (code/fileManagement.s,
+ *  initialFileVariables: wTextSpeed $02) — is $04. It was a guessed 1.6
+ *  characters a FRAME, six times faster than Seasons.
+ *  (The footage README's two-frames-a-step reading is the TAS's speed 5.) */
+export const TEXT_FRAMES_PER_CHAR = 4;
 
-/** x — multiplier on TEXT_SPEED while A or B is held. guessed. Held-button
- *  fast-forward is a source-game behaviour; 3x makes a long page skimmable
- *  without skipping it outright. */
-export const TEXT_FAST_SCALE = 3;
-
-/** chars — one text blip per this many revealed characters. guessed. It used
- *  to be `floor(chars) % 3 === 0`, tested against the running total rather than
- *  counting characters, so at a non-integer TEXT_SPEED the blip fired on an
- *  irregular beat that changed with the speed — the click was not a rhythm, it
- *  was an artefact. Counting revealed characters makes the cadence a rhythm
- *  again and keeps it one at any speed. */
-export const TEXT_BEEP_EVERY = 3;
+/** f — the least time between two text blips. Every character that is not a
+ *  space blips, unless one blipped this recently. derived from the cartridge:
+ *  code/textbox.s, w7TextSoundCooldownCounter set to $04 on each blip and the
+ *  space test beside it. At TEXT_FRAMES_PER_CHAR that is one blip a letter.
+ *  Pressing A or B mid-line shows the rest of the LINE at once (@skipToLineEnd)
+ *  with one blip; there is no held-button fast-forward in Seasons. */
+export const TEXT_BEEP_COOLDOWN = 4;
 
 /** px — how far in front of Link an A-button context action reaches. guessed. */
 export const CONTEXT_REACH = 12;
@@ -1055,8 +1065,17 @@ export const PROJECTILE_Z = 4;
 // Pickups and drops
 // ---------------------------------------------------------------------------
 
-/** f — how long a dropped pickup lingers before vanishing. guessed. */
-export const PICKUP_LIFE_FRAMES = 460;
+/** f — how long a dropped pickup lingers, once it has landed, before vanishing.
+ *  derived from the cartridge: oracles-disasm object_code/common/parts/
+ *  itemDrop.s — counter1 240 when it stops bouncing, taken down on every
+ *  other frame (itemDrop_countdownToDisappear), 480 frames. Was a guessed
+ *  460 counted from the moment it appeared. */
+export const PICKUP_LIFE_FRAMES = 480;
+
+/** f — for how much of the end of that life the pickup blinks, two frames
+ *  shown and two hidden. derived: itemDrop_countdownToDisappear toggles its
+ *  visibility each time it counts once counter1 is under 60 — 120 frames. */
+export const PICKUP_BLINK_FRAMES = 120;
 
 /** sp/f — the little upward pop a drop makes when it appears. guessed;
  *  -1.25 px/f, snapped to the grid from -1.2. */

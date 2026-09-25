@@ -15,7 +15,7 @@ import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
-  PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES,
+  PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
@@ -206,7 +206,8 @@ export class Pickup extends Entity {
         Math.round(Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y));
     }
     if (this.grabDelay > 0) this.grabDelay--;
-    if (this.life !== Infinity && --this.life <= 0) { this.remove = true; return; }
+    // The clock starts when it has landed, as the cartridge's does.
+    if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
@@ -219,7 +220,7 @@ export class Pickup extends Entity {
 
   draw(ctx, game, ox, oy) {
     // Blink out as the timer runs down.
-    if (this.life !== Infinity && this.life < 90 && (this.life >> 2) % 2 === 0) return;
+    if (this.life !== Infinity && this.life < PICKUP_BLINK_FRAMES && (this.life >> 1) % 2 === 0) return;
     const bob = this.spec.persistent ? Math.round(Math.sin(this.frame * 0.08) * 1.5) : 0;
     // A pickup with `frames` cycles them; everything else draws its one sprite.
     // `frame` already ticks in update(), so this costs no new state and no new
@@ -929,7 +930,7 @@ export class PushBlock extends Entity {
 
   update(game) {
     if (!this.slide) return;
-    const step = FP_ONE;      // one pixel a frame, on the grid
+    const step = BLOCK_SLIDE_SPEED;   // Seasons' half a pixel a frame
     this.fx += Math.sign(this.slide.fx - this.fx) * step;
     this.fy += Math.sign(this.slide.fy - this.fy) * step;
     if (this.fx === this.slide.fx && this.fy === this.slide.fy) {

@@ -3,7 +3,7 @@
 import { SCREEN_W, SCREEN_H, HUD_H, VIEW_H } from '../core/screen.js';
 import { drawText, textWidth, paginate } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
-import { TEXT_SPEED, TEXT_FAST_SCALE, TEXT_BEEP_EVERY } from '../data/feel.js';
+import { TEXT_FRAMES_PER_CHAR, TEXT_BEEP_COOLDOWN } from '../data/feel.js';
 
 const BOX_X = 4;
 const BOX_W = SCREEN_W - 8;
@@ -30,8 +30,9 @@ export class Dialogue {
     this.active = false;
     this.pages = [];
     this.page = 0;
-    this.chars = 0; this.beeped = 0;
-    this.speed = TEXT_SPEED;   // chars/f; see src/data/feel.js
+    this.chars = 0;
+    this.charT = 0;            // frames until the next character; see feel.js
+    this.beepCool = 0;
     this.done = false;
     this.onClose = null;
     this.choices = null;       // { options:[...], index, onPick }
@@ -49,7 +50,7 @@ export class Dialogue {
     if (this.active) { this.queue.push([text, opts]); return; }
     this.pages = paginate(String(text), BOX_W - PAD * 2 - 2, LINES);
     this.page = 0;
-    this.chars = 0; this.beeped = 0;
+    this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
     this.active = true;
     this.done = false;
     this.onClose = opts.onClose || null;
@@ -100,18 +101,23 @@ export class Dialogue {
     if (!this.active) return;
     const i = this.game.input;
 
+    if (this.beepCool > 0) this.beepCool--;
     if (this.chars < this.pageLen) {
-      const fast = i.down('a') || i.down('b');
-      this.chars = Math.min(this.pageLen, this.chars + this.speed * (fast ? TEXT_FAST_SCALE : 1));
-      // Click as characters appear, but not on every single one. Counted off
-      // the characters actually revealed, not off the running total: testing
-      // `floor(chars) % N` made the blip's beat an artefact of a non-integer
-      // TEXT_SPEED rather than a rhythm.
-      const shown = Math.floor(this.chars);
-      if (shown - this.beeped >= TEXT_BEEP_EVERY) {
-        this.beeped = shown - (shown % TEXT_BEEP_EVERY);
-        this.game.audio.sfx('text', { vol: 0.4 });
+      // Seasons' text: one character every TEXT_FRAMES_PER_CHAR frames, and A
+      // or B shows the rest of the current LINE at once — not the page.
+      const text = this.currentText;
+      if (i.pressed('a') || i.pressed('b')) {
+        const nl = text.indexOf('\n', this.chars);
+        this.chars = nl < 0 ? this.pageLen : nl + 1;
+        this.charT = TEXT_FRAMES_PER_CHAR;
+        this.blip(true);
+        return;
       }
+      if (--this.charT > 0) return;
+      this.charT = TEXT_FRAMES_PER_CHAR;
+      const ch = text[this.chars];
+      this.chars++;
+      if (ch !== ' ' && ch !== '\n') this.blip(false);
       return;
     }
 
@@ -143,13 +149,20 @@ export class Dialogue {
     if (i.pressed('a') || i.pressed('b')) {
       if (this.page < this.pages.length - 1) {
         this.page++;
-        this.chars = 0; this.beeped = 0;
+        this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
         this.game.audio.sfx('textNext');
       } else {
         this.game.audio.sfx('textNext');
         this.close();
       }
     }
+  }
+
+  /** A text blip, unless one sounded within TEXT_BEEP_COOLDOWN frames. */
+  blip(force) {
+    if (this.beepCool > 0 && !force) return;
+    this.beepCool = TEXT_BEEP_COOLDOWN;
+    this.game.audio.sfx('text', { vol: 0.4 });
   }
 
   draw(ctx) {
