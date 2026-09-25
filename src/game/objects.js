@@ -244,6 +244,54 @@ export class Pickup extends Entity {
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));
 
 // --------------------------------------------------------------------------
+// A thing stuck up a tree (S155 side content). It sits in the canopy, where no
+// hand or blade reaches it; a gust of the Squall Bellows blows it down, and it
+// lands as the pickup it names (`drops`). Leave before picking it up and it is
+// back in the tree next time — it is only gone once the pickup's own flag is
+// set, which the room data names as `hideFlag`.
+//
+//   ['treeSnag', 7, 1, { drops: 'e_kite', hideFlag: 'foundKite' }]
+//
+// `perched` is what check-placement.mjs reads to let it stand on a tree tile:
+// it is not standing, and check-side.mjs proves the gust brings it down.
+// --------------------------------------------------------------------------
+
+export class TreeSnag extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 2, w: 12, h: 12 };
+    this.drops = o.drops || 'e_kite';
+    const spec = PICKUPS[this.drops] || PICKUPS.rupee1;
+    this.sprite = spec.sprite;
+    this.pal = spec.pal;
+    this.harmless = true;
+    this.shadow = false;
+    this.perched = true;
+    this.depth = 4;
+  }
+
+  onGust(game, dx, dy) {
+    if (this.remove) return;
+    this.remove = true;
+    game.spawnPickup(this.x + dx * 4, this.y + TILE, this.drops, { grabDelay: 20, vy: -1 });
+    game.spawnEffect('cut', this.x, this.y + 8);
+    game.audio.sfx('cut');
+  }
+
+  draw(ctx, game, ox, oy) {
+    // It stirs in the wind it is caught in: a pixel either way, off the frame
+    // counter the entity already keeps.
+    const sway = ((this.frame++ >> 4) & 1) ? 1 : 0;
+    // Drawn up in the leaves, half a tile above the cell it is caught on: the
+    // cell has to be the canopy's lowest row, next to open ground, because the
+    // gust does not blow through a trunk (Tide.blows).
+    sprites.draw(ctx, this.sprite, ox + this.x + sway, oy + this.y - 10, this.pal ? { pal: this.pal } : undefined);
+  }
+}
+defineEntity('treeSnag', (x, y, o) => new TreeSnag(x, y, o));
+
+// --------------------------------------------------------------------------
 // Chest
 // --------------------------------------------------------------------------
 

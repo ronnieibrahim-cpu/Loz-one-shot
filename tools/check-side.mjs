@@ -86,6 +86,21 @@ const SCENARIOS = [
     expectError: /never landed/,
     expect: `g.progress.heartPieces === 0 || 'paid without the ledger'`,
   },
+  {
+    name: 'The kite: blown out of the tree with the Bellows, carried home, paid for with a Piece of Heart',
+    setup: setup({ items: { sword: 1, bellows: 1 }, equipA: 'sword', equipB: 'bellows',
+      enter: ['overworld', 0, 3, 6, 112, 64, 'up'] }),
+    steps: [['goto', 7, 2, 400], ['hold', ['up'], 6], ['wait', 5], ['hold', ['b'], 80], ['wait', 200],
+      ['travel', 3, 7, 3000], ['wait', 30], ['travel', 4, 7, 3000], ['wait', 30],
+      ['goto', 2, 5, 600], ['hold', ['up'], 40], ['wait', 60], ['errand', 'kiteDone', 1500], ['wait', 60]],
+    expect: `g.progress.flags.foundKite && g.progress.flags.kiteDone && g.progress.heartPieces === 1 || ('kite ' + !!g.progress.flags.foundKite + ', pieces ' + g.progress.heartPieces + ' in ' + g.mapId)`,
+  },
+  {
+    name: 'The kite: a sword does not bring it down',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', enter: ['overworld', 0, 3, 6, 112, 64, 'up'] }),
+    steps: [['goto', 7, 2, 400], ['hold', ['up'], 6], ['tap', 'a', 30], ['tap', 'a', 30], ['tap', 'a', 30], ['wait', 60]],
+    expect: `!g.progress.flags.foundKite && g.entities.some(e => e.perched) || 'the kite came down without a wind'`,
+  },
 ];
 
 const server = createServer(async (req, res) => {

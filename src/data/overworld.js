@@ -850,7 +850,9 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['tektite', 4, 5], ['pickup', 6, 3, { kind: 'heartPiece' }],
+      // The Piece of Heart that lay under this rock is the village child's
+      // thanks for a kite now (S155, side content); a rupee keeps the spot.
+      ['tektite', 4, 5], ['pickup', 6, 3, { kind: 'rupee20' }],
     ],
   },
   '0,3,3': {
@@ -1582,6 +1584,9 @@ const rooms = {
     ],
     entities: [
       ['sign', 6, 3, { text: 'Someone has been digging here.\nThe bluff behind has a crack in it.' }],
+      // The village child's kite (S155 errand), up the tree east of the bluff.
+      // Only a gust of the Squall Bellows brings it down.
+      ['treeSnag', 7, 1, { drops: 'e_kite', hideFlag: 'foundKite' }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
@@ -2813,7 +2818,10 @@ function installHouses() {
 
   home('houseHearth', 'A Village House', 'village', [
     ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3 }],
-    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2 }],
+    // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
+    // Heart found under the doorstep in the flood.
+    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
+      errand: { need: 'foundKite', prize: 'heartPiece', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 

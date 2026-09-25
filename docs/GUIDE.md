@@ -1776,8 +1776,12 @@ Numbered in the order this walkthrough passes them.
    the room.
 10. **Heart Piece 10** — `d3/0,2,1`, Vestry Roof, tile (4,4). North of Bogmaw
     Hall.
-11. **Heart Piece 11** — `overworld/0,2,3`, Kell Ledges, tile (6,2). Needs
-    **bombs** for the Deep Cut.
+11. **Heart Piece 11** — `houseHearth/0,0,0`, the village child's thanks for
+    their **Kite**, stuck up a tree in Bluff Hollow (`overworld/0,3,6`, the
+    tree at (7,1), just east of the cracked bluff). Stand under it facing up
+    and blow it down with the **Squall Bellows**, then take it to the child in
+    the house on the square's west side. (Kell Ledges, where a piece used to
+    be, has 20 rupees under its rock.)
 12. **Heart Piece 12** — `d4/0,4,5`, Rung Gallery, tile (3,3). Inside a
     drown-wall box: **swim in at HIGH tide**.
 13. **Heart Piece 13** — `d4/0,4,1`, East Overlook, tile (2,6).

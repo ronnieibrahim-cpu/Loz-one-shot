@@ -99,7 +99,10 @@ const report = await page.evaluate(async () => {
       // bottom, and check-cleats.mjs proves the floor reaches it.
       const sunk = new Set((def.sunkPlates || []).map(p => p.join(',')));
       const placed = g.entities.filter(e => e !== g.player && !e.remove
-        && !(e.constructor.name === 'FloorSwitch' && sunk.has(Math.floor(e.cx / 16) + ',' + Math.floor(e.cy / 16))));
+        && !(e.constructor.name === 'FloorSwitch' && sunk.has(Math.floor(e.cx / 16) + ',' + Math.floor(e.cy / 16)))
+        // A thing stuck up a tree (S155) is perched in the canopy, not standing
+        // on it; check-side.mjs proves the Bellows brings it down.
+        && !e.perched);
       for (const e of placed) {
         checked++;
         const stuck = [];
