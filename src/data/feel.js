@@ -1937,3 +1937,30 @@ export const STALFOS_SHY_PX = 0x2c;
 export const STALFOS_LEAP_LAUNCH = 2;
 export const STALFOS_LEAP_GRAVITY = 0x20 / 256;
 export const STALFOS_LEAP_SPEED = 1.25;
+
+/** px/f — a darknut plodding. derived: swordEnemies.s
+ *  swordEnemy_state_uninitialized (shared by the sword darknut), SPEED_80. */
+export const DARKNUT_SPEED = 0.5;
+
+/** f — each plod lasts BASE + (random & MASK), one in eight toward Link.
+ *  derived: swordEnemies.s swordEnemy_chooseRandomAngleAndCounter1
+ *  ($50 + (random & $3f); c == 0 of random & 7). */
+export const DARKNUT_WALK_BASE = 0x50;
+export const DARKNUT_WALK_MASK = 0x3f;
+
+/** px — Link this close on both axes starts a chase. derived: swordEnemies.s
+ *  swordDarknut_checkLinkIsClose (difference + $28 < $51). */
+export const DARKNUT_SEE_PX = 0x28;
+
+/** f — and it cannot start another until this long after the last ends.
+ *  derived: swordEnemies.s swordEnemy_setChaseCooldown, $14 for subid 0. */
+export const DARKNUT_CHASE_COOLDOWN = 0x14;
+
+/** f — it stands squared up this long before it goes. derived: swordEnemies.s
+ *  swordEnemy_beginChasingLink, counter1 $10. */
+export const DARKNUT_SQUARE_FRAMES = 0x10;
+
+/** f, px/f — then hounds Link for this long at this speed. derived:
+ *  swordEnemies.s swordDarknut_state9 (counter1 $60, SPEED_c0). */
+export const DARKNUT_CHASE_FRAMES = 0x60;
+export const DARKNUT_CHASE_SPEED = 0.75;

@@ -6,7 +6,7 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith, bounceAngle, linkWithin,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith, bounceAngle, linkWithin, nudgeAngle,
 } from '../game/enemy.js';
 import { spawnEntity, canOccupy } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
@@ -27,6 +27,8 @@ import {
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
   WHISP_SPEED,
+  DARKNUT_SPEED, DARKNUT_WALK_BASE, DARKNUT_WALK_MASK, DARKNUT_SEE_PX, DARKNUT_CHASE_COOLDOWN,
+  DARKNUT_SQUARE_FRAMES, DARKNUT_CHASE_FRAMES, DARKNUT_CHASE_SPEED,
   STALFOS_SPEED, STALFOS_WALK_BASE, STALFOS_WALK_MASK, STALFOS_TOWARD_ODDS, STALFOS_SHY_PX,
   STALFOS_LEAP_LAUNCH, STALFOS_LEAP_GRAVITY, STALFOS_LEAP_SPEED,
   MOBLIN_SPEED, MOBLIN_WALK_BASE, MOBLIN_WALK_MASK, MOBLIN_PAUSE_FRAMES, MOBLIN_SPEAR_SPEED,
@@ -760,7 +762,7 @@ export function installEnemies() {
 
   // --- Darknut: armoured knight, only vulnerable from behind ------------
   defineEnemy('darknut', {
-    hp: 6, damage: 3, pal: 'enemyr', speed: 0.5, rate: 10,
+    hp: 6, damage: 3, pal: 'enemyr', rate: 10,
     frames: {
       down: ['darknut_d0', 'darknut_d1'],
       up: ['darknut_d0', 'darknut_d1'],
@@ -776,15 +778,50 @@ export function installEnemies() {
     hb: { x: 2, y: 4, w: 12, h: 11 },
     shield: 'front',
     drops: 'rich',
+    // Seasons' sword darknut (swordEnemies.s): plods about the four
+    // directions; when Link comes within 40 px it stops, squares up, and then
+    // hounds him for a while, turning toward him a step every other frame,
+    // before plodding again. The shield on its front is ours: circle behind.
+    port: 'swordEnemies.s',
+    speed: DARKNUT_SPEED,
     ai(e, g) {
-      // Advances steadily with its shield up, then lunges once you are close.
-      // Circle behind it: the shield only covers the way it faces.
-      const d = distToPlayer(e, g);
-      if (d < 60) {
-        charge(e, g, { speed: 1.5, tell: 22, range: 60, shake: true,
-          idle: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
-      } else {
-        patrol(e, g, { axis: e.homeX % 32 < 16 ? 'x' : 'y' });
+      const pick = () => {                        // swordEnemy_chooseRandomAngleAndCounter1
+        e.aiTimer = DARKNUT_WALK_BASE + (g.rng.int(256) & DARKNUT_WALK_MASK);
+        if ((g.rng.int(256) & 7) === 0) cardinalToward(e, g); else e.dir = randDir(g);
+        e.angle = { up: 0, right: 8, down: 16, left: 24 }[e.dir];
+      };
+      switch (e.aiState) {
+        case 0:
+          e.dir = randDir(g); e.aiTimer = 1; e.cool = DARKNUT_CHASE_COOLDOWN; e.aiState = 'plod';
+          return;
+        case 'plod': {                            // swordDarknut_state8
+          const p = g.player;
+          if (e.cool > 0) e.cool--;
+          if (e.cool === 0 && p && Math.abs(p.cy - e.cy) <= DARKNUT_SEE_PX
+              && Math.abs(p.cx - e.cx) <= DARKNUT_SEE_PX) {
+            e.aiState = 'square'; e.aiTimer = DARKNUT_SQUARE_FRAMES;
+            e.angle = angleToward(e, g); e.dir = dirOfAngle(e.angle);
+            e.attackTime = DARKNUT_SQUARE_FRAMES; e.still = true;
+            return;
+          }
+          e.still = false; e.speed = DARKNUT_SPEED;
+          if (--e.aiTimer <= 0) { pick(); return; }
+          if (!walkOn(e, g, DARKNUT_SPEED)) e.dir = OPPOSITE[e.dir];   // ecom_bounceOffWallsAndHoles
+          return;
+        }
+        case 'square':                            // swordDarknut_state9
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'hound'; e.aiTimer = DARKNUT_CHASE_FRAMES; e.speed = DARKNUT_CHASE_SPEED; e.still = false;
+          return;
+        case 'hound':                             // swordDarknut_stateA
+          if (--e.aiTimer <= 0) {                 // swordEnemy_gotoState8
+            e.angle = (e.angle + 4) & 0x18; e.dir = dirOfAngle(e.angle);
+            e.speed = DARKNUT_SPEED; e.cool = DARKNUT_CHASE_COOLDOWN; e.aiState = 'plod'; e.aiTimer = 1;
+            return;
+          }
+          if (!(e.aiTimer & 1)) { e.angle = nudgeAngle(e.angle, angleToward(e, g)); e.dir = dirOfAngle(e.angle); }
+          moveAngle(e, g, e.angle, DARKNUT_CHASE_SPEED);
+          return;
       }
     },
   });

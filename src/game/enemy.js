@@ -1105,6 +1105,13 @@ export function linkWithin(e, g, c) {
   return !!p && Math.abs(p.cx - e.cx) + Math.abs(p.cy - e.cy) < c;
 }
 
+/** objectNudgeAngleTowards: one step of 32 round toward `target`. */
+export function nudgeAngle(a, target) {
+  const d = (a - target) & 31;
+  if (d === 0) return a;
+  return (d < 16 ? a - 1 : a + 1) & 31;
+}
+
 /** ecom_updateCardinalAngleTowardTarget: face Link along the greater gap. */
 export function cardinalToward(e, g) { if (g.player) e.dir = dirTo(e, g.player); }
 
