@@ -6,7 +6,7 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith, bounceAngle,
 } from '../game/enemy.js';
 import { spawnEntity, canOccupy } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
@@ -26,6 +26,7 @@ import {
   BUBBLE_SPEED, BUBBLE_TURN_ODDS,
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
+  WHISP_SPEED,
   TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP,
   BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
@@ -607,8 +608,13 @@ export function installEnemies() {
     attackFrame: 'wisp_atk',
     z: 8,
     drops: 'good',
+    // Moves as Seasons' whisp does (whisp.s): on a diagonal, off every wall.
+    // The rings are ours.
+    port: 'whisp.s',
+    speed: WHISP_SPEED,
     ai(e, g) {
-      orbit(e, g, { radius: 28, speed: 0.03 });
+      if (e.aiState === 0) { e.angle = (g.rng.int(256) & 0x18) + 4; e.aiState = 'drift'; }
+      e.angle = bounceAngle(e, g, e.angle, WHISP_SPEED);
       if (every(e, 150)) shootRing(e, g, 6, { sprite: 'shot_orb', pal: 'magic', speed: 1.0, damage: 2 });
     },
   });

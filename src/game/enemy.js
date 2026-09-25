@@ -1135,6 +1135,21 @@ export function moveAngle(e, g, angle, speed) {
 }
 
 /**
+ * ecom_bounceOffWalls then objectApplySpeed: move along `angle`, and when a
+ * wall stops one axis, mirror the angle on it. Returns the new angle.
+ */
+export function bounceAngle(e, g, angle, speed) {
+  const r = angle / 32 * 2 * Math.PI;
+  const s = sp(speed);
+  const dx = Math.round(s * Math.sin(r)), dy = Math.round(-s * Math.cos(r));
+  const m = moveEntity(g, e, dx, dy);
+  let a = angle;
+  if (m.hitX && dx) a = (32 - a) % 32;
+  if (m.hitY && dy) a = (48 - a) % 32;
+  return a;
+}
+
+/**
  * Fly one frame along `angle`, over anything (objectApplySpeed, which knows
  * no tiles), turning back off the room's edge as ecom_bounceOffScreenBoundary
  * does: a side edge mirrors the angle left-right, a top or bottom edge

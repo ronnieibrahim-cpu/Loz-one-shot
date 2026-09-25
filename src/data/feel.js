@@ -1890,3 +1890,7 @@ export const TEKTITE_CROUCH_FRAMES = 24;
  *  @smallLeap ($feaa, $0e) and @bigLeap ($fe80, $0c). */
 export const TEKTITE_SMALL_LEAP = [0x156 / 256, 0x0e / 256];
 export const TEKTITE_BIG_LEAP = [0x180 / 256, 0x0c / 256];
+
+/** px/f — a whisp, always on a diagonal. derived: whisp.s
+ *  whisp_state_uninitialized, SPEED_c0, angle (random & $18) + 4. */
+export const WHISP_SPEED = 0.75;
