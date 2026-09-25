@@ -1,4 +1,6 @@
-// Motion harness. Proves that ground enemies actually walk the 8px lattice.
+// Motion harness. Proves that ground enemies actually walk the 8px lattice —
+// all but the PORTED ones, which walk as their Oracle of Seasons counterparts
+// do (spec.port names the disassembly file), and must be seen doing it.
 //
 //   node tools/check-motion.mjs            run it
 //   node tools/check-motion.mjs --verbose  print a per-enemy table
@@ -43,6 +45,14 @@
 // fliers and aquatic enemies — the continuous half of the roster — do visit
 // positions the lattice does not contain. If a future change quietly grid-locks
 // everything, that check is what fails.
+//
+// PORTED ENEMIES (S151). The cartridge's enemies are not on a lattice: each
+// has a speed and an angle and walks continuously (ecom_applyVelocity...).
+// The human chose that over the lattice after S150. For every enemy whose
+// spec declares `port`, this asserts instead that it is off the lattice
+// (gridLocked says no), that it walked, that whenever it moved without being
+// thrown it moved exactly its declared per-frame speed along one axis, and
+// that it was seen standing still between walks.
 //
 // Boot pattern copied from tools/check-gates.mjs.
 
@@ -179,7 +189,11 @@ async function runInPage([ground, wet, frames, seed]) {
     watch.push({
       name, e,
       grid: enemy.gridLocked(e),
+      port: !!(e.spec && e.spec.port),
       speed: e.speed,
+      badSpeed: [],       // ported: frames that moved a distance its speed does not give
+      walkFrames: 0,      // ported: frames it moved under its own power
+      stillFrames: 0,     // ported: frames it stood still under its own power
       px: e.fx, py: e.fy,
       bad: [],            // alignment violations: {f, x, y}
       idleAligned: 0,     // frames standing still, on a lattice point
@@ -196,8 +210,16 @@ async function runInPage([ground, wet, frames, seed]) {
     for (const w of watch) {
       const e = w.e;
       if (e.dead || e.remove) continue;
-      w.moved += Math.abs(e.fx - w.px) + Math.abs(e.fy - w.py);
+      const ddx = Math.abs(e.fx - w.px), ddy = Math.abs(e.fy - w.py);
+      w.moved += ddx + ddy;
       w.px = e.fx; w.py = e.fy;
+      if (w.port && !(e.knockTime > 0) && !(e.stun > 0) && !e.dormant) {
+        const step = fixed.sp(e.speed);
+        if (ddx === 0 && ddy === 0) w.stillFrames++;
+        else if ((ddx === step && ddy === 0) || (ddy === step && ddx === 0)) w.walkFrames++;
+        else if (w.badSpeed.length < 4) w.badSpeed.push({ f, ddx, ddy, step });
+        else w.badSpeed.push(null);
+      }
       if (e.stepping && !w.wasStepping) w.steps++;
       w.wasStepping = !!e.stepping;
 
@@ -216,7 +238,9 @@ async function runInPage([ground, wet, frames, seed]) {
   }
 
   return watch.map(w => ({
-    name: w.name, grid: w.grid, speed: w.speed,
+    name: w.name, grid: w.grid, port: w.port, speed: w.speed,
+    badSpeed: w.badSpeed.filter(Boolean), badSpeedCount: w.badSpeed.length,
+    walkFrames: w.walkFrames, stillFrames: w.stillFrames,
     bad: w.bad.filter(Boolean), badCount: w.bad.length,
     idleAligned: w.idleAligned, offLattice: w.offLattice,
     steps: w.steps, moved: Math.round(w.moved / fixed.FP_ONE),
@@ -260,7 +284,8 @@ const wet = await page2.evaluate(runInPage, ['waterS', true, FRAMES, SEED]);
 
 const all = [...dry, ...wet];
 const gridded = all.filter(r => r.grid);
-const free = all.filter(r => !r.grid);
+const ported = all.filter(r => r.port);
+const free = all.filter(r => !r.grid && !r.port);
 
 if (VERBOSE) {
   console.log('\n  enemy          lattice  speed  steps  moved  idle@grid  off-lattice  bad');
@@ -308,6 +333,17 @@ const stuckToGrid = movingFree.filter(r => r.offLattice === 0);
 check('fliers and swimmers still move continuously', movingFree.length > 0 && stuckToGrid.length === 0,
   movingFree.length === 0 ? 'nothing continuous moved at all'
     : `${stuckToGrid.map(r => r.name).join(', ')} never left the lattice`);
+
+// --- ported enemies walk as the cartridge's do ----------------------------
+check('every ported enemy is off the lattice', ported.every(r => !r.grid),
+  ported.filter(r => r.grid).map(r => r.name).join(', '));
+const portIdle = ported.filter(r => r.walkFrames === 0 || r.stillFrames === 0);
+check('every ported enemy both walked and stood still', ported.length > 0 && portIdle.length === 0,
+  ported.length === 0 ? 'nothing is ported' : portIdle.map(r => `${r.name} walked ${r.walkFrames} stood ${r.stillFrames}`).join(', '));
+const portFast = ported.filter(r => r.badSpeedCount > 0);
+check('every ported enemy moves exactly its cartridge speed, one axis at a time', portFast.length === 0,
+  portFast.slice(0, 4).map(r => `${r.name}: ${r.badSpeedCount} frame(s), first ` +
+    r.badSpeed.slice(0, 2).map(b => `f${b.f} ${b.ddx},${b.ddy} want ${b.step}`).join(', ')).join(' | '));
 
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

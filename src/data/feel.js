@@ -1658,3 +1658,46 @@ export const VIBRATO_DEPTH_SEMITONES = 0.18;
  *  channel to stand in for polyphony the hardware does not have. guessed;
  *  fast enough to read as one chord rather than a scale run. */
 export const ARPEGGIO_STEP_FRAMES = 3;
+
+// ---------------------------------------------------------------------------
+// SEASONS' ENEMIES, PORTED (S151). Each enemy's walk, stand, turn and shot,
+// read from its own file in the Oracle of Seasons disassembly
+// (github.com/Stewmath/oracles-disasm, object_code/common/enemies/<name>.s).
+// Speeds: constants/common/objectSpeeds.s, where SPEED_100 is one pixel a
+// frame along one axis, so SPEED_80 is 0.5. Damage and health stay ours.
+// ---------------------------------------------------------------------------
+
+/** px/f — the octorok's walk. derived: octorok.s octorok_state_uninitialized,
+ *  SPEED_80 for a red octorok (objectSpeeds.s: SPEED_100 = 1 px/f). */
+export const OCTOROK_SPEED = 0.5;
+
+/** [f] — how long an octorok stands before it walks again, indexed by the
+ *  roll that decided it. derived: octorok.s octorok_counter1Values. */
+export const OCTOROK_STAND_FRAMES = [30, 45, 60, 75, 45, 60, 75, 90];
+
+/** [f] — how long an octorok walks, one picked at random. derived: octorok.s
+ *  octorok_walkCounterValues ($19 $21 $29 $31); the walk counter is
+ *  decremented before the step, so it walks one frame fewer than each. */
+export const OCTOROK_WALK_FRAMES = [25, 33, 41, 49];
+
+/** mask — after each walk an octorok rolls a byte and ANDs it with this; zero
+ *  means shoot, anything else picks the stand from OCTOROK_STAND_FRAMES. So a
+ *  red octorok shoots one time in eight. derived: octorok.s @counter1Ranges
+ *  ($07 for a red one) and octorok_state_08. */
+export const OCTOROK_SHOOT_MASK = 7;
+
+/** f — an octorok stands this long, facing where it will shoot, before the
+ *  rock leaves. derived: octorok.s octorok_state_08, counter1 $10. */
+export const OCTOROK_SHOOT_WINDUP = 16;
+
+/** f — and stands this long after it. derived: octorok.s octorok_state_0b,
+ *  counter1 $20. */
+export const OCTOROK_SHOOT_REST = 32;
+
+/** 1-in-n — the chance an octorok turns to face Link as it sets off on a
+ *  walk. derived: octorok.s octorok_state_09 (random & 3 == 0). */
+export const OCTOROK_TURN_TO_LINK = 4;
+
+/** px/f — the octorok's rock. derived: parts/octorokProjectile.s @state0,
+ *  speed $50 = SPEED_200. */
+export const OCTOROK_SHOT_SPEED = 2;

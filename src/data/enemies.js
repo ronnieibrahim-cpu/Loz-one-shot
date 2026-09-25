@@ -6,16 +6,21 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
+  randDir, walkOn, randomCardinal, cardinalToward,
 } from '../game/enemy.js';
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.js';
+import {
+  OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK,
+  OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED,
+} from './feel.js';
 
 export function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
   defineEnemy('octorok', {
-    hp: 2, damage: 2, pal: 'enemyg', speed: 0.42, rate: 11,
+    hp: 2, damage: 2, pal: 'enemyg', rate: 11,
     // The sea octorok's flinch, shared: the two draw from the same four
     // sheet frames, so the land one squints the same way. hp 2 means a
     // level-1 sword kills it outright; a chain or a held blade shows it.
@@ -29,10 +34,42 @@ export function installEnemies() {
     attackFrame: 'octorok_atk',
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
+    // Seasons' red octorok (octorok.s): walk a while, then usually stand and
+    // sometimes stop to spit a rock the way it is facing; set off again in a
+    // random direction, one time in four toward Link. Nothing aims the rock.
+    port: 'octorok.s',
+    speed: OCTOROK_SPEED,
     ai(e, g) {
-      wander(e, g, { decide: 2 });
-      if (every(e, 74) && aligned(e, g, 14) && distToPlayer(e, g) < 96) {
-        shoot(e, g, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
+      switch (e.aiState) {
+        case 0:                                   // octorok_state_uninitialized
+          e.dir = randDir(g);
+          e.aiTimer = OCTOROK_WALK_FRAMES[g.rng.int(4)];
+          e.aiState = 'walk';
+          return;
+        case 'walk':                              // state $0a
+          e.still = false;
+          if (--e.aiTimer <= 0) { e.aiState = 'decide'; return; }
+          if (!walkOn(e, g, OCTOROK_SPEED)) randomCardinal(e, g);
+          return;
+        case 'decide': {                          // state $08
+          e.still = true;
+          const roll = g.rng.int(256) & OCTOROK_SHOOT_MASK;
+          if (roll === 0) { e.aiState = 'windup'; e.aiTimer = OCTOROK_SHOOT_WINDUP; }
+          else { e.aiState = 'stand'; e.aiTimer = OCTOROK_STAND_FRAMES[roll]; }
+          return;
+        }
+        case 'stand':                             // state $09
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'walk';
+          e.aiTimer = OCTOROK_WALK_FRAMES[g.rng.int(4)];
+          e.dir = randDir(g);
+          if (g.rng.int(OCTOROK_TURN_TO_LINK) === 0) cardinalToward(e, g);
+          return;
+        case 'windup':                            // state $0b
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'stand'; e.aiTimer = OCTOROK_SHOOT_REST;
+          shoot(e, g, { sprite: 'shot_rock', speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false });
+          return;
       }
     },
   });

@@ -144,6 +144,11 @@ export class Enemy extends Entity {
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
+    // The walk cycle's own clock. Every enemy's walks with `tick` unless its
+    // ai sets `still` — a Seasons enemy standing between walks does not
+    // animate (the cartridge calls enemyAnimate only while walking).
+    this.animTick = 0;
+    this.still = false;
     this.homeX = x; this.homeY = y;
     this.shadow = this.flying;
     if (spec.z) this.z = spec.z;
@@ -201,7 +206,7 @@ export class Enemy extends Entity {
     if (!f) return this.spec.sprite || 'blob';
     if (Array.isArray(f)) {
       this.flipX = false;
-      return f[Math.floor(this.tick / this.rate) % f.length];
+      return f[Math.floor(this.animTick / this.rate) % f.length];
     }
     let key = this.dir;
     if (key === 'left' || key === 'right') {
@@ -211,7 +216,7 @@ export class Enemy extends Entity {
       this.flipX = false;
     }
     const list = f[key] || f.down || f.side || Object.values(f)[0];
-    return list[Math.floor(this.tick / this.rate) % list.length];
+    return list[Math.floor(this.animTick / this.rate) % list.length];
   }
 
   /** Aquatic enemies must stay in water; land enemies stay out of it. */
@@ -225,6 +230,7 @@ export class Enemy extends Entity {
 
   update(game) {
     this.tick++;
+    if (!this.still) this.animTick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
     if (this.attackTime > 0) this.attackTime--;
@@ -418,6 +424,7 @@ export class Boss extends Enemy {
 
   update(game) {
     this.tick++;
+    if (!this.still) this.animTick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
 
@@ -648,6 +655,10 @@ export const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' }
  */
 export function gridLocked(e) {
   if (e instanceof Boss) return false;
+  // A PORTED enemy walks as its Seasons counterpart does, and the cartridge's
+  // enemies are not on a lattice (the human's call, after S150). `port` names
+  // the disassembly file its behaviour was read from.
+  if (e.spec && e.spec.port) return false;
   return !e.flying && e.terrain !== 'water';
 }
 
@@ -1065,6 +1076,26 @@ export function submerge(e, g, o = {}) {
 }
 
 /** Fire a shot at the player. */
+// --------------------------------------------------------------------------
+// Seasons' walkers (ported enemies, spec.port)
+// --------------------------------------------------------------------------
+//
+// The cartridge's ground enemies have a speed and an angle and nothing else:
+// ecom_applyVelocityForTopDownEnemy moves them `speed` along their angle every
+// frame and reports whether they got anywhere. These are that, over our own
+// mover, so the same walls, pits and tides stop them.
+
+/** Walk one frame along `e.dir` at `speed` px/f. False if something stopped it. */
+export function walkOn(e, g, speed) {
+  return moveDir(e, g, e.dir, speed);
+}
+
+/** ecom_setRandomCardinalAngle. */
+export function randomCardinal(e, g) { e.dir = randDir(g); }
+
+/** ecom_updateCardinalAngleTowardTarget: face Link along the greater gap. */
+export function cardinalToward(e, g) { if (g.player) e.dir = dirTo(e, g.player); }
+
 export function shoot(e, g, o = {}) {
   if (!g.player) return null;
   if (g.audio) g.audio.sfx(o.sfx || 'enemyShoot');
