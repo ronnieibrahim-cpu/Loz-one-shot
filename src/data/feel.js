@@ -1713,3 +1713,52 @@ export const CRAB_SPEED_UPDOWN = 0.25;
 /** [f] — how long the sand crab keeps one direction. derived: sandCrab.s
  *  @state8, counter1 = $30 + (random & $30). */
 export const CRAB_WALK_FRAMES = [48, 64, 80, 96];
+
+/** mask — a zol or gel rolls a byte and ANDs it with this at the end of each
+ *  hold; zero means hop, so one time in eight. derived: zol.s
+ *  zol_subid01_state8 and gel.s gel_state8 (and $07). */
+export const HOP_ODDS_MASK = 7;
+
+/** px/f — a zol or gel hopping at Link. derived: zol.s zol_subid01_stateA
+ *  (SPEED_100) and gel.s gel_beginHop (SPEED_100). */
+export const SLIME_HOP_SPEED = 1;
+
+/** px/f — how fast a zol or gel leaves the ground. derived: zol.s and gel.s,
+ *  speedZ -$200 (two pixels a frame, upward). */
+export const SLIME_HOP_LAUNCH = 2;
+
+/** px/f/f — taken off that each frame in the air. derived: zol.s and gel.s,
+ *  objectUpdateSpeedZ_paramC with c = $28 ($28/256 of a pixel). */
+export const SLIME_HOP_GRAVITY = 0x28 / 256;
+
+/** f — a zol holds still this long between moves. derived: zol.s
+ *  zol_state_uninitialized and zol_subid01_state9/B, counter1 $18. */
+export const ZOL_HOLD_FRAMES = 24;
+
+/** px/f — a zol sliding at Link. derived: zol.s zol_subid01_state8, SPEED_80. */
+export const ZOL_SLIDE_SPEED = 0.5;
+
+/** f — and for this long. derived: zol.s zol_subid01_state8, counter1 $10. */
+export const ZOL_SLIDE_FRAMES = 16;
+
+/** f — a zol shivers this long before it hops. derived: zol.s
+ *  zol_subid01_state8 @hopTowardLink, counter1 $20. */
+export const ZOL_SHAKE_FRAMES = 32;
+
+/** px — each of a split zol's two gels lands this far to one side. derived:
+ *  zol.s zol_subid01_stateD, zol_spawnGel with c = +-4. */
+export const ZOL_SPLIT_OFFSET = 4;
+
+/** f — a gel stands this long between moves. derived: gel.s
+ *  gel_state_uninitialized and gel_state9/B, counter1 $10. */
+export const GEL_HOLD_FRAMES = 16;
+
+/** px/f — a gel inching at Link. derived: gel.s gel_state8, SPEED_40. */
+export const GEL_INCH_SPEED = 0.25;
+
+/** f — and for this long. derived: gel.s gel_state8, counter1 $08. */
+export const GEL_INCH_FRAMES = 8;
+
+/** f — a gel shivers this long before it hops. derived: gel.s gel_state8,
+ *  counter1 $30. */
+export const GEL_SHAKE_FRAMES = 48;

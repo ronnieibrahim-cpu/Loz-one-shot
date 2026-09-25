@@ -6,7 +6,7 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall,
 } from '../game/enemy.js';
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
@@ -16,6 +16,9 @@ import {
   OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK,
   OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED,
   CRAB_SPEED_SIDE, CRAB_SPEED_UPDOWN, CRAB_WALK_FRAMES,
+  HOP_ODDS_MASK, SLIME_HOP_SPEED, SLIME_HOP_LAUNCH, SLIME_HOP_GRAVITY,
+  ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET,
+  GEL_HOLD_FRAMES, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES,
 } from './feel.js';
 
 export function installEnemies() {
@@ -143,7 +146,7 @@ export function installEnemies() {
   // --- Zol: a slime that splits when struck ------------------------------
   defineEnemy('zol', {
     light: true,
-    hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
+    hp: 2, damage: 2, pal: 'slime', rate: 14,
     frames: ['zol_0', 'zol_1'],
     hurtFrame: 'zol_hurt',
     deathFrame: 'zol_death',
@@ -160,13 +163,43 @@ export function installEnemies() {
     hb: { x: 3, y: 6, w: 10, h: 9 },
     terrain: 'any',
     drops: 'common',
-    ai(e, g) { hop(e, g, { wait: 52, dist: 8, height: 7, frames: 16 }); },
+    // Seasons' red zol (zol.s, subid 1): holds, then slides at Link for a
+    // moment; one time in eight it shivers and hops at him instead.
+    port: 'zol.s',
+    speed: ZOL_SLIDE_SPEED,
+    ai(e, g) {
+      switch (e.aiState) {
+        case 0: e.aiState = 'hold'; e.aiTimer = ZOL_HOLD_FRAMES; return;
+        case 'hold':                              // subid01 state 8
+          e.speed = ZOL_SLIDE_SPEED;
+          if (--e.aiTimer > 0) return;
+          if ((g.rng.int(256) & HOP_ODDS_MASK) === 0) {
+            e.aiState = 'shake'; e.aiTimer = ZOL_SHAKE_FRAMES; e.attackTime = ZOL_SHAKE_FRAMES;
+          } else {
+            e.aiState = 'slide'; e.aiTimer = ZOL_SLIDE_FRAMES; e.angle = angleToward(e, g);
+          }
+          return;
+        case 'slide':                             // state 9
+          moveAngle(e, g, e.angle, ZOL_SLIDE_SPEED);
+          if (--e.aiTimer <= 0) { e.aiState = 'hold'; e.aiTimer = ZOL_HOLD_FRAMES; }
+          return;
+        case 'shake':                             // state $0a
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'hop'; e.angle = angleToward(e, g); e.speed = SLIME_HOP_SPEED;
+          launch(e, SLIME_HOP_LAUNCH);
+          if (g.audio) g.audio.sfx('hop');
+          return;
+        case 'hop':                               // state $0b
+          moveAngle(e, g, e.angle, SLIME_HOP_SPEED);
+          if (!fall(e, SLIME_HOP_GRAVITY)) { e.aiState = 'hold'; e.aiTimer = ZOL_HOLD_FRAMES; }
+          return;
+      }
+    },
     onDie(e, g) {
-      // Splits into two gels, unless this zol was itself a split. The offset is
-      // a whole lattice cell: a gel that spawned between lattice points would
-      // walk a shifted grid for the rest of its short life.
+      // Splits into two gels, unless this zol was itself a split, four pixels
+      // either side of where it stood (zol_spawnGel).
       if (e.opts.split) return;
-      for (const dx of [-ENEMY_GRID_STEP, ENEMY_GRID_STEP]) {
+      for (const dx of [-ZOL_SPLIT_OFFSET, ZOL_SPLIT_OFFSET]) {
         spawnEntity(g, 'gel', (e.x + dx) / TILE, e.y / TILE, { split: true });
       }
     },
@@ -174,7 +207,7 @@ export function installEnemies() {
 
   defineEnemy('gel', {
     light: true,
-    hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
+    hp: 1, damage: 1, pal: 'slime', rate: 10,
     frames: ['gel_0', 'gel_1'],
     // Present for completeness and never drawn today: at hp 1 every hit is
     // the killing one, and the death pose outranks the flinch.
@@ -192,7 +225,39 @@ export function installEnemies() {
     hurtBox: { x: 4, y: 5, w: 4, h: 4 },
     terrain: 'any',
     drops: 'none',
-    ai(e, g) { chase(e, g, { speed: 0.42 }); },
+    // Seasons' gel (gel.s): stands, then inches at Link; one time in eight it
+    // shivers and hops at him. (The cartridge's gel also clings to Link and
+    // slows him; not ported — see docs/NEXT-SESSION.md S151.)
+    port: 'gel.s',
+    speed: GEL_INCH_SPEED,
+    ai(e, g) {
+      switch (e.aiState) {
+        case 0: e.aiState = 'hold'; e.aiTimer = GEL_HOLD_FRAMES; return;
+        case 'hold':                              // gel_state8
+          e.speed = GEL_INCH_SPEED;
+          if (--e.aiTimer > 0) return;
+          if ((g.rng.int(256) & HOP_ODDS_MASK) === 0) {
+            e.aiState = 'shake'; e.aiTimer = GEL_SHAKE_FRAMES;
+          } else {
+            e.aiState = 'inch'; e.aiTimer = GEL_INCH_FRAMES; e.angle = angleToward(e, g);
+          }
+          return;
+        case 'inch':                              // gel_state9
+          moveAngle(e, g, e.angle, GEL_INCH_SPEED);
+          if (--e.aiTimer <= 0) { e.aiState = 'hold'; e.aiTimer = GEL_HOLD_FRAMES; }
+          return;
+        case 'shake':                             // gel_stateA
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'hop'; e.angle = angleToward(e, g); e.speed = SLIME_HOP_SPEED;
+          launch(e, SLIME_HOP_LAUNCH);
+          if (g.audio) g.audio.sfx('hop');
+          return;
+        case 'hop':                               // gel_stateB
+          moveAngle(e, g, e.angle, SLIME_HOP_SPEED);
+          if (!fall(e, SLIME_HOP_GRAVITY)) { e.aiState = 'hold'; e.aiTimer = GEL_HOLD_FRAMES; }
+          return;
+      }
+    },
   });
 
   // --- Keese: erratic flier, ignores terrain -----------------------------

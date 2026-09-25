@@ -1096,6 +1096,51 @@ export function randomCardinal(e, g) { e.dir = randDir(g); }
 /** ecom_updateCardinalAngleTowardTarget: face Link along the greater gap. */
 export function cardinalToward(e, g) { if (g.player) e.dir = dirTo(e, g.player); }
 
+/**
+ * objectGetAngleTowardLink: the angle to Link on the cartridge's 32-step
+ * compass (0 up, 8 right, 16 down, 24 left), rounded to the nearest step.
+ */
+export function angleToward(e, g, target) {
+  const p = target || g.player;
+  if (!p) return 16;
+  const dx = p.cx - e.cx, dy = p.cy - e.cy;
+  const a = Math.round(Math.atan2(dx, -dy) / (2 * Math.PI) * 32);
+  return ((a % 32) + 32) % 32;
+}
+
+/** The facing an angle reads as, for the sprite and the shield. */
+export function dirOfAngle(a) {
+  return ['up', 'right', 'down', 'left'][Math.floor(((a + 4) % 32) / 8)];
+}
+
+/**
+ * Move one frame at `speed` px/f along a 32-step `angle`
+ * (ecom_applyVelocityForSideviewEnemy with an angle that need not be
+ * cardinal). Each axis is the speed times the angle's sine or cosine, in
+ * whole subpixels. False if something stopped it.
+ */
+export function moveAngle(e, g, angle, speed) {
+  const r = angle / 32 * 2 * Math.PI;
+  const s = sp(speed);
+  const dx = Math.round(s * Math.sin(r)), dy = Math.round(-s * Math.cos(r));
+  if (e.terrainOk && !e.terrainOk(g, toPx(e.fx + dx), toPx(e.fy + dy))) return false;
+  const m = moveEntity(g, e, dx, dy);
+  return !((m.hitX && dx) || (m.hitY && dy));
+}
+
+/**
+ * A hop off the ground: objectSetSpeedZ then objectUpdateSpeedZ_paramC each
+ * frame. `vz` is the launch in px/f (upward), `gravity` what is taken off it
+ * each frame. Returns true while still in the air.
+ */
+export function launch(e, vz) { e.vzS = sp(vz); e.fz = Math.max(e.fz || 0, 1); }
+export function fall(e, gravity) {
+  e.fz = (e.fz || 0) + e.vzS;
+  e.vzS -= sp(gravity);
+  if (e.fz <= 0) { e.fz = 0; e.vzS = 0; return false; }
+  return true;
+}
+
 export function shoot(e, g, o = {}) {
   if (!g.player) return null;
   if (g.audio) g.audio.sfx(o.sfx || 'enemyShoot');
