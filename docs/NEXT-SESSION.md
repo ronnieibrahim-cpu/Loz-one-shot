@@ -39,7 +39,26 @@ tool: tools/check-side.mjs (20 scenarios) and tools/shoot-steps.mjs
 (screenshots after steps / on a condition). Seasons grab modes (which items
 use one hand) are in data/seasons/treasureObjectData.s; chests have no pose.
 
+### Follow-up the same session: items look the same everywhere (human's ask)
+The human: "the item sprite seems to change to a hand drawn alternative when
+Link is holding it up. It should look the same. Also fix the sprites of other
+overworld items like rupees, heart pieces etc that have Oracles equivalents."
+- New ripper tools/rip-treasures.py -> src/data/sprites-treasures.js (12th in
+  check-rippers and CLAUDE.md), from assets/treasures/oracles-disasm/seasons/
+  (README there): p_rupee, p_rupee5, p_rupee20, p_rupee100 (new), p_heart,
+  p_bomb (new; bomb4 uses it), p_heartpiece, p_heartcontainer, p_key,
+  p_bosskey, i_map. Treasures follow interaction $60's subid table ->
+  gfx header -> tile/palette/animation -> OAM layout; drops follow
+  itemDrop.s + part $01's layout. The hand-drawn versions were deleted from
+  sprites-world.js and sprites-gear.js; PICKUPS pass `pal: null` for them.
+- A lifted rock or pot is drawn as its own TILE (`ThrownObject.tileArt`), so it
+  no longer becomes `rock16`/`o_pot`; themed dungeon pots lost `liftSprite`.
+- Whole table green, playthrough 43/43, replay 51/51.
+
 ### Noticed, not chased
+- Still hand-drawn with a possible Seasons equivalent: o_chest/o_chestbig,
+  o_sign, o_block, o_switch_*, o_torch_* (world objects rather than items);
+  worth the same treatment if the human asks.
 - Placed `rupee20` pickups (now on six old heart-piece spots) are not
   persistent: they blink out after PICKUP_LIFE_FRAMES and return on re-entry.
   Pre-existing behaviour of every placed rupee.
