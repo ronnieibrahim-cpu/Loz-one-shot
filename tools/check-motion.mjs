@@ -190,6 +190,7 @@ async function runInPage([ground, wet, frames, seed]) {
       name, e,
       grid: enemy.gridLocked(e),
       port: !!(e.spec && e.spec.port),
+      fixture: !!(e.spec && e.spec.speed === 0),
       speed: e.speed,
       badSpeed: [],       // ported: frames that moved a distance its speed does not give
       walkFrames: 0,      // ported: frames it moved under its own power
@@ -249,7 +250,7 @@ async function runInPage([ground, wet, frames, seed]) {
   }
 
   return watch.map(w => ({
-    name: w.name, grid: w.grid, port: w.port, speed: w.speed,
+    name: w.name, grid: w.grid, port: w.port, fixture: w.fixture, speed: w.speed,
     badSpeed: w.badSpeed.filter(Boolean), badSpeedCount: w.badSpeed.length,
     walkFrames: w.walkFrames, stillFrames: w.stillFrames,
     bad: w.bad.filter(Boolean), badCount: w.bad.length,
@@ -349,7 +350,8 @@ check('fliers and swimmers still move continuously', movingFree.length > 0 && st
 // --- ported enemies walk as the cartridge's do ----------------------------
 check('every ported enemy is off the lattice', ported.every(r => !r.grid),
   ported.filter(r => r.grid).map(r => r.name).join(', '));
-const portIdle = ported.filter(r => r.walkFrames === 0 || r.stillFrames === 0);
+// A ported fixture (a beamos: speed 0) only has to stand.
+const portIdle = ported.filter(r => (r.walkFrames === 0 && !r.fixture) || r.stillFrames === 0);
 check('every ported enemy both walked and stood still', ported.length > 0 && portIdle.length === 0,
   ported.length === 0 ? 'nothing is ported' : portIdle.map(r => `${r.name} walked ${r.walkFrames} stood ${r.stillFrames}`).join(', '));
 const portFast = ported.filter(r => r.badSpeedCount > 0);

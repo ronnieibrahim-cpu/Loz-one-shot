@@ -6,9 +6,10 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle,
 } from '../game/enemy.js';
 import { spawnEntity, canOccupy } from '../game/entity.js';
+import { fire } from '../game/projectile.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.js';
@@ -22,6 +23,8 @@ import {
   KEESE_SPEED, KEESE_FIRST_REST, KEESE_FLIGHT_BASE, KEESE_FLIGHT_SPAN, KEESE_VEER_ODDS,
   LEEVER_SPEED, LEEVER_UNDER_FRAMES, LEEVER_SURFACE_TILES, LEEVER_RISE_FRAMES, LEEVER_SINK_FRAMES,
   LEEVER_CHASE_BASE, LEEVER_CHASE_MASK,
+  BUBBLE_SPEED, BUBBLE_TURN_ODDS,
+  BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
 } from './feel.js';
 
@@ -395,7 +398,7 @@ export function installEnemies() {
   // --- Bubble: invulnerable drifting hazard ------------------------------
   defineEnemy('bubble', {
     light: true,
-    hp: 999, damage: 2, pal: 'spark', speed: 1.0, rate: 6, terrain: 'air',
+    hp: 999, damage: 2, pal: 'spark', rate: 6,
     frames: ['bubble_0', 'bubble_1'],
     // Shown only when the Resonance Rod has rung it and a blow gets through;
     // the death pose is ready but unreachable while hp is 999.
@@ -404,7 +407,19 @@ export function installEnemies() {
     shield: 'all',
     drops: 'none',
     z: 6,
-    ai(e, g) { bounceDiag(e, g, { speed: 1.05 }); },
+    // Seasons' bubble (bubble.s): moves in the four directions and, whenever
+    // it is square on the 8 px grid or stopped by a wall, turns one time in
+    // eight. (The cartridge's also takes Link's sword away for three seconds
+    // on touch; not ported — see docs/NEXT-SESSION.md S151.)
+    port: 'bubble.s',
+    speed: BUBBLE_SPEED,
+    terrain: 'any',
+    ai(e, g) {
+      const turn = () => { if (g.rng.int(BUBBLE_TURN_ODDS) === 0) e.dir = randDir(g); };
+      if (e.aiState === 0) { e.dir = randDir(g); e.aiState = 'go'; }
+      if (e.x % 8 === 0 && e.y % 8 === 0) turn();
+      if (!walkOn(e, g, BUBBLE_SPEED)) turn();
+    },
   });
 
   // --- Beamos: static, fires when you are in line ------------------------
@@ -418,21 +433,37 @@ export function installEnemies() {
     shield: 'all',
     terrain: 'any',
     drops: 'none',
+    // Seasons' beamos (beamos.s): its eye turns one step of the 32 every five
+    // frames, round and round; when it comes onto Link it stops and, for the
+    // last ten of twenty frames, fires a beam along that angle, a piece a
+    // frame at 8 px a frame. Then forty frames before it can fire again.
+    port: 'beamos.s',
     ai(e, g) {
-      // Fires only along its own row/column, same shape as octorok's shot —
-      // `aligned()` both gates the shot and sets `e.dir` toward the player,
-      // and the shoot() call below carries no `aim`, so `fire()` sends the
-      // shot straight in that direction rather than homing on the player's
-      // exact position. Found and fixed this session: `aim: true` here
-      // used to fire an aimed shot at any range < 80 regardless of
-      // alignment, which is exactly what docs/ENEMIES.md's "only fires
-      // straight along its own facing; step off its row or column and it's
-      // harmless" lesson says does NOT happen — confirmed with a scratch
-      // probe placing the player diagonally off-axis, which still took a
-      // hit before this fix. See docs/prompts/LEDGER.md.
-      if (every(e, 44) && aligned(e, g, 14) && distToPlayer(e, g) < 80) {
-        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, damage: 2, radius: BEAM_SHOT_RADIUS });
+      if (e.aiState === 0) {                      // @state_uninitialized
+        e.angle = 0; e.aiTimer = BEAMOS_TURN_FRAMES; e.cool = 0; e.aiState = 'turn';
       }
+      if (e.aiState === 'turn') {                 // @state8
+        if (--e.aiTimer <= 0) {
+          e.aiTimer = BEAMOS_TURN_FRAMES;
+          e.angle = (e.angle + 1) & 31;
+          e.dir = dirOfAngle(e.angle);
+        }
+        if (e.cool > 0 && --e.cool > 0) return;
+        const d = (angleToward(e, g) - e.angle + 1) & 0xff;
+        if (d >= 2) return;
+        e.aiState = 'fire'; e.aiTimer = BEAMOS_FIRE_FRAMES; e.attackTime = BEAMOS_FIRE_FRAMES;
+        return;
+      }
+      // @state9
+      if (--e.aiTimer <= 0) {
+        e.aiTimer = BEAMOS_TURN_FRAMES; e.cool = BEAMOS_COOLDOWN; e.aiState = 'turn';
+        return;
+      }
+      if (e.aiTimer === BEAMOS_BEAM_PIECES + 1 && g.audio) g.audio.sfx('enemyShoot');
+      if (e.aiTimer > BEAMOS_BEAM_PIECES) return;
+      const r = e.angle / 32 * 2 * Math.PI;
+      fire(g, e, { sprite: 'shot_beam', pal: 'enemyr', damage: 2, radius: BEAM_SHOT_RADIUS,
+        vx: BEAMOS_BEAM_SPEED * Math.sin(r), vy: -BEAMOS_BEAM_SPEED * Math.cos(r) });
     },
   });
 

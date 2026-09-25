@@ -1822,3 +1822,28 @@ export const LEEVER_SINK_FRAMES = 24;
  *  @setRandomHighCounter1 ($70 + (random & $38)). */
 export const LEEVER_CHASE_BASE = 0x70;
 export const LEEVER_CHASE_MASK = 0x38;
+
+/** px/f — a bubble. derived: bubble.s @state_uninitialized, SPEED_c0. */
+export const BUBBLE_SPEED = 0.75;
+
+/** 1-in-n — a bubble's chance to turn each frame it is square on the grid or
+ *  stopped. derived: bubble.s @chooseNewDirection (random & 7 == 0). */
+export const BUBBLE_TURN_ODDS = 8;
+
+/** f — the beamos's eye moves one step of 32 this often: a full turn in 160.
+ *  derived: beamos.s @updateAngle, counter1 $05. */
+export const BEAMOS_TURN_FRAMES = 5;
+
+/** f — once it sees Link it holds this long, firing over the last
+ *  BEAMOS_BEAM_PIECES of them. derived: beamos.s @checkFireBeam (counter1 20)
+ *  and @state9 (a piece every frame below 11). */
+export const BEAMOS_FIRE_FRAMES = 20;
+export const BEAMOS_BEAM_PIECES = 10;
+
+/** px/f — each piece of the beam. derived: parts/beam.s @state0, speed $50
+ *  (SPEED_200) scaled by 4 through objectSetComponentSpeedByScaledVelocity. */
+export const BEAMOS_BEAM_SPEED = 8;
+
+/** f — after firing, the beamos cannot fire again for this long. derived:
+ *  beamos.s @state9, counter2 40. */
+export const BEAMOS_COOLDOWN = 40;
