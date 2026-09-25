@@ -994,7 +994,10 @@ const main = async () => {
   check('arpeggio repeats the chord in order', music.arpeggio.cycleOK, JSON.stringify(music.arpeggio));
 
   console.log('\n--- HUD, menu, save ---');
-  await tap('Enter');
+  // The menu comes and goes through Seasons' white fade (MENU_FADE_OPEN /
+  // _CLOSE), and the page does not answer until it has faded in.
+  const settle = async () => { for (let i = 0; i < 40 && await G(() => window.__game.veiled()); i++) await frames(2); };
+  await tap('Enter'); await settle();
   check('menu opens', await G(() => window.__game.mode === 'menu'));
   await shot('11-menu-items');
   await tap('Tab'); await shot('12-menu-map');
@@ -1006,7 +1009,7 @@ const main = async () => {
   await tap('x');
   await frames(10);
   check('save wrote to localStorage', await G(() => !!localStorage.getItem('oracleOfTides.save.v1')));
-  await tap('Enter');
+  await tap('Enter'); await settle();
   check('menu closes', await G(() => window.__game.mode === 'play'));
 
   console.log('\n--- load a save ---');

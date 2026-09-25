@@ -64,7 +64,8 @@ READ BUT NOT APPLIED:
   (5688-5715), white held, back in over ~27 f (5746-5773). A door into a
   building or cave: an instant cut to white, 16 f of white, then ~20 f back
   in (3659-3695, 8598-8629, 14170-14199). The item menu: 10 f each way
-  (1744-1754). Drowning: ~24 f out (4469-4493). None applied: it changes a
+  (1744-1754). (4468-4495, first read as drowning, is a STAIRCASE in a
+  dungeon — S151; the cartridge's drowning has no fade at all.) None applied: it changes a
   look (white) and a pace nobody has asked for yet.
 - Knockback distance: not isolable — the run is steering through every hit.
 - Pit fall, feather jump: none on foot in the run (the cucco carries Link

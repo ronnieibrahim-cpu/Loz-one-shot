@@ -583,6 +583,72 @@ export const TIDE_SWEEP_FRAMES = 23;
 /** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
 export const FADE_RATE = 0.09;
 
+/** [f, f, f] — going down or up STAIRS: fade to white over the first, hold
+ *  white for the second, fade back in over the third. measured: out 27
+ *  (5688-5715), white 31 (5715-5746), in 27 (5746-5773). reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, mean screen brightness. Seasons fades
+ *  to WHITE, not black. */
+export const STAIRS_FADE = [27, 31, 27];
+
+/** [f, f, f] — through a DOOR or a cave mouth: an instant cut to white and
+ *  16 frames of white; the room then comes back by DOOR_REVEAL_*, not by a
+ *  fade, so the third is 0. measured: white 16 (3660-3675), 16 (8599-8614),
+ *  17 (14171-14187). reference: assets/footage/seasons-tas-rooster-adventure.mp4.
+ *  (S150 read the reveal as a 20-frame fade in by mean brightness — S151.) */
+export const DOOR_FADE = [0, 16, 0];
+
+/** [f, f, f] — opening the item menu: the field fades to white, holds, and
+ *  the item page fades in. measured: out 10 (1744-1754), white 20
+ *  (1754-1774), in 8 (1774-1782). reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, mean screen brightness.
+ *  The HUD fades with the field. */
+export const MENU_FADE_OPEN = [10, 20, 8];
+
+/** [f, f, f] — closing the item menu: the page fades to white, holds, and the
+ *  field fades back in. measured: out 9 (1791-1800), white 13 (1800-1813),
+ *  in 9 (1813-1822). reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const MENU_FADE_CLOSE = [9, 13, 9];
+
+/** f — through any door (into a dungeon, out of one, into a cave): after
+ *  DOOR_FADE's white, the HUD comes back over a blank field for this long
+ *  before the room starts to open. measured: 6 (3676-3681), 5 (8615-8619),
+ *  4 (14188-14191) — the cartridge is loading the room; the middle is taken.
+ *  reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const DOOR_REVEAL_BLANK = 5;
+
+/** f — then the room is uncovered one column a frame, alternately to the
+ *  right and to the left, until the field is whole. measured: 20 (3682-3701,
+ *  8620-8639, 14192-14211 — identical each time). reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const DOOR_REVEAL_STEPS = 20;
+
+/** px — the width of each column the reveal uncovers. measured: 8 (every
+ *  frame 3682-3701 widens the strip by exactly 8). reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const DOOR_REVEAL_STEP_PX = 8;
+
+/** px — the left edge of the reveal's first column, from the field's left.
+ *  measured: 72 (3682 shows columns 72-79). reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const DOOR_REVEAL_FROM = 72;
+
+/** [f, f] — a chest item rising out of the chest: how far it rises (px) and
+ *  over how many frames, and how long after the lid opens the text box
+ *  appears. measured: the lid opens at 8133, the item appears at 8136 and
+ *  rises 11 px (steps 2,1,1,0,1 then one pixel every four frames), the text
+ *  box opens at 8169. reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const CHEST_ITEM_RISE = [2, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1];
+
+/** f — from the chest lid opening to the text box opening. measured: 36
+ *  (lid at video frame 8133, text box at 8169). reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4. The item appears 3 frames after the lid
+ *  (CHEST_ITEM_DELAY). */
+export const CHEST_TEXT_DELAY = 36;
+
+/** f — from the lid opening to the item showing above the chest. measured: 3
+ *  (8133 -> 8136). reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
+export const CHEST_ITEM_DELAY = 3;
+
 /** f — how long the opening card holds before it fades, if nothing is
  *  pressed. guessed: the footage's run skips the card at its first chance
  *  (video frames 6744-6803 are 60 frames of it), so its natural length is
@@ -709,8 +775,9 @@ export const FALL_FRAMES = FALL_ANIM_FRAMES.reduce((a, b) => a + b, 0) + 2;
 /** f — length of being washed back to shore by water: Seasons' drowning.
  *  derived from the cartridge: animationData19c40 (LINK_ANIM_MODE_DROWN,
  *  6 + 16 frames to its end marker) and the same two invisible frames as a
- *  pit. It agrees with the ~24-frame drowning fade read off the footage
- *  (assets/footage/README.md, 4469-4493). Was a guessed 30. */
+ *  pit. There is no screen fade: linkState02 @substate5 animates and
+ *  respawns, nothing else. (The footage's 4468-4495, once read as a drowning
+ *  fade, is a staircase — S151.) Was a guessed 30. */
 export const WASH_FRAMES = 6 + 16 + 2;
 
 /** f — how long Link holds the conch, and is frozen for. guessed. */

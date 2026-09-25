@@ -17,7 +17,7 @@ import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
-import { MENU_DESC_DWELL, MENU_DESC_HOLD } from '../data/feel.js';
+import { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 
 // THE SEASONS INVENTORY PAGE (tools/rip-screens.py, off the footage): a white
@@ -228,7 +228,12 @@ export class Menu {
   }
 
   open() { this.game.mode = 'menu'; this.tab = 0; this.cursor = 0; }
-  close() { this.game.mode = 'play'; this.game.audio.sfx('pause'); }
+  close() {
+    // Through white again, the way it came (MENU_FADE_CLOSE).
+    const g = this.game;
+    g.audio.sfx('pause');
+    g.fadeOut(() => { g.mode = 'play'; }, true, MENU_FADE_CLOSE);
+  }
 
   get items() { return equippableItems(this.game.progress); }
 
@@ -237,6 +242,8 @@ export class Menu {
     const i = g.input;
     if (this.messageTime > 0) this.messageTime--;
     this.tickDesc();
+    // Nothing on the page answers while it is fading in or out.
+    if (g.fadeDir || g.fadeHold > 0) return;
 
     if (i.pressed('start')) { this.close(); return; }
 
