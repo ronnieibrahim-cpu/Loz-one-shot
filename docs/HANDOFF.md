@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A lock on a DOOR is invisible to a flood that counts SCREENS (S154).**
+  check-progression marked a dungeon reached when its entrance screen was in
+  the flood, so the first keyed door changed nothing it reported: the screen
+  in front of a locked door is as reachable as ever. It now asks whether a
+  warp TILE is in the flood. Any new lock that sits on a doorway rather than
+  across a region needs a tile-level question.
+- **A new first-conversation beat breaks every harness that talks to that
+  person on a fresh save (S154).** check-trade went red the moment the Maku
+  Tree's first word became a key, and stayed red for five commits because
+  only the playthrough and the gate checks were being run per key. Run the
+  whole table when you add a beat, not the tools you think it touches.
+
 - **A boss is not a picture on the cartridge (S152).** It is a list of 8x16
   hardware sprites per frame (enemyOamData.s) whose tile numbers are relative
   to where its graphics header loaded, flipped and coloured by `oamFlags XOR

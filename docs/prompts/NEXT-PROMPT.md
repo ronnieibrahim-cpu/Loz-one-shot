@@ -1,36 +1,38 @@
-# Next session — a key for every dungeon, then side content
+# Next session — side content, the trading chain, items held overhead
 
 ## Read first
 - CLAUDE.md, all of it.
-- `docs/NEXT-SESSION.md`, the S153 entry: the human's decisions are there.
-- `docs/GAME-PLAN.md` (overworld gates table), `docs/DUNGEON-STATUS.md`,
-  `docs/TRADING.md`.
+- `docs/NEXT-SESSION.md`, the S154 entry: the human's decisions are there.
+- `docs/GAME-PLAN.md` ("Dungeon keys" table), `docs/TRADING.md`.
 
 ## Why this, now
-S153 filmed every boss (the human leaves the camera crop as Seasons has it),
-gave the spin attack its sword and Seasons' own sound, and turned the title
-green. The human then chose: one key item per dungeon, Seasons' way, so the
-six dungeons are played in story order; then minigames, townsfolk quests and
-secret caves.
+S154 locked every dungeon behind its own key, Seasons' way, handed over by a
+story beat after the dungeon before (Maku Tree, Sandpiper fisherman, the old
+man in the square, the shore Salter, the digger, the Maku Tree again). The six
+are now played strictly in order. The human's standing list continues.
 
 ## The task
-1. Propose the six dungeon keys in plain words: who gives each, when, what
-   it looks like, where its lock sits. D1's comes from the Maku Tree on first
-   meeting (the Gnarled Key's role); each later one from a story beat after
-   the dungeon before; D6's seal joins the same scheme. Ours in design,
-   Seasons in look (keyhole doors, key icons from the sheets where they
-   exist). Get a yes before building.
-2. Build them one key per commit. After each: the robot's route learns it,
-   and check-progression, check-overworld, check-gates, check-exits,
-   check-items, check-playthrough (42/42 or more, to THE END, never died).
-3. Propose the side content: one or two tide minigames, townsfolk quests
-   paying heart pieces or rupees, secret caves with prizes. Yes first, then
-   one piece per commit, the robot or a checker proving each is reachable.
-4. The trading chain: ask whether they want clearer hints, distinct trader
-   sprites, or a plainer guide section.
+1. SIDE CONTENT (the human said yes in S153; not yet proposed in detail):
+   one or two tide minigames, townsfolk quests, secret caves (bombable walls,
+   tide-only openings). HUMAN'S S154 RULE: the heart-piece prizes are EXISTING
+   heart pieces moved off the map into this content, not new ones (the cap
+   window 14-16 is full at 24 pieces). Candidates the robot never collects,
+   so moving them costs its health budget nothing: Rustfall 0,3,0, Salt
+   Terraces 0,5,0, Palace Wall 0,9,0, Kell Ledges 0,2,3, Log Drift 0,6,4, and
+   the Palace cave (cave4). Propose in plain words, get a yes, then one piece
+   per commit, with check-hearts proving the count still lands and a checker
+   or the robot proving each prize reachable.
+2. ITEMS HELD OVERHEAD (human, S154: "fix item sprites when Link is carrying
+   them over his head"). Compare ours to Seasons (footage + disasm) for both
+   cases — an item held up when it is got (chests, givers, the new keys), and
+   a pot/rock lifted and carried — and fix what differs: position, which
+   frame Link uses, the item's size. Show before/after beside Seasons.
+3. Ask whether the trading chain needs clearer hints, distinct trader
+   sprites, or a plainer guide section (carried over from S153, not yet asked).
 
 ## Done means
-- Every checker in CLAUDE.md's table green; `check-rippers` green.
+- Every checker in CLAUDE.md's table green, check-playthrough 43/43 or more,
+  to THE END, never died; `check-rippers` green.
 - `npm run build`, `dist/` committed, NEXT-SESSION.md and this file updated.
 
 ## Out of scope

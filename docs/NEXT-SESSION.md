@@ -1,3 +1,81 @@
+## S154 — a key for every dungeon, Seasons' way
+
+The brief (NEXT-PROMPT S153): propose six dungeon keys, build them one per
+commit with the robot relearning its route each time. Done. Side content was
+NOT started (see "the human's decisions").
+
+### What landed (branch claude/oracle-tides-dungeon-keys-cp6id6, off S153's branch)
+One commit per key: c955ce3 (D1 + the whole mechanism), 6e1b2b1 (D2),
+ec8ec3a (D3), b174d20 (D4), b245b0b (D5), ed3781d (D6).
+
+| D | Key | Giver (beat scene) | Need | Lock |
+|---|---|---|---|---|
+| 1 | Barnacle Key | Maku Tree, first meeting (`makuKey`) | 0 | Grotto door |
+| 2 | Coral Key | Sandpiper Row fisherman `fisher1` (`coralKey`) | 1 | Spire door |
+| 3 | Peat Key | old man in the square `villager1` (`peatKey`) | 2 | Sanctum door |
+| 4 | Cistern Key | Village Shore Salter `shoreSalter` (`cisternKey`) | 3 | Cistern door |
+| 5 | Moss Key | village digger (giver) (`mossKey`) | 4 | Shrine door |
+| 6 | Bell's Clapper | Maku Tree, `makuMaster` at 5 | 5 | `keepSeal` on Upper Kell / Abyss Stair |
+
+- MECHANISM. A key is two save flags, `keyDn` (held) and `openedDn` (turned);
+  `src/data/keys.js` lists them (+ `migrateKeys` for old saves: every Essence
+  held grants its key already turned; `makuOpenedKeep` grants the clapper).
+  A keyhole is a story-gate tile with `keyFlag` (new tiledef field, named in
+  `registerTiles`); `Game.tryKeyhole` fires from the A button AND from
+  leaning on it (`tryPushBlock` falls through to it after PUSH_DELAY_FRAMES,
+  as Seasons' nextToOverworldKeyhole does). With the key: a built cutscene —
+  chest sfx, new `lift` step (the key rises: KEY_RISE_SPEED 2 px/f,
+  KEY_RISE_GRAVITY $28/256, KEY_HOLD_FRAMES 60, all derived from
+  overworldKeySprite.s), rumble + shake KEYHOLE_OPEN_FRAMES (guessed), set
+  `openedDn`, `applyStoryGates`, `secret` sfx. `startCutscene` now takes a
+  step array. Without the key: deny sfx + the tile's `openDeny` line.
+- DOORS. PORTALS in tiles-core.js carry `key`/`deny`; the block's bottom row
+  becomes `portalDnBLShut`/`BRShut` (SOLID, no WARP) whose art is DERIVED by
+  `shutDoorway()` from the door's own drawn doorway (slab + keyhole across
+  the seam) and which `openTo` the open cells. D6's portal has no key; its
+  lock is `keepSeal` (now keyFlag keyD6, openFlag openedD6). validate.mjs now
+  counts `openTo` targets as reachable.
+- GIVERS. `beat: { scene, need, flag }` on any NPC/Giver/Trader/MakuTree
+  (`NPC.playBeat`, asked before anything else they say). Scenes in story.js
+  end with `{ do: g => g.presentKey('dn') }` (held overhead with the item
+  jingle, "You got the X!"). Farore's intro and Essence 1-4 scenes now point
+  at the next giver.
+- ART. `tools/rip-keys.py` -> `src/data/sprites-keys.js` (11th ripper, in
+  check-rippers + CLAUDE.md table): the cartridges' key-item sprites from
+  oracles-disasm `spr_map_compass_keys*.png` + treasureDisplayData.s +
+  paletteData.s, copied to `assets/keys/oracles-disasm/` (README there).
+  Shapes: Gnarled->Barnacle, Dragon->Coral, Floodgate->Peat, Crown->Cistern,
+  Mermaid->Moss, Graveyard->Clapper; colours ours. Quest screen draws held
+  keys under the Essences.
+- TOOLS. check-progression: a dungeon counts reached only when a warp TILE is
+  in the flood (not the screen); beats are offers; new assertion per keyed
+  door "shut without its key". check-gates: first-meeting beat, Grotto
+  keyhole shut/open in-engine, clapper opens both seal courses. check-
+  playthrough: new assertion "every locked door opened with its own key"
+  (43/43). actor-runtime: `beat` and `keyhole` directives (dTrade's approach
+  factored into dTalkTo). check-dialogue/check-trade mocks treat the beat as
+  heard (check-trade was RED from c955ce3 to ed3781d — fixed in ed3781d).
+- Route: Maku first; fisher after D1's crab at Sandpiper Row; old man on the
+  walk west through the square; Salter via a 4,8 detour; digger after the
+  Noble Sword; seal leaned on from Upper Kell (2,1) facing right (the tiles
+  below the seal are drowned walls). Run ends at frame 189145.
+- Guide (GUIDE.md) and GAME-PLAN.md ("Dungeon keys" table) updated.
+  GUIDE.html was NOT rebuilt — its build route is unknown; check it.
+
+### The human's decisions this session (bind the next one)
+1. The six-key plan above: YES as proposed.
+2. SIDE CONTENT: heart-piece prizes must be EXISTING heart pieces moved into
+   the side content, not new ones. Candidates the robot never picks up are
+   listed in NEXT-PROMPT. Still to be proposed in detail.
+3. NEW TO-DO: "fix item sprites when Link is carrying them over his head" —
+   compare with Seasons and fix (NEXT-PROMPT task 2).
+4. Trading-chain question (hints / sprites / guide) still not asked.
+
+### Noticed, not chased
+- The rising key draws over Link's head (it rises from the keyhole row and
+  Link stands one row below). Seasons' sprite also spawns at the keyhole.
+- The quest screen's key row pushes the text down 12 px; fits today.
+
 ## S153 — the bosses filmed; the spin attack's sword and sound; the title in green
 
 The brief (NEXT-PROMPT S152): film every boss fight, check the tall ones for

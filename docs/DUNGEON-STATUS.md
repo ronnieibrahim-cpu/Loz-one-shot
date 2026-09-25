@@ -37,6 +37,10 @@ ladder is objective 10's remaining work in `docs/prompts/STATE.md`. A dungeon re
 its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 `check-playthrough.mjs` is green through it.
 
+**S154: EVERY DUNGEON IS LOCKED BEHIND ITS OWN KEY**, given by a story beat
+after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
+played strictly in order; check-progression and check-playthrough prove it.
+
 ## The board
 
 | D | Map | Name | Item | Status | Where it landed |
