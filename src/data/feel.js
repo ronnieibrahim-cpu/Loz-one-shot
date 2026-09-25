@@ -1345,6 +1345,11 @@ export const TORRENT_ANIM_RATE = 2;
  *  (it alternates o_valve and o_valve_turn). guessed; fast enough to read as
  *  spinning, slow enough that the two poses are both seen. */
 export const WHEEL_SPIN_BEAT = 4;
+/** f — how long a lit torch holds each of its four flame frames. derived:
+ *  oracles-disasm data/seasons/animationData.s, animationData_04_5d5e (the
+ *  dungeon animation group $18's first entry, which copies the flame tiles
+ *  over the lit torch, TILEINDEX_LIT_TORCH $09), `.db $0f` per frame. */
+export const TORCH_FLAME_FRAMES = 15;
 /** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
 export const RIPTIDE_ANIM_RATE = 4;
 

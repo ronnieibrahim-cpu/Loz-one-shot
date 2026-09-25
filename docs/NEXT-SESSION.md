@@ -1,3 +1,55 @@
+## S156 — chests, sign, torches, push blocks and floor buttons are Seasons' own; the guide republished
+
+Branch claude/oracle-tides-side-content-pb1230 (off S155's
+claude/oracle-tides-side-content-iqiosb; S154, S155 and S156 are NOT on main).
+
+### The human's decisions this session (bind the next one)
+1. TRADING CHAIN: asked again; the human wanted to read the guide first and
+   asked for it as a link that works anywhere. Published (the walkthrough
+   artifact, https://claude.ai/artifact/Tu2aquFgGryNkxY9z6Pxrb, version 3).
+   STILL UNANSWERED: hints / distinct traders / nothing. Ask again.
+2. "Migrate Oracle of Seasons art for chests, signs, push blocks, floor
+   switches and torches": done (below).
+3. NEXT: "Boss art for three bosses" — Thalassor, Gustharpy, Saltwraith. Note
+   the guide says all three are placed in no room (leftovers of the
+   eight-dungeon layout). Ask whether they want them placed somewhere as well
+   as drawn, before drawing; check assets/bosses/ for a Seasons source first.
+
+### What landed
+- Guide: GUIDE.md/.html no longer say diagonals are faster (CLAUDE.md: same
+  speed) nor carry the "no one has played to the end / ending not wired"
+  caveats (both false since S121/S43). check-guide green.
+- New ripper tools/rip-objects.py -> src/data/sprites-objects.js (13th in
+  check-rippers and CLAUDE.md). It reads Seasons' ROOM TILES, not sprites:
+  tilesets.s -> gfxHeaders.s (VRAM) -> tilesetMappingsXX.bin (256 metatiles x
+  8 bytes: 4 tile indices then 4 attrs; pal bits 0-2, bank bit 3, flips 5/6;
+  $8800 addressing) -> paletteHeaders/paletteData (BG 0 from PALH_0f, 2-7 per
+  tileset) -> animationGroups/Data/GfxHeaders for the lit-torch flame.
+  Sources copied to assets/objects/oracles-disasm/seasons/ (README there).
+  Metatiles by the disasm's own names: CHEST $f1/$f0, SIGN $f2 (overworld
+  spring, tileset $00), UNLIT/LIT_TORCH $08/$09, BUTTON $0c/$0d,
+  PUSHABLE_BLOCK $1d. Button and sign ground keyed out by an edge flood over
+  the majority corner colour; everything else untouched.
+- Per-dungeon block and button: OBJECT_THEMES maps our legend to the Seasons
+  dungeon it wears — Grotto = Sword & Shield Maze ICE ($41), Coral =
+  Explorer's Crypt ($3e), Bog = Poison Moth's Lair ($39), Cistern = Dancing
+  Dragon ($3a), Wood = Ancient Ruins ($3c), Abyss = S&S Maze FIRE ($42).
+  `themed()` in objects.js picks `o_block_<t>` / `o_switch_up|down_<t>`.
+- Chests: Seasons has one chest; o_chestbig* draw the same one (fidelity).
+  Torch flame: 4 frames, TORCH_FLAME_FRAMES 15 (derived, animationData.s).
+- Hand-drawn o_chest*, o_sign, o_block, o_switch_*, o_torch* deleted from
+  sprites-world.js; entities pass pal null.
+- Verified: extracted chest/torch/button/block are pixel-identical to the
+  Poison Moth's Lair map sheet. Whole table green; playthrough 43/43.
+
+### Noticed, not chased
+- The Grotto's push block is pink (the ice maze's palette 6), beside the
+  room's grey static block tiles. That is the source's colour; if it reads
+  wrong to the human, the static `dBlock*` tiles could come from the same
+  metatile instead.
+- Overworld floor switches ($9e/$9f levers) exist in Seasons; none of ours
+  are outdoors, so not ripped.
+
 ## S155 — side content from existing heart pieces; items held overhead; the trading chain in plain words
 
 Branch claude/oracle-tides-side-content-iqiosb (off S154's

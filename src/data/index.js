@@ -29,6 +29,7 @@ import { installTradeSprites, TRADE_ART } from './sprites-trade.js';
 import { installErrandSprites, ERRAND_ART } from './sprites-errands.js';
 import { installKeySprites, KEY_ART } from './sprites-keys.js';
 import { installTreasureSprites, TREASURE_ART } from './sprites-treasures.js';
+import { installObjectSprites, OBJECT_ART as OBJECT_RIPPED_ART } from './sprites-objects.js';
 import { installMakuSprites, MAKU_SPRITE_ART } from './tiles-maku.js';
 
 // Background tile art: validated at 16x16.
@@ -62,6 +63,7 @@ export const SPRITE_PACKS = {
   errands: ERRAND_ART,
   keys: KEY_ART,
   treasures: TREASURE_ART,
+  objectsRipped: OBJECT_RIPPED_ART,
   maku: MAKU_SPRITE_ART,
 };
 
@@ -107,6 +109,9 @@ export function installData() {
   // world are the cartridge's own (tools/rip-treasures.py) and these names
   // are defined nowhere else.
   installTreasureSprites();
+  // The same for chests, the sign, torches, push blocks and floor buttons
+  // (tools/rip-objects.py): room tiles on the cartridge, entities here.
+  installObjectSprites();
   // The Maku Tree's face, off the same panel as her grove.
   installMakuSprites();
   installEnemies();

@@ -21,8 +21,16 @@ import {
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
-  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES,
+  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES,
 } from '../data/feel.js';
+import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
+
+/** `base` in this map's own Seasons colours: a push block or floor button is
+ *  a tile of the Seasons dungeon the map is built from (tools/rip-objects.py). */
+function themed(base, game) {
+  const t = game && game.map && OBJECT_THEMES[game.map.legend];
+  return t ? base + '_' + t : base;
+}
 
 // --------------------------------------------------------------------------
 // Pickups
@@ -323,7 +331,8 @@ export class Chest extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 1, y: 4, w: 14, h: 11 };
-    this.pal = o.big ? 'gold' : 'chest';
+    // Seasons' own chest, in its own colours (tools/rip-objects.py).
+    this.pal = null;
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
@@ -563,7 +572,7 @@ export class Sign extends Entity {
     this.w = 16; this.h = 16;
     this.hb = { x: 2, y: 4, w: 12, h: 11 };
     this.sprite = 'o_sign';
-    this.pal = 'wood';
+    this.pal = null;
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
@@ -1082,8 +1091,10 @@ export class PushBlock extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 0, y: 0, w: 16, h: 16 };
-    this.sprite = o.sprite || 'o_block';
-    this.pal = o.pal || 'stone';
+    // Seasons' own block, in the colours of the Seasons dungeon this one is
+    // built from (OBJECT_THEMES); `spriteName` picks it per map.
+    this.sprite = o.sprite || null;
+    this.pal = o.pal || null;
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
@@ -1092,6 +1103,8 @@ export class PushBlock extends Entity {
     this.slide = null;
     this.axis = o.axis || null;        // 'x' | 'y' restriction
   }
+
+  spriteName(game) { return this.sprite || themed('o_block', game); }
 
   push(game, dx, dy) {
     if (this.slide || (this.once && this.moved)) return false;
@@ -1129,7 +1142,7 @@ export class FloorSwitch extends Entity {
     this.hb = { x: 2, y: 2, w: 12, h: 12 };
     this.harmless = true;
     this.shadow = false;
-    this.pal = 'brick';
+    this.pal = null;
     this.pressed = false;
     this.hold = o.hold !== false;       // false = stays down once pressed
     this.group = o.group || 'default';
@@ -1177,7 +1190,7 @@ export class FloorSwitch extends Entity {
     }
   }
 
-  spriteName() { return this.pressed ? 'o_switch_down' : 'o_switch_up'; }
+  spriteName(game) { return themed(this.pressed ? 'o_switch_down' : 'o_switch_up', game); }
 }
 defineEntity('switch', (x, y, o) => new FloorSwitch(x, y, o));
 
@@ -1189,7 +1202,7 @@ export class Torch extends Entity {
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
-    this.pal = 'stone';
+    this.pal = null;
     this.lit = !!o.lit;
     this.group = o.group || 'default';
     this.flammable = true;
@@ -1203,7 +1216,7 @@ export class Torch extends Entity {
   }
   spriteName() {
     if (!this.lit) return 'o_torch';
-    return 'o_torch_lit' + (Math.floor(this.frame / 6) % 2);
+    return 'o_torch_lit' + (Math.floor(this.frame / TORCH_FLAME_FRAMES) % TORCH_FLAME_COUNT);
   }
   update() { this.frame++; }
 }

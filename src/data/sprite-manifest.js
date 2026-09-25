@@ -84,6 +84,15 @@ export const REQUIRED_SPRITES = {
   // here rather than only in a git log.
   fairies: ['p_fairy', 'p_fairy_1'],
 
+  // ---- pack: sprites-objects.js (GENERATED, tools/rip-objects.py) -----
+  objectsRipped: [
+    'o_chest', 'o_chest_open', 'o_chestbig', 'o_chestbig_open', 'o_sign',
+    'o_torch', ...seq('o_torch_lit', 4),
+    'o_block', 'o_switch_up', 'o_switch_down',
+    ...['grotto', 'coral', 'bog', 'cistern', 'wood', 'abyss'].flatMap(t =>
+      ['o_block_' + t, 'o_switch_up_' + t, 'o_switch_down_' + t]),
+  ],
+
   // ---- pack: sprites-treasures.js (GENERATED, tools/rip-treasures.py) --
   // The rupees, hearts, keys, bombs and map lying in the world, the
   // cartridge's own (S155); they used to be hand-drawn in sprites-world.js.
@@ -103,9 +112,6 @@ export const REQUIRED_SPRITES = {
   ],
 
   objects: [
-    'o_chest', 'o_chest_open', 'o_chestbig', 'o_chestbig_open',
-    'o_sign', 'o_block', 'o_switch_up', 'o_switch_down',
-    'o_torch', 'o_torch_lit0', 'o_torch_lit1',
     'o_raft', 'o_valve', 'o_valve_open', 'o_valve_turn', 'o_pot', 'rock16', 'o_coralbud',
   ],
 
