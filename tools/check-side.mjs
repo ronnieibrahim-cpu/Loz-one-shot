@@ -152,6 +152,31 @@ const SCENARIOS = [
     steps: [['race', 600], ['hold', ['down'], 60], ['hold', ['right'], 600], ['wait', 200]],
     expect: `!g.progress.flags.raceWon && !g.race || 'reached Pip at tide ' + g.tide.level`,
   })),
+  {
+    name: 'The dive: Dov asks, all five casks come up in one breath, and he pays a Piece of Heart',
+    setup: setup({ items: { sword: 1, cleats: 1 }, equipA: 'sword', equipB: 'cleats',
+      enter: ['overworld', 0, 8, 9, 64, 48, 'down'] }),
+    steps: [['errandAsk', 'diveDone', 900], ['goto', 1, 4, 400], ['soles', 'sink'],
+      ['goto', 2, 5, 300], ['goto', 4, 6, 300], ['goto', 5, 5, 300], ['goto', 7, 6, 300], ['goto', 7, 5, 300],
+      ['wait', 120], ['goto', 8, 4, 400], ['wait', 30], ['errand', 'diveDone', 1500], ['wait', 60]],
+    expect: `g.progress.flags.salvageDone && g.progress.flags.diveDone && g.progress.heartPieces === 1 || ('salvage ' + !!g.progress.flags.salvageDone + ', pieces ' + g.progress.heartPieces)`,
+  },
+  {
+    name: 'The dive: surface with two casks and they sink back where they lay',
+    setup: setup({ items: { sword: 1, cleats: 1 }, equipA: 'sword', equipB: 'cleats',
+      enter: ['overworld', 0, 8, 9, 64, 48, 'down'] }),
+    steps: [['errandAsk', 'diveDone', 900], ['goto', 1, 4, 400], ['soles', 'sink'],
+      ['goto', 2, 5, 300], ['goto', 4, 6, 300], ['goto', 1, 4, 400], ['wait', 60]],
+    expect: `!g.progress.flags.salvageDone && !g.dive && g.entities.filter(e => e.kind === 'salvage' && !e.remove).length === 5 || ('casks lying: ' + g.entities.filter(e => e.kind === 'salvage' && !e.remove).length)`,
+  },
+  {
+    name: 'The dive: a swimmer on the surface passes over the casks and takes none',
+    setup: setup({ items: { sword: 1, cleats: 1 }, equipA: 'sword', equipB: 'cleats',
+      enter: ['overworld', 0, 8, 9, 64, 48, 'down'] }),
+    steps: [['errandAsk', 'diveDone', 900], ['goto', 1, 4, 400], ['soles', 'swim'],
+      ['hold', ['down'], 20], ['hold', ['right'], 40], ['wait', 20]],
+    expect: `!g.dive && g.entities.filter(e => e.kind === 'salvage' && !e.remove).length === 5 && g.player.inDeep || ('deep ' + g.player.inDeep + ', casks ' + g.entities.filter(e => e.kind === 'salvage' && !e.remove).length)`,
+  },
 ];
 
 const server = createServer(async (req, res) => {

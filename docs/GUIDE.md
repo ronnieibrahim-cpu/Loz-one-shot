@@ -1785,7 +1785,13 @@ Numbered in the order this walkthrough passes them.
 12. **Heart Piece 12** — `d4/0,4,5`, Rung Gallery, tile (3,3). Inside a
     drown-wall box: **swim in at HIGH tide**.
 13. **Heart Piece 13** — `d4/0,4,1`, East Overlook, tile (2,6).
-14. **Heart Piece 14** — `overworld/0,6,4`, Log Drift, tile (2,5). In the open.
+14. **Heart Piece 14** — the **salvage dive**: Dov at Wrecked Hull
+    (`overworld/0,8,9`, tile (2,2)) lost five casks of cargo in the deep pool
+    behind the wreck. Talk to him (any time his trading link is not the live
+    one), set the **Kelp-Soled Cleats** to walk the floor, walk into the pool
+    and pick up all five casks **in one breath** — come up short and they sink
+    back. Take the news to Dov. (Log Drift, where a piece used to be, has 20
+    rupees.)
 15. **Heart Piece 15** — `d5/0,1,5`, Drowned Cloister, tile (3,3).
 16. **Heart Piece 16** — `d5/0,5,5`, Bower Cell, tile (5,1).
 17. **Heart Piece 17** — `houseShop/0,0,0`, the shopkeeper's thanks for his

@@ -1188,6 +1188,8 @@ const rooms = {
   },
   '0,6,4': {
     name: 'Log Drift',
+    // Its Piece of Heart is Dov's thanks for his cargo now (S155, side
+    // content); a rupee keeps the spot.
     legend: 'wood', music: 'overworld',
     map: [
       'TTog11goTT',
@@ -1200,7 +1202,7 @@ const rooms = {
       'TToggggoTT',
     ],
     entities: [
-      ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
   },
   '0,7,4': {
@@ -2588,14 +2590,18 @@ const rooms = {
   '0,8,9': {
     name: 'Wrecked Hull',
     legend: 'dunes', music: 'overworld',
+    // THE SALVAGE DIVE (S155 side content). The deep pool in rows 5-6 is where
+    // Dov's cargo went down; it is deep at every tide, so only the Cleats'
+    // floor mode walks it. The casks appear once Dov has asked for them
+    // (`needFlag`), and all of them come up in one breath or none (Game.salvage).
     map: [
       'TToggggoTT',
       'Tgg....ggT',
       'gg.qq.q.gg',
       'gg......gg',
       'gg144441gg',
-      '11******11',
-      '*1******1*',
+      '11======11',
+      '*1======1*',
       '**********',
     ],
     entities: [
@@ -2604,8 +2610,16 @@ const rooms = {
       ['trader', 2, 2, {
         sprite: 'npc_villager', waiting: 'wreckSurvivor', after: 'dovAfter',
         deals: [{ stage: 5, wants: 'eel', gives: 'lead', text: 'dovTrade' }],
+        // His own errand, asked whenever the chain is not at his link (S155).
+        errand: { need: 'salvageDone', prize: 'heartPiece', flag: 'diveDone', ask: 'diveAsk',
+          asked: 'diveAsked', thanks: 'diveThanks' },
       }],
       ['crab', 6, 4],
+      ['pickup', 2, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 4, 6, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 5, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 7, 6, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 7, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
     ],
   },
   '0,9,9': {

@@ -134,6 +134,8 @@ export const DIALOGUE = {
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
   // The townsfolk's errands (S155 side content). Each person says `...Ask`
   // until their thing comes home, then `...Thanks` as they pay for it.
+  diveAsk: 'My cargo went down with the hull, into\nthe deep pool behind it. Five casks. If you\ncan walk the bottom, bring all five up in\none breath. Come up short and you drop the\nlot; I have seen it happen.',
+  diveThanks: 'Five! The whole cargo, and dry inside, the\nway a good cask is. I was saving this for\nthe day it came back. Here.',
   raceAsk: 'Race you to Pip on the sandbar out past\nthe Fishing Stones! The sand path only\nshows at low tide. Ready? GO!',
   raceBusy: 'Why are you still here? RUN!',
   raceWin: 'Pip: You made it! Nobody beats the tide\nlike that. Here, you earned it.',

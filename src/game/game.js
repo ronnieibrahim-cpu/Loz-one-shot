@@ -119,6 +119,7 @@ export class Game {
     this.slot = 0;
     this.lure = null;
     this.race = null;
+    this.dive = null;
     this.linkPal = 'link';
     this.paused = false;
     this.debug = false;
@@ -155,6 +156,7 @@ export class Game {
     this.entities.length = 0;
     this.boss = null;
     this.race = null;
+    this.dive = null;
     this.tide.clearOverrides();
     this.tide.level = this.progress.tide;
     const s = this.progress.pos;
@@ -177,6 +179,7 @@ export class Game {
     this.entities.length = 0;
     this.boss = null;
     this.race = null;
+    this.dive = null;
     // A placed anchor is run state, not save state: reloading returns it to
     // your pocket rather than restoring a frozen patch you cannot see the
     // reason for.
@@ -300,10 +303,31 @@ export class Game {
     this.entities = this.entities.filter(e => e === this.player);
     this.boss = null;
     this.lure = null;
+    this.dive = null;
     const room = this.room;
     if (!room) return;
     const list = room.def.entities || [];
-    list.forEach((spec, i) => {
+    list.forEach((spec, i) => this.spawnSpec(room, spec, i));
+    this.flushPending();
+  }
+
+  /**
+   * Spawn now what the room holds back until `flagName` is set (S155): the
+   * salvage dive's cargo appears when Dov asks for it, not on the next visit.
+   */
+  spawnFlagged(flagName) {
+    const room = this.room;
+    if (!room) return;
+    (room.def.entities || []).forEach((spec, i) => {
+      const opts = Array.isArray(spec) ? spec[3] : spec;
+      if (opts && opts.needFlag === flagName) this.spawnSpec(room, spec, i);
+    });
+    this.flushPending();
+  }
+
+  /** One entry of a room's `entities`, as spawnRoomEntities spawns it. */
+  spawnSpec(room, spec, i) {
+    {
       const [type, tx, ty, opts] = Array.isArray(spec) ? spec : [spec.t, spec.x, spec.y, spec];
       const saveKey = `${this.mapId}:${room.key}:${i}`;
       const o = { ...(opts || {}), saveKey };
@@ -323,8 +347,7 @@ export class Game {
         if (this.progress.beaten[this.mapId] && e.oncePerGame !== false) { e.remove = true; }
         else this.boss = e;
       }
-    });
-    this.flushPending();
+    }
   }
 
   /**
@@ -1288,6 +1311,47 @@ export class Game {
     drawText(ctx, text, SCREEN_W - w + 1, HUD_H + 4, this.race.t < 120 ? '#f86050' : '#f8f8e8');
   }
 
+  // ----------------------------------------------------------- salvage dive
+  //
+  // Dov's cargo (S155): every `salvage` piece the room places on the floor of
+  // the Wrecked Hull's lagoon, to be brought up in one breath. Each is counted as it is
+  // picked up; surface with fewer than all of them and the ones you carried
+  // sink back to where they lay. `dive` is run state, like `race`.
+
+  salvage(e) {
+    if (!this.dive) this.dive = { taken: [] };
+    this.dive.taken.push(e);
+    const n = this.dive.taken.length;
+    const all = (this.room.def.entities || []).filter(s => Array.isArray(s)
+      && s[0] === 'pickup' && s[3] && s[3].kind === 'salvage').length;
+    if (n >= all) {
+      this.dive = null;
+      setFlag(this.progress, 'salvageDone');
+      this.audio.jingle('secret');
+      this.say('That is all of Dov\'s cargo! Take it up to him.');
+    } else {
+      this.audio.sfx('rupee');
+    }
+  }
+
+  /** Called every frame: a dive that surfaces short of the whole cargo loses it. */
+  updateDive() {
+    const d = this.dive;
+    if (!d) return;
+    if (this.player && this.player.underwater) return;
+    this.dive = null;
+    // Back where they lay. (Leaving the room drops the dive — see
+    // spawnRoomEntities — and the pieces are simply there again next visit,
+    // because a piece of salvage is never recorded as taken.)
+    for (const e of d.taken) {
+      e.remove = false;
+      e.grabDelay = 0;
+      this.addEntity(e);
+    }
+    this.audio.sfx('splash');
+    this.say('The cargo slips out of your arms and\nsinks back down. All of it, in one breath!');
+  }
+
   /** An errand's object found (S155): the same beat as presentTrade. */
   presentErrand(id) {
     const def = ERRANDS[id];
@@ -1642,6 +1706,7 @@ export class Game {
     this.fadeThen = null;
     this.itemShow = null;
     this.race = null;
+    this.dive = null;
     this.bannerText = null; this.bannerTime = 0;
     this.lure = null;
     this.paused = false;
@@ -1757,6 +1822,7 @@ export class Game {
     // A race's clock (S155): stopped by a screen scroll and a text box, both
     // above; running through a conch sweep, below — changing the sea costs time.
     if (this.race && --this.race.t <= 0) this.loseRace();
+    this.updateDive();
     // The sweep was already stepped at the top of play mode. Stepping it again
     // here ran the wave front at double speed and made TIDE_SWEEP_FRAMES mean
     // half what it said; it also stretched the conch lock-out, because nothing

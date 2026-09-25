@@ -3067,6 +3067,21 @@ export async function installRuntime() {
   }
 
   /**
+   * BE ASKED FOR AN ERRAND (S155): talk to the holder of the errand whose
+   * `flag` this is until its `asked` flag is set — the salvage dive's cargo
+   * only appears once Dov has asked for it.
+   */
+  function* dErrandAsk(flagName, maxF) {
+    const g = window.__game;
+    const holder = g.entities.find(e => !e.remove && e.errand && e.errand.flag === flagName);
+    if (!holder) throw new Error(`errandAsk: nobody in ${g.mapId} ${g.room && g.room.key} holds '${flagName}'`);
+    const asked = holder.errand.asked;
+    yield* dTalkTo(holder, () => !!g.progress.flags[asked], 'errandAsk', `the holder of '${flagName}'`, maxF);
+    yield* dDialogueClear(300);
+    if (!g.progress.flags[asked]) throw new Error(`errandAsk: '${asked}' never landed`);
+  }
+
+  /**
    * START A RACE (S155): talk to the `racer` in this room until its clock is
    * running. The run itself is ordinary directives.
    */
@@ -3148,6 +3163,7 @@ export async function installRuntime() {
       else if (kind === 'beat') yield* dBeat(a[0], a[1]);
       else if (kind === 'errand') yield* dErrand(a[0], a[1]);
       else if (kind === 'race') yield* dRace(a[0]);
+      else if (kind === 'errandAsk') yield* dErrandAsk(a[0], a[1]);
       else if (kind === 'keyhole') yield* dKeyhole(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'ending') yield* dEnding(a[0]);
       else throw new Error('unknown replay directive: ' + kind);

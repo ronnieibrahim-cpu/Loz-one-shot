@@ -170,6 +170,16 @@ for (const [id, def] of Object.entries(ERRANDS)) {
   };
 }
 
+// A piece of the wreck's cargo (S155, the salvage dive). It lies on the floor
+// of deep water and only a player WALKING THAT FLOOR picks it up (`floor`) —
+// a swimmer passing over it does not. It is not recorded as taken
+// (`fleeting`): the dive is all five in one breath, and pieces carried up
+// short of five go back down (Game.salvage).
+PICKUPS.salvage = {
+  sprite: 'i_e_salvage', pal: null, persistent: true, floor: true, fleeting: true,
+  get(g, e) { g.salvage(e); },
+};
+
 /** What this pickup is carrying, or the kind's face value if nothing set it. */
 function worthOf(e, base) {
   return (e && e.worth != null) ? e.worth : base;
@@ -219,12 +229,13 @@ export class Pickup extends Entity {
     if (this.grabDelay > 0) this.grabDelay--;
     // The clock starts when it has landed, as the cartridge's does.
     if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
+    if (this.spec.floor && !(game.player && game.player.underwater)) return;
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
   collect(game) {
     this.remove = true;
-    if (this.saveKey) game.progress.secrets[this.saveKey] = true;
+    if (this.saveKey && !this.spec.fleeting) game.progress.secrets[this.saveKey] = true;
     this.spec.get(game, this);
     game.spawnEffect('sparkle', this.x, this.y, { life: 14 });
   }
@@ -391,7 +402,7 @@ export class NPC extends Entity {
     // contract as the Maku Tree's `sceneFlag`. Asked before anything else the
     // person would say, so a beat is never queued behind a trade or a gift.
     this.beat = o.beat || null;
-    // AN ERRAND (S155): `{ need, prize, flag, ask, thanks }`. Until it is done
+    // AN ERRAND (S155): `{ need, prize, flag, ask, thanks, asked? }`. Until it is done
     // this person says `ask`; once `need` (an errand object's flag, see
     // src/data/errands.js) is set they say `thanks` and hand over `prize`, a
     // PICKUPS kind, held overhead; `flag` records it done and, from then on,
@@ -403,7 +414,13 @@ export class NPC extends Entity {
   errandTalk(game) {
     const e = this.errand, p = game.progress;
     if (!e || flag(p, e.flag)) return false;
-    if (!flag(p, e.need)) { game.startDialogue(e.ask, this); return true; }
+    if (!flag(p, e.need)) {
+      game.startDialogue(e.ask, this);
+      // `asked`: a flag the asking sets, for an errand whose object is only
+      // there once somebody has said so (the salvage dive's cargo).
+      if (e.asked && !flag(p, e.asked)) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
+      return true;
+    }
     const pay = () => { setFlag(p, e.flag); game.presentPrize(e.prize); };
     game.startDialogue(e.thanks, this);
     if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
@@ -801,7 +818,9 @@ export class Trader extends NPC {
     }
     const deal = this.liveDeal(game);
     // Not this trader's turn. Either they are still waiting for the chain to
-    // reach them, or it has gone past and they are done with it.
+    // reach them, or it has gone past and they are done with it. A trader can
+    // hold an errand too (S155: Dov's salvage dive), asked in between.
+    if (!deal && this.errandTalk(game)) return;
     if (!deal) {
       const done = this.spent(game);
       const line = (done && this.afterText) || this.waitingText || this.afterText;
