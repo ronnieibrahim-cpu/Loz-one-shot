@@ -1912,3 +1912,28 @@ export const MOBLIN_PAUSE_FRAMES = 8;
 /** px/f — its spear. derived: parts/enemyArrow.s @subid0 @@state0, speed $50
  *  (SPEED_200). */
 export const MOBLIN_SPEAR_SPEED = 2;
+
+/** px/f — a stalfos ambling. derived: stalfos.s stalfos_moveInRandomAngle,
+ *  SPEED_80. */
+export const STALFOS_SPEED = 0.5;
+
+/** f — each amble lasts BASE + (random & MASK). derived: stalfos.s
+ *  stalfos_moveInRandomAngle, $20 + (random & $30). */
+export const STALFOS_WALK_BASE = 0x20;
+export const STALFOS_WALK_MASK = 0x30;
+
+/** 1-in-n — an amble heads straight at Link. derived: stalfos.s
+ *  stalfos_moveInRandomAngle ((random & $0f) == 1). */
+export const STALFOS_TOWARD_ODDS = 16;
+
+/** px — Link swinging nearer than this (across plus down) makes it leap.
+ *  derived: stalfos.s stalfos_checkJumpAwayFromLink, c = $2c, through
+ *  objectCheckLinkWithinDistance. */
+export const STALFOS_SHY_PX = 0x2c;
+
+/** px/f, px/f/f, px/f — its leap away: launch, gravity, and speed along the
+ *  ground. derived: stalfos.s stalfos_state0a (speedZ -$200, SPEED_140) and
+ *  stalfos_state0b (c = $20). */
+export const STALFOS_LEAP_LAUNCH = 2;
+export const STALFOS_LEAP_GRAVITY = 0x20 / 256;
+export const STALFOS_LEAP_SPEED = 1.25;

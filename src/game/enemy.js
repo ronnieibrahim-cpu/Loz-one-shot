@@ -1099,6 +1099,12 @@ export function centeredWith(e, g, b) {
   return !!p && (Math.abs(p.cy - e.cy) <= b || Math.abs(p.cx - e.cx) <= b);
 }
 
+/** objectCheckLinkWithinDistance: across plus down to Link, under `c` px. */
+export function linkWithin(e, g, c) {
+  const p = g.player;
+  return !!p && Math.abs(p.cx - e.cx) + Math.abs(p.cy - e.cy) < c;
+}
+
 /** ecom_updateCardinalAngleTowardTarget: face Link along the greater gap. */
 export function cardinalToward(e, g) { if (g.player) e.dir = dirTo(e, g.player); }
 

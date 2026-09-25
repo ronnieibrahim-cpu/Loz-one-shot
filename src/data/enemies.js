@@ -6,7 +6,7 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith, bounceAngle,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle, dirOfAngle, centeredWith, bounceAngle, linkWithin,
 } from '../game/enemy.js';
 import { spawnEntity, canOccupy } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
@@ -27,6 +27,8 @@ import {
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
   WHISP_SPEED,
+  STALFOS_SPEED, STALFOS_WALK_BASE, STALFOS_WALK_MASK, STALFOS_TOWARD_ODDS, STALFOS_SHY_PX,
+  STALFOS_LEAP_LAUNCH, STALFOS_LEAP_GRAVITY, STALFOS_LEAP_SPEED,
   MOBLIN_SPEED, MOBLIN_WALK_BASE, MOBLIN_WALK_MASK, MOBLIN_PAUSE_FRAMES, MOBLIN_SPEAR_SPEED,
   TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP,
   BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
@@ -703,7 +705,7 @@ export function installEnemies() {
 
   // --- Stalfos: skittish skeleton that hops away from your sword --------
   defineEnemy('stalfos', {
-    hp: 3, damage: 2, pal: 'enemyk', speed: 0.7, rate: 8,
+    hp: 3, damage: 2, pal: 'enemyk', rate: 8,
     frames: {
       down: ['stalfos_d0', 'stalfos_d1'],
       up: ['stalfos_d0', 'stalfos_d1'],
@@ -716,9 +718,43 @@ export function installEnemies() {
     deathFrame: 'stalfos_death',
     hurtFrame: 'stalfos_hurt',
     drops: 'good',
+    // Seasons' stalfos (stalfos.s, subid 1): ambles on any of the 32 angles,
+    // off every wall — now and then straight at Link — and when he swings
+    // anything near it, leaps away from him, untouchable on the way up.
+    port: 'stalfos.s',
+    speed: STALFOS_SPEED,
     ai(e, g) {
-      if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });
-      else chase(e, g, { speed: 0.55 });
+      const amble = () => {                       // stalfos_moveInRandomAngle
+        e.aiTimer = STALFOS_WALK_BASE + (g.rng.int(256) & STALFOS_WALK_MASK);
+        e.angle = g.rng.int(32);
+        if (g.rng.int(STALFOS_TOWARD_ODDS) === 0) e.angle = angleToward(e, g);
+        e.speed = STALFOS_SPEED; e.aiState = 'amble';
+      };
+      // stalfos_checkJumpAwayFromLink
+      const p = g.player;
+      if (p && p.swinging > 0 && e.aiState !== 'leap' && linkWithin(e, g, STALFOS_SHY_PX)) {
+        launch(e, STALFOS_LEAP_LAUNCH);
+        e.speed = STALFOS_LEAP_SPEED;
+        cardinalToward(e, g); e.dir = OPPOSITE[e.dir];
+        e.invuln = 9999; e.aiState = 'leap';
+        if (g.audio) g.audio.sfx('hop');
+        return;
+      }
+      switch (e.aiState) {
+        case 0: amble(); return;                  // state 8
+        case 'amble':                             // state 9
+          if (--e.aiTimer <= 0) { amble(); return; }
+          e.angle = bounceAngle(e, g, e.angle, STALFOS_SPEED);
+          e.dir = dirOfAngle(e.angle);
+          return;
+        case 'leap': {                            // state $0b
+          const was = e.vzS;
+          if (!fall(e, STALFOS_LEAP_GRAVITY)) { e.invuln = 0; amble(); return; }
+          if (was > 0 && e.vzS <= 0) e.invuln = 0;   // touchable once it starts down
+          walkOn(e, g, STALFOS_LEAP_SPEED);
+          return;
+        }
+      }
     },
   });
 
