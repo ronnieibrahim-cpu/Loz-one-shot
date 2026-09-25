@@ -457,7 +457,10 @@ export const PLANS = {
       probes: [[11, 5], [12, 5]],
     },
     steps: [
-      ['wait', 30],
+      // S151: the room's keese is Seasons' keese now and flies over the snarl
+      // that used to seal it in; this settle lets its first flight pass before
+      // Link walks to the bank, so it is not knocked off his mark.
+      ['wait', 240],
       // Straight to the bank and hard up against the bole, which at MID is a
       // tree and will not let him past. Walking into it is how the facing is
       // set: there is no aim button, and `tap` throws wherever Link is looking.
