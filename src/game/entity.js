@@ -261,6 +261,13 @@ export class Entity {
 export function moveEntity(game, e, sdx, sdy, caps) {
   const c = caps || e.caps || null;
   let hitX = false, hitY = false;
+  // THE CORNER NUDGE IS FOR TERRAIN, AND FOR A STRAIGHT PUSH. Seasons slides
+  // Link round the corner of a wall he walks into square-on; it does not
+  // slide him round a person, and a diagonal press already slides along a
+  // wall by moving on its free axis. Nudging round a solid townsperson on a
+  // diagonal press walked Link along its side and off the screen beside an
+  // exit (Sennit, Sandpiper Row; S147's note).
+  const straight = !(sdx && sdy);
 
   if (sdx !== 0) {
     const nfx = e.fx + sdx;
@@ -270,7 +277,8 @@ export function moveEntity(game, e, sdx, sdy, caps) {
     } else {
       // corner nudge: allow the move if shifting a pixel on the other axis frees it
       let ok = false;
-      for (const nfy of [e.fy - FP_ONE, e.fy + FP_ONE]) {
+      const nudge = straight && !canOccupy(game, e, nx, e.y, c, true) ? [e.fy - FP_ONE, e.fy + FP_ONE] : [];
+      for (const nfy of nudge) {
         if (canOccupy(game, e, nx, toPx(nfy), c)) { e.fx = nfx; e.fy = nfy; ok = true; break; }
       }
       if (!ok) hitX = true;
@@ -283,7 +291,8 @@ export function moveEntity(game, e, sdx, sdy, caps) {
       e.fy = nfy;
     } else {
       let ok = false;
-      for (const nfx of [e.fx - FP_ONE, e.fx + FP_ONE]) {
+      const nudge = straight && !canOccupy(game, e, e.x, ny, c, true) ? [e.fx - FP_ONE, e.fx + FP_ONE] : [];
+      for (const nfx of nudge) {
         if (canOccupy(game, e, toPx(nfx), ny, c)) { e.fy = nfy; e.fx = nfx; ok = true; break; }
       }
       if (!ok) hitY = true;
@@ -293,7 +302,7 @@ export function moveEntity(game, e, sdx, sdy, caps) {
 }
 
 /** Would the entity's hitbox at (x, y) be free of solid tiles? */
-export function canOccupy(game, e, x, y, caps) {
+export function canOccupy(game, e, x, y, caps, terrainOnly = false) {
   const room = game.room;
   if (!room) return false;
   const r = { x: x + e.hb.x, y: y + e.hb.y, w: e.hb.w, h: e.hb.h };
@@ -329,7 +338,7 @@ export function canOccupy(game, e, x, y, caps) {
       }
     }
   }
-  if (!airborne) {
+  if (!airborne && !terrainOnly) {
     for (const o of game.entities) {
       if (o === e || !o.solid || o.dead) continue;
       const ob = o.rect();

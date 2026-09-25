@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Sweep a boss fight's options before touching the robot (S150).** After
+  the cartridge's contact boxes landed, six boss and miniboss fights lost.
+  Every one came back by trying the `boss` directive's existing options
+  (`openRetreat`, `diagRetreat`, `reachSwing`, `breakContact`) and the entry
+  wait, six at once in parallel with `route-prefix.mjs`'s new `PATCH=` — a
+  few minutes each. The robot changes that DID pay were general and small:
+  swing at a body standing in the path, plan round fixtures and slow
+  drifters, step off a charge away from the wall. Each reshuffled the whole
+  run, so make them before the sweeps, not after.
+- **route-prefix's trace lines lose their leading space at step 1000.** A
+  `grep "^ +[0-9]+ "` silently stops at 999 and the run looks like it ended
+  there. Use `^ *[0-9]+ [a-z]`.
+- **A held button is not a press.** An actor verb that yields the sword bit
+  every frame charges a spin and never swings (S150's first cut of the
+  path-blocker swing). Alternate with a zero frame.
+
 - **The disassembly answers what the footage cannot (S149).** The TAS footage
   could never show a full sword swing (it re-presses every four frames), so
   the sword stayed `guessed` for the project's life — and was wrong in the way

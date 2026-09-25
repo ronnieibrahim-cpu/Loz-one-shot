@@ -1,3 +1,76 @@
+## S150 — Seasons' hit rules, timing tables, one theme per dungeon
+
+The human's brief: contact damage on the cartridge's collision boxes, then
+every `guessed` constant the disassembly answers, then the white fades and the
+chest (pictures first), then music, then the corner-shove and pit-planning
+bugs — and, broadly, "now that you have the game code, match all mechanic
+behaviours where it makes sense; ask if unclear". Disassembly cloned read-only
+to the scratchpad (`GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1
+https://github.com/Stewmath/oracles-disasm`).
+
+### What landed (each constant in feel.js names its table)
+- CONTACT: Link's collision box is 12x12 on the middle of his sprite
+  (`LINK_HURT_RADIUS`, link.s linkState00); an enemy hurts him when its own
+  box (`enemyHurtRect`: 6x6 either way, gel 2x2, keese 4x6, lifted with a
+  hoverer's z) overlaps it — `code/collisionEffects.s` @checkHitLink. Enemy
+  shots are 2x2 either way (`ENEMY_SHOT_RADIUS`, partData), the beamos beam
+  3x3. A stunned enemy does not hurt to touch. All of it is ONE engine
+  question, `Entity.contactRect()` (Player / Enemy / Projectile override it);
+  the actor asks it too.
+- HITS: Link thrown 15 f at 1.25 px/f and cannot walk for those 15 f,
+  invulnerable 34 f (LINKDMG_04). Enemies thrown at 2 px/f AWAY from what hit
+  them on 32 angles, stopping when blocked; three strengths
+  (`ENEMY_HIT_TIERS`: L1 sword/held blade 16 px 16 f, L2 sword/seeds/thrown
+  22 px 21 f, spin/bomb 30 px 26 f). Bombs and thrown pots now knock back.
+  The Ballast Heart halves the frames (Steadfast Ring).
+- PITS/DROWNING: one heart each (was half); fall 16+10+10 f + 2 invisible;
+  drown 24 f; then 60 f invulnerable and 16 f standing still.
+- TEXT: one letter every 4 frames (speed 3, what a new file starts on; was
+  1.6 letters a frame); A/B shows the rest of the LINE; a blip per letter,
+  4 f cooldown. Spin charges on the 41st held frame; held blade the frame
+  after the swing. Ledge hop 28 f, 12 px high. Drops live 480 f from landing,
+  blink 2-on/2-off for the last 120. Blocks move after 20 f of leaning and
+  slide 0.5 px/f (was a magic number outside feel.js). Pegasus 480 f.
+- MUSIC: `dungeon3`..`dungeon6`, ours, one per dungeon; docs/MUSIC.md lists
+  every place against its track. audio-render baseline: 4 added, 0 changed.
+- CORNER NUDGE: only for terrain and only on a straight press, as Seasons'
+  slideAngleTable / adjacentWallsBitset have it — the townsperson shove is
+  gone. d1-descent re-recorded.
+- ROBOT (tools/actor-runtime.mjs): contactRect; swings at a body in its path
+  (never at a front shield facing it, never at a fixture); findPath goes
+  round fixtures, slow drifters (spec.speed <= 0.4) and PITS (groundFlags),
+  falling back to the old plan only when nothing else reaches; a boss charge
+  is stepped off AWAY from a wall and then followed to where it ends; dFight
+  opens a gap before coming at a shielded side; no fight walks through a
+  cave mouth. route-prefix.mjs: `PATCH=idx=json;...` and `FRAMES=a-b`.
+- ROUTE: fight at the Sunken Reef door; the D2 jellyfish killed on the way
+  past; Keep Lock's second press a 2-frame lean; seven fights re-swept
+  (Gohmaraq, Reefguard, Anemos, Bogmaw, Tideshade, Brinehulk, Nereth — the
+  winning options and margins are in the route comments).
+- check-playthrough 42/42, 0 deaths, low-water 8 qh (was 2). Replays 51/51.
+
+### Waiting on the human
+- WHITE FADES AND THE CHEST: implemented, photographed, NOT committed. The
+  patch is `white-fades-and-chest.patch` in the session scratchpad and the
+  pictures went to the human (cmp_stairs / cmp_door / cmp_chest). What it
+  does: stairs fade to white 27 f, hold 31, back 27 (`STAIRS_FADE`); doors
+  and cave mouths cut to white, 16 f, back in 20 (`DOOR_FADE`), chosen by the
+  warp tile's F.STAIRS; the chest item rises out of the chest (11 px, the
+  measured step list) and the text box opens 36 f after the lid; the fade
+  hold freezes play like a fade does (`fadeHold`). If the scratchpad is gone,
+  rebuild it from this paragraph and assets/footage/README.md. The menu's
+  10 f white fade and drowning's white fade are not in it yet. Seasons'
+  DUNGEON ENTRANCE also opens the room from a central strip outward (footage
+  3676-3696) — not attempted.
+- ENEMY BEHAVIOUR PORT (asked, not started): each Seasons enemy's state
+  machine is in object_code/common/enemies/*.s (octorok: stand 30-90 f,
+  walk 25-49 f at 0.5 px/f, shoot after 16 f, 1-in-4 turn toward Link). A
+  port conflicts with check-motion's "ground enemies stay on the 8 px
+  lattice" — the cartridge's enemies are not on a lattice.
+- DAMAGE/HEALTH: the cartridge's octorok does half a heart, most others a
+  full heart (ours half); healths match ours where the enemy exists.
+  Unchanged: it is the P9 damage ladder (check-hearts).
+
 ## S149 — the sword hits like Seasons' sword
 
 The human: "swinging next to an enemy often results in a miss that doesn't
