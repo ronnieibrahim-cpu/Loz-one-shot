@@ -21,7 +21,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
-  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT,
+  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -62,10 +62,18 @@ let nextId = 1;
  * none (a boss) falls back to its `hb`.
  */
 export function enemyHurtRect(e) {
-  // A hoverer (keese, bubble, wisp) is drawn `z` pixels up, and the box goes
-  // with the sprite: the cartridge's keese and bubble fly at z 0, so their box
-  // is where they are drawn, and ours are drawn higher.
-  const lift = e.z > 0 ? e.z : 0;
+  // A hoverer (keese, bubble, wisp) is drawn `spec.z` pixels up, and the box
+  // goes with the sprite: the cartridge's keese and bubble fly at z 0, so their
+  // box is where they are drawn, and ours are drawn higher.
+  //
+  // Anything ABOVE that — a zol, a tektite, a stalfos in the air — keeps its
+  // box on the ground under it, and touches nothing once it is ENEMY_CONTACT_Z
+  // or more up: the cartridge compares heights before it compares boxes, for
+  // Link and for his sword alike (code/collisionEffects.s, "Check if Z
+  // positions are within 7 pixels"). S151; the box used to rise with the jump.
+  const hover = (e.spec && e.spec.z) || 0;
+  if (e.z - hover >= ENEMY_CONTACT_Z) return { x: -1e4, y: -1e4, w: 0, h: 0 };
+  const lift = hover > 0 && e.z > 0 ? Math.min(e.z, hover) : 0;
   const hb = e.spec && e.spec.hurtBox;
   if (hb) return { x: e.x + hb.x, y: e.y + hb.y - lift, w: hb.w, h: hb.h };
   if (e.w > 16 || e.h > 16) return e.rect();

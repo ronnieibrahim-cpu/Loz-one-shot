@@ -966,10 +966,12 @@ export const ROUTE = [
   // S150: re-swept (five entry steps x two option sets): right 24 then down
   // 12, with the diagonal retreat as well, wins on 14 of 28 — the plain
   // open-floor retreat now loses from every entry tried.
+  // S151 (Seasons' enemies, white fades): re-swept; the reach swing wins on
+  // 28 of 28 (the S150 options now leave 14, the plain retreat loses).
   ['travel', 2, 2, 4000],
   ['hold', ['right'], 24],
   ['hold', ['down'], 12],
-  ['boss', 9000, 'bogmaw', { openRetreat: true, diagRetreat: true }],
+  ['boss', 9000, 'bogmaw', { reachSwing: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -1146,7 +1148,9 @@ export const ROUTE = [
   // fourteen hits that used to kill the actor came from the swarm and exactly
   // one came from the boss. `openRetreat` stays off: measured in S131-S132
   // from the route's own doorway, it flips a seed from a win to a death.
-  ['boss', 14000, null, { clearAdds: true }],
+  // S151: re-swept after Seasons' enemies and the height rule: the reach
+  // swing wins on 23 of 28; the plain fight now loses.
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —
@@ -1542,7 +1546,8 @@ export const ROUTE = [
   // The Essence stands at 7,4 in an Oracle arena: walk onto it and wait out
   // the pose, or the loot that follows stands still and the Heart Container
   // is left in the room.
-  ['boss', 24000, null],
+  // S151: re-swept; the reach swing wins (15 -> 11); the plain fight loses.
+  ['boss', 24000, null, { reachSwing: true }],
   ['wait', 240],
   ['goto', 7, 4, 600],
   ['dialogue', 900],
@@ -1926,8 +1931,11 @@ export const ROUTE = [
   ['hold', ['right'], 60],
 
   // ---------------------------------------------------------------- d5 0,3,3
-  // The Grove Crossing.
-  ['fight', 4000, 1500],
+  // The Grove Crossing. S151: not fought. Nothing here is shut on a clear,
+  // and its stalfos is Seasons' now: it leaps away from every swing, and
+  // pinned on the south wall it leaps in place onto a robot swinging from
+  // its standoff — the old fight lost 40 quarter-hearts to it and died.
+  ['wait', 60],
   ['loot', 600],
   ['goto', 13, 5, 1500],
   ['hold', ['right'], 90],
@@ -2488,6 +2496,11 @@ export const ROUTE = [
   // change, so the stair is named by hand like every other one.
   ['travel', 4, 3, 4000],
   ['travel', 3, 3, 4000],
+  // S151: Keep Lock's darknut is Seasons' now and hounds anyone within 40 px
+  // of it; unlocking the west door with it at his back killed the run from a
+  // full bar. It is cut down first.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 4000, 1500],
   ['goto', 1, 5, 1500],
   ['hold', ['left'], 24],
   ['tap', 'a', 30],
@@ -2689,6 +2702,11 @@ export const ROUTE = [
   ['goto', 13, 5, 1500],
   ['exit', 'right', 600],
 
+  // S151: the darknut here hounds the door, as Keep Lock's does; cut down
+  // first, then the line goes back on A.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 4000, 1500],
+  ['equip', 'dredge', 'A', 400],
   ['goto', 13, 5, 1500],
   ['hold', ['right'], 24],
   ['tap', 'a', 30],

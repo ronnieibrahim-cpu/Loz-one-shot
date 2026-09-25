@@ -2007,3 +2007,9 @@ export const PINCER_BACK_SPEED = 1;
 /** f — hides this long before it can come again. derived: pincer.s
  *  pincer_head_stateD, counter1 30. */
 export const PINCER_REST_FRAMES = 30;
+
+/** px — an enemy this far or more above the ground (over its drawn hover)
+ *  neither touches Link nor can be struck: its box stays on the ground under
+ *  it. derived: code/collisionEffects.s, the z test before checkHitLink and
+ *  before each item ("Check if Z positions are within 7 pixels"). */
+export const ENEMY_CONTACT_Z = 7;

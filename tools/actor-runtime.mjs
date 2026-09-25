@@ -1287,6 +1287,10 @@ export async function installRuntime() {
     // further than the old box did (SWORD_ARC); the old band walked in closer
     // than the blade needs and the crab by the D1 Crab Pit door got its hit in.
     const NEAR = 18, FAR = 26, LINED = 4, BACKOFF = 26, EDGE = 12;
+    // A Seasons stalfos: keep the standoff from one on the ground — inside the
+    // blade's reach, outside its body when it lands — and swing from there to
+    // make it leap; the second swing meets it coming down.
+    const STALFOS_KEEP = NEAR, STALFOS_SHY = FAR + 1;
     // A `fight` directive means "clear THIS room", and `fence` below is the
     // main defence of that. This is the backstop for when the fence is not
     // enough — a transition can still fire from a corner the fence does not
@@ -1315,6 +1319,16 @@ export async function installRuntime() {
       if (q.x > (g.room ? g.room.pw : VIEW_W) - 16 - EDGE) m &= ~BIT.right;
       if (q.y < EDGE) m &= ~BIT.up;
       if (q.y > (g.room ? g.room.ph : VIEW_H) - 16 - EDGE) m &= ~BIT.down;
+      // NOR INTO A PIT (S151). The keese flies over them now, as Seasons'
+      // does, and a swordsman closing on it walked in after it: four falls in
+      // one D4 room. Each direction is asked of the engine's own groundFlags a
+      // few pixels on, where the fall would be decided.
+      if (!q.jumping && !(q.z > 0)) {
+        for (const [bit, ddx, ddy] of [[BIT.left, -4, 0], [BIT.right, 4, 0], [BIT.up, 0, -4], [BIT.down, 0, 4]]) {
+          if (!(m & bit)) continue;
+          if (ent.groundFlags(g, { x: q.x + ddx, y: q.y + ddy, hb: q.hb }) & F.PIT) m &= ~bit;
+        }
+      }
       // Nor through a doorway: a cave mouth in the middle of a screen is a
       // way out that the edge fence cannot see (S150, the Sunken Reef).
       const warps = (g.room && g.room.warps) || [];
@@ -1429,6 +1443,48 @@ export async function installRuntime() {
       const along = axisX ? dx : dy;
       const perp = axisX ? dy : dx;
       const face = faceOn(axisX);
+
+      // SEASONS' STALFOS (S151). It leaps straight away from any swing within
+      // 44 px (across plus down) and cannot be hit on the way up — so the
+      // standoff swing below only ever sends it into the air, and pinned on a
+      // wall it leaps in place and comes down on the swordsman. A player
+      // swings from just outside its reach to make it jump, closes while it
+      // is up, and strikes as it comes down; against a wall it cannot get
+      // away, which is where this herds it.
+      if (best.spec && best.spec.port === 'stalfos.s') {
+        const lined = Math.abs(perp) <= LINED;
+        if (best.aiState === 'leap') {
+          // Struck as it comes down: touchable again past the top, and in
+          // reach of the blade once it is under ENEMY_CONTACT_Z. The swing is
+          // live for its whole length, so it starts a few pixels early.
+          if (!best.invuln && best.z < 12 && lined && Math.abs(along) <= FAR) {
+            yield safeF(BIT[face]) | LENS; f++;
+            yield swordBit('fight') | LENS; f++;
+            continue;
+          }
+          if (!lined) {
+            yield safeF(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right)) | LENS;
+            f++; continue;
+          }
+          // Chase it in the air: it leaps at 1.25, Link walks at 1.5.
+          yield (Math.abs(along) > NEAR ? safeF(BIT[face]) : safeF(0)) | LENS; f++; continue;
+        }
+        if (Math.abs(along) < STALFOS_KEEP) {
+          const away = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
+          const m = safeF(away, true);
+          if (m) { yield m | LENS; f++; continue; }
+        }
+        if (!lined) {
+          yield safeF(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right)) | LENS;
+          f++; continue;
+        }
+        if (Math.abs(along) < STALFOS_SHY) {
+          yield safeF(BIT[face]) | LENS; f++;
+          yield swordBit('fight') | LENS; f++;
+          continue;
+        }
+        yield safeF(BIT[face]) | LENS; f++; continue;
+      }
 
       if (Math.abs(perp) > LINED) {
         // Off the enemy's row or column: the sword box is narrow, so line up
@@ -2367,6 +2423,9 @@ export async function installRuntime() {
     // Open the menu.
     for (let i = 0; i < 60 && g.mode !== 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
     if (g.mode !== 'menu') throw new Error('equip: the menu would not open');
+    // The page comes up through Seasons' white fade and answers nothing
+    // until it is in (MENU_FADE_OPEN).
+    for (let i = 0; i < 120 && g.veiled(); i++) yield 0;
     const m = g.menu;
     const idx = () => m.items.findIndex(it => it.id === id);
     if (idx() < 0) throw new Error(`equip: ${id} is not in the item list`);
@@ -2385,6 +2444,7 @@ export async function installRuntime() {
     }
     // Close it again and hand control back to the field.
     for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
+    for (let i = 0; i < 120 && g.veiled(); i++) yield 0;   // the field fades back in
     yield* dWait(4);
     if (g.progress[key] !== id) {
       throw new Error(`equip: ${id} is still not on ${want} (A=${g.progress.equipA}, B=${g.progress.equipB})`);
@@ -2434,6 +2494,7 @@ export async function installRuntime() {
     }
     for (let i = 0; i < 60 && g.mode !== 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
     if (g.mode !== 'menu') throw new Error('charm: the menu would not open');
+    for (let i = 0; i < 120 && g.veiled(); i++) yield 0;   // see dEquip
     const m = g.menu;
     // SELECT walks the tab strip one step at a time and wraps, so this is a
     // press-and-release per step rather than a hold.
@@ -2452,6 +2513,7 @@ export async function installRuntime() {
       yield BIT.right; yield 0;
     }
     for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
+    for (let i = 0; i < 120 && g.veiled(); i++) yield 0;   // the field fades back in
     yield* dWait(4);
     if (inCase() === off) {
       throw new Error(`charm: ${id} is still ${off ? 'in' : 'not in'} the ${want} case`);
