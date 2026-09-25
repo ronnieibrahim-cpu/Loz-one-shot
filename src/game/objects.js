@@ -34,12 +34,18 @@ import {
  * drops and the doubling has to happen when the drop is rolled — a rupee
  * already lying on the floor was worth what it was worth when it fell.
  */
+// EVERY PICKUP WITH AN ORACLE EQUIVALENT IS THE CARTRIDGE'S OWN SPRITE (S155):
+// the rupees, hearts, Piece of Heart, Heart Container, keys, bombs and map are
+// cut from Oracle of Seasons' graphics by tools/rip-treasures.py and carry
+// their own colours, so `pal` is null for them — a palette here would repaint
+// the cartridge's art. The same sprite is drawn on the floor, rising from a
+// chest and held over Link's head, so none of the three can look different.
 export const PICKUPS = {
-  rupee1: { sprite: 'p_rupee', pal: 'rupee', worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); g.audio.sfx('rupee'); } },
-  rupee5: { sprite: 'p_rupee5', pal: 'enemyr', worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); g.audio.sfx('rupee'); } },
-  rupee20: { sprite: 'p_rupee20', pal: 'enemyp', worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
-  rupee100: { sprite: 'p_rupee20', pal: 'gold', worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
-  heart: { sprite: 'p_heart', pal: 'heart', get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
+  rupee1: { sprite: 'p_rupee', pal: null, worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); g.audio.sfx('rupee'); } },
+  rupee5: { sprite: 'p_rupee5', pal: null, worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); g.audio.sfx('rupee'); } },
+  rupee20: { sprite: 'p_rupee20', pal: null, worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
+  rupee100: { sprite: 'p_rupee100', pal: null, worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
+  heart: { sprite: 'p_heart', pal: null, get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
   // EXTRACTED, and it flaps. Both frames come off the Oracle fairy sheet
   // (tools/rip-fairies.py); `pal: null` because each binds its own palette and
   // passing one would override the colours taken off the cartridge.
@@ -54,7 +60,10 @@ export const PICKUPS = {
   // art already in the build. `pal: null` because i_bomb binds its own palette
   // (see the header of sprites-gear.js); passing one would override it. Same
   // shape as `seeds5` below, which has always pointed at `i_reefseed`.
-  bomb4: { sprite: 'i_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
+  //
+  // S155: it is now the cartridge's own DROP, `p_bomb` (tools/rip-treasures.py,
+  // item drop 4), which is what Seasons draws on the floor.
+  bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
   // NO TEXT BOX, deliberately. An open dialogue freezes every entity while the
   // mode is still 'play' (see CLAUDE.md, traps), so a first-time hint on a
   // FLOOR DROP stops the game dead in the middle of whatever fight dropped it.
@@ -76,11 +85,11 @@ export const PICKUPS = {
     },
   },
   key: {
-    sprite: 'p_key', pal: 'key', persistent: true,
+    sprite: 'p_key', pal: null, persistent: true,
     get(g) { addKey(g.progress, g.mapId); g.audio.sfx('key'); g.say('You found a Small Key!'); },
   },
   bossKey: {
-    sprite: 'p_bosskey', pal: 'gold', persistent: true,
+    sprite: 'p_bosskey', pal: null, persistent: true,
     get(g) { g.progress.bossKeys[g.mapId] = true; g.audio.jingle('fanfareShort'); g.say('You found the Boss Key!'); },
   },
   dungeonMap: {
@@ -100,7 +109,7 @@ export const PICKUPS = {
     },
   },
   heartPiece: {
-    sprite: 'p_heartpiece', pal: 'heart', persistent: true, hold: 2,
+    sprite: 'p_heartpiece', pal: null, persistent: true, hold: 2,
     get(g) {
       const done = addHeartPiece(g.progress);
       g.audio.jingle('heartPiece');
@@ -119,7 +128,7 @@ export const PICKUPS = {
     },
   },
   heartContainer: {
-    sprite: 'p_heartcontainer', pal: 'heart', persistent: true, hold: 2,
+    sprite: 'p_heartcontainer', pal: null, persistent: true, hold: 2,
     get(g) { addHeartContainer(g.progress); g.audio.jingle('fanfare'); g.say('You got a Heart Container!'); },
   },
 };

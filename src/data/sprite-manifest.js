@@ -48,7 +48,7 @@ export const REQUIRED_SPRITES = {
     'i_bomb', 'i_bomb_lit',
     'i_cleats', 'i_cleats2',
     'i_chain', 'i_hookhead',
-    'i_map', 'i_chart', 'i_unknown',
+    'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
     'i_anchor', 'o_anchor',
     'i_kilnshell', 'o_kilnshell', 'o_kilnshell_lit0', 'o_kilnshell_lit1',
@@ -84,10 +84,14 @@ export const REQUIRED_SPRITES = {
   // here rather than only in a git log.
   fairies: ['p_fairy', 'p_fairy_1'],
 
+  // ---- pack: sprites-treasures.js (GENERATED, tools/rip-treasures.py) --
+  // The rupees, hearts, keys, bombs and map lying in the world, the
+  // cartridge's own (S155); they used to be hand-drawn in sprites-world.js.
+  treasures: ['p_rupee', 'p_rupee5', 'p_rupee20', 'p_rupee100', 'p_heart', 'p_bomb',
+    'p_heartpiece', 'p_heartcontainer', 'p_key', 'p_bosskey', 'i_map'],
+
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
-    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart',
-    'p_key', 'p_bosskey', 'p_heartpiece', 'p_heartcontainer',
     'p_tidebell_0', 'p_tidebell_1',
     'p_essence1_0', 'p_essence1_1', 'p_essence1_dim',
     'p_essence2_0', 'p_essence2_1', 'p_essence2_dim',

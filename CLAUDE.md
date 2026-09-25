@@ -112,6 +112,7 @@ ripper credit in the header. The current set:
 | `src/data/tiles-maku.js` | `tools/rip-maku.py` |
 | `src/data/screens-seasons.js` | `tools/rip-screens.py` (title sheet + still screens cut from the footage by `tools/grab-footage-frames.py`) |
 | `src/data/sprites-keys.js` | `tools/rip-keys.py` (the six dungeon keys, from the Oracles' key-item graphics in `assets/keys/`) |
+| `src/data/sprites-treasures.js` | `tools/rip-treasures.py` (the rupees, hearts, Piece of Heart, Heart Container, keys, bomb drop and dungeon map as Seasons draws them in the world, from its own graphics and tables in `assets/treasures/`) |
 | `src/data/sprites-bosses-seasons.js` | `tools/rip-bosses.py` (the cartridge's own boss graphics, frame layouts and palettes, from `assets/bosses/oracles-disasm/`) |
 | `src/data/music-seasons.js` | `tools/rip-music.py` (Seasons' own channel scripts, from oracles-disasm copied into `assets/music/`; played by `src/core/gbsound.js`) |
 

@@ -56,6 +56,7 @@ const RIPPERS = [
   ['rip-dungeon-themes.py',  'src/data/tiles-dungeon-themes.js'],
   ['rip-bosses.py',          'src/data/sprites-bosses-seasons.js'],  // S152: bosses from Seasons' own boss graphics
   ['rip-keys.py',            'src/data/sprites-keys.js'],  // S154: the six dungeon keys from the Oracles' key-item graphics
+  ['rip-treasures.py',       'src/data/sprites-treasures.js'],  // S155: rupees, hearts, keys, map lying in the world, from Seasons' own graphics
 ];
 // Verified by check-tilesets.mjs through its own --verify flag, and it emits a
 // PNG plus a manifest rather than a module, so it is not this tool's business.

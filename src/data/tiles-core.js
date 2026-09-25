@@ -3004,7 +3004,10 @@ export function installCoreTiles() {
         : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
         : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot' : 'pot',
-      flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
+      // No `liftSprite`: lifted, a pot is drawn as the pot it was (S155).
+      // It used to name `o_pot`, the hand-drawn stand-in, so every dungeon
+      // pot turned into a different pot the moment Link picked it up.
+      flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T,
     };
   }
   installGroundFringes(TILE_DEFS);

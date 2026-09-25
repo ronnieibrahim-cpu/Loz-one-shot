@@ -749,6 +749,8 @@ export class Game {
     if (tr.persist) this.persistTile(tx, ty, tr.to);
     const obj = new ThrownObject(tx * TILE, ty * TILE, {
       sprite: def.liftSprite || (name.startsWith('pot') ? 'o_pot' : 'rock16'),
+      // Drawn as the tile it was, unless the tile names a sprite of its own.
+      tileArt: def.liftSprite ? null : name,
       pal: def.pal, vx: 0, vy: 0, drops: tr.drop || 'none',
     });
     // Player.updateMovement already lifts the held sprite by CARRY_HEIGHT via
@@ -1203,7 +1205,7 @@ export class Game {
     } else if (chest.rupees) {
       addRupees(p, chest.rupees);
       this.audio.sfx('rupeeBig');
-      this.chestShow(chest, { sprite: 'p_rupee20', pal: chest.rupees >= 100 ? 'gold' : 'enemyp' },
+      this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
         `You got ${chest.rupees} Rupees!`);
     } else {
       this.say('Nothing but sand.');

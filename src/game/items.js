@@ -35,7 +35,7 @@ import {
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
   KILNSHELL_BURN_DAMAGE,
 } from '../data/feel.js';
-import { sprites } from '../gfx/art.js';
+import { sprites, tiles } from '../gfx/art.js';
 
 // --------------------------------------------------------------------------
 // Bomb
@@ -358,6 +358,12 @@ export class ThrownObject extends Entity {
     this.hb = { x: 3, y: 3, w: 10, h: 10 };
     this.sprite = o.sprite || 'rock16';
     this.pal = o.pal || 'stone';
+    // THE THING HE LIFTED, NOT A PICTURE OF IT (S155). A rock or pot lifted off
+    // the ground names the TILE it was (`tileArt`), and is drawn with that
+    // tile's own art — Seasons' own rock and pot — so it does not turn into
+    // the hand-drawn stand-in (`rock16`, `o_pot`) the moment it leaves the
+    // floor. The stand-ins stay only for a thrown object that never was a tile.
+    this.tileArt = o.tileArt || null;
     this.vx = o.vx || 0; this.vy = o.vy || 0;      // sp/f
     this.z = o.z || 14;
     this.vz = THROW_ARC_RISE;
@@ -383,6 +389,11 @@ export class ThrownObject extends Entity {
       }
     }
     if (this.fz <= 0) this.shatter(game);
+  }
+
+  draw(ctx, game, ox, oy) {
+    if (!this.tileArt) { super.draw(ctx, game, ox, oy); return; }
+    tiles.draw(ctx, this.tileArt, ox + this.x, oy + this.y - this.z, { pal: this.pal });
   }
 
   shatter(game) {

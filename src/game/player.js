@@ -991,7 +991,7 @@ export class Player extends Entity {
     } else {
       c.remove = true;
       game.addEntity(new ThrownObject(this.x + dx * 4, this.y + dy * 4, {
-        sprite: c.sprite || 'rock16', pal: c.pal || 'stone',
+        sprite: c.sprite || 'rock16', pal: c.pal || 'stone', tileArt: c.tileArt || null,
         vx: dx * THROW_SPEED, vy: dy * THROW_SPEED, z: CARRY_HEIGHT, drops: c.dropTable || 'none',
       }));
     }
