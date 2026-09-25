@@ -13,6 +13,7 @@ import {
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
+import { ERRANDS } from '../data/errands.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
   PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES,
@@ -157,6 +158,16 @@ export function rollDropTable(name, stream) {
   let r = stream.float() * total;
   for (const [w, item] of t) { r -= w; if (r <= 0) return item; }
   return null;
+}
+
+// The townsfolk's errands' objects (S155): one pickup kind each, `e_<id>`,
+// found lying in the world. Picking one up sets the errand's flag and holds it
+// overhead; the person who asked for it reads the flag (NPC.errand).
+for (const [id, def] of Object.entries(ERRANDS)) {
+  PICKUPS['e_' + id] = {
+    sprite: def.icon, pal: null, persistent: true,
+    get(g) { setFlag(g.progress, def.flag); g.presentErrand(id); },
+  };
 }
 
 /** What this pickup is carrying, or the kind's face value if nothing set it. */
@@ -332,6 +343,23 @@ export class NPC extends Entity {
     // contract as the Maku Tree's `sceneFlag`. Asked before anything else the
     // person would say, so a beat is never queued behind a trade or a gift.
     this.beat = o.beat || null;
+    // AN ERRAND (S155): `{ need, prize, flag, ask, thanks }`. Until it is done
+    // this person says `ask`; once `need` (an errand object's flag, see
+    // src/data/errands.js) is set they say `thanks` and hand over `prize`, a
+    // PICKUPS kind, held overhead; `flag` records it done and, from then on,
+    // they say their ordinary lines again.
+    this.errand = o.errand || null;
+  }
+
+  /** Speak for this person's errand if it is still open. True if it spoke. */
+  errandTalk(game) {
+    const e = this.errand, p = game.progress;
+    if (!e || flag(p, e.flag)) return false;
+    if (!flag(p, e.need)) { game.startDialogue(e.ask, this); return true; }
+    const pay = () => { setFlag(p, e.flag); game.presentPrize(e.prize); };
+    game.startDialogue(e.thanks, this);
+    if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
+    return true;
   }
 
   /** Play this person's story beat if it is owed now. True if it started. */
@@ -379,6 +407,7 @@ export class NPC extends Entity {
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
     if (this.playBeat(game)) return;
+    if (this.errandTalk(game)) return;
     if (this.onTalk) { if (this.onTalk(game, this, player) === false) return; }
     const line = (this.afterText && this.conditional() && this.ready(game))
       ? this.afterText : this.dialogue;

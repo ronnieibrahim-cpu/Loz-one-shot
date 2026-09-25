@@ -67,6 +67,10 @@ export const REQUIRED_SPRITES = {
     'i_t_pearl', 'i_t_cup', 'i_t_jar', 'i_t_kettle', 'i_t_rope',
   ],
 
+  // ---- pack: sprites-errands.js -----------------------------------------
+  // The townsfolk's errands' objects (S155). Hand-drawn for the same reason.
+  errands: ['i_e_ledger', 'i_e_kite', 'i_e_jar'],
+
   // ---- pack: sprites-keys.js (GENERATED, tools/rip-keys.py) -----------
   // The six dungeon keys: the Oracle cartridges' key-item shapes, our keys.
   keys: ['i_key_d1', 'i_key_d2', 'i_key_d3', 'i_key_d4', 'i_key_d5', 'i_key_d6'],

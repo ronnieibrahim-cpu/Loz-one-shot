@@ -1784,8 +1784,10 @@ Numbered in the order this walkthrough passes them.
 14. **Heart Piece 14** — `overworld/0,6,4`, Log Drift, tile (2,5). In the open.
 15. **Heart Piece 15** — `d5/0,1,5`, Drowned Cloister, tile (3,3).
 16. **Heart Piece 16** — `d5/0,5,5`, Bower Cell, tile (5,1).
-17. **Heart Piece 17** — `overworld/0,5,0`, Salt Terraces, tile (6,4). Behind
-    the **Resonance Rod** vane gate.
+17. **Heart Piece 17** — `houseShop/0,0,0`, the shopkeeper's thanks for his
+    **Shop Ledger**, which blew away onto the South Sands (`overworld/0,5,9`,
+    tile (8,2), two screens south of the shop). Pick it up and bring it back.
+    No items needed. (Salt Terraces, where a piece used to be, has 20 rupees.)
 18. **Heart Piece 18** — `cave6/0,0,0`, Slackwater Cave, tile (4,4). A sea cave
     in the cliff at the top of the Wind Shelf (`overworld/0,1,2`, on the
     Cliffs of Kell) at (3,1). Its mouth is only above the water at **LOW

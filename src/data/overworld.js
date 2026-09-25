@@ -209,7 +209,9 @@ const rooms = {
       '###1151###',
     ],
     entities: [
-      ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'heartPiece' }],
+      // The Piece of Heart that lay here is the shopkeeper's thanks for his
+      // ledger now (S155, side content); a rupee keeps the spot.
+      ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'rupee20' }],
     ],
   },
   '0,6,0': {
@@ -2464,6 +2466,8 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 3],
+      // The shopkeeper's ledger (S155 errand), blown down the beach.
+      ['pickup', 8, 2, { kind: 'e_ledger' }],
     ],
   },
   '0,6,9': {
@@ -2694,7 +2698,10 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3 }],
+          // His errand (S155): the ledger, lost on the South Sands, for a
+          // Piece of Heart. He talks shop again once it is home.
+          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
+            errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
           ['shopItem', 4, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield' }],
           ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
           ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],

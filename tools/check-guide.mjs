@@ -184,6 +184,10 @@ function findHeartPieces() {
           if (Array.isArray(e) && e.length >= 4 && e[3] && e[3].kind === 'heartPiece') {
             found.push(`${mapId}/${key}`);
           }
+          // A townsperson's errand prize (S155), counted as check-hearts does.
+          if (Array.isArray(e) && e[3] && e[3].errand && e[3].errand.prize === 'heartPiece') {
+            found.push(`${mapId}/${key}`);
+          }
         }
       };
       scan(def.entities);

@@ -43,8 +43,8 @@ function check(ok, label) {
 // 1. Heart pieces, counted from the data the game actually loads.
 // ---------------------------------------------------------------------------
 //
-// A piece reaches the player by one of FOUR routes, and all four are counted
-// here because all four have been used in the world already: an entity placed
+// A piece reaches the player by one of FOUR routes (five since S155's
+// errands, see scanSpawnList), all counted here because all are used: an entity placed
 // in the room's `entities`, a `buried` item under a diggable tile, a
 // `puzzle.reward.spawn` that drops one when a room is solved, and a DROWNED
 // WHEEL whose `gives` says so.
@@ -74,6 +74,13 @@ function scanSpawnList(list, where, how) {
     const [kind, x, y, opts] = ent;
     if (kind === 'pickup' && opts && opts.kind === 'heartPiece') {
       pieces.push({ where, how, x, y });
+    }
+    // A FIFTH ROUTE (S155): a townsperson's errand pays a piece when its
+    // object comes home. Counted off the errand's own declaration, `prize`,
+    // like the drowned wheel's `gives`; the tile tested is the one the person
+    // stands on. check-side.mjs is what proves the errand can be finished.
+    if (opts && opts.errand && opts.errand.prize === 'heartPiece') {
+      pieces.push({ where, how: 'errand', x, y });
     }
   }
 }

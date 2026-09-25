@@ -38,6 +38,7 @@ const snap = async (name) => {
   console.log('wrote', name);
 };
 const shots = spec.shots || [];
+const whens = (spec.when || []).map(w => Object.assign([...w], { done: false }));
 // Run all steps, pausing after each to shoot if asked.
 await page.evaluate(([s, st]) => window.__rp.beginRecord(s, st), [spec.setup, spec.steps]);
 let lastStep = -1;
@@ -45,6 +46,12 @@ for (let i = 0; i < 20000; i++) {
   const r = await page.evaluate(() => window.__rp.pump(1));
   const step = await page.evaluate(() => { const t = window.__rp._trace || []; return t.length ? t[t.length - 1].step : -1; });
   if (step !== lastStep) { lastStep = step; if (shots.includes(step)) await snap(`${out}-${step}.png`); }
+  // `when`: [[name, expr]] — also shoot the first frame on which expr (read
+  // with the game as `g`) is true, e.g. the moment a prize is held overhead.
+  for (const w of whens) {
+    if (w.done) continue;
+    if (await page.evaluate(src => { const g = window.__game; return !!eval(src); }, w[1])) { w.done = true; await snap(`${out}-${w[0]}.png`); }
+  }
   if (r.done || r.error) { if (r.error) console.log('ERR', r.error); break; }
 }
 if (shots.includes('end')) { for (let i = 0; i < 2; i++) await page.evaluate(() => window.__rp.pump(1)); await snap(`${out}-end.png`); }

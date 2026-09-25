@@ -132,6 +132,10 @@ export const DIALOGUE = {
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   elder1: 'I have seen the sea take this village\ntwice and give it back once.\nWe are owed, is what I am saying.',
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
+  // The townsfolk's errands (S155 side content). Each person says `...Ask`
+  // until their thing comes home, then `...Thanks` as they pay for it.
+  ledgerAsk: 'My ledger went out of the window in the\nlast big wind. Every debt on this coast\nis in that book. Try the South Sands.',
+  ledgerThanks: 'My ledger! Wet, but legible. Wet is how\nit always is. Here: I owe you, and now\nthat is written down too.',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
 
   // ---- second states -----------------------------------------------------

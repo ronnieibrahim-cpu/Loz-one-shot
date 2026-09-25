@@ -72,6 +72,20 @@ const SCENARIOS = [
     steps: [['hold', ['up'], 180], ['wait', 30]],
     expect: `g.mapId === 'overworld' || ('got into ' + g.mapId + ' at tide ' + g.tide.level)`,
   })),
+  {
+    name: 'The ledger: found on the South Sands, carried to the shop, paid for with a Piece of Heart',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 5, 9, 64, 32, 'right'] }),
+    steps: [['goto', 8, 2, 400], ['wait', 90], ['travel', 5, 8, 3000], ['wait', 30], ['travel', 5, 7, 3000], ['wait', 30],
+      ['goto', 4, 5, 600], ['hold', ['up'], 40], ['wait', 60], ['errand', 'ledgerDone', 1500], ['wait', 60]],
+    expect: `g.progress.flags.foundLedger && g.progress.flags.ledgerDone && g.progress.heartPieces === 1 || ('ledger ' + !!g.progress.flags.foundLedger + ', pieces ' + g.progress.heartPieces)`,
+  },
+  {
+    name: 'The ledger: the shopkeeper pays nothing until it is home',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', enter: ['houseShop', 0, 0, 0, 72, 81, 'up'] }),
+    steps: [['errand', 'ledgerDone', 600]],
+    expectError: /never landed/,
+    expect: `g.progress.heartPieces === 0 || 'paid without the ledger'`,
+  },
 ];
 
 const server = createServer(async (req, res) => {
@@ -100,6 +114,11 @@ for (const sc of SCENARIOS) {
     let r;
     try { r = await page.evaluate(n => window.__rp.pump(n), 100); } catch (e) { err = e.message.split('\n')[0]; break; }
     if (r.done || r.error) { if (r.error) err = r.error; break; }
+  }
+  // A scenario that is SUPPOSED to be refused names the refusal it expects.
+  if (sc.expectError) {
+    if (!err || !sc.expectError.test(err)) err = 'expected a refusal matching ' + sc.expectError + ', got ' + (err || 'none');
+    else err = null;
   }
   let verdict = err ? 'directive failed: ' + err : null;
   if (!verdict) {

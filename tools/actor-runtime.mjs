@@ -3052,6 +3052,21 @@ export async function installRuntime() {
   }
 
   /**
+   * FINISH AN ERRAND (S155): talk to whoever in this room holds the errand
+   * whose `flag` this is, until the save carries it — the same approach as
+   * `beat`, found by asking the entities rather than a tile.
+   */
+  function* dErrand(flagName, maxF) {
+    const g = window.__game;
+    if (g.progress.flags[flagName]) return;
+    const holder = g.entities.find(e => !e.remove && e.errand && e.errand.flag === flagName);
+    if (!holder) throw new Error(`errand: nobody in ${g.mapId} ${g.room && g.room.key} holds '${flagName}'`);
+    yield* dTalkTo(holder, () => !!g.progress.flags[flagName], 'errand', `the holder of '${flagName}'`, maxF);
+    yield* dDialogueClear(300);
+    if (!g.progress.flags[flagName]) throw new Error(`errand: '${flagName}' never landed`);
+  }
+
+  /**
    * TURN A DUNGEON KEY (S154): stand on (tx, ty) and lean `dir` into the
    * keyhole until its flag says it has opened, as a player does.
    */
@@ -3119,6 +3134,7 @@ export async function installRuntime() {
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
       else if (kind === 'beat') yield* dBeat(a[0], a[1]);
+      else if (kind === 'errand') yield* dErrand(a[0], a[1]);
       else if (kind === 'keyhole') yield* dKeyhole(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'ending') yield* dEnding(a[0]);
       else throw new Error('unknown replay directive: ' + kind);

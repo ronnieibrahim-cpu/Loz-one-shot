@@ -64,6 +64,8 @@ for (const m of MAPS.values()) {
       for (const d of opts.deals || []) {
         for (const f of DEAL_ID_FIELDS) note(d[f], `deals[].${f}`);
       }
+      // A townsperson's errand (S155) speaks two lines of its own.
+      if (opts.errand) { note(opts.errand.ask, 'errand.ask'); note(opts.errand.thanks, 'errand.thanks'); }
     }
   }
 }
@@ -102,7 +104,12 @@ for (const m of MAPS.values()) {
         const said = [];
         // A key-giver's story beat (S154) is its own scene, heard once; the lines
         // proved here are what the person says every other time.
-        npc.interact({ progress: { essences, flags: o.beat ? { [o.beat.flag]: true } : {} },
+        // An errand (S155) is proved by check-side.mjs; here it is done, and the
+        // lines proved are the ones the person goes back to afterwards.
+        const flags = {};
+        if (o.beat) flags[o.beat.flag] = true;
+        if (o.errand) flags[o.errand.flag] = true;
+        npc.interact({ progress: { essences, flags },
           startDialogue: id => said.push(id) },
           { cx: 0, cy: 0 });
         return said[0];

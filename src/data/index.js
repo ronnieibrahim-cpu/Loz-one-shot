@@ -26,6 +26,7 @@ import { installHudSprites, HUD_ART } from './sprites-hud.js';
 import { installGearSprites, GEAR_ART } from './sprites-gear.js';
 import { installTitleSprites, TITLE_ART } from './sprites-title.js';
 import { installTradeSprites, TRADE_ART } from './sprites-trade.js';
+import { installErrandSprites, ERRAND_ART } from './sprites-errands.js';
 import { installKeySprites, KEY_ART } from './sprites-keys.js';
 import { installMakuSprites, MAKU_SPRITE_ART } from './tiles-maku.js';
 
@@ -57,6 +58,7 @@ export const SPRITE_PACKS = {
   gear: GEAR_ART,
   title: TITLE_ART,
   trade: TRADE_ART,
+  errands: ERRAND_ART,
   keys: KEY_ART,
   maku: MAKU_SPRITE_ART,
 };
@@ -96,6 +98,8 @@ export function installData() {
   installTitleSprites();
   // The Coastwise Chain's eleven objects, drawn to match them.
   installTradeSprites();
+  // The townsfolk's errands' three objects, drawn the same way.
+  installErrandSprites();
   installKeySprites();
   // The Maku Tree's face, off the same panel as her grove.
   installMakuSprites();

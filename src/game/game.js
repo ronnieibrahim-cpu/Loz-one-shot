@@ -50,6 +50,7 @@ import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu, invalidateWorldMap } from './menu.js';
 import { Camera } from './camera.js';
 import { TRADE_ITEMS, tradeName, tradeIcon } from '../data/trade.js';
+import { ERRANDS } from '../data/errands.js';
 import { keyByFlag, keyFor, migrateKeys } from '../data/keys.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
 import { Title } from './title.js';
@@ -1224,6 +1225,33 @@ export class Game {
     this.player.frozen = ITEM_PRESENT_FRAMES;
     this.itemShow = { sprite: tradeIcon(id), t: ITEM_PRESENT_FRAMES };
     this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
+  }
+
+  /**
+   * A prize handed over by a person (S155 side content): any PICKUPS kind,
+   * held overhead the way a gift is, then collected — a Piece of Heart says
+   * its own line; rupees are counted aloud here because their pickup is silent.
+   */
+  presentPrize(kind) {
+    const spec = PICKUPS[kind];
+    if (!spec) return;
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: spec.sprite, pal: spec.pal, t: ITEM_PRESENT_FRAMES };
+    spec.get(this, null);
+    if (spec.worth) {
+      this.audio.jingle('itemGet');
+      this.say(`You got ${spec.worth} Rupees!`);
+    }
+  }
+
+  /** An errand's object found (S155): the same beat as presentTrade. */
+  presentErrand(id) {
+    const def = ERRANDS[id];
+    if (!def) return;
+    this.audio.jingle('itemGet');
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: def.icon, t: ITEM_PRESENT_FRAMES };
+    this.say(`You found the ${def.name}!\n${def.got}`);
   }
 
   /**
