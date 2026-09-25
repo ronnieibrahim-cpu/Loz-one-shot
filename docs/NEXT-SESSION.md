@@ -49,7 +49,17 @@ https://github.com/Stewmath/oracles-disasm`).
   winning options and margins are in the route comments).
 - check-playthrough 42/42, 0 deaths, low-water 8 qh (was 2). Replays 51/51.
 
-### Waiting on the human
+### The human's answers (after S150)
+- ENEMY BEHAVIOUR PORT: YES. Port each Seasons enemy's state machine, and
+  drop check-motion's "ground enemies stay on the 8 px lattice" rule for the
+  ported ones — the cartridge's enemies are not on a lattice.
+- DAMAGE: NO. Keep our damage ladder (half a heart for most enemies).
+- MENU AND DROWNING WHITE FADES, AND THE DUNGEON-ENTRANCE REVEAL: YES.
+- The stairs/door white fades and the chest rise were read as approved along
+  with those; the parked change is committed as
+  docs/patches/white-fades-and-chest.patch (applies cleanly on fd2f09a).
+
+### Waiting on the human (as S150 left it)
 - WHITE FADES AND THE CHEST: implemented, photographed, NOT committed. The
   patch is `white-fades-and-chest.patch` in the session scratchpad and the
   pictures went to the human (cmp_stairs / cmp_door / cmp_chest). What it

@@ -1,0 +1,235 @@
+diff --git a/src/data/feel.js b/src/data/feel.js
+index 8839408..35b2b0c 100644
+--- a/src/data/feel.js
++++ b/src/data/feel.js
+@@ -583,6 +583,36 @@ export const TIDE_SWEEP_FRAMES = 23;
+ /** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
+ export const FADE_RATE = 0.09;
+ 
++/** [f, f, f] — going down or up STAIRS: fade to white over the first, hold
++ *  white for the second, fade back in over the third. measured: out 27
++ *  (5688-5715), white 31 (5715-5746), in 27 (5746-5773). reference:
++ *  assets/footage/seasons-tas-rooster-adventure.mp4, mean screen brightness. Seasons fades
++ *  to WHITE, not black. */
++export const STAIRS_FADE = [27, 31, 27];
++
++/** [f, f, f] — through a DOOR or a cave mouth: an instant cut to white, 16
++ *  frames of white, then 20 frames back in. measured: reference:
++ *  assets/footage/seasons-tas-rooster-adventure.mp4, video frames 3659-3695,
++ *  8598-8629 and 14170-14199. */
++export const DOOR_FADE = [0, 16, 20];
++
++/** [f, f] — a chest item rising out of the chest: how far it rises (px) and
++ *  over how many frames, and how long after the lid opens the text box
++ *  appears. measured: the lid opens at 8133, the item appears at 8136 and
++ *  rises 11 px (steps 2,1,1,0,1 then one pixel every four frames), the text
++ *  box opens at 8169. reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
++export const CHEST_ITEM_RISE = [2, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1];
++
++/** f — from the chest lid opening to the text box opening. measured: 36
++ *  (lid at video frame 8133, text box at 8169). reference:
++ *  assets/footage/seasons-tas-rooster-adventure.mp4. The item appears 3 frames after the lid
++ *  (CHEST_ITEM_DELAY). */
++export const CHEST_TEXT_DELAY = 36;
++
++/** f — from the lid opening to the item showing above the chest. measured: 3
++ *  (8133 -> 8136). reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
++export const CHEST_ITEM_DELAY = 3;
++
+ /** f — how long the opening card holds before it fades, if nothing is
+  *  pressed. guessed: the footage's run skips the card at its first chance
+  *  (video frames 6744-6803 are 60 frames of it), so its natural length is
+diff --git a/src/game/game.js b/src/game/game.js
+index 3afdf5d..160b010 100644
+--- a/src/game/game.js
++++ b/src/game/game.js
+@@ -57,6 +57,7 @@ import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../cor
+ import { sp } from '../core/fixed.js';
+ import {
+   ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
++  STAIRS_FADE, DOOR_FADE, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY,
+   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
+   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
+   LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
+@@ -103,6 +104,7 @@ export class Game {
+     this.hitstop = 0;
+     this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
+     this.fadeAmount = 0; this.fadeDir = 0; this.fadeThen = null; this.fadeWhite = false;
++    this.fadeTiming = null; this.fadeHold = 0;
+     this.transition = null;
+     this.bannerText = null; this.bannerTime = 0;
+     this.cutscene = null;
+@@ -422,7 +424,7 @@ export class Game {
+ 
+   /** Walk off the edge into the neighbouring room. */
+   checkRoomExit() {
+-    if (this.transition || this.fadeDir || !this.player || this.dialogue.active) return;
++    if (this.transition || this.fadeDir || this.fadeHold > 0 || !this.player || this.dialogue.active) return;
+     const p = this.player;
+     const r = p.rect();
+     const i = this.input;
+@@ -564,11 +566,13 @@ export class Game {
+ 
+   /** Hard cut with a fade: doors, stairs, cave mouths, whirlpools. */
+   warpTo(mapId, floor, rx, ry, pos, dir, o = {}) {
+-    if (this.fadeDir) return;
++    if (this.fadeDir || this.fadeHold > 0) return;
++    // Seasons goes to WHITE for a door and for stairs, each at its own pace.
++    const timing = o.fade || null;
+     this.fadeOut(() => {
+       const px = pos ? pos.x : null, py = pos ? pos.y : null;
+       this.enterMap(mapId, floor, rx, ry, px, py, dir || (this.player && this.player.dir), o);
+-    }, o.white);
++    }, timing ? true : o.white, timing);
+   }
+ 
+   /**
+@@ -583,22 +587,35 @@ export class Game {
+    * passed, and the one thing the beat was for — the whole Bell alone on black
+    * — had never once happened.
+    */
+-  fadeOut(then, white = false) {
++  fadeOut(then, white = false, timing = null) {
+     this.fadeDir = 1; this.fadeAmount = 0; this.fadeThen = then; this.fadeWhite = white;
++    // `timing` is Seasons' [out, hold, in] in frames (STAIRS_FADE, DOOR_FADE);
++    // without it the fade runs at FADE_RATE each way, as it always has.
++    this.fadeTiming = timing;
++    if (timing && timing[0] === 0) this.fadeAmount = 1;
+   }
+   fadeIn() { this.fadeDir = -1; this.fadeAmount = 1; }
+ 
+   updateFade() {
++    if (this.fadeHold > 0) { if (--this.fadeHold === 0) this.fadeIn(); return; }
+     if (!this.fadeDir) return;
+-    this.fadeAmount += this.fadeDir * FADE_RATE;
++    const tm = this.fadeTiming;
++    const rate = tm ? 1 / Math.max(1, this.fadeDir > 0 ? tm[0] : tm[2]) : FADE_RATE;
++    if (!(tm && this.fadeDir > 0 && tm[0] === 0)) this.fadeAmount += this.fadeDir * rate;
+     if (this.fadeDir > 0 && this.fadeAmount >= 1) {
+       this.fadeAmount = 1;
+       const t = this.fadeThen; this.fadeThen = null; this.fadeDir = 0;
+-      if (t) { t(); if (!this.fadeDir) this.fadeIn(); }
++      if (t) {
++        t();
++        if (!this.fadeDir) {
++          if (tm && tm[1] > 0) this.fadeHold = tm[1];
++          else this.fadeIn();
++        }
++      }
+       // No callback means nobody is going to put a new room on screen, so the
+       // black is the point. Whoever asked for it says when it lifts.
+     } else if (this.fadeDir < 0 && this.fadeAmount <= 0) {
+-      this.fadeAmount = 0; this.fadeDir = 0;
++      this.fadeAmount = 0; this.fadeDir = 0; this.fadeTiming = null;
+     }
+   }
+ 
+@@ -749,7 +766,7 @@ export class Game {
+ 
+   /** Step onto a warp tile (cave mouth, stairs, open door). */
+   checkWarpTile() {
+-    if (this.transition || this.fadeDir || !this.player) return;
++    if (this.transition || this.fadeDir || this.fadeHold > 0 || !this.player) return;
+     const p = this.player;
+     if (p.z > 2) return;
+     const tx = Math.floor(p.cx / TILE), ty = Math.floor((p.y + 12) / TILE);
+@@ -765,7 +782,7 @@ export class Game {
+     this.audio.sfx(w.sfx || 'stairs');
+     this.warpTo(w.to.map, w.to.floor || 0, w.to.rx, w.to.ry,
+       { x: w.to.px != null ? w.to.px : p.x, y: w.to.py != null ? w.to.py : p.y },
+-      w.to.dir || p.dir, { banner: true });
++      w.to.dir || p.dir, { banner: true, fade: (f & F.STAIRS) ? STAIRS_FADE : DOOR_FADE });
+   }
+ 
+   /**
+@@ -795,7 +812,7 @@ export class Game {
+    * @param res  what `moveEntity` said about the step just taken
+    */
+   doorwayPull(p, dx, dy, res) {
+-    if (!this.room || this.transition || this.fadeDir || this._warpLock) return;
++    if (!this.room || this.transition || this.fadeDir || this.fadeHold > 0 || this._warpLock) return;
+     if (p.z > 2) return;
+     // Only a cardinal press into something solid pulls. A diagonal already has
+     // a free axis to find the door with, and pulling one would fight the
+@@ -1069,7 +1086,7 @@ export class Game {
+         p.maxBottles = Math.max(p.maxBottles, BOTTLE_CAPACITY);
+         addBottles(p, BOTTLE_CAPACITY);
+       }
+-      this.presentItem(id, lv);
++      this.presentItem(id, lv, chest);
+     } else if (chest.charm) {
+       // Charms in the world came only out of the shop and the scrimshander's
+       // random carve until P8 started placing them by hand, and a chest is the
+@@ -1091,16 +1108,26 @@ export class Game {
+   }
+ 
+   /** Freeze, hold the item overhead, and describe it. */
+-  presentItem(id, lv) {
++  presentItem(id, lv, chest = null) {
+     const def = ITEMS[id];
+     // `itemGet` is the rising arpeggio composed for exactly this beat — the
+     // item held overhead. `fanfare` is the longer piece, kept for the moments
+     // that earn it (heart container, essence, dungeon cleared).
+     this.audio.jingle('itemGet');
++    const name = itemName(id, lv);
++    const text = `You got the ${name}!\n${def ? def.desc : ''}`;
++    if (chest) {
++      // Out of a chest it is Seasons' beat: the item comes up out of the
++      // chest CHEST_ITEM_DELAY frames after the lid, rises CHEST_ITEM_RISE,
++      // and the text box opens CHEST_TEXT_DELAY frames after the lid.
++      this.player.frozen = ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY;
++      this.itemShow = { id, lv, t: ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY,
++        chest: { x: chest.x, y: chest.y }, age: 0, text };
++      return;
++    }
+     this.player.frozen = ITEM_PRESENT_FRAMES;
+     this.itemShow = { id, lv, t: ITEM_PRESENT_FRAMES };
+-    const name = itemName(id, lv);
+-    this.say(`You got the ${name}!\n${def ? def.desc : ''}`);
++    this.say(text);
+   }
+ 
+   /**
+@@ -1535,7 +1562,15 @@ export class Game {
+     // would be a rule the player never sees applied.
+     this.scrim.update();
+     if (this.bannerTime > 0) this.bannerTime--;
+-    if (this.itemShow) { this.itemShow.t--; if (this.itemShow.t <= 0) this.itemShow = null; }
++    if (this.itemShow) {
++      const s = this.itemShow;
++      s.t--; s.age = (s.age || 0) + 1;
++      if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
++      // The item stays up until its text is read, then goes with it.
++      if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
++      else if (!s.chest && s.t <= 0) this.itemShow = null;
++      if (this.itemShow === null && this.player) this.player.frozen = 0;
++    }
+     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
+ 
+     if (this.dialogue.active) { this.dialogue.update(); this.flushPending(); return; }
+@@ -1553,7 +1588,7 @@ export class Game {
+     // below this line runs during a sweep, so the player's own timers stall
+     // for its whole length.
+     if (this.tide.busy) return;
+-    if (this.fadeDir) return;
++    if (this.fadeDir || this.fadeHold > 0) return;
+ 
+     // Hitstop. Everything above this line has already run for the frame —
+     // audio, the tide sweep, the shake, the HUD timers — and everything below
+@@ -2014,7 +2049,15 @@ export class Game {
+     // Through the scene's own offset, which carries the camera: in a room
+     // bigger than the screen the prize used to float wherever Link would have
+     // been had the view never scrolled.
+-    const x = ox + p.x, y = oy + p.y - 16;
++    let x = ox + p.x, y = oy + p.y - 16;
++    if (s.chest) {
++      // Rising out of the chest, as Seasons draws it.
++      const a = (s.age || 0) - CHEST_ITEM_DELAY;
++      if (a < 0) return;
++      let rise = 0;
++      for (let i = 0; i < Math.min(a, CHEST_ITEM_RISE.length); i++) rise += CHEST_ITEM_RISE[i];
++      x = ox + s.chest.x; y = oy + s.chest.y - 4 - rise;
++    }
+     // A trade item carries its own sprite and its own palette; an inventory
+     // item is looked up. Both are held in the same place, over Link's head.
+     if (s.sprite) { sprites.draw(ctx, s.sprite, x, y); return; }
