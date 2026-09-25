@@ -278,11 +278,35 @@ export async function installRuntime() {
   }
 
   /** Breadth-first path over tile centres. Returns a list of tiles, or null. */
-  function findPath(g, p, from, to) {
+  function findPath(g, p, from, to, noHazards) {
     const W = RW(g);
     const key = (t) => t.ty * W + t.tx;
     const start = key(from), goal = key(to);
     if (start === goal) return [to];
+    // FIXTURES ARE WALKED ROUND. A barnacle or a beamos (hp 999, rooted) is a
+    // hazard no sword removes; the tile path used to go straight through the
+    // square beside it and take a touch every invulnerability window (six in a
+    // row crossing the Abyssal Keep's Rootbound Hall, S150). A tile whose
+    // standing box would touch one is refused unless no path exists without it.
+    const hazard = new Set();
+    if (!noHazards) {
+      for (const e of g.entities) {
+        if (!e.isEnemy || e.dead || e.dying || e.harmless || e.isBoss || !(e.damage > 0)) continue;
+        // Fixtures (hp 999, rooted) and the slow drifters — urchins,
+        // jellyfish — that a path can simply go round. Anything quicker is
+        // somewhere else by the time the player gets there.
+        const sp0 = e.spec ? (e.spec.speed || 0) : 0;
+        if (!(e.maxHp >= 999 && sp0 === 0) && !(sp0 > 0 && sp0 <= 0.4)) continue;
+        const r = e.contactRect();
+        const x0 = Math.floor((r.x - 14) / TILE), x1 = Math.floor((r.x + r.w + 13) / TILE);
+        const y0 = Math.floor((r.y - 14) / TILE), y1 = Math.floor((r.y + r.h + 13) / TILE);
+        for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+          const bx = tx * TILE + 2, by = ty * TILE + 2;
+          if (bx < r.x + r.w + 1 && r.x - 1 < bx + 12 && by < r.y + r.h + 1 && r.y - 1 < by + 12) hazard.add(ty * W + tx);
+        }
+      }
+      hazard.delete(start); hazard.delete(goal);
+    }
     const prev = new Map([[start, -1]]);
     const q = [start];
     for (let head = 0; head < q.length; head++) {
@@ -290,7 +314,7 @@ export async function installRuntime() {
       const cx = cur % W, cy = (cur / W) | 0;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = cx + dx, ny = cy + dy, nk = ny * W + nx;
-        if (prev.has(nk) || !passable(g, p, nx, ny)) continue;
+        if (prev.has(nk) || hazard.has(nk) || !passable(g, p, nx, ny)) continue;
         prev.set(nk, cur);
         if (nk === goal) {
           const out = [];
@@ -301,7 +325,7 @@ export async function installRuntime() {
         q.push(nk);
       }
     }
-    return null;
+    return hazard.size ? findPath(g, p, from, to, true) : null;
   }
 
   /** Buttons that carry the player toward a pixel waypoint. */
@@ -726,7 +750,7 @@ export async function installRuntime() {
   function* dGoto(tx, ty, maxF) {
     const g = window.__game;
     let path = null, wi = 0, sinceReplan = 1e9, sinceProgress = 0;
-    let lastX = null, lastY = null;
+    let lastX = null, lastY = null, pressed = false;
     // A GOTO IS ADDRESSED TO ONE ROOM. `dFight` has had this guard since P3 —
     // a directive that ends somewhere other than it started makes every
     // directive after it fiction while still recording perfectly well — and
@@ -766,8 +790,47 @@ export async function installRuntime() {
       // Shots only, and never a standstill. A walker cannot out-wait a body
       // that is not going anywhere — see `noStay` in `evade` — and an enemy in
       // the way is `dFight`'s business, not the path's.
+      // A BODY STANDING IN THE PATH IS CUT DOWN, NOT WALKED INTO. The path is
+      // tiles and ignores what stands on them; a slow urchin or a jellyfish
+      // parked on the one column a route walks used to be pushed through,
+      // eating a touch every invulnerability window — eight in a row off the
+      // Abyssal Keep's urchin (S150, where contact became the cartridge's
+      // 12x12). A person swings at it. Only when the sword is on a button.
+      const blocker = bodyAhead(g, p, wx - p.x, wy - p.y);
+      if (blocker && slotBit('sword')) {
+        const bx = blocker.cx - p.cx, by = blocker.cy - p.cy;
+        const face = Math.abs(bx) > Math.abs(by) ? (bx > 0 ? 'right' : 'left') : (by > 0 ? 'down' : 'up');
+        if (p.swinging > 0 || pressed) { pressed = false; yield 0; continue; }
+        if (p.dir !== face) { yield BIT[face]; continue; }
+        // A swing is a PRESS: held, the button charges instead.
+        pressed = true;
+        yield slotBit('sword'); continue;
+      }
       yield evade(g, steer(p, wx, wy), { shotsOnly: true, noStay: true });
     }
+  }
+
+  /** A live enemy body touching-close to the player on the side he is walking. */
+  function bodyAhead(g, p, sx, sy) {
+    if (!sx && !sy) return null;
+    for (const e of g.entities) {
+      if (!e.isEnemy || e.dead || e.dying || e.harmless || e.dormant || e.hidden || e.isBoss) continue;
+      if (!(e.damage > 0) || e.remove) continue;
+      // Not a fixture: a barnacle or a beamos (hp 999) is walked round.
+      if (e.maxHp >= 999 || e.shield === 'all') continue;
+      const { gapX, gapY } = gapTo(p, e);
+      if (gapX > 6 || gapY > 6) continue;
+      if ((e.cx - p.cx) * sx + (e.cy - p.cy) * sy <= 0) continue;
+      // A shield turned this way stops the swing dead; swinging into it for
+      // ever is worse than the walk (S150, the Undertow's doorway urchin).
+      if (e.shield === 'front') {
+        const bx = e.cx - p.cx, by = e.cy - p.cy;
+        const toward = Math.abs(bx) > Math.abs(by) ? (bx > 0 ? 'left' : 'right') : (by > 0 ? 'up' : 'down');
+        if (e.dir === toward) continue;
+      }
+      return e;
+    }
+    return null;
   }
 
   /** Hold a direction until the room or map changes, then let it settle. */
@@ -858,7 +921,7 @@ export async function installRuntime() {
    */
   /**
    * The gap between two entities' real boxes, per axis. Asks the entities' own
-   * `rect()` — the same AABB `Entity.overlaps` and `updateContactDamage` use —
+   * `contactRect()` — the same boxes `updateContactDamage` tests (S150) —
    * rather than re-deriving a box from `cx`/`cy` and a guessed offset.
    */
   /**
@@ -957,7 +1020,7 @@ export async function installRuntime() {
       // circled the wreckage of the zol it had just killed, on a lattice that
       // backed it into the two gels the same zol had just split into.
       } else if (shotsOnly || !e.isEnemy || e.dead || e.dying) continue;
-      const r = e.rect();
+      const r = e.contactRect();
       out.push({
         x: r.x + r.w / 2, y: r.y + r.h / 2,
         vx: e.isProjectile ? e.vx / 256 : 0, vy: e.isProjectile ? e.vy / 256 : 0,
@@ -977,7 +1040,7 @@ export async function installRuntime() {
   function moveCost(g, mx, my, list) {
     const q = g.player;
     if (!q) return 0;
-    const pr = q.rect();
+    const pr = q.contactRect();
     const px0 = pr.x + pr.w / 2, py0 = pr.y + pr.h / 2;
     let cost = 0;
     for (const h of list) {
@@ -1102,8 +1165,8 @@ export async function installRuntime() {
     let noBody = null;
     if (opts.noContact && !opts.noContact.dead && g.player) {
       const vel = opts.noContactVel || { vx: 0, vy: 0 };
-      const tr = opts.noContact.rect();
-      noBody = { pr: g.player.rect(), tr: { x: tr.x + vel.vx, y: tr.y + vel.vy, w: tr.w, h: tr.h } };
+      const tr = opts.noContact.contactRect();
+      noBody = { pr: g.player.contactRect(), tr: { x: tr.x + vel.vx, y: tr.y + vel.vy, w: tr.w, h: tr.h } };
     }
     // Prefer the candidate that keeps most of what was asked for, so the swap
     // is the smallest one that works.
@@ -1144,7 +1207,7 @@ export async function installRuntime() {
   }
 
   function gapTo(a, c) {
-    const ra = a.rect(), rb = c.rect();
+    const ra = a.contactRect(), rb = c.contactRect();
     return {
       gapX: Math.max(rb.x - (ra.x + ra.w), ra.x - (rb.x + rb.w)),
       gapY: Math.max(rb.y - (ra.y + ra.h), ra.y - (rb.y + rb.h)),
@@ -1238,6 +1301,18 @@ export async function installRuntime() {
       if (q.x > (g.room ? g.room.pw : VIEW_W) - 16 - EDGE) m &= ~BIT.right;
       if (q.y < EDGE) m &= ~BIT.up;
       if (q.y > (g.room ? g.room.ph : VIEW_H) - 16 - EDGE) m &= ~BIT.down;
+      // Nor through a doorway: a cave mouth in the middle of a screen is a
+      // way out that the edge fence cannot see (S150, the Sunken Reef).
+      const warps = (g.room && g.room.warps) || [];
+      if (warps.length) {
+        const r = q.rect();
+        for (const [bit, ddx, ddy] of [[BIT.left, -3, 0], [BIT.right, 3, 0], [BIT.up, 0, -3], [BIT.down, 0, 3]]) {
+          if (!(m & bit)) continue;
+          const x0 = Math.floor((r.x + ddx) / TILE), x1 = Math.floor((r.x + r.w - 1 + ddx) / TILE);
+          const y0 = Math.floor((r.y + ddy) / TILE), y1 = Math.floor((r.y + r.h - 1 + ddy) / TILE);
+          if (warps.some(w => w.x >= x0 && w.x <= x1 && w.y >= y0 && w.y <= y1)) m &= ~bit;
+        }
+      }
       return m;
     };
     // The same swap `dBoss` uses, with the foe currently being closed on left
@@ -1312,7 +1387,30 @@ export async function installRuntime() {
       const shielded = (f2) => best.shield === 'all'
         || (best.shield === 'front' && OPP[f2] === best.dir);
       let axisX = Math.abs(dx) >= Math.abs(dy);
-      if (best.shield && shielded(faceOn(axisX)) && !shielded(faceOn(!axisX))) axisX = !axisX;
+      // Only if the other axis is already a standoff away: lining up on it
+      // from closer means walking INTO the enemy to get level with it, and
+      // since S150 its box is the cartridge's 12x12 on its middle. That is
+      // how the Drinking Floor's crab took a run pinned to the bottom wall.
+      if (best.shield && shielded(faceOn(axisX)) && !shielded(faceOn(!axisX))) {
+        const off = axisX ? dy : dx;
+        if (Math.abs(off) >= NEAR) axisX = !axisX;
+        else {
+          // Too level with it to come at its side yet: open the gap on the
+          // side axis first, away from it (or toward the roomier side when
+          // dead level), and come back in from there.
+          const room = g.room;
+          let away;
+          if (axisX) {
+            const down = off < 0 || (off === 0 && p.y < (room ? room.ph : VIEW_H) / 2);
+            away = down ? BIT.down : BIT.up;
+          } else {
+            const right = off < 0 || (off === 0 && p.x < (room ? room.pw : VIEW_W) / 2);
+            away = right ? BIT.right : BIT.left;
+          }
+          const m = safeF(away);
+          if (m) { yield m | LENS; f++; continue; }
+        }
+      }
 
       const along = axisX ? dx : dy;
       const perp = axisX ? dy : dx;
@@ -1688,12 +1786,27 @@ export async function installRuntime() {
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
       if (b.charging) {
         if (chargeSide === 0) {
-          chargeSide = (b.dir === 'up' || b.dir === 'down')
-            ? (p.cx >= b.cx ? 1 : -1) : (p.cy >= b.cy ? 1 : -1);
+          const vert = b.dir === 'up' || b.dir === 'down';
+          chargeSide = vert ? (p.cx >= b.cx ? 1 : -1) : (p.cy >= b.cy ? 1 : -1);
+          // Not into a wall: the side away from the boss is no escape when
+          // Link is already against that side of the room (S150 — Gohmaraq
+          // charged down the west wall onto an actor stepping west into it).
+          const pos = vert ? p.x : p.y;
+          const lim = (vert ? (g.room ? g.room.pw : VIEW_W) : (g.room ? g.room.ph : VIEW_H)) - 16;
+          if (chargeSide < 0 && pos < EDGE + 20) chargeSide = 1;
+          else if (chargeSide > 0 && pos > lim - EDGE - 20) chargeSide = -1;
         }
-        const perp = (b.dir === 'up' || b.dir === 'down')
+        const vert = b.dir === 'up' || b.dir === 'down';
+        const perp = vert
           ? (chargeSide > 0 ? BIT.right : BIT.left)
           : (chargeSide > 0 ? BIT.down : BIT.up);
+        // Once clear of its line, go WITH the charge: it ends against the far
+        // wall, dazed and open, and that window is the fight. Dodging in place
+        // and walking back afterwards reaches it as it closes (S150: with the
+        // dodge made to work, Gohmaraq sat on 8 hp for 7000 frames).
+        const off = vert ? Math.abs(p.cx - b.cx) : Math.abs(p.cy - b.cy);
+        const clear = (vert ? b.hb.w : b.hb.h) / 2 + 6 + 8;
+        if (off >= clear && BIT[b.dir]) { yield safe(BIT[b.dir]); f++; continue; }
         yield safe(perp); f++; continue;
       }
       chargeSide = 0;
@@ -2044,7 +2157,7 @@ export async function installRuntime() {
         // is built to punish (ENEMY_CHARGE_MIN_RANGE), and Gohmaraq, fought
         // that way, charged the actor round its arena until the clock ran out.
         const reachDir = axisX ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-        const sb = p.swordBox(g, 2, reachDir), br = b.rect();
+        const sb = p.swordBox(g, 2, reachDir), br = b.contactRect();
         const reaches = reachSwing
           && sb.x < br.x + br.w && br.x < sb.x + sb.w && sb.y < br.y + br.h && br.y < sb.y + sb.h
           && Math.abs(axisX ? dy : dx) <= 8;

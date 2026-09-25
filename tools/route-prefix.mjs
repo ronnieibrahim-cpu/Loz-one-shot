@@ -22,6 +22,12 @@ import { chromium } from 'playwright';
 const ROOT = process.env.ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const { installRuntime } = await import(ROOT + '/tools/actor-runtime.mjs');
 const { ROUTE, SEED } = await import(ROOT + '/tools/playthrough-route.mjs?' + Date.now());
+// PATCH='<index>=<json directive>[;...]' swaps directives for this run only,
+// so an entry wait or a standoff can be swept without editing the route.
+if (process.env.PATCH) for (const part of process.env.PATCH.split(';')) {
+  const k = part.indexOf('=');
+  ROUTE[Number(part.slice(0, k))] = JSON.parse(part.slice(k + 1));
+}
 const start = Number(process.argv[2]), end = Number(process.argv[3] || ROUTE.length);
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname); if (p.endsWith('/')) p += 'index.html';
@@ -61,6 +67,25 @@ if (process.env.TIDEHOOK) {
   }, Number(process.env.TIDEHOOK));
 }
 // TIDEHOOK=<frame> lists every tide change from that frame on, with who made it.
+// FRAMES=<from>-<to> prints every frame in that window: Link, his hp and
+// invulnerability, the buttons held, and every enemy's position.
+if (process.env.FRAMES) {
+  const [a, b] = process.env.FRAMES.split('-').map(Number);
+  await page.evaluate(([a, b]) => {
+    const g = window.__game, orig = g.update.bind(g);
+    window.__frames = [];
+    g.update = (...args) => {
+      const r = orig(...args);
+      if (g.frame >= a && g.frame <= b && g.player) {
+        const p = g.player, i = g.input;
+        const held = ['up', 'down', 'left', 'right', 'a', 'b'].filter(k => i.down(k)).join('');
+        const foes = g.entities.filter(e => e.isEnemy && !e.dead).map(e => `${e.kind || e.type}@${Math.round(e.x)},${Math.round(e.y)}${e.dir ? e.dir[0] : ""}${e.knockTime ? "k" : ""}${e.isBoss ? ` hp${e.hp}${e.weakOpen ? "O" : ""}${e.charging ? "C" : ""}${e.stun ? "S" : ""}` : ""}`).join(" ");
+        window.__frames.push(`F${g.frame} L${p.x},${p.y}${p.dir[0]} hp${g.progress.hearts} inv${p.invuln} sw${p.swinging} [${held}] ${foes}`);
+      }
+      return r;
+    };
+  }, [a, b]);
+}
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE.slice(0, end));
 let r; let err = null;
 for (let i = 0; i < 4000; i++) {
@@ -70,6 +95,7 @@ for (let i = 0; i < 4000; i++) {
 const res = await page.evaluate(() => window.__rp.result());
 for (const t of res.trace.filter(t => t.step >= start)) console.log(`${String(t.step).padStart(4)} ${t.kind.padEnd(9)} f${String(t.frame).padStart(6)} ${t.room.padEnd(12)} ${String(t.x).padStart(4)},${String(t.y).padStart(3)} hp ${t.hp}/${t.maxHp} tide ${t.tide} foes ${t.foes} keys ${t.keys} ${t.foeKinds ? '[' + t.foeKinds + ']' : ''}`);
 const hits = await page.evaluate(() => window.__hits);
+if (process.env.FRAMES) for (const x of await page.evaluate(() => window.__frames)) console.log(x);
 if (process.env.TIDEHOOK) for (const x of await page.evaluate(() => window.__tides)) console.log('TIDE', x); if (process.env.HITS) for (const h of hits) if (h.includes(process.env.HITS)) console.log('HIT', h);
 const st = await page.evaluate(() => { const g = window.__game; return { ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + (e.pressed ? '*' : '') + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' '), flags: Object.keys(g.progress.flags).filter(k => k.startsWith(g.mapId)).join(','), map: g.mapId, room: g.room && g.room.key, x: g.player.x, y: g.player.y, tide: g.tide.level, mode: g.mode, progress: g.progress }; });
 if (process.argv[4]) await writeFile(process.argv[4], JSON.stringify(st));

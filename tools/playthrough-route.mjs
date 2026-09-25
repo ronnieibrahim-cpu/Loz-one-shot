@@ -79,7 +79,11 @@ export const ROUTE = [
   ['loot', 1500],
   ['dialogue', 400],
   ['goto', 5, 6, 400],
-  ['wait', 120],
+  // S150: no standing about at the door. The crab on the flats walks into a
+  // player who waits here, and since contact is the cartridge's 12x12 on
+  // Link's middle (and he is invulnerable 34 frames, not 46) it took six of
+  // ten quarter-hearts in three touches. Fight first.
+  ['fight', 600],
   ['dialogue', 300],
   // There is an octorok on the mouth of this cave and the run comes out of the
   // door into its line. Walked past, it took six of twelve quarter-hearts —
@@ -397,14 +401,18 @@ export const ROUTE = [
   ['tap', 'a', 30],
   ['dialogue', 300],
   ['exit', 'up', 400],
-  ['wait', 90],
+  ['wait', 120],
 
   // ---------------------------------------------------------------- d1 0,3,1
   // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
   // plain fight won 8 of 46 entry waits swept in the real run (20..200); with
   // the open-floor retreat every wait from 52 to 180 wins, on the same four
   // quarter-hearts — the fight stops depending on the frame it starts on.
-  ['boss', 9000, null, { openRetreat: true }],
+  // S150 (cartridge contact boxes, 34-frame invulnerability, the charge dodge
+  // made to step AWAY from a wall and then follow the charge to where it
+  // ends): swept waits 60/90/120 x four option sets, and one won — this one,
+  // on 11 of 16. It is a knife edge again; the next change here should sweep.
+  ['boss', 20000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 300],
   // WALK ONTO THE ESSENCE BY HAND — `dLoot` cannot collect it: `Essence` has
   // no `isDrop`. It appears in the middle of the arena, tile 7,4.
@@ -586,6 +594,14 @@ export const ROUTE = [
   // band. THE BARNACLE AT 7,8 IS A FIXED HAZARD, never fought — so the key
   // is fetched up the east side, clear of it. Then the key opens the west
   // wall's key door, which is the Stair Coil's.
+  //
+  // S150: the jellyfish in 0,3,5 drifts up the one column `travel` walks, and
+  // with the cartridge's contact box it stung the run five times in a row on
+  // the way through (15 qh). It is killed on the way past; the room is
+  // crossed three more times below.
+  ['travel', 3, 5, 1500],
+  ['fight', 1200],
+  ['loot', 400],
   ['travel', 3, 4, 1500],
   ['goto', 3, 8, 400],
   ['hold', ['left'], 40],
@@ -651,7 +667,9 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d2 1,4,2
   // Reefguard Hall, two rooms long: the miniboss for the second Small Key,
   // then the urchin that stands between the room and its puzzle flag.
-  ['boss', 6000, 'reefguard'],
+  // S150: `diagRetreat` (swept six option sets at two entry holds; this won
+  // on 16 of 20, the plain fight died under the Reefguard's column of fire).
+  ['boss', 6000, 'reefguard', { diagRetreat: true }],
   ['dialogue', 300],
   ['use', 'conch', 2, 140],
   ['goto', 20, 5, 700],
@@ -733,9 +751,11 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d2 1,3,1
   // ANEMOS, THE CROWNED COLUMN. His timers run off the absolute frame, so
   // the entry frame matters; this wait is re-swept whenever anything
-  // upstream moves (see LEDGER S48/S50 for the method).
-  ['wait', 216],
-  ['boss', 9000],
+  // upstream moves (see LEDGER S48/S50 for the method). S150 re-swept it
+  // with the retreat options: 150 + open-floor diagonal retreat wins on 18/24
+  // (240 also wins, on 15; 180 loses).
+  ['wait', 150],
+  ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
   ['goto', 7, 4, 400],
@@ -943,10 +963,13 @@ export const ROUTE = [
   // S147: at 1.5 px/f the fight pinned him IN the west doorway itself and
   // lost from full health; two steps into the room first, and it is won
   // without a touch (the step was swept: right, right+down, right+up, 4,4).
+  // S150: re-swept (five entry steps x two option sets): right 24 then down
+  // 12, with the diagonal retreat as well, wins on 14 of 28 — the plain
+  // open-floor retreat now loses from every entry tried.
   ['travel', 2, 2, 4000],
-  ['hold', ['right'], 12],
+  ['hold', ['right'], 24],
   ['hold', ['down'], 12],
-  ['boss', 9000, 'bogmaw', { openRetreat: true }],
+  ['boss', 9000, 'bogmaw', { openRetreat: true, diagRetreat: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -2356,7 +2379,10 @@ export const ROUTE = [
   // often enough, and a press made in the hurt flinch opens nothing: the run
   // walked on with the key still in its pocket and three rooms later had no
   // Dredge Line. A second press at an open door only swings the sword.
-  ['hold', ['up'], 12],
+  // Faced with a two-frame lean, not twelve: when the first press DID open
+  // it, twelve frames of up walked straight through into Keep Lock, and the
+  // `goto` below then crossed that hall's whole length into its knight (S150).
+  ['hold', ['up'], 2],
   ['tap', 'a', 30],
   ['dialogue', 300],
   ['goto', 7, 1, 900],
@@ -2500,7 +2526,9 @@ export const ROUTE = [
   ['equip', 'sword', 'A', 400],
   ['tide', 0, 140, 900],
   ['travel', 4, 5, 4000],
-  ['boss', 9000, 'tideshade', { breakContact: true }],
+  // S150: swept six option sets; `reachSwing` with `breakContact` wins on 35
+  // of 44, the plain `breakContact` on 14.
+  ['boss', 9000, 'tideshade', { breakContact: true, reachSwing: true }],
   ['wait', 180],
   ['loot', 1200],
 
@@ -2788,7 +2816,9 @@ export const ROUTE = [
   // S147: at 1.5 px/f the straight retreat every other fight now uses loses
   // this one from 39 of 48; the old diagonal wins it on 26, open-floor
   // retreat or not (swept over six option sets).
-  ['boss', 12000, 'brinehulk', { diagRetreat: true }],
+  // S150: swept six option sets; `reachSwing` added wins on 37 of 48, the
+  // diagonal retreat alone now dies.
+  ['boss', 12000, 'brinehulk', { diagRetreat: true, reachSwing: true }],
   ['wait', 240],
 
   // THE BOSS KEY. The chest on the far island, and the last locked thing in
