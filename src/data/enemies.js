@@ -454,10 +454,15 @@ export function installEnemies() {
     z: 6,
     // Seasons' bubble (bubble.s): moves in the four directions and, whenever
     // it is square on the 8 px grid or stopped by a wall, turns one time in
-    // eight. (The cartridge's also takes Link's sword away for three seconds
-    // on touch; not ported — see docs/NEXT-SESSION.md S151.)
+    // eight. Its touch takes Link's sword away for BUBBLE_SWORD_LOCK_FRAMES
+    // (wSwordDisabledCounter), as the cartridge's does; the Whisp Ring that
+    // spares him there has no counterpart here.
     port: 'bubble.s',
     speed: BUBBLE_SPEED,
+    onTouchLink(e, g, p) {
+      if (p.swordLock <= 0 && g.audio) g.audio.sfx('block');
+      p.swordLock = BUBBLE_SWORD_LOCK_FRAMES;
+    },
     terrain: 'any',
     ai(e, g) {
       const turn = () => { if (g.rng.int(BUBBLE_TURN_ODDS) === 0) e.dir = randDir(g); };
