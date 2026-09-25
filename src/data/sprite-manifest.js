@@ -138,7 +138,7 @@ export const REQUIRED_SPRITES = {
   // Bosses are 32x32 unless the name ends in _48 (48x48).
   bosses: [
     ...seq('boss_gohmaraq_', 3), ...seq('boss_gohmaraq_open_', 3), 'boss_gohmaraq_hurt',
-    ...seq('boss_anemos_', 3), 'boss_anemos_hurt',
+    ...seq('boss_anemos_', 3), ...seq('boss_anemos_open_', 3), 'boss_anemos_hurt',
     ...seq('boss_gloomtide_', 3), 'boss_gloomtide_hurt',
     ...seq('boss_wyverna_', 3), 'boss_wyverna_hurt',
     ...seq('boss_rootmaw_', 3), 'boss_rootmaw_hurt',
@@ -158,6 +158,7 @@ export const REQUIRED_SPRITES = {
 /** Canvas of each boss built from Seasons' boss graphics (tools/rip-bosses.py). */
 const SEASONS_BOSS_CANVAS = {
   boss_gohmaraq: [48, 32],   // Gohma, body and claw
+  boss_anemos: [32, 52],     // Medusa Head's crown on Manhandla's stalk
 };
 
 /** Expected pixel size for a sprite name, used by the validator. */

@@ -20,7 +20,8 @@ proves the rip reproduces byte for byte.
 | `enemyData.s` | `data/seasons/` | each enemy's graphics header, palette and tile base |
 | `enemyAnimations.s` | `data/seasons/` | each enemy's frame list (`enemyXXOamDataPointers`) |
 | `enemyOamData.s` | `data/seasons/` | each frame's hardware sprites: offset, tile, flags |
-| `paletteData.s` | `data/seasons/` | `standardSpritePaletteData`, the sprite colours |
+| `paletteData.s` | `data/seasons/` | `standardSpritePaletteData` and each boss's own colours |
+| `paletteHeaders.s` | `data/seasons/` | which colours a boss loads into sprite palettes 6-7 (`ld b,PALH_...` in its object_code) |
 
 Which of our bosses is built from which Seasons boss is the `BOSSES` table in
 `tools/rip-bosses.py`; the look is Seasons', what the boss does is ours.

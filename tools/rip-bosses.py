@@ -70,6 +70,12 @@ GOHMA = dict(enemy=0x7b, gfx=0xb0, b3=0x10)   # enemyData.s 0x7b, subid 1: $b0 /
 CLAW = (8, -6)
 BLOCK = (7, -1)
 
+# medusaHead.s loads palette header $88 (`ld b,$88`, enemyBoss_initializeRoom):
+# the sea-green of its mane is sprite palette 6.
+MEDUSA = dict(enemy=0x7f, gfx=0xba, b3=0x00, palh=0x88)  # enemyData.s 0x7f: $ba / $00
+# Manhandla's stalk (enemy7dSubidData, subid 1: $60) worn in Medusa's colours.
+STALK = dict(enemy=0x7d, gfx=0xb6, b3=0x60, palh=0x88)
+
 BOSSES = {
     'gohmaraq': dict(
         source='Gohma (ENEMY_GOHMA $7b), Oracle of Seasons D4',
@@ -85,6 +91,28 @@ BOSSES = {
             'boss_gohmaraq_open_2': [(GOHMA, 2, 0, 0), (GOHMA, 13, CLAW[1], CLAW[0])],
             # Struck: animation 9's recoil, frame 8, the claw pulled in to guard.
             'boss_gohmaraq_hurt': [(GOHMA, 8, 0, 0), (GOHMA, 18, BLOCK[1], BLOCK[0])],
+        },
+    ),
+    # The human asked for Medusa Head's crown kept and the rest less like it
+    # (S152), and chose from four: the crown — the TOP ROW of Medusa's frame 0,
+    # oam y 0 — on Manhandla's stalk (enemy $7d, subid 1-3: $b6 / $60), the
+    # stalk in Medusa's own sea-green. An anemone: tentacles on a column.
+    'anemos': dict(
+        source="Medusa Head's crown (ENEMY_MEDUSA_HEAD $7f, D8) on Manhandla's "
+               "stalk (ENEMY_MANHANDLA $7d, D6), both in Medusa's palette",
+        canvas=(32, 52), origin=(16, 40),
+        frames={
+            # Swaying: Manhandla's animation 0 runs its stalk 0, 1, 0, 2.
+            'boss_anemos_0': [(MEDUSA, 0, 0, -14, (0,)), (STALK, 0, 0, -4)],
+            'boss_anemos_1': [(MEDUSA, 0, 0, -14, (0,)), (STALK, 1, 0, -4)],
+            'boss_anemos_2': [(MEDUSA, 0, 0, -14, (0,)), (STALK, 2, 0, -4)],
+            # Open to feed: the stalk stretched and gaping (its frames 3 and 4,
+            # animations 1 and 2), the crown carried 8 px up with its head.
+            'boss_anemos_open_0': [(MEDUSA, 0, 0, -22, (0,)), (STALK, 3, 0, -4)],
+            'boss_anemos_open_1': [(MEDUSA, 0, 0, -22, (0,)), (STALK, 4, 0, -4)],
+            'boss_anemos_open_2': [(MEDUSA, 0, 0, -22, (0,)), (STALK, 3, 0, -4)],
+            # Struck: Medusa's mane thrown up (frame 7's top row, oam y -8).
+            'boss_anemos_hurt': [(MEDUSA, 7, 0, -6, (248,)), (STALK, 0, 0, -4)],
         },
     ),
 }
@@ -139,9 +167,10 @@ def gfx_chain(index):
             return files
 
 
-def standard_palettes():
+def palette_data(label, count):
+    """`count` palettes of four colours from paletteData.s, starting at `label`."""
     lines = read('paletteData.s')
-    start = lines.index('standardSpritePaletteData:') + 1
+    start = lines.index(label + ':') + 1
     pals, cur = [], []
     for line in lines[start:]:
         m = re.search(r'm_RGB16 \$(\w+) \$(\w+) \$(\w+)', line)
@@ -152,11 +181,32 @@ def standard_palettes():
         if len(cur) == 4:
             pals.append(cur)
             cur = []
-        if len(pals) == 6:
+        if len(pals) == count:
             return pals
 
 
-PALS = standard_palettes()
+def boss_palettes(palh):
+    """The eight sprite palettes in a boss fight.
+
+    Sprite palettes 0-5 are standardSpritePaletteData, loaded once and never
+    replaced; 6 and 7 belong to whoever loaded them last. A boss loads its own
+    through enemyBoss_initializeRoom with a palette header (`ld b,PALH_...`
+    in its object_code file), which paletteHeaders.s spells out.
+    """
+    pals = palette_data('standardSpritePaletteData', 6) + [None, None]
+    if palh is None:
+        return pals
+    lines = read('paletteHeaders.s')
+    at = next(i for i, l in enumerate(lines)
+              if re.match(r'm_PaletteHeaderStart \$%02x,' % palh, l))
+    for line in lines[at + 1:]:
+        if 'm_PaletteHeaderEnd' in line:
+            break
+        m = re.search(r'm_PaletteHeaderSpr (\d+), (\d+), (\w+)', line)
+        if m:
+            first, n = int(m.group(1)), int(m.group(2))
+            pals[first:first + n] = palette_data(m.group(3), n)
+    return pals
 
 _vram = {}
 
@@ -189,13 +239,22 @@ def signed(v):
 
 
 def draw_part(canvas, part, ox, oy):
-    """Draw one object frame onto `canvas` (a dict (x,y) -> (palette, index))."""
-    src, index, dx, dy = part
+    """Draw one object frame onto `canvas`: (x,y) -> ((palette header, palette), index).
+
+    A part is (source, oam frame, dx, dy) or (source, oam frame, dx, dy, rows):
+    `rows` keeps only the hardware sprites whose oam y is listed — one row of
+    8x16 sprites out of a frame, so a boss can wear one Seasons creature's
+    crown on another's body.
+    """
+    src, index, dx, dy = part[:4]
+    rows = part[4] if len(part) > 4 else None
     ims = vram(src['gfx'])
     oam_flags = src['b3'] >> 4
     base = (src['b3'] & 0x0f) * 2
     # Earlier hardware sprites are in front: paint back to front.
     for y, x, t, f in reversed(oam_entries(src['enemy'], index)):
+        if rows is not None and y not in rows:
+            continue
         flags = oam_flags ^ f
         tile = sprite_tile(ims, (base + t) & 0xff)
         if flags & 0x20:
@@ -208,7 +267,7 @@ def draw_part(canvas, part, ox, oy):
             for xx in range(8):
                 v = tile.getpixel((xx, yy))
                 if v:
-                    canvas[(left + xx, top + yy)] = (flags & 7, v)
+                    canvas[(left + xx, top + yy)] = ((src.get('palh'), flags & 7), v)
 
 
 # GB colour index -> art index. The cartridge's sprite palettes run
@@ -228,10 +287,10 @@ def build():
             for (x, y) in canvas:
                 if not (0 <= x < cw and 0 <= y < ch):
                     sys.exit(f'{name}: pixel at {x},{y} falls outside its {cw}x{ch} canvas')
-            used = sorted({p for p, v in canvas.values()})
+            used = sorted({p for p, v in canvas.values()}, key=lambda k: (k[0] or 0, k[1]))
             layers = []
             for i, pal in enumerate(used):
-                layer = name if i == 0 else f'{name}@p{pal}'
+                layer = name if i == 0 else f'{name}@{i}'
                 rows = []
                 for y in range(ch):
                     row = ''
@@ -240,7 +299,8 @@ def build():
                         row += TO_ART[c[1]] if c and c[0] == pal else '.'
                     rows.append(row)
                 art[layer] = rows
-                p = PALS[pal]
+                p = boss_palettes(pal[0])[pal[1]]
+                assert p, f'{name}: palette {pal[1]} is never loaded by header {pal[0]}'
                 # light, mid, (mid), black — the '2' slot is never written.
                 pals[layer] = [p[3], p[2], p[2], p[1]]
                 layers.append(layer)
@@ -259,7 +319,7 @@ HEADER = '''// Boss frames assembled from Oracle of Seasons' own boss graphics.
 //
 // Each frame is the cartridge's own hardware sprites, placed, flipped and
 // coloured the way the Game Boy draws them. A frame in more than one palette
-// is split into non-overlapping layers ('name', 'name@pN'). BOSS_RIG says,
+// is split into non-overlapping layers ('name', 'name@1', ...). BOSS_RIG says,
 // per frame, its size, its layers, and the pixel (ax, ay) where the boss's
 // position falls — which the engine puts on the centre of the hitbox.
 //'''

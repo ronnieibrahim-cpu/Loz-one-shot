@@ -318,6 +318,7 @@ export function installBosses() {
     hp: 24, damage: 4, pal: 'coral', speed: 0, rate: 12,
     w: 32, h: 32, hb: { x: 5, y: 8, w: 22, h: 22 },
     frames: ['boss_anemos_0', 'boss_anemos_1', 'boss_anemos_2'],
+    openFrames: ['boss_anemos_open_0', 'boss_anemos_open_1', 'boss_anemos_open_2'],
     hurtFrame: 'boss_anemos_hurt',
     intro: 80, shell: true, terrain: 'any', drops: 'none',
     // Read by `tools/actor-runtime.mjs`'s `dBoss`: this fight's final phase
