@@ -184,6 +184,8 @@ export function expectedSize(name) {
   const seasonsBoss = SEASONS_BOSS_CANVAS[name.split('@')[0].replace(/_(open_)?(\d+|hurt)$/, '')];
   if (seasonsBoss) return seasonsBoss;
   if (name.startsWith('boss_')) return name.endsWith('_48') ? [48, 48] : [32, 32];
+  const miniSize = { mini_clawcrab: [44, 28], mini_ironknight: [34, 30], mini_thornvine: [30, 40], mini_tideshade: [30, 34] }[name.split('@')[0].replace(/_\d+$/, '')];
+  if (miniSize) return miniSize;  // S152: drawn around Seasons parts, at their own size
   if (name.startsWith('mini_')) return [24, 24];
   if (name === 'maku_face') return [64, 48];  // the eyes, nose and leaf over the trunk
   if (name === 'o_raft') return [16, 16];      // drawn twice, mirrored, to make 32
