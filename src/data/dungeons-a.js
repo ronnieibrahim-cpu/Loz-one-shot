@@ -1505,7 +1505,7 @@ export function installDungeonsA() {
     //   Bogmaw Hall, and the boss door is in its north wall -> 3,1 Gloomtide.
     cell: [15, 11],
     legend: 'dungeonBog',
-    music: 'dungeon',
+    music: 'dungeon3',
     tint: 'cave',
     dungeon: {
       index: 3,
@@ -2356,7 +2356,7 @@ export function installDungeonsA() {
     w: 8, h: 8, floors: 1,
     cell: [15, 11],
     legend: 'dungeonCistern',
-    music: 'dungeon2',
+    music: 'dungeon4',
     tint: 'cave',
     dungeon: {
       index: 4,

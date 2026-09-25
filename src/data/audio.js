@@ -567,6 +567,163 @@ const TRACKS = {
     order: ['A', 'A', 'B', 'D', 'C'],
   },
 
+  // ONE THEME PER DUNGEON (S150). `dungeon` and `dungeon2` used to be shared
+  // by three dungeons each; these four are ours, one per remaining dungeon,
+  // each leaning on what its dungeon does with the sea:
+  //   dungeon3  Bogwater Sanctum — A dorian, 100 bpm, a slow sway over a
+  //             drone: the marsh that the tide makes and unmakes.
+  //   dungeon4  Cliffside Cistern — G minor, 136 bpm, the second pulse a
+  //             running arpeggio: wind through the pump-house.
+  //   dungeon5  Drowned Wood Shrine — C minor, 108 bpm, a thin lead and a
+  //             long echo behind it, the drums barely there.
+  //   dungeon6  Abyssal Keep — B phrygian, 118 bpm, a march on the low wave
+  //             channel: the garrison under the sea.
+  dungeon3: {
+    bpm: 100, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.12, decay: 0.2, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.08, decay: 0.22 },
+      wav: { vol: 0.24, decay: 0.05 },
+      noi: { vol: 0.1 },
+    },
+    patterns: {
+      I: {
+        p1: '.  .  .  .  .  .  .  .  E5  -  -  -  -  -  -  -  D5  -  -  -  C5  -  -  -  B4  -  -  -  A4  -  -  -',
+        wav: 'A1  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  A1  -  -  -  -  -  -  -  G1  -  -  -  E1  -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  .  h  x  .  h  h',
+      },
+      A: {
+        p1: 'A4  -  -  .  C5  .  E5  -  -  .  D5  .  C5  -  -  .  B4  -  -  .  A4  .  G4  -  -  .  A4  -  -  -  -  .',
+        p2: 'E4  -  -  .  .  .  C4  -  -  .  .  .  A3  -  -  .  G3  -  -  .  .  .  E3  -  -  .  F#3  -  -  -  -  .',
+        wav: 'A1  -  -  -  E2  -  -  -  A1  -  -  -  E2  -  -  -  G1  -  -  -  D2  -  -  -  D2  -  -  -  E2  -  -  -',
+        noi: 'x  .  .  h  .  .  h  .  x  .  .  h  .  .  h  .  x  .  .  h  .  .  h  .  x  .  .  h  .  h  h  .',
+      },
+      B: {
+        p1: 'F#5  -  -  .  E5  .  D5  -  -  .  E5  .  C5  -  -  .  D5  -  -  .  B4  .  A4  -  -  -  -  -  -  -  -  .',
+        p2: 'D4  -  -  .  .  .  A3  -  -  .  .  .  E4  -  -  .  B3  -  -  .  .  .  F#3  -  -  -  -  -  -  -  -  .',
+        wav: 'D2  -  -  -  A1  -  -  -  D2  -  -  -  A1  -  -  -  G1  -  -  -  D2  -  -  -  A1  -  -  -  E2  -  -  -',
+        noi: 'x  .  .  h  .  .  h  .  x  .  .  h  .  .  h  .  x  .  .  h  .  h  h  .  x  .  h  .  x  h  h  h',
+      },
+      C: {
+        p1: 'E4  -  -  -  -  -  -  -  F#4  -  -  -  -  -  -  -  G4  -  -  -  A4  -  -  -  B4  -  -  -  C5  -  D5  .',
+        wav: 'A1+C2+E2  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  D2+F#2+A2  -  -  -  -  -  -  -  E1  -  -  -  E1  -  -  -',
+        noi: '.  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  x  .  .  .  .  .  h  .  x  .  s  .  x  .  s  h',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  dungeon4: {
+    bpm: 136, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.25, vol: 0.14, decay: 0.12, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.08, decay: 0.1 },
+      wav: { vol: 0.22, decay: 0.07 },
+      noi: { vol: 0.12 },
+    },
+    patterns: {
+      I: {
+        p1: 'G5  .  D5  .  Bb4  .  G4  .  G5  .  D5  .  Bb4  .  G4  .  A4  .  Bb4  .  C5  .  D5  -  -  -  -  -  -  -  -  .',
+        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  F#4  .  G4  .  A4  .  Bb4  -  -  -  -  -  -  -  -  .',
+        wav: 'G1  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  D2  -  -  -  -  -  -  -  D1  -  -  -  D1  -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  h  .  h  .  h  .  h  .  x  .  h  .  x  .  h  .  x  s  x  s  c  .  .  .',
+      },
+      A: {
+        p1: 'G4  .  .  G4  Bb4  .  D5  .  C5  .  Bb4  .  A4  -  -  .  Bb4  .  .  Bb4  D5  .  G5  .  F5  .  D5  .  C5  -  -  .',
+        p2: 'D4  G4  Bb4  D4  G4  Bb4  D4  G4  C4  F4  A4  C4  F4  A4  C4  F4  D4  G4  Bb4  D4  G4  Bb4  D4  G4  C4  Eb4  A4  C4  Eb4  A4  C4  Eb4',
+        wav: 'G1  -  .  G1  G1  -  .  G1  F1  -  .  F1  F1  -  .  F1  Eb1  -  .  Eb1  Eb1  -  .  Eb1  F1  -  .  F1  F1  -  .  F1',
+        noi: 'x  .  h  s  x  .  h  .  x  .  h  s  x  .  h  h  x  .  h  s  x  .  h  .  x  .  h  s  x  s  h  h',
+      },
+      B: {
+        p1: 'D5  -  -  .  Eb5  .  D5  .  C5  -  -  .  Bb4  .  A4  .  G4  -  -  .  A4  .  Bb4  .  C5  .  D5  .  G5  -  -  .',
+        p2: 'Bb3  D4  G4  Bb3  D4  G4  Bb3  D4  A3  C4  F4  A3  C4  F4  A3  C4  Eb4  G4  Bb4  Eb4  G4  Bb4  Eb4  G4  D4  F#4  A4  D4  F#4  A4  D4  F#4',
+        wav: 'G1  -  .  G1  G1  -  .  G1  F1  -  .  F1  F1  -  .  F1  Eb1  -  .  Eb1  Eb1  -  .  Eb1  D1  -  .  D1  D1  -  .  D1',
+        noi: 'x  .  h  s  x  .  h  .  x  .  h  s  x  .  h  h  x  .  h  s  x  .  h  .  x  s  x  s  c  .  .  .',
+      },
+      C: {
+        p1: 'Bb5  -  -  -  A5  -  -  -  G5  -  -  -  F#5  -  -  -  G5  -  -  -  -  -  -  -  -  -  -  -  .  .  .  .',
+        p2: 'D5  .  C5  .  Bb4  .  A4  .  G4  .  F#4  .  Eb4  .  D4  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
+        wav: 'Eb2  -  -  -  -  -  -  -  D2  -  -  -  -  -  -  -  G1  -  -  -  -  -  -  -  D1  -  -  -  D1  -  -  -',
+        noi: 'x  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  x  .  h  .  x  .  h  .  x  s  x  s  c  .  .  .',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'B', 'A', 'C'],
+  },
+
+  dungeon5: {
+    bpm: 108, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.125, vol: 0.13, decay: 0.16, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.1, decay: 0.2, echo: {of: 'p1', rows: 6, volMul: 0.35} },
+      wav: { vol: 0.2, decay: 0.1 },
+      noi: { vol: 0.09 },
+    },
+    patterns: {
+      I: {
+        p1: 'C5  -  -  -  -  -  -  -  Eb5  -  -  -  -  -  -  -  G4  -  -  -  -  -  -  -  Ab4  .  G4  .  F4  .  Eb4  .',
+        wav: 'C2+Eb2+G2  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  Ab1+C2+Eb2  -  -  -  -  -  -  -  G1  -  -  -  G1  -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  h  .  h  h',
+      },
+      A: {
+        p1: 'C5  .  .  .  G4  .  .  .  Eb5  -  -  .  D5  .  C5  .  Bb4  .  .  .  F4  .  .  .  G4  -  -  -  -  -  -  .',
+        wav: 'C2  -  -  -  G1  -  -  -  C2  -  -  -  G1  -  -  -  Bb1  -  -  -  F1  -  -  -  Eb1  -  -  -  G1  -  -  -',
+        noi: 'x  .  .  .  h  .  .  .  s  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  s  .  .  .  h  .  h  .',
+      },
+      B: {
+        p1: 'Ab4  .  C5  .  Eb5  .  Ab5  -  -  .  G5  .  F5  .  Eb5  .  D5  .  F5  .  Ab5  .  G5  -  -  -  -  -  -  -  -  .',
+        wav: 'Ab1  -  -  -  Eb2  -  -  -  Ab1  -  -  -  Eb2  -  -  -  Bb1  -  -  -  F2  -  -  -  G1  -  -  -  D2  -  -  -',
+        noi: 'x  .  .  .  h  .  .  .  s  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  s  .  h  .  h  h  h  .',
+      },
+      C: {
+        p1: 'Eb5  -  -  -  D5  -  -  -  C5  -  -  -  B4  -  -  -  C5  -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
+        wav: 'Ab1  -  -  -  -  -  -  -  G1  -  -  -  -  -  -  -  C2  -  -  -  -  -  -  -  G1  -  -  -  G1  -  -  -',
+        noi: '.  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  x  .  s  .  c  .  .  .',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'B', 'A', 'C'],
+  },
+
+  dungeon6: {
+    bpm: 118, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.14, decay: 0.14, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.1, decay: 0.14 },
+      wav: { vol: 0.26, decay: 0.05 },
+      noi: { vol: 0.14 },
+    },
+    patterns: {
+      I: {
+        p1: 'B4  -  -  -  -  -  -  -  C5  -  -  -  -  -  -  -  B4  -  -  -  -  -  -  -  F5  -  -  -  -  -  -  .',
+        p2: 'F#4  -  -  -  -  -  -  -  G4  -  -  -  -  -  -  -  F#4  -  -  -  -  -  -  -  C5  -  -  -  -  -  -  .',
+        wav: 'B1  -  -  -  B1  -  -  -  C2  -  -  -  C2  -  -  -  B1  -  -  -  B1  -  -  -  F1  -  -  -  F1  -  -  -',
+        noi: 'c  .  .  .  x  .  .  .  x  .  .  .  x  .  .  .  x  .  .  .  x  .  .  .  x  .  x  .  x  s  x  s',
+      },
+      A: {
+        p1: 'B4  .  B4  .  D5  .  C5  .  B4  -  -  .  A4  .  B4  .  C5  .  .  .  B4  .  A4  .  G4  -  -  .  F#4  -  -  .',
+        p2: 'F#4  .  .  .  F#4  .  .  .  G4  .  .  .  G4  .  .  .  E4  .  .  .  E4  .  .  .  D4  .  .  .  C#4  .  .  .',
+        wav: 'B1  .  B1  .  B1  .  B1  .  C2  .  C2  .  C2  .  C2  .  A1  .  A1  .  A1  .  A1  .  G1  .  G1  .  F#1  .  F#1  .',
+        noi: 'x  .  s  .  x  x  s  .  x  .  s  .  x  x  s  .  x  .  s  .  x  x  s  .  x  .  s  .  x  s  x  s',
+      },
+      B: {
+        p1: 'F5  -  -  .  E5  .  D5  .  C5  -  -  .  D5  .  E5  .  F5  .  E5  .  D5  .  C5  .  B4  -  -  -  -  -  -  .',
+        p2: 'C5  -  -  .  B4  .  A4  .  G4  -  -  .  A4  .  B4  .  C5  .  B4  .  A4  .  G4  .  F#4  -  -  -  -  -  -  .',
+        wav: 'F1  .  F1  .  F1  .  F1  .  C2  .  C2  .  C2  .  C2  .  D2  .  D2  .  C2  .  C2  .  B1  .  B1  .  B1  .  B1  .',
+        noi: 'x  .  s  .  x  x  s  .  x  .  s  .  x  x  s  .  x  .  s  .  x  x  s  .  x  s  x  s  c  .  .  .',
+      },
+      C: {
+        p1: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  B5  -  -  -  A5  -  -  -  G5  -  -  -  F#5  -  -  -',
+        p2: 'B3  .  .  .  .  .  .  .  C4  .  .  .  .  .  .  .  D4  -  -  -  C4  -  -  -  B3  -  -  -  C4  -  -  -',
+        wav: 'B1+D2+F#2  -  -  -  -  -  -  -  C2+E2+G2  -  -  -  -  -  -  -  B1  -  -  -  -  -  -  -  F1  -  -  -  F1  -  -  -',
+        noi: 'x  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  x  .  s  .  x  .  s  .  x  s  x  s  c  .  .  .',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'A', 'B', 'C'],
+  },
+
   // Nereth. Faster and darker than `boss`: D Phrygian, tritone-heavy, with a
   // full chromatic descent in C for the last phase.
   finalBoss: {

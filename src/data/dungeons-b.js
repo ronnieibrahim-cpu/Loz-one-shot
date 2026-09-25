@@ -99,7 +99,7 @@ export function installDungeonsB() {
     w: 8, h: 8, floors: 1,
     cell: [15, 11],
     legend: 'dungeonWood',
-    music: 'dungeon',
+    music: 'dungeon5',
     tint: 'cave',
     dungeon: {
       index: 5,
@@ -1310,7 +1310,7 @@ export function installDungeonsB() {
     w: 8, h: 8, floors: 2,
     cell: [15, 11],
     legend: 'dungeonAbyss',
-    music: 'dungeon2',
+    music: 'dungeon6',
     tint: 'cave',
     dungeon: {
       index: 6,
