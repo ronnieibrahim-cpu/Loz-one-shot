@@ -144,7 +144,7 @@ export const REQUIRED_SPRITES = {
     ...seq('boss_rootmaw_', 3), ...seq('boss_rootmaw_open_', 2), 'boss_rootmaw_hurt',
     ...seq('boss_brinehulk_', 3), ...seq('boss_brinehulk_open_', 2), 'boss_brinehulk_hurt',
     ...seq('boss_thalassor_', 3), 'boss_thalassor_hurt',
-    ...seq('boss_nereth_', 4), 'boss_nereth_hurt',
+    ...seq('boss_nereth_', 4), ...seq('boss_nereth_open_', 2), 'boss_nereth_hurt',
   ],
 
   minibosses: [
@@ -163,6 +163,7 @@ const SEASONS_BOSS_CANVAS = {
   boss_wyverna: [55, 67],    // Aquamentus given fins (drawn over, sprites-bosses.js)
   boss_rootmaw: [62, 60],    // a Seasons tree clump given a trunk and a maw
   boss_brinehulk: [48, 48],  // a salt golem with Seasons' boulders for fists
+  boss_nereth: [43, 48],     // General Onox crowned and drowned
   boss_gloomtide: [48, 45],  // Digdogger turned to muck (drawn over, sprites-bosses.js)
 };
 

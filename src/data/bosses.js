@@ -919,6 +919,7 @@ export function installBosses() {
     hp: 80, damage: 4, pal: 'abyss', speed: 0.6, rate: 9,
     w: 32, h: 32, hb: { x: 4, y: 8, w: 24, h: 22 },
     frames: ['boss_nereth_0', 'boss_nereth_1', 'boss_nereth_2', 'boss_nereth_3'],
+    openFrames: ['boss_nereth_open_0', 'boss_nereth_open_1'],
     hurtFrame: 'boss_nereth_hurt',
     intro: 120, shell: true, terrain: 'any', drops: 'none',
     // Read by `tools/actor-runtime.mjs`'s `dBoss` — see the matching comment

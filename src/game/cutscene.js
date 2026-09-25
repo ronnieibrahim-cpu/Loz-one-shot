@@ -54,6 +54,7 @@ import {
   CUTSCENE_READ_CPS, CUTSCENE_READ_LEAD_FRAMES,
 } from '../data/feel.js';
 import { spawnEntity } from './entity.js';
+import { bossRig } from './enemy.js';
 import { giveItem, setFlag } from './progress.js';
 import { DIR_VEC } from './entity.js';
 import { moveEntity } from './entity.js';
@@ -242,7 +243,10 @@ export function runCutscene(game, steps, data = {}) {
         }
         const elapsed = shown.total - shown.t;
         const name = shown.art[Math.floor(elapsed / CUTSCENE_SHOW_ANIM_FRAMES) % shown.art.length];
-        const c = sprites.bake(name, shown.pal);
+        // A boss frame drawn in layers (its rig, src/game/enemy.js) is flattened
+        // into one canvas in its own colours; the step's `pal` is for one-palette art.
+        const rig = bossRig(name);
+        const c = rig ? flattenRig(rig) : sprites.bake(name, shown.pal);
         if (c) {
           const w = c.width * shown.scale, h = c.height * shown.scale;
           const drift = shown.rise
@@ -268,4 +272,18 @@ export function runCutscene(game, steps, data = {}) {
       }
     },
   };
+}
+
+const flatRigs = new Map();
+function flattenRig(rig) {
+  const key = rig.layers[0] + '|' + sprites.tintKey;
+  let c = flatRigs.get(key);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = rig.w; c.height = rig.h;
+    const x = c.getContext('2d');
+    for (const l of rig.layers) x.drawImage(sprites.bake(l), 0, 0);
+    flatRigs.set(key, c);
+  }
+  return c;
 }

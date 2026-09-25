@@ -274,7 +274,7 @@ const CUTSCENES = {
     { music: null },
     { fade: 'out' },
     { fade: 'in' },
-    { show: { art: 'boss_nereth_0', scale: 2, rise: false, pal: 'abyss' },
+    { show: { art: 'boss_nereth_0', scale: 2, rise: false },
       text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
     { say: 'Nereth: You came down. Everything comes down eventually. That is the only law I have ever needed.' },
     { say: 'Nereth: I did not break the Bell to be cruel, wader. I broke it because the sea was told what to do for a thousand years and never once asked.' },

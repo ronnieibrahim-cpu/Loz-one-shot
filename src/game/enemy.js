@@ -43,6 +43,9 @@ import { BOSS_ART_RIG } from '../data/sprites-bosses.js';
 
 // Every boss frame drawn at its own size rather than the entity's cell.
 const BOSS_RIG = { ...RIPPED_RIG, ...BOSS_ART_RIG };
+
+/** The rig for a boss frame drawn at its own size and in layers, or null. */
+export function bossRig(name) { return BOSS_RIG[name] || null; }
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';

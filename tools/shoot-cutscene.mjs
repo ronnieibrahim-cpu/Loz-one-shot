@@ -94,7 +94,7 @@ if (NERETH) {
     g.mode = 'play';
     delete g.progress.flags.heardNereth;
     // Straight into the throne room. The boss spawns with the room.
-    g.enterMap('d6', 1, 3, 1, 80, 100, 'up', { instant: true });
+    g.enterMap('d6', 1, 3, 0, 200, 150, 'up', { instant: true });
     const hasBoss = !!(g.boss || g.entities.some(e => e.isBoss));
     // The held pose is `intro: 120` frames; the scene fires as it ends.
     await new Promise(res => {
@@ -105,7 +105,7 @@ if (NERETH) {
     return { hasBoss, mode: g.mode, track: g.audio.trackName || null };
   });
   console.log(`  nereth: boss present=${r.hasBoss} mode=${r.mode} track=${r.track}`);
-  if (!r.hasBoss) problems.push('no boss in d6/1,3,1 — nothing to introduce');
+  if (!r.hasBoss) problems.push('no boss in d6/1,3,0 — nothing to introduce');
   if (r.mode !== 'cutscene') problems.push(`nerethIntro did not fire: mode is '${r.mode}', not 'cutscene'`);
 
   // Drive it to the end and confirm it hands over to the final boss theme,
