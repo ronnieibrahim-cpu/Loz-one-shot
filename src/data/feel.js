@@ -1762,3 +1762,40 @@ export const GEL_INCH_FRAMES = 8;
 /** f — a gel shivers this long before it hops. derived: gel.s gel_state8,
  *  counter1 $30. */
 export const GEL_SHAKE_FRAMES = 48;
+
+/** px/f — a keese in flight. derived: keese.s keese_subid00_state8, SPEED_c0. */
+export const KEESE_SPEED = 0.75;
+
+/** f — a keese's first rest. derived: keese.s keese_initializeSubid, counter1 $20. */
+export const KEESE_FIRST_REST = 32;
+
+/** [count, count] — a flight lasts BASE + random(SPAN) counts, each count two
+ *  frames (the counter ticks on alternate frames). derived: keese.s
+ *  keese_subid00_state8, counter1 = $c0 + (random & $3f). */
+export const KEESE_FLIGHT_BASE = 0xc0;
+export const KEESE_FLIGHT_SPAN = 0x40;
+
+/** 1-in-n — on each counted frame of a flight, the chance a keese veers onto a
+ *  new random angle. derived: keese.s keese_subid00_state9 (random & $0f). */
+export const KEESE_VEER_ODDS = 16;
+
+/** f — gliding to a halt, a keese still moves for this long. derived: keese.s
+ *  keese_subid00_stateA, moves while counter1 < $68. */
+export const KEESE_GLIDE_FRAMES = 0x68;
+
+/** [px/f] — its speed through the glide, one entry per 16 frames. derived:
+ *  keese.s keese_updateDeceleration @speeds (SPEED_c0 80 40 40 20 20 20 20). */
+export const KEESE_SLOW_SPEEDS = [0.75, 0.5, 0.25, 0.25, 0.125, 0.125, 0.125, 0.125];
+
+/** [mask] — and its wings, which beat only on frames where (frame & mask) is
+ *  zero. derived: keese.s keese_updateDeceleration @bits. */
+export const KEESE_SLOW_BEAT = [0, 0, 1, 1, 3, 3, 7, 0];
+
+/** f — the glide ends, and the rest begins, here. derived: keese.s
+ *  keese_subid00_stateA, full stop at counter1 $7f. */
+export const KEESE_STOP_FRAMES = 0x7f;
+
+/** [f, f] — a rest lasts BASE + random(SPAN). derived: keese.s
+ *  keese_subid00_stateA, counter1 = $20 + (random & $7f). */
+export const KEESE_REST_BASE = 0x20;
+export const KEESE_REST_SPAN = 0x80;

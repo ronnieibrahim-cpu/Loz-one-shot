@@ -1129,6 +1129,25 @@ export function moveAngle(e, g, angle, speed) {
 }
 
 /**
+ * Fly one frame along `angle`, over anything (objectApplySpeed, which knows
+ * no tiles), turning back off the room's edge as ecom_bounceOffScreenBoundary
+ * does: a side edge mirrors the angle left-right, a top or bottom edge
+ * up-down. Returns the angle, which the edge may have changed.
+ */
+export function flyAngle(e, g, angle, speed) {
+  const r = angle / 32 * 2 * Math.PI;
+  const s = sp(speed);
+  const dx = Math.round(s * Math.sin(r)), dy = Math.round(-s * Math.cos(r));
+  const maxX = sp(g.room.pw - e.w), maxY = sp(g.room.ph - e.h);
+  let fx = e.fx + dx, fy = e.fy + dy, a = angle;
+  if (fx < 0 || fx > maxX) { a = (32 - a) % 32; fx = Math.max(0, Math.min(maxX, fx)); }
+  if (fy < 0 || fy > maxY) { a = (48 - a) % 32; fy = Math.max(0, Math.min(maxY, fy)); }
+  e.fx = fx; e.fy = fy;
+  e.dir = dirOfAngle(a);
+  return a;
+}
+
+/**
  * A hop off the ground: objectSetSpeedZ then objectUpdateSpeedZ_paramC each
  * frame. `vz` is the launch in px/f (upward), `gravity` what is taken off it
  * each frame. Returns true while still in the air.

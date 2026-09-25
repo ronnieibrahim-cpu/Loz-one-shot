@@ -6,7 +6,7 @@ import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
   driftWithTide, beginStep, advanceStep, OPPOSITE,
-  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall,
+  randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle,
 } from '../game/enemy.js';
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
@@ -19,6 +19,8 @@ import {
   HOP_ODDS_MASK, SLIME_HOP_SPEED, SLIME_HOP_LAUNCH, SLIME_HOP_GRAVITY,
   ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET,
   GEL_HOLD_FRAMES, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES,
+  KEESE_SPEED, KEESE_FIRST_REST, KEESE_FLIGHT_BASE, KEESE_FLIGHT_SPAN, KEESE_VEER_ODDS,
+  KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
 } from './feel.js';
 
 export function installEnemies() {
@@ -263,7 +265,7 @@ export function installEnemies() {
   // --- Keese: erratic flier, ignores terrain -----------------------------
   defineEnemy('keese', {
     light: true,
-    hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
+    hp: 1, damage: 1, pal: 'shadow', rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
     // Never drawn today, for the same hp-1 reason as gel's.
     hurtFrame: 'keese_hurt',
@@ -284,21 +286,47 @@ export function installEnemies() {
     hurtBox: { x: 2, y: 4, w: 12, h: 8 },
     z: 8,
     drops: 'common',
+    // Seasons' keese (keese.s, subid 0): rests, then flies off at a random
+    // angle over walls and all, now and then veering; after a long flight it
+    // glides to a halt, its wings slowing, and rests again. It turns back off
+    // the room's edge. Nothing about it aims at Link.
+    port: 'keese.s',
+    speed: KEESE_SPEED,
     ai(e, g) {
-      // Rests, then darts toward Link in bursts.
-      if (e._rest == null) e._rest = 60;
-      if (e._rest > 0) {
-        // Same +1 phase correction hop() needed (src/game/enemy.js):
-        // Enemy.update() decrements attackTime at the top of the frame,
-        // before this ai() runs, while _rest's own trigger decrement
-        // happens here, later in the same frame — one tick out of phase
-        // if both were keyed to the same countdown value. Measured with a
-        // scratch probe the same way hop()'s own fix was, not assumed to
-        // carry over untested.
-        if (e._rest === ENEMY_ATTACK_FRAMES + 1) e.attackTime = ENEMY_ATTACK_FRAMES;
-        e._rest--; if (e._rest === 0) e._dash = 70; return;
+      switch (e.aiState) {
+        case 0:                                   // keese_initializeSubid
+          e.aiState = 'rest'; e.aiTimer = KEESE_FIRST_REST; e.still = true; return;
+        case 'rest':                              // subid00 state 8
+          e.still = true;
+          if (--e.aiTimer > 0) return;
+          e.angle = g.rng.int(32);
+          e.speed = KEESE_SPEED;
+          e.aiTimer = KEESE_FLIGHT_BASE + g.rng.int(KEESE_FLIGHT_SPAN);
+          e.aiState = 'fly'; e.still = false;
+          return;
+        case 'fly':                               // state 9
+          e.angle = flyAngle(e, g, e.angle, e.speed);
+          // The flight counter ticks on alternate frames only.
+          if (e.tick & 1) return;
+          if (--e.aiTimer <= 0) { e.aiState = 'slow'; e.aiTimer = 0; return; }
+          if (g.rng.int(KEESE_VEER_ODDS) === 0) e.angle = g.rng.int(32);
+          return;
+        case 'slow': {                            // state $0a
+          const t = e.aiTimer;
+          // The new speed is set AFTER this frame's move, as the cartridge
+          // orders it, so it is carried to the next frame.
+          if (e.nextSpeed != null) { e.speed = e.nextSpeed; e.nextSpeed = null; }
+          if (t < KEESE_GLIDE_FRAMES) e.angle = flyAngle(e, g, e.angle, e.speed);
+          if ((t & 15) === 0) e.nextSpeed = KEESE_SLOW_SPEEDS[t >> 4];
+          // The wings beat slower and slower: keese_updateDeceleration @bits.
+          e.still = !!(e.tick & KEESE_SLOW_BEAT[t >> 4]);
+          if (++e.aiTimer >= KEESE_STOP_FRAMES) {
+            e.aiState = 'rest'; e.still = true;
+            e.aiTimer = KEESE_REST_BASE + g.rng.int(KEESE_REST_SPAN);
+          }
+          return;
+        }
       }
-      if (e._dash > 0) { e._dash--; bounceDiag(e, g, { speed: 1.15 }); if (e._dash === 0) e._rest = 50; }
     },
   });
 
