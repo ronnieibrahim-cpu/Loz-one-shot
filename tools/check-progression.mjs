@@ -97,11 +97,16 @@ function defAt(name, tide) {
 }
 
 /** Everywhere on the overworld a warp leads, screen by screen. */
-const WARPS = [];                       // { screen, map }
+const WARPS = [];                       // { screen, map, x, y }
 for (const [k, d] of Object.entries(m.roomDefs)) {
-  for (const w of d.warps || []) if (w.to && w.to.map) WARPS.push({ screen: k, map: w.to.map });
+  for (const w of d.warps || []) if (w.to && w.to.map) WARPS.push({ screen: k, map: w.to.map, x: w.x, y: w.y });
 }
-const screensLeadingTo = (mapId) => WARPS.filter(w => w.map === mapId).map(w => w.screen);
+const screensLeadingTo = (mapId) => [...new Set(WARPS.filter(w => w.map === mapId).map(w => w.screen))];
+// THE DOOR, NOT THE SCREEN (S154). A dungeon door is a keyhole now, and the
+// screen in front of a locked door is as reachable as it ever was — so a
+// dungeon counts as reached only when one of its warp TILES is in the flood,
+// which a shut keyhole is not until its key is held (`walkable` below).
+const doorsLeadingTo = (mapId) => WARPS.filter(w => w.map === mapId);
 
 // --------------------------------------------------------------------------
 // What each dungeon hands over — read out of the dungeon, not written here.
@@ -132,6 +137,7 @@ const DUNGEONS = dungeons().map(d => ({
   name: d.name,
   essence: d.dungeon.essence,
   entrances: screensLeadingTo(d.id),
+  doors: doorsLeadingTo(d.id),
   grants: grantsOf(d.id),
 }));
 
@@ -169,6 +175,14 @@ for (const map of MAPS.values()) {
       if (TRADER_KINDS.has(type) && Array.isArray(o.deals)) {
         for (const d of o.deals) CHAIN.push({ where, stage: d.stage, deal: d });
       }
+      // A STORY BEAT (S154): how every dungeon key is handed over. The scene
+      // sets its own flag, which is the key; `beat.flag` names it.
+      if (o.beat) {
+        const steps = STORY_CUTSCENES[o.beat.scene] || [];
+        const beatFlags = [...new Set([o.beat.flag, ...steps.filter(st => st.flag).map(st => st.flag)])];
+        OFFERS.push({ where, need: o.beat.need || 0, items: [], flags: beatFlags,
+          label: `${map.name}: ${o.beat.scene} at ${o.beat.need || 0} Essence(s) -> ${beatFlags.map(f => `'${f}'`).join(', ')}` });
+      }
       if (type === 'makuTree' && o.scene) {
         // A cutscene hands over its own items and sets its own flags, so both
         // are read out of the scene. The Master Sword is granted HERE and
@@ -198,7 +212,8 @@ function walkable(name, tide, held, flags) {
   const d = defAt(name, tide);
   if (!d) return false;
   for (const [bit, item] of GATE_ITEM) if ((d.flags & bit) && holds(held, item)) return true;
-  if (d.openFlag) return flags.has(d.openFlag);
+  // A keyhole is open to a player holding its key: he turns it on arrival.
+  if (d.openFlag) return flags.has(d.openFlag) || (!!d.keyFlag && flags.has(d.keyFlag));
   // THIS TOOL ARRIVED ON A BRANCH THAT NEVER SAW THE COLLISION CONSOLIDATION,
   // so it was born with the tenth private copy of "is this tile solid" — the
   // one the other nine had just been taken off. It is not a style fix. The
@@ -250,8 +265,11 @@ function flood(held, flags) {
       seen.add(k); q.push([trk, tx, ty]);
     }
   }
-  return new Set([...seen].map(k => k.split(':')[0]));
+  const rooms = new Set([...seen].map(k => k.split(':')[0]));
+  rooms.tiles = seen;
+  return rooms;
 }
+const doorReached = (d, reached) => d.doors.some(w => reached.tiles.has(`${w.screen}:${w.x},${w.y}`));
 
 // --------------------------------------------------------------------------
 // The run: a new game, and then only what the world lets you have.
@@ -319,7 +337,7 @@ for (let round = 1; round <= DUNGEONS.length + OFFERS.length + 2; round++) {
   if (gained) continue;                  // re-flood: a flag may have opened a road
 
   // Every dungeon whose door is now reachable and which is not done yet.
-  const open = DUNGEONS.filter(d => !cleared.has(d.id) && d.entrances.some(s => reached.has(s)));
+  const open = DUNGEONS.filter(d => !cleared.has(d.id) && doorReached(d, reached));
   if (!open.length) break;
   for (const d of open) {
     enteredWith.set(d.id, new Map(held));
@@ -375,6 +393,26 @@ for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
   if (!finalReach.has(`0,${x},${y}`)) unreached.push(`0,${x},${y}`);
 }
 check('a finished game can walk the whole overworld', unreached.length === 0, unreached.join(','));
+
+// --- 4b. every keyed door is shut without its key (S154) -------------------
+//
+// A finished game holding everything but ONE key must not reach that key's
+// door — otherwise the keyhole is scenery and the order it promises is not
+// enforced. Which doors are keyed is read off the door tiles, not listed here.
+for (const d of DUNGEONS) {
+  const keys = new Set();
+  for (const w of d.doors) {
+    const room = getRoom('overworld', ...w.screen.split(',').map(Number));
+    const def = defAt(room.baseName(w.x, w.y), 1);
+    if (def && def.keyFlag) keys.add(JSON.stringify([def.keyFlag, def.openFlag]));
+  }
+  for (const k of keys) {
+    const [keyFlag, openFlag] = JSON.parse(k);
+    const without = new Set([...flags].filter(f => f !== keyFlag && f !== openFlag));
+    check(`${d.id.toUpperCase()}'s door stays shut without '${keyFlag}'`,
+      !doorReached(d, flood(held, without)), 'reached without its key');
+  }
+}
 
 // --- 5. the order is a real order -----------------------------------------
 // Every dungeon must be entered in a strictly later round than one whose item

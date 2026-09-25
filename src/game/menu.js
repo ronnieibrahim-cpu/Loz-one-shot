@@ -12,11 +12,12 @@ import {
   CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm,
   caseSize, slotOpen, equippedIn,
 } from './scrimshaw.js';
-import { HEART_UNITS } from './progress.js';
+import { HEART_UNITS, flag } from './progress.js';
 import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
+import { DUNGEON_KEYS } from '../data/keys.js';
 import { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 
@@ -660,6 +661,15 @@ export class Menu {
       sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), x + (i - 1) * 18, y, { pal: got ? 'essence' + i : 'uidark' });
     }
     y += 19;
+    // THE SIX DUNGEON KEYS (S154), beside the Essences they open the way to.
+    // Only the keys held are drawn, in the order of the dungeons.
+    let kx = x;
+    for (const k of DUNGEON_KEYS) {
+      if (!flag(p, k.flag)) continue;
+      sprites.draw(ctx, k.icon, kx, y - 4);
+      kx += 12;
+    }
+    if (kx > x) y += 12;
     drawText(ctx, `Hearts ${Math.ceil(p.hearts / HEART_UNITS)}/${Math.ceil(p.maxHearts / HEART_UNITS)}`
       + `   Pieces ${p.heartPieces}/4`, x, y, INK);
     y += 10;

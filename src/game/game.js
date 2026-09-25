@@ -50,6 +50,7 @@ import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu, invalidateWorldMap } from './menu.js';
 import { Camera } from './camera.js';
 import { TRADE_ITEMS, tradeName, tradeIcon } from '../data/trade.js';
+import { keyByFlag, keyFor, migrateKeys } from '../data/keys.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
@@ -64,7 +65,7 @@ import {
   LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
-  DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED,
+  DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
   LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
@@ -166,6 +167,7 @@ export class Game {
     if (!p) return false;
     this.slot = slot;
     this.progress = p;
+    migrateKeys(p);
     seedGlobal(p.seed);
     resetRooms();
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
@@ -751,13 +753,54 @@ export class Game {
         }
       }
     }
-    return false;
+    // Leaning on a keyhole is how Seasons turns a key in it.
+    return this.tryKeyhole(tx, ty);
+  }
+
+  /**
+   * A DUNGEON KEYHOLE, Oracle of Seasons' way (S154). Lean on it — or press A
+   * at it — holding its key, and the key leaves Link's hands, rises out of the
+   * lock and hangs there, the ground rumbles, and the door opens for good.
+   * Without the key it says what the lock is shaped for. The key is kept.
+   *
+   * The cartridge's version is code/interactableTiles.s nextToOverworldKeyhole:
+   * the same twenty frames of pushing as a block (PUSH_DELAY_FRAMES), then
+   * SND_OPENCHEST, then the key sprite (KEY_RISE_* in feel.js), then the
+   * door's own opening scene. Opening sets the keyhole's `openFlag`, and
+   * `applyStoryGates` does the rest — here and in every other room the same
+   * key opens, the moment they are walked into.
+   */
+  tryKeyhole(tx, ty) {
+    const room = this.room;
+    if (!room || !room.inBounds(tx, ty)) return false;
+    const def = getTileDef(room.baseName(tx, ty));
+    if (!def || !def.keyFlag || !def.openFlag) return false;
+    if (flag(this.progress, def.openFlag)) return false;
+    const key = keyByFlag(def.keyFlag);
+    if (!key || !flag(this.progress, key.flag)) {
+      this.audio.sfx('deny');
+      if (def.openDeny) this.say(def.openDeny);
+      return true;
+    }
+    // The key rises over the middle of the lock: a keyhole drawn across two
+    // cells (a dungeon door's) is centred on their seam.
+    const same = (x) => room.inBounds(x, ty) && getTileDef(room.baseName(x, ty))?.keyFlag === def.keyFlag;
+    const cx = same(tx - 1) ? tx * TILE : same(tx + 1) ? (tx + 1) * TILE : tx * TILE + TILE / 2;
+    this.startCutscene([
+      { sfx: 'chest' },
+      { lift: { art: key.icon, x: cx - TILE / 2, y: ty * TILE } },
+      { sfx: 'rumble', shake: [2, KEYHOLE_OPEN_FRAMES], wait: KEYHOLE_OPEN_FRAMES },
+      { flag: def.openFlag, do: (g) => g.applyStoryGates() },
+      { sfx: 'secret' },
+    ]);
+    return true;
   }
 
   /** A-button interaction with a tile: locked doors, readable fixtures. */
   tileInteract(tx, ty, player) {
     const room = this.room;
     if (!room.inBounds(tx, ty)) return false;
+    if (this.tryKeyhole(tx, ty)) return true;
     const name = room.baseName(tx, ty);
     const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
     if (name === 'dDoorLocked') {
@@ -1183,6 +1226,22 @@ export class Game {
     this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
   }
 
+  /**
+   * A dungeon key handed over (S154): it goes into the save and is held
+   * overhead with the item jingle, the same beat as presentItem. A key is not
+   * an item — it is never on a button — so it is a flag, read by its keyhole
+   * and drawn on the quest screen.
+   */
+  presentKey(map) {
+    const key = keyFor(map);
+    if (!key) return;
+    setFlag(this.progress, key.flag);
+    this.audio.jingle('itemGet');
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: key.icon, t: ITEM_PRESENT_FRAMES };
+    this.say(`You got the ${key.name}!\n${key.desc}`);
+  }
+
   autoEquip(id) {
     const p = this.progress;
     const def = ITEMS[id];
@@ -1367,7 +1426,9 @@ export class Game {
   }
 
   startCutscene(id, o = {}) {
-    const cs = CUTSCENES[id] || (o.fallback ? CUTSCENES[o.fallback] : null);
+    // A scene is a name in CUTSCENES, or a list of steps built on the spot
+    // (the keyhole's, which depends on where the keyhole is).
+    const cs = Array.isArray(id) ? id : CUTSCENES[id] || (o.fallback ? CUTSCENES[o.fallback] : null);
     if (!cs) return false;
     this.cutscene = runCutscene(this, cs, o.data || {});
     this.mode = 'cutscene';

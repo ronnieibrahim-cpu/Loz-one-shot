@@ -111,6 +111,7 @@ ripper credit in the header. The current set:
 | `src/data/tiles-dungeon-themes.js` | `tools/rip-dungeon-themes.py` |
 | `src/data/tiles-maku.js` | `tools/rip-maku.py` |
 | `src/data/screens-seasons.js` | `tools/rip-screens.py` (title sheet + still screens cut from the footage by `tools/grab-footage-frames.py`) |
+| `src/data/sprites-keys.js` | `tools/rip-keys.py` (the six dungeon keys, from the Oracles' key-item graphics in `assets/keys/`) |
 | `src/data/sprites-bosses-seasons.js` | `tools/rip-bosses.py` (the cartridge's own boss graphics, frame layouts and palettes, from `assets/bosses/oracles-disasm/`) |
 | `src/data/music-seasons.js` | `tools/rip-music.py` (Seasons' own channel scripts, from oracles-disasm copied into `assets/music/`; played by `src/core/gbsound.js`) |
 

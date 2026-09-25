@@ -179,7 +179,7 @@ const CUTSCENES = {
     { say: 'Farore: The Moon Conch. Sound it and the tide will answer: LOW, then MID, then HIGH, and around again.' },
     { say: 'Farore: You will need a blade too. There is one in the village chest, and the village will be glad to be rid of it.' },
     { give: { item: 'sword', level: 1 } },
-    { say: 'Farore: Go east to the Shallows. Sound the conch at low water and the sandbar will carry you to the reef.' },
+    { say: 'Farore: Before anything, go and see the Maku Tree. Her hollow is at the top of the square. She has been keeping something for you.' },
     { flag: 'sawIntro' },
     { music: 'village' },
   ],
@@ -245,6 +245,16 @@ const CUTSCENES = {
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------
+  // THE FIRST MEETING (S154): the Barnacle Key, the Gnarled Key's role. The
+  // tree's `beat` plays this the first time she is spoken to; the last step
+  // hands the key over the way every item is handed over, held overhead.
+  makuKey: [
+    { say: 'Maku Tree: Hoo... a wader, with a shard of the Bell humming in his pocket. Farore sent you. Good.' },
+    { say: 'Maku Tree: When the sea went wrong, the village stopped up the Tidewash Grotto with stone and gave the key to my roots to mind. They have minded it long enough.' },
+    { say: 'Maku Tree: The Grotto is east, out on the Shallows. Sound the conch at low water and the sandbar will carry you. Put this in the door and lean on it.' },
+    { do: (g) => g.presentKey('d1') },
+  ],
+
   makuSatchel: [
     { say: 'Maku Tree: Hoo hoo! One Essence and my roots can feel the Bell again.' },
     { say: 'Maku Tree: Take the Rod. It was cut from the Bell that used to keep the tide honest.' },

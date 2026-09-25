@@ -34,6 +34,17 @@ export const ROUTE = [
   // press: this is where the conch and the sword come from.
   ['newgame', 3000],
 
+  // THE MAKU TREE FIRST (S154). Farore's last line sends the player to her,
+  // and her first word is the Barnacle Key: the Grotto's door is a keyhole
+  // now, and nothing opens it but that key. Her hollow is the top of the
+  // square the new game opens in; her grove's way out is its open bottom edge.
+  ['goto', 4, 1, 900],
+  ['wait', 90],
+  ['beat', 'keyD1', 2000],
+  ['dialogue', 600],
+  ['goto', 5, 7, 600],
+  ['wait', 90],
+
   // ---- THREE PIECES OF HEART, AND WHY THE ROUTE NOW DETOURS FOR THEM -----
   //
   // Gohmaraq is not winnable at three hearts by a player who walks in the
@@ -122,6 +133,11 @@ export const ROUTE = [
   // rock they are cut into (the two cells above it are now the cliff), so this
   // directive moves with it. There is a crab on this screen; it is walked past
   // rather than fought, which is what a player does.
+  //
+  // S154: THE DOOR IS SHUT until the Barnacle Key is turned in it. Stand
+  // below the left half and lean up into it, Seasons' way; the key rises out
+  // of the lock and the door opens for good. Then the doorway is a doorway.
+  ['keyhole', 4, 3, 'up', 'openedD1', 600],
   ['goto', 4, 2, 600],
   ['wait', 60],
   ['dialogue', 200],

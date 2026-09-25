@@ -14,6 +14,8 @@
 //     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
 //     openTo: 'rockFloorDk',               //   carries this flag (see below)
 //     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
+//     keyFlag: 'keyD1',                    // a KEYHOLE: holding this flag and
+//                                          //   pushing in sets `openFlag`
 //   }
 //
 // STORY GATES
@@ -24,6 +26,11 @@
 //   changes that. `Game.applyStoryGates` is the whole implementation and it
 //   runs alongside `restoreRoomState`, so a story gate opens the moment you
 //   walk in rather than when you touch it.
+//
+//   A KEYHOLE is a story gate with `keyFlag` as well: the player who holds
+//   that flag (a dungeon key, src/data/keys.js) opens it himself by leaning on
+//   it, Seasons' way (`Game.tryKeyhole`), and that sets `openFlag`. Every tool
+//   that floods counts a keyhole open once the key is held.
 //
 //   It exists because a region can be owed to the STORY rather than to an
 //   item, and expressing that as an item flag is how a progression lock gets
@@ -202,6 +209,11 @@ export function registerTiles(defs) {
       openFlag: def.openFlag || null,
       openTo: def.openTo || null,
       openDeny: def.openDeny || null,
+      // A KEYHOLE is a story gate the player opens himself: holding the flag
+      // `keyFlag` names (a dungeon key, see src/data/keys.js) and pushing into
+      // the tile sets `openFlag`. Named here for the same reason as the three
+      // above it.
+      keyFlag: def.keyFlag || null,
       // THE ORACLE WALL RING. A wall tile in a dungeon built at Oracle room
       // size (`cell: [15, 11]` on its map) draws the outer ring of every room
       // from this set of pieces — four corners, four runs and the jambs that

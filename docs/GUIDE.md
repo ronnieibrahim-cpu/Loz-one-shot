@@ -203,8 +203,10 @@ a lot in both.
 **The square** (`overworld/0,4,7`). Two doors and three people who matter:
 
 - **The Maku Tree** — the door at the top of the screen, tile (4,1), leading to
-  `houseMaku/0,0,0`. She is asleep. She will say `makuWait`: bring one Essence
-  and something of the Bell's. Farore is in here too, at (7,4), and will tell
+  `houseMaku/0,0,0`. **Go here first.** Her first word to you is the
+  **Barnacle Key** (`makuKey`), the key to the Tidewash Grotto: every dungeon
+  door is locked with its own key now, Oracle of Seasons' way (S154). After
+  that she will say `makuWait`: bring one Essence and something of the Bell's. Farore is in here too, at (7,4), and will tell
   you what the Bell actually is.
 - **A village house** — tile (2,4), leading to `houseHearth/0,0,0`. A small
   rupee pickup on the floor at (2,4) and two people who explain the tide better
@@ -253,7 +255,9 @@ at tile (3,2) leads to `cave1/0,0,0`, the **Bluff Grotto**. Inside:
 From the square, east to Village East (`overworld/0,5,7`), then south to
 Driftwood Strand (`overworld/0,5,8`) and east along the strand: East Strand
 (`0,6,8`), Dune Crossing (`0,7,8`), **Grotto Mouth** (`0,8,8`). That is Dungeon
-1's door, at tile (4,1).
+1's door, at tile (4,1). It is stopped with a stone slab with a keyhole in it:
+stand below it and lean up into it holding the Barnacle Key, and the key turns
+and the door opens for good.
 
 Detours worth taking first, all of them reachable with nothing but the conch:
 

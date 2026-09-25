@@ -1523,14 +1523,69 @@ const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
 // crown. It is the tile the room actually has beside the gate, not the one the
 // region is named after — see `Room.underGround` for the same problem one
 // scale down.
+//
+// `key` (S154): the door is SHUT until its dungeon key is turned in it. The
+// block's bottom row is drawn with the doorway stopped by a slab carrying a
+// keyhole across the seam, and each shut cell is a keyhole story gate
+// (`keyFlag`/`openFlag`, src/world/tileset.js) that becomes the open doorway
+// cell above it once the key has been turned. The slab is DERIVED from each
+// door's own drawn doorway (`shutDoorway`), so it is the same shape as the arch
+// it stops and in the door's own colours. The Abyssal Keep's door has no key:
+// its lock is the seal on the road to it (`keepSeal`), which the sixth key opens.
 const PORTALS = {
-  portalD1: { pal: ['#e8d0a0', '#c0a068', '#8c6c40', '#241810'], ground: 'sand' },
-  portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral' },
-  portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud' },
-  portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand' },
-  portalD5: { pal: ['#d0b890', '#98764c', '#5c4028', '#140c08'], ground: 'sand' },
+  portalD1: { pal: ['#e8d0a0', '#c0a068', '#8c6c40', '#241810'], ground: 'sand', key: 'keyD1',
+    deny: 'The door is stopped with stone.\nIts keyhole is crusted with barnacles.' },
+  portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral',
+    deny: 'The door is stopped with stone.\nThe keyhole branches like coral.' },
+  portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud',
+    deny: 'The door is stopped with stone.\nPeat has silted up round its keyhole.' },
+  portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand',
+    deny: 'The door is stopped with stone.\nIts keyhole is cut square, for iron.' },
+  portalD5: { pal: ['#d0b890', '#98764c', '#5c4028', '#140c08'], ground: 'sand',
+    deny: 'The door is stopped with stone.\nMoss grows thick in its keyhole.' },
   portalD6: { pal: ['#8c9cd0', '#4c5c94', '#2c3458', '#06080f'], ground: 'sandRust' },
 };
+
+const artRows = (a) => a.trim().split('\n').map(r => r.trim());
+
+/**
+ * The doorway of a portal's bottom row, stopped with a slab and a keyhole.
+ *
+ * The doorway is the dark (index 3) region that touches the seam between the
+ * two bottom cells; it is filled with the door's lightest-but-one ink, its
+ * border kept as outline, and a keyhole is cut across the seam where the two
+ * halves meet — Seasons' keyholes sit in the middle of the thing they open.
+ * Returns the two cells' art.
+ */
+function shutDoorway(bl, br) {
+  const g = artRows(bl).map((r, y) => (r + artRows(br)[y]).split(''));
+  const H = g.length, W = g[0].length;
+  const inDoor = new Set(), q = [];
+  for (let y = 2; y < H - 1; y++) for (const x of [W / 2 - 1, W / 2]) {
+    if (g[y][x] === '3') { inDoor.add(y * W + x); q.push([x, y]); }
+  }
+  while (q.length) {
+    const [x, y] = q.pop();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= W || ny < 2 || ny >= H - 1) continue;
+      if (g[ny][nx] !== '3' || inDoor.has(ny * W + nx)) continue;
+      inDoor.add(ny * W + nx); q.push([nx, ny]);
+    }
+  }
+  const edge = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    .some(([dx, dy]) => !inDoor.has((y + dy) * W + (x + dx)));
+  for (const k of inDoor) {
+    const x = k % W, y = (k - x) / W;
+    if (!edge(x, y)) g[y][x] = '1';
+  }
+  const hole = ['.33.', '3333', '3333', '.33.', '.33.', '3333'];
+  hole.forEach((r, i) => r.split('').forEach((c, j) => {
+    if (c === '3') g[6 + i][W / 2 - 2 + j] = '3';
+  }));
+  const half = (x0) => '\n' + g.map(r => r.slice(x0, x0 + W / 2).join('')).join('\n');
+  return [half(0), half(W / 2)];
+}
 
 /** Tiledefs and the block registry for the six dungeon doors. */
 function installDungeonPortals() {
@@ -1550,6 +1605,18 @@ function installDungeonPortals() {
         cells.push(tile);
       }
       tiles.push(cells);
+    }
+    if (p.key) {
+      const [bl, br] = shutDoorway(ART[name + 'BL'], ART[name + 'BR']);
+      const opened = 'opened' + p.key.slice(3);
+      tiles[1] = tiles[1].map((open, i) => {
+        const shut = open + 'Shut';
+        defs[shut] = {
+          art: i ? br : bl, pal: name, underArt: p.ground, flags: F.SOLID,
+          keyFlag: p.key, openFlag: opened, openTo: open, openDeny: p.deny,
+        };
+        return shut;
+      });
     }
     blocks[name] = { w: 2, h: 2, tiles };
   }

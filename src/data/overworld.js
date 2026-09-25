@@ -2737,6 +2737,8 @@ function installHouses() {
             }],
             scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
             sceneAfter: 'makuOpened',
+            // The first meeting: the Barnacle Key, before anything else she has.
+            beat: { scene: 'makuKey', need: 0, flag: 'keyD1' },
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5 }],
         ],

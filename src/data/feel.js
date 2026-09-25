@@ -799,6 +799,28 @@ export const CONCH_FRAMES = 46;
  *  and pushes when it reaches zero. Was a guessed 18. */
 export const PUSH_DELAY_FRAMES = 20;
 
+/** px/f — how fast a dungeon key leaves Link's hands and rises out of its
+ *  keyhole. derived from the cartridge: oracles-disasm object_code/common/
+ *  interactions/overworldKeySprite.s @state0, `ld bc,-$200` into
+ *  objectSetSpeedZ — speedZ -$200, two pixels a frame upward. */
+export const KEY_RISE_SPEED = 2;
+
+/** px/f² — how fast that rise slows. derived from the cartridge:
+ *  overworldKeySprite.s @state1, `ld c,$28` into objectUpdateSpeedZ_paramC:
+ *  $28/256 of a pixel a frame off the speed every frame, until it stops
+ *  climbing (about 13 frames and 13 pixels up). */
+export const KEY_RISE_GRAVITY = 0x28 / 256;
+
+/** f — how long the key hangs over the keyhole once it has stopped rising,
+ *  before it is gone and the door opens. derived from the cartridge:
+ *  overworldKeySprite.s @state1, counter1 = $3c, counted down by @state2. */
+export const KEY_HOLD_FRAMES = 60;
+
+/** f — how long the ground rumbles as a dungeon door opens to its key.
+ *  guessed: Seasons' opening scenes are per door (the Gnarled Root's rises
+ *  out of the ground); ours is one shake for every door. */
+export const KEYHOLE_OPEN_FRAMES = 40;
+
 /** sp/f — how fast a pushed block slides its one tile: half a pixel a frame,
  *  32 frames for the tile. derived from the cartridge: oracles-disasm
  *  object_code/common/interactions/pushblock.s, SPEED_80 for counter1 $20.

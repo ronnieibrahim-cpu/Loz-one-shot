@@ -325,6 +325,20 @@ export class NPC extends Entity {
     this.rate = o.rate || 22;
     this.faceOnTalk = o.faceOnTalk !== false;
     this.onTalk = o.onTalk || null;
+    // A STORY BEAT (S154): a cutscene this person plays once, the first time
+    // they are spoken to after `need` Essences — how each dungeon key is
+    // handed over. `{ scene, need, flag }`: the scene is in src/data/story.js
+    // and SETS `flag` itself, and the flag is also the guard, the same
+    // contract as the Maku Tree's `sceneFlag`. Asked before anything else the
+    // person would say, so a beat is never queued behind a trade or a gift.
+    this.beat = o.beat || null;
+  }
+
+  /** Play this person's story beat if it is owed now. True if it started. */
+  playBeat(game) {
+    const b = this.beat, p = game.progress;
+    if (!b || flag(p, b.flag) || p.essences.length < (b.need || 0)) return false;
+    return game.startCutscene(b.scene);
   }
 
   update(game) {
@@ -364,6 +378,7 @@ export class NPC extends Entity {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
+    if (this.playBeat(game)) return;
     if (this.onTalk) { if (this.onTalk(game, this, player) === false) return; }
     const line = (this.afterText && this.conditional() && this.ready(game))
       ? this.afterText : this.dialogue;
@@ -552,6 +567,7 @@ export class Giver extends NPC {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
+    if (this.playBeat(game)) return;
     if (this.giveFlag && flag(p, this.giveFlag)) {
       if (this.afterText) game.startDialogue(this.afterText, this);
       else if (this.dialogue) game.startDialogue(this.dialogue, this);
@@ -786,6 +802,7 @@ export class MakuTree extends Trader {
 
   interact(game, player) {
     const p = game.progress;
+    if (this.playBeat(game)) return;
     if (this.sceneReady(game)) {
       if (this.faceOnTalk) this.dir = 'down';
       game.startCutscene(this.scene);

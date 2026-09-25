@@ -229,6 +229,8 @@ for (const [name, d] of TILES) {
     if (d.variants) for (const t of d.variants) reachable.add(t);
     if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
     if (d.ring) for (const t of Object.values(d.ring)) reachable.add(t);
+    // A story gate or keyhole becomes its `openTo` in play (Game.applyStoryGates).
+    if (d.openTo) reachable.add(d.openTo);
     // A ground fringe is reached through `edgePairs` — a map of a neighbour's
     // MATERIAL to that pair's 12 mask keys (see installGroundFringes in
     // tiles-core.js). Without this the 204 fringe tiles all read as unreachable

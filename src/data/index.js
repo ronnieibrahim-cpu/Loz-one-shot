@@ -26,6 +26,7 @@ import { installHudSprites, HUD_ART } from './sprites-hud.js';
 import { installGearSprites, GEAR_ART } from './sprites-gear.js';
 import { installTitleSprites, TITLE_ART } from './sprites-title.js';
 import { installTradeSprites, TRADE_ART } from './sprites-trade.js';
+import { installKeySprites, KEY_ART } from './sprites-keys.js';
 import { installMakuSprites, MAKU_SPRITE_ART } from './tiles-maku.js';
 
 // Background tile art: validated at 16x16.
@@ -56,6 +57,7 @@ export const SPRITE_PACKS = {
   gear: GEAR_ART,
   title: TITLE_ART,
   trade: TRADE_ART,
+  keys: KEY_ART,
   maku: MAKU_SPRITE_ART,
 };
 
@@ -94,6 +96,7 @@ export function installData() {
   installTitleSprites();
   // The Coastwise Chain's eleven objects, drawn to match them.
   installTradeSprites();
+  installKeySprites();
   // The Maku Tree's face, off the same panel as her grove.
   installMakuSprites();
   installEnemies();

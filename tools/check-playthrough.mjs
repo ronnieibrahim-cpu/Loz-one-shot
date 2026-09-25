@@ -90,6 +90,9 @@ import { extname, join, normalize, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installRuntime } from './actor-runtime.mjs';
 import { ROUTE, SEED, GOAL } from './playthrough-route.mjs';
+import { installData } from '../src/data/index.js';
+import { TILES } from '../src/world/tileset.js';
+import { DUNGEON_KEYS } from '../src/data/keys.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -502,6 +505,16 @@ check('THE ABYSSAL KEEP WAS PLAYED TO NERETH\'S OWN DOOR — its four keys earne
   `dredge ${s.items.includes('dredge')}, kilnshell ${s.items.includes('kilnshell')}, `
   + `flags missing ${D6_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
   + `rooms missing ${['d6/1,4,3', 'd6/1,3,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+
+// THE DUNGEON KEYS (S154). Every dungeon whose door is a keyhole was opened by
+// its own key, which the run was handed by that key's giver — read as flags
+// off the save, and which doors ARE keyholes read off the tile table, so a
+// key added next session joins this assertion without an edit here.
+installData();
+const keyed = DUNGEON_KEYS.filter(k => [...TILES.values()].some(d => d.keyFlag === k.flag));
+const unturned = keyed.filter(k => !(s.flags || []).includes(k.flag) || !(s.flags || []).includes(k.opened));
+check(`EVERY LOCKED DUNGEON DOOR WAS OPENED WITH ITS OWN KEY — ${keyed.map(k => k.name).join(', ')}`,
+  keyed.length > 0 && unturned.length === 0, `not turned: ${unturned.map(k => k.name).join(', ')}`);
 
 // AND THEN THE REST OF IT — the Sunken Bar, the Crossed Shafts, the Boss Key,
 // and the King. This is the assertion the whole verification table has been

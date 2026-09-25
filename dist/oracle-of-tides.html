@@ -1619,6 +1619,28 @@ const CONCH_FRAMES = 46;
  *  and pushes when it reaches zero. Was a guessed 18. */
 const PUSH_DELAY_FRAMES = 20;
 
+/** px/f — how fast a dungeon key leaves Link's hands and rises out of its
+ *  keyhole. derived from the cartridge: oracles-disasm object_code/common/
+ *  interactions/overworldKeySprite.s @state0, `ld bc,-$200` into
+ *  objectSetSpeedZ — speedZ -$200, two pixels a frame upward. */
+const KEY_RISE_SPEED = 2;
+
+/** px/f² — how fast that rise slows. derived from the cartridge:
+ *  overworldKeySprite.s @state1, `ld c,$28` into objectUpdateSpeedZ_paramC:
+ *  $28/256 of a pixel a frame off the speed every frame, until it stops
+ *  climbing (about 13 frames and 13 pixels up). */
+const KEY_RISE_GRAVITY = 0x28 / 256;
+
+/** f — how long the key hangs over the keyhole once it has stopped rising,
+ *  before it is gone and the door opens. derived from the cartridge:
+ *  overworldKeySprite.s @state1, counter1 = $3c, counted down by @state2. */
+const KEY_HOLD_FRAMES = 60;
+
+/** f — how long the ground rumbles as a dungeon door opens to its key.
+ *  guessed: Seasons' opening scenes are per door (the Gnarled Root's rises
+ *  out of the ground); ours is one shake for every door. */
+const KEYHOLE_OPEN_FRAMES = 40;
+
 /** sp/f — how fast a pushed block slides its one tile: half a pixel a frame,
  *  32 frames for the tile. derived from the cartridge: oracles-disasm
  *  object_code/common/interactions/pushblock.s, SPEED_80 for counter1 $20.
@@ -3015,6 +3037,10 @@ __exports["FALL_FRAMES"] = FALL_FRAMES;
 __exports["WASH_FRAMES"] = WASH_FRAMES;
 __exports["CONCH_FRAMES"] = CONCH_FRAMES;
 __exports["PUSH_DELAY_FRAMES"] = PUSH_DELAY_FRAMES;
+__exports["KEY_RISE_SPEED"] = KEY_RISE_SPEED;
+__exports["KEY_RISE_GRAVITY"] = KEY_RISE_GRAVITY;
+__exports["KEY_HOLD_FRAMES"] = KEY_HOLD_FRAMES;
+__exports["KEYHOLE_OPEN_FRAMES"] = KEYHOLE_OPEN_FRAMES;
 __exports["BLOCK_SLIDE_SPEED"] = BLOCK_SLIDE_SPEED;
 __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
 __exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
@@ -5162,6 +5188,8 @@ __define("world/tileset.js", function (__exports, __require) {
 //     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
 //     openTo: 'rockFloorDk',               //   carries this flag (see below)
 //     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
+//     keyFlag: 'keyD1',                    // a KEYHOLE: holding this flag and
+//                                          //   pushing in sets `openFlag`
 //   }
 //
 // STORY GATES
@@ -5172,6 +5200,11 @@ __define("world/tileset.js", function (__exports, __require) {
 //   changes that. `Game.applyStoryGates` is the whole implementation and it
 //   runs alongside `restoreRoomState`, so a story gate opens the moment you
 //   walk in rather than when you touch it.
+//
+//   A KEYHOLE is a story gate with `keyFlag` as well: the player who holds
+//   that flag (a dungeon key, src/data/keys.js) opens it himself by leaning on
+//   it, Seasons' way (`Game.tryKeyhole`), and that sets `openFlag`. Every tool
+//   that floods counts a keyhole open once the key is held.
 //
 //   It exists because a region can be owed to the STORY rather than to an
 //   item, and expressing that as an item flag is how a progression lock gets
@@ -5350,6 +5383,11 @@ function registerTiles(defs) {
       openFlag: def.openFlag || null,
       openTo: def.openTo || null,
       openDeny: def.openDeny || null,
+      // A KEYHOLE is a story gate the player opens himself: holding the flag
+      // `keyFlag` names (a dungeon key, see src/data/keys.js) and pushing into
+      // the tile sets `openFlag`. Named here for the same reason as the three
+      // above it.
+      keyFlag: def.keyFlag || null,
       // THE ORACLE WALL RING. A wall tile in a dungeon built at Oracle room
       // size (`cell: [15, 11]` on its map) draws the outer ring of every room
       // from this set of pieces — four corners, four runs and the jambs that
@@ -11981,6 +12019,20 @@ class NPC extends Entity {
     this.rate = o.rate || 22;
     this.faceOnTalk = o.faceOnTalk !== false;
     this.onTalk = o.onTalk || null;
+    // A STORY BEAT (S154): a cutscene this person plays once, the first time
+    // they are spoken to after `need` Essences — how each dungeon key is
+    // handed over. `{ scene, need, flag }`: the scene is in src/data/story.js
+    // and SETS `flag` itself, and the flag is also the guard, the same
+    // contract as the Maku Tree's `sceneFlag`. Asked before anything else the
+    // person would say, so a beat is never queued behind a trade or a gift.
+    this.beat = o.beat || null;
+  }
+
+  /** Play this person's story beat if it is owed now. True if it started. */
+  playBeat(game) {
+    const b = this.beat, p = game.progress;
+    if (!b || flag(p, b.flag) || p.essences.length < (b.need || 0)) return false;
+    return game.startCutscene(b.scene);
   }
 
   update(game) {
@@ -12020,6 +12072,7 @@ class NPC extends Entity {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
+    if (this.playBeat(game)) return;
     if (this.onTalk) { if (this.onTalk(game, this, player) === false) return; }
     const line = (this.afterText && this.conditional() && this.ready(game))
       ? this.afterText : this.dialogue;
@@ -12208,6 +12261,7 @@ class Giver extends NPC {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
+    if (this.playBeat(game)) return;
     if (this.giveFlag && flag(p, this.giveFlag)) {
       if (this.afterText) game.startDialogue(this.afterText, this);
       else if (this.dialogue) game.startDialogue(this.dialogue, this);
@@ -12442,6 +12496,7 @@ class MakuTree extends Trader {
 
   interact(game, player) {
     const p = game.progress;
+    if (this.playBeat(game)) return;
     if (this.sceneReady(game)) {
       if (this.faceOnTalk) this.dir = 'down';
       game.startCutscene(this.scene);
@@ -13611,6 +13666,68 @@ __exports["tradeName"] = tradeName;
 __exports["tradeIcon"] = tradeIcon;
 });
 
+/* ===== src/data/keys.js ===== */
+__define("data/keys.js", function (__exports, __require) {
+// THE SIX DUNGEON KEYS (S154). One key item per dungeon, Oracle of Seasons'
+// way: every dungeon's door is a keyhole, and each key is handed over by a
+// story beat after the dungeon before, so the six are played in order.
+//
+// What a key IS in the save: two flags. `flag` says you hold the key (the
+// quest screen draws it); `opened` says its keyhole has been turned, and is
+// the `openFlag` of every keyhole tile that key answers (`keyFlag` on the
+// tiledef, see src/world/tileset.js). The key is kept after it is used, as
+// Seasons keeps the Gnarled Key.
+//
+// Who gives each is data on the giver itself (a `beat` on the NPC, see NPC in
+// src/game/objects.js), and what each keyhole looks like is its tile. This
+// table only names the keys, so the menu, the keyhole and the tools agree on
+// one list.
+
+const DUNGEON_KEYS = [
+  { map: 'd1', flag: 'keyD1', opened: 'openedD1', name: 'Barnacle Key', icon: 'i_key_d1',
+    desc: 'It opens the Tidewash Grotto.' },
+  { map: 'd2', flag: 'keyD2', opened: 'openedD2', name: 'Coral Key', icon: 'i_key_d2',
+    desc: 'It opens the Coral Spire.' },
+  { map: 'd3', flag: 'keyD3', opened: 'openedD3', name: 'Peat Key', icon: 'i_key_d3',
+    desc: 'It opens the Bogwater Sanctum.' },
+  { map: 'd4', flag: 'keyD4', opened: 'openedD4', name: 'Cistern Key', icon: 'i_key_d4',
+    desc: 'It opens the Cliffside Cistern.' },
+  { map: 'd5', flag: 'keyD5', opened: 'openedD5', name: 'Moss Key', icon: 'i_key_d5',
+    desc: 'It opens the Drowned Wood Shrine.' },
+  { map: 'd6', flag: 'keyD6', opened: 'openedD6', name: "Bell's Clapper", icon: 'i_key_d6',
+    desc: 'It unseals the road to the Abyssal Keep.' },
+];
+
+/** The key for a dungeon's map id, or null. */
+function keyFor(map) {
+  return DUNGEON_KEYS.find(k => k.map === map) || null;
+}
+
+/** The key a keyhole flag belongs to, or null. */
+function keyByFlag(flag) {
+  return DUNGEON_KEYS.find(k => k.flag === flag) || null;
+}
+
+/**
+ * A save made before the keys existed (S154) has been through doors that are
+ * now locked. Every dungeon whose Essence it holds gets its key, already
+ * turned — so nobody is locked out of a dungeon they have finished, and the
+ * next key still comes from its own giver.
+ */
+function migrateKeys(p) {
+  DUNGEON_KEYS.forEach((k, i) => {
+    if (!p.essences || !p.essences.includes(i + 1)) return;
+    p.flags[k.flag] = true;
+    p.flags[k.opened] = true;
+  });
+  if (p.flags.makuOpenedKeep) { p.flags.keyD6 = true; p.flags.openedD6 = true; }
+}
+__exports["DUNGEON_KEYS"] = DUNGEON_KEYS;
+__exports["keyFor"] = keyFor;
+__exports["keyByFlag"] = keyByFlag;
+__exports["migrateKeys"] = migrateKeys;
+});
+
 /* ===== src/data/screens-seasons.js ===== */
 __define("data/screens-seasons.js", function (__exports, __require) {
 // GENERATED by tools/rip-screens.py — do not edit by hand; edit the ripper
@@ -14354,11 +14471,12 @@ const { tileArt } = __require("world/tileset.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
 const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
-const { HEART_UNITS } = __require("game/progress.js");
+const { HEART_UNITS, flag } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
 const { MAPS, getMap, hasRoom, getRoom, roomKeyAt } = __require("world/maps.js");
 const { TIDE_NAMES, TIDE_COUNT } = __require("game/tide.js");
 const { tradeName, tradeIcon } = __require("data/trade.js");
+const { DUNGEON_KEYS } = __require("data/keys.js");
 const { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE } = __require("data/feel.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 
@@ -15002,6 +15120,15 @@ class Menu {
       sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), x + (i - 1) * 18, y, { pal: got ? 'essence' + i : 'uidark' });
     }
     y += 19;
+    // THE SIX DUNGEON KEYS (S154), beside the Essences they open the way to.
+    // Only the keys held are drawn, in the order of the dungeons.
+    let kx = x;
+    for (const k of DUNGEON_KEYS) {
+      if (!flag(p, k.flag)) continue;
+      sprites.draw(ctx, k.icon, kx, y - 4);
+      kx += 12;
+    }
+    if (kx > x) y += 12;
     drawText(ctx, `Hearts ${Math.ceil(p.hearts / HEART_UNITS)}/${Math.ceil(p.maxHearts / HEART_UNITS)}`
       + `   Pieces ${p.heartPieces}/4`, x, y, INK);
     y += 10;
@@ -22063,6 +22190,10 @@ __define("game/cutscene.js", function (__exports, __require) {
 // pins x and y to 0 when the room is not bigger than the view. The nine rooms
 // in the game a camera CAN move in are all mid-dungeon and none of them runs a
 // cutscene. Do not add one without first checking that number has changed.
+//   { lift: { art: 'i_key_d1', x, y } }      a dungeon key rises out of its
+//                                            keyhole at room pixel (x, y) and
+//                                            hangs there, Seasons' overworld
+//                                            key sprite (KEY_RISE_* in feel.js)
 //   { do(game, data) {} }                    arbitrary hook
 //
 // Steps that need to wait return control until their condition clears.
@@ -22070,7 +22201,7 @@ __define("game/cutscene.js", function (__exports, __require) {
 const { SCREEN_W, SCREEN_H, HUD_H } = __require("core/screen.js");
 const { drawTextCentered, wrapText } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
-const { CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX, CUTSCENE_READ_CPS, CUTSCENE_READ_LEAD_FRAMES } = __require("data/feel.js");
+const { CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX, CUTSCENE_READ_CPS, CUTSCENE_READ_LEAD_FRAMES, KEY_RISE_SPEED, KEY_RISE_GRAVITY, KEY_HOLD_FRAMES } = __require("data/feel.js");
 const { spawnEntity } = __require("game/entity.js");
 const { bossRig } = __require("game/enemy.js");
 const { giveItem, setFlag } = __require("game/progress.js");
@@ -22109,6 +22240,7 @@ function runCutscene(game, steps, data = {}) {
   let caption = null;
   let shown = null;
   let waitingDialogue = false;
+  let lifted = null;
 
   function begin(step) {
     if (step.music !== undefined) { if (step.music) game.audio.play(step.music); else game.audio.stop(); }
@@ -22158,6 +22290,9 @@ function runCutscene(game, steps, data = {}) {
       game.say(step.say, { onClose: () => { waitingDialogue = false; } });
     }
     if (step.wait) waiting = step.wait;
+    if (step.lift) {
+      lifted = { ...step.lift, z: 0, vz: -KEY_RISE_SPEED, hold: KEY_HOLD_FRAMES };
+    }
     if (step.walk) walking = { ...step.walk, t: step.walk.frames || 30 };
   }
 
@@ -22165,6 +22300,7 @@ function runCutscene(game, steps, data = {}) {
     if (waitingDialogue) return false;
     if (waiting > 0) return false;
     if (walking) return false;
+    if (lifted) return false;
     if (caption && caption.t > 0) return false;
     if (shown && shown.t > 0) return false;
     if (step.fade && game.fadeDir) return false;
@@ -22204,10 +22340,17 @@ function runCutscene(game, steps, data = {}) {
         if (shown) shown.t = 0;
         if (caption) caption.t = 0;
         if (walking) walking.t = 0;
+        lifted = null;
         if (waitingDialogue) game.dialogue.close();
       }
 
       if (waiting > 0) waiting--;
+      // The key: z moves by the speed, then the speed by the pull, as
+      // objectUpdateSpeedZ_paramC does; it hangs once it stops climbing.
+      if (lifted) {
+        if (lifted.vz < 0) { lifted.z += lifted.vz; lifted.vz += KEY_RISE_GRAVITY; }
+        else if (--lifted.hold <= 0) lifted = null;
+      }
       if (caption && caption.t > 0) caption.t--;
       if (shown && shown.t > 0) shown.t--;
       if (walking) {
@@ -22232,6 +22375,11 @@ function runCutscene(game, steps, data = {}) {
     },
 
     draw(ctx) {
+      if (lifted) {
+        const cam = game.camera || { x: 0, y: 0 };
+        sprites.draw(ctx, lifted.art, Math.round(lifted.x - cam.x),
+          Math.round(HUD_H + lifted.y - cam.y + lifted.z), {});
+      }
       // PICTURE ON TOP, CARD BENEATH IT — and the layout is computed, not
       // hand-tuned per scene. A centred caption box sits across the middle of
       // the screen, so the first cut of this drew the Essence orb straight
@@ -22359,12 +22507,13 @@ const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu, invalidateWorldMap } = __require("game/menu.js");
 const { Camera } = __require("game/camera.js");
 const { TRADE_ITEMS, tradeName, tradeIcon } = __require("data/trade.js");
+const { keyByFlag, keyFor, migrateKeys } = __require("data/keys.js");
 const { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } = __require("game/scrimshaw.js");
 const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -22459,6 +22608,7 @@ class Game {
     if (!p) return false;
     this.slot = slot;
     this.progress = p;
+    migrateKeys(p);
     seedGlobal(p.seed);
     resetRooms();
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
@@ -23044,13 +23194,54 @@ class Game {
         }
       }
     }
-    return false;
+    // Leaning on a keyhole is how Seasons turns a key in it.
+    return this.tryKeyhole(tx, ty);
+  }
+
+  /**
+   * A DUNGEON KEYHOLE, Oracle of Seasons' way (S154). Lean on it — or press A
+   * at it — holding its key, and the key leaves Link's hands, rises out of the
+   * lock and hangs there, the ground rumbles, and the door opens for good.
+   * Without the key it says what the lock is shaped for. The key is kept.
+   *
+   * The cartridge's version is code/interactableTiles.s nextToOverworldKeyhole:
+   * the same twenty frames of pushing as a block (PUSH_DELAY_FRAMES), then
+   * SND_OPENCHEST, then the key sprite (KEY_RISE_* in feel.js), then the
+   * door's own opening scene. Opening sets the keyhole's `openFlag`, and
+   * `applyStoryGates` does the rest — here and in every other room the same
+   * key opens, the moment they are walked into.
+   */
+  tryKeyhole(tx, ty) {
+    const room = this.room;
+    if (!room || !room.inBounds(tx, ty)) return false;
+    const def = getTileDef(room.baseName(tx, ty));
+    if (!def || !def.keyFlag || !def.openFlag) return false;
+    if (flag(this.progress, def.openFlag)) return false;
+    const key = keyByFlag(def.keyFlag);
+    if (!key || !flag(this.progress, key.flag)) {
+      this.audio.sfx('deny');
+      if (def.openDeny) this.say(def.openDeny);
+      return true;
+    }
+    // The key rises over the middle of the lock: a keyhole drawn across two
+    // cells (a dungeon door's) is centred on their seam.
+    const same = (x) => room.inBounds(x, ty) && getTileDef(room.baseName(x, ty))?.keyFlag === def.keyFlag;
+    const cx = same(tx - 1) ? tx * TILE : same(tx + 1) ? (tx + 1) * TILE : tx * TILE + TILE / 2;
+    this.startCutscene([
+      { sfx: 'chest' },
+      { lift: { art: key.icon, x: cx - TILE / 2, y: ty * TILE } },
+      { sfx: 'rumble', shake: [2, KEYHOLE_OPEN_FRAMES], wait: KEYHOLE_OPEN_FRAMES },
+      { flag: def.openFlag, do: (g) => g.applyStoryGates() },
+      { sfx: 'secret' },
+    ]);
+    return true;
   }
 
   /** A-button interaction with a tile: locked doors, readable fixtures. */
   tileInteract(tx, ty, player) {
     const room = this.room;
     if (!room.inBounds(tx, ty)) return false;
+    if (this.tryKeyhole(tx, ty)) return true;
     const name = room.baseName(tx, ty);
     const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
     if (name === 'dDoorLocked') {
@@ -23476,6 +23667,22 @@ class Game {
     this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
   }
 
+  /**
+   * A dungeon key handed over (S154): it goes into the save and is held
+   * overhead with the item jingle, the same beat as presentItem. A key is not
+   * an item — it is never on a button — so it is a flag, read by its keyhole
+   * and drawn on the quest screen.
+   */
+  presentKey(map) {
+    const key = keyFor(map);
+    if (!key) return;
+    setFlag(this.progress, key.flag);
+    this.audio.jingle('itemGet');
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: key.icon, t: ITEM_PRESENT_FRAMES };
+    this.say(`You got the ${key.name}!\n${key.desc}`);
+  }
+
   autoEquip(id) {
     const p = this.progress;
     const def = ITEMS[id];
@@ -23660,7 +23867,9 @@ class Game {
   }
 
   startCutscene(id, o = {}) {
-    const cs = CUTSCENES[id] || (o.fallback ? CUTSCENES[o.fallback] : null);
+    // A scene is a name in CUTSCENES, or a list of steps built on the spot
+    // (the keyhole's, which depends on where the keyhole is).
+    const cs = Array.isArray(id) ? id : CUTSCENES[id] || (o.fallback ? CUTSCENES[o.fallback] : null);
     if (!cs) return false;
     this.cutscene = runCutscene(this, cs, o.data || {});
     this.mode = 'cutscene';
@@ -34310,14 +34519,69 @@ const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
 // crown. It is the tile the room actually has beside the gate, not the one the
 // region is named after — see `Room.underGround` for the same problem one
 // scale down.
+//
+// `key` (S154): the door is SHUT until its dungeon key is turned in it. The
+// block's bottom row is drawn with the doorway stopped by a slab carrying a
+// keyhole across the seam, and each shut cell is a keyhole story gate
+// (`keyFlag`/`openFlag`, src/world/tileset.js) that becomes the open doorway
+// cell above it once the key has been turned. The slab is DERIVED from each
+// door's own drawn doorway (`shutDoorway`), so it is the same shape as the arch
+// it stops and in the door's own colours. The Abyssal Keep's door has no key:
+// its lock is the seal on the road to it (`keepSeal`), which the sixth key opens.
 const PORTALS = {
-  portalD1: { pal: ['#e8d0a0', '#c0a068', '#8c6c40', '#241810'], ground: 'sand' },
-  portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral' },
-  portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud' },
-  portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand' },
-  portalD5: { pal: ['#d0b890', '#98764c', '#5c4028', '#140c08'], ground: 'sand' },
+  portalD1: { pal: ['#e8d0a0', '#c0a068', '#8c6c40', '#241810'], ground: 'sand', key: 'keyD1',
+    deny: 'The door is stopped with stone.\nIts keyhole is crusted with barnacles.' },
+  portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral',
+    deny: 'The door is stopped with stone.\nThe keyhole branches like coral.' },
+  portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud',
+    deny: 'The door is stopped with stone.\nPeat has silted up round its keyhole.' },
+  portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand',
+    deny: 'The door is stopped with stone.\nIts keyhole is cut square, for iron.' },
+  portalD5: { pal: ['#d0b890', '#98764c', '#5c4028', '#140c08'], ground: 'sand',
+    deny: 'The door is stopped with stone.\nMoss grows thick in its keyhole.' },
   portalD6: { pal: ['#8c9cd0', '#4c5c94', '#2c3458', '#06080f'], ground: 'sandRust' },
 };
+
+const artRows = (a) => a.trim().split('\n').map(r => r.trim());
+
+/**
+ * The doorway of a portal's bottom row, stopped with a slab and a keyhole.
+ *
+ * The doorway is the dark (index 3) region that touches the seam between the
+ * two bottom cells; it is filled with the door's lightest-but-one ink, its
+ * border kept as outline, and a keyhole is cut across the seam where the two
+ * halves meet — Seasons' keyholes sit in the middle of the thing they open.
+ * Returns the two cells' art.
+ */
+function shutDoorway(bl, br) {
+  const g = artRows(bl).map((r, y) => (r + artRows(br)[y]).split(''));
+  const H = g.length, W = g[0].length;
+  const inDoor = new Set(), q = [];
+  for (let y = 2; y < H - 1; y++) for (const x of [W / 2 - 1, W / 2]) {
+    if (g[y][x] === '3') { inDoor.add(y * W + x); q.push([x, y]); }
+  }
+  while (q.length) {
+    const [x, y] = q.pop();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= W || ny < 2 || ny >= H - 1) continue;
+      if (g[ny][nx] !== '3' || inDoor.has(ny * W + nx)) continue;
+      inDoor.add(ny * W + nx); q.push([nx, ny]);
+    }
+  }
+  const edge = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    .some(([dx, dy]) => !inDoor.has((y + dy) * W + (x + dx)));
+  for (const k of inDoor) {
+    const x = k % W, y = (k - x) / W;
+    if (!edge(x, y)) g[y][x] = '1';
+  }
+  const hole = ['.33.', '3333', '3333', '.33.', '.33.', '3333'];
+  hole.forEach((r, i) => r.split('').forEach((c, j) => {
+    if (c === '3') g[6 + i][W / 2 - 2 + j] = '3';
+  }));
+  const half = (x0) => '\n' + g.map(r => r.slice(x0, x0 + W / 2).join('')).join('\n');
+  return [half(0), half(W / 2)];
+}
 
 /** Tiledefs and the block registry for the six dungeon doors. */
 function installDungeonPortals() {
@@ -34337,6 +34601,18 @@ function installDungeonPortals() {
         cells.push(tile);
       }
       tiles.push(cells);
+    }
+    if (p.key) {
+      const [bl, br] = shutDoorway(ART[name + 'BL'], ART[name + 'BR']);
+      const opened = 'opened' + p.key.slice(3);
+      tiles[1] = tiles[1].map((open, i) => {
+        const shut = open + 'Shut';
+        defs[shut] = {
+          art: i ? br : bl, pal: name, underArt: p.ground, flags: F.SOLID,
+          keyFlag: p.key, openFlag: opened, openTo: open, openDeny: p.deny,
+        };
+        return shut;
+      });
     }
     blocks[name] = { w: 2, h: 2, tiles };
   }
@@ -38930,6 +39206,8 @@ function installHouses() {
             }],
             scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
             sceneAfter: 'makuOpened',
+            // The first meeting: the Barnacle Key, before anything else she has.
+            beat: { scene: 'makuKey', need: 0, flag: 'keyD1' },
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5 }],
         ],
@@ -47870,7 +48148,7 @@ const CUTSCENES = {
     { say: 'Farore: The Moon Conch. Sound it and the tide will answer: LOW, then MID, then HIGH, and around again.' },
     { say: 'Farore: You will need a blade too. There is one in the village chest, and the village will be glad to be rid of it.' },
     { give: { item: 'sword', level: 1 } },
-    { say: 'Farore: Go east to the Shallows. Sound the conch at low water and the sandbar will carry you to the reef.' },
+    { say: 'Farore: Before anything, go and see the Maku Tree. Her hollow is at the top of the square. She has been keeping something for you.' },
     { flag: 'sawIntro' },
     { music: 'village' },
   ],
@@ -47936,6 +48214,16 @@ const CUTSCENES = {
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------
+  // THE FIRST MEETING (S154): the Barnacle Key, the Gnarled Key's role. The
+  // tree's `beat` plays this the first time she is spoken to; the last step
+  // hands the key over the way every item is handed over, held overhead.
+  makuKey: [
+    { say: 'Maku Tree: Hoo... a wader, with a shard of the Bell humming in his pocket. Farore sent you. Good.' },
+    { say: 'Maku Tree: When the sea went wrong, the village stopped up the Tidewash Grotto with stone and gave the key to my roots to mind. They have minded it long enough.' },
+    { say: 'Maku Tree: The Grotto is east, out on the Shallows. Sound the conch at low water and the sandbar will carry you. Put this in the door and lean on it.' },
+    { do: (g) => g.presentKey('d1') },
+  ],
+
   makuSatchel: [
     { say: 'Maku Tree: Hoo hoo! One Essence and my roots can feel the Bell again.' },
     { say: 'Maku Tree: Take the Rod. It was cut from the Bell that used to keep the tide honest.' },
@@ -57899,6 +58187,160 @@ __exports["TRADE_ART"] = TRADE_ART;
 __exports["installTradeSprites"] = installTradeSprites;
 });
 
+/* ===== src/data/sprites-keys.js ===== */
+__define("data/sprites-keys.js", function (__exports, __require) {
+// The six dungeon keys, cut from the Oracle games' own key-item graphics.
+//
+// Generated by tools/rip-keys.py — edit that, not this file.
+// Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
+// commit 7584d87), assets/keys/oracles-disasm/: the inventory screen's key
+// sprites, the table naming each key item's sprite, and the standard sprite
+// palettes. Credit: the oracles-disasm project and its contributors; the
+// artwork is Nintendo's and Capcom's. This is fan-work art only.
+//
+// The shapes are the cartridges'; the keys, and their colours, are ours.
+//
+// Built from:
+//   i_key_d1: seasons TREASURE_GNARLED_KEY ($37, palette 5) — the Barnacle Key: the spiral is a shell
+//   i_key_d2: seasons TREASURE_DRAGON_KEY ($39, palette 1) — the Coral Key: the horns branch like coral
+//   i_key_d3: seasons TREASURE_FLOODGATE_KEY ($38, palette 4) — the Peat Key: a drop of bog water
+//   i_key_d4: ages TREASURE_CROWN_KEY ($38, palette 2) — the Cistern Key: a square iron bow
+//   i_key_d5: ages TREASURE_MERMAID_KEY ($39, palette 5) — the Moss Key: the bow grown over like a leaf
+//   i_key_d6: ages TREASURE_GRAVEYARD_KEY ($37, palette 5) — the Bell's Clapper: a round bob on a stem
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const KEY_ART = {
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  i_key_d1: { pal: 'i_key_d1', art: `
+    .......3........
+    ......303.......
+    ......3333......
+    .....310013.....
+    ....31033013....
+    ....30331303....
+    ....31003303....
+    .....333303.....
+    .......3013.....
+    ......3013......
+    ......303.......
+    .....3303.......
+    .....300333.....
+    .....330313.....
+    .....300313.....
+    .....333333.....` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  i_key_d2: { pal: 'i_key_d2', art: `
+    ................
+    ....33....33....
+    ....313..313....
+    ....33133133....
+    .....311113.....
+    .....301103.....
+    .....331133.....
+    ......3113......
+    ......3333......
+    .......313......
+    .......313......
+    .......3133.....
+    .....333113.....
+    .....313133.....
+    .....333113.....
+    .......3333.....` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  i_key_d3: { pal: 'i_key_d3', art: `
+    .......3........
+    ......303.......
+    ......303.......
+    .....30003......
+    ....3001003.....
+    ....3011103.....
+    ....3011103.....
+    .....30103......
+    ......333.......
+    ......303.......
+    ......30333.....
+    .....330303.....
+    .....300333.....
+    .....330303.....
+    ......30333.....
+    ......333.......` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  i_key_d4: { pal: 'i_key_d4', art: `
+    ................
+    ......33333.....
+    .....3000013....
+    .....3011133....
+    .....3011133....
+    .....3011133....
+    .....3133333....
+    ......33333.....
+    .......313......
+    .......303......
+    .......303......
+    .......30333....
+    .......30303....
+    .......30333....
+    .......30303....
+    .......33333....` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  i_key_d5: { pal: 'i_key_d5', art: `
+    ................
+    ....333..333....
+    ....30033003....
+    ....30000003....
+    ....30011003....
+    .....301103.....
+    ......3313......
+    .......313......
+    .......313......
+    .......313......
+    .....333133.....
+    .....303113.....
+    .....303113.....
+    .....333113.....
+    .....303113.....
+    .....333333.....` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  i_key_d6: { pal: 'i_key_d6', art: `
+    ................
+    ......3333......
+    .....311113.....
+    ....31000113....
+    ....30303013....
+    ....30303013....
+    ....30010013....
+    ....33000133....
+    .....303013.....
+    .....331333.....
+    ......303.......
+    .....3303.......
+    .....300333.....
+    .....330313.....
+    .....300313.....
+    .....333333.....` },
+};
+
+// Ours: one palette per key.
+const KEY_PALETTES = {
+  i_key_d1: ['#f0e8d0', '#8ca0a8', '#8ca0a8', '#000000'],
+  i_key_d2: ['#f8d0d8', '#e05878', '#e05878', '#000000'],
+  i_key_d3: ['#d8b888', '#6c4c2c', '#6c4c2c', '#000000'],
+  i_key_d4: ['#d0d8e0', '#58687c', '#58687c', '#000000'],
+  i_key_d5: ['#c0e890', '#3c8848', '#3c8848', '#000000'],
+  i_key_d6: ['#f8e8a0', '#c89830', '#c89830', '#000000'],
+};
+
+function installKeySprites() {
+  registerPalettes(KEY_PALETTES);
+  sprites.add(KEY_ART, 'ui');
+}
+__exports["KEY_ART"] = KEY_ART;
+__exports["KEY_PALETTES"] = KEY_PALETTES;
+__exports["installKeySprites"] = installKeySprites;
+});
+
 /* ===== src/data/index.js ===== */
 __define("data/index.js", function (__exports, __require) {
 // Single entry point that installs every data pack into the engine registries.
@@ -57929,6 +58371,7 @@ const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
 const { installTitleSprites, TITLE_ART } = __require("data/sprites-title.js");
 const { installTradeSprites, TRADE_ART } = __require("data/sprites-trade.js");
+const { installKeySprites, KEY_ART } = __require("data/sprites-keys.js");
 const { installMakuSprites, MAKU_SPRITE_ART } = __require("data/tiles-maku.js");
 
 // Background tile art: validated at 16x16.
@@ -57959,6 +58402,7 @@ const SPRITE_PACKS = {
   gear: GEAR_ART,
   title: TITLE_ART,
   trade: TRADE_ART,
+  keys: KEY_ART,
   maku: MAKU_SPRITE_ART,
 };
 
@@ -57997,6 +58441,7 @@ function installData() {
   installTitleSprites();
   // The Coastwise Chain's eleven objects, drawn to match them.
   installTradeSprites();
+  installKeySprites();
   // The Maku Tree's face, off the same panel as her grove.
   installMakuSprites();
   installEnemies();

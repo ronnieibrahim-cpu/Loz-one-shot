@@ -2952,21 +2952,15 @@ export async function installRuntime() {
    * key), and it has to fail HERE, as "no trader in this room holds stage N",
    * rather than be rescued by a verb that went and found one.
    */
-  function* dTrade(stage, maxF) {
+  /**
+   * Walk beside `holder` and talk until `done()` — the approach half of
+   * `trade`, shared with `beat` (S154) so the two cannot drift apart. The
+   * notes inside are the trade verb's, and they bind both.
+   */
+  function* dTalkTo(holder, done, what, who, maxF) {
     const g = window.__game;
-    const at = () => g.progress.trade.stage || 0;
-    if (at() >= stage) return;
-    const holder = g.entities.find(e => !e.remove && typeof e.liveDeal === 'function'
-      && (e.liveDeal(g) || {}).stage === stage);
-    if (!holder) {
-      const here = g.entities.filter(e => typeof e.liveDeal === 'function')
-        .map(e => `${Math.floor(e.cx / TILE)},${Math.floor(e.cy / TILE)}`).join(' ');
-      throw new Error(`trade: nobody in ${g.mapId} ${g.room && g.room.key} holds stage ${stage} `
-        + `(chain is at ${at()}, holding "${g.progress.trade.item}")`
-        + `; links in this room: ${here || '(none)'}`);
-    }
     const p0 = g.player;
-    if (!p0) throw new Error('trade: no player');
+    if (!p0) throw new Error(what + ': no player');
     // A TRADER WANDERS, AND THIS VERB USED TO AIM AT WHERE ONE WAS. The link's
     // tile was read ONCE, the actor walked to the square beside it and then
     // pressed A at that square for nine hundred frames whether or not anybody
@@ -2983,7 +2977,7 @@ export async function installRuntime() {
     // holder's CURRENT tile, and the press loop gives up early the moment the
     // holder is no longer next door rather than burning its whole budget.
     const ATTEMPTS = 4;
-  for (let attempt = 0; attempt < ATTEMPTS && at() < stage; attempt++) {
+  for (let attempt = 0; attempt < ATTEMPTS && !done(); attempt++) {
     const tx = Math.floor(holder.cx / TILE), ty = Math.floor(holder.cy / TILE);
     // EVERY SIDE IS TRIED, AND ARRIVAL IS CHECKED. A path that PLANS is not a
     // walk that lands: the village screens are full of solid NPCs and signs,
@@ -3013,7 +3007,7 @@ export async function installRuntime() {
     }
     if (!stand) {
       if (attempt < ATTEMPTS - 1) { yield* dWait(30); continue; }
-      throw new Error(`trade: cannot get beside the stage-${stage} link at ${tx},${ty} in `
+      throw new Error(`${what}: cannot get beside ${who} at ${tx},${ty} in `
         + `${g.mapId} ${g.room && g.room.key} :: ${why.join(' | ')}`);
     }
     for (let i = 0; i < 8 && g.player.dir !== stand.face; i++) yield BIT[stand.face];
@@ -3026,7 +3020,7 @@ export async function installRuntime() {
       const hx = Math.floor(holder.cx / TILE), hy = Math.floor(holder.cy / TILE);
       return Math.abs(hx - q.tx) + Math.abs(hy - q.ty) <= 2;
     };
-    for (let f = 0; f < budget && at() < stage; f++) {
+    for (let f = 0; f < budget && !done(); f++) {
       if (g.dialogue.active) { yield (f % 6 === 0) ? BIT.a : 0; continue; }
       if (g.mode !== 'play' || (g.player && g.player.frozen > 0) || g.itemShow) { yield 0; continue; }
       // Walked off? Stop pressing and go round again rather than spending the
@@ -3037,6 +3031,55 @@ export async function installRuntime() {
     yield* dDialogueClear(120);
     yield* dWait(4);
   }
+  }
+
+  /**
+   * HEAR A STORY BEAT: talk to whoever in this room owes the beat that sets
+   * `flag` (a dungeon key, S154), until the save carries it. Like `trade`, it
+   * names the STATE and finds the person by asking the entities — never a
+   * tile — and it does not walk to the screen.
+   */
+  function* dBeat(flagName, maxF) {
+    const g = window.__game;
+    if (g.progress.flags[flagName]) return;
+    const holder = g.entities.find(e => !e.remove && e.beat && e.beat.flag === flagName);
+    if (!holder) throw new Error(`beat: nobody in ${g.mapId} ${g.room && g.room.key} owes '${flagName}'`);
+    yield* dTalkTo(holder, () => !!g.progress.flags[flagName], 'beat', `the giver of '${flagName}'`, maxF);
+    yield* dDialogueClear(300);
+    if (!g.progress.flags[flagName]) {
+      throw new Error(`beat: '${flagName}' never landed; essences ${g.progress.essences.length}`);
+    }
+  }
+
+  /**
+   * TURN A DUNGEON KEY (S154): stand on (tx, ty) and lean `dir` into the
+   * keyhole until its flag says it has opened, as a player does.
+   */
+  function* dKeyhole(tx, ty, dir, flagName, maxF) {
+    const g = window.__game;
+    if (!g.progress.flags[flagName]) yield* dGoto(tx, ty, 900);
+    for (let f = 0; f < (maxF || 600) && !g.progress.flags[flagName]; f++) {
+      if (g.dialogue.active) { yield (f % 6 === 0) ? BIT.a : 0; continue; }
+      yield g.mode === 'play' ? BIT[dir] : 0;
+    }
+    yield* dDialogueClear(200);
+    if (!g.progress.flags[flagName]) throw new Error(`keyhole: '${flagName}' never opened from ${tx},${ty}`);
+  }
+
+  function* dTrade(stage, maxF) {
+    const g = window.__game;
+    const at = () => g.progress.trade.stage || 0;
+    if (at() >= stage) return;
+    const holder = g.entities.find(e => !e.remove && typeof e.liveDeal === 'function'
+      && (e.liveDeal(g) || {}).stage === stage);
+    if (!holder) {
+      const here = g.entities.filter(e => typeof e.liveDeal === 'function')
+        .map(e => `${Math.floor(e.cx / TILE)},${Math.floor(e.cy / TILE)}`).join(' ');
+      throw new Error(`trade: nobody in ${g.mapId} ${g.room && g.room.key} holds stage ${stage} `
+        + `(chain is at ${at()}, holding "${g.progress.trade.item}")`
+        + `; links in this room: ${here || '(none)'}`);
+    }
+    yield* dTalkTo(holder, () => at() >= stage, 'trade', `the stage-${stage} link`, maxF);
     if (at() < stage) {
       throw new Error(`trade: the stage-${stage} link would not deal. chain at ${at()}, `
         + `holding "${g.progress.trade.item}", player `
@@ -3075,6 +3118,8 @@ export async function installRuntime() {
       else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
+      else if (kind === 'beat') yield* dBeat(a[0], a[1]);
+      else if (kind === 'keyhole') yield* dKeyhole(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'ending') yield* dEnding(a[0]);
       else throw new Error('unknown replay directive: ' + kind);
       // A trace of where each directive left the player. Recording prints it;

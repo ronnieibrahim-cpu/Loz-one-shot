@@ -42,6 +42,10 @@
 // pins x and y to 0 when the room is not bigger than the view. The nine rooms
 // in the game a camera CAN move in are all mid-dungeon and none of them runs a
 // cutscene. Do not add one without first checking that number has changed.
+//   { lift: { art: 'i_key_d1', x, y } }      a dungeon key rises out of its
+//                                            keyhole at room pixel (x, y) and
+//                                            hangs there, Seasons' overworld
+//                                            key sprite (KEY_RISE_* in feel.js)
 //   { do(game, data) {} }                    arbitrary hook
 //
 // Steps that need to wait return control until their condition clears.
@@ -52,6 +56,7 @@ import { sprites } from '../gfx/art.js';
 import {
   CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX,
   CUTSCENE_READ_CPS, CUTSCENE_READ_LEAD_FRAMES,
+  KEY_RISE_SPEED, KEY_RISE_GRAVITY, KEY_HOLD_FRAMES,
 } from '../data/feel.js';
 import { spawnEntity } from './entity.js';
 import { bossRig } from './enemy.js';
@@ -91,6 +96,7 @@ export function runCutscene(game, steps, data = {}) {
   let caption = null;
   let shown = null;
   let waitingDialogue = false;
+  let lifted = null;
 
   function begin(step) {
     if (step.music !== undefined) { if (step.music) game.audio.play(step.music); else game.audio.stop(); }
@@ -140,6 +146,9 @@ export function runCutscene(game, steps, data = {}) {
       game.say(step.say, { onClose: () => { waitingDialogue = false; } });
     }
     if (step.wait) waiting = step.wait;
+    if (step.lift) {
+      lifted = { ...step.lift, z: 0, vz: -KEY_RISE_SPEED, hold: KEY_HOLD_FRAMES };
+    }
     if (step.walk) walking = { ...step.walk, t: step.walk.frames || 30 };
   }
 
@@ -147,6 +156,7 @@ export function runCutscene(game, steps, data = {}) {
     if (waitingDialogue) return false;
     if (waiting > 0) return false;
     if (walking) return false;
+    if (lifted) return false;
     if (caption && caption.t > 0) return false;
     if (shown && shown.t > 0) return false;
     if (step.fade && game.fadeDir) return false;
@@ -186,10 +196,17 @@ export function runCutscene(game, steps, data = {}) {
         if (shown) shown.t = 0;
         if (caption) caption.t = 0;
         if (walking) walking.t = 0;
+        lifted = null;
         if (waitingDialogue) game.dialogue.close();
       }
 
       if (waiting > 0) waiting--;
+      // The key: z moves by the speed, then the speed by the pull, as
+      // objectUpdateSpeedZ_paramC does; it hangs once it stops climbing.
+      if (lifted) {
+        if (lifted.vz < 0) { lifted.z += lifted.vz; lifted.vz += KEY_RISE_GRAVITY; }
+        else if (--lifted.hold <= 0) lifted = null;
+      }
       if (caption && caption.t > 0) caption.t--;
       if (shown && shown.t > 0) shown.t--;
       if (walking) {
@@ -214,6 +231,11 @@ export function runCutscene(game, steps, data = {}) {
     },
 
     draw(ctx) {
+      if (lifted) {
+        const cam = game.camera || { x: 0, y: 0 };
+        sprites.draw(ctx, lifted.art, Math.round(lifted.x - cam.x),
+          Math.round(HUD_H + lifted.y - cam.y + lifted.z), {});
+      }
       // PICTURE ON TOP, CARD BENEATH IT — and the layout is computed, not
       // hand-tuned per scene. A centred caption box sits across the middle of
       // the screen, so the first cut of this drew the Essence orb straight

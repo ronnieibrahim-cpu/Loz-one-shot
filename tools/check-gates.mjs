@@ -405,6 +405,51 @@ check('walking into a one-tile chasm hops it', cWalk.tx >= 2, `ended ${JSON.stri
 // ROOM and the held item but not the save. Run mid-file it left that state
 // lying under every later probe, and the Dredge Line's boulder assertion went
 // red for reasons that had nothing to do with the Dredge Line.
+// --- the Grotto's keyhole (S154) -------------------------------------------
+// A dungeon door is a keyhole, Oracle of Seasons' way: lean on it holding the
+// key and it opens for good; without the key it says what it wants and stays
+// shut. Driven with a real held direction, so the push counter, the keyhole,
+// the cutscene and the story gate are all the engine's own.
+const keyhole = async (withKey) => {
+  await page.evaluate((k) => {
+    const g = window.__game;
+    g.mode = 'play';
+    delete g.progress.flags.openedD1;
+    if (k) g.progress.flags.keyD1 = true; else delete g.progress.flags.keyD1;
+    g.enterMap('overworld', 0, 8, 8, 72, 56, 'up', { instant: true });
+    window.__harness.step(3);
+    if (g.dialogue) g.dialogue.active = false;
+    g.entities = g.entities.filter(e => { if (e === g.player) return true; e.remove = true; return false; });
+    g.tide.setLevel(0, { instant: true });
+    g.player.invuln = 100000;
+    g.player.x = 72; g.player.y = 40; g.player.dir = 'up';
+  }, withKey);
+  await page.keyboard.down('ArrowUp');
+  const out = { sawText: false, sawCut: false };
+  for (let i = 0; i < 90; i++) {
+    await frames(4);
+    const st = await page.evaluate(() => {
+      const g = window.__game;
+      const r = { text: !!(g.dialogue && g.dialogue.active), cut: g.mode === 'cutscene' };
+      if (r.text) g.dialogue.close();
+      return r;
+    });
+    out.sawText = out.sawText || st.text;
+    out.sawCut = out.sawCut || st.cut;
+  }
+  await page.keyboard.up('ArrowUp');
+  return Object.assign(out, await page.evaluate(() => ({
+    map: window.__game.mapId, opened: !!window.__game.progress.flags.openedD1,
+  })));
+};
+const shut = await keyhole(false);
+check('without the Barnacle Key the Grotto door stays shut', shut.map === 'overworld' && !shut.opened,
+  JSON.stringify(shut));
+check('...and leaning on it says what its keyhole wants', shut.sawText, JSON.stringify(shut));
+const open = await keyhole(true);
+check('with the Barnacle Key, leaning on the door turns it', open.sawCut && open.opened, JSON.stringify(open));
+check('...and the open door takes you into the Grotto', open.map === 'd1', JSON.stringify(open));
+
 // --- the tree that sets the flag ------------------------------------------
 //
 // EVERYTHING BELOW THIS POINT USED TO SET `makuOpenedKeep` BY HAND, which
@@ -440,6 +485,20 @@ const tree = await page.evaluate(async () => {
     for (let i = 0; i < 12 && g.dialogue.active; i++) g.dialogue.close();
   };
 
+  const play = () => {
+    for (let i = 0; i < 6000 && (g.mode === 'cutscene' || g.dialogue.active); i++) {
+      window.__harness.step(1);
+      if (g.dialogue && g.dialogue.active) g.dialogue.close();
+    }
+  };
+
+  // THE FIRST MEETING (S154): a new game's first word with her is the
+  // Barnacle Key, before anything the chain or the Essences owe.
+  t.interact(g, g.player);
+  out.keyScene = g.mode === 'cutscene';
+  play();
+  out.key1 = !!g.progress.flags.keyD1;
+
   // Five Essences and the chain never walked: beat two must NOT fire.
   g.progress.essences = [1, 2, 3, 4, 5];
   talk();
@@ -467,6 +526,8 @@ const tree = await page.evaluate(async () => {
 });
 check('the Maku Tree is a trader with a second beat', tree.found && tree.klass === 'MakuTree',
   JSON.stringify(tree));
+check('the first meeting plays her key scene', tree.keyScene === true, 'no cutscene on first talk');
+check('...and hands over the Barnacle Key', tree.key1 === true, 'keyD1 never set');
 check('she will not open the road before the chain is walked', tree.earlyFired === false,
   'makuOpenedKeep was set at five Essences with the chain unstarted');
 check('beat one hands over the Resonance Rod', tree.rod === 1 && tree.stage === 12,
