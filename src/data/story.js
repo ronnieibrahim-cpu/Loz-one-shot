@@ -199,7 +199,7 @@ const CUTSCENES = {
     { show: { art: ['p_essence1_0', 'p_essence1_1'], scale: 3, pal: 'essence1' }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
     { say: 'The shard settles against the conch and the two of them hum at each other like old friends.' },
     { say: 'Somewhere inland, a tree that has been asleep for a hundred years opens one eye.' },
-    { say: 'Farore: One. Go and see the Maku Tree — it will have felt that, and it will want to give you something.' },
+    { say: 'Farore: One. The fisherman at Sandpiper Row has been watching the reef all his life. He will have felt that. Go and see him.' },
     { music: 'overworld' },
   ],
   essence2: [
@@ -242,6 +242,15 @@ const CUTSCENES = {
     { say: 'The last shard comes away from Nereth\'s crown and the six of them find each other in your hands.' },
     { say: 'The Tide Bell is whole. It is much smaller than the stories, and much heavier.' },
     { music: 'overworld' },
+  ],
+
+  // ---- the dungeon keys (S154), one story beat each -----------------------
+  // THE CORAL KEY: Sandpiper Row's fisherman, once the first Essence is in.
+  coralKey: [
+    { say: 'Fisherman: You came out of the Grotto dry. Nobody comes out of anywhere dry this year.' },
+    { say: 'Fisherman: My father dived the Coral Spire before the sea went strange. The divers locked it behind them when they gave up, and he kept the key in his tackle box.' },
+    { say: 'Fisherman: Reef\'s north of here, past the gap. The sea is listening to you now. Take it.' },
+    { do: (g) => g.presentKey('d2') },
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------

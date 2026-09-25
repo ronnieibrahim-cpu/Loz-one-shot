@@ -1535,7 +1535,7 @@ const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
 const PORTALS = {
   portalD1: { pal: ['#e8d0a0', '#c0a068', '#8c6c40', '#241810'], ground: 'sand', key: 'keyD1',
     deny: 'The door is stopped with stone.\nIts keyhole is crusted with barnacles.' },
-  portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral',
+  portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral', key: 'keyD2',
     deny: 'The door is stopped with stone.\nThe keyhole branches like coral.' },
   portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud',
     deny: 'The door is stopped with stone.\nPeat has silted up round its keyhole.' },

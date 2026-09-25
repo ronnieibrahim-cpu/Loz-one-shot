@@ -524,12 +524,18 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 200],
   ['loot', 900],
+  // THE CORAL KEY (S154). The fisherman here has held it since his father
+  // gave up diving the Spire, and hands it over once the first Essence is in.
+  ['beat', 'keyD2', 2000],
+  ['dialogue', 600],
 
   // Straight on to the Spire Mouth — Coral Landing's fairy is a fuller heal
   // than anything the overworld has left to offer, so the two Pieces of
   // Heart sitting either side of the dungeon mouth are collected AFTER it,
   // not before, and at full health rather than at whatever the crossing left.
   ['travel', 10, 5, 8000],
+  // The Spire's door is shut until the Coral Key turns in it (S154).
+  ['keyhole', 4, 3, 'up', 'openedD2', 600],
   ['goto', 4, 2, 600],
   ['wait', 60],
 

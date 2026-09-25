@@ -538,11 +538,16 @@ At this point you can also:
 
 ## 5. The Coral Reef
 
+**First, the Coral Key.** With the first Essence in hand, talk to the
+fisherman who wanders **Sandpiper Row** (`overworld/0,9,8`), next door to the
+Grotto. His father dived the Spire before the sea went strange, and he hands
+you the key to its door (`coralKey`). The Spire's door is locked without it.
+
 From Tidewatch: east to Village East (`overworld/0,5,7`), east to Sunken Reef
 (`0,6,7`), east through Shallows Gate (`0,7,7`), Grotto Approach (`0,8,7`), Dune
 Bowl (`0,9,7`), then **north** to Sandbar Run (`0,9,6`), east to Feather Gap
 (`0,10,6`), and north to **Spire Mouth** (`overworld/0,10,5`). Dungeon 2's door
-is at tile (4,1).
+is at tile (4,1): lean up into its keyhole holding the Coral Key.
 
 The dune screens between are laced with one-tile chasms. Walk into them; the hop
 is automatic. The four-tile bands along the reef's southern edge are walls and

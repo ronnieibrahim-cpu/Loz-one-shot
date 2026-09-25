@@ -100,7 +100,10 @@ for (const m of MAPS.values()) {
       npc.faceOnTalk = false;
       const run = (essences) => {
         const said = [];
-        npc.interact({ progress: { essences, flags: {} }, startDialogue: id => said.push(id) },
+        // A key-giver's story beat (S154) is its own scene, heard once; the lines
+        // proved here are what the person says every other time.
+        npc.interact({ progress: { essences, flags: o.beat ? { [o.beat.flag]: true } : {} },
+          startDialogue: id => said.push(id) },
           { cx: 0, cy: 0 });
         return said[0];
       };

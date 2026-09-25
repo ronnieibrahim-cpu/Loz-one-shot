@@ -2240,7 +2240,9 @@ const rooms = {
     ],
     entities: [
       ['sign', 5, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
-      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2 }],
+      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2,
+        // The Coral Key, once the first Essence is in (S154).
+        beat: { scene: 'coralKey', need: 1, flag: 'keyD2' } }],
       // Coastwise Chain, link 6.
       ['trader', 4, 6, {
         sprite: 'npc_hood_blue', waiting: 'sandpiperKid', after: 'sennitAfter',
