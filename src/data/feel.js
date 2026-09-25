@@ -728,8 +728,12 @@ export const PUSH_DELAY_FRAMES = 20;
  *  It was a bare one-pixel step inside PushBlock.update. */
 export const BLOCK_SLIDE_SPEED = 128;
 
-/** f — how long a Pegasus Seed's speed boost lasts. guessed. */
-export const PEGASUS_FRAMES = 300;
+/** f — how long a Pegasus Seed's speed boost lasts. derived from the
+ *  cartridge: oracles-disasm object_code/common/itemParents/seedsParent.s,
+ *  @pegasusSeeds sets wPegasusSeedCounter to $03c0 and code/bank0.s
+ *  decPegasusSeedCounter takes two off it a frame (one with the Pegasus
+ *  Ring): 480 frames. Was a guessed 300. */
+export const PEGASUS_FRAMES = 480;
 
 /** f — how long Link holds a new item overhead. derived from the `itemGet`
  *  jingle, which is what the pose exists to sit under: 20 rows at bpm 132 and
