@@ -1835,7 +1835,9 @@ const rooms = {
       // `every(e, n)` phases an enemy off its id — so one extra villager here
       // re-phases every enemy in the game and the d1-descent replay walks into
       // a hit it used to dodge. Recorded in docs/HANDOFF.md.
-      ['npc', 8, 2, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4 }],
+      ['npc', 8, 2, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4,
+        // The Peat Key, once the second Essence is in (S154).
+        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' } }],
       ['npc', 4, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
       // The salter works at the stump table, at the west end of the square's
       // open row 4. NOT IN ROW 5, at either end: row 5 is the one row that

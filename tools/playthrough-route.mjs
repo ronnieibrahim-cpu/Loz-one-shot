@@ -820,6 +820,10 @@ export const ROUTE = [
   ['loot', 1200],
   ['travel', 5, 7, 6000],
   ['travel', 4, 7, 6000],
+  // THE PEAT KEY (S154): the old man wandering the square turned it himself
+  // when the bog took the Sanctum, and gives it up at two Essences.
+  ['beat', 'keyD3', 2000],
+  ['dialogue', 600],
   ['travel', 3, 7, 6000],
   ['fight', 8000, 8000],
   ['loot', 1200],
@@ -854,6 +858,8 @@ export const ROUTE = [
   // The Sanctum's mouth, by way of Sanctum Path. Both halves of the arch
   // enter; the left one is the tile the door's own warp sits on.
   ['travel', 1, 8, 8000],
+  // The Sanctum's door is shut until the Peat Key turns in it (S154).
+  ['keyhole', 4, 3, 'up', 'openedD3', 600],
   ['goto', 4, 2, 800],
   ['wait', 90],
 

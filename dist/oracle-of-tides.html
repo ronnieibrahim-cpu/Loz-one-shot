@@ -34533,7 +34533,7 @@ const PORTALS = {
     deny: 'The door is stopped with stone.\nIts keyhole is crusted with barnacles.' },
   portalD2: { pal: ['#f0b0c8', '#c86888', '#8c3858', '#1c0c14'], ground: 'sandCoral', key: 'keyD2',
     deny: 'The door is stopped with stone.\nThe keyhole branches like coral.' },
-  portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud',
+  portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud', key: 'keyD3',
     deny: 'The door is stopped with stone.\nPeat has silted up round its keyhole.' },
   portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand',
     deny: 'The door is stopped with stone.\nIts keyhole is cut square, for iron.' },
@@ -38304,7 +38304,9 @@ const rooms = {
       // `every(e, n)` phases an enemy off its id — so one extra villager here
       // re-phases every enemy in the game and the d1-descent replay walks into
       // a hit it used to dodge. Recorded in docs/HANDOFF.md.
-      ['npc', 8, 2, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4 }],
+      ['npc', 8, 2, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4,
+        // The Peat Key, once the second Essence is in (S154).
+        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' } }],
       ['npc', 4, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
       // The salter works at the stump table, at the west end of the square's
       // open row 4. NOT IN ROW 5, at either end: row 5 is the one row that
@@ -48180,6 +48182,7 @@ const CUTSCENES = {
     { shake: [2, 30] },
     { say: 'Far out past the shelf, something very large notices that it is being taken apart.' },
     { say: 'Nereth: ...a shard. Two shards. The little wading thing has hands.' },
+    { say: 'Farore: Two. The marsh is next, and the Sanctum in it is locked. The old man in the square was there when they locked it. Ask him.' },
     { music: 'overworld' },
   ],
   essence3: [
@@ -48222,6 +48225,14 @@ const CUTSCENES = {
     { say: 'Fisherman: My father dived the Coral Spire before the sea went strange. The divers locked it behind them when they gave up, and he kept the key in his tackle box.' },
     { say: 'Fisherman: Reef\'s north of here, past the gap. The sea is listening to you now. Take it.' },
     { do: (g) => g.presentKey('d2') },
+  ],
+
+  // THE PEAT KEY: the old man in the village square, at two Essences.
+  peatKey: [
+    { say: 'Old man: Two of them, and you still have all your fingers. Sit down a moment. No, stand, you are wet.' },
+    { say: 'Old man: When the bog came up over the Sanctum, we stopped its door so the marsh would not get into the village by that road. I turned the key myself.' },
+    { say: 'Old man: West, past the cracked cliff. The bog walks at low water. Here. It never did fit anything else.' },
+    { do: (g) => g.presentKey('d3') },
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------

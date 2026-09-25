@@ -753,10 +753,14 @@ The Deep Cut also has a raft on it at (3,3) and a sign explaining the three ways
 across the cut: *"Swim it, blow the raft, or grow a bridge."* All three work,
 once you own the things.
 
+**Then the Peat Key.** With two Essences, talk to the old man who wanders the
+village square (`overworld/0,4,7`). He turned the Sanctum's key himself when the
+bog took it, and gives it to you now (`peatKey`).
+
 Now head into the Marsh. From Tidewatch: west to West Bluff (`overworld/0,3,7`),
 west to Bog Causeway (`0,2,7`), west to Sanctum Path (`0,1,7`) — a `rupee20` in
 the open at (2,2) — and south to **Sanctum Mouth** (`overworld/0,1,8`). Dungeon
-3's door is at tile (4,1).
+3's door is at tile (4,1): lean into its keyhole holding the Peat Key.
 
 One screen further south is **Witch's Hollow** (`overworld/0,1,9`), with
 **Yarrow**, the Chain's ninth link, and a buried Heart Piece you cannot reach

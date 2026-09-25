@@ -209,6 +209,7 @@ const CUTSCENES = {
     { shake: [2, 30] },
     { say: 'Far out past the shelf, something very large notices that it is being taken apart.' },
     { say: 'Nereth: ...a shard. Two shards. The little wading thing has hands.' },
+    { say: 'Farore: Two. The marsh is next, and the Sanctum in it is locked. The old man in the square was there when they locked it. Ask him.' },
     { music: 'overworld' },
   ],
   essence3: [
@@ -251,6 +252,14 @@ const CUTSCENES = {
     { say: 'Fisherman: My father dived the Coral Spire before the sea went strange. The divers locked it behind them when they gave up, and he kept the key in his tackle box.' },
     { say: 'Fisherman: Reef\'s north of here, past the gap. The sea is listening to you now. Take it.' },
     { do: (g) => g.presentKey('d2') },
+  ],
+
+  // THE PEAT KEY: the old man in the village square, at two Essences.
+  peatKey: [
+    { say: 'Old man: Two of them, and you still have all your fingers. Sit down a moment. No, stand, you are wet.' },
+    { say: 'Old man: When the bog came up over the Sanctum, we stopped its door so the marsh would not get into the village by that road. I turned the key myself.' },
+    { say: 'Old man: West, past the cracked cliff. The bog walks at low water. Here. It never did fit anything else.' },
+    { do: (g) => g.presentKey('d3') },
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------
