@@ -1,3 +1,92 @@
+## S152 — every boss wears Seasons art; the gel, bubble and beetle mechanics
+
+The human's brief (NEXT-PROMPT S151): boss art first, one boss at a time with
+a yes before the next; then the three Seasons mechanics they said yes to, one
+per commit, the robot taught each; then the ported enemies' missing art
+through rippers; then everything green. All four done. Disassembly cloned
+read-only to the scratchpad, as in S149-S151.
+
+### What landed
+- BOSS RIPPER (new): `tools/rip-bosses.py` -> `src/data/sprites-bosses-seasons.js`,
+  from `assets/bosses/oracles-disasm/` (credited, README there). No sheet has
+  a boss; the cartridge has all of them as 8x16 hardware sprites plus the
+  tables that place/flip/colour them, so the ripper does what
+  code/bank0.s @drawObject does (oam y-16/x-8, tile = base + oam tile, flags
+  = oamFlags XOR oam flags; earlier oam entries in front) with
+  gfx headers (objectGfxHeaders.s), enemyData.s b3 (palette + tile base),
+  enemyAnimations.s pointer tables, enemyOamData.s, and palettes
+  (standardSpritePaletteData; a boss's own palette 6/7 comes from the
+  palette header it passes enemyBoss_initializeRoom, `ld b,PALH_..` in its
+  object_code file: Aquamentus $80, Dodongo $81, Mothula $82, Digdogger $84,
+  Manhandla $85, Gleeok $87, Medusa $88, Onox $89, Dragon Onox $8a). A part
+  may take one ROW of oam entries (`rows`), so creatures combine. Colours are
+  RGB555*255/31, the same scaling the enemy sheet uses (Seasons blue == the
+  octorok's blue to the bit). check-rippers covers it (12 rippers now).
+- RIG: a boss frame is drawn at its own size in LAYERS (one per palette) with
+  (ax, ay) on the centre of the hitbox (`BOSS_RIG` from the generated file
+  merged with hand-authored `BOSS_ART_RIG` in sprites-bosses.js;
+  Boss.draw, `bossRig()` export; cutscene `show` flattens a rig). Hitboxes and
+  fights untouched (check-bosses 19/19 after every boss). `openFrames`: a
+  shelled boss shows its weak point open (Boss.spriteName, drawing only).
+- THE BOSSES (each shown to the human before/after with a Seasons reference;
+  their answers in brackets):
+  - Gohmaraq = Seasons Gohma, body + claw at gohma.s offsets, eye shut/open (yes).
+  - Anemos = Medusa Head's crown (top oam row) on Manhandla's stalk, in
+    Medusa's sea-green (they asked to keep the crown and lose the face; chose B).
+  - Gloomtide = Digdogger, crest hand-swapped for mud bubbles, claws for drips,
+    swamp green paletteData4da0 (asked for less like source; chose B).
+  - Wyverna = Aquamentus hand-edited: fan back fin for horns, ribbed fish fin
+    for the wing, tail fluke, gills, Gleeok's teal (chose "keep refining", then
+    "go further").
+  - Rootmaw = a Seasons tree canopy clumped x3 (spring overworld sheet
+    @1204,156, lifted off its sand), its roots x3, a drawn trunk with slit
+    eyes and stitched maw; murky swamp colours, weed, moss, knot, curled roots
+    (drawn at their go-ahead; "more drowned"; "add flourish").
+  - Brinehulk = drawn salt golem around Seasons' Boulder (enemy sheet @789,69)
+    as fists; salt crust, crystals, core that cracks open ("draw it like the tree").
+  - Nereth = General Onox hand-worked: gold crown, seaweed hair, barnacles,
+    glowing eyes, torn cape (4 layers) ("more flourish").
+  - Thalassor, Gustharpy and Saltwraith are defined but placed in no room:
+    skipped, still hand-drawn.
+  - Minibosses: clawcrab = sand crab + two Gohma claws; ironknight = darknut
+    + drawn tower shield and spear; thornvine = Manhandla head on a drawn
+    thorny vine; tideshade = Poe sister + drawn shroud; reefguard = Armos
+    turned to coral with drawn antler coral and plinth; bogmaw = Like Like in
+    a drawn dark mud pool. (Last two took three rounds.)
+- MECHANICS (feel.js, all `derived`, file and label named): GEL clings on
+  touch (gel.s stateC/D: 120 f, no sword, moves every other frame, each press
+  -3 f, hops off opposite Link's facing) — Player.clungBy/swordLocked,
+  spec.onTouchLink; BUBBLE touch -> Player.swordLock 180 f (bubble.s; no
+  bubble is placed in any room today); SPIKED BEETLE: `shield: 'all'` right
+  way up, spec.onShielded flips it on ANY shield level (spikedBeetle.s),
+  skids, harmless and hittable 180 f, shakes last 60 (`shakeX`, drawing
+  only), rights itself. Its walk frames are d0/d1 for every facing and s0 is
+  the belly-up pose (S151 had them half swapped). ROBOT: shakes a clinging gel
+  off by releasing the d-pad every other frame (actor-runtime pump, live
+  runs only); leaves an unhurtable beetle alone by the existing shield:'all'
+  rule. NEW TOOL check-seasons-mechanics.mjs (13 assertions, CLAUDE.md row).
+- ENEMY ART (rip-enemies.py): beamos_e0..e7 (boxes 16-23, anticlockwise on
+  the sheet from up), leever_rise0/1 (136/137), pincer_body (232, three beads
+  at 3/4, 1/2, 1/4 of reach, `spec.drawUnder`), darknut sword: TALL frames
+  darknut_down0/1 and up0/1 at native size (boxes 82-85; `spec.drawOffset`
+  bottom-anchors the up pair) and darknut_sword_s (box 60, flipped) drawn in
+  front sideways (`spec.drawOver`). `spec.pose(e)` picks a state frame after
+  the flinch. check-motion, replay 51/51, check-sword green.
+- Fixed on the way: shoot-cutscene --nereth pointed at d6/1,3,1 since the
+  Keep's rebuild; the throne room is 1,3,0.
+
+### Waiting on the human
+- Nothing asked of them is open. Worth showing: the Wyverna/Rootmaw/Nereth
+  in motion in a real fight (only stills were shown).
+
+### Noticed, not chased
+- `darknut_atk` (the hand-drawn square-up pose) still shows while it squares
+  up; Seasons has no such pose.
+- Anemos, Rootmaw and Nereth are much taller than their hitboxes; seen from
+  far below the camera can crop their tops (check in play).
+- The playthrough never buys the shield, so it never flips a beetle; beetles
+  are overworld-only and it walks past them.
+
 ## S151 — Seasons' white, Seasons' enemies, Seasons' music
 
 The human's brief: apply S150's parked fades-and-chest patch, add the menu
