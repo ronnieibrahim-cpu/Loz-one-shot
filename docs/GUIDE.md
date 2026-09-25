@@ -920,13 +920,17 @@ width and stays there.
 
 ## 9. The Cliffs of Kell
 
+**First, the Cistern Key.** With three Essences, talk to the Salter standing on
+**Village Shore** (`overworld/0,4,8`). The Salters barred the Cistern's gate when
+the sea got into their water, and she gives you its key (`cisternKey`).
+
 From Tidewatch: east to Village East (`overworld/0,5,7`), north to The Wading
 (`0,5,6`), west to South Wood (`0,4,6`), north through Bog Trees (`0,4,5`) and
 Shrine Path (`0,4,4`) to **The Deep Cut** (`overworld/0,3,4`) — the bombed
 rockfall. Then north to Cliff Face (`0,3,3`) and west to **Kell Ledges**
 (`overworld/0,2,3`), where **Heart Piece 11** is sitting in the open at (6,2).
 West again is **Cistern Mouth** (`overworld/0,1,3`); Dungeon 4's door is at tile
-(4,1).
+(4,1): lean into its keyhole holding the Cistern Key.
 
 Alternatively from the Deep Cut go west to Kell Basin (`0,2,4`) and north to Kell
 Ledges — same place, and the Basin is full of `tektite` which hop across water

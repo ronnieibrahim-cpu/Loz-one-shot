@@ -1242,6 +1242,12 @@ export const ROUTE = [
   // Shrine Path. Nine screens, all of them already walked at least once by
   // this run, and `travel` plans the whole thing.
   ['travel', 4, 7, 10000],
+  // THE CISTERN KEY (S154): the Salter on Village Shore barred the Cistern's
+  // gate when the sea got into it, and gives up the key at three Essences.
+  ['travel', 4, 8, 4000],
+  ['beat', 'keyD4', 2000],
+  ['dialogue', 600],
+  ['travel', 4, 7, 4000],
   ['travel', 4, 4, 10000],
 
   // ------------------------------------------------- overworld 0,3,4
@@ -1276,6 +1282,9 @@ export const ROUTE = [
   // warping, entered from the east.
   ['travel', 2, 3, 8000],
   ['travel', 1, 3, 8000],
+  // The Cistern's door is shut until the Cistern Key turns in it (S154):
+  // leaned on from the east, the side the run arrives on.
+  ['keyhole', 6, 2, 'left', 'openedD4', 900],
   ['goto', 6, 2, 1200],
   ['hold', ['left'], 60],
   ['wait', 120],

@@ -217,6 +217,7 @@ const CUTSCENES = {
     { show: { art: ['p_essence3_0', 'p_essence3_1'], scale: 3, pal: 'essence3' }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
     { say: 'The marsh drains a finger\'s width and stays there. It has not held still in a year.' },
     { say: 'Farore: Three. The sea is starting to remember which way is down. Keep going.' },
+    { say: 'Farore: The Cistern up on the Kell is locked too. The Salters drew their water from it. Ask the one on the village shore.' },
     { music: 'overworld' },
   ],
   essence4: [
@@ -260,6 +261,14 @@ const CUTSCENES = {
     { say: 'Old man: When the bog came up over the Sanctum, we stopped its door so the marsh would not get into the village by that road. I turned the key myself.' },
     { say: 'Old man: West, past the cracked cliff. The bog walks at low water. Here. It never did fit anything else.' },
     { do: (g) => g.presentKey('d3') },
+  ],
+
+  // THE CISTERN KEY: the Salter on Village Shore, at three Essences.
+  cisternKey: [
+    { say: 'Salter: Three. The pans felt that. The brine ran the right way for an hour and then remembered itself.' },
+    { say: 'Salter: Our water came down from the Cistern on the Kell, before the sea got into it. When it did, we barred the gate and kept the key. Salters keep things.' },
+    { say: 'Salter: North through the Deep Cut, then west along the cliffs. Take the key. Bring back the water, if you can carry it.' },
+    { do: (g) => g.presentKey('d4') },
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------

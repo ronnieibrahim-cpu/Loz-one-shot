@@ -2127,7 +2127,9 @@ const rooms = {
         sprite: 'npc_child', waiting: 'coastChild', after: 'pellAfter',
         deals: [{ stage: 2, wants: 'float', gives: 'claw', text: 'pellTrade' }],
       }],
-      ['npc', 4, 1, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3 }],
+      ['npc', 4, 1, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3,
+        // The Cistern Key, once the third Essence is in (S154).
+        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' } }],
       ['crab', 6, 4],
     ],
   },

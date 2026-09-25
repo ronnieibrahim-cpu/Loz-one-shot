@@ -1539,7 +1539,7 @@ const PORTALS = {
     deny: 'The door is stopped with stone.\nThe keyhole branches like coral.' },
   portalD3: { pal: ['#d8d8a8', '#a0a870', '#687044', '#101408'], ground: 'mud', key: 'keyD3',
     deny: 'The door is stopped with stone.\nPeat has silted up round its keyhole.' },
-  portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand',
+  portalD4: { pal: ['#d8dcd0', '#a0a898', '#646c64', '#14181a'], ground: 'sand', key: 'keyD4',
     deny: 'The door is stopped with stone.\nIts keyhole is cut square, for iron.' },
   portalD5: { pal: ['#d0b890', '#98764c', '#5c4028', '#140c08'], ground: 'sand',
     deny: 'The door is stopped with stone.\nMoss grows thick in its keyhole.' },
