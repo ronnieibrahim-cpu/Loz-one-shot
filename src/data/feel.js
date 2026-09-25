@@ -1799,3 +1799,26 @@ export const KEESE_STOP_FRAMES = 0x7f;
  *  keese_subid00_stateA, counter1 = $20 + (random & $7f). */
 export const KEESE_REST_BASE = 0x20;
 export const KEESE_REST_SPAN = 0x80;
+
+/** px/f — a leever charging. derived: leever.s @state9, SPEED_80. */
+export const LEEVER_SPEED = 0.5;
+
+/** [f] — how long a leever waits underground, one picked at random. derived:
+ *  leever.s @setRandomCounter1 @counter1Vals ($10 $30 $50 $70). */
+export const LEEVER_UNDER_FRAMES = [16, 48, 80, 112];
+
+/** [tiles] — how far ahead of Link a leever surfaces, picked by the frame
+ *  counter. derived: leever.s @chooseSpawnPosition @@linkRelativeOffsets
+ *  (3, 4, 5, 5 rows or columns along his facing). */
+export const LEEVER_SURFACE_TILES = [3, 4, 5, 5];
+
+/** f — rising out of the sand, and sinking back into it. derived: Seasons'
+ *  data/seasons/enemyAnimations.s, enemy $0b's animations 0 (18+1+8 frames
+ *  to its parameter 1) and 2 (8+1+15). */
+export const LEEVER_RISE_FRAMES = 27;
+export const LEEVER_SINK_FRAMES = 24;
+
+/** f — a leever charges for BASE + (random & MASK) frames. derived: leever.s
+ *  @setRandomHighCounter1 ($70 + (random & $38)). */
+export const LEEVER_CHASE_BASE = 0x70;
+export const LEEVER_CHASE_MASK = 0x38;

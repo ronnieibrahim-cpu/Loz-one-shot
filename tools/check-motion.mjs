@@ -213,7 +213,11 @@ async function runInPage([ground, wet, frames, seed]) {
       const ddx = Math.abs(e.fx - w.px), ddy = Math.abs(e.fy - w.py);
       w.moved += ddx + ddy;
       w.px = e.fx; w.py = e.fy;
-      if (w.port && !(e.knockTime > 0) && !(e.stun > 0) && !e.dormant) {
+      // Surfacing somewhere new (a leever, a wizzrobe) is not a walk: the
+      // frame it comes up, having been hidden, is not measured.
+      const surfaced = w.wasHidden && !e.hidden;
+      w.wasHidden = !!e.hidden;
+      if (w.port && !(e.knockTime > 0) && !(e.stun > 0) && !e.dormant && !surfaced && !e.hidden) {
         // Along an axis the move is exactly the speed; along one of the
         // cartridge's 32 angles each axis is rounded to a whole subpixel, so
         // the length is the speed to within that rounding. Never more. A move

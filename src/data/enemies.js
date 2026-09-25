@@ -8,7 +8,7 @@ import {
   driftWithTide, beginStep, advanceStep, OPPOSITE,
   randDir, walkOn, randomCardinal, cardinalToward, angleToward, moveAngle, launch, fall, flyAngle,
 } from '../game/enemy.js';
-import { spawnEntity } from '../game/entity.js';
+import { spawnEntity, canOccupy } from '../game/entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.js';
@@ -20,6 +20,8 @@ import {
   ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET,
   GEL_HOLD_FRAMES, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES,
   KEESE_SPEED, KEESE_FIRST_REST, KEESE_FLIGHT_BASE, KEESE_FLIGHT_SPAN, KEESE_VEER_ODDS,
+  LEEVER_SPEED, LEEVER_UNDER_FRAMES, LEEVER_SURFACE_TILES, LEEVER_RISE_FRAMES, LEEVER_SINK_FRAMES,
+  LEEVER_CHASE_BASE, LEEVER_CHASE_MASK,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
 } from './feel.js';
 
@@ -332,20 +334,61 @@ export function installEnemies() {
 
   // --- Leever: burrows and surfaces near you -----------------------------
   defineEnemy('leever', {
-    hp: 2, damage: 2, pal: 'enemyp', speed: 0.5, rate: 9,
+    hp: 2, damage: 2, pal: 'enemyp', rate: 8,
     frames: ['leever_0', 'leever_1'],
     hurtFrame: 'leever_hurt',
     deathFrame: 'leever_death',
     terrain: 'land',
     drops: 'common',
+    // Seasons' leever (leever.s, subid 0): waits underground, then rises three
+    // to five tiles ahead of wherever Link is facing, charges him in a
+    // straight line, and sinks when its time is up or something is in its
+    // way. Harmless and untouchable while under or on its way up or down.
+    port: 'leever.s',
+    speed: LEEVER_SPEED,
     ai(e, g) {
-      // down/up were 70/110 — surfaced (chasing, vulnerable) for MORE of the
-      // cycle than buried, the opposite of docs/ENEMIES.md's "spends most of
-      // its time buried and untouchable" lesson. Swapped so buried is the
-      // longer half, confirmed with a scratch probe counting hidden vs. up
-      // frames over several cycles before and after. See
-      // docs/prompts/LEDGER.md.
-      submerge(e, g, { down: 110, up: 70, whileUp: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
+      const under = () => { e.hidden = true; e.harmless = true; e.invuln = 9999; };
+      switch (e.aiState) {
+        case 0:                                   // @state_uninitialized
+          under(); e.still = true;
+          e.aiTimer = LEEVER_UNDER_FRAMES[g.rng.int(4)];
+          e.aiState = 'under';
+          return;
+        case 'under': {                           // @state8
+          if (--e.aiTimer > 0) return;
+          e.aiTimer = 1;                          // an unusable spot tries again next frame
+          const p = g.player;
+          if (!p) return;
+          const k = g.frame & 3, n = LEEVER_SURFACE_TILES[k];
+          const [dx, dy] = { up: [0, -n], down: [0, n], left: [-n, 0], right: [n, 0] }[p.dir] || [0, n];
+          const tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
+          const x = tx * TILE, y = ty * TILE;
+          if (tx < 0 || ty < 0 || x > g.room.pw - TILE || y > g.room.ph - TILE) return;
+          if (!canOccupy(g, e, x, y)) return;
+          e.x = x; e.y = y;
+          e.hidden = false;
+          e.aiState = 'rise'; e.aiTimer = LEEVER_RISE_FRAMES;
+          return;
+        }
+        case 'rise':                              // @state9
+          if (--e.aiTimer > 0) return;
+          e.harmless = false; e.invuln = 0; e.still = false;
+          cardinalToward(e, g);
+          e.aiTimer = LEEVER_CHASE_BASE + (g.rng.int(256) & LEEVER_CHASE_MASK);
+          e.aiState = 'chase';
+          return;
+        case 'chase':                             // @subid00_stateA
+          if (--e.aiTimer > 0 && walkOn(e, g, LEEVER_SPEED)) return;
+          e.harmless = true; e.invuln = 9999; e.still = true;
+          e.aiState = 'sink'; e.aiTimer = LEEVER_SINK_FRAMES;
+          return;
+        case 'sink':                              // @stateB
+          if (--e.aiTimer > 0) return;
+          under();
+          e.aiTimer = LEEVER_UNDER_FRAMES[g.rng.int(4)];
+          e.aiState = 'under';
+          return;
+      }
     },
   });
 
