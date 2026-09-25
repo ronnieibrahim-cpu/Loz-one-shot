@@ -1964,3 +1964,21 @@ export const DARKNUT_SQUARE_FRAMES = 0x10;
  *  swordEnemies.s swordDarknut_state9 (counter1 $60, SPEED_c0). */
 export const DARKNUT_CHASE_FRAMES = 0x60;
 export const DARKNUT_CHASE_SPEED = 0.75;
+
+/** f — a wizzrobe flickers in over this long. derived: wizzrobe.s
+ *  wizzrobe_subid1_state8, counter1 60. */
+export const WIZZROBE_PHASE_IN_FRAMES = 60;
+
+/** f — stands this long, and fires when this many are left. derived:
+ *  wizzrobe.s wizzrobe_subid1_state9 (counter1 72) and _stateA (fires at 52). */
+export const WIZZROBE_STAND_FRAMES = 72;
+export const WIZZROBE_FIRE_AT = 52;
+
+/** f — then phases out over OUT frames, the last GONE of them unseen. derived:
+ *  wizzrobe.s wizzrobe_subid1_stateA (counter1 180) and _stateB (invisible
+ *  below 120). */
+export const WIZZROBE_OUT_FRAMES = 180;
+export const WIZZROBE_GONE_FRAMES = 120;
+
+/** px/f — its shot. derived: parts/wizzrobeProjectile.s, speed $50 (SPEED_200). */
+export const WIZZROBE_SHOT_SPEED = 2;

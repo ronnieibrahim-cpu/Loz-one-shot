@@ -27,6 +27,8 @@ import {
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
   WHISP_SPEED,
+  WIZZROBE_PHASE_IN_FRAMES, WIZZROBE_STAND_FRAMES, WIZZROBE_FIRE_AT, WIZZROBE_OUT_FRAMES,
+  WIZZROBE_GONE_FRAMES, WIZZROBE_SHOT_SPEED,
   DARKNUT_SPEED, DARKNUT_WALK_BASE, DARKNUT_WALK_MASK, DARKNUT_SEE_PX, DARKNUT_CHASE_COOLDOWN,
   DARKNUT_SQUARE_FRAMES, DARKNUT_CHASE_FRAMES, DARKNUT_CHASE_SPEED,
   STALFOS_SPEED, STALFOS_WALK_BASE, STALFOS_WALK_MASK, STALFOS_TOWARD_ODDS, STALFOS_SHY_PX,
@@ -834,18 +836,47 @@ export function installEnemies() {
     deathFrame: 'wizzrobe_death',
     attackFrame: 'wizzrobe_atk',
     drops: 'good',
+    // Seasons' red wizzrobe (wizzrobe.s, subid 1): picks an open tile on the
+    // screen, faces Link and phases in, flickering; stands, fires once along
+    // the way it faces, phases out and is gone a while. Untouchable except
+    // while it stands.
+    port: 'wizzrobe.s',
     ai(e, g) {
-      // submerge() is the engine's appear/disappear cycle; it hides the sprite
-      // and drops the hitbox while down, which is exactly a wizzrobe's phase.
-      submerge(e, g, {
-        down: 90, up: 80,
-        whileUp(e2, g2) {
-          if (every(e2, 44)) {
-            facePlayer(e2, g2);
-            shoot(e2, g2, { sprite: 'shot_orb', pal: 'magic', speed: 1.6, aim: true, damage: 3 });
+      const off = () => { e.harmless = true; e.invuln = 9999; };
+      switch (e.aiState) {
+        case 0: off(); e.hidden = true; e.aiState = 'choose'; return;
+        case 'choose': {                          // subid1 state 8
+          // wizzrobe_chooseSpawnPosition: a row 0-7 of the view, then a
+          // column rolled until it is 0-9; an unusable tile tries again next frame.
+          const cam = g.camera || { x: 0, y: 0 };
+          const row = (g.rng.int(256) & 0x70) >> 4;
+          let col;
+          do col = (g.rng.int(256) & 0xf0) >> 4; while (col >= 10);
+          const x = Math.floor(cam.x / TILE) * TILE + col * TILE;
+          const y = Math.floor(cam.y / TILE) * TILE + row * TILE;
+          if (x > g.room.pw - TILE || y > g.room.ph - TILE || !canOccupy(g, e, x, y)) return;
+          e.x = x; e.y = y;
+          cardinalToward(e, g);
+          e.aiState = 'in'; e.aiTimer = WIZZROBE_PHASE_IN_FRAMES;
+          return;
+        }
+        case 'in':                                // state 9
+          e.hidden = !!(e.tick & 1);
+          if (--e.aiTimer > 0) return;
+          e.hidden = false; e.harmless = false; e.invuln = 0;
+          e.aiState = 'stand'; e.aiTimer = WIZZROBE_STAND_FRAMES;
+          return;
+        case 'stand':                             // state $0a
+          if (--e.aiTimer <= 0) { off(); e.aiState = 'out'; e.aiTimer = WIZZROBE_OUT_FRAMES; return; }
+          if (e.aiTimer === WIZZROBE_FIRE_AT) {
+            shoot(e, g, { sprite: 'shot_orb', pal: 'magic', speed: WIZZROBE_SHOT_SPEED, aim: false, damage: 3 });
           }
-        },
-      });
+          return;
+        case 'out':                               // state $0b
+          if (--e.aiTimer <= 0) { e.aiState = 'choose'; return; }
+          e.hidden = e.aiTimer <= WIZZROBE_GONE_FRAMES ? true : !!(e.tick & 1);
+          return;
+      }
     },
   });
 
