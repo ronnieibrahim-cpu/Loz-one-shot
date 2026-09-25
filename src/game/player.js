@@ -42,7 +42,7 @@ import {
   BELLOWS_RAFT_SCALE,
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
-  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT,
+  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFT_STEP_FRAMES, LIFT_STEP_POS,
   ROD_RING_FRAMES,
   CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
@@ -122,6 +122,7 @@ export class Player extends Entity {
     this.shielding = false;
     this.jumping = false;
     this.carrying = null;
+    this.liftT = 0;
     this.inDeep = false;
     this.inShallow = false;
     this.cleatMode = 'swim';      // 'swim' on the surface, 'sink' on the floor
@@ -185,7 +186,7 @@ export class Player extends Entity {
     if (this.falling > 0) { this.updateFalling(game); return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
     if (this.sinkT > 0) { this.updateSinkTransition(game); return; }
-    if (this.frozen > 0) { this.frozen--; this.animT++; return; }
+    if (this.frozen > 0) { this.frozen--; this.animT++; this.placeCarried(); return; }
 
     // Being reeled in by the Dredge Line suspends normal control.
     if (this.hookPulling) { this.animT++; return; }
@@ -218,10 +219,34 @@ export class Player extends Entity {
     this.updateHazards(game);
     this.updateStrandwalker(game);
 
-    if (this.carrying) {
-      this.carrying.x = this.x;
-      this.carrying.y = this.y - CARRY_HEIGHT;
+    this.placeCarried();
+  }
+
+  /**
+   * Where the thing in his hands is. Overhead at CARRY_HEIGHT once lifted;
+   * during the lift (`liftT`, counting down) at Seasons' two lift positions
+   * for the way he is facing — see LIFT_STEP_POS.
+   */
+  placeCarried() {
+    const c = this.carrying;
+    if (!c) return;
+    if (this.liftT > 0) {
+      const done = LIFT_STEP_FRAMES[0] + LIFT_STEP_FRAMES[1] - this.liftT;
+      const [x, z] = LIFT_STEP_POS[this.dir][done < LIFT_STEP_FRAMES[0] ? 0 : 1];
+      this.liftT--;
+      c.x = this.x + x;
+      c.y = this.y + z;
+      return;
     }
+    c.x = this.x;
+    c.y = this.y - CARRY_HEIGHT;
+  }
+
+  /** Start the lift: Link is held still for its two steps, as in Seasons. */
+  beginLift() {
+    this.liftT = LIFT_STEP_FRAMES[0] + LIFT_STEP_FRAMES[1];
+    this.frozen = Math.max(this.frozen, this.liftT);
+    this.placeCarried();
   }
 
   // --------------------------------------------------------------- terrain
@@ -942,12 +967,13 @@ export class Player extends Entity {
       if (e.liftable && !e.dead && Math.hypot(e.cx - (this.cx + dx * LIFT_REACH), e.cy - (this.cy + dy * LIFT_REACH)) < LIFT_REACH) {
         this.carrying = e;
         e.carried = true;
+        this.beginLift();
         game.audio.sfx('lift');
         return true;
       }
     }
     const got = game.liftTile(tx, ty, level, this);
-    if (got) { this.carrying = got; game.audio.sfx('lift'); return true; }
+    if (got) { this.carrying = got; this.beginLift(); game.audio.sfx('lift'); return true; }
     return false;
   }
 
@@ -955,6 +981,7 @@ export class Player extends Entity {
     const c = this.carrying;
     if (!c) return false;
     this.carrying = null;
+    this.liftT = 0;
     c.carried = false;
     const [dx, dy] = DIR_VEC[this.dir];
     if (c instanceof ThrownObject || c.thrownVx !== undefined) {
@@ -976,6 +1003,7 @@ export class Player extends Entity {
     if (!this.carrying) return;
     const c = this.carrying;
     this.carrying = null;
+    this.liftT = 0;
     c.carried = false;
     c.remove = true;
     game.spawnEffect('splash', c.x, c.y);
@@ -1396,6 +1424,9 @@ export class Player extends Entity {
       return 'link_fall_' + (t < a ? 0 : t < a + b ? 1 : 2);
     }
     if (this.spinning > 0) { this.flipX = false; return 'link_spin_' + this.spinPos(); }
+    // Holding up something just got: Seasons' own pose, facing the viewer.
+    const shown = game && game.itemShow;
+    if (shown && shown.hands && !shown.chest) { this.flipX = false; return 'link_get_' + shown.hands; }
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.bellowsT > 0) return 'link_push_' + key;
     if (this.sinkT > 0) return 'link_dive';

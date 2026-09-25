@@ -37,7 +37,7 @@ import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } from './entity.js';
-import { spawnEffectAt, Explosion } from './effects.js';
+import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
 import { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
@@ -64,7 +64,7 @@ import {
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
-  BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
+  BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
@@ -1220,9 +1220,29 @@ export class Game {
     const name = itemName(id, lv);
     const text = `You got the ${name}!\n${def ? def.desc : ''}`;
     if (chest) { this.chestShow(chest, { id, lv }, text); return; }
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { id, lv, t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ id, lv }, id === 'sword' ? 1 : 2);
     this.say(text);
+  }
+
+  /**
+   * LINK HOLDS IT UP (S155), Seasons' way: he takes the "Pick up item" pose
+   * (`link_get_1` one hand, `link_get_2` both), the thing sits ITEM_HOLD_RISE
+   * above him — nudged ITEM_HOLD_ONE_HAND_X toward the raised hand when it is
+   * one — and it stays up until its text box is closed, never less than
+   * ITEM_PRESENT_FRAMES. Which hands: Seasons' own grab modes
+   * (data/seasons/treasureObjectData.s) — two for nearly everything a person
+   * hands over or you pick up off the ground (a Piece of Heart, a trade item,
+   * a shield, a satchel), one for a sword and for a key. Out of a CHEST there
+   * is no pose at all: the item rises out of the chest (chestShow).
+   */
+  holdUp(show, hands) {
+    // Both hands are up: whatever he was working stops, and the Bellows'
+    // wind goes with it (its puffs would otherwise hang frozen on his head
+    // for as long as the text is open, since nothing updates under a box).
+    if (this.player.stopBellows) this.player.stopBellows(this);
+    for (const e of this.entities) if (e.isEffect && e.spec === EFFECTS.foam) e.remove = true;
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = Object.assign({ t: ITEM_PRESENT_FRAMES, hands }, show);
   }
 
   /**
@@ -1248,8 +1268,7 @@ export class Game {
   presentTrade(id) {
     const def = TRADE_ITEMS[id];
     this.audio.jingle('itemGet');
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { sprite: tradeIcon(id), t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ sprite: tradeIcon(id) }, 2);
     this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
   }
 
@@ -1261,8 +1280,7 @@ export class Game {
   presentPrize(kind) {
     const spec = PICKUPS[kind];
     if (!spec) return;
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { sprite: spec.sprite, pal: spec.pal, t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ sprite: spec.sprite, pal: spec.pal }, 2);
     spec.get(this, null);
     if (spec.worth) {
       this.audio.jingle('itemGet');
@@ -1357,8 +1375,7 @@ export class Game {
     const def = ERRANDS[id];
     if (!def) return;
     this.audio.jingle('itemGet');
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { sprite: def.icon, t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ sprite: def.icon }, 2);
     this.say(`You found the ${def.name}!\n${def.got}`);
   }
 
@@ -1373,8 +1390,7 @@ export class Game {
     if (!key) return;
     setFlag(this.progress, key.flag);
     this.audio.jingle('itemGet');
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { sprite: key.icon, t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ sprite: key.icon }, 1);
     this.say(`You got the ${key.name}!\n${key.desc}`);
   }
 
@@ -1804,7 +1820,9 @@ export class Game {
       if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
       // The item stays up until its text is read, then goes with it.
       if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
-      else if (!s.chest && s.t <= 0) this.itemShow = null;
+      // Held up, it goes when its text is read (Seasons deletes the treasure
+      // the frame the box closes) and not before the pose's own minimum.
+      else if (!s.chest && s.t <= 0 && !this.dialogue.active) this.itemShow = null;
       if (this.itemShow === null && this.player) this.player.frozen = 0;
     }
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
@@ -2312,7 +2330,7 @@ export class Game {
     // Through the scene's own offset, which carries the camera: in a room
     // bigger than the screen the prize used to float wherever Link would have
     // been had the view never scrolled.
-    let x = ox + p.x, y = oy + p.y - 16;
+    let x = ox + p.x + (s.hands === 1 ? ITEM_HOLD_ONE_HAND_X : 0), y = oy + p.y - ITEM_HOLD_RISE;
     if (s.chest) {
       // Rising out of the chest, as Seasons draws it.
       const a = (s.age || 0) - CHEST_ITEM_DELAY;

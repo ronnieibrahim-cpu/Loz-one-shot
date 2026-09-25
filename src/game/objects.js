@@ -100,7 +100,7 @@ export const PICKUPS = {
     },
   },
   heartPiece: {
-    sprite: 'p_heartpiece', pal: 'heart', persistent: true,
+    sprite: 'p_heartpiece', pal: 'heart', persistent: true, hold: 2,
     get(g) {
       const done = addHeartPiece(g.progress);
       g.audio.jingle('heartPiece');
@@ -119,7 +119,7 @@ export const PICKUPS = {
     },
   },
   heartContainer: {
-    sprite: 'p_heartcontainer', pal: 'heart', persistent: true,
+    sprite: 'p_heartcontainer', pal: 'heart', persistent: true, hold: 2,
     get(g) { addHeartContainer(g.progress); g.audio.jingle('fanfare'); g.say('You got a Heart Container!'); },
   },
 };
@@ -236,6 +236,9 @@ export class Pickup extends Entity {
   collect(game) {
     this.remove = true;
     if (this.saveKey && !this.spec.fleeting) game.progress.secrets[this.saveKey] = true;
+    // Picked up off the ground, a Piece of Heart or a Heart Container is held
+    // up in both hands, as Seasons does (grab mode 2 in its treasure table).
+    if (this.spec.hold && !game.itemShow) game.holdUp({ sprite: this.sprite, pal: this.pal }, this.spec.hold);
     this.spec.get(game, this);
     game.spawnEffect('sparkle', this.x, this.y, { life: 14 });
   }

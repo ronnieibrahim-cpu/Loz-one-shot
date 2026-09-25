@@ -842,6 +842,19 @@ export const PEGASUS_FRAMES = 480;
  *  phrase instead of being cut off by it. */
 export const ITEM_PRESENT_FRAMES = 116;
 
+/** px — how far above Link an item he holds up is drawn. derived from the
+ *  cartridge: oracles-disasm object_code/common/interactions/treasure.s,
+ *  @setLinkAnimationAndDeleteIfTextClosed puts the treasure at Link's position
+ *  with `ld b,$f2` (y -14) through objectTakePositionWithOffset. Both are
+ *  sprite centres, and both sprites are 16x16, so it is the same offset
+ *  between their corners. It was 16. */
+export const ITEM_HOLD_RISE = 14;
+
+/** px — how far toward his raised hand a ONE-handed hold draws the item.
+ *  derived: same routine, @grabMode1 `ldbc $80,$fc` (x -4); @grabMode2, both
+ *  hands, is `ldbc $81,$00`. */
+export const ITEM_HOLD_ONE_HAND_X = -4;
+
 /** f — how long Link is frozen when claiming an essence. guessed. */
 export const ESSENCE_FREEZE_FRAMES = 150;
 
@@ -916,8 +929,31 @@ export const THROW_SLIDE_DECAY = 0.9;
 /** sp/f — below this a thrown bomb's slide is called finished. guessed. */
 export const THROW_SLIDE_STOP = 26;
 
-/** px — height an object is held at while carried. guessed. */
+/** px — height an object is held at while carried. derived from the
+ *  cartridge (S155): oracles-disasm object_code/common/itemParents/
+ *  commonCode.s, @liftedObjectPositions, weight 0 (a pot, a rock, a bush):
+ *  z $f3 = -13 standing and walking, x 0, in every direction. It was a
+ *  guessed 13 and the guess was right. */
 export const CARRY_HEIGHT = 13;
+
+/** f — the two steps of a lift before the object is overhead. derived:
+ *  Link's LINK_ANIM_MODE_LIFT_4 (oracles-disasm data/seasons/
+ *  specialObjectAnimationData.s, animationData19cb9 running on into 19cbc)
+ *  is 3+4 frames at lift position 0, 4 at position 1, then 2 at the held
+ *  position before the pickup finishes. Link cannot move for the lift. */
+export const LIFT_STEP_FRAMES = [7, 4];
+
+/** px — where a lifted object is on each step of the lift, [x, z] per facing
+ *  (z is up-negative, as the cartridge writes it). derived: the same
+ *  @liftedObjectPositions table, weight 0, frames 0 and 1. Facing down it
+ *  starts at Link's feet and comes up past his face; facing sideways it
+ *  comes off the ground in front of him. */
+export const LIFT_STEP_POS = {
+  up: [[0, -8], [0, -6]],
+  right: [[7, 0], [3, -8]],
+  down: [[0, 6], [0, 4]],
+  left: [[-8, 0], [-4, -8]],
+};
 
 // ---------------------------------------------------------------------------
 // The Tidewright's Anchor

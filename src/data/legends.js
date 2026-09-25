@@ -368,7 +368,7 @@ export function installLegends() {
   registerLegend('cave', {
     ' ': 'void',
     '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
-    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'pot', 'o': 'rock',
+    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'potCave', 'o': 'rockCave',
     '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',

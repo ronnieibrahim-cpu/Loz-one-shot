@@ -15,6 +15,7 @@ export const REQUIRED_SPRITES = {
     'link_hold_down', 'link_hold_up', 'link_hold_side',
     ...seq('link_swim_down_', 2), ...seq('link_swim_up_', 2), ...seq('link_swim_side_', 2),
     'link_carry_down', 'link_carry_up', 'link_carry_side',
+    'link_get_1', 'link_get_2',
     'link_push_down', 'link_push_up', 'link_push_side',
     'link_hurt_down', 'link_hurt_up', 'link_hurt_side',
     'link_conch_down', 'link_conch_up', 'link_conch_side',

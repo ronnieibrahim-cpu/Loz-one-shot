@@ -2365,6 +2365,11 @@ export function installCoreTiles() {
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
+    // A cave's own rock and pot (S155): the same art on the cave's dark stone
+    // floor. The plain ones name grass and dungeon floor beneath them, so a
+    // rock lifted in a cave left a lawn behind on the rock.
+    rockCave: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'rockFloorDk' },
+    potCave: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'rockFloorDk' },
     sign: { art: ART.sign, pal: 'wood', flags: F.SOLID, underArt: 'grass' },
     // NO `stump` TILE. There was a hand-drawn one and no legend anywhere could
     // name it, so no room grid could place it — dead art carrying a SOLID flag.
@@ -3049,6 +3054,8 @@ export function installCoreTiles() {
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    rockCave: { lift: 'rockFloorDk', drop: 'common' },
+    potCave: { lift: 'rockFloorDk', drop: 'common' },
     ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },

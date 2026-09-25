@@ -126,6 +126,15 @@ FRAMES = {
     'link_push_up':     (1226, ACT_Y, False),
     'link_push_side':   (1260, ACT_Y, True),
 
+    # ---- holding up something just got (S155) -----------------------------
+    #
+    # The sheet's "Pick up item" pair: one hand raised, then both. Seasons'
+    # LINK_ANIM_MODE_GETITEM1HAND / GETITEM2HAND (oracles-disasm
+    # constants/common/linkAnimations.s); which one a treasure uses is its grab
+    # mode in data/seasons/treasureObjectData.s. Both face the viewer.
+    'link_get_1':       (1353, IDLE_Y, False),
+    'link_get_2':       (1370, IDLE_Y, False),
+
     'link_carry_down':  (1370, ACT_Y, False),
     'link_carry_up':    (1387, ACT_Y, False),
     'link_carry_side':  (1404, ACT_Y, True),
