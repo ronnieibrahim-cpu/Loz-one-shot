@@ -1,3 +1,54 @@
+## S155 — side content from existing heart pieces; items held overhead; the trading chain in plain words
+
+Branch claude/oracle-tides-side-content-iqiosb (off S154's
+claude/oracle-tides-dungeon-keys-cp6id6, which is NOT yet on main).
+
+### The human's decisions this session (bind the next one)
+1. SIDE CONTENT plan: YES as proposed (two caves, three errands, a race, a
+   dive; six existing heart pieces the robot never collects moved into them;
+   a rupee20 left on each old spot). I changed two details and said so: the
+   kite belongs to the child in the village house (houseHearth), and the bog
+   water to that child's mum (the netmaker), not a Salter.
+2. TRADING CHAIN: "The guide just needs to be updated for trading mini game,
+   then I can better weigh in on its quality." Done (chapter 13 rewritten
+   plainly). ASK THEM AGAIN next session whether it needs clearer in-game
+   hints or more distinct-looking traders, now they have read it.
+
+### What landed (one commit each, every one on the whole table + playthrough 43/43)
+| Commit | Piece | Prize (moved from) | Proof |
+|---|---|---|---|
+| 319c34f | Hollow Den: `cliffCrackedCave` (legend `Z`) in Bluff Hollow 0,3,6 bombs to a cave mouth -> cave5 | HP (Palace Wall 0,9,0) | check-side |
+| 7ae6478 + 322ec04 | Slackwater Cave: `seaCaveMouth` (legend `&`: caveMouth/waterD/waterD) at Wind Shelf 0,1,2 (3,1) -> cave6, `noTide` inside | HP (cave4) | check-side |
+| 824fc8d | Ledger errand: `e_ledger` on South Sands 0,5,9 (8,2) -> shopkeeper (houseShop) | HP (Salt Terraces 0,5,0) | check-side |
+| 750e184 | Kite errand: `treeSnag` in Bluff Hollow (7,1), Bellows gust drops `e_kite` -> houseHearth child | HP (Kell Ledges 0,2,3) | check-side |
+| aecefaa | Bog water errand: `e_bogwater` at Bog Head 0,0,6 (4,5) -> houseHearth netmaker | rupee100 | check-side (two halves; the marsh walk is check-overworld's) |
+| 0b39c76 | Tide-pool race: `racer` South Bluff 0,3,9 (1,3), `raceGoal` Pip on South Sands islet (7,6); row 6 of 0,3,9/0,4,9/0,5,9 is `4` seafloor; clock RACE_SHORE_FRAMES 400 (actor: 275) | HP (Rustfall 0,3,0), then rupee20 | check-side (win, re-win pays rupees, dawdle loses, MID/HIGH unreachable) |
+| f3df4de | Salvage dive: Wrecked Hull 0,8,9 rows 5-6 now `=` deep pool; 5 `salvage` pickups (`floor`, `fleeting`, needFlag diveAsked); Dov (trader) holds an errand with `asked` | HP (Log Drift 0,6,4) | check-side (dive, surface-early resets, surface swimmer can't take) |
+| 2165cac | Held overhead: `link_get_1/2` ripped (rip-link.py, sheet "Pick up item"); `Game.holdUp(show, hands)`; ITEM_HOLD_RISE 14, ITEM_HOLD_ONE_HAND_X -4 (treasure.s); held until text closes (min ITEM_PRESENT_FRAMES); ground heart pieces/containers held (`hold: 2`); lift in two steps LIFT_STEP_FRAMES [7,4], LIFT_STEP_POS (commonCode.s @liftedObjectPositions); CARRY_HEIGHT now derived; `rockCave`/`potCave` | — | replay 51/51, playthrough 43/43 |
+| 8083b35 | GUIDE.md + GUIDE.html (hand-built page; edit it by hand): chapter 13 plain, Side quests section, heart list | — | check-guide |
+
+Mechanisms: `errand: { need, prize, flag, ask, thanks, asked? }` on any
+`npc` or `trader` (`NPC.errandTalk`; a trader asks it only when no deal of
+theirs is live). ERRANDS table in src/data/errands.js (objects are PICKUPS
+`e_<id>`, art in sprites-errands.js, hand-drawn like trade items).
+`Game.presentPrize/presentErrand/spawnFlagged/startRace/finishRace/salvage`;
+`game.race` and `game.dive` are run state cleared on death, load, new game,
+room change (dive). check-hearts and check-guide count `errand.prize` and a
+`racer`'s `prize`. New actor directives: `errand`, `errandAsk`, `race`. New
+tool: tools/check-side.mjs (20 scenarios) and tools/shoot-steps.mjs
+(screenshots after steps / on a condition). Seasons grab modes (which items
+use one hand) are in data/seasons/treasureObjectData.s; chests have no pose.
+
+### Noticed, not chased
+- Placed `rupee20` pickups (now on six old heart-piece spots) are not
+  persistent: they blink out after PICKUP_LIFE_FRAMES and return on re-entry.
+  Pre-existing behaviour of every placed rupee.
+- The dungeon-key cutscene's rising key (S154) is its own `lift` step; the key
+  handed over afterwards now uses the one-hand pose.
+- The Seasons footage has no clean NPC-gift hold (the TAS resets just after
+  the Rod); the pose reference is the sheet and the disassembly.
+- test.mjs's fps assertion failed once under parallel load (see HANDOFF).
+
 ## S154 — a key for every dungeon, Seasons' way
 
 The brief (NEXT-PROMPT S153): propose six dungeon keys, build them one per

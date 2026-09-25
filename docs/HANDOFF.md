@@ -447,6 +447,31 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An entity added to a room the playthrough visits re-phases every enemy
+  after it (S155).** Entity ids are global and `every(e, n)` phases enemies
+  off them. Side content kept the robot's world identical by (a) placing new
+  people in rooms the robot never enters (its health table lists them), (b)
+  turning an existing entity into what was needed in place (the shopkeeper,
+  Dov, the netmaker gained an `errand` field; no new entity), and (c) giving
+  anything that must sit in a visited room a `needFlag` the robot never sets
+  (Dov's casks), since an unspawned entity takes no id. Replacing a pickup's
+  `kind` at the same index is free too.
+- **Wind does not blow through a tree (S155).** `Tide.blows` stops the
+  Bellows' cone at the first solid tile, so a thing "up a tree" must sit on
+  the canopy's LOWEST row, next to open ground, and is drawn higher.
+- **Nothing updates under a text box, effects included (S155).** A Bellows
+  puff spawned the frame an item was held up hung frozen on Link's head for as
+  long as the box was open. `Game.holdUp` now stops the Bellows and clears its
+  puffs.
+- **A real-time frame-rate test fails under your own parallel load (S155).**
+  test.mjs's "frame rate is healthy" read 39 fps while check-side ran beside
+  it and passed alone. It measures the machine, not the game; run test.mjs
+  alone before believing it.
+- **The plain `rock` and `pot` name grass and dungeon floor beneath them
+  (S155).** Every cave's `o` left a lawn when lifted. The cave legend now uses
+  `rockCave`/`potCave` (rock floor beneath). Any new region legend that
+  reuses `rock` needs its own variant.
+
 - **A lock on a DOOR is invisible to a flood that counts SCREENS (S154).**
   check-progression marked a dungeon reached when its entrance screen was in
   the flood, so the first keyed door changed nothing it reported: the screen

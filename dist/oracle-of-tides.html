@@ -1662,6 +1662,19 @@ const PEGASUS_FRAMES = 480;
  *  phrase instead of being cut off by it. */
 const ITEM_PRESENT_FRAMES = 116;
 
+/** px — how far above Link an item he holds up is drawn. derived from the
+ *  cartridge: oracles-disasm object_code/common/interactions/treasure.s,
+ *  @setLinkAnimationAndDeleteIfTextClosed puts the treasure at Link's position
+ *  with `ld b,$f2` (y -14) through objectTakePositionWithOffset. Both are
+ *  sprite centres, and both sprites are 16x16, so it is the same offset
+ *  between their corners. It was 16. */
+const ITEM_HOLD_RISE = 14;
+
+/** px — how far toward his raised hand a ONE-handed hold draws the item.
+ *  derived: same routine, @grabMode1 `ldbc $80,$fc` (x -4); @grabMode2, both
+ *  hands, is `ldbc $81,$00`. */
+const ITEM_HOLD_ONE_HAND_X = -4;
+
 /** f — how long Link is frozen when claiming an essence. guessed. */
 const ESSENCE_FREEZE_FRAMES = 150;
 
@@ -1736,8 +1749,31 @@ const THROW_SLIDE_DECAY = 0.9;
 /** sp/f — below this a thrown bomb's slide is called finished. guessed. */
 const THROW_SLIDE_STOP = 26;
 
-/** px — height an object is held at while carried. guessed. */
+/** px — height an object is held at while carried. derived from the
+ *  cartridge (S155): oracles-disasm object_code/common/itemParents/
+ *  commonCode.s, @liftedObjectPositions, weight 0 (a pot, a rock, a bush):
+ *  z $f3 = -13 standing and walking, x 0, in every direction. It was a
+ *  guessed 13 and the guess was right. */
 const CARRY_HEIGHT = 13;
+
+/** f — the two steps of a lift before the object is overhead. derived:
+ *  Link's LINK_ANIM_MODE_LIFT_4 (oracles-disasm data/seasons/
+ *  specialObjectAnimationData.s, animationData19cb9 running on into 19cbc)
+ *  is 3+4 frames at lift position 0, 4 at position 1, then 2 at the held
+ *  position before the pickup finishes. Link cannot move for the lift. */
+const LIFT_STEP_FRAMES = [7, 4];
+
+/** px — where a lifted object is on each step of the lift, [x, z] per facing
+ *  (z is up-negative, as the cartridge writes it). derived: the same
+ *  @liftedObjectPositions table, weight 0, frames 0 and 1. Facing down it
+ *  starts at Link's feet and comes up past his face; facing sideways it
+ *  comes off the ground in front of him. */
+const LIFT_STEP_POS = {
+  up: [[0, -8], [0, -6]],
+  right: [[7, 0], [3, -8]],
+  down: [[0, 6], [0, 4]],
+  left: [[-8, 0], [-4, -8]],
+};
 
 // ---------------------------------------------------------------------------
 // The Tidewright's Anchor
@@ -2922,6 +2958,17 @@ const GB_HPF_CHARGE = 0.999958;
  *  them to the device. guessed: well above the highest note's fundamental,
  *  and small enough to render the overworld in a blink on a phone. */
 const GB_RENDER_RATE = 32768;
+
+// --- side content (S155) ------------------------------------------------------
+
+/** frames — the tide-pool race's clock, from the kid on South Bluff to Pip on
+ *  the South Sands islet. derived: the actor, starting beside the kid at LOW,
+ *  runs down to the sand path and along it in 275 frames of clock time
+ *  (tools/check-side.mjs); this is about half as long again, rounded to 400,
+ *  so a player who knows the way has two seconds to spare and one who stops
+ *  to think does not. The clock runs through a conch sweep and stops for a
+ *  screen scroll and a text box. */
+const RACE_SHORE_FRAMES = 400;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -3044,6 +3091,8 @@ __exports["KEYHOLE_OPEN_FRAMES"] = KEYHOLE_OPEN_FRAMES;
 __exports["BLOCK_SLIDE_SPEED"] = BLOCK_SLIDE_SPEED;
 __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
 __exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
+__exports["ITEM_HOLD_RISE"] = ITEM_HOLD_RISE;
+__exports["ITEM_HOLD_ONE_HAND_X"] = ITEM_HOLD_ONE_HAND_X;
 __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
 __exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
 __exports["THE_END_HOLD_FRAMES"] = THE_END_HOLD_FRAMES;
@@ -3059,6 +3108,8 @@ __exports["THROW_ARC_GRAVITY"] = THROW_ARC_GRAVITY;
 __exports["THROW_SLIDE_DECAY"] = THROW_SLIDE_DECAY;
 __exports["THROW_SLIDE_STOP"] = THROW_SLIDE_STOP;
 __exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
+__exports["LIFT_STEP_FRAMES"] = LIFT_STEP_FRAMES;
+__exports["LIFT_STEP_POS"] = LIFT_STEP_POS;
 __exports["ANCHOR_RADIUS_TILES"] = ANCHOR_RADIUS_TILES;
 __exports["ANCHOR_SHAPE"] = ANCHOR_SHAPE;
 __exports["ANCHOR_THROW_SPEED"] = ANCHOR_THROW_SPEED;
@@ -3319,6 +3370,7 @@ __exports["GB_FRAME_RATE"] = GB_FRAME_RATE;
 __exports["GB_MIX_LEVEL"] = GB_MIX_LEVEL;
 __exports["GB_HPF_CHARGE"] = GB_HPF_CHARGE;
 __exports["GB_RENDER_RATE"] = GB_RENDER_RATE;
+__exports["RACE_SHORE_FRAMES"] = RACE_SHORE_FRAMES;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -10177,7 +10229,7 @@ const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
 
 // Which way the blade points on the swing's first phase: out to one side.
 // Facing down it starts on Link's left, facing up on his right, and facing
@@ -10249,6 +10301,7 @@ class Player extends Entity {
     this.shielding = false;
     this.jumping = false;
     this.carrying = null;
+    this.liftT = 0;
     this.inDeep = false;
     this.inShallow = false;
     this.cleatMode = 'swim';      // 'swim' on the surface, 'sink' on the floor
@@ -10312,7 +10365,7 @@ class Player extends Entity {
     if (this.falling > 0) { this.updateFalling(game); return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
     if (this.sinkT > 0) { this.updateSinkTransition(game); return; }
-    if (this.frozen > 0) { this.frozen--; this.animT++; return; }
+    if (this.frozen > 0) { this.frozen--; this.animT++; this.placeCarried(); return; }
 
     // Being reeled in by the Dredge Line suspends normal control.
     if (this.hookPulling) { this.animT++; return; }
@@ -10345,10 +10398,34 @@ class Player extends Entity {
     this.updateHazards(game);
     this.updateStrandwalker(game);
 
-    if (this.carrying) {
-      this.carrying.x = this.x;
-      this.carrying.y = this.y - CARRY_HEIGHT;
+    this.placeCarried();
+  }
+
+  /**
+   * Where the thing in his hands is. Overhead at CARRY_HEIGHT once lifted;
+   * during the lift (`liftT`, counting down) at Seasons' two lift positions
+   * for the way he is facing — see LIFT_STEP_POS.
+   */
+  placeCarried() {
+    const c = this.carrying;
+    if (!c) return;
+    if (this.liftT > 0) {
+      const done = LIFT_STEP_FRAMES[0] + LIFT_STEP_FRAMES[1] - this.liftT;
+      const [x, z] = LIFT_STEP_POS[this.dir][done < LIFT_STEP_FRAMES[0] ? 0 : 1];
+      this.liftT--;
+      c.x = this.x + x;
+      c.y = this.y + z;
+      return;
     }
+    c.x = this.x;
+    c.y = this.y - CARRY_HEIGHT;
+  }
+
+  /** Start the lift: Link is held still for its two steps, as in Seasons. */
+  beginLift() {
+    this.liftT = LIFT_STEP_FRAMES[0] + LIFT_STEP_FRAMES[1];
+    this.frozen = Math.max(this.frozen, this.liftT);
+    this.placeCarried();
   }
 
   // --------------------------------------------------------------- terrain
@@ -11069,12 +11146,13 @@ class Player extends Entity {
       if (e.liftable && !e.dead && Math.hypot(e.cx - (this.cx + dx * LIFT_REACH), e.cy - (this.cy + dy * LIFT_REACH)) < LIFT_REACH) {
         this.carrying = e;
         e.carried = true;
+        this.beginLift();
         game.audio.sfx('lift');
         return true;
       }
     }
     const got = game.liftTile(tx, ty, level, this);
-    if (got) { this.carrying = got; game.audio.sfx('lift'); return true; }
+    if (got) { this.carrying = got; this.beginLift(); game.audio.sfx('lift'); return true; }
     return false;
   }
 
@@ -11082,6 +11160,7 @@ class Player extends Entity {
     const c = this.carrying;
     if (!c) return false;
     this.carrying = null;
+    this.liftT = 0;
     c.carried = false;
     const [dx, dy] = DIR_VEC[this.dir];
     if (c instanceof ThrownObject || c.thrownVx !== undefined) {
@@ -11103,6 +11182,7 @@ class Player extends Entity {
     if (!this.carrying) return;
     const c = this.carrying;
     this.carrying = null;
+    this.liftT = 0;
     c.carried = false;
     c.remove = true;
     game.spawnEffect('splash', c.x, c.y);
@@ -11523,6 +11603,9 @@ class Player extends Entity {
       return 'link_fall_' + (t < a ? 0 : t < a + b ? 1 : 2);
     }
     if (this.spinning > 0) { this.flipX = false; return 'link_spin_' + this.spinPos(); }
+    // Holding up something just got: Seasons' own pose, facing the viewer.
+    const shown = game && game.itemShow;
+    if (shown && shown.hands && !shown.chest) { this.flipX = false; return 'link_get_' + shown.hands; }
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.bellowsT > 0) return 'link_push_' + key;
     if (this.sinkT > 0) return 'link_dive';
@@ -11701,6 +11784,42 @@ __exports["roomHasDryGround"] = roomHasDryGround;
 __exports["enemyHurtRect"] = enemyHurtRect;
 });
 
+/* ===== src/data/errands.js ===== */
+__define("data/errands.js", function (__exports, __require) {
+// The townsfolk's errands (S155 side content): three things that went missing
+// off the village, and what each of them is.
+//
+// An errand is three pieces, and only the first lives here:
+//   * the OBJECT, found lying somewhere and picked up like any pickup — its
+//     PICKUPS kind is `e_<id>` (src/game/objects.js builds them from this
+//     table), and picking it up sets `flag`;
+//   * the PERSON who asked, an `npc` carrying `errand: { need, prize, flag,
+//     ask, thanks }` — `need` is this table's `flag`, and `prize` is a PICKUPS
+//     kind handed over when the object comes home (NPC.interact);
+//   * the proof, in tools/check-side.mjs.
+//
+// Like a trade item, an errand object is NOT an inventory item: it never
+// enters `progress.items` and is not in docs/ITEMS.md's roster. It is a flag.
+// Unlike a trade item there is no counter and no order — the three errands are
+// independent, and can be done in any order or not at all.
+
+const ERRANDS = {
+  ledger: {
+    name: 'Shop Ledger', icon: 'i_e_ledger', flag: 'foundLedger',
+    got: 'The shopkeeper\'s ledger, fat with seawater.\nEvery page says somebody owes him.',
+  },
+  kite: {
+    name: 'Kite', icon: 'i_e_kite', flag: 'foundKite',
+    got: 'A patched cloth kite, none the worse\nfor a night in a tree.',
+  },
+  bogwater: {
+    name: 'Jar of Bog Water', icon: 'i_e_jar', flag: 'foundBogWater',
+    got: 'A jar left filling at the bog spring.\nThe water in it is the colour of tea.',
+  },
+};
+__exports["ERRANDS"] = ERRANDS;
+});
+
 /* ===== src/game/objects.js ===== */
 __define("game/objects.js", function (__exports, __require) {
 // World objects: pickups, chests, NPCs, signs, pushable blocks, switches,
@@ -11715,7 +11834,8 @@ const { drawText } = __require("gfx/font.js");
 const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
+const { ERRANDS } = __require("data/errands.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES } = __require("data/feel.js");
 
 // --------------------------------------------------------------------------
 // Pickups
@@ -11793,7 +11913,7 @@ const PICKUPS = {
     },
   },
   heartPiece: {
-    sprite: 'p_heartpiece', pal: 'heart', persistent: true,
+    sprite: 'p_heartpiece', pal: 'heart', persistent: true, hold: 2,
     get(g) {
       const done = addHeartPiece(g.progress);
       g.audio.jingle('heartPiece');
@@ -11812,7 +11932,7 @@ const PICKUPS = {
     },
   },
   heartContainer: {
-    sprite: 'p_heartcontainer', pal: 'heart', persistent: true,
+    sprite: 'p_heartcontainer', pal: 'heart', persistent: true, hold: 2,
     get(g) { addHeartContainer(g.progress); g.audio.jingle('fanfare'); g.say('You got a Heart Container!'); },
   },
 };
@@ -11852,6 +11972,26 @@ function rollDropTable(name, stream) {
   for (const [w, item] of t) { r -= w; if (r <= 0) return item; }
   return null;
 }
+
+// The townsfolk's errands' objects (S155): one pickup kind each, `e_<id>`,
+// found lying in the world. Picking one up sets the errand's flag and holds it
+// overhead; the person who asked for it reads the flag (NPC.errand).
+for (const [id, def] of Object.entries(ERRANDS)) {
+  PICKUPS['e_' + id] = {
+    sprite: def.icon, pal: null, persistent: true,
+    get(g) { setFlag(g.progress, def.flag); g.presentErrand(id); },
+  };
+}
+
+// A piece of the wreck's cargo (S155, the salvage dive). It lies on the floor
+// of deep water and only a player WALKING THAT FLOOR picks it up (`floor`) —
+// a swimmer passing over it does not. It is not recorded as taken
+// (`fleeting`): the dive is all five in one breath, and pieces carried up
+// short of five go back down (Game.salvage).
+PICKUPS.salvage = {
+  sprite: 'i_e_salvage', pal: null, persistent: true, floor: true, fleeting: true,
+  get(g, e) { g.salvage(e); },
+};
 
 /** What this pickup is carrying, or the kind's face value if nothing set it. */
 function worthOf(e, base) {
@@ -11902,12 +12042,16 @@ class Pickup extends Entity {
     if (this.grabDelay > 0) this.grabDelay--;
     // The clock starts when it has landed, as the cartridge's does.
     if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
+    if (this.spec.floor && !(game.player && game.player.underwater)) return;
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
   collect(game) {
     this.remove = true;
-    if (this.saveKey) game.progress.secrets[this.saveKey] = true;
+    if (this.saveKey && !this.spec.fleeting) game.progress.secrets[this.saveKey] = true;
+    // Picked up off the ground, a Piece of Heart or a Heart Container is held
+    // up in both hands, as Seasons does (grab mode 2 in its treasure table).
+    if (this.spec.hold && !game.itemShow) game.holdUp({ sprite: this.sprite, pal: this.pal }, this.spec.hold);
     this.spec.get(game, this);
     game.spawnEffect('sparkle', this.x, this.y, { life: 14 });
   }
@@ -11925,6 +12069,54 @@ class Pickup extends Entity {
   }
 }
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));
+
+// --------------------------------------------------------------------------
+// A thing stuck up a tree (S155 side content). It sits in the canopy, where no
+// hand or blade reaches it; a gust of the Squall Bellows blows it down, and it
+// lands as the pickup it names (`drops`). Leave before picking it up and it is
+// back in the tree next time — it is only gone once the pickup's own flag is
+// set, which the room data names as `hideFlag`.
+//
+//   ['treeSnag', 7, 1, { drops: 'e_kite', hideFlag: 'foundKite' }]
+//
+// `perched` is what check-placement.mjs reads to let it stand on a tree tile:
+// it is not standing, and check-side.mjs proves the gust brings it down.
+// --------------------------------------------------------------------------
+
+class TreeSnag extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 2, w: 12, h: 12 };
+    this.drops = o.drops || 'e_kite';
+    const spec = PICKUPS[this.drops] || PICKUPS.rupee1;
+    this.sprite = spec.sprite;
+    this.pal = spec.pal;
+    this.harmless = true;
+    this.shadow = false;
+    this.perched = true;
+    this.depth = 4;
+  }
+
+  onGust(game, dx, dy) {
+    if (this.remove) return;
+    this.remove = true;
+    game.spawnPickup(this.x + dx * 4, this.y + TILE, this.drops, { grabDelay: 20, vy: -1 });
+    game.spawnEffect('cut', this.x, this.y + 8);
+    game.audio.sfx('cut');
+  }
+
+  draw(ctx, game, ox, oy) {
+    // It stirs in the wind it is caught in: a pixel either way, off the frame
+    // counter the entity already keeps.
+    const sway = ((this.frame++ >> 4) & 1) ? 1 : 0;
+    // Drawn up in the leaves, half a tile above the cell it is caught on: the
+    // cell has to be the canopy's lowest row, next to open ground, because the
+    // gust does not blow through a trunk (Tide.blows).
+    sprites.draw(ctx, this.sprite, ox + this.x + sway, oy + this.y - 10, this.pal ? { pal: this.pal } : undefined);
+  }
+}
+defineEntity('treeSnag', (x, y, o) => new TreeSnag(x, y, o));
 
 // --------------------------------------------------------------------------
 // Chest
@@ -12026,6 +12218,29 @@ class NPC extends Entity {
     // contract as the Maku Tree's `sceneFlag`. Asked before anything else the
     // person would say, so a beat is never queued behind a trade or a gift.
     this.beat = o.beat || null;
+    // AN ERRAND (S155): `{ need, prize, flag, ask, thanks, asked? }`. Until it is done
+    // this person says `ask`; once `need` (an errand object's flag, see
+    // src/data/errands.js) is set they say `thanks` and hand over `prize`, a
+    // PICKUPS kind, held overhead; `flag` records it done and, from then on,
+    // they say their ordinary lines again.
+    this.errand = o.errand || null;
+  }
+
+  /** Speak for this person's errand if it is still open. True if it spoke. */
+  errandTalk(game) {
+    const e = this.errand, p = game.progress;
+    if (!e || flag(p, e.flag)) return false;
+    if (!flag(p, e.need)) {
+      game.startDialogue(e.ask, this);
+      // `asked`: a flag the asking sets, for an errand whose object is only
+      // there once somebody has said so (the salvage dive's cargo).
+      if (e.asked && !flag(p, e.asked)) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
+      return true;
+    }
+    const pay = () => { setFlag(p, e.flag); game.presentPrize(e.prize); };
+    game.startDialogue(e.thanks, this);
+    if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
+    return true;
   }
 
   /** Play this person's story beat if it is owed now. True if it started. */
@@ -12073,6 +12288,7 @@ class NPC extends Entity {
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
     if (this.playBeat(game)) return;
+    if (this.errandTalk(game)) return;
     if (this.onTalk) { if (this.onTalk(game, this, player) === false) return; }
     const line = (this.afterText && this.conditional() && this.ready(game))
       ? this.afterText : this.dialogue;
@@ -12089,6 +12305,61 @@ class NPC extends Entity {
   }
 }
 defineEntity('npc', (x, y, o) => new NPC(x, y, o));
+
+// --------------------------------------------------------------------------
+// A race (S155 side content): a `racer` who starts the clock and a
+// `raceGoal` who stops it, sharing a race `id`. The clock lives on the game
+// (Game.startRace); the frames it allows live in feel.js, named here by id so
+// room data never carries a timing constant.
+//
+//   ['racer', 1, 3, { race: 'shore', ask: 'raceAsk', busy: 'raceBusy',
+//     win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20',
+//     flag: 'raceWon', sprite: 'npc_child' }]
+//   ['raceGoal', 5, 5, { race: 'shore', dialogue: 'raceGoalWait', sprite: ... }]
+// --------------------------------------------------------------------------
+
+const RACE_FRAMES = { shore: RACE_SHORE_FRAMES };
+
+class Racer extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.raceDef = {
+      id: o.race, frames: RACE_FRAMES[o.race] || 0, prize: o.prize || 'rupee20',
+      again: o.again || 'rupee20', flag: o.flag || null, win: o.win || null, lose: o.lose || null,
+    };
+    this.askText = o.ask || null;
+    this.busyText = o.busy || null;
+  }
+
+  interact(game, player) {
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    if (game.race) { if (this.busyText) game.startDialogue(this.busyText, this); return; }
+    const go = () => game.startRace(this.raceDef);
+    game.startDialogue(this.askText, this);
+    if (game.dialogue.active) game.dialogue.onClose = go; else go();
+  }
+}
+defineEntity('racer', (x, y, o) => new Racer(x, y, o));
+
+class RaceGoal extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.raceId = o.race || null;
+  }
+
+  update(game) {
+    super.update(game);
+    // The finish is reaching them, not talking to them: a race ends the frame
+    // you arrive, the way a line is crossed.
+    const p = game.player, r = game.race;
+    if (!p || !r || r.id !== this.raceId) return;
+    if (Math.abs(p.cx - this.cx) <= TILE + 4 && Math.abs(p.cy - this.cy) <= TILE + 4) game.finishRace();
+  }
+}
+defineEntity('raceGoal', (x, y, o) => new RaceGoal(x, y, o));
 
 class Sign extends Entity {
   constructor(x, y, o = {}) {
@@ -12363,7 +12634,9 @@ class Trader extends NPC {
     }
     const deal = this.liveDeal(game);
     // Not this trader's turn. Either they are still waiting for the chain to
-    // reach them, or it has gone past and they are done with it.
+    // reach them, or it has gone past and they are done with it. A trader can
+    // hold an errand too (S155: Dov's salvage dive), asked in between.
+    if (!deal && this.errandTalk(game)) return;
     if (!deal) {
       const done = this.spent(game);
       const line = (done && this.afterText) || this.waitingText || this.afterText;
@@ -13085,8 +13358,11 @@ __exports["PICKUPS"] = PICKUPS;
 __exports["DROP_TABLES"] = DROP_TABLES;
 __exports["rollDropTable"] = rollDropTable;
 __exports["Pickup"] = Pickup;
+__exports["TreeSnag"] = TreeSnag;
 __exports["Chest"] = Chest;
 __exports["NPC"] = NPC;
+__exports["Racer"] = Racer;
+__exports["RaceGoal"] = RaceGoal;
 __exports["Sign"] = Sign;
 __exports["ShopItem"] = ShopItem;
 __exports["Giver"] = Giver;
@@ -22498,7 +22774,7 @@ const { getMap, getRoom, hasRoom, resetRooms, MAPS } = __require("world/maps.js"
 const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } = __require("game/entity.js");
-const { spawnEffectAt, Explosion } = __require("game/effects.js");
+const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
 const { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE } = __require("game/progress.js");
@@ -22507,13 +22783,14 @@ const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu, invalidateWorldMap } = __require("game/menu.js");
 const { Camera } = __require("game/camera.js");
 const { TRADE_ITEMS, tradeName, tradeIcon } = __require("data/trade.js");
+const { ERRANDS } = __require("data/errands.js");
 const { keyByFlag, keyFor, migrateKeys } = __require("data/keys.js");
 const { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } = __require("game/scrimshaw.js");
 const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -22558,6 +22835,8 @@ class Game {
     this.cutscene = null;
     this.slot = 0;
     this.lure = null;
+    this.race = null;
+    this.dive = null;
     this.linkPal = 'link';
     this.paused = false;
     this.debug = false;
@@ -22593,6 +22872,8 @@ class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.race = null;
+    this.dive = null;
     this.tide.clearOverrides();
     this.tide.level = this.progress.tide;
     const s = this.progress.pos;
@@ -22614,6 +22895,8 @@ class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.race = null;
+    this.dive = null;
     // A placed anchor is run state, not save state: reloading returns it to
     // your pocket rather than restoring a frozen patch you cannot see the
     // reason for.
@@ -22737,10 +23020,31 @@ class Game {
     this.entities = this.entities.filter(e => e === this.player);
     this.boss = null;
     this.lure = null;
+    this.dive = null;
     const room = this.room;
     if (!room) return;
     const list = room.def.entities || [];
-    list.forEach((spec, i) => {
+    list.forEach((spec, i) => this.spawnSpec(room, spec, i));
+    this.flushPending();
+  }
+
+  /**
+   * Spawn now what the room holds back until `flagName` is set (S155): the
+   * salvage dive's cargo appears when Dov asks for it, not on the next visit.
+   */
+  spawnFlagged(flagName) {
+    const room = this.room;
+    if (!room) return;
+    (room.def.entities || []).forEach((spec, i) => {
+      const opts = Array.isArray(spec) ? spec[3] : spec;
+      if (opts && opts.needFlag === flagName) this.spawnSpec(room, spec, i);
+    });
+    this.flushPending();
+  }
+
+  /** One entry of a room's `entities`, as spawnRoomEntities spawns it. */
+  spawnSpec(room, spec, i) {
+    {
       const [type, tx, ty, opts] = Array.isArray(spec) ? spec : [spec.t, spec.x, spec.y, spec];
       const saveKey = `${this.mapId}:${room.key}:${i}`;
       const o = { ...(opts || {}), saveKey };
@@ -22760,8 +23064,7 @@ class Game {
         if (this.progress.beaten[this.mapId] && e.oncePerGame !== false) { e.remove = true; }
         else this.boss = e;
       }
-    });
-    this.flushPending();
+    }
   }
 
   /**
@@ -23634,9 +23937,29 @@ class Game {
     const name = itemName(id, lv);
     const text = `You got the ${name}!\n${def ? def.desc : ''}`;
     if (chest) { this.chestShow(chest, { id, lv }, text); return; }
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { id, lv, t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ id, lv }, id === 'sword' ? 1 : 2);
     this.say(text);
+  }
+
+  /**
+   * LINK HOLDS IT UP (S155), Seasons' way: he takes the "Pick up item" pose
+   * (`link_get_1` one hand, `link_get_2` both), the thing sits ITEM_HOLD_RISE
+   * above him — nudged ITEM_HOLD_ONE_HAND_X toward the raised hand when it is
+   * one — and it stays up until its text box is closed, never less than
+   * ITEM_PRESENT_FRAMES. Which hands: Seasons' own grab modes
+   * (data/seasons/treasureObjectData.s) — two for nearly everything a person
+   * hands over or you pick up off the ground (a Piece of Heart, a trade item,
+   * a shield, a satchel), one for a sword and for a key. Out of a CHEST there
+   * is no pose at all: the item rises out of the chest (chestShow).
+   */
+  holdUp(show, hands) {
+    // Both hands are up: whatever he was working stops, and the Bellows'
+    // wind goes with it (its puffs would otherwise hang frozen on his head
+    // for as long as the text is open, since nothing updates under a box).
+    if (this.player.stopBellows) this.player.stopBellows(this);
+    for (const e of this.entities) if (e.isEffect && e.spec === EFFECTS.foam) e.remove = true;
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = Object.assign({ t: ITEM_PRESENT_FRAMES, hands }, show);
   }
 
   /**
@@ -23662,9 +23985,115 @@ class Game {
   presentTrade(id) {
     const def = TRADE_ITEMS[id];
     this.audio.jingle('itemGet');
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { sprite: tradeIcon(id), t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ sprite: tradeIcon(id) }, 2);
     this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
+  }
+
+  /**
+   * A prize handed over by a person (S155 side content): any PICKUPS kind,
+   * held overhead the way a gift is, then collected — a Piece of Heart says
+   * its own line; rupees are counted aloud here because their pickup is silent.
+   */
+  presentPrize(kind) {
+    const spec = PICKUPS[kind];
+    if (!spec) return;
+    this.holdUp({ sprite: spec.sprite, pal: spec.pal }, 2);
+    spec.get(this, null);
+    if (spec.worth) {
+      this.audio.jingle('itemGet');
+      this.say(`You got ${spec.worth} Rupees!`);
+    }
+  }
+
+  // ------------------------------------------------------------------ races
+  //
+  // A race (S155 side content) is a clock and a finish: a `racer` starts it,
+  // its `raceGoal` ends it when the player reaches them, and running out of
+  // clock ends it the other way. `race` lives on the game, not in the save —
+  // a race does not survive a death, a reload or a new game.
+
+  startRace(def) {
+    this.race = { id: def.id, t: def.frames, frames: def.frames, prize: def.prize,
+      flag: def.flag, again: def.again, lose: def.lose, win: def.win };
+    this.audio.sfx('confirm');
+  }
+
+  finishRace() {
+    const r = this.race;
+    if (!r) return;
+    this.race = null;
+    const first = !flag(this.progress, r.flag);
+    setFlag(this.progress, r.flag);
+    this.startDialogue(r.win);
+    const pay = () => this.presentPrize(first ? r.prize : r.again);
+    if (this.dialogue.active) this.dialogue.onClose = pay; else pay();
+  }
+
+  loseRace() {
+    const r = this.race;
+    this.race = null;
+    this.audio.sfx('deny');
+    if (r && r.lose) this.startDialogue(r.lose);
+  }
+
+  /** The clock, seconds and tenths, top right of the playfield. */
+  drawRaceClock(ctx) {
+    const s = Math.max(0, this.race.t) / 60;
+    const text = `${Math.floor(s)}.${Math.floor(s * 10) % 10}`;
+    const w = textWidth(text) + 6;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(SCREEN_W - w - 2, HUD_H + 2, w, 11);
+    drawText(ctx, text, SCREEN_W - w + 1, HUD_H + 4, this.race.t < 120 ? '#f86050' : '#f8f8e8');
+  }
+
+  // ----------------------------------------------------------- salvage dive
+  //
+  // Dov's cargo (S155): every `salvage` piece the room places on the floor of
+  // the Wrecked Hull's lagoon, to be brought up in one breath. Each is counted as it is
+  // picked up; surface with fewer than all of them and the ones you carried
+  // sink back to where they lay. `dive` is run state, like `race`.
+
+  salvage(e) {
+    if (!this.dive) this.dive = { taken: [] };
+    this.dive.taken.push(e);
+    const n = this.dive.taken.length;
+    const all = (this.room.def.entities || []).filter(s => Array.isArray(s)
+      && s[0] === 'pickup' && s[3] && s[3].kind === 'salvage').length;
+    if (n >= all) {
+      this.dive = null;
+      setFlag(this.progress, 'salvageDone');
+      this.audio.jingle('secret');
+      this.say('That is all of Dov\'s cargo! Take it up to him.');
+    } else {
+      this.audio.sfx('rupee');
+    }
+  }
+
+  /** Called every frame: a dive that surfaces short of the whole cargo loses it. */
+  updateDive() {
+    const d = this.dive;
+    if (!d) return;
+    if (this.player && this.player.underwater) return;
+    this.dive = null;
+    // Back where they lay. (Leaving the room drops the dive — see
+    // spawnRoomEntities — and the pieces are simply there again next visit,
+    // because a piece of salvage is never recorded as taken.)
+    for (const e of d.taken) {
+      e.remove = false;
+      e.grabDelay = 0;
+      this.addEntity(e);
+    }
+    this.audio.sfx('splash');
+    this.say('The cargo slips out of your arms and\nsinks back down. All of it, in one breath!');
+  }
+
+  /** An errand's object found (S155): the same beat as presentTrade. */
+  presentErrand(id) {
+    const def = ERRANDS[id];
+    if (!def) return;
+    this.audio.jingle('itemGet');
+    this.holdUp({ sprite: def.icon }, 2);
+    this.say(`You found the ${def.name}!\n${def.got}`);
   }
 
   /**
@@ -23678,8 +24107,7 @@ class Game {
     if (!key) return;
     setFlag(this.progress, key.flag);
     this.audio.jingle('itemGet');
-    this.player.frozen = ITEM_PRESENT_FRAMES;
-    this.itemShow = { sprite: key.icon, t: ITEM_PRESENT_FRAMES };
+    this.holdUp({ sprite: key.icon }, 1);
     this.say(`You got the ${key.name}!\n${key.desc}`);
   }
 
@@ -24010,6 +24438,8 @@ class Game {
     this.transition = null;
     this.fadeThen = null;
     this.itemShow = null;
+    this.race = null;
+    this.dive = null;
     this.bannerText = null; this.bannerTime = 0;
     this.lure = null;
     this.paused = false;
@@ -24107,7 +24537,9 @@ class Game {
       if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
       // The item stays up until its text is read, then goes with it.
       if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
-      else if (!s.chest && s.t <= 0) this.itemShow = null;
+      // Held up, it goes when its text is read (Seasons deletes the treasure
+      // the frame the box closes) and not before the pose's own minimum.
+      else if (!s.chest && s.t <= 0 && !this.dialogue.active) this.itemShow = null;
       if (this.itemShow === null && this.player) this.player.frozen = 0;
     }
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
@@ -24122,6 +24554,10 @@ class Game {
     }
 
     if (this.transition) { this.updateTransition(); this.flushPending(); return; }
+    // A race's clock (S155): stopped by a screen scroll and a text box, both
+    // above; running through a conch sweep, below — changing the sea costs time.
+    if (this.race && --this.race.t <= 0) this.loseRace();
+    this.updateDive();
     // The sweep was already stepped at the top of play mode. Stepping it again
     // here ran the wave front at double speed and made TIDE_SWEEP_FRAMES mean
     // half what it said; it also stretched the conch lock-out, because nothing
@@ -24423,6 +24859,7 @@ class Game {
     drawHud(ctx, this);
     if (!this.veiled()) drawAreaBanner(ctx, this);
     if (this.boss && !this.boss.dead) drawBossBar(ctx, this);
+    if (this.race) this.drawRaceClock(ctx);
     this.dialogue.draw(ctx);
 
     if (this.mode === 'menu') this.menu.draw(ctx);
@@ -24610,7 +25047,7 @@ class Game {
     // Through the scene's own offset, which carries the camera: in a room
     // bigger than the screen the prize used to float wherever Link would have
     // been had the view never scrolled.
-    let x = ox + p.x, y = oy + p.y - 16;
+    let x = ox + p.x + (s.hands === 1 ? ITEM_HOLD_ONE_HAND_X : 0), y = oy + p.y - ITEM_HOLD_RISE;
     if (s.chest) {
       // Rising out of the chest, as Seasons draws it.
       const a = (s.age || 0) - CHEST_ITEM_DELAY;
@@ -35113,6 +35550,11 @@ function installCoreTiles() {
     reefDeep: { tide: ['waterSReef', 'waterDReef', 'waterDReef'] },
     tideRock: { tide: ['rockFloor', 'rockFloor', 'waterS'] },     // stepping stone
     drownWall: { tide: ['cliff', 'cliff', 'waterD'] },            // swim over it at high
+    // A sea cave's mouth (S155 side content): open at LOW, and at MID and HIGH
+    // the sea stands in it — a swimmer can float into the notch, and there is
+    // no way in until the water goes. Never solid at a higher level than a
+    // lower one: check-anchor.mjs holds every tide tile to that.
+    seaCaveMouth: { tide: ['caveMouth', 'waterD', 'waterD'] },
     // Every other outdoor region `9` has shown up in so far — the abyss, the
     // cliffs — already has a stone floor of its own, so plain grey `cliff`
     // never had to prove it against anything but more grey. The dunes are
@@ -35246,6 +35688,10 @@ function installCoreTiles() {
     // art at the top row rather than the lip, because the crack IS the tell and
     // a lip drawn over it would hide the one thing the player has to see.
     cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    // A cracked cliff with a cave behind it (S155): the same wall, and a bomb
+    // leaves a cave mouth rather than sand. The room lists the warp on this
+    // cell from the start; it is inert until the tile under it carries F.WARP.
+    cliffCrackedCave: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -35352,6 +35798,11 @@ function installCoreTiles() {
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
+    // A cave's own rock and pot (S155): the same art on the cave's dark stone
+    // floor. The plain ones name grass and dungeon floor beneath them, so a
+    // rock lifted in a cave left a lawn behind on the rock.
+    rockCave: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'rockFloorDk' },
+    potCave: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'rockFloorDk' },
     sign: { art: ART.sign, pal: 'wood', flags: F.SOLID, underArt: 'grass' },
     // NO `stump` TILE. There was a hand-drawn one and no legend anywhere could
     // name it, so no room grid could place it — dead art carrying a SOLID flag.
@@ -36036,10 +36487,13 @@ function installCoreTiles() {
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    rockCave: { lift: 'rockFloorDk', drop: 'common' },
+    potCave: { lift: 'rockFloorDk', drop: 'common' },
     ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedCave: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
     // The Power Bracelet is gone and lifting is base moveset, so a boulder
     // needs a reason to still be a boulder: `liftLevel: 2` puts it past bare
     // hands, and the Dredge Line drags it out of the way. That is the same
@@ -36103,6 +36557,8 @@ function installLegends() {
     '*': 'openSea',   // the sea past the last screen: drawn as water, solid to a swimmer
     // barriers and props
     '#': 'cliff', '^': 'cliffTop', '%': 'cliffDk', 'X': 'cliffCracked',
+    'Z': 'cliffCrackedCave',   // bombs open to a cave mouth (S155)
+    '&': 'seaCaveMouth',       // a cave mouth only above water at LOW (S155)
     'T': 'tree', 'Y': 'treeSand', 'P': 'palm',
     'b': 'bush', 'B': 'bushSand', 'o': 'rock', 'O': 'rockSand',
     'q': 'post', 'Q': 'postSand', 'x': 'digSpot',
@@ -36448,7 +36904,7 @@ function installLegends() {
   registerLegend('cave', {
     ' ': 'void',
     '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
-    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'pot', 'o': 'rock',
+    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'potCave', 'o': 'rockCave',
     '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
@@ -36610,6 +37066,8 @@ const rooms = {
   },
   '0,3,0': {
     name: 'Rustfall',
+    // Its Piece of Heart is the tide-pool race's prize now (S155, side
+    // content); a rupee keeps the spot.
     legend: 'abyss', music: 'abyss',
     // THE SECOND OUTDOOR BELLOWS FIXTURE, and it is the Cliff Face's turned on
     // its end the way the Long Race turns the Drowned Sill: the shelf is at the
@@ -36633,7 +37091,7 @@ const rooms = {
     },
     entities: [
       ['wheel', 8, 2, { needTurns: 45 }],
-      ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
     script: {
       onEnter(game) {
@@ -36681,7 +37139,9 @@ const rooms = {
       '###1151###',
     ],
     entities: [
-      ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'heartPiece' }],
+      // The Piece of Heart that lay here is the shopkeeper's thanks for his
+      // ledger now (S155, side content); a rupee keeps the spot.
+      ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'rupee20' }],
     ],
   },
   '0,6,0': {
@@ -36757,7 +37217,9 @@ const rooms = {
       '###g11g###',
     ],
     entities: [
-      ['octorokSea', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      // The Piece of Heart that lay here moved to the Hollow Den behind Bluff
+      // Hollow's cracked wall (S155, side content); a rupee keeps the spot.
+      ['octorokSea', 4, 3], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
   },
   '0,10,0': {
@@ -37038,18 +37500,27 @@ const rooms = {
   '0,1,2': {
     name: 'Wind Shelf',
     legend: 'cliffs', music: 'overworld',
+    // THE SEA CAVE (S155 side content). Its mouth at 3,1 is `seaCaveMouth`:
+    // above water only at LOW, when the channel in front of it is wadeable
+    // too. At MID and HIGH the sea stands in the mouth and the warp is inert.
+    // Not in row 0: a doorway on the seam would disagree with the screen above.
     map: [
       '##########',
-      '#555551gg#',
-      '55.o.oo.gg',
+      '###&##1gg#',
+      '5555.oo.gg',
       '11......gg',
       'gg.GGGG.gg',
       'ggg____ggg',
       '#gggggggg#',
       '###g##g###',
     ],
+    warps: [
+      { x: 3, y: 1, to: { map: 'cave6', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['tektite', 3, 3], ['tektite', 6, 4],
+      // The first tektite stood at 3,3, on the sea cave's doorstep, and met
+      // everyone coming out of it (S155).
+      ['tektite', 7, 3], ['tektite', 6, 4],
     ],
   },
   '0,2,2': {
@@ -37309,7 +37780,9 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['tektite', 4, 5], ['pickup', 6, 3, { kind: 'heartPiece' }],
+      // The Piece of Heart that lay under this rock is the village child's
+      // thanks for a kite now (S155, side content); a rupee keeps the spot.
+      ['tektite', 4, 5], ['pickup', 6, 3, { kind: 'rupee20' }],
     ],
   },
   '0,3,3': {
@@ -37643,6 +38116,8 @@ const rooms = {
   },
   '0,6,4': {
     name: 'Log Drift',
+    // Its Piece of Heart is Dov's thanks for his cargo now (S155, side
+    // content); a rupee keeps the spot.
     legend: 'wood', music: 'overworld',
     map: [
       'TTog11goTT',
@@ -37655,7 +38130,7 @@ const rooms = {
       'TToggggoTT',
     ],
     entities: [
-      ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
   },
   '0,7,4': {
@@ -37982,6 +38457,9 @@ const rooms = {
     ],
     entities: [
       ['zol', 4, 3],
+      // The jar the village house's netmaker left filling at the spring
+      // (S155 errand).
+      ['pickup', 4, 5, { kind: 'e_bogwater' }],
     ],
   },
   '0,1,6': {
@@ -38022,18 +38500,28 @@ const rooms = {
   '0,3,6': {
     name: 'Bluff Hollow',
     legend: 'coast', music: 'overworld',
+    // THE CRACKED WALL (S155 side content). A short bluff face standing in the
+    // treeline, drawn the way West Bluff's grotto is drawn one screen south:
+    // `###` over `#Z#`. The crack at 4,1 is `cliffCrackedCave`; a bomb leaves
+    // a cave mouth, and the warp below has been listed on that cell all along.
     map: [
-      'TTTTTTTTTT',
-      'TgTTTTTTfT',
-      'Tg.bb.b.gT',
+      'TTT###TTTT',
+      'TgT#Z#TTfT',
+      'Tg.b..b.gT',
       'Tf......gT',
       'Tf.x..o.gT',
       'Tgg....ggT',
       'Tgg....ggT',
       'TToggggoTT',
     ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'cave5', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['sign', 6, 3, { text: 'Someone has been digging here.' }],
+      ['sign', 6, 3, { text: 'Someone has been digging here.\nThe bluff behind has a crack in it.' }],
+      // The village child's kite (S155 errand), up the tree east of the bluff.
+      // Only a gust of the Squall Bellows brings it down.
+      ['treeSnag', 7, 1, { drops: 'e_kite', hideFlag: 'foundKite' }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
@@ -38864,6 +39352,10 @@ const rooms = {
   '0,3,9': {
     name: 'South Bluff',
     legend: 'coast', music: 'overworld',
+    // THE TIDE-POOL RACE (S155 side content) starts here. Row 6 is a sand
+    // path through the sea (`4`, seafloor: dry at LOW, deep above), running
+    // east through Fishing Stones to an islet on the South Sands where the
+    // finish is. It is the only way to the islet on foot.
     map: [
       'TToggggoTT',
       'Tff....ggT',
@@ -38871,17 +39363,22 @@ const rooms = {
       'Tg......gg',
       '*11x1111gg',
       '*1******11',
-      '*1******1*',
+      '*144444444',
       '**********',
     ],
     entities: [
       ['octorok', 6, 3],
+      ['racer', 1, 3, {
+        race: 'shore', sprite: 'npc_child', ask: 'raceAsk', busy: 'raceBusy',
+        win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
+      }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
   '0,4,9': {
     name: 'Fishing Stones',
     legend: 'coast', music: 'overworld',
+    // Row 6 is the tide-pool race's sand path (see South Bluff).
     map: [
       'TToggggoTT',
       'Tgg....ggT',
@@ -38889,7 +39386,7 @@ const rooms = {
       'gg.3333.gg',
       'gg133331gg',
       '11******11',
-      '*1******1*',
+      '4444444444',
       '**********',
     ],
     entities: [
@@ -38906,6 +39403,9 @@ const rooms = {
   '0,5,9': {
     name: 'South Sands',
     legend: 'coast', music: 'overworld',
+    // The tide-pool race's finish (S155): the sand path along row 6 ends at
+    // the islet at 7,6, which nothing else reaches on foot. Not in row 5: the
+    // sandbars in row 4 would wade to it at MID.
     map: [
       'TToggggoTT',
       'Tfg....fgT',
@@ -38913,11 +39413,14 @@ const rooms = {
       'gg.1111.gg',
       'gg111111gg',
       '11******11',
-      '*1******1*',
+      '4444444.**',
       '**********',
     ],
     entities: [
       ['octorok', 4, 3],
+      ['raceGoal', 7, 6, { race: 'shore', sprite: 'npc_villager2', dialogue: 'raceGoalWait' }],
+      // The shopkeeper's ledger (S155 errand), blown down the beach.
+      ['pickup', 8, 2, { kind: 'e_ledger' }],
     ],
   },
   '0,6,9': {
@@ -39015,14 +39518,18 @@ const rooms = {
   '0,8,9': {
     name: 'Wrecked Hull',
     legend: 'dunes', music: 'overworld',
+    // THE SALVAGE DIVE (S155 side content). The deep pool in rows 5-6 is where
+    // Dov's cargo went down; it is deep at every tide, so only the Cleats'
+    // floor mode walks it. The casks appear once Dov has asked for them
+    // (`needFlag`), and all of them come up in one breath or none (Game.salvage).
     map: [
       'TToggggoTT',
       'Tgg....ggT',
       'gg.qq.q.gg',
       'gg......gg',
       'gg144441gg',
-      '11******11',
-      '*1******1*',
+      '11======11',
+      '*1======1*',
       '**********',
     ],
     entities: [
@@ -39031,8 +39538,16 @@ const rooms = {
       ['trader', 2, 2, {
         sprite: 'npc_villager', waiting: 'wreckSurvivor', after: 'dovAfter',
         deals: [{ stage: 5, wants: 'eel', gives: 'lead', text: 'dovTrade' }],
+        // His own errand, asked whenever the chain is not at his link (S155).
+        errand: { need: 'salvageDone', prize: 'heartPiece', flag: 'diveDone', ask: 'diveAsk',
+          asked: 'diveAsked', thanks: 'diveThanks' },
       }],
       ['crab', 6, 4],
+      ['pickup', 2, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 4, 6, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 5, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 7, 6, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
+      ['pickup', 7, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
     ],
   },
   '0,9,9': {
@@ -39148,7 +39663,10 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3 }],
+          // His errand (S155): the ledger, lost on the South Sands, for a
+          // Piece of Heart. He talks shop again once it is home.
+          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
+            errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
           ['shopItem', 4, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield' }],
           ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
           ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
@@ -39259,8 +39777,14 @@ function installHouses() {
   });
 
   home('houseHearth', 'A Village House', 'village', [
-    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3 }],
-    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2 }],
+    // Her errand (S155): the jar of bog water left at Bog Head's spring, for
+    // a hundred rupees. The only errand that pays in rupees.
+    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
+      errand: { need: 'foundBogWater', prize: 'rupee100', flag: 'bogwaterDone', ask: 'bogwaterAsk', thanks: 'bogwaterThanks' } }],
+    // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
+    // Heart found under the doorstep in the flood.
+    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
+      errand: { need: 'foundKite', prize: 'heartPiece', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 
@@ -39497,10 +40021,78 @@ function installCaves() {
           '##########',
         ],
         entities: [
-          ['pickup', 4, 1, { kind: 'heartPiece' }],
+          // Its Piece of Heart moved to the Wind Shelf's sea cave (S155, side
+          // content); a rupee keeps the spot.
+          ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [[7, 2, 'A palace notice, in a hand that gave up halfway: "The rest of it is under. Do not go and look."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 10, ry: 1, px: 64, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  // THE HOLLOW DEN (S155 side content): behind the cracked wall in Bluff
+  // Hollow, opened with a bomb. Its Piece of Heart is the one that used to lie
+  // in the open on the Palace Wall — moved, not added, so the heart count is
+  // unchanged (check-hearts.mjs).
+  registerMap({
+    id: 'cave5',
+    kind: 'cave',
+    name: 'Hollow Den',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#.o....o.#',
+          '#........#',
+          '#..p..p..#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 2, { kind: 'heartPiece' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  // THE SLACKWATER CAVE (S155 side content): in the cliff over the Wind
+  // Shelf's channel, and its mouth is only above the sea at LOW. The tide is
+  // held inside (`noTide`), so the sea cannot be raised behind the player and
+  // the way out is always the way in. Its Piece of Heart is the one that lay
+  // in the Palace cave — moved, not added (check-hearts.mjs).
+  registerMap({
+    id: 'cave6',
+    kind: 'cave',
+    name: 'Slackwater Cave',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#..2222..#',
+          '#..2222..#',
+          '#o.......#',
+          '#.......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 4, { kind: 'heartPiece' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -48112,6 +48704,21 @@ const DIALOGUE = {
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   elder1: 'I have seen the sea take this village\ntwice and give it back once.\nWe are owed, is what I am saying.',
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
+  // The townsfolk's errands (S155 side content). Each person says `...Ask`
+  // until their thing comes home, then `...Thanks` as they pay for it.
+  diveAsk: 'My cargo went down with the hull, into\nthe deep pool behind it. Five casks. If you\ncan walk the bottom, bring all five up in\none breath. Come up short and you drop the\nlot; I have seen it happen.',
+  diveThanks: 'Five! The whole cargo, and dry inside, the\nway a good cask is. I was saving this for\nthe day it came back. Here.',
+  raceAsk: 'Race you to Pip on the sandbar out past\nthe Fishing Stones! The sand path only\nshows at low tide. Ready? GO!',
+  raceBusy: 'Why are you still here? RUN!',
+  raceWin: 'Pip: You made it! Nobody beats the tide\nlike that. Here, you earned it.',
+  raceLose: 'Too slow! The tide would have had you.\nCome back and try again.',
+  raceGoalWait: 'Pip: The finish is here. Get my friend\non South Bluff to start the clock.',
+  ledgerAsk: 'My ledger went out of the window in the\nlast big wind. Every debt on this coast\nis in that book. Try the South Sands.',
+  ledgerThanks: 'My ledger! Wet, but legible. Wet is how\nit always is. Here: I owe you, and now\nthat is written down too.',
+  kiteAsk: 'My kite got away and went up a tree in\nthe hollow past the bluff. It is too high.\nYou would need a wind to get it down.',
+  kiteThanks: 'My kite! Mum said it was gone for good.\nI found this under the doorstep in the\nflood. You have it. I have a kite.',
+  bogwaterAsk: 'My husband left a jar filling at the spring\nup at Bog Head and came home without it.\nNets last twice as long tanned in bog water.',
+  bogwaterThanks: 'That is the colour! Tea-brown. The nets\ngo in tonight. Take this for the walk;\nthe bog is no place to go for nothing.',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
 
   // ---- second states -----------------------------------------------------
@@ -51788,6 +52395,42 @@ const PLAYER_ART = {
     ................
     ................
     ................`,
+  // extracted — a direct crop off the sheet named in this file's own header (mirrored in place for a flipped pose).
+  link_get_1: `
+    ...33.333.......
+    ..30031113......
+    ..300333013.....
+    ..3333333033....
+    ..31331133303...
+    ..31330030303...
+    ..31300000303...
+    ..31303300113...
+    ..3130330131333.
+    ..31310013131303
+    ..33133331311303
+    ..3011111103333.
+    .331000000133...
+    301311111133033.
+    3001333333300003
+    3333333333333333`,
+  // extracted — a direct crop off the sheet named in this file's own header (mirrored in place for a flipped pose).
+  link_get_2: `
+    ...33.3333.33...
+    ..300310013003..
+    ..300333333003..
+    ..333333333333..
+    ..313330033313..
+    ..313030030313..
+    ..313000000313..
+    ..313103301313..
+    ..313103301313..
+    ...3131001313...
+    ...3313333133...
+    ...3011111103...
+    ..311000000113..
+    .30331111113303.
+    3000133333310003
+    .33333333333333.`,
   // extracted — a direct crop off the sheet named in this file's own header (mirrored in place for a flipped pose).
   link_hold_down: `
     .....33333......
@@ -58239,6 +58882,112 @@ __exports["TRADE_ART"] = TRADE_ART;
 __exports["installTradeSprites"] = installTradeSprites;
 });
 
+/* ===== src/data/sprites-errands.js ===== */
+__define("data/sprites-errands.js", function (__exports, __require) {
+// The things the townsfolk's errands send you for (S155), and Dov's cargo.
+//
+// HAND-DRAWN, for the reason sprites-trade.js gives: Seasons' own trade and
+// quest objects each belong to that game's story, and a ledger, a kite and a
+// jar are ours. Drawn to its register — three colours plus transparency, a hard
+// 1px black outline, no anti-aliasing, a silhouette that reads in pure black.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const ERRAND_ART = {
+  // A bound shop ledger: leather boards, a paper label, the page edges showing.
+  i_e_ledger: { pal: 'i_e_ledger', art: `
+    ................
+    ...33333333333..
+    ..32111111111113
+    ..32110000011113
+    ..32110000011113
+    ..32111111111113
+    ..32111111111113
+    ..32111111111113
+    ..32111111111113
+    ..32111111111113
+    ..32111111111113
+    ..32222222222223
+    ..33000000000003
+    ...3333333333333
+    ................
+    ................` },
+  // A diamond kite on its cross-spar, with a bowed tail.
+  i_e_kite: { pal: 'i_e_kite', art: `
+    .......33.......
+    ......3003......
+    .....300013.....
+    ....30000113....
+    ...3000011113...
+    ..300000111113..
+    ...3222222223...
+    ....32211113....
+    .....322113.....
+    ......3223......
+    .......33.......
+    ......3.........
+    .......3........
+    ......303.......
+    .......3........
+    ........3.......` },
+  // A stoppered clay jar, the bog water dark inside the neck.
+  i_e_jar: { pal: 'i_e_jar', art: `
+    ................
+    ......3333......
+    .....322223.....
+    ......3223......
+    .....311113.....
+    ....31000113....
+    ...3100011113...
+    ...3100111113...
+    ...3101111113...
+    ...3111111123...
+    ...3111111223...
+    ....31112223....
+    .....322223.....
+    ......3333......
+    ................
+    ................` },
+  // A piece of Dov's cargo off the lagoon floor: a small hooped cask.
+  i_e_salvage: { pal: 'i_e_salvage', art: `
+    ................
+    ................
+    .....333333.....
+    ....31111113....
+    ...3222222223...
+    ...3100110013...
+    ...3100110013...
+    ...3222222223...
+    ...3100110013...
+    ...3100110013...
+    ...3222222223...
+    ....31111113....
+    .....333333.....
+    ................
+    ................
+    ................` },
+};
+
+const ERRAND_PALETTES = {
+  // Paper, red-brown leather, the dark spine.
+  i_e_ledger: ['#f8f0d0', '#b05838', '#602818', '#000000'],
+  // A pale panel, red cloth, a tarred spar.
+  i_e_kite: ['#fff8d8', '#e05050', '#784030', '#000000'],
+  // Fired clay, and the peat-dark water in its throat.
+  i_e_jar: ['#f0e0b8', '#b08050', '#5a3a20', '#000000'],
+  // Sea-grey staves and green-black iron hoops: it has been down a while.
+  i_e_salvage: ['#e0d8c0', '#9a8a68', '#384838', '#000000'],
+};
+
+function installErrandSprites() {
+  registerPalettes(ERRAND_PALETTES);
+  sprites.add(ERRAND_ART, 'ui');
+}
+__exports["ERRAND_ART"] = ERRAND_ART;
+__exports["installErrandSprites"] = installErrandSprites;
+});
+
 /* ===== src/data/sprites-keys.js ===== */
 __define("data/sprites-keys.js", function (__exports, __require) {
 // The six dungeon keys, cut from the Oracle games' own key-item graphics.
@@ -58423,6 +59172,7 @@ const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
 const { installTitleSprites, TITLE_ART } = __require("data/sprites-title.js");
 const { installTradeSprites, TRADE_ART } = __require("data/sprites-trade.js");
+const { installErrandSprites, ERRAND_ART } = __require("data/sprites-errands.js");
 const { installKeySprites, KEY_ART } = __require("data/sprites-keys.js");
 const { installMakuSprites, MAKU_SPRITE_ART } = __require("data/tiles-maku.js");
 
@@ -58454,6 +59204,7 @@ const SPRITE_PACKS = {
   gear: GEAR_ART,
   title: TITLE_ART,
   trade: TRADE_ART,
+  errands: ERRAND_ART,
   keys: KEY_ART,
   maku: MAKU_SPRITE_ART,
 };
@@ -58493,6 +59244,8 @@ function installData() {
   installTitleSprites();
   // The Coastwise Chain's eleven objects, drawn to match them.
   installTradeSprites();
+  // The townsfolk's errands' three objects, drawn the same way.
+  installErrandSprites();
   installKeySprites();
   // The Maku Tree's face, off the same panel as her grove.
   installMakuSprites();
