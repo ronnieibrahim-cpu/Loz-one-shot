@@ -237,7 +237,9 @@ export class Entity {
     }
     const name = this.spriteName ? this.spriteName(game) : this.sprite;
     if (!name) return;
-    sprites.draw(ctx, name, ox + this.x, oy + this.y - this.z, {
+    // `shakeX`: a whole-pixel shiver an enemy's ai sets (the flipped spiked
+    // beetle's last second); drawing only, the entity does not move.
+    sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0), oy + this.y - this.z, {
       pal, flipX: this.flipX, alpha: this.alpha,
     });
   }

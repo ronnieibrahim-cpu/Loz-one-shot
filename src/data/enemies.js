@@ -521,40 +521,35 @@ export function installEnemies() {
   defineEnemy('beetle', {
     light: true,
     hp: 3, damage: 2, pal: 'enemyk', rate: 9,
-    frames: {
-      down: ['beetle_d0', 'beetle_d1'],
-      up: ['beetle_d0', 'beetle_d1'],
-      side: ['beetle_s0', 'beetle_s1'],
-    },
+    // One pose for every facing, as the cartridge draws it (spikedBeetle.s
+    // animation 0); its other pair on the sheet is the belly it shows when
+    // turned over (animation 1). S151 had used that pair for walking sideways
+    // and as a charge tell; neither is Seasons'.
+    frames: ['beetle_d0', 'beetle_d1'],
+    idleFrame: 'beetle_s0',
     // hp 3 > swordDamage() at sword level 1 (2) — the hurtFrame hp rule S12
     // found (src/game/enemy.js's Enemy.die(), docs/prompts/LEDGER.md).
     hurtFrame: 'beetle_hurt',
     deathFrame: 'beetle_death',
-    // Reuses beetle's own beetle_s0 as its attackFrame rather than hand-
-    // drawing a new pose — the same zero-new-art shape S43 found on
-    // moblin_d1 and S93 found on siren_1. beetle_hurt's own comment
-    // (sprites-enemies-hurt.js) already names beetle_s0/s1 as "two
-    // balled-charge frames", distinct from the upright beetle_d0/d1 pair —
-    // rendered both from the real runtime enemyk palette to confirm: d0 is
-    // an upright bug with legs and antennae spread to the sides, s0 is a
-    // genuinely different silhouette, curled into a round shell with a
-    // target-like pattern. A real shape change, not a recolour (the test
-    // S91 used to reject wisp_1) — exactly what "rolling into a ball to
-    // charge" should look like. Applied as ONE non-directional pose (like
-    // octorok_atk, S90) rather than per-facing: beetle only has a second
-    // pose for the SIDE facing, not down/up, so a charge that starts while
-    // facing down or up would otherwise show no telegraph at all — the
-    // same "one accepted pose beats an inconsistent per-facing set"
-    // reasoning octorok_atk already used. Left in the ordinary side frames
-    // cycle too, same as moblin_d1/siren_1.
-    attackFrame: 'beetle_s0',
-    shield: 'front',
+    // Nothing hurts it right way up (ENEMYCOLLISION_SPIKED_BEETLE); a raised
+    // shield turns it over and then it can be struck. `shield` is set per
+    // state in ai.
+    shield: 'all',
     drops: 'good',
     // Seasons' spiked beetle (spikedBeetle.s): wanders slowly; the moment Link
     // is on its row or column it turns on him and charges, gathering speed,
-    // until a wall stops it; stands a moment, then wanders on. (The
-    // cartridge's flips over when a shield turns it; here the shield on its
-    // front stays ours.)
+    // until a wall stops it; stands a moment, then wanders on. Charging into
+    // his raised shield FLIPS it (onShielded): up it goes, skids away, and
+    // lies on its back BEETLE_FLIP_FRAMES, harmless and open to the sword,
+    // shaking for the last BEETLE_FLIP_SHAKE_FRAMES before it rights itself.
+    onShielded(e, g, p) {
+      if (e.aiState === 'flipped' || e.dying) return;
+      e.aiState = 'flipped'; e.aiTimer = BEETLE_FLIP_FRAMES;
+      e.shield = null; e.harmless = true; e.idle = true; e.still = true;
+      e.angle = angleToward(e, g) ^ 16;             // away from Link
+      launch(e, BEETLE_FLIP_LAUNCH);
+      if (g.audio) g.audio.sfx('hop');
+    },
     port: 'spikedBeetle.s',
     speed: BEETLE_WALK_SPEED,
     ai(e, g) {
@@ -565,10 +560,25 @@ export function installEnemies() {
       const charge = () => {
         cardinalToward(e, g);
         e.aiState = 'charge'; e.cnt = BEETLE_CHARGE_COUNT; e.speed = BEETLE_WALK_SPEED;
-        e.attackTime = ENEMY_ATTACK_FRAMES;
       };
       switch (e.aiState) {
         case 0: wander(); e.aiState = 'walk'; return;
+        case 'flipped': {                         // @stateB
+          if (e.fz > 0 || e.vzS) {
+            moveAngle(e, g, e.angle, BEETLE_FLIP_SKID);
+            fall(e, BEETLE_FLIP_GRAVITY);
+          }
+          if (--e.aiTimer > 0) {
+            // The last second, it shakes: x oscillates a pixel either way.
+            e.shakeX = e.aiTimer < BEETLE_FLIP_SHAKE_FRAMES ? [0, 1, 0, -1][(e.aiTimer >> 1) & 3] : 0;
+            return;
+          }
+          e.shakeX = 0; e.idle = false; e.still = false;
+          e.shield = 'all'; e.harmless = false;
+          launch(e, BEETLE_FLIP_LAUNCH);
+          e.aiState = 'walk'; e.speed = BEETLE_RIGHT_SPEED; wander();
+          return;
+        }
         case 'walk':                              // @state8
           e.still = false;
           if (centeredWith(e, g, BEETLE_SEE_PX)) { charge(); return; }
