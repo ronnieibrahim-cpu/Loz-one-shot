@@ -1894,3 +1894,21 @@ export const TEKTITE_BIG_LEAP = [0x180 / 256, 0x0c / 256];
 /** px/f — a whisp, always on a diagonal. derived: whisp.s
  *  whisp_state_uninitialized, SPEED_c0, angle (random & $18) + 4. */
 export const WHISP_SPEED = 0.75;
+
+/** px/f — a moblin walking. derived: arrowDarknut.s
+ *  arrowDarknut_state_uninitialized (shared by the moblin), SPEED_80. */
+export const MOBLIN_SPEED = 0.5;
+
+/** f — it walks BASE + (random & MASK) frames at a stretch. derived:
+ *  arrowDarknut.s arrowDarknut_setState8WithRandomAngleAndCounter
+ *  ($30 + (random & $3f)). */
+export const MOBLIN_WALK_BASE = 0x30;
+export const MOBLIN_WALK_MASK = 0x3f;
+
+/** f — and pauses this long between. derived: moblinsAndShroudedStalfos.s
+ *  moblin_state_8, counter1 $08. */
+export const MOBLIN_PAUSE_FRAMES = 8;
+
+/** px/f — its spear. derived: parts/enemyArrow.s @subid0 @@state0, speed $50
+ *  (SPEED_200). */
+export const MOBLIN_SPEAR_SPEED = 2;

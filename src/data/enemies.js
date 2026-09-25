@@ -27,6 +27,7 @@ import {
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
   WHISP_SPEED,
+  MOBLIN_SPEED, MOBLIN_WALK_BASE, MOBLIN_WALK_MASK, MOBLIN_PAUSE_FRAMES, MOBLIN_SPEAR_SPEED,
   TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP,
   BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
@@ -651,7 +652,7 @@ export function installEnemies() {
 
   // --- Moblin: throws spears, retreats when close ------------------------
   defineEnemy('moblin', {
-    hp: 4, damage: 3, pal: 'enemyg', speed: 0.45, rate: 10,
+    hp: 4, damage: 3, pal: 'enemyg', rate: 10,
     frames: {
       down: ['moblin_d0', 'moblin_d1'],
       up: ['moblin_u0', 'moblin_u1'],
@@ -670,12 +671,32 @@ export function installEnemies() {
     attackFrame: { down: 'moblin_d1', up: 'moblin_u1', side: 'moblin_s1' },
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
+    // Seasons' spear moblin (moblinsAndShroudedStalfos.s, sharing
+    // arrowDarknut.s): walks a random stretch, pauses, sets off in a random
+    // direction — and every second time it sets off, if that direction faces
+    // Link, throws. It no longer backs away from him.
+    port: 'moblinsAndShroudedStalfos.s',
+    speed: MOBLIN_SPEED,
     ai(e, g) {
-      const d = distToPlayer(e, g);
-      if (d < 30) flee(e, g, { speed: 0.55 });
-      else wander(e, g, { decide: 4 });
-      if (every(e, 88) && aligned(e, g, 16) && d < 100) {
-        shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: 1.8, damage: 3 });
+      const setOff = () => {
+        e.aiTimer = MOBLIN_WALK_BASE + (g.rng.int(256) & MOBLIN_WALK_MASK);
+        e.aiState = 'walk'; e.still = false;
+      };
+      switch (e.aiState) {
+        case 0: e.dir = randDir(g); e.throws = 0; setOff(); return;
+        case 'walk':                              // moblin_state_8
+          if (--e.aiTimer > 0 && walkOn(e, g, MOBLIN_SPEED)) return;
+          e.aiState = 'pause'; e.aiTimer = MOBLIN_PAUSE_FRAMES; e.still = true;
+          return;
+        case 'pause':                             // moblin_state_9
+          if (--e.aiTimer > 0) return;
+          e.dir = randDir(g);
+          setOff();
+          // arrowDarknut_fireArrowEveryOtherTime
+          if ((++e.throws & 1) && g.player && dirOfAngle(angleToward(e, g)) === e.dir) {
+            shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: MOBLIN_SPEAR_SPEED, damage: 3 });
+          }
+          return;
       }
     },
   });
