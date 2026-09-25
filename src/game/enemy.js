@@ -38,7 +38,11 @@ import {
 } from './entity.js';
 import { fire } from './projectile.js';
 import { sprites } from '../gfx/art.js';
-import { BOSS_RIG } from '../data/sprites-bosses-seasons.js';
+import { BOSS_RIG as RIPPED_RIG } from '../data/sprites-bosses-seasons.js';
+import { BOSS_ART_RIG } from '../data/sprites-bosses.js';
+
+// Every boss frame drawn at its own size rather than the entity's cell.
+const BOSS_RIG = { ...RIPPED_RIG, ...BOSS_ART_RIG };
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';

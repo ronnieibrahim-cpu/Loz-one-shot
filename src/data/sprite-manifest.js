@@ -155,10 +155,12 @@ export const REQUIRED_SPRITES = {
   ],
 };
 
-/** Canvas of each boss built from Seasons' boss graphics (tools/rip-bosses.py). */
+/** Canvas of each boss built from Seasons' boss graphics (tools/rip-bosses.py,
+ *  or drawn over them by hand in sprites-bosses.js). */
 const SEASONS_BOSS_CANVAS = {
   boss_gohmaraq: [48, 32],   // Gohma, body and claw
   boss_anemos: [32, 52],     // Medusa Head's crown on Manhandla's stalk
+  boss_gloomtide: [48, 45],  // Digdogger turned to muck (drawn over, sprites-bosses.js)
 };
 
 /** Expected pixel size for a sprite name, used by the validator. */
