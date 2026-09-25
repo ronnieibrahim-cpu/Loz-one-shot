@@ -101,6 +101,32 @@ const SCENARIOS = [
     steps: [['goto', 7, 2, 400], ['hold', ['up'], 6], ['tap', 'a', 30], ['tap', 'a', 30], ['tap', 'a', 30], ['wait', 60]],
     expect: `!g.progress.flags.foundKite && g.entities.some(e => e.perched) || 'the kite came down without a wind'`,
   },
+  // The bog is a long way from the village and the actor's travel planner does
+  // not cross the marsh on its own, so this errand is proved in its two halves:
+  // the jar is picked up where it lies, and the netmaker pays for it at home.
+  // That Bog Head can be walked to at all is check-overworld's and
+  // check-progression's to prove, and they do.
+  {
+    name: 'The bog water: the jar can be picked up at Bog Head',
+    setup: setup({ items: { sword: 1, bombs: 1 }, equipA: 'sword', tide: 0,
+      enter: ['overworld', 0, 0, 6, 128, 64, 'left'] }),
+    steps: [['goto', 4, 5, 600], ['wait', 200]],
+    expect: `g.progress.flags.foundBogWater || 'the jar was not picked up'`,
+  },
+  {
+    name: 'The bog water: the netmaker pays a hundred rupees for it',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', flags: ['foundBogWater'], rupees: 0,
+      enter: ['houseHearth', 0, 0, 0, 72, 81, 'up'] }),
+    steps: [['errand', 'bogwaterDone', 1500], ['wait', 60]],
+    expect: `g.progress.rupees === 100 && g.progress.heartPieces === 0 || ('rupees ' + g.progress.rupees)`,
+  },
+  {
+    name: 'The bog water: nothing is paid before the jar is home',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', rupees: 0, enter: ['houseHearth', 0, 0, 0, 72, 81, 'up'] }),
+    steps: [['errand', 'bogwaterDone', 600]],
+    expectError: /never landed/,
+    expect: `g.progress.rupees === 0 || 'paid without the jar'`,
+  },
 ];
 
 const server = createServer(async (req, res) => {

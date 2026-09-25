@@ -1525,6 +1525,9 @@ const rooms = {
     ],
     entities: [
       ['zol', 4, 3],
+      // The jar the village house's netmaker left filling at the spring
+      // (S155 errand).
+      ['pickup', 4, 5, { kind: 'e_bogwater' }],
     ],
   },
   '0,1,6': {
@@ -2817,7 +2820,10 @@ function installHouses() {
   });
 
   home('houseHearth', 'A Village House', 'village', [
-    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3 }],
+    // Her errand (S155): the jar of bog water left at Bog Head's spring, for
+    // a hundred rupees. The only errand that pays in rupees.
+    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
+      errand: { need: 'foundBogWater', prize: 'rupee100', flag: 'bogwaterDone', ask: 'bogwaterAsk', thanks: 'bogwaterThanks' } }],
     // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
     // Heart found under the doorstep in the flood.
     ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,

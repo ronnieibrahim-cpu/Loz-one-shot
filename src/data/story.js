@@ -138,6 +138,8 @@ export const DIALOGUE = {
   ledgerThanks: 'My ledger! Wet, but legible. Wet is how\nit always is. Here: I owe you, and now\nthat is written down too.',
   kiteAsk: 'My kite got away and went up a tree in\nthe hollow past the bluff. It is too high.\nYou would need a wind to get it down.',
   kiteThanks: 'My kite! Mum said it was gone for good.\nI found this under the doorstep in the\nflood. You have it. I have a kite.',
+  bogwaterAsk: 'My husband left a jar filling at the spring\nup at Bog Head and came home without it.\nNets last twice as long tanned in bog water.',
+  bogwaterThanks: 'That is the colour! Tea-brown. The nets\ngo in tonight. Take this for the walk;\nthe bog is no place to go for nothing.',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
 
   // ---- second states -----------------------------------------------------
