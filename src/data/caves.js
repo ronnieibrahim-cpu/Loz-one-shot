@@ -196,4 +196,36 @@ export function installCaves() {
       },
     },
   });
+  // THE HOLLOW DEN (S155 side content): behind the cracked wall in Bluff
+  // Hollow, opened with a bomb. Its Piece of Heart is the one that used to lie
+  // in the open on the Palace Wall — moved, not added, so the heart count is
+  // unchanged (check-hearts.mjs).
+  registerMap({
+    id: 'cave5',
+    kind: 'cave',
+    name: 'Hollow Den',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#.o....o.#',
+          '#........#',
+          '#..p..p..#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 2, { kind: 'heartPiece' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
+      },
+    },
+  });
 }

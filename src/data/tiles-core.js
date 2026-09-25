@@ -2250,6 +2250,10 @@ export function installCoreTiles() {
     // art at the top row rather than the lip, because the crack IS the tell and
     // a lip drawn over it would hide the one thing the player has to see.
     cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    // A cracked cliff with a cave behind it (S155): the same wall, and a bomb
+    // leaves a cave mouth rather than sand. The room lists the warp on this
+    // cell from the start; it is inert until the tile under it carries F.WARP.
+    cliffCrackedCave: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -3044,6 +3048,7 @@ export function installCoreTiles() {
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedCave: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
     // The Power Bracelet is gone and lifting is base moveset, so a boulder
     // needs a reason to still be a boulder: `liftLevel: 2` puts it past bare
     // hands, and the Dredge Line drags it out of the way. That is the same

@@ -21,6 +21,7 @@ export function installLegends() {
     '*': 'openSea',   // the sea past the last screen: drawn as water, solid to a swimmer
     // barriers and props
     '#': 'cliff', '^': 'cliffTop', '%': 'cliffDk', 'X': 'cliffCracked',
+    'Z': 'cliffCrackedCave',   // bombs open to a cave mouth (S155)
     'T': 'tree', 'Y': 'treeSand', 'P': 'palm',
     'b': 'bush', 'B': 'bushSand', 'o': 'rock', 'O': 'rockSand',
     'q': 'post', 'Q': 'postSand', 'x': 'digSpot',

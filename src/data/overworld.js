@@ -285,7 +285,9 @@ const rooms = {
       '###g11g###',
     ],
     entities: [
-      ['octorokSea', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      // The Piece of Heart that lay here moved to the Hollow Den behind Bluff
+      // Hollow's cracked wall (S155, side content); a rupee keeps the spot.
+      ['octorokSea', 4, 3], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
   },
   '0,10,0': {
@@ -1550,18 +1552,25 @@ const rooms = {
   '0,3,6': {
     name: 'Bluff Hollow',
     legend: 'coast', music: 'overworld',
+    // THE CRACKED WALL (S155 side content). A short bluff face standing in the
+    // treeline, drawn the way West Bluff's grotto is drawn one screen south:
+    // `###` over `#Z#`. The crack at 4,1 is `cliffCrackedCave`; a bomb leaves
+    // a cave mouth, and the warp below has been listed on that cell all along.
     map: [
-      'TTTTTTTTTT',
-      'TgTTTTTTfT',
-      'Tg.bb.b.gT',
+      'TTT###TTTT',
+      'TgT#Z#TTfT',
+      'Tg.b..b.gT',
       'Tf......gT',
       'Tf.x..o.gT',
       'Tgg....ggT',
       'Tgg....ggT',
       'TToggggoTT',
     ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'cave5', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['sign', 6, 3, { text: 'Someone has been digging here.' }],
+      ['sign', 6, 3, { text: 'Someone has been digging here.\nThe bluff behind has a crack in it.' }],
     ],
     buried: [[3, 4, 'rupee20']],
   },

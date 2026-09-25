@@ -1388,8 +1388,9 @@ Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
   **Palace Porch**: **Heart Piece 18** at (4,1), and a notice from someone who
   gave up halfway — *"The rest of it is under. Do not go and look."*
 - North from Reefway is **Coral Gate** (`overworld/0,8,0`), and east of that
-  **Palace Wall** (`overworld/0,9,0`) — **Heart Piece 19** in the open at (2,5),
-  with an `octorokSea` in the water.
+  **Palace Wall** (`overworld/0,9,0`) — 20 rupees in the open at (2,5), with an
+  `octorokSea` in the water. (A Piece of Heart used to lie here; it is now in
+  the Hollow Den behind Bluff Hollow's cracked wall.)
 
 Also worth doing now, with the Rod in hand: **the village digger**
 (`overworld/0,4,7`, tile (8,2)) has been waiting for **3 Essences** and you have
@@ -1787,8 +1788,10 @@ Numbered in the order this walkthrough passes them.
     the **Resonance Rod** vane gate.
 18. **Heart Piece 18** — `cave4/0,0,0`, Palace Porch, tile (4,1). Cave mouth on
     Palace Mouth `overworld/0,10,1` at (4,1), behind the same vane gate.
-19. **Heart Piece 19** — `overworld/0,9,0`, Palace Wall, tile (2,5). Behind the
-    vane gate.
+19. **Heart Piece 19** — `cave5/0,0,0`, Hollow Den, tile (4,2). Bluff Hollow
+    (`overworld/0,3,6`, just north-west of the village) has a short cliff face
+    in its treeline with a crack in it at (4,1): **bomb it** and a cave mouth
+    opens. Needs **bombs** and nothing else.
 20. **Heart Piece 20** — `d6/0,5,3`, The Slack Water, buried at (4,4). **Dredge
     Line**, cast from (4,6) facing up at **MID**.
 21. **Heart Piece 21** — `d6/1,2,3`, The Sunken Bar, buried at (2,1). **Dredge
@@ -1919,6 +1922,7 @@ hit.
 | `cave2/0,0,0` Reef Hollow | `overworld/0,6,7` (4,3) | Big chest with the **Kilnshell**; a `rupee20` behind drift-tangle; a `rupee20` and **Heart Piece 2**, both needing **LOW tide** to reach |
 | `cave3/0,0,0` Salt Pan Vault | `overworld/0,6,1` (3,2), behind the vanes | Big chest with the **Bottled Tide** case |
 | `cave4/0,0,0` Palace Porch | `overworld/0,10,1` (4,1), behind the vanes | **Heart Piece 18** |
+| `cave5/0,0,0` Hollow Den | `overworld/0,3,6` (4,1) — a cracked wall; **bomb it** | **Heart Piece 19** |
 
 The Salt Pan Vault and the Palace Porch are the one-room ruins of what used to be
 two more dungeons. Each kept the item its dungeon used to hand over. The notices
