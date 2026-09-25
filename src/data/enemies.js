@@ -26,6 +26,7 @@ import {
   BUBBLE_SPEED, BUBBLE_TURN_ODDS,
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
+  TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP,
   BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
 } from './feel.js';
@@ -544,7 +545,7 @@ export function installEnemies() {
   // --- Tektite: hops at you across water ---------------------------------
   defineEnemy('tektite', {
     light: true,
-    hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
+    hp: 2, damage: 2, pal: 'enemyb', rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
     hurtFrame: 'tektite_hurt',
     deathFrame: 'tektite_death',
@@ -556,7 +557,41 @@ export function installEnemies() {
     // shows in the run-up to every hop, the same beetle_s0/zol_1 shape.
     attackFrame: 'tektite_1',
     drops: 'common',
-    ai(e, g) { hop(e, g, { wait: 34, dist: 16, height: 13, frames: 20 }); },
+    // Seasons' tektite (tektite.s, subid 0): stands, crouches, and leaps at
+    // Link along any of the 32 angles — one leap in eight a big one — then
+    // stands again where it lands.
+    port: 'tektite.s',
+    speed: TEKTITE_SPEED,
+    ai(e, g) {
+      const stand = () => {
+        e.aiState = 'stand'; e.still = false;
+        e.aiTimer = (g.rng.int(256) & TEKTITE_STAND_MASK) + TEKTITE_STAND_MIN;
+      };
+      switch (e.aiState) {
+        case 0:                                   // @state_uninitialized
+          e.aiState = 'stand'; e.aiTimer = (g.rng.int(256) & TEKTITE_STAND_MASK) + 1; return;
+        case 'stand':                             // @state8
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'crouch'; e.aiTimer = TEKTITE_CROUCH_FRAMES; e.attackTime = TEKTITE_CROUCH_FRAMES;
+          e.still = true;
+          return;
+        case 'crouch':                            // @state9, @stateA
+          if (--e.aiTimer > 0) return;
+          {
+            const big = (g.rng.int(256) & 7) === 0;
+            const [vz, grav] = big ? TEKTITE_BIG_LEAP : TEKTITE_SMALL_LEAP;
+            launch(e, vz); e.grav = grav;
+            e.angle = angleToward(e, g);
+            e.aiState = 'leap'; e.still = false;
+            if (g.audio) g.audio.sfx('hop');
+          }
+          return;
+        case 'leap':                              // @stateB
+          if (!fall(e, e.grav)) { stand(); return; }
+          moveAngle(e, g, e.angle, TEKTITE_SPEED);
+          return;
+      }
+    },
   });
 
   // --- Wisp: circles a point and shoots rings ---------------------------
