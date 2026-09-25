@@ -2102,3 +2102,14 @@ export const GB_HPF_CHARGE = 0.999958;
  *  them to the device. guessed: well above the highest note's fundamental,
  *  and small enough to render the overworld in a blink on a phone. */
 export const GB_RENDER_RATE = 32768;
+
+// --- side content (S155) ------------------------------------------------------
+
+/** frames — the tide-pool race's clock, from the kid on South Bluff to Pip on
+ *  the South Sands islet. derived: the actor, starting beside the kid at LOW,
+ *  runs down to the sand path and along it in 275 frames of clock time
+ *  (tools/check-side.mjs); this is about half as long again, rounded to 400,
+ *  so a player who knows the way has two seconds to spare and one who stops
+ *  to think does not. The clock runs through a conch sweep and stops for a
+ *  screen scroll and a text box. */
+export const RACE_SHORE_FRAMES = 400;

@@ -1806,8 +1806,13 @@ Numbered in the order this walkthrough passes them.
     Line**, cast from (2,2) facing up at **MID**.
 22. **Heart Piece 22** — `overworld/0,0,0`, Drowned Shore, buried at (3,3).
     **Dredge Line**. Ring the Rod at the bell to be pointed at it.
-23. **Heart Piece 23** — `overworld/0,3,0`, Rustfall, tile (2,5). Behind the
-    Maku Tree's five-Essence seal.
+23. **Heart Piece 23** — the **tide-pool race**'s first prize, paid on the
+    South Sands islet (`overworld/0,5,9`, tile (7,6)). Talk to the kid on
+    South Bluff (`overworld/0,3,9`, tile (1,3)) at **LOW tide**: run down the
+    west edge to the sand path through the sea (row 6) and east along it,
+    through Fishing Stones, to Pip on the islet, inside the clock (400 frames,
+    about 6.7 seconds). Later wins pay 20 rupees. (Rustfall, where a piece
+    used to be, has 20 rupees.)
 24. **Heart Piece 24** — `overworld/0,1,9`, Witch's Hollow, buried at (3,4).
     **Dredge Line**.
 

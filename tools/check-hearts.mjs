@@ -79,7 +79,8 @@ function scanSpawnList(list, where, how) {
     // object comes home. Counted off the errand's own declaration, `prize`,
     // like the drowned wheel's `gives`; the tile tested is the one the person
     // stands on. check-side.mjs is what proves the errand can be finished.
-    if (opts && opts.errand && opts.errand.prize === 'heartPiece') {
+    // A race's `racer` pays its first win the same way (S155).
+    if (opts && ((opts.errand && opts.errand.prize === 'heartPiece') || (kind === 'racer' && opts.prize === 'heartPiece'))) {
       pieces.push({ where, how: 'errand', x, y });
     }
   }

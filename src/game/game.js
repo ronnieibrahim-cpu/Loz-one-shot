@@ -118,6 +118,7 @@ export class Game {
     this.cutscene = null;
     this.slot = 0;
     this.lure = null;
+    this.race = null;
     this.linkPal = 'link';
     this.paused = false;
     this.debug = false;
@@ -153,6 +154,7 @@ export class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.race = null;
     this.tide.clearOverrides();
     this.tide.level = this.progress.tide;
     const s = this.progress.pos;
@@ -174,6 +176,7 @@ export class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.race = null;
     // A placed anchor is run state, not save state: reloading returns it to
     // your pocket rather than restoring a frozen patch you cannot see the
     // reason for.
@@ -1244,6 +1247,47 @@ export class Game {
     }
   }
 
+  // ------------------------------------------------------------------ races
+  //
+  // A race (S155 side content) is a clock and a finish: a `racer` starts it,
+  // its `raceGoal` ends it when the player reaches them, and running out of
+  // clock ends it the other way. `race` lives on the game, not in the save —
+  // a race does not survive a death, a reload or a new game.
+
+  startRace(def) {
+    this.race = { id: def.id, t: def.frames, frames: def.frames, prize: def.prize,
+      flag: def.flag, again: def.again, lose: def.lose, win: def.win };
+    this.audio.sfx('confirm');
+  }
+
+  finishRace() {
+    const r = this.race;
+    if (!r) return;
+    this.race = null;
+    const first = !flag(this.progress, r.flag);
+    setFlag(this.progress, r.flag);
+    this.startDialogue(r.win);
+    const pay = () => this.presentPrize(first ? r.prize : r.again);
+    if (this.dialogue.active) this.dialogue.onClose = pay; else pay();
+  }
+
+  loseRace() {
+    const r = this.race;
+    this.race = null;
+    this.audio.sfx('deny');
+    if (r && r.lose) this.startDialogue(r.lose);
+  }
+
+  /** The clock, seconds and tenths, top right of the playfield. */
+  drawRaceClock(ctx) {
+    const s = Math.max(0, this.race.t) / 60;
+    const text = `${Math.floor(s)}.${Math.floor(s * 10) % 10}`;
+    const w = textWidth(text) + 6;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(SCREEN_W - w - 2, HUD_H + 2, w, 11);
+    drawText(ctx, text, SCREEN_W - w + 1, HUD_H + 4, this.race.t < 120 ? '#f86050' : '#f8f8e8');
+  }
+
   /** An errand's object found (S155): the same beat as presentTrade. */
   presentErrand(id) {
     const def = ERRANDS[id];
@@ -1597,6 +1641,7 @@ export class Game {
     this.transition = null;
     this.fadeThen = null;
     this.itemShow = null;
+    this.race = null;
     this.bannerText = null; this.bannerTime = 0;
     this.lure = null;
     this.paused = false;
@@ -1709,6 +1754,9 @@ export class Game {
     }
 
     if (this.transition) { this.updateTransition(); this.flushPending(); return; }
+    // A race's clock (S155): stopped by a screen scroll and a text box, both
+    // above; running through a conch sweep, below — changing the sea costs time.
+    if (this.race && --this.race.t <= 0) this.loseRace();
     // The sweep was already stepped at the top of play mode. Stepping it again
     // here ran the wave front at double speed and made TIDE_SWEEP_FRAMES mean
     // half what it said; it also stretched the conch lock-out, because nothing
@@ -2010,6 +2058,7 @@ export class Game {
     drawHud(ctx, this);
     if (!this.veiled()) drawAreaBanner(ctx, this);
     if (this.boss && !this.boss.dead) drawBossBar(ctx, this);
+    if (this.race) this.drawRaceClock(ctx);
     this.dialogue.draw(ctx);
 
     if (this.mode === 'menu') this.menu.draw(ctx);

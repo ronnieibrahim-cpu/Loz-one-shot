@@ -134,6 +134,11 @@ export const DIALOGUE = {
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
   // The townsfolk's errands (S155 side content). Each person says `...Ask`
   // until their thing comes home, then `...Thanks` as they pay for it.
+  raceAsk: 'Race you to Pip on the sandbar out past\nthe Fishing Stones! The sand path only\nshows at low tide. Ready? GO!',
+  raceBusy: 'Why are you still here? RUN!',
+  raceWin: 'Pip: You made it! Nobody beats the tide\nlike that. Here, you earned it.',
+  raceLose: 'Too slow! The tide would have had you.\nCome back and try again.',
+  raceGoalWait: 'Pip: The finish is here. Get my friend\non South Bluff to start the clock.',
   ledgerAsk: 'My ledger went out of the window in the\nlast big wind. Every debt on this coast\nis in that book. Try the South Sands.',
   ledgerThanks: 'My ledger! Wet, but legible. Wet is how\nit always is. Here: I owe you, and now\nthat is written down too.',
   kiteAsk: 'My kite got away and went up a tree in\nthe hollow past the bluff. It is too high.\nYou would need a wind to get it down.',

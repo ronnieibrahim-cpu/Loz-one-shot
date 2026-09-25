@@ -138,6 +138,8 @@ const rooms = {
   },
   '0,3,0': {
     name: 'Rustfall',
+    // Its Piece of Heart is the tide-pool race's prize now (S155, side
+    // content); a rupee keeps the spot.
     legend: 'abyss', music: 'abyss',
     // THE SECOND OUTDOOR BELLOWS FIXTURE, and it is the Cliff Face's turned on
     // its end the way the Long Race turns the Drowned Sill: the shelf is at the
@@ -161,7 +163,7 @@ const rooms = {
     },
     entities: [
       ['wheel', 8, 2, { needTurns: 45 }],
-      ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
     script: {
       onEnter(game) {
@@ -2420,6 +2422,10 @@ const rooms = {
   '0,3,9': {
     name: 'South Bluff',
     legend: 'coast', music: 'overworld',
+    // THE TIDE-POOL RACE (S155 side content) starts here. Row 6 is a sand
+    // path through the sea (`4`, seafloor: dry at LOW, deep above), running
+    // east through Fishing Stones to an islet on the South Sands where the
+    // finish is. It is the only way to the islet on foot.
     map: [
       'TToggggoTT',
       'Tff....ggT',
@@ -2427,17 +2433,22 @@ const rooms = {
       'Tg......gg',
       '*11x1111gg',
       '*1******11',
-      '*1******1*',
+      '*144444444',
       '**********',
     ],
     entities: [
       ['octorok', 6, 3],
+      ['racer', 1, 3, {
+        race: 'shore', sprite: 'npc_child', ask: 'raceAsk', busy: 'raceBusy',
+        win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
+      }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
   '0,4,9': {
     name: 'Fishing Stones',
     legend: 'coast', music: 'overworld',
+    // Row 6 is the tide-pool race's sand path (see South Bluff).
     map: [
       'TToggggoTT',
       'Tgg....ggT',
@@ -2445,7 +2456,7 @@ const rooms = {
       'gg.3333.gg',
       'gg133331gg',
       '11******11',
-      '*1******1*',
+      '4444444444',
       '**********',
     ],
     entities: [
@@ -2462,6 +2473,9 @@ const rooms = {
   '0,5,9': {
     name: 'South Sands',
     legend: 'coast', music: 'overworld',
+    // The tide-pool race's finish (S155): the sand path along row 6 ends at
+    // the islet at 7,6, which nothing else reaches on foot. Not in row 5: the
+    // sandbars in row 4 would wade to it at MID.
     map: [
       'TToggggoTT',
       'Tfg....fgT',
@@ -2469,11 +2483,12 @@ const rooms = {
       'gg.1111.gg',
       'gg111111gg',
       '11******11',
-      '*1******1*',
+      '4444444.**',
       '**********',
     ],
     entities: [
       ['octorok', 4, 3],
+      ['raceGoal', 7, 6, { race: 'shore', sprite: 'npc_villager2', dialogue: 'raceGoalWait' }],
       // The shopkeeper's ledger (S155 errand), blown down the beach.
       ['pickup', 8, 2, { kind: 'e_ledger' }],
     ],

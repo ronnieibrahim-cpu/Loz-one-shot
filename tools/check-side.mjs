@@ -127,6 +127,31 @@ const SCENARIOS = [
     expectError: /never landed/,
     expect: `g.progress.rupees === 0 || 'paid without the jar'`,
   },
+  {
+    name: 'The race: at LOW the sand path gets you to Pip inside the clock, for a Piece of Heart',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 3, 9, 48, 48, 'left'] }),
+    steps: [['race', 600], ['goto', 1, 6, 300], ['hold', ['right'], 600], ['wait', 200]],
+    expect: `g.progress.flags.raceWon && g.progress.heartPieces === 1 && !g.race || ('won ' + !!g.progress.flags.raceWon + ', pieces ' + g.progress.heartPieces)`,
+  },
+  {
+    name: 'The race: won again, it pays rupees, not a second piece',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, flags: ['raceWon'], rupees: 0,
+      enter: ['overworld', 0, 3, 9, 48, 48, 'left'] }),
+    steps: [['race', 600], ['goto', 1, 6, 300], ['hold', ['right'], 600], ['wait', 200]],
+    expect: `g.progress.rupees === 20 && g.progress.heartPieces === 0 || ('rupees ' + g.progress.rupees + ', pieces ' + g.progress.heartPieces)`,
+  },
+  {
+    name: 'The race: dawdle at the start and the clock runs out',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 3, 9, 48, 48, 'left'] }),
+    steps: [['race', 600], ['wait', 150], ['goto', 1, 6, 300], ['hold', ['right'], 600], ['wait', 200]],
+    expect: `!g.progress.flags.raceWon && g.progress.heartPieces === 0 && !g.race || 'won after dawdling'`,
+  },
+  ...[1, 2].map(t => ({
+    name: `The race: at ${t === 1 ? 'MID' : 'HIGH'} the sand path is under the sea and Pip cannot be reached`,
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: t, enter: ['overworld', 0, 3, 9, 48, 48, 'left'] }),
+    steps: [['race', 600], ['hold', ['down'], 60], ['hold', ['right'], 600], ['wait', 200]],
+    expect: `!g.progress.flags.raceWon && !g.race || 'reached Pip at tide ' + g.tide.level`,
+  })),
 ];
 
 const server = createServer(async (req, res) => {

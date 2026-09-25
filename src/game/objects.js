@@ -21,7 +21,7 @@ import {
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
-  CHARM_CASE_ESSENCES,
+  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES,
 } from '../data/feel.js';
 
 // --------------------------------------------------------------------------
@@ -472,6 +472,61 @@ export class NPC extends Entity {
   }
 }
 defineEntity('npc', (x, y, o) => new NPC(x, y, o));
+
+// --------------------------------------------------------------------------
+// A race (S155 side content): a `racer` who starts the clock and a
+// `raceGoal` who stops it, sharing a race `id`. The clock lives on the game
+// (Game.startRace); the frames it allows live in feel.js, named here by id so
+// room data never carries a timing constant.
+//
+//   ['racer', 1, 3, { race: 'shore', ask: 'raceAsk', busy: 'raceBusy',
+//     win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20',
+//     flag: 'raceWon', sprite: 'npc_child' }]
+//   ['raceGoal', 5, 5, { race: 'shore', dialogue: 'raceGoalWait', sprite: ... }]
+// --------------------------------------------------------------------------
+
+const RACE_FRAMES = { shore: RACE_SHORE_FRAMES };
+
+export class Racer extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.raceDef = {
+      id: o.race, frames: RACE_FRAMES[o.race] || 0, prize: o.prize || 'rupee20',
+      again: o.again || 'rupee20', flag: o.flag || null, win: o.win || null, lose: o.lose || null,
+    };
+    this.askText = o.ask || null;
+    this.busyText = o.busy || null;
+  }
+
+  interact(game, player) {
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    if (game.race) { if (this.busyText) game.startDialogue(this.busyText, this); return; }
+    const go = () => game.startRace(this.raceDef);
+    game.startDialogue(this.askText, this);
+    if (game.dialogue.active) game.dialogue.onClose = go; else go();
+  }
+}
+defineEntity('racer', (x, y, o) => new Racer(x, y, o));
+
+export class RaceGoal extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.raceId = o.race || null;
+  }
+
+  update(game) {
+    super.update(game);
+    // The finish is reaching them, not talking to them: a race ends the frame
+    // you arrive, the way a line is crossed.
+    const p = game.player, r = game.race;
+    if (!p || !r || r.id !== this.raceId) return;
+    if (Math.abs(p.cx - this.cx) <= TILE + 4 && Math.abs(p.cy - this.cy) <= TILE + 4) game.finishRace();
+  }
+}
+defineEntity('raceGoal', (x, y, o) => new RaceGoal(x, y, o));
 
 export class Sign extends Entity {
   constructor(x, y, o = {}) {

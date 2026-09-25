@@ -3067,6 +3067,18 @@ export async function installRuntime() {
   }
 
   /**
+   * START A RACE (S155): talk to the `racer` in this room until its clock is
+   * running. The run itself is ordinary directives.
+   */
+  function* dRace(maxF) {
+    const g = window.__game;
+    const holder = g.entities.find(e => !e.remove && e.raceDef);
+    if (!holder) throw new Error(`race: nobody in ${g.mapId} ${g.room && g.room.key} starts a race`);
+    yield* dTalkTo(holder, () => !!g.race, 'race', 'the racer', maxF);
+    if (!g.race) throw new Error('race: the clock never started');
+  }
+
+  /**
    * TURN A DUNGEON KEY (S154): stand on (tx, ty) and lean `dir` into the
    * keyhole until its flag says it has opened, as a player does.
    */
@@ -3135,6 +3147,7 @@ export async function installRuntime() {
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
       else if (kind === 'beat') yield* dBeat(a[0], a[1]);
       else if (kind === 'errand') yield* dErrand(a[0], a[1]);
+      else if (kind === 'race') yield* dRace(a[0]);
       else if (kind === 'keyhole') yield* dKeyhole(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'ending') yield* dEnding(a[0]);
       else throw new Error('unknown replay directive: ' + kind);
