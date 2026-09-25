@@ -17,6 +17,7 @@
 
 export async function installRuntime() {
   const ent = await import('/src/game/entity.js');
+  const { F } = await import('/src/world/tileset.js');
   // For `anchorOverride`: where the Anchor actually bit, read out of the live
   // tide field rather than predicted from the throw's arc.
   const items = await import('/src/game/items.js');
@@ -277,6 +278,16 @@ export async function installRuntime() {
     return ent.canOccupy(g, p, tx * TILE, ty * TILE, p.caps);
   }
 
+  /**
+   * Would standing here drop the player down a pit? `canOccupy` says a pit is
+   * floor — it is, until you are on it — so the planner used to walk straight
+   * over one (the Hauling Pit, S147). Asked of the engine's own `groundFlags`,
+   * the point the player's fall is decided on, for a player parked on the tile.
+   */
+  function pitAt(g, p, tx, ty) {
+    return !!(ent.groundFlags(g, { x: tx * TILE, y: ty * TILE, hb: p.hb }) & F.PIT);
+  }
+
   /** Breadth-first path over tile centres. Returns a list of tiles, or null. */
   function findPath(g, p, from, to, noHazards) {
     const W = RW(g);
@@ -315,6 +326,7 @@ export async function installRuntime() {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = cx + dx, ny = cy + dy, nk = ny * W + nx;
         if (prev.has(nk) || hazard.has(nk) || !passable(g, p, nx, ny)) continue;
+        if (!noHazards && nk !== goal && pitAt(g, p, nx, ny)) continue;
         prev.set(nk, cur);
         if (nk === goal) {
           const out = [];
@@ -325,7 +337,9 @@ export async function installRuntime() {
         q.push(nk);
       }
     }
-    return hazard.size ? findPath(g, p, from, to, true) : null;
+    // Nothing round: try again the old way, over pits and past fixtures —
+    // a gap the hop clears is a pit tile on the path, and so is a real fall.
+    return noHazards ? null : findPath(g, p, from, to, true);
   }
 
   /** Buttons that carry the player toward a pixel waypoint. */

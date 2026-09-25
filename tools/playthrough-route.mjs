@@ -2914,7 +2914,9 @@ export const ROUTE = [
   ['dialogue', 1800],
   // S147, at 1.5 px/f: `breakPin` alone won on 6 of 48; with
   // `breakContact` as well he is beaten on 28 (swept over four option sets).
-  ['boss', 20000, null, { breakPin: true, breakContact: true }],
+  // S150: swept six option sets; `reachSwing` added wins on 39 of 48 (the
+  // plain pair now loses once the planner stopped walking over pits).
+  ['boss', 20000, null, { breakPin: true, breakContact: true, reachSwing: true }],
   ['wait', 300],
   ['loot', 1200],
 
