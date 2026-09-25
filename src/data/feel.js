@@ -1982,3 +1982,28 @@ export const WIZZROBE_GONE_FRAMES = 120;
 
 /** px/f — its shot. derived: parts/wizzrobeProjectile.s, speed $50 (SPEED_200). */
 export const WIZZROBE_SHOT_SPEED = 2;
+
+/** px — a pincer comes out when Link is nearer than this (across plus down).
+ *  derived: pincer.s pincer_head_state9, c = $28. */
+export const PINCER_SEE_PX = 0x28;
+
+/** f — it shows its eyes this long first. derived: Seasons'
+ *  data/seasons/enemyAnimations.s, enemy $45 animation 0 ($24 frames to its
+ *  parameter 1). */
+export const PINCER_WARN_FRAMES = 0x24;
+
+/** px/f, px — it lunges out this fast, this far. derived: pincer.s
+ *  pincer_head_stateB (var33 += 2 until $20). */
+export const PINCER_OUT_SPEED = 2;
+export const PINCER_REACH = 0x20;
+
+/** f — holds out this long. derived: pincer.s @fullyExtended, counter1 $08. */
+export const PINCER_HOLD_FRAMES = 8;
+
+/** px/f — draws back this fast. derived: pincer.s pincer_head_stateD (var33
+ *  down by one a frame). */
+export const PINCER_BACK_SPEED = 1;
+
+/** f — hides this long before it can come again. derived: pincer.s
+ *  pincer_head_stateD, counter1 30. */
+export const PINCER_REST_FRAMES = 30;

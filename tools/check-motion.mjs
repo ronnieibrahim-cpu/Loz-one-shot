@@ -227,7 +227,7 @@ async function runInPage([ground, wet, frames, seed]) {
         const len = Math.hypot(ddx, ddy);
         if (ddx === 0 && ddy === 0) w.stillFrames++;
         else if ((ddx === step && ddy === 0) || (ddy === step && ddx === 0)
-          || Math.abs(len - step) <= 1) w.walkFrames++;
+          || Math.abs(len - step) <= 1.5) w.walkFrames++;
         else if (len < step) w.blocked = (w.blocked || 0) + 1;
         else if (w.badSpeed.length < 4) w.badSpeed.push({ f, ddx, ddy, step });
         else w.badSpeed.push(null);

@@ -27,6 +27,8 @@ import {
   BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN,
   BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES,
   WHISP_SPEED,
+  PINCER_SEE_PX, PINCER_WARN_FRAMES, PINCER_OUT_SPEED, PINCER_REACH, PINCER_HOLD_FRAMES,
+  PINCER_BACK_SPEED, PINCER_REST_FRAMES,
   WIZZROBE_PHASE_IN_FRAMES, WIZZROBE_STAND_FRAMES, WIZZROBE_FIRE_AT, WIZZROBE_OUT_FRAMES,
   WIZZROBE_GONE_FRAMES, WIZZROBE_SHOT_SPEED,
   DARKNUT_SPEED, DARKNUT_WALK_BASE, DARKNUT_WALK_MASK, DARKNUT_SEE_PX, DARKNUT_CHASE_COOLDOWN,
@@ -984,31 +986,50 @@ export function installEnemies() {
     attackFrame: 'pincer_1',
     hb: { x: 3, y: 3, w: 10, h: 11 },
     drops: 'common',
+    // Seasons' pincer (pincer.s, the head): hides in its hole until Link is
+    // within 40 px, shows its eyes, then lunges 32 px at him along one of
+    // eight directions, holds, draws back, and hides a while. Touchable only
+    // while it is out.
+    port: 'pincer.s',
     ai(e, g) {
-      // Never leaves its hole: it snaps out along one axis and is reeled back,
-      // so the safe ground is diagonal to it. Both halves of that are lattice
-      // steps — two cells out, two cells back — which is what makes the reach
-      // something the player can measure by eye rather than guess at. It used
-      // to be reeled home by a proportional lerp that never quite arrived, and
-      // then by a subpixel one that arrived but still landed off the lattice.
-      if (e._pinch == null) e._pinch = 'hole';
-      if (e._pinch === 'out' || e._pinch === 'back') {
-        advanceStep(e, g);
-        if (e.step) return;
-        if (e._pinch === 'out') {
-          e._pinch = 'back';
-          if (!beginStep(e, g, OPPOSITE[e.dir], ENEMY_GRID_STEP * 2, 24)) e._pinch = 'hole';
-        } else {
-          e._pinch = 'hole';
-        }
-        return;
-      }
-      if (every(e, 70) && aligned(e, g, 14) && distToPlayer(e, g) < 72) {
-        facePlayer(e, g);
-        g.spawnEffect('spark', e.x, e.y - 6);
-        e.stun = 10;
-        e.attackTime = 10;
-        if (beginStep(e, g, e.dir, ENEMY_GRID_STEP * 2, 14)) e._pinch = 'out';
+      const place = (d) => {                      // objectSetPositionInCircleArc
+        const r = e.angle / 32 * 2 * Math.PI;
+        e.fx = e.homeFx + Math.round(d * 256 * Math.sin(r));
+        e.fy = e.homeFy - Math.round(d * 256 * Math.cos(r));
+      };
+      const hide = () => { e.hidden = true; e.harmless = true; e.invuln = 9999; };
+      switch (e.aiState) {
+        case 0: e.homeFx = e.fx; e.homeFy = e.fy; hide(); e.aiState = 'wait'; return;   // state 8
+        case 'wait':                              // state 9
+          if (!linkWithin(e, g, PINCER_SEE_PX)) return;
+          e.hidden = false; e.aiState = 'warn'; e.aiTimer = PINCER_WARN_FRAMES;
+          e.attackTime = PINCER_WARN_FRAMES;
+          return;
+        case 'warn':                              // state $0a
+          if (--e.aiTimer > 0) return;
+          e.harmless = false; e.invuln = 0;
+          e.angle = (angleToward(e, g) + 2) & 0x1c; e.dir = dirOfAngle(e.angle);
+          e.reach = 0; e.speed = PINCER_OUT_SPEED; e.aiState = 'out';
+          return;
+        case 'out':                               // state $0b
+          place(e.reach);
+          e.reach += PINCER_OUT_SPEED;
+          if (e.reach >= PINCER_REACH) { e.aiState = 'hold'; e.aiTimer = PINCER_HOLD_FRAMES; }
+          return;
+        case 'hold':                              // state $0c
+          if (--e.aiTimer > 0) return;
+          e.aiState = 'back'; e.speed = PINCER_BACK_SPEED;
+          return;
+        case 'back':                              // state $0d
+          place(e.reach);
+          e.reach -= PINCER_BACK_SPEED;
+          if (e.reach > 0) return;
+          hide(); e.aiState = 'rest'; e.aiTimer = PINCER_REST_FRAMES;
+          return;
+        case 'rest':                              // state $0e
+          if (--e.aiTimer > 0) return;
+          e.fx = e.homeFx; e.fy = e.homeFy; e.aiState = 'wait';
+          return;
       }
     },
   });
