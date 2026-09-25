@@ -657,6 +657,26 @@ export class Audio {
 
   _renderSfx(d, t0, pitch, volMul) {
     const ctx = this.ctx;
+    if (d.seasons) {
+      // Oracle of Seasons' own sound effect, rendered once by its own engine
+      // (gbsound.js) and replayed from the buffer on the effects bus.
+      this._gbSfx = this._gbSfx || new Map();
+      let buf = this._gbSfx.get(d.seasons);
+      if (!buf) {
+        const r = renderSeasons(d.seasons, GB_RENDER_RATE);
+        if (!r) return;
+        buf = ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
+        buf.getChannelData(0).set(r.data);
+        this._gbSfx.set(d.seasons, buf);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.value = (d.vol ?? 1) * volMul;
+      src.connect(g); g.connect(this.sfxBus);
+      src.start(t0);
+      return;
+    }
     switch (d.type) {
       case 'multi':
         for (const p of d.parts || []) this._renderSfx(p, t0 + (p.delay || 0), pitch, volMul);

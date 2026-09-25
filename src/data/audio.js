@@ -12,12 +12,9 @@ const SFX = {
       { type: 'blip', freq: 1400, freq2: 2600, dur: 0.1, duty: 0.25, vol: 0.08, delay: 0.01 },
     ],
   },
-  spin: {
-    type: 'multi', parts: [
-      { type: 'noise', freq: 3000, freq2: 1400, dur: 0.3, q: 1.2, vol: 0.15 },
-      { type: 'arp', notes: ['C5', 'E5', 'G5', 'C6'], step: 0.05, duty: 0.5, vol: 0.1, delay: 0.02 },
-    ],
-  },
+  // Oracle of Seasons' own spin whoosh (sfx/swordSpin.s), played by its own
+  // sound engine: the noise channel swept up and back down over 32 frames.
+  spin: { seasons: 'swordSpin' },
   charged: { type: 'blip', freq: 900, freq2: 1800, dur: 0.14, duty: 0.125, vol: 0.07 },
   linkHurt: { type: 'blip', freq: 420, freq2: 130, dur: 0.24, duty: 0.5, wave: 'saw', vol: 0.15 },
   jump: { type: 'blip', freq: 500, freq2: 950, dur: 0.11, duty: 0.25, vol: 0.11 },

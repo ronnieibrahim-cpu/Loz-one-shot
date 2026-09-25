@@ -4,7 +4,7 @@
 Source: assets/music/oracles-disasm/, copied verbatim from Stewmath's
 oracles-disasm (github.com/Stewmath/oracles-disasm, commit 7584d87): the
 channel scripts of the tracks this game plays (mus/*.s), the item-get
-jingle (sfx/getItem.s), the wave channel's waveforms, the noise channel's
+jingle (sfx/getItem.s), the spin attack (sfx/swordSpin.s), the wave channel's waveforms, the noise channel's
 drum table, and the sound engine's frequency, envelope and vibrato tables
 (audio-tables.s, from code/audio.s). Credit: the oracles-disasm project and
 its contributors, who took these apart; the music is Nintendo's.
@@ -51,6 +51,9 @@ TRACKS = [
     ('intro1', 'mus/intro1.s', 'musIntro1'),
     ('intro2', 'mus/intro2.s', 'musIntro2'),
     ('getItem', 'sfx/getItem.s', 'sndGetItem'),
+    # The spin attack's whoosh (S153): the noise channel alone, swept up and
+    # back down over 32 frames. Played as a sound effect, not a jingle.
+    ('swordSpin', 'sfx/swordSpin.s', 'sndSwordSpin'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']
