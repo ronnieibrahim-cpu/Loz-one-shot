@@ -574,7 +574,7 @@ const rooms = {
     // Not in row 0: a doorway on the seam would disagree with the screen above.
     map: [
       '##########',
-      '#5#&#51gg#',
+      '###&##1gg#',
       '5555.oo.gg',
       '11......gg',
       'gg.GGGG.gg',
