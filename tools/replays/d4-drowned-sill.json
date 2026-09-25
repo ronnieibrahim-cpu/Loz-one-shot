@@ -46,8 +46,8 @@
   "camMaxX": 80,
   "camMinY": 0,
   "camMaxY": 48,
-  "camEndX": 5,
-  "camEndY": 10,
+  "camEndX": 0,
+  "camEndY": 9,
   "probeNames": "dFloorCistern|dFloorCistern"
  },
  "buttons": [
@@ -116,7 +116,15 @@
   ],
   [
    0,
-   59
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   53
   ],
   [
    2,
@@ -487,8 +495,8 @@
   },
   {
    "f": 1260,
-   "x": 81,
-   "y": 62,
+   "x": 76,
+   "y": 61,
    "hp": 10,
    "e": 3,
    "d": 1,
@@ -508,8 +516,8 @@
   "mapId": "d4",
   "room": "0,2,3",
   "floor": 0,
-  "x": 81,
-  "y": 62,
+  "x": 76,
+  "y": 61,
   "z": 0,
   "dir": "right",
   "playerId": 1,
