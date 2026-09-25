@@ -54,6 +54,7 @@ const RIPPERS = [
   ['rip-music.py',           'src/data/music-seasons.js'],   // S151: Seasons' own music data
   ['rip-terrain.py',         'src/data/tiles-terrain.js'],
   ['rip-dungeon-themes.py',  'src/data/tiles-dungeon-themes.js'],
+  ['rip-bosses.py',          'src/data/sprites-bosses-seasons.js'],  // S152: bosses from Seasons' own boss graphics
 ];
 // Verified by check-tilesets.mjs through its own --verify flag, and it emits a
 // PNG plus a manifest rather than a module, so it is not this tool's business.

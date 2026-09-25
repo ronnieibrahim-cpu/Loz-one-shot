@@ -21,6 +21,7 @@ import { installFairies, FAIRY_ART } from './sprites-fairies.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installEnemyHurtSprites, ENEMY_HURT_ART } from './sprites-enemies-hurt.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
+import { installSeasonsBossSprites, BOSS_SEASONS_ART } from './sprites-bosses-seasons.js';
 import { installHudSprites, HUD_ART } from './sprites-hud.js';
 import { installGearSprites, GEAR_ART } from './sprites-gear.js';
 import { installTitleSprites, TITLE_ART } from './sprites-title.js';
@@ -50,6 +51,7 @@ export const SPRITE_PACKS = {
   enemiesHurt: ENEMY_HURT_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
+  bossesSeasons: BOSS_SEASONS_ART,
   hudRipped: HUD_ART,
   gear: GEAR_ART,
   title: TITLE_ART,
@@ -81,6 +83,9 @@ export function installData() {
   installEnemySprites();
   installEnemyHurtSprites();
   installBossSprites();
+  // After the hand-drawn pack: a boss assembled from Seasons' own boss
+  // graphics takes its frame names off the hand-drawn one it replaces.
+  installSeasonsBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the
   // hand-drawn ones for the items Oracle of Seasons actually has.
   installHudSprites();

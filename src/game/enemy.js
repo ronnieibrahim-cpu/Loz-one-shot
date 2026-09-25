@@ -37,6 +37,8 @@ import {
   Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect,
 } from './entity.js';
 import { fire } from './projectile.js';
+import { sprites } from '../gfx/art.js';
+import { BOSS_RIG } from '../data/sprites-bosses-seasons.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';
@@ -52,7 +54,7 @@ import {
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
   ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
-  ENEMY_ATTACK_FRAMES,
+  ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
@@ -529,12 +531,35 @@ export class Boss extends Enemy {
 
   spriteName() {
     if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
+    // A shelled boss whose weak point is open shows it, the way Seasons'
+    // Gohma lifts its eyelid: `openFrames` is the same cycle with the eye up.
+    // Pure drawing — the fight reads `weakOpen`, never the frame.
+    const o = this.spec.openFrames;
+    if (o && this.weakOpen) {
+      this.flipX = false;
+      return o[Math.floor(this.animTick / this.rate) % o.length];
+    }
     return super.spriteName();
   }
 
   draw(ctx, game, ox, oy) {
     if (this.dying && (this.deathTime >> 1) % 2 === 0) return;
-    super.draw(ctx, game, ox, oy);
+    const name = this.spriteName(game);
+    const rig = BOSS_RIG[name];
+    if (!rig) { super.draw(ctx, game, ox, oy); return; }
+    // A frame assembled from the cartridge (src/data/sprites-bosses-seasons.js)
+    // is drawn at Seasons' own size, with the boss's position — the rig's
+    // (ax, ay) — on the centre of its hitbox. The art is placed around the
+    // fight; the fight is not moved to fit the art. Flashes like any enemy.
+    let pal = null;
+    if (this.flicker > 0 && Math.floor(this.flicker / ENEMY_HIT_FLASH_BEAT) % 2 === 0) pal = 'hitflash';
+    const hb = this.spec.hb || { x: 0, y: 0, w: this.w, h: this.h };
+    const cx = ox + this.x + hb.x + (hb.w >> 1);
+    const cy = oy + this.y + hb.y + (hb.h >> 1) - this.z;
+    const x = this.flipX ? cx - (rig.w - rig.ax) : cx - rig.ax;
+    for (const layer of rig.layers) {
+      sprites.draw(ctx, layer, x, cy - rig.ay, { pal: pal || undefined, flipX: this.flipX, alpha: this.alpha });
+    }
   }
 }
 

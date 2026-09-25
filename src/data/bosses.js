@@ -250,6 +250,7 @@ export function installBosses() {
     hp: 24, damage: 4, pal: 'enemyr', speed: 0.55, rate: 9,
     w: 32, h: 32, hb: { x: 3, y: 10, w: 26, h: 20 },
     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
+    openFrames: ['boss_gohmaraq_open_0', 'boss_gohmaraq_open_1', 'boss_gohmaraq_open_2'],
     hurtFrame: 'boss_gohmaraq_hurt',
     intro: 90, shell: true, terrain: 'any', drops: 'none',
     init(e) { e._pdir = 'right'; e._open = 0; },

@@ -137,7 +137,7 @@ export const REQUIRED_SPRITES = {
   // ---- pack: sprites-bosses.js -----------------------------------------
   // Bosses are 32x32 unless the name ends in _48 (48x48).
   bosses: [
-    ...seq('boss_gohmaraq_', 3), 'boss_gohmaraq_hurt',
+    ...seq('boss_gohmaraq_', 3), ...seq('boss_gohmaraq_open_', 3), 'boss_gohmaraq_hurt',
     ...seq('boss_anemos_', 3), 'boss_anemos_hurt',
     ...seq('boss_gloomtide_', 3), 'boss_gloomtide_hurt',
     ...seq('boss_wyverna_', 3), 'boss_wyverna_hurt',
@@ -155,6 +155,11 @@ export const REQUIRED_SPRITES = {
   ],
 };
 
+/** Canvas of each boss built from Seasons' boss graphics (tools/rip-bosses.py). */
+const SEASONS_BOSS_CANVAS = {
+  boss_gohmaraq: [48, 32],   // Gohma, body and claw
+};
+
 /** Expected pixel size for a sprite name, used by the validator. */
 export function expectedSize(name) {
   // The held-blade poses are the only Link frames that are not 16x16: the
@@ -166,6 +171,11 @@ export function expectedSize(name) {
   if (name === 'link_hold_up') return [16, 28];
   if (name === 'link_hold_side') return [28, 16];
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
+  // A boss assembled from Seasons' own graphics (tools/rip-bosses.py) is drawn
+  // at the cartridge's size, not ours: every frame of one boss shares one
+  // canvas, stated here by hand so a ripper change that moves it is a failure.
+  const seasonsBoss = SEASONS_BOSS_CANVAS[name.split('@')[0].replace(/_(open_)?(\d+|hurt)$/, '')];
+  if (seasonsBoss) return seasonsBoss;
   if (name.startsWith('boss_')) return name.endsWith('_48') ? [48, 48] : [32, 32];
   if (name.startsWith('mini_')) return [24, 24];
   if (name === 'maku_face') return [64, 48];  // the eyes, nose and leaf over the trunk
