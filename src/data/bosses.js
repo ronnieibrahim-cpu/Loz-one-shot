@@ -493,7 +493,8 @@ export function installBosses() {
   defineBoss('wyverna', {
     hp: 44, damage: 4, pal: 'enemyb', speed: 1.0, rate: 7,
     w: 32, h: 32, hb: { x: 4, y: 8, w: 24, h: 20 },
-    frames: ['boss_wyverna_0', 'boss_wyverna_1', 'boss_wyverna_2'],
+    frames: ['boss_wyverna_0', 'boss_wyverna_1'],
+    openFrames: ['boss_wyverna_open_0'],
     hurtFrame: 'boss_wyverna_hurt',
     intro: 80, shell: true, terrain: 'air', drops: 'none',
     init(e) { e._open = 0; e.shadow = true; },
