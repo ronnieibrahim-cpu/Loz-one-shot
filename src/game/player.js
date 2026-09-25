@@ -14,7 +14,9 @@
 
 import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS,
+  enemyHurtRect,
 } from './entity.js';
+export { enemyHurtRect };
 import { F, transformFor } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
@@ -24,7 +26,7 @@ import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
-  SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, ENEMY_HURT_RADIUS, LINK_HURT_RADIUS,
+  SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
   BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
@@ -77,25 +79,6 @@ export function swingPhase(t) {
   return SWING_PHASE_FRAMES.length - 1;
 }
 
-/**
- * An enemy's collision area — what the sword must reach and what hurts Link
- * when it touches his own (playerHurtRect): a box of ENEMY_HURT_RADIUS either
- * way of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
- * is the footprint it walks on and sits two pixels low. An enemy whose spec
- * declares its own `hurtBox` keeps it; anything bigger than one cell with
- * none (a boss) falls back to its `hb`.
- */
-export function enemyHurtRect(e) {
-  // A hoverer (keese, bubble, wisp) is drawn `z` pixels up, and the box goes
-  // with the sprite: the cartridge's keese and bubble fly at z 0, so their box
-  // is where they are drawn, and ours are drawn higher.
-  const lift = e.z > 0 ? e.z : 0;
-  const hb = e.spec && e.spec.hurtBox;
-  if (hb) return { x: e.x + hb.x, y: e.y + hb.y - lift, w: hb.w, h: hb.h };
-  if (e.w > 16 || e.h > 16) return e.rect();
-  const r = ENEMY_HURT_RADIUS;
-  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r - lift, w: r * 2, h: r * 2 };
-}
 
 /**
  * Link's own collision area: a box of LINK_HURT_RADIUS either way of the
@@ -108,6 +91,9 @@ export function playerHurtRect(p) {
 }
 
 export class Player extends Entity {
+  /** What an enemy has to touch to hurt him: playerHurtRect. */
+  contactRect() { return playerHurtRect(this); }
+
   constructor(x, y) {
     super(x, y);
     this.w = 16; this.h = 16;
@@ -1206,7 +1192,7 @@ export class Player extends Entity {
       if (this.z > 6 && !e.flying) continue;      // jumped over it
       // The cartridge's rule: Link's 12x12 against the enemy's own box, both
       // on the middle of the sprite — not the two walking footprints.
-      if (!rectOverlap(playerHurtRect(this), enemyHurtRect(e))) continue;
+      if (!rectOverlap(this.contactRect(), e.contactRect())) continue;
       // "Sea creature" is the enemy's own terrain field, not where it happens
       // to be standing: a crab hauled onto dry land by the tide is still what
       // the Anemone's Gift protects you from.

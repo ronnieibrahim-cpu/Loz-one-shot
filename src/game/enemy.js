@@ -34,7 +34,7 @@
 // Bosses use defineBoss, which adds phase handling and a health bar.
 
 import {
-  Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo,
+  Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect,
 } from './entity.js';
 import { fire } from './projectile.js';
 import { F } from '../world/tileset.js';
@@ -71,6 +71,9 @@ const TERRAIN_AVOID = {
 };
 
 export class Enemy extends Entity {
+  /** The cartridge's collision box on the middle of the sprite: enemyHurtRect. */
+  contactRect() { return enemyHurtRect(this); }
+
   constructor(x, y, spec, opts = {}) {
     super(x, y, opts);
     this.spec = spec;

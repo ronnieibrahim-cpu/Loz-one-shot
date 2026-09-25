@@ -6,7 +6,7 @@ import { sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE,
-  ENEMY_SHOT_RADIUS, LINK_HURT_RADIUS,
+  ENEMY_SHOT_RADIUS,
 } from '../data/feel.js';
 
 export class Projectile extends Entity {
@@ -40,11 +40,16 @@ export class Projectile extends Entity {
     this.radius = o.radius || ENEMY_SHOT_RADIUS;
   }
 
+  /** The shot's collision box: `radius` either way of its middle as drawn. */
+  contactRect() {
+    const r = this.radius;
+    return { x: this.cx - r, y: this.cy - this.z - r, w: r * 2, h: r * 2 };
+  }
+
   /** True if this enemy shot is touching Link's collision area. */
   touchesPlayer(pl) {
-    const r = this.radius, lr = LINK_HURT_RADIUS;
-    const sx = this.cx, sy = this.cy - this.z;
-    return Math.abs(sx - pl.cx) < r + lr && Math.abs(sy - pl.cy) < r + lr;
+    const a = this.contactRect(), b = pl.contactRect();
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
   }
 
   update(game) {

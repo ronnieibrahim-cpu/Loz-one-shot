@@ -20,7 +20,7 @@ import { sprites } from '../gfx/art.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
-  ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
+  ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
   HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT,
 } from '../data/feel.js';
 
@@ -52,6 +52,26 @@ export function dirTo(a, b) {
 }
 
 let nextId = 1;
+
+/**
+ * An enemy's collision area — what the sword must reach and what hurts Link
+ * when it touches his own (playerHurtRect): a box of ENEMY_HURT_RADIUS either
+ * way of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
+ * is the footprint it walks on and sits two pixels low. An enemy whose spec
+ * declares its own `hurtBox` keeps it; anything bigger than one cell with
+ * none (a boss) falls back to its `hb`.
+ */
+export function enemyHurtRect(e) {
+  // A hoverer (keese, bubble, wisp) is drawn `z` pixels up, and the box goes
+  // with the sprite: the cartridge's keese and bubble fly at z 0, so their box
+  // is where they are drawn, and ours are drawn higher.
+  const lift = e.z > 0 ? e.z : 0;
+  const hb = e.spec && e.spec.hurtBox;
+  if (hb) return { x: e.x + hb.x, y: e.y + hb.y - lift, w: hb.w, h: hb.h };
+  if (e.w > 16 || e.h > 16) return e.rect();
+  const r = ENEMY_HURT_RADIUS;
+  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r - lift, w: r * 2, h: r * 2 };
+}
 
 /** How long a hit of `knock` pixels leaves an ordinary enemy invulnerable. */
 export function hitInvulnFrames(knock) {
@@ -134,6 +154,15 @@ export class Entity {
   rect() {
     return { x: this.x + this.hb.x, y: this.y + this.hb.y, w: this.hb.w, h: this.hb.h };
   }
+
+  /**
+   * The box this thing HURTS and IS HURT with, as opposed to `rect()`, the
+   * footprint it walks on. The same for most entities; an enemy, Link and an
+   * enemy shot use the cartridge's collision radii (enemyHurtRect,
+   * Player.contactRect, Projectile.contactRect). Contact damage asks this, and
+   * so does every tool that models contact — never a copy of it.
+   */
+  contactRect() { return this.rect(); }
 
   overlaps(o) {
     const a = this.rect(), b = o.rect();
