@@ -50,6 +50,28 @@ const SCENARIOS = [
     steps: [['goto', 4, 2, 400], ['hold', ['up'], 90], ['wait', 30]],
     expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' with no bomb')`,
   },
+  {
+    name: 'Slackwater Cave: at LOW the mouth is dry, and the Piece of Heart is inside',
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
+      enter: ['overworld', 0, 1, 2, 48, 64, 'up'] }),
+    steps: [['goto', 3, 2, 400], ['hold', ['up'], 60], ['wait', 60],
+      ['goto', 4, 5, 400], ['hold', ['up'], 30], ['wait', 200]],
+    expect: `g.mapId === 'cave6' && g.progress.heartPieces === 1 || ('in ' + g.mapId + ', pieces ' + g.progress.heartPieces)`,
+  },
+  {
+    name: 'Slackwater Cave: the conch is held inside, and the way out is dry',
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
+      enter: ['cave6', 0, 0, 0, 72, 81, 'up'] }),
+    steps: [['use', 'conch', 2, 140], ['goto', 5, 5, 300], ['hold', ['down'], 60], ['wait', 60]],
+    expect: `g.mapId === 'overworld' && g.tide.level === 0 && !g.player.inDeep || ('in ' + g.mapId + ' at tide ' + g.tide.level)`,
+  },
+  ...[1, 2].map(t => ({
+    name: `Slackwater Cave: at ${t === 1 ? 'MID' : 'HIGH'} the sea stands in the mouth`,
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: t,
+      enter: ['overworld', 0, 1, 2, 48, 48, 'up'] }),
+    steps: [['hold', ['up'], 180], ['wait', 30]],
+    expect: `g.mapId === 'overworld' || ('got into ' + g.mapId + ' at tide ' + g.tide.level)`,
+  })),
 ];
 
 const server = createServer(async (req, res) => {

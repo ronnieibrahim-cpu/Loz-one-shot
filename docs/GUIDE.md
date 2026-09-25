@@ -1385,8 +1385,8 @@ Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
   (`0,8,1`) and Hooked Channel (`0,9,1`) to **Palace Mouth**
   (`overworld/0,10,1`).
 - **Palace Mouth** has a cave mouth at tile (4,1) leading to `cave4/0,0,0`, the
-  **Palace Porch**: **Heart Piece 18** at (4,1), and a notice from someone who
-  gave up halfway — *"The rest of it is under. Do not go and look."*
+  **Palace Porch**: 20 rupees at (4,1) (its Piece of Heart moved to the
+  Slackwater Cave), and a notice from someone who gave up halfway — *"The rest of it is under. Do not go and look."*
 - North from Reefway is **Coral Gate** (`overworld/0,8,0`), and east of that
   **Palace Wall** (`overworld/0,9,0`) — 20 rupees in the open at (2,5), with an
   `octorokSea` in the water. (A Piece of Heart used to lie here; it is now in
@@ -1786,8 +1786,10 @@ Numbered in the order this walkthrough passes them.
 16. **Heart Piece 16** — `d5/0,5,5`, Bower Cell, tile (5,1).
 17. **Heart Piece 17** — `overworld/0,5,0`, Salt Terraces, tile (6,4). Behind
     the **Resonance Rod** vane gate.
-18. **Heart Piece 18** — `cave4/0,0,0`, Palace Porch, tile (4,1). Cave mouth on
-    Palace Mouth `overworld/0,10,1` at (4,1), behind the same vane gate.
+18. **Heart Piece 18** — `cave6/0,0,0`, Slackwater Cave, tile (4,4). A sea cave
+    in the cliff at the top of the Wind Shelf (`overworld/0,1,2`, on the
+    Cliffs of Kell) at (3,1). Its mouth is only above the water at **LOW
+    tide**: sound the sea down, wade the channel and walk in.
 19. **Heart Piece 19** — `cave5/0,0,0`, Hollow Den, tile (4,2). Bluff Hollow
     (`overworld/0,3,6`, just north-west of the village) has a short cliff face
     in its treeline with a crack in it at (4,1): **bomb it** and a cave mouth
@@ -1921,7 +1923,8 @@ hit.
 | `cave1/0,0,0` Bluff Grotto | `overworld/0,3,7` (3,2) | Chest with 30 rupees; **Heart Piece 1**; big chest with the **Noble Sword** at 4 Essences |
 | `cave2/0,0,0` Reef Hollow | `overworld/0,6,7` (4,3) | Big chest with the **Kilnshell**; a `rupee20` behind drift-tangle; a `rupee20` and **Heart Piece 2**, both needing **LOW tide** to reach |
 | `cave3/0,0,0` Salt Pan Vault | `overworld/0,6,1` (3,2), behind the vanes | Big chest with the **Bottled Tide** case |
-| `cave4/0,0,0` Palace Porch | `overworld/0,10,1` (4,1), behind the vanes | **Heart Piece 18** |
+| `cave4/0,0,0` Palace Porch | `overworld/0,10,1` (4,1), behind the vanes | 20 rupees |
+| `cave6/0,0,0` Slackwater Cave | `overworld/0,1,2` (3,1) — a sea cave, open at **LOW tide** only | **Heart Piece 18** |
 | `cave5/0,0,0` Hollow Den | `overworld/0,3,6` (4,1) — a cracked wall; **bomb it** | **Heart Piece 19** |
 
 The Salt Pan Vault and the Palace Porch are the one-room ruins of what used to be

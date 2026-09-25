@@ -189,7 +189,9 @@ export function installCaves() {
           '##########',
         ],
         entities: [
-          ['pickup', 4, 1, { kind: 'heartPiece' }],
+          // Its Piece of Heart moved to the Wind Shelf's sea cave (S155, side
+          // content); a rupee keeps the spot.
+          ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [[7, 2, 'A palace notice, in a hand that gave up halfway: "The rest of it is under. Do not go and look."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 10, ry: 1, px: 64, py: 32, dir: 'down' } }],
@@ -225,6 +227,40 @@ export function installCaves() {
           ['pickup', 4, 2, { kind: 'heartPiece' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  // THE SLACKWATER CAVE (S155 side content): in the cliff over the Wind
+  // Shelf's channel, and its mouth is only above the sea at LOW. The tide is
+  // held inside (`noTide`), so the sea cannot be raised behind the player and
+  // the way out is always the way in. Its Piece of Heart is the one that lay
+  // in the Palace cave — moved, not added (check-hearts.mjs).
+  registerMap({
+    id: 'cave6',
+    kind: 'cave',
+    name: 'Slackwater Cave',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#..2222..#',
+          '#..2222..#',
+          '#o.......#',
+          '#.......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 4, { kind: 'heartPiece' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
       },
     },
   });

@@ -568,18 +568,27 @@ const rooms = {
   '0,1,2': {
     name: 'Wind Shelf',
     legend: 'cliffs', music: 'overworld',
+    // THE SEA CAVE (S155 side content). Its mouth at 3,1 is `seaCaveMouth`:
+    // above water only at LOW, when the channel in front of it is wadeable
+    // too. At MID and HIGH the sea stands in the mouth and the warp is inert.
+    // Not in row 0: a doorway on the seam would disagree with the screen above.
     map: [
       '##########',
-      '#555551gg#',
-      '55.o.oo.gg',
+      '#5#&#51gg#',
+      '5555.oo.gg',
       '11......gg',
       'gg.GGGG.gg',
       'ggg____ggg',
       '#gggggggg#',
       '###g##g###',
     ],
+    warps: [
+      { x: 3, y: 1, to: { map: 'cave6', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['tektite', 3, 3], ['tektite', 6, 4],
+      // The first tektite stood at 3,3, on the sea cave's doorstep, and met
+      // everyone coming out of it (S155).
+      ['tektite', 7, 3], ['tektite', 6, 4],
     ],
   },
   '0,2,2': {

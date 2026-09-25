@@ -2117,6 +2117,11 @@ export function installCoreTiles() {
     reefDeep: { tide: ['waterSReef', 'waterDReef', 'waterDReef'] },
     tideRock: { tide: ['rockFloor', 'rockFloor', 'waterS'] },     // stepping stone
     drownWall: { tide: ['cliff', 'cliff', 'waterD'] },            // swim over it at high
+    // A sea cave's mouth (S155 side content): open at LOW, and at MID and HIGH
+    // the sea stands in it — a swimmer can float into the notch, and there is
+    // no way in until the water goes. Never solid at a higher level than a
+    // lower one: check-anchor.mjs holds every tide tile to that.
+    seaCaveMouth: { tide: ['caveMouth', 'waterD', 'waterD'] },
     // Every other outdoor region `9` has shown up in so far — the abyss, the
     // cliffs — already has a stone floor of its own, so plain grey `cliff`
     // never had to prove it against anything but more grey. The dunes are
