@@ -1851,6 +1851,8 @@ const rooms = {
         ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
+        // The Moss Key, once the fourth Essence is in (S154).
+        beat: { scene: 'mossKey', need: 4, flag: 'keyD5' },
       }],
     ],
   },

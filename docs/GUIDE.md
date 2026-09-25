@@ -1119,10 +1119,16 @@ big chest at (7,2). Double the sword you have been using since the intro.
 
 ## 11. The Drowned Wood
 
+**First, the Moss Key.** With four Essences, talk to the digger in the village
+square (`overworld/0,4,7`). He finally digs where he has been itching to, and
+turns up a key grown over with moss (`mossKey`). You can walk the Drowned Wood
+without it; you cannot open the Shrine.
+
 From Tidewatch: east to Village East (`overworld/0,5,7`), north to The Wading
 (`overworld/0,5,6`) — *"Only a swimmer goes north from here,"* which is true at
 MID and not at LOW — then north to **Wood Heart** (`overworld/0,5,5`) and north
-again to **Shrine Mouth** (`overworld/0,5,4`). Dungeon 5's door is at tile (4,1).
+again to **Shrine Mouth** (`overworld/0,5,4`). Dungeon 5's door is at tile (4,1):
+lean into its keyhole holding the Moss Key.
 
 On the way and around it:
 

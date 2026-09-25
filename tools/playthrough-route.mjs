@@ -1649,7 +1649,14 @@ export const ROUTE = [
   // Wood Shrine's arch at 5,4. `check-progression` puts this screen in round
   // one, so nothing on the way is gated — the walk is open ground and the
   // dungeon is the work.
+  //
+  // THE MOSS KEY FIRST (S154): the digger in the square turns it up at four
+  // Essences, and the Shrine's door is shut until it turns.
+  ['travel', 4, 7, 6000],
+  ['beat', 'keyD5', 2000],
+  ['dialogue', 600],
   ['travel', 5, 4, 40000],
+  ['keyhole', 4, 3, 'up', 'openedD5', 900],
   ['goto', 4, 3, 1500],
   ['hold', ['up'], 60],
   ['wait', 180],

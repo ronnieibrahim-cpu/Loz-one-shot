@@ -227,6 +227,7 @@ const CUTSCENES = {
     { shake: [3, 40] },
     { say: 'Nereth: Half. HALF. Come to the Keep, then, and bring my Bell with you. I will take it back at the door.' },
     { say: 'Farore: He is frightened. That is new, and it is not necessarily good news.' },
+    { say: 'Farore: The digger in the square has been itching to dig somewhere for a week. Go and let him.' },
     { music: 'overworld' },
   ],
   essence5: [
@@ -269,6 +270,14 @@ const CUTSCENES = {
     { say: 'Salter: Our water came down from the Cistern on the Kell, before the sea got into it. When it did, we barred the gate and kept the key. Salters keep things.' },
     { say: 'Salter: North through the Deep Cut, then west along the cliffs. Take the key. Bring back the water, if you can carry it.' },
     { do: (g) => g.presentKey('d4') },
+  ],
+
+  // THE MOSS KEY: the village digger, at four Essences.
+  mossKey: [
+    { say: 'Digger: Four! The sea finally said something useful. It said: here, and stop asking.' },
+    { shake: [1, 30], sfx: 'rumble' },
+    { say: 'Digger: A key, grown over with moss. The Shrine in the Drowned Wood had a door like that, before the wood went under. North of the village, up the wood road.' },
+    { do: (g) => g.presentKey('d5') },
   ],
 
   // ---- the Maku Tree beats ------------------------------------------------
