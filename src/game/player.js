@@ -8,7 +8,7 @@
 //   link_carry_down        link_carry_up        link_carry_side
 //   link_push_down         link_push_up         link_push_side
 //   link_hurt              link_fall_0/1/2
-//   link_dive              link_spin_0/1/2/3
+//   link_dive              link_spin_0..7
 //   link_hold_down/up/side (blade held out, walking with it)
 //   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
 
@@ -28,7 +28,7 @@ import {
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
   BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
-  SPIN_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX,
+  SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES,
@@ -68,6 +68,12 @@ const SWING_DIAG = {
   left:  ['fx_blade_ur', -16, -13, true],
   down:  ['fx_blade_dl', -13, 12, false],
 };
+
+// The spin's blade, placed against Link's cell exactly as the sheet's Spin
+// Attack band places it (tools/rip-link.py): [x, y] for position 0..7,
+// clockwise from up, even = cardinal, odd = the diagonal after it.
+const SPIN_BLADE = [[0, -16], [16, -13], [16, 0], [13, 16], [0, 16], [-13, 12], [-16, 0], [-10, -13]];
+const SPIN_START = { up: 0, right: 2, down: 4, left: 6 };
 
 /** Which of the swing's four phases frame `t` (0-based) of it falls in. */
 export function swingPhase(t) {
@@ -855,6 +861,16 @@ export class Player extends Entity {
     game.audio.sfx('spin');
   }
 
+  /** Where the blade is in the spin, 0..7 clockwise from up. It starts on the
+   *  way Link faces and moves a quarter turn every SPIN_STEP_FRAMES. */
+  spinPos() {
+    const t = SPIN_FRAMES - this.spinning;
+    const [card, diag] = SPIN_STEP_FRAMES;
+    const q = Math.floor(t / (card + diag));
+    const half = t % (card + diag) < card ? 0 : 1;
+    return (SPIN_START[this.dir] + q * 2 + half) % 8;
+  }
+
   updateSpin(game) {
     this.spinning--;
     this.animT++;
@@ -1379,7 +1395,7 @@ export class Player extends Entity {
       const [a, b] = FALL_ANIM_FRAMES;
       return 'link_fall_' + (t < a ? 0 : t < a + b ? 1 : 2);
     }
-    if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
+    if (this.spinning > 0) { this.flipX = false; return 'link_spin_' + this.spinPos(); }
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.bellowsT > 0) return 'link_push_' + key;
     if (this.sinkT > 0) return 'link_dive';
@@ -1454,6 +1470,11 @@ export class Player extends Entity {
     //
     // Drawn before the arc so the white swoosh reads as coming off the edge of
     // the blade rather than sitting under it.
+    if (this.spinning > 0) {
+      const k = this.spinPos();
+      const [bx, by] = SPIN_BLADE[k];
+      sprites.draw(ctx, 'fx_spin_' + k, ox + this.x + bx, dy + by, { pal });
+    }
     const pose = this.swinging > 0 ? this.bladePose() : null;
     if (pose && pose.phase === 1) {
       const [name, bx, by, flip] = SWING_DIAG[this.dir];

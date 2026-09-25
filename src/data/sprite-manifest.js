@@ -24,7 +24,7 @@ export const REQUIRED_SPRITES = {
     // required because they are SOURCE-GAME art already cut from the sheet,
     // and re-cutting is the expensive half; deleting them would mean editing
     // tools/rip-link.py to lose art we may well want back.
-    ...seq('link_fall_', 3), ...seq('link_dig_', 2), 'link_dive', ...seq('link_spin_', 4),
+    ...seq('link_fall_', 3), ...seq('link_dig_', 2), 'link_dive', ...seq('link_spin_', 8),
   ],
 
   fx: [

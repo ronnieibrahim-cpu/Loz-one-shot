@@ -219,8 +219,18 @@ export const CHARGE_FRAMES = 41;
 /** f — interval between charge sparkles once charged. guessed. */
 export const CHARGE_SPARKLE_EVERY = 6;
 
-/** f — length of a spin attack. guessed. */
-export const SPIN_FRAMES = 26;
+/** f — how long the blade holds each of the spin's eight positions, as
+ *  [cardinal, the diagonal after it]: a quarter turn is five frames. derived:
+ *  oracles-disasm data/seasons/specialObjectAnimationData.s, Link's
+ *  LINK_ANIM_MODE_28..2b (animationData19d66..19d78), `.db $03 ..` then
+ *  `.db $02 ..` per direction, chained clockwise up, right, down, left. */
+export const SPIN_STEP_FRAMES = [3, 2];
+
+/** f — length of a spin attack: five quarter turns, one full circle and back
+ *  to the quarter it began on. derived: oracles-disasm
+ *  object_code/common/itemParents/swordParent.s @state3 loads counter1 = $05
+ *  (no Spin Ring), and @state4 ends the spin when five quarters have passed. */
+export const SPIN_FRAMES = 25;
 
 /** px — how far in front of Link the blade reaches. guessed. */
 export const SWORD_REACH = 13;

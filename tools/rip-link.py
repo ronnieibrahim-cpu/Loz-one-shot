@@ -143,11 +143,34 @@ FRAMES = {
     'link_hurt_up':     (912, IDLE_Y, False),
     'link_hurt_side':   (929, IDLE_Y, True),
 
-    # The four slash frames read as a rotation, which is what the spin needs.
-    'link_spin_0':      (1086, ACT_Y, False),
-    'link_spin_1':      (1069, ACT_Y, True),
-    'link_spin_2':      (1103, ACT_Y, False),
-    'link_spin_3':      (1069, ACT_Y, False),
+    # ---- the spin attack -----------------------------------------------------
+    #
+    # THE SPIN HAD NO SWORD IN IT (S153). It used to borrow the four slash
+    # BODIES, which on real hardware are drawn with the blade as a separate
+    # sprite on top, so Link twirled with his hands empty. The sheet's Spin
+    # Attack band is the whole thing: eight positions clockwise from up, each a
+    # Link cell and a blade cell laid out exactly as they sit against each
+    # other. Both are taken as their own cells here, and Player.draw puts the
+    # blade back at the offset the band itself puts it (SPIN_BLADE there).
+    # Cardinal positions are the even numbers; the diagonal after each is odd.
+    # The left-hand ones are the sheet's own and are NOT mirrors of the right:
+    # a clockwise swoosh mirrored runs anticlockwise.
+    'link_spin_0':      (895, 444, False),   # up
+    'link_spin_1':      (912, 444, False),   # up, blade up-right
+    'link_spin_2':      (945, 444, False),   # right
+    'link_spin_3':      (978, 444, False),   # right, blade down-right
+    'link_spin_4':      (1008, 444, False),  # down
+    'link_spin_5':      (1038, 444, False),  # down, blade down-left
+    'link_spin_6':      (1071, 444, False),  # left
+    'link_spin_7':      (1098, 444, False),  # left, blade up-left
+    'fx_spin_0':        (895, 428, False),
+    'fx_spin_1':        (928, 431, False),
+    'fx_spin_2':        (961, 444, False),
+    'fx_spin_3':        (991, 460, False),
+    'fx_spin_4':        (1008, 460, False),
+    'fx_spin_5':        (1025, 456, False),
+    'fx_spin_6':        (1055, 444, False),
+    'fx_spin_7':        (1088, 431, False),
 
     # Sounding the conch: arms raised, same read as carrying something aloft.
     'link_conch_down':  (1370, ACT_Y, False),
