@@ -39,9 +39,15 @@ which is which").
    d. Show the human before/after pictures (ours old / ours new / a Seasons
       boss beside them) and get a yes before moving to the next boss.
    Boss HITBOXES and fights must not change (check-bosses, check-playthrough).
-2. The human's open questions from S151 (NEXT-SESSION "Waiting on the
-   human"): the gel's cling, the bubble's sword lock, the spiked beetle's
-   flip, and the "Get Item" recording. Do what they answer.
+2. The three Seasons mechanics the human said YES to (NEXT-SESSION S151,
+   "The human's answers"), one per commit, each read from its file in the
+   disassembly with every number in feel.js tagged `derived`: the GEL clings
+   to Link (gel.s states C/D), the BUBBLE takes his sword away for 180 f on
+   touch (bubble.s), the SPIKED BEETLE flips over when his shield turns it
+   and is hurt only while flipped (spikedBeetle.s; its front shield goes).
+   Damage and health stay ours. Teach the robot each one in the same commit
+   it lands in (a clinging gel, a lost sword, a beetle met shield-first),
+   then re-route until check-playthrough is green.
 3. Art the ported enemies now need (only through rippers): the beamos's
    eight eye facings, the pincer's body segments, the leever's rise/sink
    frames, the darknut's sword.

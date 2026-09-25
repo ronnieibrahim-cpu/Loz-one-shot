@@ -57,7 +57,22 @@ Disassembly cloned read-only to the scratchpad, as in S149/S150.
   low-water 6 qh. Replays 51/51 (d5-overthrow waits 240 f at the start: its
   keese flies over the snarl now).
 
-### Waiting on the human
+### The human's answers (after S151): YES to all five
+- GEL: port its cling (gel.s gel_stateC/D: latches onto Link on contact,
+  120 f, no sword, movement every other frame, button presses shake it off
+  faster, then it hops away).
+- BUBBLE: port its sword lock (bubble.s: 180 f with no sword on touch,
+  `wSwordDisabledCounter`; the Whisp Ring's exemption has no counterpart
+  here unless a charm is chosen for it).
+- SPIKED BEETLE: port the flip (spikedBeetle.s: a shield hit flips it for
+  180 f, shaking in the last 60, vulnerable only while flipped); its front
+  shield goes.
+- GET ITEM: the cartridge's own jingle (sfx/getItem.s) stays.
+- MUSIC LOUDNESS: fine as it is (`GB_MIX_LEVEL` 0.12 may be re-tagged as
+  approved by the human, still `guessed`).
+- The octorok and the other ports stand.
+
+### Waiting on the human (as S151 left it, now answered above)
 - THE OCTOROK SIDE-BY-SIDE was sent; the rest were ported without waiting
   (one commit each, revertable) — confirm or name what is wrong.
 - NOT PORTED, asked: the GEL clings to Link and slows him, no sword (gel.s
