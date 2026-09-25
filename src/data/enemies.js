@@ -15,6 +15,7 @@ import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.j
 import {
   OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK,
   OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED,
+  CRAB_SPEED_SIDE, CRAB_SPEED_UPDOWN, CRAB_WALK_FRAMES,
 } from './feel.js';
 
 export function installEnemies() {
@@ -114,7 +115,7 @@ export function installEnemies() {
 
   // --- Crab: scuttles sideways, shielded from the front -------------------
   defineEnemy('crab', {
-    hp: 2, damage: 2, pal: 'enemyr', speed: 0.62, rate: 8,
+    hp: 2, damage: 2, pal: 'enemyr', rate: 8,
     frames: ['crab_0', 'crab_1'],
     hurtFrame: 'crab_hurt',
     deathFrame: 'crab_death',
@@ -122,10 +123,20 @@ export function installEnemies() {
     terrain: 'shallow',
     shield: 'front',
     drops: 'common',
+    // Seasons' sand crab (sandCrab.s): never stops; picks a direction and a
+    // stretch, scuttles fast sideways and slowly up and down, and picks again
+    // when the stretch ends or something stops it. Its shield faces its way.
+    port: 'sandCrab.s',
+    speed: CRAB_SPEED_SIDE,
     ai(e, g) {
-      patrol(e, g, { axis: 'x' });
-      if (every(e, 120)) e._pdir = e._pdir === 'left' ? 'right' : 'left';
-      if (distToPlayer(e, g) < 40 && every(e, 30)) facePlayer(e, g);
+      if (e.aiState !== 'walk') {                 // state 8
+        e.dir = randDir(g);
+        e.aiTimer = CRAB_WALK_FRAMES[g.rng.int(CRAB_WALK_FRAMES.length)];
+        e.speed = (e.dir === 'left' || e.dir === 'right') ? CRAB_SPEED_SIDE : CRAB_SPEED_UPDOWN;
+        e.aiState = 'walk';
+        return;
+      }
+      if (--e.aiTimer <= 0 || !walkOn(e, g, e.speed)) e.aiState = 'pick';   // state 9
     },
   });
 

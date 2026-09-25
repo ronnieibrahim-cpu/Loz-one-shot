@@ -1701,3 +1701,15 @@ export const OCTOROK_TURN_TO_LINK = 4;
 /** px/f — the octorok's rock. derived: parts/octorokProjectile.s @state0,
  *  speed $50 = SPEED_200. */
 export const OCTOROK_SHOT_SPEED = 2;
+
+/** px/f — the sand crab scuttling left or right. derived: sandCrab.s @state8,
+ *  SPEED_100 when the angle is sideways. */
+export const CRAB_SPEED_SIDE = 1;
+
+/** px/f — the sand crab walking up or down. derived: sandCrab.s @state8,
+ *  SPEED_40. */
+export const CRAB_SPEED_UPDOWN = 0.25;
+
+/** [f] — how long the sand crab keeps one direction. derived: sandCrab.s
+ *  @state8, counter1 = $30 + (random & $30). */
+export const CRAB_WALK_FRAMES = [48, 64, 80, 96];
