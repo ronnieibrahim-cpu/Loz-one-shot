@@ -50,7 +50,7 @@ below is read out of the room defs; every gate below is a tile that exists.
 | Cliffs of Kell (D4) | x0-3, y2-5 | 16 | `cliffs` | Bombs (`boulderCracked`, the Deep Cut rockfall) |
 | Salt Pans | x4-7, y0-2 | 12 | `salt` | Resonance Rod (`saltVane`) |
 | Reef Palace approach | x8-11, y0-3 | 16 | `reef` | Resonance Rod — reached only through the Pans |
-| Abyssal approach (D6) | x0-3, y0-1 | 8 | `abyss` | **the story** (`keepSeal`) — the Maku Tree, at five Essences |
+| Abyssal approach (D6) | x0-3, y0-1 | 8 | `abyss` | **the Bell's Clapper** (`keepSeal` is its keyhole) — the Maku Tree's key, at five Essences |
 
 The three settlement screens (`town`, x4-5 y7-8) and Sandpiper Row
 (`townDunes`, `0,9,8`) sit inside the Coast and the Shallows respectively.
@@ -88,7 +88,7 @@ outside its own branch. What each one seals, from that tool's own output:
 |---|---|---|
 | Bombs | `cliffCrackedDk`, `boulderCracked` | 34 screens: the Marsh, the Cliffs, and the Abyssal approach beyond them |
 | Resonance Rod | `saltVane` | 27 screens: the Salt Pans and the Reef Palace behind them |
-| the Maku Tree, at five Essences | `keepSeal` | 8 screens: the Abyssal approach |
+| the Bell's Clapper (the Maku Tree, at five Essences) | `keepSeal` | 8 screens: the Abyssal approach |
 | Dredge Line | `boulder` | 2 screens: the Bog Stair, which is optional |
 
 All four are also proved in-engine, with a live player and the real item, by
@@ -108,6 +108,29 @@ are its real overworld reason to exist.
 
 Note the Salt Pans gate also holds the Reef Palace shut, since the Palace is
 reached only through the Pans.
+
+## Dungeon keys (S154)
+
+Every dungeon's door is locked with its own key, Oracle of Seasons' way, and
+each key is a story beat after the dungeon before — so the six are played in
+order. A key is held as a flag (`keyDn`) and its keyhole, once turned, as
+another (`openedDn`); `src/data/keys.js` lists them. A keyhole is a tile with
+`keyFlag`/`openFlag` (src/world/tileset.js), turned by leaning on it
+(`Game.tryKeyhole`), and the giver is a `beat` on the person
+(src/game/objects.js). `check-progression` proves the order and that each door
+is shut without its key; `check-playthrough` turns all six.
+
+| D | Key | Given by | When | Lock |
+|---|---|---|---|---|
+| 1 | Barnacle Key | the Maku Tree (`makuKey`) | first meeting | the Grotto's door |
+| 2 | Coral Key | the Sandpiper Row fisherman (`coralKey`) | 1 Essence | the Spire's door |
+| 3 | Peat Key | the old man in Tidewatch's square (`peatKey`) | 2 Essences | the Sanctum's door |
+| 4 | Cistern Key | the Salter on Village Shore (`cisternKey`) | 3 Essences | the Cistern's door |
+| 5 | Moss Key | the village digger (`mossKey`) | 4 Essences | the Shrine's door |
+| 6 | Bell's Clapper | the Maku Tree (`makuMaster`) | 5 Essences | the seal on the road down the Kell |
+
+The pictures are the Oracles' own key-item sprites (Gnarled, Dragon, Floodgate;
+Crown, Mermaid, Graveyard), cut by `tools/rip-keys.py`, in our colours.
 
 ## Dungeons
 

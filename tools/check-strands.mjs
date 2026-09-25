@@ -76,7 +76,8 @@ for (const k of Object.keys(m.roomDefs)) {
 
 // Every gate held open: this tool is about terrain, not gates.
 const openMask = F.HEAVY | F.BOMBABLE | F.VANE;
-const openStory = new Set(['makuOpenedKeep']);
+// Every story gate and keyhole held open (S154: the six dungeon keys).
+const openStory = new Set(['makuOpenedKeep', 'openedD1', 'openedD2', 'openedD3', 'openedD4', 'openedD5', 'openedD6']);
 // On foot. No swimming (that is the Cleats), no jumping, no cutting.
 const CAPS = { jumping: false, swim: false, cutting: false };
 

@@ -1411,14 +1411,15 @@ runs:
   Keep, and that she has been growing them for a century waiting for a reason.
 - She hands you the **Master Sword** (`sword` level 3). There is no level 2 from
   her; the Noble Sword was the chest in the Bluff Grotto.
-- She sets the flag that **splits the Keep's seal**. This is the one story gate in
-  the world: the iron on Upper Kell (`overworld/0,2,2`) and the plugs on the
-  Abyss Stair (`overworld/0,2,1`) open together, and **nothing you carry opens
-  either of them**.
+- She hands you the **Bell's Clapper** — the sixth dungeon key (S154). The
+  Keep's seal is a keyhole: the iron on Upper Kell (`overworld/0,2,2`) and the
+  plugs on the Abyss Stair (`overworld/0,2,1`) are one lock. Stand on the grass
+  at the west end of Upper Kell's course, at (2,1), and lean right into it:
+  the clapper turns and both courses open together. Nothing else opens them.
 
 **The road to the Keep.** From The Deep Cut (`overworld/0,3,4`): north to Cliff
 Face (`0,3,3`), west to Kell Ledges (`0,2,3`), north to **Upper Kell**
-(`overworld/0,2,2`) — now passable — north to **Abyss Stair**
+(`overworld/0,2,2`) — open once the clapper has turned — north to **Abyss Stair**
 (`overworld/0,2,1`), west to The Long Drop (`0,1,1`), north to **Gate of the
 Keep** (`overworld/0,1,0`). Dungeon 6's door is at tile (4,1).
 

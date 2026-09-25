@@ -2265,8 +2265,11 @@ export function installCoreTiles() {
     // `openFlag` in src/world/tileset.js and `Game.applyStoryGates`.
     keepSeal: {
       art: ART.keepSeal, pal: 'rust', flags: F.SOLID, underArt: 'rockFloorDk',
-      openFlag: 'makuOpenedKeep', openTo: 'rockFloorDk',
-      openDeny: 'Iron, bolted across the road down.\nNothing you carry will shift it.',
+      // THE SIXTH KEYHOLE (S154): the Bell's Clapper, which the Maku Tree
+      // gives at five Essences, opens it; leaning on any course of it opens
+      // both (the flag is the record, `applyStoryGates` the rest).
+      keyFlag: 'keyD6', openFlag: 'openedD6', openTo: 'rockFloorDk',
+      openDeny: 'Iron, bolted across the road down.\nThe lock in it is a hollow the shape\nof the inside of a bell.',
     },
 
     // ---- the four terrain-shaped region gates ------------------------------
@@ -3063,10 +3066,10 @@ export function installCoreTiles() {
       ring: 'saltFlat', fx: 'spark', persist: true, sfx: 'break',
       deny: 'The vane is set too far to reach. Something must make it sing.',
     },
-    // `keepSeal` HAS NO TRANSFORM AND MUST NOT GET ONE. It is a story gate:
-    // `openFlag` opens it on room entry once the Maku Tree has opened the road,
-    // and an item that also opened it would put the Keep back behind an item
-    // again. Its refusal line lives on the tiledef as `openDeny`.
+    // `keepSeal` HAS NO TRANSFORM AND MUST NOT GET ONE. It is a keyhole: the
+    // Bell's Clapper, the Maku Tree's gift at five Essences, opens it, and an
+    // item that also opened it would put the Keep back behind an item again.
+    // Its refusal line lives on the tiledef as `openDeny`.
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dredge: 'sand', drop: 'dredged', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it

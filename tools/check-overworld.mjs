@@ -18,7 +18,7 @@
 //   Bombs          F.BOMBABLE        Sunken Marsh, and the Cliffs of Kell
 //   Resonance Rod  F.VANE            Salt Pans
 //   Dredge Line    F.HEAVY           the Bog Stair
-//   the Maku Tree  'makuOpenedKeep'  Abyssal approach
+//   the Bell's Clapper 'openedD6'   Abyssal approach (the Maku Tree's key, S154)
 //
 // THE LAST ONE IS NOT AN ITEM. A gate is one of two things here: a tile flag
 // an item answers, or a tile whose `openFlag` the SAVE carries — a story gate,
@@ -74,7 +74,7 @@ const GATES = {
     // 'makuOpenedKeep' at five Essences and the seal's two courses — the
     // boulder line on Upper Kell and the plugs on the Abyss Stair — open
     // together. Nothing the player carries opens either.
-    openFlag: 'makuOpenedKeep', region: 'Abyssal approach', story: true,
+    openFlag: 'openedD6', region: 'Abyssal approach', story: true,
     covers: [[0, 3, 0, 1]],
   },
   dredge: {

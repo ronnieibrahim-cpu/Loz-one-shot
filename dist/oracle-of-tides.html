@@ -35261,8 +35261,11 @@ function installCoreTiles() {
     // `openFlag` in src/world/tileset.js and `Game.applyStoryGates`.
     keepSeal: {
       art: ART.keepSeal, pal: 'rust', flags: F.SOLID, underArt: 'rockFloorDk',
-      openFlag: 'makuOpenedKeep', openTo: 'rockFloorDk',
-      openDeny: 'Iron, bolted across the road down.\nNothing you carry will shift it.',
+      // THE SIXTH KEYHOLE (S154): the Bell's Clapper, which the Maku Tree
+      // gives at five Essences, opens it; leaning on any course of it opens
+      // both (the flag is the record, `applyStoryGates` the rest).
+      keyFlag: 'keyD6', openFlag: 'openedD6', openTo: 'rockFloorDk',
+      openDeny: 'Iron, bolted across the road down.\nThe lock in it is a hollow the shape\nof the inside of a bell.',
     },
 
     // ---- the four terrain-shaped region gates ------------------------------
@@ -36059,10 +36062,10 @@ function installCoreTiles() {
       ring: 'saltFlat', fx: 'spark', persist: true, sfx: 'break',
       deny: 'The vane is set too far to reach. Something must make it sing.',
     },
-    // `keepSeal` HAS NO TRANSFORM AND MUST NOT GET ONE. It is a story gate:
-    // `openFlag` opens it on room entry once the Maku Tree has opened the road,
-    // and an item that also opened it would put the Keep back behind an item
-    // again. Its refusal line lives on the tiledef as `openDeny`.
+    // `keepSeal` HAS NO TRANSFORM AND MUST NOT GET ONE. It is a keyhole: the
+    // Bell's Clapper, the Maku Tree's gift at five Essences, opens it, and an
+    // item that also opened it would put the Keep back behind an item again.
+    // Its refusal line lives on the tiledef as `openDeny`.
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dredge: 'sand', drop: 'dredged', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it
@@ -48287,9 +48290,14 @@ const CUTSCENES = {
     { say: 'Maku Tree: Take this with you. It was left here a long time ago by someone who also thought they would be back.' },
     { give: { item: 'sword', level: 3 }, jingle: 'fanfare' },
     { show: { art: 'i_sword3', scale: 3 }, frames: 130 },
-    { say: 'Maku Tree: Go down, Link. And come back up. That second part is the one people forget.' },
+    // THE SIXTH KEY (S154). The seal on the road down the Kell is a keyhole,
+    // and this is what fits it.
+    { say: 'Maku Tree: And this. When he broke the Bell, the clapper fell out and rolled into my roots. He never came looking for it.' },
+    { say: 'Maku Tree: The seal on the road down the Kell was cast in the same foundry as the Bell. It will know its own clapper. Go down, Link. And come back up. That second part is the one people forget.' },
     { flag: 'makuOpenedKeep' },
+    { flag: 'keyD6' },
     { music: 'overworld' },
+    { do: (g) => g.presentKey('d6') },
   ],
 
   // ---- the final fight ----------------------------------------------------

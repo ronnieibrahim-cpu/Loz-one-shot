@@ -2316,6 +2316,10 @@ export const ROUTE = [
   ['travel', 3, 4, 4000], ['loot', 600],
   ['travel', 2, 3, 4000], ['loot', 600],
   ['travel', 2, 2, 4000], ['loot', 600],
+  // THE SEAL IS A KEYHOLE (S154): lean into Upper Kell's course of it from
+  // the grass at its west end, holding the Bell's Clapper, and both courses
+  // open. (Below it is a drowned wall: only swimmable at HIGH.)
+  ['keyhole', 2, 1, 'right', 'openedD6', 900],
   ['travel', 2, 1, 4000], ['loot', 600],
   ['travel', 1, 1, 4000], ['loot', 600],
   ['travel', 1, 0, 4000], ['loot', 600],

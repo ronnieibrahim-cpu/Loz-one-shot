@@ -245,8 +245,8 @@ check('Bombs open the Deep Cut rockfall', fallAfter !== 'boulderCracked', fallAf
 
 // --- the Keep's seal: the one gate no item answers -------------------------
 // Room 0,2,1, row 6, cols 3-6, and room 0,2,2, row 1, cols 3-6 — two courses
-// of one seal. It carries `openFlag: 'makuOpenedKeep'`, which the Maku Tree
-// sets at five Essences, and NOTHING else opens it.
+// of one seal. It is a keyhole (S154): the Bell's Clapper, which the Maku
+// Tree gives at five Essences, opens it, and NOTHING else does.
 //
 // Both halves are asserted because the failure that shipped was the open half
 // being true of the wrong key: the seal was an iron plug the Dredge Line
@@ -272,22 +272,38 @@ const denied = await page.evaluate(() => {
 check('...and says why, instead of reading as scenery',
   denied.active && /bolted/i.test(denied.said), JSON.stringify(denied));
 
-// Now the flag, and only the flag.
-const opened = await page.evaluate(async () => {
+// Now the Bell's Clapper (S154): the seal is a keyhole, and leaning into
+// Upper Kell's course from the grass at its west end, holding the key, opens both courses — the one leaned on
+// at once, and the Abyss Stair's the moment it is walked into.
+await page.evaluate(() => {
   const g = window.__game;
-  const prog = await import('/src/game/progress.js');
   if (g.dialogue) g.dialogue.active = false;
   g.mode = 'play';
-  prog.setFlag(g.progress, 'makuOpenedKeep');
+  g.progress.flags.keyD6 = true;
+  g.enterMap('overworld', 0, 2, 2, 32, 16, 'right', { instant: true });
+  window.__harness.step(3);
+  g.entities = g.entities.filter(e => { if (e === g.player) return true; e.remove = true; return false; });
+  g.player.invuln = 100000;
+});
+await page.keyboard.down('ArrowRight');
+for (let i = 0; i < 80 && !(await page.evaluate(() => !!window.__game.progress.flags.openedD6)); i++) {
+  await frames(4);
+  await page.evaluate(() => { const d = window.__game.dialogue; if (d && d.active) d.close(); });
+}
+await page.keyboard.up('ArrowRight');
+await frames(200);
+const opened = await page.evaluate(async () => {
+  const g = window.__game;
+  if (g.dialogue) g.dialogue.active = false;
+  g.mode = 'play';
+  const kell = [3, 4, 5, 6].map(x => g.room.baseName(x, 1));
   g.enterMap('overworld', 0, 2, 1, 80, 64, 'down', { instant: true });
   window.__harness.step(3);
   const stair = [3, 4, 5, 6].map(x => g.room.baseName(x, 6));
-  g.enterMap('overworld', 0, 2, 2, 80, 64, 'down', { instant: true });
-  window.__harness.step(3);
-  const kell = [3, 4, 5, 6].map(x => g.room.baseName(x, 1));
-  return { stair, kell };
+  return { stair, kell, flag: !!g.progress.flags.openedD6 };
 });
-check('the Maku Tree opens the Abyss Stair course',
+check("the Bell's Clapper turns in the seal", opened.flag, JSON.stringify(opened));
+check('...and opens the Abyss Stair course',
   opened.stair.every(n => n !== 'keepSeal'), opened.stair.join(','));
 check('...and the Upper Kell course with it',
   opened.kell.every(n => n !== 'keepSeal'), opened.kell.join(','));
@@ -521,6 +537,7 @@ const tree = await page.evaluate(async () => {
     if (g.dialogue && g.dialogue.active) g.dialogue.close();
   }
   out.opened = !!g.progress.flags.makuOpenedKeep;
+  out.clapper = !!g.progress.flags.keyD6;
   out.sword = g.progress.items.sword || 0;
   return out;
 });
@@ -536,6 +553,7 @@ check('beat two plays makuMaster', tree.sceneStarted === true, 'no cutscene star
 check('...and it is the tree, not the harness, that sets makuOpenedKeep',
   tree.opened === true, 'the scene ran and the flag never landed');
 check('...and grants the level-3 sword with it', tree.sword === 3, `sword L${tree.sword}`);
+check("...and the Bell's Clapper, the seal's key", tree.clapper === true, 'keyD6 never set');
 
 
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));

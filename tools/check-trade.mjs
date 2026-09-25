@@ -340,7 +340,11 @@ await page.evaluate(() => {
 const go = (mapId, key) => page.evaluate(([m, k]) => window.__go(m, k), [mapId, key]);
 const talk = () => page.evaluate(() => window.__talk());
 
-await page.evaluate(() => { window.__game.newGame(0, 'CHAIN'); window.__game.mode = 'play'; });
+// The Maku Tree's FIRST word is the Barnacle Key (S154), a story beat that
+// comes before her link of the chain; check-gates proves it. This run is
+// about the chain, so the beat counts as already heard.
+await page.evaluate(() => { window.__game.newGame(0, 'CHAIN'); window.__game.mode = 'play';
+  window.__game.progress.flags.keyD1 = true; });
 
 section('playing the chain');
 

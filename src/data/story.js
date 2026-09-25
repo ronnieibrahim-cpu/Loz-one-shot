@@ -310,9 +310,14 @@ const CUTSCENES = {
     { say: 'Maku Tree: Take this with you. It was left here a long time ago by someone who also thought they would be back.' },
     { give: { item: 'sword', level: 3 }, jingle: 'fanfare' },
     { show: { art: 'i_sword3', scale: 3 }, frames: 130 },
-    { say: 'Maku Tree: Go down, Link. And come back up. That second part is the one people forget.' },
+    // THE SIXTH KEY (S154). The seal on the road down the Kell is a keyhole,
+    // and this is what fits it.
+    { say: 'Maku Tree: And this. When he broke the Bell, the clapper fell out and rolled into my roots. He never came looking for it.' },
+    { say: 'Maku Tree: The seal on the road down the Kell was cast in the same foundry as the Bell. It will know its own clapper. Go down, Link. And come back up. That second part is the one people forget.' },
     { flag: 'makuOpenedKeep' },
+    { flag: 'keyD6' },
     { music: 'overworld' },
+    { do: (g) => g.presentKey('d6') },
   ],
 
   // ---- the final fight ----------------------------------------------------
