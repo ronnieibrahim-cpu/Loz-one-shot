@@ -521,12 +521,23 @@ export class Menu {
     const g = this.game;
     const tw = 10, th = 8;
     const W = m.w * tw, H = m.h * th;
-    const ox = Math.round((SCREEN_W - W) / 2), oy = PAGE.y + Math.max(2, Math.round((PAGE.h - H) / 2));
+    // THE WORLD IS WIDER THAN THE PAGE (S157). Seventeen screens at one pixel
+    // a tile is 170 pixels and the page is 144, so the picture is a window
+    // that slides to keep Link's screen in the middle, stopping at the world's
+    // edges, with an arrow on a side where there is more. Nothing is shrunk:
+    // a squeezed picture would no longer be one pixel per tile.
+    const VW = Math.min(W, PAGE.w - 8);
+    const here = g.room && g.room.mapId === m.id ? g.room.rx * tw + (tw >> 1) : W >> 1;
+    const left = W > VW ? Math.max(0, Math.min(W - VW, here - (VW >> 1))) : 0;
+    const vx = Math.round((SCREEN_W - VW) / 2);
+    const ox = vx - left, oy = PAGE.y + Math.max(2, Math.round((PAGE.h - H) / 2));
 
     // A frame, so the sea reads as ending at a coast rather than at the edge
     // of the drawing.
     ctx.fillStyle = '#101820';
-    ctx.fillRect(ox - 1, oy - 1, W + 2, H + 2);
+    ctx.fillRect(vx - 1, oy - 1, VW + 2, H + 2);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(vx, oy, VW, H); ctx.clip();
     ctx.drawImage(worldCanvas(g, m), ox, oy);
 
     // Unexplored screens are painted back out. Doing it this way — cached
@@ -574,6 +585,13 @@ export class Menu {
       ctx.fillStyle = ((g.frame >> 4) & 1) ? '#f8f8e8' : '#e04858';
       ctx.fillRect(cx - 1, cy - 1, 3, 3);
     }
+
+    ctx.restore();
+    // More world past the page's edge: a small arrow in the margin that side.
+    ctx.fillStyle = '#101820';
+    const my = oy + (H >> 1);
+    if (left > 0) for (let i = 0; i < 3; i++) ctx.fillRect(vx - 5 + i, my - i, 1, 2 * i + 1);
+    if (left < W - VW) for (let i = 0; i < 3; i++) ctx.fillRect(vx + VW + 4 - i, my - i, 1, 2 * i + 1);
 
     // The key, only once there is something on the map to key.
     if (Object.keys(g.progress.secrets).some(k => k.startsWith('seen:' + m.id + ':'))) {

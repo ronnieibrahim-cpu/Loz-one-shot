@@ -248,10 +248,11 @@ check('no 32x32 object is cut short by plain ground', cut.length === 0,
 // GATES ARE EXEMPT and are identified by their flags rather than by name: a
 // seal, a row of vanes, a cracked rockfall and a grate are all walls in a line
 // on purpose. So are ledges, and so are trees, which are the border of nearly
-// every screen in the game.
+// every screen in the game. And so are FENCES (S157): Horon's log palisade
+// and the paling run are lines on purpose; the tiledef says `fence`.
 const GATEISH = F.RING | F.BOMBABLE | F.VANE | F.HEAVY;
 const decorative = (d) => !!d.underArt && !!(d.flags & F.SOLID) && !d.quad && !d.big
-  && !(d.flags & (F.LEDGE | GATEISH)) && !d.openFlag;
+  && !(d.flags & (F.LEDGE | GATEISH)) && !d.openFlag && !d.fence;
 const lines = [];
 for (const [mapId, m] of MAPS) {
   for (const key of Object.keys(m.roomDefs)) {

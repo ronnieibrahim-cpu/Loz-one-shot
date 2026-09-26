@@ -31,6 +31,7 @@
 // Usage: node check-progression.mjs [--verbose]
 
 import { installData } from '../src/data/index.js';
+import { OVERWORLD_W, OVERWORLD_H } from '../src/data/overworld.js';
 import { MAPS, getRoom, dungeons } from '../src/world/maps.js';
 import { getTileDef, F } from '../src/world/tileset.js';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
@@ -40,7 +41,7 @@ import { STORY_CUTSCENES } from '../src/data/story.js';
 installData();
 
 const VERBOSE = process.argv.includes('--verbose');
-const W = 10, H = 8, OW = 12, OH = 10;
+const W = 10, H = 8, OW = OVERWORLD_W, OH = OVERWORLD_H;
 const START = '0,4,7';                 // Tidewatch Village, where a new game begins
 const m = MAPS.get('overworld');
 

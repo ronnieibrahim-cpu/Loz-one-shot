@@ -7,6 +7,14 @@
 
 export const SEED = 20260806;
 
+// S157: THE OVERWORLD WAS WIDENED (12 screens across to 17) so Tidewatch could
+// be Horon Village's size and Sandpiper Row three screens. Every `travel` taken
+// on the overworld east of an insertion was shifted by
+// tools/oneshot/widen-overworld.mjs (one inside a dungeon names a dungeon room
+// and was left alone — the route's own trace said which map each step starts
+// in); the steps that meet a townsperson who moved were re-aimed by hand, the
+// Net-mender's door is a row higher, and Bogmaw was re-swept.
+
 // Retuned for the `entity-solid-collision` merge (`0b68e6b`): push blocks are
 // solid to the player now, so `canOccupy` genuinely rejects a path through one
 // and `Player.tryPush` actually fires. The previous route pre-dated that fix
@@ -82,7 +90,7 @@ export const ROUTE = [
   // patch and the wall carving says so — "When the sea withdraws, walk where
   // fish swam". Seafloor is walkable at LOW and nowhere else, so the conch is
   // the whole puzzle: MID -> HIGH -> LOW is two soundings.
-  ['travel', 6, 7, 6000],
+  ['travel', 9, 7, 6000],
   ['goto', 4, 2, 900],
   ['wait', 90],
   ['dialogue', 300],
@@ -126,7 +134,7 @@ export const ROUTE = [
   // heals to full, and on the way to the fourth.
 
   // And on to the Grotto Mouth.
-  ['travel', 8, 8, 12000],
+  ['travel', 11, 8, 12000],
 
   // The cave mouth is a warp tile at 4,2 — walking onto it is the whole of
   // entering a dungeon. It moved down a row when the mouths were set into the
@@ -485,7 +493,7 @@ export const ROUTE = [
   ['goto', 5, 6, 500],
   ['exit', 'down', 400],
   ['wait', 60],
-  ['travel', 8, 8, 8000],
+  ['travel', 11, 8, 8000],
   ['wait', 60],
 
   // ------------------------------------------------------- overworld 0,8,8
@@ -533,7 +541,7 @@ export const ROUTE = [
   // than anything the overworld has left to offer, so the two Pieces of
   // Heart sitting either side of the dungeon mouth are collected AFTER it,
   // not before, and at full health rather than at whatever the crossing left.
-  ['travel', 10, 5, 8000],
+  ['travel', 15, 5, 8000],
   // The Spire's door is shut until the Coral Key turns in it (S154).
   ['keyhole', 4, 3, 'up', 'openedD2', 600],
   ['goto', 4, 2, 600],
@@ -569,7 +577,7 @@ export const ROUTE = [
   // sign: at 1.5 px/f (S147) arriving on 4,5 fired the hop on the way in,
   // the goto chased its own target back across the seam, and `exit` then
   // walked straight through Tidepools without its fight.
-  ['travel', 10, 6, 3000],
+  ['travel', 15, 6, 3000],
   ['goto', 5, 3, 500],
   ['exit', 'down', 400],
 
@@ -598,11 +606,11 @@ export const ROUTE = [
 
   // ------------------------------------------------------- overworld 0,11,4
   // Outer Coral, right beside the Spire Mouth — MID tide for this one.
-  ['travel', 11, 4, 6000],
+  ['travel', 16, 4, 6000],
   ['fight', 25000, 25000],
   ['dialogue', 200],
   ['loot', 900],
-  ['travel', 10, 5, 4000],
+  ['travel', 15, 5, 4000],
   ['goto', 4, 2, 600],
   ['wait', 60],
 
@@ -800,26 +808,26 @@ export const ROUTE = [
   ['wait', 60],
   // West along the strand. Screen by screen rather than one `travel`: a single
   // call across the map rerouted north through the salt pans and died there.
-  ['travel', 10, 6, 6000],
+  ['travel', 15, 6, 6000],
   ['goto', 4, 5, 500],
   ['exit', 'down', 400],
-  ['travel', 10, 8, 4000],
-  ['travel', 9, 8, 4000],
-  ['travel', 8, 8, 4000],
+  ['travel', 15, 8, 4000],
+  ['travel', 12, 8, 4000],
+  ['travel', 11, 8, 4000],
 
   // Row 7 west from Grotto Mouth, not the strand — the strand's Dune Crossing
   // and Village Shore cost twelve quarter-hearts between them.
-  ['travel', 8, 7, 6000],
+  ['travel', 11, 7, 6000],
   ['fight', 8000, 8000],
   ['loot', 1200],
-  ['travel', 7, 7, 6000],
+  ['travel', 10, 7, 6000],
   ['fight', 8000, 8000],
   ['loot', 1200],
-  ['travel', 6, 7, 6000],
+  ['travel', 9, 7, 6000],
   ['fight', 8000, 8000],
   ['loot', 1200],
   ['travel', 5, 7, 6000],
-  ['travel', 4, 7, 6000],
+  ['travel', 6, 7, 6000],
   // THE PEAT KEY (S154): the old man wandering the square turned it himself
   // when the bog took the Sanctum, and gives it up at two Essences.
   ['beat', 'keyD3', 2000],
@@ -996,10 +1004,14 @@ export const ROUTE = [
   // open-floor retreat now loses from every entry tried.
   // S151 (Seasons' enemies, white fades): re-swept; the reach swing wins on
   // 28 of 28 (the S150 options now leave 14, the plain retreat loses).
+  // S157 (the overworld widened; the RNG arrives here with a different
+  // history): the reach swing alone is pinned in the south-west corner and
+  // dies; with the diagonal retreat too it wins untouched (swept eight ways:
+  // four win — this, the open+diagonal pair, a 16/24 entry, and breakContact).
   ['travel', 2, 2, 4000],
   ['hold', ['right'], 24],
   ['hold', ['down'], 12],
-  ['boss', 9000, 'bogmaw', { reachSwing: true }],
+  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -1244,7 +1256,7 @@ export const ROUTE = [
   ['travel', 4, 7, 10000],
   // THE CISTERN KEY (S154): the Salter on Village Shore barred the Cistern's
   // gate when the sea got into it, and gives up the key at three Essences.
-  ['travel', 4, 8, 4000],
+  ['travel', 7, 8, 4000],
   ['beat', 'keyD4', 2000],
   ['dialogue', 600],
   ['travel', 4, 7, 4000],
@@ -2158,7 +2170,7 @@ export const ROUTE = [
   // 3,5 and her house's own way out is the tile at 5,6, so stepping onto it
   // IS the exit: an `exit` directive after it walks out of the village screen
   // as well and lands the run one screen south of the link it wants next.
-  ['goto', 3, 5, 900],
+  ['goto', 3, 4, 900],
   ['wait', 90],
   ['trade', 1, 1200],
   ['goto', 5, 6, 600],
@@ -2167,9 +2179,9 @@ export const ROUTE = [
   ['trade', 2, 1200],
   ['travel', 5, 8, 4000], ['loot', 600],
   ['trade', 3, 1200],
-  ['travel', 5, 7, 4000],
+  ['travel', 8, 7, 4000],
   ['trade', 4, 1200],
-  ['travel', 6, 7, 4000], ['loot', 600],
+  ['travel', 9, 7, 4000], ['loot', 600],
   ['goto', 1, 4, 1500],
   // THE KILNSHELL, AND IT IS FETCHED HERE BECAUSE THE RUN IS ALREADY STANDING
   // ON THE DOORSTEP. Sunken Reef's cave mouth at 4,2 is the tile this leg has
@@ -2194,12 +2206,12 @@ export const ROUTE = [
   ['wait', 120],
   ['goto', 4, 4, 1500],
   ['goto', 8, 4, 1500],
-  ['travel', 7, 7, 4000], ['loot', 600],
-  ['travel', 8, 7, 4000], ['loot', 600],
-  ['travel', 8, 8, 4000], ['loot', 600],
-  ['travel', 8, 9, 4000], ['loot', 600],
+  ['travel', 10, 7, 4000], ['loot', 600],
+  ['travel', 11, 7, 4000], ['loot', 600],
+  ['travel', 11, 8, 4000], ['loot', 600],
+  ['travel', 11, 9, 4000], ['loot', 600],
   ['trade', 5, 1200],
-  ['travel', 9, 9, 4000], ['loot', 600],
+  ['travel', 12, 9, 4000], ['loot', 600],
   // LINK 6 — Sennit, on Sandpiper Row. The crab on this screen is left alive
   // until the deal is done; see the first rule above.
   // Up the east side of Deep Bar's opening: Sennit stands on 4,6, the very
@@ -2209,26 +2221,26 @@ export const ROUTE = [
   // Sennit: with it taken, the only way round him is along the screen's
   // bottom row, and the same nudge walks Link off it (swept 30..240, S147).
   ['goto', 6, 1, 600],
-  ['travel', 9, 8, 4000],
+  ['travel', 14, 8, 4000],
   ['wait', 120],
   ['trade', 6, 1200],
   ['loot', 600],
-  ['travel', 9, 7, 4000], ['loot', 600],
-  ['travel', 9, 6, 4000], ['loot', 600],
-  ['travel', 9, 5, 4000], ['loot', 600],
+  ['travel', 12, 7, 4000], ['loot', 600],
+  ['travel', 12, 6, 4000], ['loot', 600],
+  ['travel', 12, 5, 4000], ['loot', 600],
   ['trade', 7, 1200],
   // BACK WEST ALONG ROW 7, because rows 5 and 6 do not join the wood at all:
   // Reef Wall is walled along its whole west edge and North Dunes is treelined
   // along its whole north edge. The chasm across Sandbar Run's foot is the
   // hand-named seam — walk onto row 5 and hold `down`, and the hop fires.
-  ['travel', 9, 6, 4000],
+  ['travel', 12, 6, 4000],
   ['goto', 4, 5, 1500],
   ['hold', ['down'], 70],
   ['wait', 60],
   ['loot', 600],
-  ['travel', 8, 7, 4000], ['loot', 600],
-  ['travel', 7, 7, 4000], ['loot', 600],
-  ['travel', 6, 7, 4000], ['loot', 600],
+  ['travel', 11, 7, 4000], ['loot', 600],
+  ['travel', 10, 7, 4000], ['loot', 600],
+  ['travel', 9, 7, 4000], ['loot', 600],
   ['goto', 8, 4, 1500],
   ['goto', 1, 4, 1500],
   ['travel', 5, 7, 4000], ['loot', 600],
@@ -2271,7 +2283,7 @@ export const ROUTE = [
   ['trade', 10, 1200],
   ['loot', 600],
   ['travel', 4, 8, 4000], ['loot', 600],
-  ['goto', 3, 5, 900],
+  ['goto', 3, 4, 900],
   ['wait', 90],
   ['trade', 11, 1200],
   ['goto', 5, 6, 600],

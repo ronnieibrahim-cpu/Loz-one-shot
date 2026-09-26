@@ -193,6 +193,10 @@ export function installLegends() {
     'i': 'block:bBarrels' + grass,
     'e': 'block:bCrate' + grass,
     'z': 'block:bCrates' + grass,
+    // Horon's plaza and yards (S157): fountain 2x2, stool, log palisade.
+    'F': 'block:bFountain' + grass,
+    's': 'block:bStool' + grass,
+    'l': 'block:bLogFence' + grass,
   });
   // The village's one non-building doorway. `C` is the cave arch everywhere
   // else in the world; in a town it is the hollow at the top of the square that
@@ -200,6 +204,17 @@ export function installLegends() {
   // of oaks was the tell that the two had been sharing a tile.
   registerLegend('town', { ...townKit(''), 'C': 'treeHollow' }, 'coast');
   registerLegend('townDunes', townKit('Sand'), 'dunes');
+  // TIDEWATCH AT HORON VILLAGE'S SIZE (S157). Horon's own ground — its lawn,
+  // the pale-yellow yard its houses and gardens stand in, the dirt of its
+  // paths and square, its flower beds — and its fountain, stools and log
+  // palisade, all extracted (tools/rip-terrain.py, SP_GROUND and SP_TOWN).
+  // The town kit's buildings and props stand on the lawn here, and so do the
+  // trees, rocks and bushes: each names `hLawn` as the ground under it.
+  registerLegend('horon', {
+    ...townKit('Lawn'), 'C': 'treeHollow',
+    'g': 'hLawn', 'G': 'hLawnTuft', 'y': 'hYard', '.': 'hDirt', 'f': 'hFlowers',
+    'T': 'treeLawn', 'b': 'bushLawn', 'o': 'rockLawn',
+  }, 'coast');
 
   // ---- dungeon: shared indoor vocabulary ---------------------------------
   registerLegend('dungeon', {

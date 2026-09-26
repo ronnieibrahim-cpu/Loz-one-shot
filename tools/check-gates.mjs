@@ -204,7 +204,7 @@ const rodRange = await page.evaluate(async () => {
 });
 // Far enough that only the HIGH range reaches: between the two radii.
 const farTx = Math.max(0, 8 - Math.floor((rodRange.low + rodRange.high) / 2 / 16));
-const VANE = { rx: 7, ry: 1, gx: 8, gy: 2, dir: 'right', item: 'rod' };
+const VANE = { rx: 10, ry: 1, gx: 8, gy: 2, dir: 'right', item: 'rod' };
 
 let before = await setup({ ...VANE, tx: 5, ty: 2, level: 1 });
 check('the salt vane starts as a vane', before === 'saltVane', before);
@@ -400,7 +400,7 @@ check('...and only the boulder in front', bNext === 'boulder', bNext);
 // else in the suite walks into a gap.
 //
 // Room 0,8,6: a one-tile chasm at col 1, rows 2-5, behind the west doorway.
-const CHASM = { rx: 8, ry: 6, gx: 1, gy: 3, tx: 0, ty: 3, dir: 'right' };
+const CHASM = { rx: 11, ry: 6, gx: 1, gy: 3, tx: 0, ty: 3, dir: 'right' };
 const c0 = await setup({ ...CHASM, item: 'sword', level: 1 });
 check('the coral chasm is a chasm', c0 === 'chasm', c0);
 const cWalk = await walkAt('ArrowRight', false);
@@ -432,7 +432,7 @@ const keyhole = async (withKey) => {
     g.mode = 'play';
     delete g.progress.flags.openedD1;
     if (k) g.progress.flags.keyD1 = true; else delete g.progress.flags.keyD1;
-    g.enterMap('overworld', 0, 8, 8, 72, 56, 'up', { instant: true });
+    g.enterMap('overworld', 0, 11, 8, 72, 56, 'up', { instant: true });
     window.__harness.step(3);
     if (g.dialogue) g.dialogue.active = false;
     g.entities = g.entities.filter(e => { if (e === g.player) return true; e.remove = true; return false; });

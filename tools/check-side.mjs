@@ -76,7 +76,7 @@ const SCENARIOS = [
     name: 'The ledger: found on the South Sands, carried to the shop, paid for with a Piece of Heart',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 5, 9, 64, 32, 'right'] }),
     steps: [['goto', 8, 2, 400], ['wait', 90], ['travel', 5, 8, 3000], ['wait', 30], ['travel', 5, 7, 3000], ['wait', 30],
-      ['goto', 4, 5, 600], ['hold', ['up'], 40], ['wait', 60], ['errand', 'ledgerDone', 1500], ['wait', 60]],
+      ['goto', 2, 5, 600], ['hold', ['up'], 40], ['wait', 60], ['errand', 'ledgerDone', 1500], ['wait', 60]],
     expect: `g.progress.flags.foundLedger && g.progress.flags.ledgerDone && g.progress.heartPieces === 1 || ('ledger ' + !!g.progress.flags.foundLedger + ', pieces ' + g.progress.heartPieces)`,
   },
   {
@@ -155,7 +155,7 @@ const SCENARIOS = [
   {
     name: 'The dive: Dov asks, all five casks come up in one breath, and he pays a Piece of Heart',
     setup: setup({ items: { sword: 1, cleats: 1 }, equipA: 'sword', equipB: 'cleats',
-      enter: ['overworld', 0, 8, 9, 64, 48, 'down'] }),
+      enter: ['overworld', 0, 11, 9, 64, 48, 'down'] }),
     steps: [['errandAsk', 'diveDone', 900], ['goto', 1, 4, 400], ['soles', 'sink'],
       ['goto', 2, 5, 300], ['goto', 4, 6, 300], ['goto', 5, 5, 300], ['goto', 7, 6, 300], ['goto', 7, 5, 300],
       ['wait', 120], ['goto', 8, 4, 400], ['wait', 30], ['errand', 'diveDone', 1500], ['wait', 60]],
@@ -164,7 +164,7 @@ const SCENARIOS = [
   {
     name: 'The dive: surface with two casks and they sink back where they lay',
     setup: setup({ items: { sword: 1, cleats: 1 }, equipA: 'sword', equipB: 'cleats',
-      enter: ['overworld', 0, 8, 9, 64, 48, 'down'] }),
+      enter: ['overworld', 0, 11, 9, 64, 48, 'down'] }),
     steps: [['errandAsk', 'diveDone', 900], ['goto', 1, 4, 400], ['soles', 'sink'],
       ['goto', 2, 5, 300], ['goto', 4, 6, 300], ['goto', 1, 4, 400], ['wait', 60]],
     expect: `!g.progress.flags.salvageDone && !g.dive && g.entities.filter(e => e.kind === 'salvage' && !e.remove).length === 5 || ('casks lying: ' + g.entities.filter(e => e.kind === 'salvage' && !e.remove).length)`,
@@ -172,7 +172,7 @@ const SCENARIOS = [
   {
     name: 'The dive: a swimmer on the surface passes over the casks and takes none',
     setup: setup({ items: { sword: 1, cleats: 1 }, equipA: 'sword', equipB: 'cleats',
-      enter: ['overworld', 0, 8, 9, 64, 48, 'down'] }),
+      enter: ['overworld', 0, 11, 9, 64, 48, 'down'] }),
     steps: [['errandAsk', 'diveDone', 900], ['goto', 1, 4, 400], ['soles', 'swim'],
       ['hold', ['down'], 20], ['hold', ['right'], 40], ['wait', 20]],
     expect: `!g.dive && g.entities.filter(e => e.kind === 'salvage' && !e.remove).length === 5 && g.player.inDeep || ('deep ' + g.player.inDeep + ', casks ' + g.entities.filter(e => e.kind === 'salvage' && !e.remove).length)`,

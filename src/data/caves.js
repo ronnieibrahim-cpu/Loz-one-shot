@@ -116,7 +116,7 @@ export function installCaves() {
           // in. All three states of one tile, which is the item in miniature.
           [1, 5, 'Older, and lower down: "Lime drinks the sea and spits fire.\nDrown it and it sulks."'],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 7, px: 64, py: 64, dir: 'down' } }],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 7, px: 64, py: 64, dir: 'down' } }],
       },
     },
   });
@@ -162,7 +162,7 @@ export function installCaves() {
           ['chest', 4, 3, { big: true, item: 'bottle', level: 1 }],
         ],
         readable: [[7, 3, 'Salt-etched: "One swallow of the sea, kept where the sea cannot follow it."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 1, px: 48, py: 48, dir: 'down' } }],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } }],
       },
     },
   });
@@ -194,7 +194,7 @@ export function installCaves() {
           ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [[7, 2, 'A palace notice, in a hand that gave up halfway: "The rest of it is under. Do not go and look."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 10, ry: 1, px: 64, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } }],
       },
     },
   });

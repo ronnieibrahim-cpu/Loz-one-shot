@@ -346,7 +346,7 @@ await hold([]); await step(4);
 section('Kelp-Soled Cleats');
 
 // The Gyre: a ring of riptide around a dry centre.
-await park({ map: 'overworld', rx: 7, ry: 3, tx: 4, ty: 3, dir: 'down', tide: 1, items: { cleats: 1 }, equipB: 'cleats' });
+await park({ map: 'overworld', rx: 10, ry: 3, tx: 4, ty: 3, dir: 'down', tide: 1, items: { cleats: 1 }, equipB: 'cleats' });
 r = await read(() => {
   const g = window.__game;
   const d = g.room.tile(4, 1, g.tide.level);

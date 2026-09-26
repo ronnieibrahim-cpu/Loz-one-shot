@@ -7,7 +7,7 @@
 
 import { tiles as tileSheet } from '../gfx/art.js';
 import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
-import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
+import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, HORON_GROUND } from './tiles-terrain.js';
 import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } from './tiles-maku.js';
@@ -1502,7 +1502,7 @@ const TOWN_ENTRANCE = {
   bHouseGreen: [1, 2],
   bHouseRed: [1, 2],
 };
-const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
+const TOWN_GROUNDS = { '': 'grass', Sand: 'sand', Lawn: 'hLawn' };
 
 
 // --------------------------------------------------------------------------
@@ -1667,6 +1667,7 @@ function installTownBlocks() {
           defs[tile] = {
             art: ART[art], pal, underArt: uArt || ground,
             ...(uArt ? { underExact: true } : {}),
+            ...(name === 'bFence' || name === 'bLogFence' ? { fence: true } : {}),
             flags: isDoor ? F.SOLID | F.WARP : F.SOLID,
             ...(isDoor ? { mask: 0 } : {}),
           };
@@ -3010,6 +3011,29 @@ export function installCoreTiles() {
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T,
     };
   }
+  // HORON'S GROUND (S157), for Tidewatch at Horon Village's size: its lawn,
+  // the pale-yellow yard its houses and gardens stand in, the dirt of its paths
+  // and square, and its flower beds, extracted by tools/rip-terrain.py
+  // (SP_GROUND) with Horon's own palettes. A lawn cell beside a yard draws
+  // Horon's scalloped edge on the lawn's side — the four `hLawnYard*` cells —
+  // and a lawn cell at a yard's CORNER stays plain, because that is how Horon
+  // draws it. No material: a fringe would composite a second, invented edge.
+  for (const [name, pal] of Object.entries(HORON_GROUND)) TILE_DEFS[name] = { art: ART[name], pal };
+  Object.assign(TILE_DEFS.hLawn, {
+    family: 'lawn', edgeAgainst: 'yard',
+    edgeArt: { up: 'hLawnYardN', down: 'hLawnYardS', left: 'hLawnYardW', right: 'hLawnYardE' },
+    variants: ['hLawnTuft'], variantOdds: 3,
+  });
+  TILE_DEFS.hYard.family = 'yard';
+  TILE_DEFS.hDirt.family = 'dirt';
+  TILE_DEFS.hFlowers.family = 'yard';
+  // The things that stand on a lawn, naming the lawn as the ground under them
+  // — the same art as everywhere else, the way `treeDark` names the Wood's.
+  Object.assign(TILE_DEFS, {
+    treeLawn: { ...TILE_DEFS.tree, underArt: 'hLawn' },
+    bushLawn: { ...TILE_DEFS.bush, underArt: 'hLawn' },
+    rockLawn: { ...TILE_DEFS.rock, underArt: 'hLawn' },
+  });
   installGroundFringes(TILE_DEFS);
   registerTiles(TILE_DEFS);
   // After the tiledefs, so a block cell can never be shadowed by one of them.
@@ -3039,6 +3063,7 @@ export function installCoreTiles() {
   registerTransforms({
     bush: { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut', drop: 'common', sfx: 'cut' },
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
+    bushLawn: { cut: 'hLawn', bomb: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     // FIRE AND NOTHING ELSE. No `cut`, no `bomb`, no `lift`: the whole point of
     // the tile is that the tools the player already has do not answer it.
@@ -3056,6 +3081,7 @@ export function installCoreTiles() {
     seaSnarl: { cut: 'waterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
+    rockLawn: { lift: 'hLawn', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
     rockCave: { lift: 'rockFloorDk', drop: 'common' },
     potCave: { lift: 'rockFloorDk', drop: 'common' },

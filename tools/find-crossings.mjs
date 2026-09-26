@@ -25,15 +25,17 @@ import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 installData();
 
 // Region rectangles are [x0, x1, y0, y1] inclusive, straight from GAME-PLAN.md.
+// S157: shifted for the widened map (three columns after old x=5, two after
+// old x=9); a region whose east edge was on an insertion takes the new columns.
 const REGIONS = {
-  'Tidewatch Coast': [3, 6, 7, 9],
-  'The Shallows': [7, 11, 6, 9],
-  'Coral Reef': [8, 11, 4, 6],
+  'Tidewatch Coast': [3, 9, 7, 9],
+  'The Shallows': [10, 16, 6, 9],
+  'Coral Reef': [11, 16, 4, 6],
   'Sunken Marsh': [0, 2, 6, 9],
   'Cliffs of Kell': [0, 3, 2, 5],
-  'Drowned Wood': [4, 7, 3, 6],
-  'Salt Pans': [4, 7, 0, 2],
-  'Reef Palace': [8, 11, 0, 3],
+  'Drowned Wood': [4, 10, 3, 6],
+  'Salt Pans': [4, 10, 0, 2],
+  'Reef Palace': [11, 16, 0, 3],
   'Abyssal approach': [0, 3, 0, 1],
 };
 
@@ -62,7 +64,7 @@ const only = process.argv.slice(2).filter(a => !a.startsWith('--'));
 for (const [name, rect] of Object.entries(REGIONS)) {
   if (only.length && !only.includes(name)) continue;
   const crossings = [];
-  for (let sy = 0; sy < 10; sy++) for (let sx = 0; sx < 12; sx++) {
+  for (let sy = 0; sy < 10; sy++) for (let sx = 0; sx < m.w; sx++) {
     if (!inRegion(rect, sx, sy)) continue;
     const def = m.roomDefs[`0,${sx},${sy}`];
     if (!def) continue;

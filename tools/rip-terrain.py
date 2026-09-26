@@ -619,6 +619,12 @@ TOWN_PALETTES = {
     'hRoofGreen':  ['#f8f870', '#70e010', '#308800', '#000000'],
     'hRoofRed':    ['#f8d088', '#e80818', '#680828', '#000000'],
     'hWood':       ['#f8f870', '#c08018', '#603800', '#000000'],
+    # Horon's lawn and its pale-yellow yard share one ramp (S157): the yard
+    # yellow is also the light in every grass tuft, and the dark green is the
+    # tufts and the scalloped edge where a lawn meets a yard.
+    'hLawn':       ['#f8f870', '#a0f820', '#28a800', '#000000'],
+    # The pink flower bed, on the yard's yellow (S157).
+    'hFlower':     ['#f8f870', '#f028a0', '#70d020', '#000000'],
 }
 
 WOOD, TIMBER = 'sbWood', 'sbTimber'
@@ -689,11 +695,42 @@ SP_TOWN = [
         [((9, 15, 2, 2), HRED), ((9, 15, 3, 2), HRED), ((9, 15, 4, 2), HRED)],
         [((9, 15, 2, 3), HWOOD), ((9, 15, 3, 3), HWOOD), ((9, 15, 4, 3), HWOOD)],
     ]),
+    # Horon's plaza and yards (S157), for Tidewatch at Horon's size: the stone
+    # fountain in the middle of the square, the stools round it, and the log
+    # palisade the green house stands inside. All three are opaque to their
+    # edge and every pixel is in Horon's own timber ramp.
+    ('bFountain', 2, 2, 'Horon plaza fountain, on the dirt of the square', [
+        [((7, 14, 4, 3), HWOOD), ((7, 14, 5, 3), HWOOD)],
+        [((7, 14, 4, 4), HWOOD), ((7, 14, 5, 4), HWOOD)],
+    ]),
+    ('bStool', 1, 1, 'Horon plaza stool, on dirt', [[((7, 14, 3, 2), HWOOD)]]),
+    ('bLogFence', 1, 1, 'Horon log palisade, two logs on the yard', [[((8, 14, 3, 1), HWOOD)]]),
     ('bHouseShut', 3, 3, 'Horon green house with no door: window, window, window', [
         [((8, 14, 4, 2), HGRN), ((8, 14, 5, 2), HGRN), ((8, 14, 6, 2), HGRN)],
         [((8, 14, 4, 3), HGRN), ((8, 14, 5, 3), HGRN), ((8, 14, 6, 3), HGRN)],
         [((8, 14, 4, 4), HWOOD), ((8, 14, 4, 4), HWOOD), ((8, 14, 6, 4), HWOOD)],
     ]),
+]
+
+
+# HORON'S GROUND (S157). Walkable, so not blocks: each is one cell and becomes
+# an ordinary tiledef in tiles-core.js with its palette installed, the same
+# argument as the roofs — this game has never drawn Horon's lawn, so there is
+# no palette to preserve. The four `hLawnYard*` cells are Horon's scalloped
+# edge: a LAWN cell with the yard beside it on one side (Horon draws no corner
+# piece; the lawn cell at a yard's corner is plain lawn). tiles-core.js hangs
+# them on `hLawn` as its edge art against the yard.
+# name, (screen x, screen y, tile x, tile y), palette, note
+SP_GROUND = [
+    ('hLawn',      (7, 14, 0, 0), 'hLawn', 'lawn'),
+    ('hLawnTuft',  (7, 14, 0, 1), 'hLawn', 'lawn, two tufts'),
+    ('hYard',      (7, 13, 1, 1), 'hLawn', 'the yard: pale yellow with lawn-coloured tufts'),
+    ('hLawnYardS', (8, 14, 4, 0), 'hLawn', 'lawn, the yard to its south'),
+    ('hLawnYardN', (7, 13, 4, 5), 'hLawn', 'lawn, the yard to its north'),
+    ('hLawnYardE', (8, 14, 2, 2), 'hLawn', 'lawn, the yard to its east'),
+    ('hLawnYardW', (8, 14, 8, 2), 'hLawn', 'lawn, the yard to its west'),
+    ('hDirt',      (7, 14, 1, 0), 'hWood', 'the dirt of a path and the square'),
+    ('hFlowers',   (7, 15, 3, 4), 'hFlower', 'a pink flower bed on the yard'),
 ]
 
 
@@ -1375,6 +1412,10 @@ def main():
                 cnote = 'cell (%d,%d) — spring map screen %d,%d tile %d,%d' % ((cx, cy) + src)
                 townart.append(('%s_%d_%d' % (name, cx, cy), cnote, tg, top, ug, under))
         town.insert(k, (name, w, h, note, cells, townart))
+    ground = []
+    for name, src, pal, note in SP_GROUND:
+        tg, _, _, _ = quantise_sp_cell(im, src, pal)
+        ground.append((name, 'spring map screen %d,%d tile %d,%d — %s' % (src + (note,)), tg, pal))
 
     for name, path, x, y, w, h, bg, flood, topSlots, botSlots, note in BIGPROPS:
         im = sheets.get(path)
@@ -1471,6 +1512,22 @@ def main():
                 lines.extend('    ' + r for r in under[0][:-1])
                 lines.append('    ' + under[0][-1] + '`,')
                 lines.append('')
+    for name, cnote, grid, pal in ground:
+        lines.append('  // %s' % cnote)
+        lines.append('  %s: `' % name)
+        lines.extend('    ' + r for r in grid[:-1])
+        lines.append('    ' + grid[-1] + '`,')
+        lines.append('')
+    lines.append('};')
+    lines.append('')
+    lines += [
+        "// Horon's walkable ground (S157): art name -> installed palette. tiles-core.js",
+        '// makes each an ordinary tiledef; what it does (walkable, its edge against',
+        '// the yard) is declared there.',
+        'export const HORON_GROUND = {',
+    ]
+    for name, cnote, grid, pal in ground:
+        lines.append("  %s: '%s'," % (name, pal))
     lines.append('};')
     lines.append('')
     lines += [

@@ -55,6 +55,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { installData } from '../src/data/index.js';
+import { OVERWORLD_W, OVERWORLD_H } from '../src/data/overworld.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { F } from '../src/world/tileset.js';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
@@ -62,7 +63,7 @@ import { tileWalkable, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
-const W = 10, H = 8, OW = 12, OH = 10;
+const W = 10, H = 8, OW = OVERWORLD_W, OH = OVERWORLD_H;
 const BASELINE = new URL('./strands-baseline.json', import.meta.url);
 const RECORD = process.argv.includes('--record');
 const VERBOSE = process.argv.includes('--verbose');

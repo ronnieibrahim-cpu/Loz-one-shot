@@ -116,7 +116,7 @@ export function installDungeonsA() {
       boss: 'gohmaraq',
       bossRoom: '0,3,1',
       startRoom: '3,7',
-      entrance: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32 },
+      entrance: { map: 'overworld', floor: 0, rx: 11, ry: 8, px: 64, py: 32 },
     },
     rooms: {
       // ---- the south half: no Anchor, and the conch is the only tool -------
@@ -136,7 +136,7 @@ export function installDungeonsA() {
           '#######C#######',
         ],
         warps: [
-          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 11, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [3, 7, 'Carved by the door: "The sea keeps this floor. Take it back."'],
@@ -768,7 +768,7 @@ export function installDungeonsA() {
       boss: 'anemos',
       bossRoom: '1,3,1',
       startRoom: '3,7',
-      entrance: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32 },
+      entrance: { map: 'overworld', floor: 0, rx: 15, ry: 5, px: 64, py: 32 },
     },
     rooms: {
       // ---- floor 0: the flooded base. The conch is the only tool. ---------
@@ -788,7 +788,7 @@ export function installDungeonsA() {
           '######(C)######',
         ],
         warps: [
-          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 15, ry: 5, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 7, 'Coral script over the door: "What rises, carries.\nWhat falls, reveals. Look before you fall."'],

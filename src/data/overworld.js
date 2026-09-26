@@ -32,8 +32,31 @@
 
 import { registerMap } from '../world/maps.js';
 
-export const OVERWORLD_W = 12;
+export const OVERWORLD_W = 17;
 export const OVERWORLD_H = 10;
+
+// THE OVERWORLD HAS BEEN WIDENED, and a save remembers screens by position.
+// S157 inserted three columns after old x=5 (Tidewatch grew to Horon Village's
+// five screens by two) and two after old x=9 (Sandpiper Row, three screens):
+// twelve screens across became seventeen. tools/oneshot/widen-overworld.mjs
+// moved every screen reference in the game; `widenOverworldX` moves the ones in
+// a save written before, and progress.js's `migrate` calls it for any save
+// whose `worldW` is not today's width.
+export const OVERWORLD_WIDENINGS = [
+  { fromW: 12, toW: 17, inserts: [{ after: 5, count: 3 }, { after: 9, count: 2 }] },
+];
+
+/** An overworld screen column in a save written at width `fromW`, moved to
+ *  today's grid. */
+export function widenOverworldX(x, fromW) {
+  let w = fromW;
+  for (const step of OVERWORLD_WIDENINGS) {
+    if (w !== step.fromW) continue;
+    x += step.inserts.filter(i => x > i.after).reduce((a, i) => a + i.count, 0);
+    w = step.toW;
+  }
+  return x;
+}
 
 // The peoples of Thalassia, as an NPC entity says them. The art is extracted
 // (tools/rip-races.py); who they are is ours.
@@ -216,7 +239,7 @@ const rooms = {
       ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'rupee20' }],
     ],
   },
-  '0,6,0': {
+  '0,9,0': {
     name: 'Boiling Pan',
     legend: 'salt', music: 'salt',
     map: [
@@ -240,7 +263,7 @@ const rooms = {
       ['leever', 6, 4, { phase: 0 }],
     ],
   },
-  '0,7,0': {
+  '0,10,0': {
     name: 'East Crust',
     legend: 'salt', music: 'salt',
     map: [
@@ -258,7 +281,7 @@ const rooms = {
     ],
   },
   // ---- reef --------------------------------------------------------------
-  '0,8,0': {
+  '0,11,0': {
     name: 'Coral Gate',
     legend: 'reef', music: 'reef',
     map: [
@@ -275,7 +298,7 @@ const rooms = {
       ['jellyfish', 4, 5],
     ],
   },
-  '0,9,0': {
+  '0,12,0': {
     name: 'Palace Wall',
     legend: 'reef', music: 'reef',
     map: [
@@ -294,7 +317,7 @@ const rooms = {
       ['octorokSea', 4, 3], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
   },
-  '0,10,0': {
+  '0,15,0': {
     name: 'Tide Steps',
     legend: 'reef', music: 'reef',
     map: [
@@ -311,7 +334,7 @@ const rooms = {
       ['siren', 4, 2],
     ],
   },
-  '0,11,0': {
+  '0,16,0': {
     name: 'East Spire',
     legend: 'reef', music: 'reef',
     map: [
@@ -433,7 +456,7 @@ const rooms = {
       ['sign', 6, 5, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
-  '0,6,1': {
+  '0,9,1': {
     name: 'Vault Approach',
     legend: 'salt', music: 'salt',
     map: [
@@ -454,7 +477,7 @@ const rooms = {
       ['beetle', 6, 5],
     ],
   },
-  '0,7,1': {
+  '0,10,1': {
     name: 'Windward Pan',
     legend: 'salt', music: 'salt',
     map: [
@@ -472,7 +495,7 @@ const rooms = {
     ],
   },
   // ---- reef --------------------------------------------------------------
-  '0,8,1': {
+  '0,11,1': {
     name: 'Reefway',
     legend: 'reef', music: 'reef',
     map: [
@@ -489,7 +512,7 @@ const rooms = {
       ['crab', 4, 3], ['crab', 6, 4],
     ],
   },
-  '0,9,1': {
+  '0,12,1': {
     name: 'Hooked Channel',
     legend: 'reef', music: 'reef',
     map: [
@@ -506,7 +529,7 @@ const rooms = {
       ['octorokSea', 5, 3],
     ],
   },
-  '0,10,1': {
+  '0,15,1': {
     name: 'Palace Mouth',
     legend: 'reef', music: 'reef',
     map: [
@@ -534,7 +557,7 @@ const rooms = {
       ['siren', 6, 4],
     ],
   },
-  '0,11,1': {
+  '0,16,1': {
     name: 'Spire Shallows',
     legend: 'reef', music: 'reef',
     map: [
@@ -670,7 +693,7 @@ const rooms = {
       ['zol', 4, 3], ['crab', 2, 2],
     ],
   },
-  '0,6,2': {
+  '0,9,2': {
     name: 'Vault Steps',
     legend: 'salt', music: 'salt',
     map: [
@@ -687,7 +710,7 @@ const rooms = {
       ['sign', 2, 5, { text: 'South, past the gap: the Drowned Wood.' }],
     ],
   },
-  '0,7,2': {
+  '0,10,2': {
     name: 'Pan Corner',
     legend: 'salt', music: 'salt',
     map: [
@@ -705,7 +728,7 @@ const rooms = {
     ],
   },
   // ---- reef --------------------------------------------------------------
-  '0,8,2': {
+  '0,11,2': {
     name: 'Sunken Colonnade',
     legend: 'reef', music: 'reef',
     map: [
@@ -722,7 +745,7 @@ const rooms = {
       ['octorokSea', 4, 4],
     ],
   },
-  '0,9,2': {
+  '0,12,2': {
     name: 'Reef Market',
     legend: 'reef', music: 'reef',
     map: [
@@ -739,7 +762,7 @@ const rooms = {
       ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher', after: 'reefFisherAfter', needEssences: 1 }],
     ],
   },
-  '0,10,2': {
+  '0,15,2': {
     name: 'Drowned Steps',
     legend: 'reef', music: 'reef',
     map: [
@@ -756,7 +779,7 @@ const rooms = {
       ['siren', 3, 2], ['barnacle', 6, 4],
     ],
   },
-  '0,11,2': {
+  '0,16,2': {
     name: 'Outer Reef',
     legend: 'reef', music: 'reef',
     map: [
@@ -947,7 +970,7 @@ const rooms = {
       ['wisp', 4, 3], ['keese', 1, 5],
     ],
   },
-  '0,6,3': {
+  '0,9,3': {
     name: 'Wood Gate',
     legend: 'wood', music: 'overworld',
     map: [
@@ -965,7 +988,7 @@ const rooms = {
       ['moblin', 6, 4],
     ],
   },
-  '0,7,3': {
+  '0,10,3': {
     name: 'The Gyre',
     legend: 'wood', music: 'overworld',
     // A closed circulation: east along the top, south down the right, west
@@ -990,7 +1013,7 @@ const rooms = {
     ],
   },
   // ---- reef --------------------------------------------------------------
-  '0,8,3': {
+  '0,11,3': {
     name: 'Reef Foot',
     legend: 'reef', music: 'reef',
     map: [
@@ -1007,7 +1030,7 @@ const rooms = {
       ['crab', 4, 3],
     ],
   },
-  '0,9,3': {
+  '0,12,3': {
     name: 'Barnacle Bank',
     legend: 'reef', music: 'reef',
     map: [
@@ -1024,7 +1047,7 @@ const rooms = {
       ['barnacle', 3, 3], ['barnacle', 6, 3],
     ],
   },
-  '0,10,3': {
+  '0,15,3': {
     name: 'Palace Causeway',
     legend: 'reef', music: 'reef',
     map: [
@@ -1041,7 +1064,7 @@ const rooms = {
       ['octorokSea', 5, 4],
     ],
   },
-  '0,11,3': {
+  '0,16,3': {
     name: 'Reef Edge',
     legend: 'reef', music: 'reef',
     map: [
@@ -1186,7 +1209,7 @@ const rooms = {
       ['wisp', 8, 5],
     ],
   },
-  '0,6,4': {
+  '0,9,4': {
     name: 'Log Drift',
     // Its Piece of Heart is Dov's thanks for his cargo now (S155, side
     // content); a rupee keeps the spot.
@@ -1205,7 +1228,7 @@ const rooms = {
       ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'rupee20' }],
     ],
   },
-  '0,7,4': {
+  '0,10,4': {
     name: 'Drowned Hollow',
     legend: 'wood', music: 'overworld',
     map: [
@@ -1223,7 +1246,7 @@ const rooms = {
     ],
   },
   // ---- coral -------------------------------------------------------------
-  '0,8,4': {
+  '0,11,4': {
     name: 'Coral Shelf',
     legend: 'coral', music: 'reef',
     map: [
@@ -1240,7 +1263,7 @@ const rooms = {
       ['crab', 4, 3], ['urchin', 6, 4],
     ],
   },
-  '0,9,4': {
+  '0,12,4': {
     name: 'Anemone Field',
     legend: 'coral', music: 'reef',
     map: [
@@ -1257,7 +1280,7 @@ const rooms = {
       ['urchin', 3, 3], ['urchin', 6, 3], ['jellyfish', 4, 4],
     ],
   },
-  '0,10,4': {
+  '0,15,4': {
     name: 'Spire Coral',
     legend: 'coral', music: 'reef',
     map: [
@@ -1274,7 +1297,7 @@ const rooms = {
       ['octorokSea', 4, 4],
     ],
   },
-  '0,11,4': {
+  '0,16,4': {
     name: 'Outer Coral',
     legend: 'coral', music: 'reef',
     map: [
@@ -1400,7 +1423,7 @@ const rooms = {
       }],
     ],
   },
-  '0,6,5': {
+  '0,9,5': {
     name: 'Sunken Glade',
     legend: 'wood', music: 'overworld',
     map: [
@@ -1417,7 +1440,7 @@ const rooms = {
       ['zol', 3, 4], ['moblin', 6, 3],
     ],
   },
-  '0,7,5': {
+  '0,10,5': {
     name: 'Wood Verge',
     legend: 'wood', music: 'overworld',
     map: [
@@ -1435,7 +1458,7 @@ const rooms = {
     ],
   },
   // ---- coral -------------------------------------------------------------
-  '0,8,5': {
+  '0,11,5': {
     name: 'Reef Wall',
     legend: 'coral', music: 'reef',
     map: [
@@ -1452,7 +1475,7 @@ const rooms = {
       ['urchin', 4, 3],
     ],
   },
-  '0,9,5': {
+  '0,12,5': {
     name: 'Coral Hollow',
     legend: 'coral', music: 'reef',
     map: [
@@ -1473,7 +1496,7 @@ const rooms = {
       }],
     ],
   },
-  '0,10,5': {
+  '0,15,5': {
     name: 'Spire Mouth',
     legend: 'coral', music: 'reef',
     map: [
@@ -1496,7 +1519,7 @@ const rooms = {
       ['sign', 2, 3, { text: 'CORAL SPIRE\nLet the sea carry you up.' }],
     ],
   },
-  '0,11,5': {
+  '0,16,5': {
     name: 'Coral Foot',
     legend: 'coral', music: 'reef',
     map: [
@@ -1632,7 +1655,7 @@ const rooms = {
       ['sign', 2, 5, { text: 'Only a swimmer goes north from here.' }],
     ],
   },
-  '0,6,6': {
+  '0,9,6': {
     name: 'Wood Foot',
     legend: 'wood', music: 'overworld',
     map: [
@@ -1650,7 +1673,7 @@ const rooms = {
     ],
   },
   // ---- dunes -------------------------------------------------------------
-  '0,7,6': {
+  '0,10,6': {
     name: 'Dune Head',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1667,7 +1690,7 @@ const rooms = {
       ['crab', 4, 3],
     ],
   },
-  '0,8,6': {
+  '0,11,6': {
     name: 'North Dunes',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1684,7 +1707,7 @@ const rooms = {
       ['leever', 4, 3], ['crab', 6, 4],
     ],
   },
-  '0,9,6': {
+  '0,12,6': {
     name: 'Sandbar Run',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1701,7 +1724,7 @@ const rooms = {
       ['crab', 3, 3], ['octorokSea', 6, 4],
     ],
   },
-  '0,10,6': {
+  '0,15,6': {
     name: 'Feather Gap',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1718,7 +1741,7 @@ const rooms = {
       ['sign', 4, 4, { text: 'North lies the reef.\nThe gaps are a single stride wide.' }],
     ],
   },
-  '0,11,6': {
+  '0,16,6': {
     name: 'East Dunes',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1827,59 +1850,32 @@ const rooms = {
   // The Maku Tree keeps its hollow at 3,1 rather than moving into a house: it
   // is a tree, and a doorway in the wood at the top of the square says so.
   '0,4,7': {
-    name: 'Tidewatch Village',
-    legend: 'town', music: 'overworld',
-    // THE VILLAGE IS TWO SCREENS. The square is here; the shop, the well and
-    // the water stair are east on `0,5,7`. It used to be one screen carrying
-    // two 3x3 buildings, a hollow and six people, which left exactly one row
-    // that crossed it — the trap at the top of CLAUDE.md, and the reason four
-    // townsfolk were standing in the roots of the treeline with nowhere else
-    // to go. Moving the shop east bought back nine solid tiles and a whole
-    // lane, and the north strip behind the shop — three tiles of grass that
-    // could only ever be reached past whoever was standing at 8,2 — is a
-    // treeline now rather than a pocket nobody could get into.
+    name: "Tidewatch Village",
+    // TIDEWATCH IS HORON VILLAGE'S SIZE (S157): five screens by two, 0,4,7 to
+    // 0,8,8, drawn as one 50x16 plan and cut into screens so the roads and yards
+    // run across the seams. Horon's own ground and plaza (legend 'horon'). The
+    // town's ways out are where they always were: west to West Bluff and Shell
+    // Beach, north to The Wading, south to the Fishing Stones and South Sands,
+    // east to Sunken Reef and East Strand.
+    // The Hearth house and the Maku Tree's hollow.
+    legend: 'horon', music: 'overworld',
     map: [
       'TTTTTTTTTT',
       'TTTTCTTTTT',
-      'gjjjguuugg',
-      'gjjjguuugg',
-      'gjjjgggggg',
-      'gggggggggg',
-      'TzgggggeiT',
-      'TToggggoTT',
+      'yjjj.gffyy',
+      'yjjj.gyyyy',
+      'yjjj.ggggg',
+      '..........',
+      'TTggg.gggg',
+      'TTggg.gggg',
     ],
     warps: [
-      // Each door is the middle cell of its building's front row, which is the
-      // one cell of a block that is not solid. Walk into it from the square.
       { x: 2, y: 4, to: { map: 'houseHearth', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
       { x: 4, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 8, 4, { text: 'TIDEWATCH VILLAGE\nEast: the shop, and the Shallows beyond.' }],
-      // The scrimshander works outdoors on the east side of the square, on the
-      // ground the shop used to stand on, off the path between the doors — an
-      // NPC is an entity, not a tile, so she narrows the square without
-      // touching its connectivity. Beside the noticeboard rather than beside
-      // the salter: three figures in adjacent tiles reads as a queue.
-      ['scrimshander', 7, 4, {}],
-      // Brinekin, and re-dressed rather than joined by one. Adding an entity to
-      // the STARTING room shifts every entity id allocated after it, and
-      // `every(e, n)` phases an enemy off its id — so one extra villager here
-      // re-phases every enemy in the game and the d1-descent replay walks into
-      // a hit it used to dodge. Recorded in docs/HANDOFF.md.
-      ['npc', 8, 2, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4,
-        // The Peat Key, once the second Essence is in (S154).
-        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' } }],
-      ['npc', 4, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
-      // The salter works at the stump table, at the west end of the square's
-      // open row 4. NOT IN ROW 5, at either end: row 5 is the one row that
-      // crosses this screen and it is how the player walks off it westward.
-      // A solid giver at 3,5 failed test.mjs's "walking west changed room";
-      // moved to 8,5 it passed that and instead walled off the east end, so
-      // village-walk's `goto` sat pushing against it for four hundred frames
-      // and the recording ended two screens away. The tile checkers see
-      // neither, because a giver is an entity and their floods are tiles.
-      ['giver', 5, 4, {
+      ['sign', 2, 6, { text: 'TIDEWATCH VILLAGE\nEast: the square, the shop, and the\nShallows beyond.' }],
+      ['giver', 8, 4, {
         ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
@@ -1889,41 +1885,27 @@ const rooms = {
     ],
   },
   '0,5,7': {
-    name: 'Village East',
-    // THE VILLAGE'S OTHER HALF, and a town legend rather than a coast one: the
-    // shop stands here now, with the well beside it and the tide pool at the
-    // foot of the yard. It is declared in tools/check-towns.mjs, which is what
-    // holds it to a village's standard — every way in and every door reaching
-    // each other ON FOOT at LOW and MID and HIGH, which is why the pool stops
-    // one column short of the north and south lanes: at HIGH those two rows of
-    // dry grass in the east are the only way round it.
-    legend: 'town', music: 'overworld',
+    name: "Village East",
+    // The shop, one building a screen as Horon has it.
+    legend: 'horon', music: 'overworld',
     map: [
-      'TToggggoTT',
-      'TggggggggT',
-      'gggHHHgggg',
-      'gwwHHHg111',
-      'gwwHHHg111',
-      'gggggggggg',
-      'TzgggggegT',
-      'TToggggoTT',
+      'TTogg.goTT',
+      'TTggg.ggTT',
+      'yHHHy.TTgg',
+      'yHHHy.TTgg',
+      'yHHHy.gggg',
+      '..........',
+      'ggggg.gggg',
+      'ggggg.gggg',
     ],
     warps: [
-      { x: 4, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 2, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      // Coastwise Chain, link 4. Mirren stands at the lip of the tide pool,
-      // which is where a fisher stands.
-      ['trader', 6, 3, {
-        sprite: 'npc_fisher2', waiting: 'coastFisher', after: 'mirrenAfter',
-        deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
-      }],
-      // The village child, moved out of the strip behind the old shop. There
-      // is a well here now and that is where a child is.
-      ['npc', 2, 5, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
+      ['npc', 8, 3, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
     ],
   },
-  '0,6,7': {
+  '0,9,7': {
     name: 'Sunken Reef',
     legend: 'coast', music: 'overworld',
     map: [
@@ -1944,7 +1926,7 @@ const rooms = {
     ],
   },
   // ---- dunes -------------------------------------------------------------
-  '0,7,7': {
+  '0,10,7': {
     name: 'Shallows Gate',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1962,7 +1944,7 @@ const rooms = {
       ['crab', 6, 4],
     ],
   },
-  '0,8,7': {
+  '0,11,7': {
     name: 'Grotto Approach',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1979,7 +1961,7 @@ const rooms = {
       ['octorok', 4, 3], ['crab', 6, 4],
     ],
   },
-  '0,9,7': {
+  '0,12,7': {
     name: 'Dune Bowl',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -1996,7 +1978,7 @@ const rooms = {
       ['leever', 4, 3], ['leever', 6, 4],
     ],
   },
-  '0,10,7': {
+  '0,15,7': {
     name: 'Tidepools',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2013,7 +1995,7 @@ const rooms = {
       ['crab', 4, 3], ['urchin', 6, 4],
     ],
   },
-  '0,11,7': {
+  '0,16,7': {
     name: 'Far Dunes',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2138,33 +2120,27 @@ const rooms = {
   // door is not on it, which is the rule for a town — a building may narrow a
   // route and may never be the reason a screen has none. See check-towns.mjs.
   '0,4,8': {
-    name: 'Village Shore',
-    legend: 'town', music: 'overworld',
+    name: "Village Shore",
+    // The Net-mender's house.
+    legend: 'horon', music: 'overworld',
     map: [
-      'TToggggoTT',
-      'TgggggzigT',
-      'gggggggggg',
-      'gghhh222gg',
-      'gghhh222gg',
-      'gghhhwwggg',
-      '#ggggwwgg#',
-      '###gggg###',
+      'TTggg.gggg',
+      'TTggg.gggg',
+      'gyhhh.yffy',
+      'gyhhh.yyyy',
+      'gyhhh.gggg',
+      '..........',
+      'TTggg.ggTT',
+      'TTogg.goTT',
     ],
     warps: [
-      { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 3, y: 4, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      // Coastwise Chain, link 2. Pell keeps the line he always had — it is
-      // what he says until the chain reaches him — and a boy who has been
-      // pinched by a crab the size of a dog is exactly who is holding the claw.
-      ['trader', 3, 2, {
+      ['trader', 6, 3, {
         sprite: 'npc_child', waiting: 'coastChild', after: 'pellAfter',
         deals: [{ stage: 2, wants: 'float', gives: 'claw', text: 'pellTrade' }],
       }],
-      ['npc', 4, 1, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3,
-        // The Cistern Key, once the third Essence is in (S154).
-        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' } }],
-      ['crab', 6, 4],
     ],
   },
   // The village's timber yard, on the screen already named for the wood that
@@ -2172,28 +2148,28 @@ const rooms = {
   // and no building — a settlement is not only the houses, and the kit's job
   // here is to make a screen look worked rather than decorated.
   '0,5,8': {
-    name: 'Driftwood Strand',
-    legend: 'town', music: 'overworld',
+    name: "Driftwood Strand",
+    // The timber yard: the chopping stump, crates and a paling fence.
+    legend: 'horon', music: 'overworld',
     map: [
-      'TToggggoTT',
-      'TggggggfgT',
-      'gguuugqggg',
-      'gguuuggggg',
-      'ggg1111ggg',
-      'ggggggnggg',
-      'TgggfgnfgT',
-      'TToggggoTT',
+      'ggggg.gggg',
+      'ggggg.gggg',
+      'yuuuy.gggg',
+      'yuuuy.gnng',
+      'yyezi.gnng',
+      '..........',
+      'TTggg.ggTT',
+      'TTogg.goTT',
     ],
     entities: [
-      ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
-      // Coastwise Chain, link 3.
+      ['pickup', 9, 3, { kind: 'rupee20' }],
       ['trader', 6, 3, {
         ...FOLK.salter, dir: 'left', waiting: 'timberSalter', after: 'hullaAfter',
         deals: [{ stage: 3, wants: 'claw', gives: 'brick', text: 'hullaTrade' }],
       }],
     ],
   },
-  '0,6,8': {
+  '0,9,8': {
     name: 'East Strand',
     legend: 'coast', music: 'overworld',
     map: [
@@ -2211,7 +2187,7 @@ const rooms = {
     ],
   },
   // ---- dunes -------------------------------------------------------------
-  '0,7,8': {
+  '0,10,8': {
     name: 'Dune Crossing',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2228,7 +2204,7 @@ const rooms = {
       ['octorok', 4, 3], ['crab', 6, 4],
     ],
   },
-  '0,8,8': {
+  '0,11,8': {
     name: 'Grotto Mouth',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2260,18 +2236,21 @@ const rooms = {
   // One cottage opens and one is shuttered. A town needs more buildings than
   // it has interiors and the source says which is which with the door it draws
   // — that is why a shut house is a different building and not a flag.
-  '0,9,8': {
+  '0,12,8': {
     name: 'Sandpiper Row',
+    // SANDPIPER ROW IS THREE SCREENS (S157), 0,12,8 to 0,14,8: a street of
+    // houses along one sandy lane. Sandpiper Cottage where it always was; the
+    // way north to Dune Bowl and south to Deep Bar are this screen's.
     legend: 'townDunes', music: 'overworld',
     map: [
-      'TToggggoTT',
-      'Tgg....ggT',
-      'gjjjgkkkgg',
-      'gjjjgkkkgg',
-      'gjjjgkkkgg',
-      'gg......ng',
-      'TizggggenT',
-      'TToggggoTT',
+      'TToGGGGoTT',
+      'TTg....gTT',
+      'gjjjgg..gg',
+      'gjjjg...gg',
+      'gjjjg..ggg',
+      '..........',
+      'TTg....gTT',
+      'TToGGGGoTT',
     ],
     warps: [
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -2281,15 +2260,9 @@ const rooms = {
       ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2,
         // The Coral Key, once the first Essence is in (S154).
         beat: { scene: 'coralKey', need: 1, flag: 'keyD2' } }],
-      // Coastwise Chain, link 6.
-      ['trader', 4, 6, {
-        sprite: 'npc_hood_blue', waiting: 'sandpiperKid', after: 'sennitAfter',
-        deals: [{ stage: 6, wants: 'lead', gives: 'whelk', text: 'sennitTrade' }],
-      }],
-      ['crab', 6, 1],
     ],
   },
-  '0,10,8': {
+  '0,15,8': {
     name: 'Shell Flats',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2306,7 +2279,7 @@ const rooms = {
       ['urchin', 4, 3], ['pickup', 6, 4, { kind: 'heartPiece' }],
     ],
   },
-  '0,11,8': {
+  '0,16,8': {
     name: 'Dune Corner',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2495,7 +2468,7 @@ const rooms = {
       ['pickup', 8, 2, { kind: 'e_ledger' }],
     ],
   },
-  '0,6,9': {
+  '0,9,9': {
     name: 'Reef Pocket',
     legend: 'coast', music: 'overworld',
     // THE SECOND ANCHOR GATE OUT OF DOORS, and it is Deep Bar's run backwards:
@@ -2528,7 +2501,7 @@ const rooms = {
     },
   },
   // ---- dunes -------------------------------------------------------------
-  '0,7,9': {
+  '0,10,9': {
     name: 'South Shallows',
     legend: 'dunes', music: 'overworld',
     // The first outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md).
@@ -2587,7 +2560,7 @@ const rooms = {
       ['sign', 6, 2, { text: 'Sow at the flood. Stand once the sea has gone back out.' }],
     ],
   },
-  '0,8,9': {
+  '0,11,9': {
     name: 'Wrecked Hull',
     legend: 'dunes', music: 'overworld',
     // THE SALVAGE DIVE (S155 side content). The deep pool in rows 5-6 is where
@@ -2622,7 +2595,7 @@ const rooms = {
       ['pickup', 7, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
     ],
   },
-  '0,9,9': {
+  '0,12,9': {
     name: 'Deep Bar',
     legend: 'dunes', music: 'overworld',
     // THE FIRST ANCHOR GATE OUT OF DOORS. Every one before it stood in D1 or
@@ -2664,7 +2637,7 @@ const rooms = {
       },
     },
   },
-  '0,10,9': {
+  '0,15,9': {
     name: 'Sunken Cove',
     legend: 'dunes', music: 'overworld',
     map: [
@@ -2681,7 +2654,7 @@ const rooms = {
       ['octorokSea', 4, 3], ['siren', 6, 4],
     ],
   },
-  '0,11,9': {
+  '0,16,9': {
     name: 'Worlds Edge',
     legend: 'dunes', music: 'overworld',
     // The second outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md),
@@ -2710,6 +2683,795 @@ const rooms = {
     },
     entities: [
       ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
+    ],
+  },
+
+  // ---- S157: the widened columns ----------------------------------------
+  // PLACEHOLDERS, written by tools/oneshot/widen-overworld.mjs. Each tile row
+  // is its west neighbour's east-edge tile repeated, so every crossing the old
+  // seam had is carried through at the same rows and the same tides, and
+  // nothing new connects to anything. Every one is to be re-authored by hand.
+  '0,6,0': {
+    name: "Salt Terraces",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '**********',
+      '**********',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,6,1': {
+    name: "Salters Rest",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,6,2': {
+    name: "Cracked Basin",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      '1111111111',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,6,3': {
+    name: "Rotting Grove",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,6,4': {
+    name: "Shrine Mouth",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,6,5': {
+    name: "Wood Heart",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,6,6': {
+    name: "The Wading",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,6,7': {
+    name: "Tidewatch Square",
+    // The square: dirt, the fountain, four stools, as Horon's is.
+    legend: 'horon', music: 'overworld',
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'f........f',
+      'y.s.FF.s.y',
+      'y...FF...y',
+      '..........',
+      'g.s....s.g',
+      'g........g',
+    ],
+    entities: [
+      ['scrimshander', 3, 6, {}],
+      ['npc', 6, 6, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4,
+        // The Peat Key, once the second Essence is in (S154).
+        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' } }],
+    ],
+  },
+  '0,6,8': {
+    name: "The Gardens",
+    // Flower beds and a row of bushes in a yard.
+    legend: 'horon', music: 'overworld',
+    map: [
+      'gggggggggg',
+      'gggggggggg',
+      'gfffllfffg',
+      'gfffyyfffg',
+      'gbbybbybbg',
+      '..........',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+    entities: [
+    ],
+  },
+  '0,6,9': {
+    name: "South Sands",
+    legend: "coast", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '1111111111',
+      '**********',
+      '**********',
+    ],
+  },
+  '0,7,0': {
+    name: "Salt Terraces",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '**********',
+      '**********',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,7,1': {
+    name: "Salters Rest",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,7,2': {
+    name: "Cracked Basin",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      '1111111111',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,7,3': {
+    name: "Rotting Grove",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,7,4': {
+    name: "Shrine Mouth",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,7,5': {
+    name: "Wood Heart",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,7,6': {
+    name: "The Wading",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,7,7': {
+    name: "Palisade Row",
+    // A house nobody opens, inside a log palisade.
+    legend: 'horon', music: 'overworld',
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gylkkklyTT',
+      'gylkkklyTT',
+      'gylkkklygg',
+      '..........',
+      'gggggg.ggg',
+      'gggggg.ggg',
+    ],
+    entities: [
+      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
+    ],
+  },
+  '0,7,8': {
+    name: "Wellside",
+    // The well, in its yard, and a stand of tall grass.
+    legend: 'horon', music: 'overworld',
+    map: [
+      'gggggg.ggg',
+      'gggggg.ggg',
+      'gywwyg.vvv',
+      'gywwyg.vvv',
+      'gyyyyg.vvv',
+      '..........',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+    entities: [
+      ['npc', 5, 4, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3,
+        // The Cistern Key, once the third Essence is in (S154).
+        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' } }],
+    ],
+  },
+  '0,7,9': {
+    name: "South Sands",
+    legend: "coast", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '1111111111',
+      '**********',
+      '**********',
+    ],
+  },
+  '0,8,0': {
+    name: "Salt Terraces",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '**********',
+      '**********',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,8,1': {
+    name: "Salters Rest",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,8,2': {
+    name: "Cracked Basin",
+    legend: "salt", music: "salt",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      '1111111111',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,8,3': {
+    name: "Rotting Grove",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,8,4': {
+    name: "Shrine Mouth",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,8,5': {
+    name: "Wood Heart",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,8,6': {
+    name: "The Wading",
+    legend: "wood", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,8,7': {
+    name: "Tide Gate",
+    // The east gate. The tide pool in the yard, and the sandbar creek
+    // Sunken Reef has at its west edge (rows 3-4) carried to the seam.
+    legend: 'horon', music: 'overworld',
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'Ty2222yggg',
+      'Ty2222y111',
+      'giyyyey111',
+      '..........',
+      'ggggggggTT',
+      'ggggggggTT',
+    ],
+    entities: [
+      ['trader', 1, 3, {
+        sprite: 'npc_fisher2', waiting: 'coastFisher', after: 'mirrenAfter',
+        deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
+      }],
+    ],
+  },
+  '0,8,8': {
+    name: "East Lawn",
+    // The south-east lawn, a grove, and the gate to East Strand.
+    legend: 'horon', music: 'overworld',
+    map: [
+      'ggggggggTT',
+      'ggggggggTT',
+      'gyTTTTnngg',
+      'gyTTTTnngg',
+      'gygggggggg',
+      '..........',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+    entities: [
+    ],
+  },
+  '0,8,9': {
+    name: "South Sands",
+    legend: "coast", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '1111111111',
+      '**********',
+      '**********',
+    ],
+  },
+  '0,13,0': {
+    name: "Palace Wall",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '**********',
+      '**********',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,13,1': {
+    name: "Hooked Channel",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,13,2': {
+    name: "Reef Market",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      '5555555555',
+      '5555555555',
+      '5555555555',
+      '5555555555',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,13,3': {
+    name: "Barnacle Bank",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,13,4': {
+    name: "Anemone Field",
+    legend: "coral", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,13,5': {
+    name: "Coral Hollow",
+    legend: "coral", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,13,6': {
+    name: "Sandbar Run",
+    legend: "dunes", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,13,7': {
+    name: "Dune Bowl",
+    legend: "dunes", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      '5555555555',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,13,8': {
+    name: 'Sandpiper Row',
+    // The Row's other house, shut, between two drying racks.
+    legend: 'townDunes', music: 'overworld',
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gnGkkkGngg',
+      'gnGkkkGngg',
+      'GGGkkkGGGG',
+      '..........',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+    entities: [
+    ],
+  },
+  '0,13,9': {
+    name: "Deep Bar",
+    legend: "dunes", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '1111111111',
+      '**********',
+      '**********',
+    ],
+  },
+  '0,14,0': {
+    name: "Palace Wall",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '**********',
+      '**********',
+      '1111111111',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,14,1': {
+    name: "Hooked Channel",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,14,2': {
+    name: "Reef Market",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      '5555555555',
+      '5555555555',
+      '5555555555',
+      '5555555555',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,14,3': {
+    name: "Barnacle Bank",
+    legend: "reef", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,14,4': {
+    name: "Anemone Field",
+    legend: "coral", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,14,5': {
+    name: "Coral Hollow",
+    legend: "coral", music: "reef",
+    placeholder: true,
+    map: [
+      '##########',
+      '##########',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '##########',
+      '##########',
+    ],
+  },
+  '0,14,6': {
+    name: "Sandbar Run",
+    legend: "dunes", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,14,7': {
+    name: "Dune Bowl",
+    legend: "dunes", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      '5555555555',
+      'gggggggggg',
+      'gggggggggg',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+  },
+  '0,14,8': {
+    name: 'Sandpiper Row',
+    // The net racks, and the way east to Shell Flats.
+    legend: 'townDunes', music: 'overworld',
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gnGnGnGggg',
+      'gnGnGnGggg',
+      'GGGGGGGzgg',
+      '..........',
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+    ],
+    entities: [
+      ['trader', 7, 3, {
+        sprite: 'npc_hood_blue', waiting: 'sandpiperKid', after: 'sennitAfter',
+        deals: [{ stage: 6, wants: 'lead', gives: 'whelk', text: 'sennitTrade' }],
+      }],
+    ],
+  },
+  '0,14,9': {
+    name: "Deep Bar",
+    legend: "dunes", music: "overworld",
+    placeholder: true,
+    map: [
+      'TTTTTTTTTT',
+      'TTTTTTTTTT',
+      'gggggggggg',
+      'gggggggggg',
+      'gggggggggg',
+      '1111111111',
+      '**********',
+      '**********',
     ],
   },
 };
@@ -2749,7 +3511,7 @@ function installHouses() {
         // shop moved east when the village became two screens — its door is
         // the middle cell of its front row on `0,5,7`, at 4,4 — so this lands
         // one tile below it, on 0,5,7 rather than on the square.
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 72, py: 88, dir: 'down' } }],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } }],
       },
     },
   });
@@ -2873,12 +3635,12 @@ function installHouses() {
         { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd' },
       ],
     }],
-  ], { rx: 4, ry: 8, px: 48, py: 104 });
+  ], { rx: 4, ry: 8, px: 48, py: 88 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
-  ], { rx: 9, ry: 8, px: 32, py: 88 });
+  ], { rx: 12, ry: 8, px: 32, py: 88 });
 }
 
 export function installOverworld() {

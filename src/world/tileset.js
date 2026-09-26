@@ -183,6 +183,10 @@ export function registerTiles(defs) {
       // separately — so it names 'water' and edgeArt fires only when the
       // neighbour actually resolves to that family.
       edgeAgainst: def.edgeAgainst || null,
+      // A FENCE (S157): a palisade or a paling run is a line on purpose, the
+      // way a treeline or a gate is. Read by tools/check-ground.mjs, which
+      // otherwise fails three decorative props in a row.
+      fence: !!def.fence,
       // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,

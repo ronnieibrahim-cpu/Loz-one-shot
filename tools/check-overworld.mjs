@@ -41,6 +41,7 @@
 // running game. See CLAUDE.md, Hard rules.
 
 import { installData } from '../src/data/index.js';
+import { OVERWORLD_W, OVERWORLD_H } from '../src/data/overworld.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { F } from '../src/world/tileset.js';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
@@ -67,7 +68,9 @@ const GATES = {
   },
   rod: {
     flag: F.VANE, region: 'Salt Pans',
-    covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
+    // S157 widened the map: the Pans are x 4-10 (with the three new columns)
+    // and the Reef Palace approach x 11-16 (with the two).
+    covers: [[4, 10, 0, 2], [11, 16, 0, 3]],
   },
   keep: {
     // NOT AN ITEM. `openFlag` names a flag on the save; the Maku Tree sets
@@ -104,7 +107,7 @@ const storyOf = (held) => new Set(held.filter(it => GATES[it].openFlag)
   .map(it => GATES[it].openFlag));
 let openMask = maskOf(HELD);
 let openStory = storyOf(HELD);
-const W = 10, H = 8, OW = 12, OH = 10;
+const W = 10, H = 8, OW = OVERWORLD_W, OH = OVERWORLD_H;
 const m = MAPS.get('overworld');
 
 let pass = 0; const fail = [];

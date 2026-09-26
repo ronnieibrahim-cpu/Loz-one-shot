@@ -177,8 +177,8 @@ Three things are worth knowing before you plan a route:
 
 | # | Dungeon | Where | Item | Boss |
 |---|---|---|---|---|
-| 1 | Tidewash Grotto | `overworld/0,8,8` | Tidewright's Anchor | `gohmaraq` |
-| 2 | Coral Spire | `overworld/0,10,5` | Brineglass Lens (+ `bombs`) | `anemos` |
+| 1 | Tidewash Grotto | `overworld/0,11,8` | Tidewright's Anchor | `gohmaraq` |
+| 2 | Coral Spire | `overworld/0,15,5` | Brineglass Lens (+ `bombs`) | `anemos` |
 | 3 | Bogwater Sanctum | `overworld/0,1,8` | Kelp-Soled Cleats | `gloomtide` |
 | 4 | Cliffside Cistern | `overworld/0,1,3` | Squall Bellows | `wyverna` |
 | 5 | Drowned Wood Shrine | `overworld/0,5,4` | Reefseed | `rootmaw` |
@@ -261,18 +261,18 @@ and the door opens for good.
 
 Detours worth taking first, all of them reachable with nothing but the conch:
 
-- **Sunken Reef** (`overworld/0,6,7`), reached east from Village East. A cave
+- **Sunken Reef** (`overworld/0,9,7`), reached east from Village East. A cave
   mouth at tile (4,3) leads to `cave2/0,0,0`, the **Reef Hollow** — go there
   now, not later. See below.
-- **Sandpiper Row** (`overworld/0,9,8`), east again past the Grotto. Two houses,
+- **Sandpiper Row** (`overworld/0,12,8`), east again past the Grotto. Two houses,
   one shut. `houseSandpiper/0,0,0` is the open one — a small rupee pickup
   inside. Sennit is the chain's sixth link and lives out here.
-- **Shell Flats** (`overworld/0,10,8`), one screen east of Sandpiper Row.
+- **Shell Flats** (`overworld/0,15,8`), one screen east of Sandpiper Row.
   **Heart Piece 3** is sitting in the open at (6,4), guarded by an `urchin`.
   Urchins are harmless until the tide covers them, so take it at LOW.
-- **Dune Corner** (`overworld/0,11,8`) has a buried `rupee20` — note it and come
+- **Dune Corner** (`overworld/0,16,8`) has a buried `rupee20` — note it and come
   back with the Dredge Line.
-- **Wrecked Hull** (`overworld/0,8,9`), south of Dune Crossing, holds **Dov**,
+- **Wrecked Hull** (`overworld/0,11,9`), south of Dune Crossing, holds **Dov**,
   the chain's fifth link. Hand him the Smoked Eel for a Sounding Lead, then
   carry it to Sennit on Sandpiper Row for the Ringing Whelk. That is the chain
   as far as it goes until you can reach the Coral Reef.
@@ -322,7 +322,7 @@ fire source would have arrived after the puzzle that wanted it.
 
 ## 3. Dungeon 1: Tidewash Grotto
 
-**Entrance:** `overworld/0,8,8`, tile (4,1).
+**Entrance:** `overworld/0,11,8`, tile (4,1).
 **Item:** Tidewright's Anchor (`anchor`).
 **Small Keys:** 3. **Boss:** `gohmaraq`, in `d1/0,3,1`.
 **Tide theme:** two levels in one room.
@@ -539,14 +539,14 @@ At this point you can also:
 ## 5. The Coral Reef
 
 **First, the Coral Key.** With the first Essence in hand, talk to the
-fisherman who wanders **Sandpiper Row** (`overworld/0,9,8`), next door to the
+fisherman who wanders **Sandpiper Row** (`overworld/0,12,8`), next door to the
 Grotto. His father dived the Spire before the sea went strange, and he hands
 you the key to its door (`coralKey`). The Spire's door is locked without it.
 
 From Tidewatch: east to Village East (`overworld/0,5,7`), east to Sunken Reef
 (`0,6,7`), east through Shallows Gate (`0,7,7`), Grotto Approach (`0,8,7`), Dune
 Bowl (`0,9,7`), then **north** to Sandbar Run (`0,9,6`), east to Feather Gap
-(`0,10,6`), and north to **Spire Mouth** (`overworld/0,10,5`). Dungeon 2's door
+(`0,10,6`), and north to **Spire Mouth** (`overworld/0,15,5`). Dungeon 2's door
 is at tile (4,1): lean up into its keyhole holding the Coral Key.
 
 The dune screens between are laced with one-tile chasms. Walk into them; the hop
@@ -555,21 +555,21 @@ always will be.
 
 On the way:
 
-- **Coral Foot** (`overworld/0,11,5`) then north to **Outer Coral**
-  (`overworld/0,11,4`): **Heart Piece 6** in the open at (5,5), sitting on reef
+- **Coral Foot** (`overworld/0,16,5`) then north to **Outer Coral**
+  (`overworld/0,16,4`): **Heart Piece 6** in the open at (5,5), sitting on reef
   flat that is exposed at LOW, wadeable at MID and underwater at HIGH — take it
   at either of the first two.
-- **Reef Edge** (`overworld/0,11,3`) has a fairy sitting in the open — a free
+- **Reef Edge** (`overworld/0,16,3`) has a fairy sitting in the open — a free
   full heal, worth remembering as a checkpoint.
-- **Coral Hollow** (`overworld/0,9,5`), one screen west of Spire Mouth, holds
+- **Coral Hollow** (`overworld/0,12,5`), one screen west of Spire Mouth, holds
   **Corriwig**, the Chain's seventh link. Give him the Ringing Whelk for the
   **Slackwater Pearl**.
-- **Reef Market** (`overworld/0,9,2`) and the northern reef are behind the Salt
+- **Reef Market** (`overworld/0,12,2`) and the northern reef are behind the Salt
   Pans' vane gate. Later.
 
 ## 6. Dungeon 2: Coral Spire
 
-**Entrance:** `overworld/0,10,5`, tile (4,1).
+**Entrance:** `overworld/0,15,5`, tile (4,1).
 **Items:** Brineglass Lens (`lens`) **and** Bombs (`bombs`).
 **Small Keys:** 2 required for 2 locked doors, plus a bonus third.
 **Boss:** `anemos`, in `d2/1,3,1`.
@@ -1134,12 +1134,12 @@ On the way and around it:
 
 - **Wood Heart** (`overworld/0,5,5`) holds **Wick**, the Chain's eighth link.
   Give him the Slackwater Pearl for the **Bogwood Cup**.
-- **Log Drift** (`overworld/0,6,4`), east of Shrine Mouth via Wood Foot
+- **Log Drift** (`overworld/0,9,4`), east of Shrine Mouth via Wood Foot
   (`0,6,6`) and Sunken Glade (`0,6,5`): **Heart Piece 14** in the open at (2,5),
   with an `anglerfry` in the water beside it. Anglerfry hang in deep water and
   lunge; take this at LOW when the water is not theirs.
-- **Wood Foot** (`overworld/0,6,6`) has a `rupee20` in the open at (6,4).
-- **The Gyre** (`overworld/0,7,3`) is a ring current — *"Swimmers go round.
+- **Wood Foot** (`overworld/0,9,6`) has a `rupee20` in the open at (6,4).
+- **The Gyre** (`overworld/0,10,3`) is a ring current — *"Swimmers go round.
   Walkers go through."* Sink or wait for LOW.
 
 ## 12. Dungeon 5: Drowned Wood Shrine
@@ -1361,9 +1361,9 @@ For the exact screens and tiles, the same twelve in a table:
 | 2 | Pell | `overworld/0,4,8` (3,2) | Cracked Float | Crab Claw |
 | 3 | Hulla, a Salter | `overworld/0,5,8` (6,3) | Crab Claw | Salt Brick |
 | 4 | Mirren, a fisher | `overworld/0,5,7` (6,3) | Salt Brick | Smoked Eel |
-| 5 | Dov, off the wreck | `overworld/0,8,9` (2,2) | Smoked Eel | Sounding Lead |
-| 6 | Sennit | `overworld/0,9,8` (4,6) | Sounding Lead | Ringing Whelk |
-| 7 | Corriwig, a diver | `overworld/0,9,5` (4,3) | Ringing Whelk | Slackwater Pearl |
+| 5 | Dov, off the wreck | `overworld/0,11,9` (2,2) | Smoked Eel | Sounding Lead |
+| 6 | Sennit | `overworld/0,12,8` (4,6) | Sounding Lead | Ringing Whelk |
+| 7 | Corriwig, a diver | `overworld/0,12,5` (4,3) | Ringing Whelk | Slackwater Pearl |
 | 8 | Wick, a Kelper | `overworld/0,5,5` (2,2) | Slackwater Pearl | Bogwood Cup |
 | 9 | Yarrow, the bog witch | `overworld/0,1,9` (5,3) | Bogwood Cup | Jar of Brine-Jelly |
 | 10 | Teel, off the stones | `overworld/0,4,9` (2,2) | Jar of Brine-Jelly | **Cold Kettle** |
@@ -1389,11 +1389,11 @@ too — 27 screens behind four vane tiles.
 Route from Tidewatch: east to Village East (`overworld/0,5,7`), north to The
 Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
 (`0,6,5`), Log Drift (`0,6,4`) and Wood Gate (`0,6,3`) to **Vault Steps**
-(`overworld/0,6,2`). Ring the Rod at the vanes. From there:
+(`overworld/0,9,2`). Ring the Rod at the vanes. From there:
 
 **North into the Pans:**
 
-- **Vault Approach** (`overworld/0,6,1`). A cave mouth at tile (3,2) leads to
+- **Vault Approach** (`overworld/0,9,1`). A cave mouth at tile (3,2) leads to
   `cave3/0,0,0`, the **Salt Pan Vault** — the ruined mouth of what used to be a
   whole dungeon. The big chest holds the **Bottled Tide** case (`bottle`). This
   is the item that lets you carry Bottled Tide at all; refills are 40 rupees at
@@ -1403,7 +1403,7 @@ Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
   conch is suppressed, and it flatly refuses to work anywhere the conch already
   works. That means boss rooms and the Black Causeway, and nothing else. Carry
   at least one into the Keep.
-- **Boiling Pan** (`overworld/0,6,0`) then west to **Salt Terraces**
+- **Boiling Pan** (`overworld/0,9,0`) then west to **Salt Terraces**
   (`overworld/0,5,0`) — **Heart Piece 17** in the open at (6,4), with a `beetle`
   patrolling. Beetles charge in straight lines; stand off the line.
 - **Salters Rest** (`overworld/0,5,1`) has a Salter elder who will tell you
@@ -1412,14 +1412,14 @@ Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
 **East to the Palace:**
 
 - From Vault Steps east to Pan Corner (`0,7,2`), north to **Windward Pan**
-  (`overworld/0,7,1`) — more vanes; ring the Rod — then east through Reefway
+  (`overworld/0,10,1`) — more vanes; ring the Rod — then east through Reefway
   (`0,8,1`) and Hooked Channel (`0,9,1`) to **Palace Mouth**
-  (`overworld/0,10,1`).
+  (`overworld/0,15,1`).
 - **Palace Mouth** has a cave mouth at tile (4,1) leading to `cave4/0,0,0`, the
   **Palace Porch**: 20 rupees at (4,1) (its Piece of Heart moved to the
   Slackwater Cave), and a notice from someone who gave up halfway — *"The rest of it is under. Do not go and look."*
-- North from Reefway is **Coral Gate** (`overworld/0,8,0`), and east of that
-  **Palace Wall** (`overworld/0,9,0`) — 20 rupees in the open at (2,5), with an
+- North from Reefway is **Coral Gate** (`overworld/0,11,0`), and east of that
+  **Palace Wall** (`overworld/0,12,0`) — 20 rupees in the open at (2,5), with an
   `octorokSea` in the water. (A Piece of Heart used to lie here; it is now in
   the Hollow Den behind Bluff Hollow's cracked wall.)
 
@@ -1773,7 +1773,7 @@ And the remaining buried rupee caches, all of them Dredge Line work:
 |---|---|
 | `overworld/0,3,6` Bluff Hollow (3,4) | `rupee20` — the sign says someone has been digging |
 | `overworld/0,3,9` South Bluff (3,4) | `rupee20` |
-| `overworld/0,11,8` Dune Corner (2,2) | `rupee20` |
+| `overworld/0,16,8` Dune Corner (2,2) | `rupee20` |
 | `d6/1,3,4` The Drowned Stand (7,1) | `rupee20` |
 
 ---
@@ -1790,14 +1790,14 @@ Numbered in the order this walkthrough passes them.
 1. **Heart Piece 1** — `cave1/0,0,0`, Bluff Grotto, tile (2,2). Cave mouth on
    West Bluff `overworld/0,3,7` at (3,2). No requirements.
 2. **Heart Piece 2** — `cave2/0,0,0`, Reef Hollow, tile (2,2). Cave mouth on
-   Sunken Reef `overworld/0,6,7` at (4,3), no requirements — but the piece
+   Sunken Reef `overworld/0,9,7` at (4,3), no requirements — but the piece
    itself sits in the seafloor patch and needs **LOW tide** to reach.
-3. **Heart Piece 3** — `overworld/0,10,8`, Shell Flats, tile (6,4). In the open.
+3. **Heart Piece 3** — `overworld/0,15,8`, Shell Flats, tile (6,4). In the open.
 4. **Heart Piece 4** — `d1/0,4,3`, The Two Gauges, tile (2,6). Behind the
    gauge door: **Anchor** puzzle, one gauge drained and one drowned at once.
 5. **Heart Piece 5** — `d1/0,5,3`, Clawcrab Den. Puzzle reward — kill the
    `clawcrab`.
-6. **Heart Piece 6** — `overworld/0,11,4`, Outer Coral, tile (5,5). In the
+6. **Heart Piece 6** — `overworld/0,16,4`, Outer Coral, tile (5,5). In the
    open, on reef flat: needs **LOW or MID** tide, underwater at HIGH.
 7. **Heart Piece 7** — `d2/1,4,5`, Glass Cell, tile (4,2). The room's `keese`
    are phased; hold the **Lens** to see and hit them.
@@ -1817,7 +1817,7 @@ Numbered in the order this walkthrough passes them.
     drown-wall box: **swim in at HIGH tide**.
 13. **Heart Piece 13** — `d4/0,4,1`, East Overlook, tile (2,6).
 14. **Heart Piece 14** — the **salvage dive**: Dov at Wrecked Hull
-    (`overworld/0,8,9`, tile (2,2)) lost five casks of cargo in the deep pool
+    (`overworld/0,11,9`, tile (2,2)) lost five casks of cargo in the deep pool
     behind the wreck. Talk to him (any time his trading link is not the live
     one), set the **Kelp-Soled Cleats** to walk the floor, walk into the pool
     and pick up all five casks **in one breath** — come up short and they sink
@@ -1864,8 +1864,8 @@ table. The short version, as a checklist:
 
 - [ ] Talk to Ossa in `houseNets/0,0,0` to start it.
 - [ ] Run links 2–6 along the coast between `overworld/0,4,8` and
-      `overworld/0,9,8`.
-- [ ] Link 7 needs the Coral Reef (`overworld/0,9,5`).
+      `overworld/0,12,8`.
+- [ ] Link 7 needs the Coral Reef (`overworld/0,12,5`).
 - [ ] Link 8 needs the Drowned Wood (`overworld/0,5,5`).
 - [ ] Link 9 needs **bombs** for the Marsh (`overworld/0,1,9`).
 - [ ] Link 10 is back at `overworld/0,4,9`, link 11 back at Ossa's.
@@ -1997,9 +1997,9 @@ hit.
 | Place | Entrance | Holds |
 |---|---|---|
 | `cave1/0,0,0` Bluff Grotto | `overworld/0,3,7` (3,2) | Chest with 30 rupees; **Heart Piece 1**; big chest with the **Noble Sword** at 4 Essences |
-| `cave2/0,0,0` Reef Hollow | `overworld/0,6,7` (4,3) | Big chest with the **Kilnshell**; a `rupee20` behind drift-tangle; a `rupee20` and **Heart Piece 2**, both needing **LOW tide** to reach |
-| `cave3/0,0,0` Salt Pan Vault | `overworld/0,6,1` (3,2), behind the vanes | Big chest with the **Bottled Tide** case |
-| `cave4/0,0,0` Palace Porch | `overworld/0,10,1` (4,1), behind the vanes | 20 rupees |
+| `cave2/0,0,0` Reef Hollow | `overworld/0,9,7` (4,3) | Big chest with the **Kilnshell**; a `rupee20` behind drift-tangle; a `rupee20` and **Heart Piece 2**, both needing **LOW tide** to reach |
+| `cave3/0,0,0` Salt Pan Vault | `overworld/0,9,1` (3,2), behind the vanes | Big chest with the **Bottled Tide** case |
+| `cave4/0,0,0` Palace Porch | `overworld/0,15,1` (4,1), behind the vanes | 20 rupees |
 | `cave6/0,0,0` Slackwater Cave | `overworld/0,1,2` (3,1) — a sea cave, open at **LOW tide** only | **Heart Piece 18** |
 | `cave5/0,0,0` Hollow Den | `overworld/0,3,6` (4,1) — a cracked wall; **bomb it** | **Heart Piece 19** |
 
@@ -2032,7 +2032,7 @@ Six regions, four real gates, and one of them is not an item at all.
 |---|---|---|---|
 | Sunken Marsh | Cracked cliff | **`bombs`** | `overworld/0,2,7` and `overworld/0,1,6` — both entrances |
 | Cliffs of Kell, and everything north | Cracked boulder | **`bombs`** | `overworld/0,3,4` The Deep Cut |
-| Salt Pans, and the Reef Palace behind them | Salt vanes | **`rod`** | `overworld/0,6,2`, `overworld/0,7,1` |
+| Salt Pans, and the Reef Palace behind them | Salt vanes | **`rod`** | `overworld/0,9,2`, `overworld/0,10,1` |
 | Abyssal approach | The Keep's iron seal | **The Maku Tree at 5 Essences.** No item touches it | `overworld/0,2,2` Upper Kell, `overworld/0,2,1` Abyss Stair |
 | Bog Stair, two northern Marsh screens | Boulders | **`dredge`** | `overworld/0,1,5` Marsh Stair |
 | Coral Reef | *(nothing)* | — | The hop is base moveset; a one-tile chasm stops nobody |

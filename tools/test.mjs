@@ -70,6 +70,36 @@ async function loadPlaywright() {
   return mod.chromium ? mod : mod.default;
 }
 
+// --- a save from before the overworld was widened loads where it was --------
+//
+// S157 inserted five columns of screens (three after old x=5, two after old
+// x=9). A save remembers screens by position, so one written on the old grid
+// must have every overworld screen it names moved: where you stand, where a
+// death puts you, the coin, and every chest, door, kill and seen screen.
+{
+  globalThis.btoa ??= (s) => Buffer.from(s, 'binary').toString('base64');
+  globalThis.atob ??= (s) => Buffer.from(s, 'base64').toString('binary');
+  const { newProgress, exportCode, importCode } = await import('../src/game/progress.js');
+  const old = newProgress('LINK', 1);
+  delete old.worldW;
+  old.pos = { ...old.pos, rx: 9, ry: 8 };
+  old.respawn = { ...old.respawn, rx: 6, ry: 7 };
+  old.coin = { map: 'overworld', floor: 0, rx: 10, ry: 1, px: 8, py: 8 };
+  old.chests['overworld:0,9,8:0'] = true;
+  old.doors['d2:0,6,3:4,4'] = 'open';
+  old.secrets['seen:overworld:0,10,1'] = true;
+  old.secrets['seen:overworld:0,4,7'] = true;
+  const got = importCode(exportCode(old));
+  check('an old save is moved onto the widened overworld',
+    got.pos.rx === 12 && got.respawn.rx === 9 && got.coin.rx === 15
+      && got.chests['overworld:0,12,8:0'] && got.doors['d2:0,6,3:4,4'] === 'open'
+      && got.secrets['seen:overworld:0,15,1'] && got.secrets['seen:overworld:0,4,7']
+      && !got.secrets['seen:overworld:0,10,1'] && got.worldW === 17,
+    JSON.stringify({ pos: got.pos.rx, re: got.respawn.rx, coin: got.coin.rx, chests: got.chests, secrets: got.secrets }));
+  const again = importCode(exportCode(got));
+  check('and a save already on it is left alone', again.pos.rx === 12 && again.coin.rx === 15);
+}
+
 // --- determinism: nothing under src/ may call Math.random -------------------
 //
 // One global stream seeded from the save plus a per-room derived stream is the
@@ -476,10 +506,12 @@ const main = async () => {
     await G(() => !window.__game.dialogue.active));
 
   console.log('\n--- tide reshapes terrain ---');
-  // The Shallows room has sandbar tiles: walkable at low, deep at high.
+  // The Tide Gate, the village's east gate, has the sandbar creek at its east
+  // edge (S157; it was the old Village East's pool): walkable at low, deep at
+  // high.
   await G(() => {
     const g = window.__game;
-    g.enterMap('overworld', 0, 5, 7, 40, 56, 'right', { instant: true });
+    g.enterMap('overworld', 0, 8, 7, 40, 72, 'right', { instant: true });
   });
   await frames(6);
   const solidByTide = await G(() => {
@@ -487,7 +519,7 @@ const main = async () => {
     const out = {};
     for (const lvl of [0, 1, 2]) {
       g.tide.setLevel(lvl, { instant: true });
-      // tile (8,3) is a sandbar in The Shallows
+      // tile (8,3) is a sandbar in the Tide Gate's creek
       out[lvl] = g.room.flagsAt(8, 3, lvl);
     }
     g.tide.setLevel(0, { instant: true });
@@ -526,7 +558,7 @@ const main = async () => {
     prog.giveItem(g.progress, 'anchor', 1);
     g.progress.equipB = 'anchor';
     g.mode = 'play';
-    g.enterMap('overworld', 0, 10, 0, 64, 104, 'up', { instant: true });
+    g.enterMap('overworld', 0, 15, 0, 64, 104, 'up', { instant: true });
     window.__harness.step(4);   // the harness owns the clock; g.frame only moves here
     if (g.dialogue) g.dialogue.active = false;
     g.entities = g.entities.filter(e => e === g.player);
@@ -595,10 +627,10 @@ const main = async () => {
                 f1: field(4, 1), m1: flatMid(4, 1), h1: flatHigh(4, 1) };
 
     // Leaving the room must not lose it, and coming back must redraw it.
-    g.enterMap('overworld', 0, 10, 1, 64, 32, 'down', { instant: true });
+    g.enterMap('overworld', 0, 15, 1, 64, 32, 'down', { instant: true });
     window.__harness.step(3);   // the harness owns the clock; g.frame only moves here
     out.survivesLeaving = !!g.tide.overrides.find(o => o.src === 'anchor');
-    g.enterMap('overworld', 0, 10, 0, 64, 104, 'up', { instant: true });
+    g.enterMap('overworld', 0, 15, 0, 64, 104, 'up', { instant: true });
     window.__harness.step(3);   // the harness owns the clock; g.frame only moves here
     if (g.dialogue) g.dialogue.active = false;
     out.spriteBack = g.entities.some(e => e.constructor.name === 'Anchor' && !e.remove);

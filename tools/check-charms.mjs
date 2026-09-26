@@ -255,7 +255,7 @@ section('LOW case');
 // Dunerunner — sand no longer slows you. Measured as distance walked over
 // SLOW ground in a fixed number of frames, which is the only honest way to
 // assert a speed multiplier that is rounded onto a whole subpixel.
-await park({ map: 'overworld', rx: 7, ry: 7, tx: 4, ty: 4, tide: 0 });
+await park({ map: 'overworld', rx: 10, ry: 7, tx: 4, ty: 4, tide: 0 });
 await nocharms();
 r = await read(() => {
   const g = window.__game;
@@ -587,7 +587,7 @@ await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 2, items: { cle
 // balanced on a lip.
 const DIVE = `
   const g = window.__game;
-  g.enterMap('overworld', 0, 6, 7, 64, 48, 'down', { instant: true });
+  g.enterMap('overworld', 0, 9, 7, 64, 48, 'down', { instant: true });
   g.tide.setLevel(2, { instant: true });
   g.player.x = 64; g.player.y = 48; g.player.z = 0;
   g.player._cleats = 1; g.player.underwater = true; g.player.breath = 100;
@@ -871,9 +871,13 @@ check('...and refuses once you own them all', r.exhausted);
 r = await read(async () => {
   const maps = await import('/src/world/maps.js');
   const ow = maps.MAPS.get('overworld');
-  const def = ow.roomDefs['0,4,7'];
-  const ents = (def && def.entities) || [];
-  return { hasNpc: ents.some(e => e[0] === 'scrimshander') };
+  // Tidewatch is ten screens since S157 (0,4,7 to 0,8,8); she works on the
+  // square, 0,6,7.
+  const tidewatch = Object.entries(ow.roomDefs).filter(([k]) => {
+    const [, x, y] = k.split(',').map(Number);
+    return x >= 4 && x <= 8 && y >= 7 && y <= 8;
+  });
+  return { hasNpc: tidewatch.some(([, def]) => (def.entities || []).some(e => e[0] === 'scrimshander')) };
 });
 check('the scrimshander stands in Tidewatch', r.hasNpc);
 

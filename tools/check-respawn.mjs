@@ -206,7 +206,7 @@ console.log('\n--- 2. crossing a seam moves the point ---');
 console.log('\n--- 3. dying outdoors leaves you outdoors, where you were ---');
 {
   await page.evaluate(() => {
-    window.__game.enterMap('overworld', 0, 8, 8, 72, 72, 'down', { instant: true });
+    window.__game.enterMap('overworld', 0, 11, 8, 72, 72, 'down', { instant: true });
   });
   await frames(6);
   const over = await die();
@@ -214,7 +214,7 @@ console.log('\n--- 3. dying outdoors leaves you outdoors, where you were ---');
   check('taking lethal damage enters the game over', over);
   check('the continue returns to play', w.mode === 'play', w.mode);
   check('and lands on the screen the player died on, NOT in the village',
-    w.map === 'overworld' && w.rx === 8 && w.ry === 8, JSON.stringify(w));
+    w.map === 'overworld' && w.rx === 11 && w.ry === 8, JSON.stringify(w));
   check('on a tile the engine says he can stand on', w.standable, JSON.stringify(w));
   check('with hearts back to full', w.hearts === w.maxHearts, `${w.hearts}/${w.maxHearts}`);
 }
@@ -342,7 +342,7 @@ console.log('\n--- 8. the sea comes back as it stood ---');
     g.enterMap('overworld', 0, 4, 7, 72, 72, 'down', { instant: true });
     g.tide.setLevel(0, { instant: true });
     // Re-take the point at LOW by walking into a room at LOW.
-    g.enterMap('overworld', 0, 10, 8, 72, 72, 'down', { instant: true });
+    g.enterMap('overworld', 0, 15, 8, 72, 72, 'down', { instant: true });
   });
   await frames(6);
   const p = await point();

@@ -25,6 +25,7 @@ import { extname, join, normalize, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installData } from '../src/data/index.js';
+import { OVERWORLD_W, OVERWORLD_H } from '../src/data/overworld.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { getTileDef, F } from '../src/world/tileset.js';
 import { defWalkable, ROUTE_AVOID } from './lib/collision.mjs';
@@ -147,7 +148,7 @@ section('reachable without the thing the chain gives you');
 // trader the flood cannot stand next to is a link behind a gate its own reward
 // opens.
 
-const W = 10, H = 8, OW = 12, OH = 10;
+const W = 10, H = 8, OW = OVERWORLD_W, OH = OVERWORLD_H;
 const ow = MAPS.get('overworld');
 const NAMES = new Map();
 for (const [k, d] of Object.entries(ow.roomDefs)) {

@@ -7,6 +7,7 @@
 import { hash32 } from '../core/rng.js';
 import { newCharmSlots, CHARM_SLOTS } from './scrimshaw.js';
 import { REEFSEED_CAPACITY, BOTTLE_CAPACITY, BOMB_CAPACITY } from '../data/feel.js';
+import { OVERWORLD_W, widenOverworldX } from '../data/overworld.js';
 
 export const HEART_UNITS = 4;
 export const SAVE_KEY = 'oracleOfTides.save.v1';
@@ -30,6 +31,9 @@ export const OVERWORLD_RESPAWN_DISTANCE = 5;
 export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
   return {
     version: 1,
+    // How many screens across the overworld was when this save was written;
+    // `migrate` moves every remembered screen when it has changed (S157).
+    worldW: OVERWORLD_W,
     name,
     seed: seed >>> 0,
     // health
@@ -341,5 +345,24 @@ function migrate(p) {
   // carry, so it is at least stable across loads rather than fresh each time.
   if (p.seed == null) out.seed = hash32('legacy', p.name || 'LINK', p.createdAt || 0);
   if (!Array.isArray(out.essences)) out.essences = [];
+  // A save from before the overworld was widened (S157) names its screens on
+  // the old grid: move them, or it loads into the wrong screen and every chest,
+  // door and kill it remembers outdoors lands on a different one.
+  const fromW = p.worldW || 12;
+  if (fromW !== OVERWORLD_W) {
+    const place = (o) => (o && o.map === 'overworld' ? { ...o, rx: widenOverworldX(o.rx, fromW) } : o);
+    out.pos = place(out.pos); out.respawn = place(out.respawn); out.coin = place(out.coin);
+    for (const k of ['chests', 'doors', 'secrets', 'slain']) {
+      const moved = {};
+      for (const [key, v] of Object.entries(out[k])) {
+        // `overworld:0,x,y:...` for a chest, a door, a kill; `seen:overworld:0,x,y`
+        // for a screen the map has drawn.
+        moved[key.replace(/^(seen:)?overworld:(\d+),(\d+),(\d+)(?=:|$)/, (m, seen, f, x, y) =>
+          `${seen || ''}overworld:${f},${widenOverworldX(+x, fromW)},${y}`)] = v;
+      }
+      out[k] = moved;
+    }
+  }
+  out.worldW = OVERWORLD_W;
   return out;
 }

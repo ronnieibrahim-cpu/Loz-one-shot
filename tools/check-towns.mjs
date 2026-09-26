@@ -48,14 +48,24 @@ installData();
 // The settlements, and the legend each is built in. Adding a town means adding
 // it here; the sweep at the end fails if a screen uses a town legend and is
 // not listed.
+// S157: Tidewatch is Horon Village's size, five screens by two, and Sandpiper
+// Row three screens.
 const TOWNS = [
   { key: '0,4,7', name: 'Tidewatch Village' },
   { key: '0,5,7', name: 'Village East' },
+  { key: '0,6,7', name: 'Tidewatch Square' },
+  { key: '0,7,7', name: 'Palisade Row' },
+  { key: '0,8,7', name: 'Tide Gate' },
   { key: '0,4,8', name: 'Village Shore' },
   { key: '0,5,8', name: 'Driftwood Strand' },
-  { key: '0,9,8', name: 'Sandpiper Row' },
+  { key: '0,6,8', name: 'The Gardens' },
+  { key: '0,7,8', name: 'Wellside' },
+  { key: '0,8,8', name: 'East Lawn' },
+  { key: '0,12,8', name: 'Sandpiper Row' },
+  { key: '0,13,8', name: 'Sandpiper Row' },
+  { key: '0,14,8', name: 'Sandpiper Row' },
 ];
-const TOWN_LEGENDS = ['town', 'townDunes'];
+const TOWN_LEGENDS = ['town', 'townDunes', 'horon'];
 
 const W = 10, H = 8;
 let pass = 0; const fail = [];
@@ -314,7 +324,7 @@ for (const m of MAPS.values()) {
 // commissioning content. The variants that are registered and unplaced are
 // printed instead — they are a legend entry away from being usable, which
 // validate.mjs already proves.
-const base = (n) => n.replace(/(Sand)$/, '');
+const base = (n) => n.replace(/(Sand|Lawn)$/, '');
 const bases = new Set([...BLOCKS.keys()].map(base));
 const placedBases = new Set([...placed].map(base));
 const unplaced = [...bases].filter(b => !placedBases.has(b));

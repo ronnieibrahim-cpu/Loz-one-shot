@@ -92,6 +92,7 @@ import { installRuntime } from './actor-runtime.mjs';
 import { ROUTE, SEED, GOAL } from './playthrough-route.mjs';
 import { installData } from '../src/data/index.js';
 import { TILES } from '../src/world/tileset.js';
+import { MAPS } from '../src/world/maps.js';
 import { DUNGEON_KEYS } from '../src/data/keys.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -460,9 +461,16 @@ check('the run completed a third Heart Container inside the Shrine',
 // in stage order and survive the walk. Every link's screen has to appear in
 // the run's own room list, and the thing that comes out of the far end has to
 // be the Resonance Rod.
-const CHAIN_SCREENS = ['houseNets/0,0,0', 'overworld/0,4,8', 'overworld/0,5,8',
-  'overworld/0,5,7', 'overworld/0,8,9', 'overworld/0,9,8', 'overworld/0,9,5',
-  'overworld/0,5,5', 'overworld/0,1,9', 'overworld/0,4,9', 'houseMaku/0,0,0'];
+//
+// The screens are READ OFF THE DATA — every room holding someone with a deal —
+// rather than listed. S157 widened the overworld and a hand-kept list of keys
+// went on naming the old grid, which is the drift this avoids.
+const CHAIN_SCREENS = [];
+for (const [mapId, m] of MAPS) {
+  for (const [key, def] of Object.entries(m.roomDefs || {})) {
+    if ((def.entities || []).some(e => e[3] && e[3].deals)) CHAIN_SCREENS.push(`${mapId}/${key}`);
+  }
+}
 check('THE COASTWISE CHAIN WAS PLAYED END TO END, all twelve links in order',
   s.items.includes('rod') && CHAIN_SCREENS.every(r => a.rooms.includes(r)),
   `rod ${s.items.includes('rod')}, screens missing ${CHAIN_SCREENS.filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);

@@ -40,6 +40,9 @@ export const PLANS = {
   // gets wrong, and it happens on every transition.
   // -------------------------------------------------------------------------
   'village-walk': {
+    // S157: re-recorded on Horon-sized Tidewatch. The same walk on the new
+    // plan: the high road (row 5) the length of the square, down into the
+    // lawn, back up, out east to the shop's screen and back.
     note: 'Tidewatch Village, east into Village East and back, past the wandering villagers',
     setup: {
       seed: 20260806,
@@ -122,11 +125,15 @@ export const PLANS = {
       // with the shopfront either side of it. At 64 the box is 67..77 and
       // fits inside the door's own column; at 72 it is 75..85, catches the
       // solid front at 5,4, and the walk up simply stops dead below the door.
-      enter: ['overworld', 0, 5, 7, 64, 96, 'down'],
+      //
+      // S157: Tidewatch is Horon's size and the shop has its own screen, its
+      // doorway at 2,4 on the high road, so the start is 32,96 — two tiles
+      // below it, the same 3px inset into the door's column.
+      enter: ['overworld', 0, 5, 7, 32, 96, 'down'],
     },
     steps: [
       ['wait', 20],
-      // Straight up into the doorway at 4,4, through the doorstep below it.
+      // Straight up into the doorway at 2,4, through the doorstep below it.
       // Ninety frames rather than sixty: the warp reads the FEET tile,
       // `floor((y + 12) / 16)`, so standing centred on the doorway is not yet
       // standing in it — the player has to walk a further twelve pixels past
@@ -149,7 +156,8 @@ export const PLANS = {
   // Tide Steps: one room, two tide levels, walked end to end.
   //
   // This is the proof that the tide is a field and not a global. The room
-  // (overworld 0,10,0) has two tide bands with different thresholds:
+  // (overworld 0,15,0 since S157's widening; 0,10,0 before) has two tide
+  // bands with different thresholds:
   //
   //     ##########
   //     #gg8888gg#     rows 1-2   `8` tideRock  dry, dry, SHALLOW
@@ -190,7 +198,7 @@ export const PLANS = {
       equipB: 'anchor',
       equipA: 'conch',
       tide: 1,
-      enter: ['overworld', 0, 10, 0, 64, 104, 'up'],
+      enter: ['overworld', 0, 15, 0, 64, 104, 'up'],
       probes: [[4, 5], [4, 1]],
     },
     steps: [
