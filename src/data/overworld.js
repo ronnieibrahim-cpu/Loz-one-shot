@@ -1,4 +1,4 @@
-// The overworld of Thalassia: a 12x10 grid of screens, all 120 present.
+// The overworld of Thalassia: a 17x10 grid of screens, all 170 present.
 // Rooms are keyed 'floor,x,y'. See world/room.js for the room contract and
 // data/legends.js for the character vocabulary (digits are always tide tiles).
 //
@@ -2686,54 +2686,64 @@ const rooms = {
     ],
   },
 
-  // ---- S157: the widened columns ----------------------------------------
-  // PLACEHOLDERS, written by tools/oneshot/widen-overworld.mjs. Each tile row
-  // is its west neighbour's east-edge tile repeated, so every crossing the old
-  // seam had is carried through at the same rows and the same tides, and
-  // nothing new connects to anything. Every one is to be re-authored by hand.
+  // ---- S157/S158: the widened columns -----------------------------------
+  // Written as placeholders by tools/oneshot/widen-overworld.mjs (S157), each
+  // one its west neighbour's east edge repeated; re-authored by hand in S158 as
+  // quiet extensions of their regions. Each screen's west edge is its west
+  // neighbour's east edge and its east edge the east neighbour's west edge,
+  // tile for tile, so every crossing the old seam had is still there at the
+  // same rows and the same tides; and the tops and bottoms are closed, so no
+  // new north-south way in exists anywhere a gate (the Pans vane, the Reef
+  // Palace approach) could be walked round.
   '0,6,0': {
-    name: "Salt Terraces",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Brine Flats",
+    legend: 'salt', music: 'salt',
     map: [
       '**********',
-      '**********',
-      '1111111111',
+      '*11111111*',
+      '1g..11..g1',
+      'gg.2222.gg',
+      'gG.2222.Gg',
       'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
+      '#ggGgggg##',
       '##########',
-      '##########',
+    ],
+    entities: [
+      ['leever', 5, 5, {phase: 0}],
     ],
   },
   '0,6,1': {
-    name: "Salters Rest",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Pan Hollow",
+    legend: 'salt', music: 'salt',
     map: [
       '##########',
+      '##gg###gg#',
+      'gg..gg..gg',
+      'gg.2222.gg',
+      'gG.2222.gg',
+      'gggggggggg',
+      '#ggg##ggg#',
       '##########',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
-      '##########',
-      '##########',
+    ],
+    entities: [
+      ['beetle', 5, 2],
     ],
   },
   '0,6,2': {
-    name: "Cracked Basin",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Bleached Reach",
+    legend: 'salt', music: 'salt',
     map: [
       '##########',
-      '##########',
-      '1111111111',
-      '1111111111',
+      '#gggg2222#',
+      '1111..1111',
+      '11.1111.11',
+      'gg.o..G.gg',
       'gggggggggg',
-      'gggggggggg',
+      '#gggggggg#',
       '##########',
-      '##########',
+    ],
+    entities: [
+      ['crab', 5, 5],
     ],
   },
   '0,6,3': {
@@ -2850,48 +2860,54 @@ const rooms = {
     ],
   },
   '0,7,0': {
-    name: "Salt Terraces",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Shoal Rows",
+    legend: 'salt', music: 'salt',
     map: [
       '**********',
-      '**********',
-      '1111111111',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
+      '***1111***',
+      '11.g..g.11',
+      'gg..o...gg',
+      'gg.3333.gg',
+      'ggg...oggg',
+      '#gggggggg#',
       '##########',
-      '##########',
+    ],
+    entities: [
+      ['zol', 2, 4], ['beetle', 7, 3],
     ],
   },
   '0,7,1': {
-    name: "Salters Rest",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Salt Works",
+    legend: 'salt', music: 'salt',
     map: [
       '##########',
+      '#gggggggg#',
+      'gg.q..q.gg',
+      'gg......gg',
+      'gg.o..b.gg',
+      'gggg33gggg',
+      '#gggggggg#',
       '##########',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
-      '##########',
-      '##########',
+    ],
+    entities: [
+      ['zol', 4, 3],
     ],
   },
   '0,7,2': {
-    name: "Cracked Basin",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Sandbar Pans",
+    legend: 'salt', music: 'salt',
     map: [
       '##########',
-      '##########',
-      '1111111111',
-      '1111111111',
+      '#gg2222gg#',
+      '11.2222.11',
+      '11......11',
+      'gg.3333.gg',
       'gggggggggg',
-      'gggggggggg',
+      '#gggggggg#',
       '##########',
-      '##########',
+    ],
+    entities: [
+      ['leever', 4, 3, {phase: 0}],
     ],
   },
   '0,7,3': {
@@ -3008,48 +3024,54 @@ const rooms = {
     ],
   },
   '0,8,0': {
-    name: "Salt Terraces",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Crust Shelf",
+    legend: 'salt', music: 'salt',
     map: [
       '**********',
-      '**********',
-      '1111111111',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
+      '*1111111**',
+      '1g.2222.g1',
+      'gg.2222.gg',
+      'ggG....Ggg',
+      'ggg.oo.ggg',
+      '#gggggggg#',
       '##########',
-      '##########',
+    ],
+    entities: [
+      ['crab', 2, 5],
     ],
   },
   '0,8,1': {
-    name: "Salters Rest",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Brine Steps",
+    legend: 'salt', music: 'salt',
     map: [
       '##########',
+      '##gggggg##',
+      'gg.1111.gg',
+      'gg.1221.gg',
+      'gg.1111.gg',
+      'gggggggggg',
+      '#ggggggg##',
       '##########',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
-      'gggggggggg',
-      '##########',
-      '##########',
+    ],
+    entities: [
+      ['zol', 2, 5], ['leever', 7, 3, {phase: 0}],
     ],
   },
   '0,8,2': {
-    name: "Cracked Basin",
-    legend: "salt", music: "salt",
-    placeholder: true,
+    name: "Pan's End",
+    legend: 'salt', music: 'salt',
     map: [
       '##########',
-      '##########',
-      '1111111111',
-      '1111111111',
+      '#gggggggg#',
+      '1111gg1111',
+      '11.1111.11',
+      'ggGo..oGgg',
       'gggggggggg',
-      'gggggggggg',
+      '#gggggggg#',
       '##########',
-      '##########',
+    ],
+    entities: [
+      ['zol', 5, 5],
     ],
   },
   '0,8,3': {
