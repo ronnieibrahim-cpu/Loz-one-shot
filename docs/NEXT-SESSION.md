@@ -1,3 +1,41 @@
+## S158 — the 42 placeholder countryside screens are real
+
+Branch claude/oracle-tides-countryside-y6ejle (off S157's
+claude/youthful-cerf-yqqh2k at ed99454). Main is still at aa8bd8d: the widening
+(fba32ea on) and this session are NOT on main until the human says so.
+
+### What landed (one commit per region block; whole table + playthrough green)
+- 5fb8765 Salt Pans 6..8 x 0..2 (Brine Flats, Shoal Rows, Crust Shelf, Pan
+  Hollow, Salt Works, Brine Steps, Bleached Reach, Sandbar Pans, Pan's End).
+- 9c65a1b Drowned Wood 6..8 x 3..6 (Hollow Oaks ... Wood Hem), music
+  'overworld' like the rest of the wood. Oaks only as whole 2x2 blocks on the
+  room's even lattice (drawQuads keys blocks on x&~1, y&~1).
+- e0aee1e South shore 6..8 x 9 (Gull Sands, Shell Bank, Tern Point).
+- f27ab1a Reef 13..14 x 0..3, Coral 13..14 x 4..5, Dunes 13..14 x 6..7, far
+  shore 13..14 x 9. Reef Market -> Drowned Steps stays a low-tide channel
+  (rows 2-5 all `5` at the edges, dry islands inside touch no edge).
+- Rules every new screen follows: col 0 == west neighbour's col 9 and col 9 ==
+  east neighbour's col 0 character for character; top and bottom rows barrier
+  (no new north-south link, so no gate can be walked round); a path across at
+  every tide wherever the old seam had dry ground; enemies from the region's
+  own cast on ground they can stand on (sirens need water: check-placement).
+- The scratch tool that did it: a splice script that takes {key: map} and
+  refuses a seam mismatch. Not committed (one-shot); the rule above is enough.
+
+### Verified
+Whole table green (test.mjs's fps check fails only with 4 browsers at once;
+passes alone), check-playthrough 43/43, THE END, never died.
+
+### Still open (ask the human)
+1. Sandpiper Row: thin (palms two rows deep top and bottom). Proposal put to
+   the human: thin the palm bands and open a lane north into the new dunes
+   screens, the way Horon has several ways out. Awaiting an answer.
+2. Moving main (aa8bd8d -> this branch's head).
+3. Boss art for Thalassor / Gustharpy / Saltwraith, and whether to place them.
+4. Merging the picture-guide branch claude/oracle-tides-guide-hb01hp (its town
+   pages describe the old four-screen village).
+
+
 ## S157 — thrown pots fly, fastest text, the overworld 17 screens across, Tidewatch at Horon's size
 
 Branch claude/youthful-cerf-yqqh2k (off main at fcda02f). aa8bd8d (throwing +
