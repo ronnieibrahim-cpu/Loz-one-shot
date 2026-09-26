@@ -39,13 +39,42 @@ export const SEED = 20260806;
 // at the foot of this file for exactly what that covers and where it stops.
 export const ROUTE = [
   // Title screen, file select, and the intro. Every button here is a real
-  // press: this is where the conch and the sword come from.
+  // press. Since S158 the intro hands over NOTHING: the run wakes on the
+  // Fishing Stones with an empty hand and has to find its sword and conch.
   ['newgame', 3000],
 
-  // THE MAKU TREE FIRST (S154). Farore's last line sends the player to her,
-  // and her first word is the Barnacle Key: the Grotto's door is a keyhole
-  // now, and nothing opens it but that key. Her hollow is the top of the
-  // square the new game opens in; her grove's way out is its open bottom edge.
+  // THE OPENING (S158). Teel on the stones, Wenna at the palisade, the blade
+  // in the Shipwright's Hollow on Gull Sands, the Moon Conch from Farore on
+  // Tern Point, then the Maku Tree and the Barnacle Key.
+  ['beat', 'metFisher', 1500],
+  ['travel', 7, 7, 6000],
+  ['beat', 'heardBlade', 3000],
+  ['travel', 6, 9, 6000],
+  ['goto', 4, 1, 900],
+  ['wait', 90],
+  // The hollow: a block stops the one gap in the wall. Lean on it twice.
+  ['goto', 4, 4, 600],
+  ['hold', ['up'], 140],
+  ['goto', 6, 2, 600],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['goto', 5, 6, 600],
+  ['wait', 90],
+  ['travel', 8, 9, 6000],
+  ['goto', 4, 4, 900],
+  ['wait', 90],
+  ['beat', 'gotConch', 3000],
+  // The sword came first, so it took B; the rest of the route was written
+  // with the conch on B and the sword on A, as the old intro left them.
+  ['equip', 'conch', 'B', 400],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 5, 6, 600],
+  ['wait', 90],
+
+  // The Maku Tree's hollow is the top of the village square; her grove's way
+  // out is its open bottom edge. Her first word is the Barnacle Key.
+  ['travel', 4, 7, 8000],
   ['goto', 4, 1, 900],
   ['wait', 90],
   ['beat', 'keyD1', 2000],

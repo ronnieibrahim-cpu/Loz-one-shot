@@ -175,28 +175,46 @@ export const DIALOGUE = {
 };
 
 const CUTSCENES = {
+  // THE OPENING (S158). Link washes up with nothing, the way Seasons opens
+  // on him lying in the grass with nothing: no voice hands him a conch and a
+  // sword over a black screen any more. The sword is in the Shipwright's
+  // Hollow on Gull Sands (a Wenna hint), the Barnacle Key from the Maku Tree,
+  // and the Moon Conch from Farore herself, in her shrine on Tern Point —
+  // the Oracle met in person, as Din and Nayru are.
   intro: [
     { music: null },
     { fade: 'in' },
     { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
     { text: 'Washed ashore on the coast of Thalassia, Link wakes to a sea that cannot decide where it belongs.', frames: 220 },
-    // SHE IS NOT IN THE ROOM. Farore lives in the Maku Tree's hollow behind a
-    // five-Essence gate, so the game's opening — eight speeches, sixty-four
-    // seconds — was delivered by a voice with no body on screen, over a static
-    // village square. This is the beat that gives her one, and it is the same
-    // beat `nerethIntro` already uses to put the Drowned King on his own card.
-    { show: { art: ['npc_farore_0', 'npc_farore_1'], scale: 3 }, frames: 130 },
-    { say: 'Farore: You are awake. Good. I am Farore, Oracle of Secrets, and I have very few left to give.' },
-    { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land.' },
-    { say: 'Farore: Without the Bell the sea rises and falls at his whim. Take this. It is a shard of the Bell itself.' },
-    { give: { item: 'conch', level: 1 }, jingle: 'fanfare' },
-    { show: { art: 'title_conch', scale: 2 }, frames: 130 },
-    { say: 'Farore: The Moon Conch. Sound it and the tide will answer: LOW, then MID, then HIGH, and around again.' },
-    { say: 'Farore: You will need a blade too. There is one in the village chest, and the village will be glad to be rid of it.' },
-    { give: { item: 'sword', level: 1 } },
-    { say: 'Farore: Before anything, go and see the Maku Tree. Her hollow is at the top of the square. She has been keeping something for you.' },
     { flag: 'sawIntro' },
-    { music: 'village' },
+    { music: 'overworld' },
+  ],
+
+  // The fisherman on the Fishing Stones, the first person spoken to.
+  wakeBeach: [
+    { say: 'Fisherman: Easy. Easy. The tide put you on my stones with the rest of the driftwood, and you are the first piece of it to sit up.' },
+    { say: 'Fisherman: This is Thalassia. That is Tidewatch, up the path. The sea has not kept a proper hour for a year: it comes and goes as it pleases.' },
+    { say: 'Fisherman: And you with empty hands. Go up to the village. Old Wenna by the palisade knows every hole in this coast. If a wader can find a blade anywhere, she will know where.' },
+    { flag: 'metFisher' },
+  ],
+
+  // Wenna at the palisade: where the first blade is.
+  bladeHint: [
+    { say: 'Wenna: Washed up, are you? You have the look. Everyone the sea brings in has the look.' },
+    { say: 'Wenna: A blade... My grandfather built boats. When the sea went strange he hid his best cutting-blade in the hollow under the bluff at Gull Sands, and walled it up after him.' },
+    { say: 'Wenna: Down the shore road past the Fishing Stones and east along the sand. His door is stubborn. Lean on things until something moves; that was his answer to everything.' },
+    { flag: 'heardBlade' },
+  ],
+
+  // Farore, in her shrine on Tern Point: the Moon Conch.
+  faroreConch: [
+    { say: 'Farore: There you are. I watched the tide bring you in. I am Farore, the Oracle of Secrets, and I have very few left to give.' },
+    { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land. Without the Bell the sea rises and falls at his whim.' },
+    { say: 'Farore: When the Bell broke, this washed up on my steps and has not stopped humming since. It was waiting for somebody. I think it was you.' },
+    { present: { item: 'conch', level: 1 } },
+    { say: 'Farore: Sound it and the tide will answer: LOW, then MID, then HIGH, and around again. Try it outside, where the sea can hear.' },
+    { say: 'Farore: The Tidewash Grotto is east, out on the Shallows, and the Maku Tree minds its key. Her hollow is at the top of the village square. Go and wake her, if you have not.' },
+    { flag: 'gotConch' },
   ],
 
   // Fallback for any essence index without its own scene.
@@ -300,21 +318,17 @@ const CUTSCENES = {
   // tree's `beat` plays this the first time she is spoken to; the last step
   // hands the key over the way every item is handed over, held overhead.
   makuKey: [
-    { say: 'Maku Tree: Hoo... a wader, with a shard of the Bell humming in his pocket. Farore sent you. Good.' },
+    { say: 'Maku Tree: Hoo... hoo? A wader, with a blade on his back. I have been asleep a long while, child. Something in the sea woke me.' },
     { say: 'Maku Tree: When the sea went wrong, the village stopped up the Tidewash Grotto with stone and gave the key to my roots to mind. They have minded it long enough.' },
-    { say: 'Maku Tree: The Grotto is east, out on the Shallows. Sound the conch at low water and the sandbar will carry you. Put this in the door and lean on it.' },
-    { do: (g) => g.presentKey('d1') },
+    { key: 'd1' },
+    { say: 'Maku Tree: The Grotto is east, out on the Shallows. But a key is no use while the sea sits on the sandbar. Farore keeps a shrine on Tern Point, down the south shore; she has been holding a piece of the Bell. Go to her, if you have not.' },
   ],
 
   makuSatchel: [
     { say: 'Maku Tree: Hoo hoo! One Essence and my roots can feel the Bell again.' },
     { say: 'Maku Tree: Take the Rod. It was cut from the Bell that used to keep the tide honest.' },
-    { give: { item: 'rod', level: 1 }, jingle: 'fanfare' },
-    // The intro holds the conch up when Farore hands it over. These two did
-    // not, so the game's second and third item handovers — the Resonance Rod
-    // and the master sword — were a fanfare and a text box with nothing to
-    // look at.
-    { show: { art: 'i_rod', scale: 3 }, frames: 130 },
+    // Held overhead to Seasons' item jingle, as every other handover is.
+    { present: { item: 'rod', level: 1 } },
     { say: 'Maku Tree: Bring me five, Link, and I will open the road to the Abyssal Keep. Then I am going back to sleep.' },
   ],
   makuMaster: [
@@ -323,8 +337,7 @@ const CUTSCENES = {
     { shake: [3, 50] },
     { say: 'Maku Tree: The roots under this village go all the way down to the Keep. I have been growing them for a century, waiting for a reason.' },
     { say: 'Maku Tree: Take this with you. It was left here a long time ago by someone who also thought they would be back.' },
-    { give: { item: 'sword', level: 3 }, jingle: 'fanfare' },
-    { show: { art: 'i_sword3', scale: 3 }, frames: 130 },
+    { present: { item: 'sword', level: 3 } },
     // THE SIXTH KEY (S154). The seal on the road down the Kell is a keyhole,
     // and this is what fits it.
     { say: 'Maku Tree: And this. When he broke the Bell, the clapper fell out and rolled into my roots. He never came looking for it.' },

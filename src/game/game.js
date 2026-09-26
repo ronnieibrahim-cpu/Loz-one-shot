@@ -1212,6 +1212,22 @@ export class Game {
     }
   }
 
+  /** One frame of an item held up (or rising out of a chest). Play mode ticks
+   *  it, and so does a cutscene — a person in a scene can hand something over
+   *  mid-scene (`present`), and the scene waits for the pose to finish. */
+  tickItemShow() {
+    const s = this.itemShow;
+    if (!s) return;
+    s.t--; s.age = (s.age || 0) + 1;
+    if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
+    // The item stays up until its text is read, then goes with it.
+    if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
+    // Held up, it goes when its text is read (Seasons deletes the treasure
+    // the frame the box closes) and not before the pose's own minimum.
+    else if (!s.chest && s.t <= 0 && !this.dialogue.active) this.itemShow = null;
+    if (this.itemShow === null && this.player) this.player.frozen = 0;
+  }
+
   /** Freeze, hold the item overhead, and describe it. */
   presentItem(id, lv, chest = null) {
     const def = ITEMS[id];
@@ -1772,6 +1788,7 @@ export class Game {
         return;
       case 'cutscene':
         this.dialogue.update();
+        this.tickItemShow();
         // THE SEA KEEPS MOVING UNDER A CUTSCENE. A `tide` beat starts a sweep
         // and then waits for it to finish (`stepDone`), and the sweep only
         // advanced in play mode — so a beat that actually moved the water
@@ -1816,17 +1833,7 @@ export class Game {
     // would be a rule the player never sees applied.
     this.scrim.update();
     if (this.bannerTime > 0 && !this.veiled()) this.bannerTime--;
-    if (this.itemShow) {
-      const s = this.itemShow;
-      s.t--; s.age = (s.age || 0) + 1;
-      if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
-      // The item stays up until its text is read, then goes with it.
-      if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
-      // Held up, it goes when its text is read (Seasons deletes the treasure
-      // the frame the box closes) and not before the pose's own minimum.
-      else if (!s.chest && s.t <= 0 && !this.dialogue.active) this.itemShow = null;
-      if (this.itemShow === null && this.player) this.player.frozen = 0;
-    }
+    this.tickItemShow();
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
 
     if (this.dialogue.active) { this.dialogue.update(); this.flushPending(); return; }

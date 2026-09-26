@@ -645,9 +645,16 @@ check('the run arrives at the Abyssal Keep\'s arch on at least half its hearts',
 // something real (10 rupees) rather than materialising for free, which is
 // exactly the line "nothing was handed to it" means to hold.
 
-const intro = a.gained.filter(g => g.frame <= 600).map(g => g.id).sort();
-check('the run starts empty and is given the conch and the sword by the intro',
-  intro.join(',') === 'conch,sword', `first items: ${intro.join(',') || '(none)'}`);
+// SINCE S158 THE INTRO HANDS OVER NOTHING. Link washes up empty-handed, as
+// in Seasons, and finds the sword in the Shipwright's Hollow before Farore
+// gives him the Moon Conch on Tern Point. So: nothing in the intro, and the
+// first two things the run ever holds are the sword and then the conch.
+const intro = a.gained.filter(g => g.frame <= 600).map(g => g.id);
+const firstTwo = a.gained.slice(0, 2).map(g => g.id);
+check('the run starts empty-handed: the intro gives nothing',
+  intro.length === 0, `intro gave: ${intro.join(',')}`);
+check('the first things found are the sword, then the conch',
+  firstTwo.join(',') === 'sword,conch', `first items: ${firstTwo.join(',') || '(none)'}`);
 check('every item the run ends with was acquired during the run',
   s.items.every(id => a.gained.some(g => g.id === id)),
   `unaccounted: ${s.items.filter(id => !a.gained.some(g => g.id === id)).join(',')}`);

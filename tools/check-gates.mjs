@@ -510,6 +510,12 @@ const tree = await page.evaluate(async () => {
 
   // THE FIRST MEETING (S154): a new game's first word with her is the
   // Barnacle Key, before anything the chain or the Essences owe.
+  // Since S158 she sleeps until a wader WITH A BLADE speaks to her: the
+  // sword is found in the Shipwright's Hollow first.
+  t.interact(g, g.player);
+  out.asleepKeyless = g.mode !== 'cutscene' && !g.progress.flags.keyD1;
+  if (g.dialogue && g.dialogue.active) g.dialogue.close();
+  g.progress.items.sword = 1;
   t.interact(g, g.player);
   out.keyScene = g.mode === 'cutscene';
   play();
@@ -543,6 +549,7 @@ const tree = await page.evaluate(async () => {
 });
 check('the Maku Tree is a trader with a second beat', tree.found && tree.klass === 'MakuTree',
   JSON.stringify(tree));
+check('without a sword she does not give the key yet', tree.asleepKeyless === true, JSON.stringify(tree));
 check('the first meeting plays her key scene', tree.keyScene === true, 'no cutscene on first talk');
 check('...and hands over the Barnacle Key', tree.key1 === true, 'keyD1 never set');
 check('she will not open the road before the chain is walked', tree.earlyFired === false,

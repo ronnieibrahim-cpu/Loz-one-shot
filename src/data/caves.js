@@ -69,6 +69,43 @@ export function installCaves() {
     },
   });
 
+  // THE SHIPWRIGHT'S HOLLOW (S158), under the bluff at Gull Sands: the first
+  // blade, and the first thing the game teaches — a block is pushed by
+  // walking into it. Seasons' Hero's Cave opens the same way. One wall across
+  // the room with a single gap, and a block just behind the gap; lean on it
+  // and it slides back one tile (a block moves once, as Seasons' do), which
+  // opens the back room, where the chest is.
+  registerMap({
+    id: 'caveShipwright',
+    kind: 'cave',
+    name: "Shipwright's Hollow",
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '#p......p#',
+          '#........#',
+          '####.#####',
+          '#........#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['block', 4, 2],
+          ['chest', 6, 1, { big: true, item: 'sword', level: 1 }],
+        ],
+        readable: [[6, 3, 'Cut into the wall: "Lean on it."']],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 9, px: 64, py: 40, dir: 'down' } }],
+      },
+    },
+  });
+
   registerMap({
     id: 'cave2',
     kind: 'cave',

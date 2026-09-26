@@ -40,9 +40,11 @@ const named = args.filter(a => !a.startsWith('--'));
 
 // The scenes that hold a picture up. The rest are dialogue-only and are shot
 // on their caption when --all is given.
-const WITH_ART = ['intro', 'essence1', 'essence2', 'essence3', 'essence4', 'essence5',
+// The intro held Farore's portrait until S158; she is met in person now, and
+// the intro is two title cards (the full pixel-art opening is its own session).
+const WITH_ART = ['essence1', 'essence2', 'essence3', 'essence4', 'essence5',
                   'essence6', 'essenceGeneric', 'nerethIntro', 'ending'];
-const DIALOGUE_ONLY = ['makuSatchel', 'makuMaster', 'tradeKettle'];
+const DIALOGUE_ONLY = ['intro', 'makuSatchel', 'makuMaster', 'tradeKettle'];
 
 const server = createServer(async (req, res) => {
   try {

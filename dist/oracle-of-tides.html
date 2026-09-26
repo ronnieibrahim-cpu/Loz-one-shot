@@ -10859,8 +10859,11 @@ const rooms = {
       ['trader', 2, 2, {
         sprite: 'npc_fisher', waiting: 'stoneFisher', after: 'teelAfter',
         deals: [{ stage: 10, wants: 'jar', gives: 'kettle', text: 'teelTrade' }],
+        // THE FIRST PERSON A NEW GAME MEETS (S158): the tide left Link on
+        // his stones. No crab here any more: the game opens on this screen
+        // with an empty hand.
+        beat: { scene: 'wakeBeach', flag: 'metFisher' },
       }],
-      ['crab', 6, 4],
     ],
   },
   '0,5,9': {
@@ -11273,9 +11276,11 @@ const rooms = {
   '0,6,9': {
     name: "Gull Sands",
     legend: 'coast', music: 'overworld',
+    // THE SHIPWRIGHT'S HOLLOW (S158): the first blade, as Seasons' Hero's
+    // Cave holds its first. A mouth in a low bluff above the beach.
     map: [
-      'TTTTTTTTTT',
-      'TTggggggTT',
+      'TT######TT',
+      'TT##C#ggTT',
       'gg......gg',
       'gg..o...gg',
       'gg.1111.gg',
@@ -11283,8 +11288,11 @@ const rooms = {
       '**********',
       '**********',
     ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['octorok', 5, 2],
+      ['sign', 6, 2, { text: 'Scratched on a plank: "Gone to wait out\nthe sea. Blade inside. Lean on the door."' }],
     ],
   },
   '0,7,0': {
@@ -11421,7 +11429,9 @@ const rooms = {
       'ggTTvg.ggg',
     ],
     entities: [
-      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
+      // Wenna. Until the player holds a blade, she says where one is (S158).
+      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3,
+        beat: { scene: 'bladeHint', flag: 'heardBlade', unlessItem: 'sword' } }],
     ],
   },
   '0,7,8': {
@@ -11621,19 +11631,25 @@ const rooms = {
   },
   '0,8,9': {
     name: "Tern Point",
-    legend: 'coast', music: 'overworld',
+    // FARORE'S SHRINE (S158): the Oracle of Secrets lives out on the point,
+    // where the villagers say she does, and hands the Moon Conch over in
+    // person. A house of the town kit, on the coast's own grass.
+    legend: 'town', music: 'overworld',
     map: [
       'TTTTTTTTTT',
       'TTggggggTT',
-      'gg..gg..gg',
-      'gg......gg',
-      'gg.1111.gg',
-      '1111111111',
+      'gg.hhh..gg',
+      'gg.hhh..gg',
+      'gg.hhh..gg',
+      '11......11',
       '**********',
       '**********',
     ],
+    warps: [
+      { x: 4, y: 4, to: { map: 'faroreShrine', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['octorok', 4, 3],
+      ['sign', 7, 4, { text: "FARORE'S SHRINE\nKnock, and mind the step." }],
     ],
   },
   '0,13,0': {
@@ -12076,9 +12092,9 @@ function installHouses() {
             scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
             sceneAfter: 'makuOpened',
             // The first meeting: the Barnacle Key, before anything else she has.
-            beat: { scene: 'makuKey', need: 0, flag: 'keyD1' },
+            // Asleep until a wader with a blade speaks to her (S158).
+            beat: { scene: 'makuKey', need: 0, flag: 'keyD1', needItem: 'sword' },
           }],
-          ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5 }],
         ],
         // The hollow is at 4,1 in the tree line at the top of the square. It is drawn
         // with `treeHollow`, not the cave arch — see the town legend.
@@ -12115,6 +12131,13 @@ function installHouses() {
       },
     },
   });
+
+  // Farore's shrine on Tern Point (S158). She gives the Moon Conch the first
+  // time she is spoken to, and lives here for the rest of the game.
+  home('faroreShrine', "Farore's Shrine", 'village', [
+    ['npc', 4, 2, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5,
+      beat: { scene: 'faroreConch', flag: 'gotConch' } }],
+  ], { rx: 8, ry: 9, px: 64, py: 88 });
 
   home('houseHearth', 'A Village House', 'village', [
     // Her errand (S155): the jar of bog water left at Bog Head's spring, for
@@ -12262,18 +12285,18 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // world state
     tide: 1,
     // position
-    // The middle of Tidewatch's square, facing the shopfront. It used to be
-    // 72,64 — which is now the alley between the two buildings the village
-    // gained, and a new game opening in an alley is a worse first frame than
-    // one opening in the square with the shop in front of it.
-    pos: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
+    // WASHED ASHORE (S158). A new game opens on the Fishing Stones below
+    // Tidewatch, holding nothing, as Seasons opens on Link lying in Holodrum's
+    // grass: the sword is found in the Shipwright's Hollow and the Moon Conch
+    // is handed over by Farore in her shrine on Tern Point.
+    pos: { map: 'overworld', floor: 0, rx: 4, ry: 9, px: 72, py: 40, dir: 'up' },
     // Where a death puts you back. This is the STARTING value only —
     // `Game.markRespawn` moves it every time the player crosses an overworld
     // seam and every time he walks into a dungeon, a cave or a house. It used
     // to be the only value it ever had, which meant dying anywhere in the
     // world sent you back to the village square. `tide` is the sea as it stood
     // when the point was taken, because MID is not a safe level everywhere.
-    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down', tide: 1 },
+    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 9, px: 72, py: 40, dir: 'up', tide: 1 },
     // stats
     deaths: 0, frames: 0, rupeesTotal: 0, kills: 0,
     createdAt: Date.now(),
@@ -16344,7 +16367,7 @@ const { TILE } = __require("core/screen.js");
 const { FP_ONE, sp } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { drawText } = __require("gfx/font.js");
-const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag } = __require("game/progress.js");
+const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag, hasItem } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
@@ -16775,9 +16798,16 @@ class NPC extends Entity {
   }
 
   /** Play this person's story beat if it is owed now. True if it started. */
+  //
+  // `needItem` / `unlessItem` / `needFlag` (S158, the opening): a beat can
+  // also wait for something the player holds or has done, and a hint about
+  // where the first blade is has no business playing to a player holding it.
   playBeat(game) {
     const b = this.beat, p = game.progress;
     if (!b || flag(p, b.flag) || p.essences.length < (b.need || 0)) return false;
+    if (b.needItem && !hasItem(p, b.needItem)) return false;
+    if (b.unlessItem && hasItem(p, b.unlessItem)) return false;
+    if (b.needFlag && !flag(p, b.needFlag)) return false;
     return game.startCutscene(b.scene);
   }
 
@@ -17163,6 +17193,9 @@ class Trader extends NPC {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
+    // A trader can also hold a story beat (S158: Teel on the Fishing Stones
+    // is the first person a new game meets), asked before any deal.
+    if (this.playBeat(game)) return;
     const deal = this.liveDeal(game);
     // Not this trader's turn. Either they are still waiting for the chain to
     // reach them, or it has gone past and they are done with it. A trader can
@@ -27070,6 +27103,7 @@ function runCutscene(game, steps, data = {}) {
   let shown = null;
   let waitingDialogue = false;
   let lifted = null;
+  let presenting = false;
 
   function begin(step) {
     if (step.music !== undefined) { if (step.music) game.audio.play(step.music); else game.audio.stop(); }
@@ -27083,6 +27117,20 @@ function runCutscene(game, steps, data = {}) {
       game.autoEquip(step.give.item);
       if (step.give.item === 'bombs') { game.progress.maxBombs = 10; game.progress.bombs = 10; }
     }
+    // A PERSON HANDING SOMETHING OVER is the same beat as a chest or a key:
+    // Link holds it up to Seasons' own item jingle and the box says what it
+    // is. `give` with a `jingle: 'fanfare'` and a `show` card was how the
+    // Rod and the Maku sword used to arrive, a different tune and a picture
+    // floating in the dark, and nowhere else in the game sounded like that.
+    if (step.present) {
+      const { item, level = 1 } = step.present;
+      giveItem(game.progress, item, level);
+      game.autoEquip(item);
+      game.presentItem(item, level);
+      presenting = true;
+    }
+    // A dungeon key handed over mid-scene: the same pose, then the scene goes on.
+    if (step.key) { game.presentKey(step.key); presenting = true; }
     if (step.spawn) spawnEntity(game, step.spawn[0], step.spawn[1], step.spawn[2], step.spawn[3] || {});
     if (step.despawn) {
       for (const e of game.entities) if (e.type === step.despawn) e.remove = true;
@@ -27127,6 +27175,7 @@ function runCutscene(game, steps, data = {}) {
 
   function stepDone(step) {
     if (waitingDialogue) return false;
+    if (presenting) { if (game.dialogue.active || game.itemShow) return false; presenting = false; }
     if (waiting > 0) return false;
     if (walking) return false;
     if (lifted) return false;
@@ -28482,6 +28531,22 @@ class Game {
     }
   }
 
+  /** One frame of an item held up (or rising out of a chest). Play mode ticks
+   *  it, and so does a cutscene — a person in a scene can hand something over
+   *  mid-scene (`present`), and the scene waits for the pose to finish. */
+  tickItemShow() {
+    const s = this.itemShow;
+    if (!s) return;
+    s.t--; s.age = (s.age || 0) + 1;
+    if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
+    // The item stays up until its text is read, then goes with it.
+    if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
+    // Held up, it goes when its text is read (Seasons deletes the treasure
+    // the frame the box closes) and not before the pose's own minimum.
+    else if (!s.chest && s.t <= 0 && !this.dialogue.active) this.itemShow = null;
+    if (this.itemShow === null && this.player) this.player.frozen = 0;
+  }
+
   /** Freeze, hold the item overhead, and describe it. */
   presentItem(id, lv, chest = null) {
     const def = ITEMS[id];
@@ -29042,6 +29107,7 @@ class Game {
         return;
       case 'cutscene':
         this.dialogue.update();
+        this.tickItemShow();
         // THE SEA KEEPS MOVING UNDER A CUTSCENE. A `tide` beat starts a sweep
         // and then waits for it to finish (`stepDone`), and the sweep only
         // advanced in play mode — so a beat that actually moved the water
@@ -29086,17 +29152,7 @@ class Game {
     // would be a rule the player never sees applied.
     this.scrim.update();
     if (this.bannerTime > 0 && !this.veiled()) this.bannerTime--;
-    if (this.itemShow) {
-      const s = this.itemShow;
-      s.t--; s.age = (s.age || 0) + 1;
-      if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
-      // The item stays up until its text is read, then goes with it.
-      if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
-      // Held up, it goes when its text is read (Seasons deletes the treasure
-      // the frame the box closes) and not before the pose's own minimum.
-      else if (!s.chest && s.t <= 0 && !this.dialogue.active) this.itemShow = null;
-      if (this.itemShow === null && this.player) this.player.frozen = 0;
-    }
+    this.tickItemShow();
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
 
     if (this.dialogue.active) { this.dialogue.update(); this.flushPending(); return; }
@@ -42019,6 +42075,43 @@ function installCaves() {
     },
   });
 
+  // THE SHIPWRIGHT'S HOLLOW (S158), under the bluff at Gull Sands: the first
+  // blade, and the first thing the game teaches — a block is pushed by
+  // walking into it. Seasons' Hero's Cave opens the same way. One wall across
+  // the room with a single gap, and a block just behind the gap; lean on it
+  // and it slides back one tile (a block moves once, as Seasons' do), which
+  // opens the back room, where the chest is.
+  registerMap({
+    id: 'caveShipwright',
+    kind: 'cave',
+    name: "Shipwright's Hollow",
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '#p......p#',
+          '#........#',
+          '####.#####',
+          '#........#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['block', 4, 2],
+          ['chest', 6, 1, { big: true, item: 'sword', level: 1 }],
+        ],
+        readable: [[6, 3, 'Cut into the wall: "Lean on it."']],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 9, px: 64, py: 40, dir: 'down' } }],
+      },
+    },
+  });
+
   registerMap({
     id: 'cave2',
     kind: 'cave',
@@ -50865,28 +50958,46 @@ const DIALOGUE = {
 };
 
 const CUTSCENES = {
+  // THE OPENING (S158). Link washes up with nothing, the way Seasons opens
+  // on him lying in the grass with nothing: no voice hands him a conch and a
+  // sword over a black screen any more. The sword is in the Shipwright's
+  // Hollow on Gull Sands (a Wenna hint), the Barnacle Key from the Maku Tree,
+  // and the Moon Conch from Farore herself, in her shrine on Tern Point —
+  // the Oracle met in person, as Din and Nayru are.
   intro: [
     { music: null },
     { fade: 'in' },
     { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
     { text: 'Washed ashore on the coast of Thalassia, Link wakes to a sea that cannot decide where it belongs.', frames: 220 },
-    // SHE IS NOT IN THE ROOM. Farore lives in the Maku Tree's hollow behind a
-    // five-Essence gate, so the game's opening — eight speeches, sixty-four
-    // seconds — was delivered by a voice with no body on screen, over a static
-    // village square. This is the beat that gives her one, and it is the same
-    // beat `nerethIntro` already uses to put the Drowned King on his own card.
-    { show: { art: ['npc_farore_0', 'npc_farore_1'], scale: 3 }, frames: 130 },
-    { say: 'Farore: You are awake. Good. I am Farore, Oracle of Secrets, and I have very few left to give.' },
-    { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land.' },
-    { say: 'Farore: Without the Bell the sea rises and falls at his whim. Take this. It is a shard of the Bell itself.' },
-    { give: { item: 'conch', level: 1 }, jingle: 'fanfare' },
-    { show: { art: 'title_conch', scale: 2 }, frames: 130 },
-    { say: 'Farore: The Moon Conch. Sound it and the tide will answer: LOW, then MID, then HIGH, and around again.' },
-    { say: 'Farore: You will need a blade too. There is one in the village chest, and the village will be glad to be rid of it.' },
-    { give: { item: 'sword', level: 1 } },
-    { say: 'Farore: Before anything, go and see the Maku Tree. Her hollow is at the top of the square. She has been keeping something for you.' },
     { flag: 'sawIntro' },
-    { music: 'village' },
+    { music: 'overworld' },
+  ],
+
+  // The fisherman on the Fishing Stones, the first person spoken to.
+  wakeBeach: [
+    { say: 'Fisherman: Easy. Easy. The tide put you on my stones with the rest of the driftwood, and you are the first piece of it to sit up.' },
+    { say: 'Fisherman: This is Thalassia. That is Tidewatch, up the path. The sea has not kept a proper hour for a year: it comes and goes as it pleases.' },
+    { say: 'Fisherman: And you with empty hands. Go up to the village. Old Wenna by the palisade knows every hole in this coast. If a wader can find a blade anywhere, she will know where.' },
+    { flag: 'metFisher' },
+  ],
+
+  // Wenna at the palisade: where the first blade is.
+  bladeHint: [
+    { say: 'Wenna: Washed up, are you? You have the look. Everyone the sea brings in has the look.' },
+    { say: 'Wenna: A blade... My grandfather built boats. When the sea went strange he hid his best cutting-blade in the hollow under the bluff at Gull Sands, and walled it up after him.' },
+    { say: 'Wenna: Down the shore road past the Fishing Stones and east along the sand. His door is stubborn. Lean on things until something moves; that was his answer to everything.' },
+    { flag: 'heardBlade' },
+  ],
+
+  // Farore, in her shrine on Tern Point: the Moon Conch.
+  faroreConch: [
+    { say: 'Farore: There you are. I watched the tide bring you in. I am Farore, the Oracle of Secrets, and I have very few left to give.' },
+    { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land. Without the Bell the sea rises and falls at his whim.' },
+    { say: 'Farore: When the Bell broke, this washed up on my steps and has not stopped humming since. It was waiting for somebody. I think it was you.' },
+    { present: { item: 'conch', level: 1 } },
+    { say: 'Farore: Sound it and the tide will answer: LOW, then MID, then HIGH, and around again. Try it outside, where the sea can hear.' },
+    { say: 'Farore: The Tidewash Grotto is east, out on the Shallows, and the Maku Tree minds its key. Her hollow is at the top of the village square. Go and wake her, if you have not.' },
+    { flag: 'gotConch' },
   ],
 
   // Fallback for any essence index without its own scene.
@@ -50990,21 +51101,17 @@ const CUTSCENES = {
   // tree's `beat` plays this the first time she is spoken to; the last step
   // hands the key over the way every item is handed over, held overhead.
   makuKey: [
-    { say: 'Maku Tree: Hoo... a wader, with a shard of the Bell humming in his pocket. Farore sent you. Good.' },
+    { say: 'Maku Tree: Hoo... hoo? A wader, with a blade on his back. I have been asleep a long while, child. Something in the sea woke me.' },
     { say: 'Maku Tree: When the sea went wrong, the village stopped up the Tidewash Grotto with stone and gave the key to my roots to mind. They have minded it long enough.' },
-    { say: 'Maku Tree: The Grotto is east, out on the Shallows. Sound the conch at low water and the sandbar will carry you. Put this in the door and lean on it.' },
-    { do: (g) => g.presentKey('d1') },
+    { key: 'd1' },
+    { say: 'Maku Tree: The Grotto is east, out on the Shallows. But a key is no use while the sea sits on the sandbar. Farore keeps a shrine on Tern Point, down the south shore; she has been holding a piece of the Bell. Go to her, if you have not.' },
   ],
 
   makuSatchel: [
     { say: 'Maku Tree: Hoo hoo! One Essence and my roots can feel the Bell again.' },
     { say: 'Maku Tree: Take the Rod. It was cut from the Bell that used to keep the tide honest.' },
-    { give: { item: 'rod', level: 1 }, jingle: 'fanfare' },
-    // The intro holds the conch up when Farore hands it over. These two did
-    // not, so the game's second and third item handovers — the Resonance Rod
-    // and the master sword — were a fanfare and a text box with nothing to
-    // look at.
-    { show: { art: 'i_rod', scale: 3 }, frames: 130 },
+    // Held overhead to Seasons' item jingle, as every other handover is.
+    { present: { item: 'rod', level: 1 } },
     { say: 'Maku Tree: Bring me five, Link, and I will open the road to the Abyssal Keep. Then I am going back to sleep.' },
   ],
   makuMaster: [
@@ -51013,8 +51120,7 @@ const CUTSCENES = {
     { shake: [3, 50] },
     { say: 'Maku Tree: The roots under this village go all the way down to the Keep. I have been growing them for a century, waiting for a reason.' },
     { say: 'Maku Tree: Take this with you. It was left here a long time ago by someone who also thought they would be back.' },
-    { give: { item: 'sword', level: 3 }, jingle: 'fanfare' },
-    { show: { art: 'i_sword3', scale: 3 }, frames: 130 },
+    { present: { item: 'sword', level: 3 } },
     // THE SIXTH KEY (S154). The seal on the road down the Kell is a keyhole,
     // and this is what fits it.
     { say: 'Maku Tree: And this. When he broke the Bell, the clapper fell out and rolled into my roots. He never came looking for it.' },

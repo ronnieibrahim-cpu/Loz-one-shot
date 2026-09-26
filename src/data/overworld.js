@@ -2441,8 +2441,11 @@ const rooms = {
       ['trader', 2, 2, {
         sprite: 'npc_fisher', waiting: 'stoneFisher', after: 'teelAfter',
         deals: [{ stage: 10, wants: 'jar', gives: 'kettle', text: 'teelTrade' }],
+        // THE FIRST PERSON A NEW GAME MEETS (S158): the tide left Link on
+        // his stones. No crab here any more: the game opens on this screen
+        // with an empty hand.
+        beat: { scene: 'wakeBeach', flag: 'metFisher' },
       }],
-      ['crab', 6, 4],
     ],
   },
   '0,5,9': {
@@ -2855,9 +2858,11 @@ const rooms = {
   '0,6,9': {
     name: "Gull Sands",
     legend: 'coast', music: 'overworld',
+    // THE SHIPWRIGHT'S HOLLOW (S158): the first blade, as Seasons' Hero's
+    // Cave holds its first. A mouth in a low bluff above the beach.
     map: [
-      'TTTTTTTTTT',
-      'TTggggggTT',
+      'TT######TT',
+      'TT##C#ggTT',
       'gg......gg',
       'gg..o...gg',
       'gg.1111.gg',
@@ -2865,8 +2870,11 @@ const rooms = {
       '**********',
       '**********',
     ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['octorok', 5, 2],
+      ['sign', 6, 2, { text: 'Scratched on a plank: "Gone to wait out\nthe sea. Blade inside. Lean on the door."' }],
     ],
   },
   '0,7,0': {
@@ -3003,7 +3011,9 @@ const rooms = {
       'ggTTvg.ggg',
     ],
     entities: [
-      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
+      // Wenna. Until the player holds a blade, she says where one is (S158).
+      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3,
+        beat: { scene: 'bladeHint', flag: 'heardBlade', unlessItem: 'sword' } }],
     ],
   },
   '0,7,8': {
@@ -3203,19 +3213,25 @@ const rooms = {
   },
   '0,8,9': {
     name: "Tern Point",
-    legend: 'coast', music: 'overworld',
+    // FARORE'S SHRINE (S158): the Oracle of Secrets lives out on the point,
+    // where the villagers say she does, and hands the Moon Conch over in
+    // person. A house of the town kit, on the coast's own grass.
+    legend: 'town', music: 'overworld',
     map: [
       'TTTTTTTTTT',
       'TTggggggTT',
-      'gg..gg..gg',
-      'gg......gg',
-      'gg.1111.gg',
-      '1111111111',
+      'gg.hhh..gg',
+      'gg.hhh..gg',
+      'gg.hhh..gg',
+      '11......11',
       '**********',
       '**********',
     ],
+    warps: [
+      { x: 4, y: 4, to: { map: 'faroreShrine', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['octorok', 4, 3],
+      ['sign', 7, 4, { text: "FARORE'S SHRINE\nKnock, and mind the step." }],
     ],
   },
   '0,13,0': {
@@ -3658,9 +3674,9 @@ function installHouses() {
             scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
             sceneAfter: 'makuOpened',
             // The first meeting: the Barnacle Key, before anything else she has.
-            beat: { scene: 'makuKey', need: 0, flag: 'keyD1' },
+            // Asleep until a wader with a blade speaks to her (S158).
+            beat: { scene: 'makuKey', need: 0, flag: 'keyD1', needItem: 'sword' },
           }],
-          ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5 }],
         ],
         // The hollow is at 4,1 in the tree line at the top of the square. It is drawn
         // with `treeHollow`, not the cave arch — see the town legend.
@@ -3697,6 +3713,13 @@ function installHouses() {
       },
     },
   });
+
+  // Farore's shrine on Tern Point (S158). She gives the Moon Conch the first
+  // time she is spoken to, and lives here for the rest of the game.
+  home('faroreShrine', "Farore's Shrine", 'village', [
+    ['npc', 4, 2, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5,
+      beat: { scene: 'faroreConch', flag: 'gotConch' } }],
+  ], { rx: 8, ry: 9, px: 64, py: 88 });
 
   home('houseHearth', 'A Village House', 'village', [
     // Her errand (S155): the jar of bog water left at Bog Head's spring, for

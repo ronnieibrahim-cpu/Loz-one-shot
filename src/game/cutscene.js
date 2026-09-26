@@ -97,6 +97,7 @@ export function runCutscene(game, steps, data = {}) {
   let shown = null;
   let waitingDialogue = false;
   let lifted = null;
+  let presenting = false;
 
   function begin(step) {
     if (step.music !== undefined) { if (step.music) game.audio.play(step.music); else game.audio.stop(); }
@@ -110,6 +111,20 @@ export function runCutscene(game, steps, data = {}) {
       game.autoEquip(step.give.item);
       if (step.give.item === 'bombs') { game.progress.maxBombs = 10; game.progress.bombs = 10; }
     }
+    // A PERSON HANDING SOMETHING OVER is the same beat as a chest or a key:
+    // Link holds it up to Seasons' own item jingle and the box says what it
+    // is. `give` with a `jingle: 'fanfare'` and a `show` card was how the
+    // Rod and the Maku sword used to arrive, a different tune and a picture
+    // floating in the dark, and nowhere else in the game sounded like that.
+    if (step.present) {
+      const { item, level = 1 } = step.present;
+      giveItem(game.progress, item, level);
+      game.autoEquip(item);
+      game.presentItem(item, level);
+      presenting = true;
+    }
+    // A dungeon key handed over mid-scene: the same pose, then the scene goes on.
+    if (step.key) { game.presentKey(step.key); presenting = true; }
     if (step.spawn) spawnEntity(game, step.spawn[0], step.spawn[1], step.spawn[2], step.spawn[3] || {});
     if (step.despawn) {
       for (const e of game.entities) if (e.type === step.despawn) e.remove = true;
@@ -154,6 +169,7 @@ export function runCutscene(game, steps, data = {}) {
 
   function stepDone(step) {
     if (waitingDialogue) return false;
+    if (presenting) { if (game.dialogue.active || game.itemShow) return false; presenting = false; }
     if (waiting > 0) return false;
     if (walking) return false;
     if (lifted) return false;

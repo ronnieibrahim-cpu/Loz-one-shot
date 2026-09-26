@@ -9,7 +9,7 @@ import { sprites } from '../gfx/art.js';
 import { drawText } from '../gfx/font.js';
 import {
   addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer,
-  addHeartPiece, HEART_UNITS, setFlag, flag,
+  addHeartPiece, HEART_UNITS, setFlag, flag, hasItem,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
@@ -449,9 +449,16 @@ export class NPC extends Entity {
   }
 
   /** Play this person's story beat if it is owed now. True if it started. */
+  //
+  // `needItem` / `unlessItem` / `needFlag` (S158, the opening): a beat can
+  // also wait for something the player holds or has done, and a hint about
+  // where the first blade is has no business playing to a player holding it.
   playBeat(game) {
     const b = this.beat, p = game.progress;
     if (!b || flag(p, b.flag) || p.essences.length < (b.need || 0)) return false;
+    if (b.needItem && !hasItem(p, b.needItem)) return false;
+    if (b.unlessItem && hasItem(p, b.unlessItem)) return false;
+    if (b.needFlag && !flag(p, b.needFlag)) return false;
     return game.startCutscene(b.scene);
   }
 
@@ -837,6 +844,9 @@ export class Trader extends NPC {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
+    // A trader can also hold a story beat (S158: Teel on the Fishing Stones
+    // is the first person a new game meets), asked before any deal.
+    if (this.playBeat(game)) return;
     const deal = this.liveDeal(game);
     // Not this trader's turn. Either they are still waiting for the chain to
     // reach them, or it has gone past and they are done with it. A trader can

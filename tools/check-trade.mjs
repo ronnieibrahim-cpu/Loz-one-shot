@@ -343,9 +343,10 @@ const talk = () => page.evaluate(() => window.__talk());
 
 // The Maku Tree's FIRST word is the Barnacle Key (S154), a story beat that
 // comes before her link of the chain; check-gates proves it. This run is
-// about the chain, so the beat counts as already heard.
+// about the chain, so the beat counts as already heard — and so does Teel's
+// (S158): he is link 10 AND the fisherman a new game wakes beside.
 await page.evaluate(() => { window.__game.newGame(0, 'CHAIN'); window.__game.mode = 'play';
-  window.__game.progress.flags.keyD1 = true; });
+  window.__game.progress.flags.keyD1 = true; window.__game.progress.flags.metFisher = true; });
 
 section('playing the chain');
 

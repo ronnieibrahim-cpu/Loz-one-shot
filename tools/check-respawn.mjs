@@ -168,13 +168,14 @@ const where = () => page.evaluate(async () => {
   };
 });
 
-const VILLAGE = (p) => p.map === 'overworld' && p.rx === 4 && p.ry === 7;
+// Since S158 a new game washes up on the Fishing Stones, below the village.
+const START = (p) => p.map === 'overworld' && p.rx === 4 && p.ry === 9;
 
 // --------------------------------------------------------------------------
-console.log('\n--- 1. a new game starts pointed at the village ---');
+console.log('\n--- 1. a new game starts pointed at the beach it wakes on ---');
 {
   const p = await point();
-  check('a new game respawns in Tidewatch Village', VILLAGE(p), JSON.stringify(p));
+  check('a new game respawns on the Fishing Stones', START(p), JSON.stringify(p));
   check('and the point carries the sea it was taken at', typeof p.tide === 'number', JSON.stringify(p));
 }
 

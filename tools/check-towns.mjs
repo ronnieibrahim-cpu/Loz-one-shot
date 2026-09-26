@@ -64,6 +64,8 @@ const TOWNS = [
   { key: '0,12,8', name: 'Sandpiper Row' },
   { key: '0,13,8', name: 'Sandpiper Row' },
   { key: '0,14,8', name: 'Sandpiper Row' },
+  // Farore's shrine on Tern Point (S158): one house of the town kit.
+  { key: '0,8,9', name: "Farore's Shrine" },
 ];
 const TOWN_LEGENDS = ['town', 'townDunes', 'horon'];
 

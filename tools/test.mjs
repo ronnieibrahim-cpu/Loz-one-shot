@@ -384,8 +384,23 @@ const main = async () => {
     await frames(4);
   }
   check('cutscene finished', await G(() => window.__game.mode === 'play'), await G(() => window.__game.mode));
-  check('intro granted the conch', await G(() => !!window.__game.progress.items.conch));
-  check('intro granted the sword', await G(() => !!window.__game.progress.items.sword));
+  // SINCE S158 THE INTRO GRANTS NOTHING: Link washes up on the Fishing Stones
+  // empty-handed and finds the sword and the conch himself (check-playthrough
+  // proves he does). Everything below tests the verbs, so it hands itself the
+  // two items the old intro gave and stands in the village square — a stated
+  // world, the same as a replay's setup.
+  check('the intro grants nothing', await G(() => !window.__game.progress.items.conch
+    && !window.__game.progress.items.sword));
+  check('a new game opens on the Fishing Stones', await G(() => {
+    const g = window.__game; return g.mapId === 'overworld' && g.room.key === '0,4,9';
+  }), await G(() => window.__game.room && window.__game.room.key));
+  await G(async () => {
+    const g = window.__game;
+    const pr = await import('/src/game/progress.js');
+    pr.giveItem(g.progress, 'conch', 1); pr.giveItem(g.progress, 'sword', 1);
+    g.progress.equipB = 'conch'; g.progress.equipA = 'sword';
+    g.enterMap('overworld', 0, 4, 7, 72, 72, 'down', { instant: true });
+  });
   await frames(10);
   await shot('04-village');
 
