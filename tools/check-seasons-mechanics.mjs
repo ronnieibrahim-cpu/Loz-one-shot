@@ -7,6 +7,8 @@
 //   * a SPIKED BEETLE cannot be hurt right way up, is FLIPPED by his raised
 //     shield, can be hurt while on its back, and rights itself after
 //     BEETLE_FLIP_FRAMES (spikedBeetle.s).
+// And (S157) a lifted rock THROWN flies Seasons' own arc — itemWeights row 0 —
+// and hurts an enemy in its path; before S157 it broke at Link's feet.
 // Each is asserted on the state the engine itself keeps, not on a model.
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
@@ -99,6 +101,36 @@ const r = await page.evaluate(async () => {
   out.beetleHurtFlipped = e.hurt(g, 1, 'right', 0, g.player) !== false && e.hp < e.maxHp;
   e.aiTimer = 1; e.flicker = 0; e.fz = 0; e.vzS = 0; e.spec.ai(e, g);
   out.beetleRights = e.aiState !== 'flipped' && e.shield === 'all';
+
+  // THROWING (S157). Lift a rock off open ground at 24,80 in 0,4,7 (row 5 is
+  // open floor end to end) and throw it. Seasons' own arc (itemWeights row 0)
+  // from CARRY_HEIGHT, simulated here from feel.js alone, says how long it
+  // flies; the engine must agree to the frame and to the pixel.
+  const throwOnce = (dir, withFoe) => {
+    g.enterMap('overworld', 0, 4, 7, dir === 'left' ? 120 : 24, 80, dir, { instant: true });
+    g.entities = g.entities.filter(x => !x.isEnemy);
+    const p = g.player; p.dir = dir;
+    const dx = dir === 'right' ? 1 : -1;
+    const tx = Math.floor((p.cx + dx * F.LIFT_REACH) / 16), ty = Math.floor(p.cy / 16);
+    g.room.setTile(tx, ty, 'rock');
+    if (!p.tryLift(g, 1)) return { lifted: false };
+    step(30);
+    const obj = p.carrying;
+    let foe = null;
+    if (withFoe) { foe = spawnEntity(g, 'octorok', 0, 0, {}); foe.x = p.x + dx * 28; foe.y = p.y; foe.frozen = true; foe.spec = { ...foe.spec, ai() {} }; }
+    const hp0 = foe && foe.hp;
+    const x0 = obj.x;
+    p.throwCarried(g);
+    let frames = 0;
+    while (!obj.remove && frames < 120) { step(1); frames++; }
+    return { lifted: true, frames, dist: Math.abs(obj.x - x0), hurt: foe ? foe.hp < hp0 || foe.dead : null, foeFrames: frames };
+  };
+  let fz = F.CARRY_HEIGHT * 256, vz = F.LIFTED_THROW_RISE, air = 0;
+  while (fz > 0) { fz += vz; vz -= F.LIFTED_THROW_GRAVITY; air++; }
+  out.throwAir = air;
+  out.throwR = throwOnce('right', false);
+  out.throwL = throwOnce('left', false);
+  out.throwFoe = throwOnce('right', true);
   return out;
 });
 check('a gel that touches Link clings to him', r.gelClings);
@@ -113,6 +145,14 @@ check("Link's raised shield flips it", r.beetleFlips);
 check('and the shield takes no hit doing it', r.beetleShieldTakesNoHit);
 check('on its back the sword hurts it', r.beetleHurtFlipped);
 check('after BEETLE_FLIP_FRAMES it rights itself, armoured again', r.beetleRights);
+const air = r.throwAir;
+check(`a thrown rock stays in the air Seasons' ${air} frames, not breaking at Link's feet`,
+  r.throwR.lifted && r.throwR.frames === air, JSON.stringify(r.throwR));
+check(`and crosses about ${Math.round(air * 1.5)} px of floor (1.5 px a frame) before it lands and breaks`,
+  Math.abs(r.throwR.dist - air * 1.5) <= 2, JSON.stringify(r.throwR));
+check('thrown the other way it flies the same', r.throwL.frames === air && Math.abs(r.throwL.dist - air * 1.5) <= 2, JSON.stringify(r.throwL));
+check('an enemy in its path is hurt, and the rock breaks on it early',
+  r.throwFoe.hurt === true && r.throwFoe.frames < air, JSON.stringify(r.throwFoe));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();

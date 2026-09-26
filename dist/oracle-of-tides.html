@@ -1742,6 +1742,36 @@ const THROW_ARC_RISE = 160;
  *  from the 0.22 that used to sit inline in items.js. */
 const THROW_ARC_GRAVITY = 56;
 
+/** sp/f — how fast a thrown pot, rock or bush travels across the floor.
+ *  derived from the cartridge (S157): oracles-disasm object_code/common/items/
+ *  commonBombAndBraceletCode.s, itemWeights row 0 (weight 0: a pot, a rock, a
+ *  bush), byte 2 = SPEED_180 without the Toss Ring = 1.5 px/f
+ *  (constants/common/objectSpeeds.s, SPEED_100 = 1 px/f). Before S157 a lifted
+ *  tile was thrown with no speed at all and broke at Link's feet. */
+const LIFTED_THROW_SPEED = 384;
+
+/** sp/f — upward speed it leaves Link's hands with. derived from the cartridge
+ *  (S157): itemWeights row 0, byte 1 = $10 read as speedZ $ff10 (itemBeginThrow
+ *  forces the high byte to $ff) = -240 sp/f, i.e. 240 up. */
+const LIFTED_THROW_RISE = 240;
+
+/** sp/f^2 — what gravity takes off that each frame. derived from the cartridge
+ *  (S157): itemWeights row 0, byte 0 = $1c, added to speedZ by
+ *  objectUpdateSpeedZ_paramC (code/bank0.s) AFTER z has moved, which is the
+ *  order ThrownObject.update keeps. From CARRY_HEIGHT that is 27 frames in the
+ *  air and about 40 px, two and a half tiles, before it lands and breaks. */
+const LIFTED_THROW_GRAVITY = 28;
+
+/** px — how far toward the facing the object is moved on the frame it is
+ *  thrown. derived from the cartridge (S157): itemBeginThrow's @throwOffsets
+ *  ($ff/$00/$01), one pixel. */
+const LIFTED_THROW_NUDGE = 1;
+
+/** px — half-size of the box a thrown pot or rock hits enemies with. derived
+ *  from the cartridge (S157): bracelet.s @state1 sets collisionRadiusY/X $06 on
+ *  the frame it is thrown — a 12x12 box. */
+const LIFTED_THROW_RADIUS = 6;
+
 /** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
  *  sit inline in items.js. */
 const THROW_SLIDE_DECAY = 0.9;
@@ -3110,6 +3140,11 @@ __exports["LIFT_REACH"] = LIFT_REACH;
 __exports["THROW_SPEED"] = THROW_SPEED;
 __exports["THROW_ARC_RISE"] = THROW_ARC_RISE;
 __exports["THROW_ARC_GRAVITY"] = THROW_ARC_GRAVITY;
+__exports["LIFTED_THROW_SPEED"] = LIFTED_THROW_SPEED;
+__exports["LIFTED_THROW_RISE"] = LIFTED_THROW_RISE;
+__exports["LIFTED_THROW_GRAVITY"] = LIFTED_THROW_GRAVITY;
+__exports["LIFTED_THROW_NUDGE"] = LIFTED_THROW_NUDGE;
+__exports["LIFTED_THROW_RADIUS"] = LIFTED_THROW_RADIUS;
 __exports["THROW_SLIDE_DECAY"] = THROW_SLIDE_DECAY;
 __exports["THROW_SLIDE_STOP"] = THROW_SLIDE_STOP;
 __exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
@@ -9062,7 +9097,7 @@ const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE } = __require("data/feel.js");
 const { sprites, tiles } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -9394,7 +9429,8 @@ class ThrownObject extends Entity {
     this.tileArt = o.tileArt || null;
     this.vx = o.vx || 0; this.vy = o.vy || 0;      // sp/f
     this.z = o.z || 14;
-    this.vz = THROW_ARC_RISE;
+    // Seasons' own arc for a weight-0 object (itemWeights row 0, S157).
+    this.vz = LIFTED_THROW_RISE;
     this.damage = 0;
     this.harmless = true;
     this.shadow = true;
@@ -9406,17 +9442,37 @@ class ThrownObject extends Entity {
   update(game) {
     this.frame++;
     this.fz += this.vz;
-    this.vz -= THROW_ARC_GRAVITY;
+    this.vz -= LIFTED_THROW_GRAVITY;
     const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
     if (r.hitX || r.hitY) { this.shatter(game); return; }
+    const a = this.contactRect();
     for (const e of game.entities) {
-      if (e.isEnemy && !e.dead && this.overlaps(e)) {
+      if (!e.isEnemy || e.dead) continue;
+      const b = e.contactRect();
+      if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
         e.hurt(game, this.power, null, KNOCK_THROWN, this);
         this.shatter(game);
         return;
       }
     }
     if (this.fz <= 0) this.shatter(game);
+  }
+
+  /** It hits with the 12x12 box Seasons gives it the frame it leaves the
+   *  hand (bracelet.s, collisionRadius $06), centred on the object — against
+   *  the enemy's own contact box, the one the sword asks. */
+  contactRect() {
+    const R = LIFTED_THROW_RADIUS;
+    return { x: this.cx - R, y: this.cy - R, w: 2 * R, h: 2 * R };
+  }
+
+  /** Thrown from Link's hands: Seasons' itemBeginThrow (S157). */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.vx = vx; this.vy = vy;
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
   }
 
   draw(ctx, game, ox, oy) {
@@ -10246,7 +10302,7 @@ const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
 
 // Which way the blade points on the swing's first phase: out to one side.
 // Facing down it starts on Link's left, facing up on his right, and facing
@@ -11180,15 +11236,22 @@ class Player extends Entity {
     this.liftT = 0;
     c.carried = false;
     const [dx, dy] = DIR_VEC[this.dir];
-    if (c instanceof ThrownObject || c.thrownVx !== undefined) {
+    // A lifted pot, rock or bush flies Seasons' own arc from where it was held
+    // (itemBeginThrow, S157). It used to take the bomb branch below, which set
+    // a slide velocity ThrownObject never reads and left it at height 0, so it
+    // broke at Link's feet on the next frame and never travelled.
+    const n = LIFTED_THROW_NUDGE, v = LIFTED_THROW_SPEED;
+    if (c instanceof ThrownObject) {
+      c.launch(this.x + dx * n, this.y + dy * n, dx * v, dy * v, CARRY_HEIGHT);
+    } else if (c.thrownVx !== undefined) {
       c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;
       c.x = this.x + dx * 4; c.y = this.y + dy * 4;
       c.remove = false;
     } else {
       c.remove = true;
-      game.addEntity(new ThrownObject(this.x + dx * 4, this.y + dy * 4, {
+      game.addEntity(new ThrownObject(this.x + dx * n, this.y + dy * n, {
         sprite: c.sprite || 'rock16', pal: c.pal || 'stone', tileArt: c.tileArt || null,
-        vx: dx * THROW_SPEED, vy: dy * THROW_SPEED, z: CARRY_HEIGHT, drops: c.dropTable || 'none',
+        vx: dx * v, vy: dy * v, z: CARRY_HEIGHT, drops: c.dropTable || 'none',
       }));
     }
     game.audio.sfx('throw');

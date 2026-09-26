@@ -42,7 +42,7 @@ import {
   BELLOWS_RAFT_SCALE,
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
-  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFT_STEP_FRAMES, LIFT_STEP_POS,
+  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS,
   ROD_RING_FRAMES,
   CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
@@ -984,15 +984,22 @@ export class Player extends Entity {
     this.liftT = 0;
     c.carried = false;
     const [dx, dy] = DIR_VEC[this.dir];
-    if (c instanceof ThrownObject || c.thrownVx !== undefined) {
+    // A lifted pot, rock or bush flies Seasons' own arc from where it was held
+    // (itemBeginThrow, S157). It used to take the bomb branch below, which set
+    // a slide velocity ThrownObject never reads and left it at height 0, so it
+    // broke at Link's feet on the next frame and never travelled.
+    const n = LIFTED_THROW_NUDGE, v = LIFTED_THROW_SPEED;
+    if (c instanceof ThrownObject) {
+      c.launch(this.x + dx * n, this.y + dy * n, dx * v, dy * v, CARRY_HEIGHT);
+    } else if (c.thrownVx !== undefined) {
       c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;
       c.x = this.x + dx * 4; c.y = this.y + dy * 4;
       c.remove = false;
     } else {
       c.remove = true;
-      game.addEntity(new ThrownObject(this.x + dx * 4, this.y + dy * 4, {
+      game.addEntity(new ThrownObject(this.x + dx * n, this.y + dy * n, {
         sprite: c.sprite || 'rock16', pal: c.pal || 'stone', tileArt: c.tileArt || null,
-        vx: dx * THROW_SPEED, vy: dy * THROW_SPEED, z: CARRY_HEIGHT, drops: c.dropTable || 'none',
+        vx: dx * v, vy: dy * v, z: CARRY_HEIGHT, drops: c.dropTable || 'none',
       }));
     }
     game.audio.sfx('throw');

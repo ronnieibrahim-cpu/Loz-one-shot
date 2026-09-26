@@ -922,6 +922,36 @@ export const THROW_ARC_RISE = 160;
  *  from the 0.22 that used to sit inline in items.js. */
 export const THROW_ARC_GRAVITY = 56;
 
+/** sp/f — how fast a thrown pot, rock or bush travels across the floor.
+ *  derived from the cartridge (S157): oracles-disasm object_code/common/items/
+ *  commonBombAndBraceletCode.s, itemWeights row 0 (weight 0: a pot, a rock, a
+ *  bush), byte 2 = SPEED_180 without the Toss Ring = 1.5 px/f
+ *  (constants/common/objectSpeeds.s, SPEED_100 = 1 px/f). Before S157 a lifted
+ *  tile was thrown with no speed at all and broke at Link's feet. */
+export const LIFTED_THROW_SPEED = 384;
+
+/** sp/f — upward speed it leaves Link's hands with. derived from the cartridge
+ *  (S157): itemWeights row 0, byte 1 = $10 read as speedZ $ff10 (itemBeginThrow
+ *  forces the high byte to $ff) = -240 sp/f, i.e. 240 up. */
+export const LIFTED_THROW_RISE = 240;
+
+/** sp/f^2 — what gravity takes off that each frame. derived from the cartridge
+ *  (S157): itemWeights row 0, byte 0 = $1c, added to speedZ by
+ *  objectUpdateSpeedZ_paramC (code/bank0.s) AFTER z has moved, which is the
+ *  order ThrownObject.update keeps. From CARRY_HEIGHT that is 27 frames in the
+ *  air and about 40 px, two and a half tiles, before it lands and breaks. */
+export const LIFTED_THROW_GRAVITY = 28;
+
+/** px — how far toward the facing the object is moved on the frame it is
+ *  thrown. derived from the cartridge (S157): itemBeginThrow's @throwOffsets
+ *  ($ff/$00/$01), one pixel. */
+export const LIFTED_THROW_NUDGE = 1;
+
+/** px — half-size of the box a thrown pot or rock hits enemies with. derived
+ *  from the cartridge (S157): bracelet.s @state1 sets collisionRadiusY/X $06 on
+ *  the frame it is thrown — a 12x12 box. */
+export const LIFTED_THROW_RADIUS = 6;
+
 /** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
  *  sit inline in items.js. */
 export const THROW_SLIDE_DECAY = 0.9;

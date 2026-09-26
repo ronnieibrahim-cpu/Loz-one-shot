@@ -24,6 +24,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   KNOCK_TOOL, KNOCK_THROWN,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
+  LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE,
@@ -366,7 +367,8 @@ export class ThrownObject extends Entity {
     this.tileArt = o.tileArt || null;
     this.vx = o.vx || 0; this.vy = o.vy || 0;      // sp/f
     this.z = o.z || 14;
-    this.vz = THROW_ARC_RISE;
+    // Seasons' own arc for a weight-0 object (itemWeights row 0, S157).
+    this.vz = LIFTED_THROW_RISE;
     this.damage = 0;
     this.harmless = true;
     this.shadow = true;
@@ -378,17 +380,37 @@ export class ThrownObject extends Entity {
   update(game) {
     this.frame++;
     this.fz += this.vz;
-    this.vz -= THROW_ARC_GRAVITY;
+    this.vz -= LIFTED_THROW_GRAVITY;
     const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
     if (r.hitX || r.hitY) { this.shatter(game); return; }
+    const a = this.contactRect();
     for (const e of game.entities) {
-      if (e.isEnemy && !e.dead && this.overlaps(e)) {
+      if (!e.isEnemy || e.dead) continue;
+      const b = e.contactRect();
+      if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
         e.hurt(game, this.power, null, KNOCK_THROWN, this);
         this.shatter(game);
         return;
       }
     }
     if (this.fz <= 0) this.shatter(game);
+  }
+
+  /** It hits with the 12x12 box Seasons gives it the frame it leaves the
+   *  hand (bracelet.s, collisionRadius $06), centred on the object — against
+   *  the enemy's own contact box, the one the sword asks. */
+  contactRect() {
+    const R = LIFTED_THROW_RADIUS;
+    return { x: this.cx - R, y: this.cy - R, w: 2 * R, h: 2 * R };
+  }
+
+  /** Thrown from Link's hands: Seasons' itemBeginThrow (S157). */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.vx = vx; this.vy = vy;
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
   }
 
   draw(ctx, game, ox, oy) {
