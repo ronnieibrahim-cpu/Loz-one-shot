@@ -18,7 +18,8 @@
   hits enemies as a weapon; here a thrown object seems to vanish with no
   travel. Fix it to behave like Seasons.
 
-## The task, one commit per piece, whole checker table before each commit
+## The task
+One commit per piece; the whole checker table before each commit.
 1. THROWING (small; do first). ThrownObject (src/game/items.js) lands after
    ~14 frames at THROW_SPEED 2.5 px/f (all three throw constants in feel.js
    are `guessed`), and shatters on the first wall/enemy overlap. Reproduce
