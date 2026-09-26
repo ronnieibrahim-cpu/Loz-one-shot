@@ -244,6 +244,83 @@ const TRACKS = {
     order: ['A', 'B', 'A', 'D', 'E', 'C'],
   },
 
+  // TIDEWATCH (S158). The human asked for each town to have a theme of its
+  // own, "calm and serene", and original. Horon has one; so does Tidewatch
+  // now. A slow lullaby in D: the lead sings a falling phrase and rests on it,
+  // the second pulse holds long tones under it, and the bass rocks through
+  // each chord like a boat at a mooring. No drums, two soft hats a pattern.
+  tidewatch: {
+    bpm: 80, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.25, vol: 0.12, decay: 0.3, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.4 },
+      wav: { vol: 0.16, decay: 0.3 },
+      noi: { vol: 0.03 },
+    },
+    patterns: {
+      A: {
+        p1: 'F#5 -  -  -  E5 -  D5 -  A4 -  -  -  -  -  -  .  B4 -  -  -  D5 -  G5 -  F#5 -  -  -  -  -  -  .',
+        p2: 'D5  -  -  -  -  -  -  -  F#4 -  -  -  -  -  -  .  G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .',
+        wav: 'D3 .  A3 .  F#3 .  A3 .  D3 .  A3 .  F#3 .  A3 .  G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .',
+        noi: '.  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .',
+      },
+      // Turns to B minor and leans on the leading tone before coming home.
+      B: {
+        p1: 'D5 -  -  -  C#5 -  B4 -  F#4 -  -  -  -  -  -  .  G4 -  -  -  A4 -  B4 -  A4 -  -  -  -  -  -  .',
+        p2: 'B4 -  -  -  -  -  -  -  D4 -  -  -  -  -  -  .  E4 -  -  -  -  -  -  -  C#5 -  -  -  -  -  -  .',
+        wav: 'B2 .  F#3 .  D3 .  F#3 .  B2 .  F#3 .  D3 .  F#3 .  G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .',
+        noi: '.  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .',
+      },
+      // A again, an octave's worth higher at the top, as if remembered.
+      A2: {
+        p1: 'A5 -  -  -  F#5 -  E5 -  D5 -  -  -  -  -  -  .  E5 -  -  -  F#5 -  D5 -  E5 -  -  -  -  -  -  .',
+        p2: 'D5  -  -  -  -  -  -  -  F#4 -  -  -  -  -  -  .  G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .',
+        wav: 'D3 .  A3 .  F#3 .  A3 .  D3 .  A3 .  F#3 .  A3 .  G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .',
+        noi: '.  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .',
+      },
+      // Home: G, A, and a long D the loop breathes out on.
+      C: {
+        p1: 'B4 -  D5 -  G5 -  F#5 -  E5 -  -  -  C#5 -  -  .  D5 -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
+        p2: 'G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .  F#4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .',
+        wav: 'G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .  D3 .  A3 .  F#3 .  A3 .  D3 -  -  -  -  -  -  .',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
+      },
+    },
+    order: ['A', 'B', 'A2', 'C'],
+  },
+
+  // SANDPIPER ROW (S158): the fishing hamlet's own, quieter still. One slow
+  // line in F over a bass that moves once a beat, and the second pulse is not
+  // a part at all: it is the lead coming back off the water a beat and a half
+  // later, the way a gull's call does across a flat evening sea.
+  sandpiper: {
+    bpm: 72, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.1, decay: 0.35, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.45, echo: { of: 'p1', rows: 6, volMul: 0.35 } },
+      wav: { vol: 0.15, decay: 0.4 },
+      noi: { vol: 0.03 },
+    },
+    patterns: {
+      A: {
+        p1: 'A4 -  -  -  C5 -  -  -  F5 -  -  -  E5 -  -  .  D5 -  -  -  C5 -  -  -  Bb4 -  -  -  A4 -  -  .',
+        wav: 'F2 -  -  -  C3 -  -  -  E2 -  -  -  C3 -  -  -  D2 -  -  -  A2 -  -  -  Bb1 -  -  -  F2 -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
+      B: {
+        p1: 'G4 -  -  -  Bb4 -  -  -  D5 -  -  -  C5 -  -  .  A4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
+        wav: 'G2 -  -  -  D3 -  -  -  C2 -  -  -  G2 -  -  -  F2 -  -  -  C3 -  -  -  A2 -  -  -  C3 -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
+      C: {
+        p1: 'F5 -  -  -  E5 -  D5 -  C5 -  -  -  -  -  -  .  D5 -  -  -  C5 -  Bb4 -  G4 -  -  -  -  -  -  .',
+        wav: 'D2 -  -  -  A2 -  -  -  A1 -  -  -  E2 -  -  -  Bb1 -  -  -  F2 -  -  -  C2 -  -  -  G2 -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
+      },
+    },
+    order: ['A', 'B', 'A', 'C'],
+  },
+
   cave: {
     bpm: 88, rowsPerBeat: 4, loop: true,
     // The second pulse has no line of its own here any more: it is the first

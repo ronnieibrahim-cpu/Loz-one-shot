@@ -1858,7 +1858,7 @@ const rooms = {
     // Beach, north to The Wading, south to the Fishing Stones and South Sands,
     // east to Sunken Reef and East Strand.
     // The Hearth house and the Maku Tree's hollow.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'TTTTTTTTTT',
       'TTTTCTTTTT',
@@ -1887,7 +1887,7 @@ const rooms = {
   '0,5,7': {
     name: "Village East",
     // The shop, one building a screen as Horon has it.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'TTogg.goTT',
       'TTggg.ggTT',
@@ -2122,7 +2122,7 @@ const rooms = {
   '0,4,8': {
     name: "Village Shore",
     // The Net-mender's house.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'TTggg.gvvg',
       'TTggg.gvvg',
@@ -2150,7 +2150,7 @@ const rooms = {
   '0,5,8': {
     name: "Driftwood Strand",
     // The timber yard: the chopping stump, crates and a paling fence.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'gvvvg.gggg',
       'gvvvg.gggg',
@@ -2241,7 +2241,7 @@ const rooms = {
     // SANDPIPER ROW IS THREE SCREENS (S157), 0,12,8 to 0,14,8: a street of
     // houses along one sandy lane. Sandpiper Cottage where it always was; the
     // way north to Dune Bowl and south to Deep Bar are this screen's.
-    legend: 'townDunes', music: 'overworld',
+    legend: 'townDunes', music: 'sandpiper',
     map: [
       'TToGGGGoTT',
       'TTg....gTT',
@@ -2820,7 +2820,7 @@ const rooms = {
   '0,6,7': {
     name: "Tidewatch Square",
     // The square: dirt, the fountain, four stools, as Horon's is.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -2841,7 +2841,7 @@ const rooms = {
   '0,6,8': {
     name: "The Gardens",
     // Flower beds and a row of bushes in a yard.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'gyffyyffyg',
       'gyyyyyyyyg',
@@ -2999,7 +2999,7 @@ const rooms = {
   '0,7,7': {
     name: "Palisade Row",
     // A house nobody opens, inside a log palisade.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -3019,7 +3019,7 @@ const rooms = {
   '0,7,8': {
     name: "Wellside",
     // The well, in its yard, and a stand of tall grass.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'ggTTgg.ggg',
       'ggTTgg.ggg',
@@ -3176,7 +3176,7 @@ const rooms = {
     name: "Tide Gate",
     // The east gate. The tide pool in the yard, and the sandbar creek
     // Sunken Reef has at its west edge (rows 3-4) carried to the seam.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -3197,7 +3197,7 @@ const rooms = {
   '0,8,8': {
     name: "East Lawn",
     // The south-east lawn, a grove, and the gate to East Strand.
-    legend: 'horon', music: 'overworld',
+    legend: 'horon', music: 'tidewatch',
     map: [
       'ggggvvvgTT',
       'ggggvvvgTT',
@@ -3374,7 +3374,7 @@ const rooms = {
     name: 'Sandpiper Row',
     // The Row's other house, shut, between two drying racks — and (S158) a
     // lane south through the palms, down to the Sandbar Shallows beach.
-    legend: 'townDunes', music: 'overworld',
+    legend: 'townDunes', music: 'sandpiper',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -3543,7 +3543,7 @@ const rooms = {
     // The net racks, and the way east to Shell Flats — and (S158) a lane
     // north through the palms into Channel Dunes, so the Row is a place with
     // several ways out, as Horon is, rather than one street in a hedge.
-    legend: 'townDunes', music: 'overworld',
+    legend: 'townDunes', music: 'sandpiper',
     map: [
       'TTTTTTggTT',
       'TTTTTTggTT',
