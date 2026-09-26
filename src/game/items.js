@@ -373,7 +373,9 @@ export class ThrownObject extends Entity {
     this.harmless = true;
     this.shadow = true;
     this.flying = true;
-    this.power = o.power || 2;
+    // Seasons' ITEM_BRACELET damage $fd: 3, against the starting sword's 2
+    // (data/seasons/itemAttributes.s). The human chose it in S157.
+    this.power = o.power || 3;
     this.depth = 20;
   }
 

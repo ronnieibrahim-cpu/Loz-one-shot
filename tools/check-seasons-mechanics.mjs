@@ -117,13 +117,13 @@ const r = await page.evaluate(async () => {
     step(30);
     const obj = p.carrying;
     let foe = null;
-    if (withFoe) { foe = spawnEntity(g, 'octorok', 0, 0, {}); foe.x = p.x + dx * 28; foe.y = p.y; foe.frozen = true; foe.spec = { ...foe.spec, ai() {} }; }
+    if (withFoe) { foe = spawnEntity(g, 'octorok', 0, 0, {}); foe.x = p.x + dx * 28; foe.y = p.y; foe.frozen = true; foe.spec = { ...foe.spec, ai() {} }; foe.hp = foe.maxHp = 10; }
     const hp0 = foe && foe.hp;
     const x0 = obj.x;
     p.throwCarried(g);
     let frames = 0;
     while (!obj.remove && frames < 120) { step(1); frames++; }
-    return { lifted: true, frames, dist: Math.abs(obj.x - x0), hurt: foe ? foe.hp < hp0 || foe.dead : null, foeFrames: frames };
+    return { lifted: true, frames, dist: Math.abs(obj.x - x0), hurt: foe ? foe.hp < hp0 || foe.dead : null, lost: foe ? hp0 - Math.max(0, foe.hp) : null, hp0, foeFrames: frames };
   };
   let fz = F.CARRY_HEIGHT * 256, vz = F.LIFTED_THROW_RISE, air = 0;
   while (fz > 0) { fz += vz; vz -= F.LIFTED_THROW_GRAVITY; air++; }
@@ -153,6 +153,8 @@ check(`and crosses about ${Math.round(air * 1.5)} px of floor (1.5 px a frame) b
 check('thrown the other way it flies the same', r.throwL.frames === air && Math.abs(r.throwL.dist - air * 1.5) <= 2, JSON.stringify(r.throwL));
 check('an enemy in its path is hurt, and the rock breaks on it early',
   r.throwFoe.hurt === true && r.throwFoe.frames < air, JSON.stringify(r.throwFoe));
+check("and it hits for Seasons' 3, harder than the starting sword's 2",
+  r.throwFoe.lost === Math.min(3, r.throwFoe.hp0), JSON.stringify(r.throwFoe));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();

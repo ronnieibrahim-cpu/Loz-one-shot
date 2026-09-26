@@ -890,16 +890,19 @@ export const LOW_HEART_EVERY = 40;
 
 /** f — how long each character of dialogue takes to appear. derived from the
  *  cartridge: oracles-disasm code/textbox.s, textSpeedData, the third byte of
- *  text speed 3 — the speed a new file starts on (code/fileManagement.s,
- *  initialFileVariables: wTextSpeed $02) — is $04. It was a guessed 1.6
- *  characters a FRAME, six times faster than Seasons.
- *  (The footage README's two-frames-a-step reading is the TAS's speed 5.) */
-export const TEXT_FRAMES_PER_CHAR = 4;
+ *  text speed 5 — the fastest of the five the file-select menu offers — is
+ *  $02. The human chose it in S157 from a side-by-side of speeds 3, 4 and 5;
+ *  before that it was speed 3's $04, the speed a new file starts on
+ *  (code/fileManagement.s, initialFileVariables: wTextSpeed $02), and before
+ *  that a guessed 1.6 characters a FRAME. Speed 5 is also the footage README's
+ *  two-frames-a-step reading (the TAS plays on it). */
+export const TEXT_FRAMES_PER_CHAR = 2;
 
 /** f — the least time between two text blips. Every character that is not a
  *  space blips, unless one blipped this recently. derived from the cartridge:
  *  code/textbox.s, w7TextSoundCooldownCounter set to $04 on each blip and the
- *  space test beside it. At TEXT_FRAMES_PER_CHAR that is one blip a letter.
+ *  space test beside it. At speed 5's two frames a letter that is one blip
+ *  every other letter, as the cartridge does at that speed.
  *  Pressing A or B mid-line shows the rest of the LINE at once (@skipToLineEnd)
  *  with one blip; there is no held-button fast-forward in Seasons. */
 export const TEXT_BEEP_COOLDOWN = 4;
