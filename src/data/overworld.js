@@ -3356,7 +3356,8 @@ const rooms = {
   },
   '0,13,8': {
     name: 'Sandpiper Row',
-    // The Row's other house, shut, between two drying racks.
+    // The Row's other house, shut, between two drying racks — and (S158) a
+    // lane south through the palms, down to the Sandbar Shallows beach.
     legend: 'townDunes', music: 'overworld',
     map: [
       'TTTTTTTTTT',
@@ -3365,8 +3366,8 @@ const rooms = {
       'gnGkkkGngg',
       'GGGkkkGGGG',
       '..........',
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
+      'TTTTggTTTT',
+      'TTTTggTTTT',
     ],
     entities: [
     ],
@@ -3375,7 +3376,7 @@ const rooms = {
     name: "Sandbar Shallows",
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
+      'TTTTggTTTT',
       'TTggggggTT',
       'gg......gg',
       'gg.5555.gg',
@@ -3515,7 +3516,7 @@ const rooms = {
       'gg......gg',
       'gg.1111.gg',
       'TTggggggTT',
-      'TTTTTTTTTT',
+      'TTTTTTggTT',
     ],
     entities: [
       ['crab', 6, 4],
@@ -3523,11 +3524,13 @@ const rooms = {
   },
   '0,14,8': {
     name: 'Sandpiper Row',
-    // The net racks, and the way east to Shell Flats.
+    // The net racks, and the way east to Shell Flats — and (S158) a lane
+    // north through the palms into Channel Dunes, so the Row is a place with
+    // several ways out, as Horon is, rather than one street in a hedge.
     legend: 'townDunes', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
+      'TTTTTTggTT',
+      'TTTTTTggTT',
       'gnGnGnGggg',
       'gnGnGnGggg',
       'GGGGGGGzgg',
