@@ -1866,8 +1866,8 @@ const rooms = {
       'yjjj.gyyyy',
       'yjjj.ggggg',
       '..........',
-      'TTggg.gggg',
-      'TTggg.gggg',
+      'TTggg.gvvg',
+      'TTggg.gvvg',
     ],
     warps: [
       { x: 2, y: 4, to: { map: 'houseHearth', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -1895,8 +1895,8 @@ const rooms = {
       'yHHHy.TTgg',
       'yHHHy.gggg',
       '..........',
-      'ggggg.gggg',
-      'ggggg.gggg',
+      'gvvvg.gfyg',
+      'gvvvg.gyyg',
     ],
     warps: [
       { x: 2, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -2124,8 +2124,8 @@ const rooms = {
     // The Net-mender's house.
     legend: 'horon', music: 'overworld',
     map: [
-      'TTggg.gggg',
-      'TTggg.gggg',
+      'TTggg.gvvg',
+      'TTggg.gvvg',
       'gyhhh.yffy',
       'gyhhh.yyyy',
       'gyhhh.gggg',
@@ -2152,8 +2152,8 @@ const rooms = {
     // The timber yard: the chopping stump, crates and a paling fence.
     legend: 'horon', music: 'overworld',
     map: [
-      'ggggg.gggg',
-      'ggggg.gggg',
+      'gvvvg.gggg',
+      'gvvvg.gggg',
       'yuuuy.gggg',
       'yuuuy.gnng',
       'yyezi.gnng',
@@ -2822,8 +2822,8 @@ const rooms = {
     // Flower beds and a row of bushes in a yard.
     legend: 'horon', music: 'overworld',
     map: [
-      'gggggggggg',
-      'gggggggggg',
+      'gyffyyffyg',
+      'gyyyyyyyyg',
       'gfffllfffg',
       'gfffyyfffg',
       'gbbybbybbg',
@@ -2965,8 +2965,8 @@ const rooms = {
       'gylkkklyTT',
       'gylkkklygg',
       '..........',
-      'gggggg.ggg',
-      'gggggg.ggg',
+      'ggTTvg.ggg',
+      'ggTTvg.ggg',
     ],
     entities: [
       ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
@@ -2977,8 +2977,8 @@ const rooms = {
     // The well, in its yard, and a stand of tall grass.
     legend: 'horon', music: 'overworld',
     map: [
-      'gggggg.ggg',
-      'gggggg.ggg',
+      'ggTTgg.ggg',
+      'ggTTgg.ggg',
       'gywwyg.vvv',
       'gywwyg.vvv',
       'gyyyyg.vvv',
@@ -3124,8 +3124,8 @@ const rooms = {
       'Ty2222y111',
       'giyyyey111',
       '..........',
-      'ggggggggTT',
-      'ggggggggTT',
+      'ggffygggTT',
+      'ggyyygggTT',
     ],
     entities: [
       ['trader', 1, 3, {
@@ -3139,8 +3139,8 @@ const rooms = {
     // The south-east lawn, a grove, and the gate to East Strand.
     legend: 'horon', music: 'overworld',
     map: [
-      'ggggggggTT',
-      'ggggggggTT',
+      'ggggvvvgTT',
+      'ggggvvvgTT',
       'gyTTTTnngg',
       'gyTTTTnngg',
       'gygggggggg',

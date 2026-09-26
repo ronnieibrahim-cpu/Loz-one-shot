@@ -1,3 +1,106 @@
+## S157 — thrown pots fly, fastest text, the overworld 17 screens across, Tidewatch at Horon's size
+
+Branch claude/youthful-cerf-yqqh2k (off main at fcda02f). aa8bd8d (throwing +
+text) IS ON MAIN (the human approved the fast-forward). The widening commits
+after it are NOT on main: 42 countryside screens are still placeholders.
+
+### The human's decisions this session (bind the next one)
+1. TEXT: Seasons text speed 5 (fastest, 2 frames a letter), from a
+   side-by-side of speeds 3/4/5.
+2. POT DAMAGE: match Seasons — a thrown pot/rock does 3 (ITEM_BRACELET $fd),
+   the starting sword 2.
+3. TOWNS: Tidewatch exactly Horon's size (5 screens by 2) and Sandpiper Row 3
+   screens; new countryside screens are "quiet extensions" of their region
+   (continue it, paths lined up, a few enemies, Seasons' own tiles; secrets
+   later).
+4. TREES: Horon's own round tree in the towns (the countryside keeps the oak).
+5. TOWN LAYOUT: "busier, like Horon" — done (tall grass, flower garden, trees).
+6. TRADING CHAIN: leave it as it is. (Closed.)
+7. MAIN: approved aa8bd8d going live. Ask again before moving main further.
+8. Still unasked this session: boss art for Thalassor / Gustharpy / Saltwraith
+   (and whether to place them); approval to merge claude/oracle-tides-guide-hb01hp.
+
+### What landed
+- aa8bd8d / 989355c THROWING: a lifted tile was thrown down the bomb branch
+  (thrownVx, never read by ThrownObject) at z 0, so it broke at Link's feet
+  on frame 1. Now `ThrownObject.launch` from `Player.throwCarried`: Seasons'
+  weight-0 arc (commonBombAndBraceletCode.s itemWeights row 0) —
+  LIFTED_THROW_SPEED 384 (SPEED_180), LIFTED_THROW_RISE 240 ($ff10),
+  LIFTED_THROW_GRAVITY 28 ($1c, z moves before speedZ, objectUpdateSpeedZ_paramC),
+  LIFTED_THROW_NUDGE 1 (@throwOffsets), LIFTED_THROW_RADIUS 6 (bracelet.s
+  collisionRadius, `ThrownObject.contactRect`, tested against the enemy's own
+  contactRect). 27 frames, ~40 px. Power 3. Anchor/Reefseed/coin/bombs keep
+  THROW_ARC_* / THROW_SPEED. check-seasons-mechanics 18 (5 throw asserts, red
+  on the old code). Disassembly: git clone --depth 1 Stewmath/oracles-disasm.
+- aa8bd8d TEXT_FRAMES_PER_CHAR 2 (textSpeedData row 5). d4-drowned-sill replay
+  re-recorded (ends where it did).
+- fba32ea THE WIDENING: tools/oneshot/widen-overworld.mjs (run once, needs the
+  pre-widening route trace) inserted 3 columns after old x=5 and 2 after old
+  x=9: OVERWORLD_W 12 -> 17. Shifted room keys, house backs, every
+  `map:'overworld',floor:0,rx:` warp, every `'overworld', 0, x, y` in src and
+  tools, strands baseline, AUDITED-ROOMS, GUIDE.md/.html `overworld/0,x,y`,
+  and the route's `travel` steps taken ON THE OVERWORLD (map from the trace).
+  Hand fixes: check-overworld Pans/Reef covers, OW = OVERWORLD_W in
+  check-overworld/strands/progression/trade, find-crossings REGIONS,
+  check-gates VANE/CHASM, check-charms/check-items park rx, check-respawn,
+  check-playthrough CHAIN_SCREENS (now derived from deals in the data).
+- Save migration: progress.worldW; `widenOverworldX`/OVERWORLD_WIDENINGS in
+  overworld.js; migrate() moves pos/respawn/coin and chests/doors/secrets
+  (incl. `seen:overworld:`)/slain keys. test.mjs asserts it.
+- Pause map: a 136px window sliding on Link's column, arrows at the sides.
+- HORON KIT (rip-terrain.py): SP_GROUND hLawn, hLawnTuft, hYard,
+  hLawnYardN/S/E/W (Horon's scallop: lawn cell with the yard on one side; no
+  corner piece), hDirt, hFlowers, hTallGrass -> HORON_GROUND; SP_TOWN blocks
+  bFountain 2x2, bStool, bLogFence (fence:true, new tiledef field, exempt from
+  check-ground's three-in-a-row); BIGPROP treeHoron (7,13 tiles 8-9,1-2;
+  root highlights merged into tan). Palettes hLawn, hFlower, treeHoronTop/Bot.
+  Tiledefs treeLawn (Horon tree), bushLawn, rockLawn; TOWN_GROUNDS Lawn.
+  Legend 'horon' (g lawn, G tuft, y yard, . dirt, f flowers, v tall grass,
+  T/b/o lawn variants, town kit + F fountain, s stool, l palisade).
+- TIDEWATCH 0,4,7..0,8,8 composed as one 50x16 plan (scratchpad town.py; the
+  plan printout is in this entry's commit's overworld.js). Screens: Tidewatch
+  Village (Hearth house, Maku hollow 4,1), Village East (shop, door 2,4),
+  Tidewatch Square (fountain, stools, scrimshander, villager1/peatKey), Palisade
+  Row (shut house in log palisade, villager2), Tide Gate (tide pool, sandbar
+  creek rows 3-4 matching Sunken Reef, Mirren), Village Shore (Net-mender's,
+  door 3,4 — raised a row: a doorstep beside the south edge scrolled the
+  screen on the first step; back py 88; Pell), Driftwood Strand (timber yard,
+  Hulla), The Gardens, Wellside (well, shore salter/cisternKey), East Lawn.
+  Roads rows 5 and 13, lanes x 5, 15, 36. Seams agree exactly both ways.
+- SANDPIPER ROW 0,12,8..0,14,8 (townDunes): cottage + sign + fisher; shut
+  house between drying racks; net racks + Sennit. Thin (palm rows 0-1, 6-7):
+  revisit once its placeholder neighbours are real.
+- check-towns TOWNS (13 screens), TOWN_LEGENDS + 'horon', per-building base
+  strips Sand|Lawn. Route: keyD3 travel 6,7; keyD4 7,8; trade 4 8,7; trade 6
+  14,8; Net-mender's door goto 3,4; Bogmaw re-swept (reachSwing+diagRetreat).
+- New tools: shoot-region.mjs (stitch overworld screens, no HUD).
+
+### Verified (fba32ea + the busier-town commit)
+Whole table green; check-playthrough 43/43, THE END, never died; replay 51/51;
+check-rippers 31/31. test.mjs's fps assertion fails only when 4+ browsers run
+at once (passes alone).
+
+### Next: the 42 placeholder screens (the job for S158)
+`placeholder: true` in overworld.js, at the end of `rooms`. Columns 6-8, rows
+0-6 and 9 (Salt Pans rows 0-2, Drowned Wood 3-6, south shore 9) and columns
+13-14, rows 0-7 and 9 (Reef Palace approach 0-3, Coral 4-5, Dunes 6-7, shore 9).
+Each is its west neighbour's east-edge column repeated (stripes). Author each
+by hand as a quiet extension of its region, per row as one canvas (as town.py
+did): left edge = west neighbour's col 9, right edge = east neighbour's col 0,
+top/bottom agree with the cells above/below. Do NOT open new north-south links
+between new cells without check-progression + check-overworld (a new link
+could bypass a gate: the Pans vane, the Reef Palace approach). Run
+check-overworld / check-strands / check-ground / check-placement after each
+row. Then re-route and re-run check-playthrough (travel budgets on the wider
+map). Only then ask the human to move main.
+
+### Noticed, not chased
+- The Maku hollow `C` (treeHollow) is still the old tree's art beside Horon's.
+- Sandpiper Row's crabs and the town's crab/octorok were dropped (Horon has no
+  enemies in town); hearts/strands unaffected.
+- The illustrated guide (other branch) describes the old four-screen village.
+
+
 ## S156 — chests, sign, torches, push blocks and floor buttons are Seasons' own; the guide republished
 
 Branch claude/oracle-tides-side-content-pb1230 (off S155's

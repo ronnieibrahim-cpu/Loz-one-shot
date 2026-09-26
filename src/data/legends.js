@@ -213,7 +213,7 @@ export function installLegends() {
   registerLegend('horon', {
     ...townKit('Lawn'), 'C': 'treeHollow',
     'g': 'hLawn', 'G': 'hLawnTuft', 'y': 'hYard', '.': 'hDirt', 'f': 'hFlowers',
-    'T': 'treeLawn', 'b': 'bushLawn', 'o': 'rockLawn',
+    'T': 'treeLawn', 'b': 'bushLawn', 'o': 'rockLawn', 'v': 'hTallGrass',
   }, 'coast');
 
   // ---- dungeon: shared indoor vocabulary ---------------------------------

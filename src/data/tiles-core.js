@@ -1645,6 +1645,11 @@ function installTownBlocks() {
     treeOakDdBot: ['#e4dcc4', '#c8b088', '#907048', '#20140c'],
     // The palm's two halves share one palette — see the note in rip-terrain.py.
     palmFrond: ['#a7c947', '#5a9731', '#8c5527', '#000000'],
+    // Horon's round tree (S157): the canopy in the spring map's leaf greens,
+    // the root half in its timber browns with the leaf shadow at slot 1 — see
+    // the note on `treeHoron` in tools/rip-terrain.py.
+    treeHoronTop: ['#70e010', '#308800', '#308800', '#000000'],
+    treeHoronBot: ['#c08018', '#308800', '#603800', '#000000'],
   });
   const defs = {}, blocks = {};
   for (const [name, b] of Object.entries(TOWN_BLOCKS)) {
@@ -3027,10 +3032,13 @@ export function installCoreTiles() {
   TILE_DEFS.hYard.family = 'yard';
   TILE_DEFS.hDirt.family = 'dirt';
   TILE_DEFS.hFlowers.family = 'yard';
+  TILE_DEFS.hTallGrass.flags = F.TALLGRASS;
   // The things that stand on a lawn, naming the lawn as the ground under them
   // — the same art as everywhere else, the way `treeDark` names the Wood's.
   Object.assign(TILE_DEFS, {
-    treeLawn: { ...TILE_DEFS.tree, underArt: 'hLawn' },
+    // Horon's own tree, not the countryside oak (the human's choice, S157).
+    treeLawn: { ...TILE_DEFS.tree, underArt: 'hLawn',
+      quad: 'treeHoron', quadPalTop: 'treeHoronTop', quadPalBot: 'treeHoronBot' },
     bushLawn: { ...TILE_DEFS.bush, underArt: 'hLawn' },
     rockLawn: { ...TILE_DEFS.rock, underArt: 'hLawn' },
   });
@@ -3063,6 +3071,7 @@ export function installCoreTiles() {
   registerTransforms({
     bush: { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut', drop: 'common', sfx: 'cut' },
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
+    hTallGrass: { cut: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     bushLawn: { cut: 'hLawn', bomb: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     // FIRE AND NOTHING ELSE. No `cut`, no `bomb`, no `lift`: the whole point of

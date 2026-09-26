@@ -574,6 +574,16 @@ BIGPROPS = [
     # second painted every frond edge trunk-brown.
     ('palm', OW, 403, 307, 32, 32, _SAND_GROUND, False, (0, 1, 3), (1, 2, 3),
      'date palm: fronds over a trunk and sand mound'),
+    # HORON'S OWN TREE (S157), for the towns: the round tree of the Seasons
+    # spring map at screen 7,13 tiles 8-9,1-2, the yard's yellow flooded away
+    # from the border so it stands on whatever lawn it is put on. The root half
+    # has five colours where a palette holds four: on hardware its top eight
+    # rows are canopy in the green palette and its bottom eight roots in the
+    # brown one, and a 16x16 cell has one. The two stray light-green pixels
+    # join the dark green, and the twenty pale highlights on the roots join the
+    # tan — leaves, trunk and outline stay exact.
+    ('treeHoron', SP, 1 + 161 * 7 + 16 * 8, 1 + 129 * 13 + 16 * 1, 32, 32, [(248, 248, 112)], True,
+     (0, 1, 3), (0, 1, 0, 1, 2, 3), 'Horon round tree, on the lawn'),
 ]
 
 # --------------------------------------------------------------------------
@@ -731,6 +741,7 @@ SP_GROUND = [
     ('hLawnYardW', (8, 14, 8, 2), 'hLawn', 'lawn, the yard to its west'),
     ('hDirt',      (7, 14, 1, 0), 'hWood', 'the dirt of a path and the square'),
     ('hFlowers',   (7, 15, 3, 4), 'hFlower', 'a pink flower bed on the yard'),
+    ('hTallGrass', (6, 13, 4, 2), 'hLawn', "Horon's tall grass"),
 ]
 
 

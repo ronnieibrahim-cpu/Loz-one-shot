@@ -1,73 +1,43 @@
-# Next session (S157) — bigger towns by widening the map, faster text, throwing that flies
+# Next session (S158) — build the 42 new countryside screens
 
 ## Read first
-- CLAUDE.md, all of it.
-- `docs/NEXT-SESSION.md`, the S156 entry and its "Later the same session"
-  (the human's decisions are there).
+- CLAUDE.md, all of it (note the trap "The overworld is 17 screens across").
+- `docs/NEXT-SESSION.md`, the S157 entry (the human's decisions are there).
 
-## The human's decisions (S156, end of session)
-- TOWNS: **option 3** — make room on the overworld itself so towns can be
-  Horon-sized (Horon Village is about five screens by two: dirt paths, a
-  plaza with a fountain and benches, one building a screen, fences, gardens,
-  lawns). Tidewatch today is four crowded screens with ~12 townsfolk; Sandpiper
-  Row is one screen. The human wants them to "breathe", with the Oracle games
-  as reference and inspiration (assets/sheets/oracle-seasons-overworld-spring.png,
-  Horon at roughly x 780-1620, y 1700-2070).
-- TEXT: dialogue should scroll faster.
-- THROWING: in Seasons a lifted pot or rock is thrown across the floor and
-  hits enemies as a weapon; here a thrown object seems to vanish with no
-  travel. Fix it to behave like Seasons.
+## The human's decisions (S157)
+- Towns: Tidewatch is Horon's size (5x2), Sandpiper Row 3 screens — done.
+- New countryside screens are QUIET EXTENSIONS of their region: continue it,
+  paths lined up with both neighbours, a few enemies, Seasons' own tiles.
+  Secrets can come later.
+- Horon's own trees in the towns only; the countryside keeps its oaks.
+- Trading chain: leave as is.
+- Main: only moved with the human's explicit go-ahead. aa8bd8d is live; the
+  widening (fba32ea and after) is not, because of the placeholders.
 
 ## The task
-One commit per piece; the whole checker table before each commit.
-1. THROWING (small; do first). ThrownObject (src/game/items.js) lands after
-   ~14 frames at THROW_SPEED 2.5 px/f (all three throw constants in feel.js
-   are `guessed`), and shatters on the first wall/enemy overlap. Reproduce
-   in-engine first (try-room / shoot-steps: lift a pot in open ground, throw,
-   log its position each frame) — suspect an immediate `hitX/hitY` from the
-   spawn point (player.js throw, `this.x + dx*4`) or a collision with a solid
-   entity, rather than the arc. Then take Seasons' own throw from
-   oracles-disasm (the thrown-object code and its speed/gravity tables; tag
-   `derived` with file and table): how far it flies, its arc, the damage it
-   does, and that it breaks on landing. Add a check (extend check-items or a
-   new tool) that a thrown pot travels its Seasons distance and hurts an
-   enemy in its path. Film before/after for the human.
-2. TEXT SPEED (small). TEXT_FRAMES_PER_CHAR is 4, derived from Seasons'
-   default text speed 3 (code/textbox.s textSpeedData). Seasons offers
-   faster speeds; propose the faster cartridge value(s) (speed 4 or 5) to the
-   human with a side-by-side, change the constant (keep it `derived`, cite
-   the table row), re-record anything downstream (replay, watch-cutscenes).
-3. TOWNS, option 3 (large; the rest of the session and likely the next).
-   Plan first and SHOW the human a drawn plan (map sketch + Horon beside it)
-   before moving anything:
-   - Insert new overworld columns/rows so Tidewatch can grow to Horon's size
-     (and Sandpiper Row to 2-3 screens) without eating existing places.
-     Every screen key east/south of the insertion shifts: room data, warps,
-     gates, story/beat/errand references, the Coastwise Chain, check-towns'
-     TOWNS list, strands baselines, the playthrough ROUTE and its actor
-     directives, route-prefix numbers, guide references. Find a single place
-     to do the shift (a script) rather than by hand, and grep for every
-     hard-coded `0,x,y` key.
-   - Lay the towns out in Horon's grammar with the town kit (3x3 building
-     blocks; one corridor rule — read the CLAUDE.md trap), dirt paths, a
-     plaza, fences, flower beds; spread the townsfolk out.
-   - check-towns, check-overworld, check-strands (re-baseline only with a
-     reason), check-progression, check-placement, check-ground, check-side,
-     check-trade, check-respawn, then re-route the playthrough and get it
-     back to 43/43, to THE END, never died.
-4. Still owed from S156: the Coastwise Chain question (hints / distinct
-   traders / nothing); boss art for Thalassor, Gustharpy, Saltwraith (ask if
-   they should also be placed); approval to merge the illustrated-guide
-   branch claude/oracle-tides-guide-hb01hp (the merge was blocked by the
-   permission check; ask the human to approve it explicitly).
+One commit per region row; the whole checker table before each commit.
+1. Replace the 42 `placeholder: true` screens in src/data/overworld.js:
+   columns 6-8 rows 0-6 and 9, columns 13-14 rows 0-7 and 9. Compose each
+   row's new cells as one canvas (the way S157's town.py did Tidewatch):
+   left edge = the west neighbour's column 9, right edge = the east
+   neighbour's column 0, tide digits carried exactly, trees as 2x2 blocks
+   that never straddle a seam, both sides of every seam agreeing.
+   Keep north-south links between new cells closed unless check-progression
+   and check-overworld prove no gate is bypassed.
+2. After each row: check-overworld, check-strands, check-ground,
+   check-placement, check-progression, validate. Show the human the row
+   (shoot-region) beside its neighbours.
+3. Sandpiper Row: revisit once its neighbours are real (it is a thin street).
+4. Re-run check-playthrough (travel budgets on the wider map); keep 43/43,
+   to THE END, never died. Then ask the human to move main.
+5. Ask: boss art for Thalassor, Gustharpy, Saltwraith (and whether to place
+   them); approval to merge claude/oracle-tides-guide-hb01hp (its town
+   pages describe the old four-screen village).
 
 ## Done means
-- Every checker in CLAUDE.md's table green, check-playthrough 43/43 or more,
-  to THE END, never died; check-rippers green.
-- `npm run build`, `dist/` committed, NEXT-SESSION.md and this file updated.
-- Push to the session branch; the human wants finished work on main too
-  (main is live on GitHub Pages), so fast-forward main when green.
+- Every checker in CLAUDE.md's table green, check-playthrough 43/43.
+- `npm run build`, dist/ committed, NEXT-SESSION.md and this file updated,
+  pushed to the session branch; main only with the human's go-ahead.
 
 ## Out of scope
-- Enemy damage and health (the human said no in S150).
-- A camera that frames bosses (the human said leave it, S153).
+- Enemy damage and health (S150). A camera that frames bosses (S153).
