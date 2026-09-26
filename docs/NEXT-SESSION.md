@@ -61,6 +61,10 @@ claude/oracle-tides-side-content-iqiosb; S154, S155 and S156 are NOT on main).
   plaza with a fountain, one building a screen, fences and flowerbeds) with
   Tidewatch (four screens, twelve townsfolk). Proposal sent; awaiting choice.
 
+- END OF SESSION, the human chose: towns OPTION 3 (widen the overworld so
+  towns can be Horon-sized), faster text, and thrown pots/rocks that fly and
+  hurt like Seasons'. All three are NEXT-PROMPT S157's tasks.
+
 ### Noticed, not chased
 - The Grotto's push block is pink (the ice maze's palette 6), beside the
   room's grey static block tiles. That is the source's colour; if it reads
