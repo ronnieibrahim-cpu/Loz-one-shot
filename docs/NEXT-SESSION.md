@@ -26,14 +26,64 @@ claude/youthful-cerf-yqqh2k at ed99454). Main is still at aa8bd8d: the widening
 Whole table green (test.mjs's fps check fails only with 4 browsers at once;
 passes alone), check-playthrough 43/43, THE END, never died.
 
-### Still open (ask the human)
-1. Sandpiper Row: thin (palms two rows deep top and bottom). Proposal put to
-   the human: thin the palm bands and open a lane north into the new dunes
-   screens, the way Horon has several ways out. Awaiting an answer.
-2. Moving main (aa8bd8d -> this branch's head).
-3. Boss art for Thalassor / Gustharpy / Saltwraith, and whether to place them.
-4. Merging the picture-guide branch claude/oracle-tides-guide-hb01hp (its town
-   pages describe the old four-screen village).
+### Later the same session — the human said "yes to all", and more
+Decisions (bind the next session):
+1. Sandpiper lanes: yes. 8bb1e34: a lane north out of 0,14,8 (cols 6-7) into
+   Channel Dunes and one south out of 0,13,8 (cols 4-5) to Sandbar Shallows.
+2. MAIN: moved to 8bb1e34 with the human's yes (countryside + Sandpiper).
+   Everything after it (opening, get-item fix, town themes) is NOT on main.
+3. Picture guide: yes, merge — BUT the branch has no common history with ours
+   (`git merge-base` finds none; it predates a history rewrite). Its content
+   is docs/guide/ + tools/guide/ only (see its README). Its pictures show the
+   old map and the old Farore intro, and tools/guide/shots.mjs indexes ROUTE
+   directives that have all moved (+~30 at the start in S158). Job: copy the
+   two directories over (`git checkout origin/claude/oracle-tides-guide-hb01hp
+   -- docs/guide tools/guide`), re-number shots.mjs against
+   `node tools/route-prefix.mjs 0`, re-capture, rewrite the opening chapter
+   and the town pages, carry over the artifact-only edits (S156 notes), build.
+4. OPENING (human chose "Seasons-style"). Done — see below.
+5. GET-ITEM: the Rod and the Maku sword used a made-up fanfare + a picture
+   card; now held overhead to Seasons' item tune. Done.
+6. TOWN THEMES: "each town its own theme, original, calm and serene". Done.
+7. BOSSES (Thalassor the eel, Gustharpy, Saltwraith): the human chose "both
+   smaller side dungeons AND a bigger optional dungeon", rewards a Piece of
+   Heart or an optional scrimshaw band/charm, "make those more fleshed out".
+   NOT STARTED — the job for S159 (see NEXT-PROMPT).
+8. An intro pixel-art cutscene like the originals': TABLED by the human for
+   its own later session.
+
+What landed after 8bb1e34:
+- OPENING (one commit). New game starts at 0,4,9 Fishing Stones (72,40,
+  facing up), holding nothing; intro is two title cards only. Teel (the
+  stage-10 trader, now with `beat: wakeBeach` -> flag metFisher) sends Link
+  to Wenna (villager2 in Palisade Row, `beat: bladeHint`, unlessItem sword ->
+  heardBlade). New cave `caveShipwright` "Shipwright's Hollow" (caves.js) in
+  a bluff on Gull Sands 0,6,9 (mouth 4,1): wall with one gap, block behind it
+  (a block moves once, so it sits at 4,2 and is pushed to 4,1), big chest
+  6,1 = sword L1. Maku Tree beat `makuKey` now `needItem: 'sword'` and uses a
+  new cutscene step `{ key: 'd1' }` then sends Link to Farore. New interior
+  `faroreShrine` (house) behind a town-kit house on Tern Point 0,8,9 (legend
+  'town', door 4,4; in check-towns TOWNS): Farore with `beat: faroreConch`
+  (-> gotConch) giving the conch via a new cutscene step
+  `{ present: { item, level } }`; she no longer stands in the Maku grove.
+  Engine: NPC beats take needItem/unlessItem/needFlag; Trader.interact plays
+  a beat first; `Game.tickItemShow` runs in cutscene mode too so a scene can
+  wait for a held-up item. Route: new opening directives + equip conch B /
+  sword A (the chest put the sword on B). check-playthrough now asserts the
+  intro gives nothing and the first two items are sword then conch (44
+  assertions). test.mjs, check-gates, check-respawn, check-trade updated;
+  replays village-walk and tide-steps-split re-recorded (the new start
+  consumes the RNG differently; both still end where they did).
+- TOWN THEMES: tracks `tidewatch` (D, 80 bpm lullaby) and `sandpiper` (F, 72
+  bpm, p2 = echo of p1) in src/data/audio.js; the ten Tidewatch screens and
+  three Sandpiper screens use them. audio-render baseline recorded for both.
+  New tool tools/render-track.mjs renders a track to WAV (in CLAUDE.md).
+
+### Noticed, not chased
+- Essence scenes still have Farore speak off-screen ("Farore: One...").
+  Consistent with her being met now, but a portrait `show` could be added.
+- houses still play `village` (the old bouncy town track).
+- The Shipwright's Hollow block wears the default (Grotto) block colours.
 
 
 ## S157 — thrown pots fly, fastest text, the overworld 17 screens across, Tidewatch at Horon's size

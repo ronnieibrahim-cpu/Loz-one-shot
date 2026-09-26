@@ -1,26 +1,42 @@
-# Next session (S159) — whatever the human decided at the end of S158
+# Next session (S159) — optional side dungeons for the three unused bosses
 
 ## Read first
 - CLAUDE.md, all of it.
-- `docs/NEXT-SESSION.md`, the S158 entry (and S157 for the human's standing
-  decisions: towns Horon-sized, quiet countryside, trading chain closed).
+- `docs/NEXT-SESSION.md`, the S158 entry (the human's decisions are there).
+- `docs/DUNGEON-STATUS.md` — this is dungeon work.
 
 ## State
-- All 170 overworld screens are authored; no `placeholder: true` is left.
-- Main is at aa8bd8d. The widening (S157) and the countryside (S158) are on
-  claude/oracle-tides-countryside-y6ejle and NOT on main. Move main only with
-  the human's explicit go-ahead.
+- Main is at 8bb1e34 (countryside + Sandpiper lanes). The new opening, the
+  get-item fix and the town themes are on claude/oracle-tides-countryside-y6ejle
+  and NOT on main: ask the human before moving it.
+- The game opens washed up on the Fishing Stones; sword from the Shipwright's
+  Hollow, conch from Farore on Tern Point. check-playthrough is 44/44.
 
 ## The task
-Ask the human these first, then do what they choose:
-1. Sandpiper Row: widen its street / open a lane north into the new dunes?
-2. Move main to the countryside branch's head?
-3. Boss art for Thalassor, Gustharpy, Saltwraith — and place them anywhere?
-4. Merge claude/oracle-tides-guide-hb01hp (its town pages are out of date)?
+1. OPTIONAL CONTENT FOR THE UNUSED BOSSES. The human chose BOTH: small side
+   dungeons AND one bigger optional dungeon, "more fleshed out", rewarding a
+   Piece of Heart or an optional scrimshaw charm. Bosses/minibosses already
+   defined in src/data/bosses.js with no room: Thalassor (eel, boss, pull
+   scales with the water), Gustharpy and Saltwraith (minibosses). Propose a
+   plan to the human FIRST (with a picture of where each entrance goes):
+   e.g. two small side dungeons (Gustharpy in the Salt Pans' new columns,
+   Saltwraith under the reef) each ending in a Piece of Heart, and one larger
+   optional dungeon with Thalassor as its boss paying a charm. Each must lean
+   on a tide consequence no main dungeon already states (CLAUDE.md design
+   rules) and reuse items the player owns. Mind check-hearts (24 pieces ->
+   cap window 14-16): new pieces change the count; adjust with the human.
+2. BOSS ART: the three have no Seasons art yet. As S152 did for Anemos,
+   build candidates from the cartridge's own boss sprites (tools/rip-bosses.py,
+   assets/bosses/; clone Stewmath/oracles-disasm for more gfx) and let the
+   human choose from pictures.
+3. THE PICTURE GUIDE: merge it (the human said yes). See NEXT-SESSION S158,
+   decision 3, for why it is a copy + recapture, not a git merge.
+4. Tabled by the human for its own later session: a pixel-art intro cutscene.
 
 ## Done means
-- Every checker in CLAUDE.md's table green, check-playthrough 43/43, THE END,
-  never died.
+- Every checker in CLAUDE.md's table green; check-playthrough 44/44, THE END,
+  never died (the side dungeons are optional; check-side should prove each
+  prize can be won).
 - `npm run build`, dist/ committed, NEXT-SESSION.md and this file updated,
   pushed; main only with the human's go-ahead.
 
