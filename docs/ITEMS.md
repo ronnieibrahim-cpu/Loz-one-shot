@@ -102,7 +102,15 @@ that performs it, not a puzzle the player has to solve before their own item
 will work.
 
 The tide keeps exactly one word in it: **deep water puts it out.** A shell
-carried into the deep gutters and has to be set down and struck again. That is
+carried into the deep gutters and has to be set down and struck again.
+
+**Thrown, it flies as itself (S160).** Lift it (A) and A again throws it: it
+flies the same arc a pot does and comes down still burning — unless its line
+crossed deep water, which puts it out in the air. It burns what it passes and
+what it lands beside, from any side. A carried shell comes with you into the
+next room. And a room may be **damp** (`damp: true`): there the shell will not
+strike at all, so fire has to be carried in lit. The Salt Pan's lower vault is
+built on both (`tools/check-kiln.mjs`). That is
 enough to keep it in conversation with the rest of the roster — every item here
 negotiates with the sea — without making "light a torch" a route problem.
 

@@ -32,7 +32,7 @@
 
 import { installData } from '../src/data/index.js';
 import { OVERWORLD_W, OVERWORLD_H } from '../src/data/overworld.js';
-import { MAPS, getRoom, dungeons } from '../src/world/maps.js';
+import { MAPS, getRoom, dungeons, optionalDungeons } from '../src/world/maps.js';
 import { getTileDef, F } from '../src/world/tileset.js';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
 import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
@@ -141,6 +141,43 @@ const DUNGEONS = dungeons().map(d => ({
   doors: doorsLeadingTo(d.id),
   grants: grantsOf(d.id),
 }));
+
+// --------------------------------------------------------------------------
+// THE OPTIONAL DUNGEONS (S160). Side content: not in `DUNGEONS`, so the run
+// above them neither waits for them nor counts them, and nothing they hold can
+// open anything — which is asserted, not assumed. What is asked of each is
+// the other half: that its door can be walked to, and at the point in the
+// game it says it opens (`dungeon.opensAt`, in Essences).
+//
+// Two of them are entered from INSIDE a cave rather than off the overworld,
+// so the way in is two hops: the overworld door into the host map, and then
+// the host map's own way down — which may be a keyhole (the Sunken Palace's
+// seal takes the Bell's Clapper). A keyhole in the host room is open to a
+// flood holding its key, the same rule `walkable` gives an overworld one.
+// --------------------------------------------------------------------------
+const OPTIONALS = optionalDungeons().map(d => {
+  let doors = doorsLeadingTo(d.id), host = null, seals = [];
+  if (!doors.length) {
+    for (const hm of MAPS.values()) {
+      if (hm.kind === 'dungeon' || hm.id === 'overworld') continue;
+      for (const [k, def] of Object.entries(hm.roomDefs)) {
+        if (!(def.warps || []).some(w => w.to && w.to.map === d.id)) continue;
+        host = hm.id;
+        const room = getRoom(hm.id, ...k.split(',').map(Number));
+        for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
+          const td = defAt(room.baseName(x, y), 1);
+          if (td && td.keyFlag) seals.push(td.keyFlag);
+        }
+      }
+    }
+    doors = host ? doorsLeadingTo(host) : [];
+  }
+  return { id: d.id, name: d.name, opensAt: d.dungeon.opensAt, essence: d.dungeon.essence,
+    item: d.dungeon.item, host, seals: [...new Set(seals)], doors, grants: grantsOf(d.id) };
+});
+const optionalOpen = (o, reached, flags) => o.doors.some(w => reached.tiles.has(`${w.screen}:${w.x},${w.y}`))
+  && o.seals.every(f => flags.has(f));
+const optionalFirst = new Map();         // id -> Essences held when its door was first reached
 
 // --------------------------------------------------------------------------
 // The grants that are not in a dungeon: an NPC or a chest that waits for a
@@ -322,6 +359,12 @@ console.log(`  a new game holds: ${START_ITEMS.map(([i, l]) => `${i} L${l}`).joi
 
 for (let round = 1; round <= DUNGEONS.length + OFFERS.length + 2; round++) {
   const reached = flood(held, flags);
+  for (const o of OPTIONALS) {
+    if (!optionalFirst.has(o.id) && optionalOpen(o, reached, flags)) {
+      optionalFirst.set(o.id, essences);
+      stages.push({ round, kind: 'optional', label: `(optional) ${o.name}'s door, at ${essences} Essence(s)` });
+    }
+  }
 
   // Anything an NPC or a chest owes you, that you can now walk to.
   let gained = false;
@@ -413,6 +456,28 @@ for (const d of DUNGEONS) {
     check(`${d.id.toUpperCase()}'s door stays shut without '${keyFlag}'`,
       !doorReached(d, flood(held, without)), 'reached without its key');
   }
+}
+
+// --- 4c. the optional dungeons (S160) ---------------------------------------
+//
+// Reachable, at the Essence count each one declares, and holding nothing the
+// route could need: no Essence, no item (a charm or a Piece of Heart is fine —
+// neither opens a door). Because they are not in DUNGEONS, every assertion
+// above is exactly what it was before they existed.
+for (const o of OPTIONALS) {
+  const at = optionalFirst.get(o.id);
+  check(`(optional) ${o.name}'s door is reachable`, at !== undefined, 'never reached');
+  check(`(optional) ${o.name} opens at ${o.opensAt} Essence(s), as it declares`,
+    at === o.opensAt, `first reached at ${at}`);
+  check(`(optional) ${o.name} holds no Essence and no item the route could need`,
+    o.essence == null && !o.item && o.grants.length === 0,
+    `essence ${o.essence}, item ${o.item}, grants ${grantLabel(o.grants)}`);
+}
+for (const o of OPTIONALS.filter(x => x.seals.length)) {
+  // A seal must seal: a finished game without its key cannot get in.
+  const without = new Set([...flags].filter(f => !o.seals.includes(f)));
+  check(`(optional) ${o.name}'s seal stays shut without ${o.seals.map(f => `'${f}'`).join(', ')}`,
+    !optionalOpen(o, finalReach, without), 'open without its key');
 }
 
 // --- 5. the order is a real order -----------------------------------------

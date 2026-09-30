@@ -486,6 +486,45 @@ console.log('\n--- 10. dying to Gohmaraq, with the fight actually running ---');
 }
 
 // --------------------------------------------------------------------------
+// A MINIBOSS ROOM PAID OUT ON A DEATH (S160). `respawn` resets the sea before
+// it enters the room it puts the player in, and a tide change is a room event
+// — so the DEAD room was asked whether its puzzle was solved with every entity
+// just cleared out of it, and an `enemies: true` room said yes: its reward
+// spawned into the respawn room and its flag was set, so the fight was over
+// for good without being won. Found by the Salt Pan's lower vault's robot
+// dying to the Saltwraith and waking up next to its Piece of Heart. Proved
+// here on D4's Ironknight, with the sea set away from the point's so the
+// respawn has to change it.
+console.log('\n--- 10b. dying to a miniboss does not win its room ---');
+{
+  await page.evaluate(() => {
+    const g = window.__game;
+    g.progress.maxHearts = 12; g.progress.hearts = 12;
+    g.tide.setLevel(0, { instant: true });
+    g.enterMap('d4', 0, 3, 7, 112, 128, 'up', { instant: true });
+  });
+  await frames(6);
+  await page.evaluate(() => {
+    const g = window.__game;
+    g.enterMap('d4', 0, 5, 3, 40, 80, 'right', { instant: true });
+    g.tide.setLevel(1, { instant: true });
+  });
+  await frames(90);
+  const live = await page.evaluate(() => window.__game.entities.some(e => e.isEnemy && !e.dead));
+  check('the Ironknight is standing in its gallery', live);
+  const over = await die();
+  check('dying in the gallery reaches the game-over screen', over);
+  await where();
+  const after = await page.evaluate(() => {
+    const g = window.__game;
+    return { flag: !!g.progress.flags.d4_ironknight, room: g.room.key,
+      rewards: g.entities.filter(e => e.constructor.name === 'Pickup').length };
+  });
+  check('and the gallery is NOT won by the death: its flag is not set',
+    after.flag === false, JSON.stringify(after));
+}
+
+// --------------------------------------------------------------------------
 // `respawn` sets `mode = 'play'` unconditionally, and that is a CLAIM about
 // what the game is doing. Anything that owns the mode has to be torn down with
 // it, or the respawn room opens with the interrupted thing still on top of it.

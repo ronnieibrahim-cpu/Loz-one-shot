@@ -54,7 +54,7 @@ played strictly in order; check-progression and check-playthrough prove it.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
-### The optional dungeons (S159 plan) — APPROVED, NOT BUILT
+### The optional dungeons (S159 plan) — APPROVED; BEING BUILT (S160)
 
 The human chose "both smaller side dungeons AND a bigger optional dungeon",
 more fleshed out, for the three bosses the six-dungeon fold left without a room
@@ -66,9 +66,15 @@ player already owns:
 
 | Optional | Where | Rooms | Theme (item) | Boss | Prize | Status |
 |---|---|---|---|---|---|---|
-| The Salt Pan Vault, lower vault | stair down inside `cave3` (Vault Approach 0,9,1) | ~6 | fire the sea puts out (Kilnshell: deep water douses it; carry and set it through the tide) | `saltwraith` | Piece of Heart | to do |
+| The Salt Pan Vault, lower vault | stair down inside `cave3` (Vault Approach 0,9,1) | 6 | fire the sea puts out (Kilnshell: damp rooms will not strike it; carry it down lit and throw it at LOW over the sumps and into the dry kelp) | `saltwraith` | Piece of Heart | **DONE S160** — map `vault`, the Hero's Cave kit; proved by `check-kiln.mjs` and `check-side.mjs` |
 | The Gullwind Eyrie | NEW cave mouth in the north cliff of Kell Corner 0,3,2 | ~6 | the tide change is how you move (Ferryman's Coin: throw, sound, swap) | `gustharpy` | Piece of Heart | to do |
 | The Sunken Palace | stair down inside `cave4` (Palace Mouth 0,15,1; its notice "The rest of it is under") | 16-18, 2 floors | the sea's height decides which floor you're on (a NEW whirlpool tile) | `thalassor` | 2 Pieces of Heart + the charm "Coilbone" (any case: a moment's safety each tide change) | to do; opens after D5 |
+
+HOW AN OPTIONAL DUNGEON DECLARES ITSELF (S160): `dungeon.optional: true`,
+no `essence`, no `item`, and `opensAt` (Essences) for check-progression;
+`index` keeps meaning "owns what the first `index` dungeons hand over".
+`dungeons()` is the six; `optionalDungeons()` the rest. check-hearts pins each
+one's pieces in OPTIONAL_PIECES and counts an unbuilt one as planned.
 
 Hearts: 24 + 4 = 28 pieces -> 7 containers -> cap 16, inside P9's 14-16
 window (2 new pieces would leave a remainder; 4 is the number). Build order:

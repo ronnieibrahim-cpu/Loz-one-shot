@@ -343,8 +343,21 @@ export function installLegends() {
   registerLegend('dungeonWood', {
     'C': 'dExitWood', '(': 'dPillarWoodW', ')': 'dPillarWoodE', '9': 'dDrownWood',
   }, 'dungeonWood');
-  theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
-  theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
+  // THE THREE OPTIONAL DUNGEONS (S160), each an Oracle dungeon in the kit of
+  // a Seasons dungeon no main one had taken (see `optionalKit` in
+  // tiles-core.js): the Salt Pan's lower vault, the Gullwind Eyrie and the
+  // Sunken Palace. Each leaves by the lit step between two pillars, `(C)`.
+  for (const T of ['Salt', 'Eyrie', 'Palace']) {
+    theme('dungeon' + T, 'dFloor' + T, 'dFloor' + T + 'Alt', 'dWall' + T, 'dWall' + T + 'X', 'dBlock' + T, 'dUrn' + T);
+    registerLegend('dungeon' + T, {
+      'C': 'dExit' + T, '(': 'dPillar' + T + 'W', ')': 'dPillar' + T + 'E',
+    }, 'dungeon' + T);
+  }
+  // The lower vault's drift-tangle `&`, and its kelp `5` — a tide tile, so
+  // a digit: dry and burnable at LOW, sodden above it. `5` is the outdoor
+  // `channel`, which no indoor room places, so repointing it moves nothing
+  // outside this dungeon (the Shrine's and the Spire's argument).
+  registerLegend('dungeonSalt', { '&': 'dTangleSalt', '5': 'dKelpSalt' }, 'dungeonSalt');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in
   // the shared vocabulary is already spoken for. `6` is `dRaceE`, one of the

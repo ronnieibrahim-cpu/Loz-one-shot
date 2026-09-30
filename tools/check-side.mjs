@@ -177,6 +177,57 @@ const SCENARIOS = [
       ['hold', ['down'], 20], ['hold', ['right'], 40], ['wait', 20]],
     expect: `!g.dive && g.entities.filter(e => e.kind === 'salvage' && !e.remove).length === 5 && g.player.inDeep || ('deep ' + g.player.inDeep + ', casks ' + g.entities.filter(e => e.kind === 'salvage' && !e.remove).length)`,
   },
+  // THE SALT PAN'S LOWER VAULT (S160), an optional dungeon: the Kilnshell's.
+  // One run from the Kiln Stair to the Saltwraith's Piece of Heart, the fire
+  // struck in the dry kiln each time and carried down lit, thrown at LOW over
+  // the sumps and into the kelp. The pan is fought at HIGH, where brine thins
+  // the wraith's bolts (tools/check-kiln.mjs proves each throw on its own).
+  {
+    name: "The Lower Vault: the fire carried down from the kiln and thrown at LOW wins the Saltwraith's Piece of Heart",
+    setup: setup({ items: { sword: 1, conch: 1, kilnshell: 1 }, equipA: 'sword', equipB: 'kilnshell',
+      maxHearts: 32, hearts: 32, tide: 0, enter: ['vault', 0, 1, 2, 112, 128, 'up'] }),
+    steps: [
+      // the Kiln Stair: strike into the tangle, lift the shell
+      ['goto', 7, 4, 300], ['hold', ['up'], 2], ['use', 'kilnshell', 1, 30], ['wait', 20], ['tap', 'a', 30],
+      ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
+      // the Sump: thrown from the bank to the island brazier
+      ['goto', 3, 5, 600], ['hold', ['right'], 2], ['tap', 'a', 90],
+      // back to the kiln for a new flame, and on to the Kelp Cell
+      ['goto', 7, 9, 600], ['hold', ['down'], 40], ['wait', 20],
+      ['goto', 7, 4, 400], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
+      ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 13, 5, 600], ['hold', ['right'], 40], ['wait', 30],
+      ['goto', 7, 5, 600], ['hold', ['up'], 2], ['tap', 'a', 90],
+      ['goto', 7, 2, 300], ['hold', ['left'], 2], ['tap', 'a', 30], ['dialogue', 300], ['wait', 30],
+      ['goto', 7, 1, 200], ['hold', ['left'], 24], ['wait', 20],
+      // the Small Key turned in the Sump's west door, with empty hands
+      ['goto', 7, 5, 300], ['hold', ['down'], 2], ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 20],
+      ['goto', 1, 5, 300], ['hold', ['left'], 4], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
+      ['goto', 7, 9, 600], ['hold', ['down'], 40], ['wait', 20],
+      ['goto', 7, 4, 400], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
+      ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 30],
+      // the Brine Gallery: tangle, near brazier, then the island
+      ['goto', 3, 6, 600], ['hold', ['up'], 2], ['tap', 'a', 90], ['tap', 'a', 30],
+      ['goto', 3, 5, 300], ['hold', ['up'], 2], ['tap', 'a', 90], ['hold', ['up'], 8], ['tap', 'a', 30],
+      ['goto', 9, 5, 600], ['hold', ['down'], 2], ['tap', 'a', 90],
+      ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
+      // the Kiln Walk: dry, so struck where it is needed
+      ['fight', 3000, 3000], ['goto', 11, 5, 600], ['hold', ['right'], 2], ['use', 'kilnshell', 1, 40], ['wait', 30],
+      ['goto', 13, 5, 300], ['hold', ['right'], 40], ['wait', 40],
+      // the Saltwraith's Pan, at HIGH
+      ['equip', 'conch', 'B', 120], ['tide', 2, 20, 600], ['wait', 60], ['goto', 3, 5, 300],
+      ['boss', 14000, 'saltwraith'], ['wait', 120], ['loot', 900], ['wait', 60],
+    ],
+    expect: `g.progress.flags.vault_wraith && g.progress.heartPieces === 1 || ('wraith ' + !!g.progress.flags.vault_wraith + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
+  },
+  {
+    name: 'The Lower Vault: without the Kilnshell the tangle on the Kiln Stair is a wall',
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
+      enter: ['vault', 0, 1, 2, 112, 128, 'up'] }),
+    steps: [['goto', 7, 4, 300], ['hold', ['up'], 90], ['tap', 'a', 30], ['hold', ['up'], 60], ['wait', 20]],
+    expect: `g.room.key === '0,1,2' && g.room.baseName(7, 3) === 'dTangleSalt' || ('got to ' + g.room.key)`,
+  },
 ];
 
 const server = createServer(async (req, res) => {

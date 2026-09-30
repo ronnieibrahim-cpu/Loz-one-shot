@@ -183,7 +183,7 @@ export function installCaves() {
       '0,0,0': {
         map: [
           '##########',
-          '#........#',
+          '#....../.#',
           '#.2222...#',
           '#.2222.o.#',
           '#.2222...#',
@@ -199,7 +199,12 @@ export function installCaves() {
           ['chest', 4, 3, { big: true, item: 'bottle', level: 1 }],
         ],
         readable: [[7, 3, 'Salt-etched: "One swallow of the sea, kept where the sea cannot follow it."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } }],
+        warps: [
+          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
+          // THE LOWER VAULT (S160), an optional dungeon: the Kilnshell's.
+          // See src/data/dungeons-optional.js.
+          { x: 7, y: 1, to: { map: 'vault', floor: 0, rx: 1, ry: 2, px: 112, py: 128, dir: 'up' } },
+        ],
       },
     },
   });

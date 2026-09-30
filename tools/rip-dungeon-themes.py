@@ -70,7 +70,59 @@ SHEETS = {
     'crypt': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-explorers-crypt.png'),
     'moth': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-poison-moths-lair.png'),
     'dragon': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-dancing-dragon.png'),
+    # NOT SHEETS: three Seasons dungeons read straight out of the cartridge's
+    # own tileset data (S160), because no rendered sheet in assets/sheets/ has
+    # them. `meta:NN` is Seasons tileset $NN, built the way the Game Boy builds
+    # it — graphics, layout, palettes — by tools/rip-objects.py's `Tileset`,
+    # from assets/objects/oracles-disasm/seasons/. The 256 metatiles are laid
+    # out 16 to a row at a 16px pitch, so a pick's coordinate is just its
+    # metatile number: see `meta()` below.
+    'heros': 'meta:36',
+    'snakes': 'meta:38',
+    'unicorn': 'meta:3b',
 }
+META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains", 'meta:3b': "Unicorn's Cave"}
+
+
+def meta(name, m, note, sheet, **opt):
+    """A pick of metatile `m` of a `meta:` sheet, in the (name, x, y, note, sheet) shape."""
+    return (name, (m % 16) * 16, (m // 16) * 16, note, dict(sheet=sheet, **opt) if opt else sheet)
+
+
+def render_tileset(index):
+    """All 256 metatiles of Seasons tileset `index`, 16 to a row, as an RGB image.
+
+    Each 8x8 quarter is drawn in its OWN palette, rather than asserting one
+    palette a metatile the way rip-objects does: every metatile picked here is
+    single-palette (the quantiser would say so), but the unpicked ones in the
+    same image need not be."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('rip_objects', os.path.join(ROOT, 'tools', 'rip-objects.py'))
+    ro = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ro)
+    t = ro.Tileset(index)
+    im = Image.new('RGB', (256, 256), (0, 0, 0))
+    for m in range(256):
+        tiles, attrs = t.map[m * 8:m * 8 + 4], t.map[m * 8 + 4:m * 8 + 8]
+        for q in range(4):
+            a = attrs[q]
+            tile = t.vram[(a >> 3) & 1].get(ro.addr(tiles[q]))
+            pal = t.pals[a & 7]
+            if tile is None or pal is None:
+                continue
+            for y in range(8):
+                for x in range(8):
+                    sx = 7 - x if a & 0x20 else x
+                    sy = 7 - y if a & 0x40 else y
+                    im.putpixel(((m % 16) * 16 + (q % 2) * 8 + x, (m // 16) * 16 + (q // 2) * 8 + y),
+                                pal[tile[sy][sx]])
+    return im
+
+
+def open_sheet(path):
+    if path.startswith('meta:'):
+        return render_tileset(int(path[5:], 16))
+    return Image.open(path).convert('RGB')
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
 # name, x, y, note.  The note's "xN" is the tile's occurrence count on the map,
@@ -78,7 +130,8 @@ OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 PICKS = [
     # ---- floors ----------------------------------------------------------
     ('ruinFloor',   531, 1290, 'x1196 sunken rosette flagstone, the ruin floor'),
-    ('ruinFloorAlt', 756, 1290, 'x94 the same flagstone, worn smooth'),
+    # (`ruinFloorAlt` 756,1290: drawn by nothing once S160 gave the Salt and Palace
+    # themes Seasons kits; removed from the rip.)
     ('paleFloor',  1986,   42, 'x1244 pale mottled flagstone, the commonest floor on the map'),
     ('reefFloor',   659,   42, 'x201 pale blue flagstone with a scored ring'),
     # (`abyssFloor` 81,2799 was the Keep's floor until S142.)
@@ -93,7 +146,8 @@ PICKS = [
     # before trusting a pick. The Salt Pan Vault uses `paleFloor` instead.
     # (`panelFloor`, the tan four-panel floor at 740,1499, was the Cistern's
     # until S140 gave it the Dancing Dragon's kit; nothing else drew it.)
-    ('gildFloor',  2725,  444, 'x19 olive floor under a gold lattice'),
+    # (`gildFloor` 2725,444: drawn by nothing once S160 gave the Salt and Palace
+    # themes Seasons kits; removed from the rip.)
 
     # ---- walls -------------------------------------------------------------
     #
@@ -116,7 +170,8 @@ PICKS = [
     # (`emberWall` 499,1274, brown brick in courses, was the Shrine's wall
     # until S140.)
     # (`cryptWall` 2114,428 was the Keep's wall until S142.)
-    ('studWall',      225,  396, 'x16 blue-grey wall banded with gold studs'),
+    # (`studWall` 225,396: drawn by nothing once S160 gave the Salt and Palace
+    # themes Seasons kits; removed from the rip.)
     # DIRECTIONAL. A horizontal run, for the top course of a room. Never a fill.
     ('hatchWall',       1,   42, 'x196 pale wall RUN, lit face and hatched base'),
     # DIRECTIONAL. Vertical barrel-vaulting. Never a fill.
@@ -133,7 +188,8 @@ PICKS = [
     # itself, which is what "tiles in both axes" means and is a property of the
     # SOURCE rather than a judgement — see the wall note above for why that
     # matters. From the True Colors half; see SHEETS.
-    ('laceWall',     1280, 1492, 'ornate lattice, tiles in both axes', 'ruins'),
+    # (`laceWall` 1280,1492: drawn by nothing once S160 gave the Salt and Palace
+    # themes Seasons kits; removed from the rip.)
 
     # ---- blocks and props --------------------------------------------------
     # (`cryptBlock` 1,1370 was the Keep's and the Shrine's block until S141-S142.)
@@ -439,6 +495,108 @@ PICKS = [
     ('kShutW',   2068, 2602, 'shutter in a west wall, teeth into the room'),
     ('kShutE',   2068, 2619, 'shutter in an east wall, teeth into the room'),
     ('kBossN',   2227, 1628, 'boss door in a north wall'),
+
+    # ---- THE THREE OPTIONAL DUNGEONS' KITS (S160) --------------------------
+    #
+    # Read out of the cartridge's tilesets rather than off a sheet: every
+    # Seasons dungeon tileset lays its metatiles out on the same plan, which
+    # the room layouts in oracles-disasm/rooms/seasons/large/ show directly
+    # (counted over every room that tileset draws): the ring is $b8 $b0 $b9 /
+    # $b3 $b1 / $ba $b2 $bb, key doors $70-$73 and boss doors $74-$77 and
+    # shutters $78-$7b in the order N E S W, the lit way out $00 between two
+    # pillars $e6, the pot $10, the push block $1d. None of the three draws a
+    # jamb beside an open doorway — the ring runs straight to the gap, as the
+    # Explorer's Crypt's does — so there are none to cut.
+    #
+    # THE SALT PAN'S LOWER VAULT wears the Hero's Cave: gold masonry round a
+    # grey gravel floor, which is the salt pan's own ground gone underground.
+    meta('hRingTL', 0xb8, 'ring corner, north-west, the Hero\'s Cave', 'heros'),
+    meta('hRingN', 0xb0, 'ring run, north wall, the Hero\'s Cave', 'heros'),
+    meta('hRingTR', 0xb9, 'ring corner, north-east, the Hero\'s Cave', 'heros'),
+    meta('hRingW', 0xb3, 'ring run, west wall, the Hero\'s Cave', 'heros'),
+    meta('hRingE', 0xb1, 'ring run, east wall, the Hero\'s Cave', 'heros'),
+    meta('hRingBL', 0xba, 'ring corner, south-west, the Hero\'s Cave', 'heros'),
+    meta('hRingS', 0xb2, 'ring run, south wall, the Hero\'s Cave', 'heros'),
+    meta('hRingBR', 0xbb, 'ring corner, south-east, the Hero\'s Cave', 'heros'),
+    meta('hKeyN', 0x70, 'key door in a north wall, the Hero\'s Cave', 'heros'),
+    meta('hKeyE', 0x71, 'key door in an east wall, the Hero\'s Cave', 'heros'),
+    meta('hKeyS', 0x72, 'key door in a south wall, the Hero\'s Cave', 'heros'),
+    meta('hKeyW', 0x73, 'key door in a west wall, the Hero\'s Cave', 'heros'),
+    meta('hShutN', 0x78, 'shutter in a north wall, the Hero\'s Cave', 'heros'),
+    meta('hShutE', 0x79, 'shutter in an east wall, the Hero\'s Cave', 'heros'),
+    meta('hShutS', 0x7a, 'shutter in a south wall, the Hero\'s Cave', 'heros'),
+    meta('hShutW', 0x7b, 'shutter in a west wall, the Hero\'s Cave', 'heros'),
+    meta('hBossN', 0x74, 'boss door in a north wall, the Hero\'s Cave', 'heros'),
+    meta('hBossS', 0x76, 'boss door in a south wall, the Hero\'s Cave', 'heros'),
+    meta('hFill', 0xb0, 'the gold masonry of a wall run, the Hero\'s Cave', 'heros'),
+    meta('hFloor', 0xa0, 'the grey gravel floor, the Hero\'s Cave', 'heros'),
+    meta('hFloorAlt', 0xa5, 'the pebbled gravel floor, the Hero\'s Cave', 'heros'),
+    meta('hBlock', 0x1d, 'the push block, the Hero\'s Cave', 'heros'),
+    meta('hPot', 0x10, 'the pot, on its own floor, the Hero\'s Cave', 'heros'),
+    meta('hStatue', 0x15, 'the blue crystal, the Hero\'s Cave', 'heros'),
+    meta('hArchC1', 0xe6, 'entrance pillar, west, the Hero\'s Cave', 'heros'),
+    meta('hArchC2', 0x00, 'the lit way out, the Hero\'s Cave', 'heros'),
+    meta('hArchC3', 0xe6, 'entrance pillar, east, the Hero\'s Cave', 'heros'),
+    #
+    # THE GULLWIND EYRIE wears Snake's Remains: bevelled violet stone round a
+    # rose floor, and the black drops its rooms open onto.
+    meta('nRingTL', 0xb8, 'ring corner, north-west, Snake\'s Remains', 'snakes'),
+    meta('nRingN', 0xb0, 'ring run, north wall, Snake\'s Remains', 'snakes'),
+    meta('nRingTR', 0xb9, 'ring corner, north-east, Snake\'s Remains', 'snakes'),
+    meta('nRingW', 0xb3, 'ring run, west wall, Snake\'s Remains', 'snakes'),
+    meta('nRingE', 0xb1, 'ring run, east wall, Snake\'s Remains', 'snakes'),
+    meta('nRingBL', 0xba, 'ring corner, south-west, Snake\'s Remains', 'snakes'),
+    meta('nRingS', 0xb2, 'ring run, south wall, Snake\'s Remains', 'snakes'),
+    meta('nRingBR', 0xbb, 'ring corner, south-east, Snake\'s Remains', 'snakes'),
+    meta('nKeyN', 0x70, 'key door in a north wall, Snake\'s Remains', 'snakes'),
+    meta('nKeyE', 0x71, 'key door in an east wall, Snake\'s Remains', 'snakes'),
+    meta('nKeyS', 0x72, 'key door in a south wall, Snake\'s Remains', 'snakes'),
+    meta('nKeyW', 0x73, 'key door in a west wall, Snake\'s Remains', 'snakes'),
+    meta('nShutN', 0x78, 'shutter in a north wall, Snake\'s Remains', 'snakes'),
+    meta('nShutE', 0x79, 'shutter in an east wall, Snake\'s Remains', 'snakes'),
+    meta('nShutS', 0x7a, 'shutter in a south wall, Snake\'s Remains', 'snakes'),
+    meta('nShutW', 0x7b, 'shutter in a west wall, Snake\'s Remains', 'snakes'),
+    meta('nBossN', 0x74, 'boss door in a north wall, Snake\'s Remains', 'snakes'),
+    meta('nBossS', 0x76, 'boss door in a south wall, Snake\'s Remains', 'snakes'),
+    meta('nFill', 0xa6, 'the flat lilac of solid stone, Snake\'s Remains', 'snakes'),
+    meta('nFloor', 0xa0, 'the rose flagstone, Snake\'s Remains', 'snakes'),
+    meta('nFloorAlt', 0xa4, 'the violet four-square slab, Snake\'s Remains', 'snakes'),
+    meta('nBlock', 0x1d, 'the push block, Snake\'s Remains', 'snakes'),
+    meta('nPot', 0x10, 'the pot, on its own floor, Snake\'s Remains', 'snakes'),
+    meta('nStatue', 0x15, 'the green crystal, Snake\'s Remains', 'snakes'),
+    meta('nArchC1', 0xe6, 'entrance pillar, west, Snake\'s Remains', 'snakes'),
+    meta('nArchC2', 0x00, 'the lit way out, Snake\'s Remains', 'snakes'),
+    meta('nArchC3', 0xe6, 'entrance pillar, east, Snake\'s Remains', 'snakes'),
+    #
+    # THE SUNKEN PALACE wears Unicorn's Cave: red rock round a lavender floor,
+    # and the one Seasons dungeon built round standing water.
+    meta('uRingTL', 0xb8, 'ring corner, north-west, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingN', 0xb0, 'ring run, north wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingTR', 0xb9, 'ring corner, north-east, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingW', 0xb3, 'ring run, west wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingE', 0xb1, 'ring run, east wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingBL', 0xba, 'ring corner, south-west, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingS', 0xb2, 'ring run, south wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uRingBR', 0xbb, 'ring corner, south-east, Unicorn\'s Cave', 'unicorn'),
+    meta('uKeyN', 0x70, 'key door in a north wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uKeyE', 0x71, 'key door in an east wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uKeyS', 0x72, 'key door in a south wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uKeyW', 0x73, 'key door in a west wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uShutN', 0x78, 'shutter in a north wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uShutE', 0x79, 'shutter in an east wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uShutS', 0x7a, 'shutter in a south wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uShutW', 0x7b, 'shutter in a west wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uBossN', 0x74, 'boss door in a north wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uBossS', 0x76, 'boss door in a south wall, Unicorn\'s Cave', 'unicorn'),
+    meta('uFill', 0xa6, 'the flat red of solid rock, Unicorn\'s Cave', 'unicorn'),
+    meta('uFloor', 0xa0, 'the lavender diamond floor, Unicorn\'s Cave', 'unicorn'),
+    meta('uFloorAlt', 0xa5, 'the violet four-square slab, Unicorn\'s Cave', 'unicorn'),
+    meta('uBlock', 0x1d, 'the push block, Unicorn\'s Cave', 'unicorn'),
+    meta('uPot', 0x10, 'the pot, on its own floor, Unicorn\'s Cave', 'unicorn'),
+    meta('uStatue', 0x15, 'the olive crystal, Unicorn\'s Cave', 'unicorn'),
+    meta('uArchC1', 0xe6, 'entrance pillar, west, Unicorn\'s Cave', 'unicorn'),
+    meta('uArchC2', 0x00, 'the lit way out, Unicorn\'s Cave', 'unicorn'),
+    meta('uArchC3', 0xe6, 'entrance pillar, east, Unicorn\'s Cave', 'unicorn'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -459,7 +617,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue'}
+KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'uStatue', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue'}
 
 
 def lum(c):
@@ -613,7 +771,7 @@ def main():
     for pick in PICKS:
         sheet = unpack(pick)[4]
         if sheet not in images:
-            images[sheet] = Image.open(sheet).convert('RGB')
+            images[sheet] = open_sheet(sheet)
 
     if '--sheet' in sys.argv:
         contact_sheet(images, os.path.join(ROOT, 'dungeon-themes-contact.png'))
@@ -635,7 +793,7 @@ def main():
             grid = key_background(grid)
         if before > 4:
             lossy.append((name, before))
-        arts.append((name, note, x, y, grid))
+        arts.append((name, note, x, y, grid, sheet))
         pals.append((name, keep))
 
     L = [
@@ -659,6 +817,12 @@ def main():
         '// tile occurs on the map — frequency is what separates a wall from a one-off',
         '// decoration. See tools/rip-dungeon-maps.py and assets/tilesets/.',
         '//',
+        '// The three optional dungeons\' kits (S160) are read instead out of the',
+        '// cartridge\'s own tilesets: Stewmath\'s oracles-disasm (github.com/Stewmath/',
+        '// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/.',
+        '// Credit: the oracles-disasm project and its contributors; the artwork is',
+        '// Nintendo\'s and Capcom\'s. Fan-work art only.',
+        '//',
         '// A tile in KEY_BACKGROUND is an OBJECT, and the floor the source drew behind',
         '// it has been keyed to `.` — transparent. Its tiledef must name an `underArt`,',
         '// or it draws a hole.',
@@ -667,8 +831,12 @@ def main():
         '',
         'export const DUNGEON_THEME_ART = {',
     ]
-    for name, note, x, y, grid in arts:
-        L.append('  // %s — oracle-seasons-dungeon-backgrounds.png @ %d,%d' % (note, x, y))
+    for name, note, x, y, grid, sheet in arts:
+        if sheet.startswith('meta:'):
+            L.append('  // %s — Seasons tileset $%s (%s), metatile $%02x'
+                     % (note, sheet[5:], META_NAMES[sheet], (y // 16) * 16 + x // 16))
+        else:
+            L.append('  // %s — oracle-seasons-dungeon-backgrounds.png @ %d,%d' % (note, x, y))
         L.append('  %s: `' % name)
         L.extend('    ' + r for r in grid[:-1])
         L.append('    ' + grid[-1] + '`,')

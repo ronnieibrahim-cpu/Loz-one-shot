@@ -10,6 +10,7 @@ import { installEnemies } from './enemies.js';
 import { installBosses } from './bosses.js';
 import { installDungeonsA } from './dungeons-a.js';
 import { installDungeonsB } from './dungeons-b.js';
+import { installOptionalDungeons } from './dungeons-optional.js';
 import { installStory } from './story.js';
 import { installAudio } from './audio.js';
 import { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } from './sprites-link.js';
@@ -120,6 +121,7 @@ export function installData() {
   installCaves();
   installDungeonsA();
   installDungeonsB();
+  installOptionalDungeons();
   installStory();
   installAudio();
 }

@@ -25,6 +25,14 @@
 //       boss: 'gohmaCrab',
 //       bossRoom: '0,3,1',
 //       entrance: { map: 'overworld', floor: 0, rx: 4, ry: 6, px: 80, py: 100 },
+//       // AN OPTIONAL DUNGEON (S160) says so: `optional: true`, and no
+//       // `essence` and no `item`. It is side content — none of the six
+//       // Essences, nothing the main route needs — and its `index` means only
+//       // what it means to every tool that reads it: "the player owns what
+//       // the first `index` dungeons hand over by the time they are in here"
+//       // (which is what gives a flood the Cleats' swim from index 3 on).
+//       // `dungeons()` is the six; `optionalDungeons()` the rest.
+//       optional: false,
 //     },
 //   }
 
@@ -152,10 +160,22 @@ export function resetRooms() {
   for (const m of MAPS.values()) m._rooms.clear();
 }
 
-/** All dungeon maps in index order. */
+/**
+ * The MAIN dungeons, in index order: the six that hold an Essence each and
+ * make up the route. An optional dungeon (S160, `dungeon.optional`) is not in
+ * this list — everything that reads it means "the route", its order or its
+ * Essences — and is in `optionalDungeons()` instead. A tool that wants every
+ * dungeon interior, the way a flood does, filters MAPS on `m.dungeon` itself.
+ */
 export function dungeons() {
-  return [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon)
+  return [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon && !m.dungeon.optional)
     .sort((a, b) => a.dungeon.index - b.dungeon.index);
+}
+
+/** The optional dungeons (S160): side content, in the order they open. */
+export function optionalDungeons() {
+  return [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon && m.dungeon.optional)
+    .sort((a, b) => a.dungeon.index - b.dungeon.index || a.id.localeCompare(b.id));
 }
 
 /**

@@ -95,8 +95,8 @@ if (files.some(f => f.endsWith('.json'))) {
   installData();
   const THEMES = {
     Grotto: 'd1 Tidewash Grotto', Coral: 'd2 Coral Spire', Bog: 'd3 Bogwater Sanctum',
-    Cistern: 'd4 Cliffside Cistern', Wood: 'd5 Drowned Wood Shrine', Salt: 'd6 Salt Pan Vault',
-    Palace: 'd7 Reef Palace', Abyss: 'd8 Abyssal Keep',
+    Cistern: 'd4 Cliffside Cistern', Wood: 'd5 Drowned Wood Shrine', Abyss: 'd6 Abyssal Keep',
+    Salt: "the Salt Pan's lower vault", Eyrie: 'the Gullwind Eyrie', Palace: 'the Sunken Palace',
   };
   const roles = t => ({
     floor: `dFloor${t}`, floorAlt: `dFloor${t}Alt`, wall: `dWall${t}`,

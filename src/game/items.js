@@ -105,6 +105,7 @@ export class Kilnshell extends Entity {
     this.lit = !!o.lit;
     this.burn = 0;
     this.depth = -1;
+    this.flight = null;
   }
 
   /** The flags under the shell — or under the player, while being carried. */
@@ -118,8 +119,51 @@ export class Kilnshell extends Entity {
     return room.flagsAt(tx, ty, game.tide);
   }
 
+  /**
+   * THROWN, IT FLIES AS ITSELF (S160). Lifted and thrown, the shell used to
+   * take the player's catch-all branch — removed, and a stand-in rock thrown
+   * in its place that shattered where it landed — so the carry the item is
+   * documented around ended by destroying it. Now it flies the same arc a
+   * lifted pot does (`ThrownObject.launch`, Seasons' itemBeginThrow) and
+   * comes down as the shell, still burning — unless its line took it over
+   * deep water, which puts it out in the air exactly as it would on the
+   * ground. That is the Salt Pan's lower vault's whole lesson: a flame can
+   * cross a gap no one can walk, but only while the sea under it is low.
+   * A wall stops it where it hits; a pit or deep water takes it (it is gone,
+   * and the button strikes a new one).
+   */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.flight = { vx, vy };
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
+    this.shadow = true;
+  }
+
+  fly(game) {
+    this.fz += this.vz;
+    this.vz -= LIFTED_THROW_GRAVITY;
+    const r = moveEntity(game, this, this.flight.vx, this.flight.vy, { jumping: true, swim: true });
+    if (r.hitX) this.flight.vx = 0;
+    if (r.hitY) this.flight.vy = 0;
+    if (this.fz > 0) return;
+    this.fz = 0; this.vz = 0; this.flight = null; this.shadow = false;
+    const f = this.groundFlags(game);
+    if (f & (F.PIT | F.VOID | F.DEEP)) {
+      // Into the sump or the sea: the shell is lost, and a new one strikes.
+      this.remove = true;
+      game.spawnEffect(f & F.DEEP ? 'splash' : 'puff', this.cx - 8, this.cy - 8);
+      game.audio.sfx(f & F.DEEP ? 'splash' : 'fall');
+      return;
+    }
+    game.audio.sfx('place');
+  }
+
   update(game) {
     this.frame++;
+    if (this.flight) this.fly(game);
+    if (this.remove) return;
     const f = this.groundFlags(game);
 
     // The one thing the sea still decides. A shell carried into deep water
@@ -136,9 +180,14 @@ export class Kilnshell extends Entity {
     // What a flame touches. Grown by half a tile so a shell set down BESIDE a
     // torch lights it, rather than having to be standing in the same tile as
     // one — which, a torch being solid, it cannot be.
+    //
+    // THE SHELL'S WHOLE CELL, grown by half a tile (S160) — not its hitbox,
+    // which sits low in the cell, so the reach used to run two pixels further
+    // south than north and a shell thrown to the tile below a brazier (a
+    // player's feet stand a pixel off the grid) could land beside it and not
+    // light it. Beside is beside, from any side.
     if (this.burn % 4 === 0) {
-      const r = this.rect();
-      game.checkTileAction({ x: r.x - 8, y: r.y - 8, w: r.w + 16, h: r.h + 16 }, 'fire');
+      game.checkTileAction({ x: this.x - 8, y: this.y - 8, w: 32, h: 32 }, 'fire');
       for (const e of game.entities) {
         if (e === this || e.dead || !e.isEnemy) continue;
         if (this.overlaps(e)) e.hurt(game, KILNSHELL_BURN_DAMAGE, null, 0);
@@ -1099,6 +1148,16 @@ export const ITEMS = {
         placed.remove = true;
         game.audio.sfx('place');
         return true;
+      }
+      // A DAMP ROOM WILL NOT STRIKE IT (S160). The Salt Pan's lower vault
+      // holds brine in the air, and a room that says `damp` refuses the
+      // strike: fire has to be carried in, lit, from a room dry enough to
+      // make it — and whatever the sea puts out down there stays out until it
+      // is carried in again. Recall above still works everywhere.
+      if (game.room && game.room.def.damp) {
+        if (!game.dialogue.active) game.say('The brine hangs too thick in the air.\nThe shell will not strike here.');
+        game.audio.sfx('deny');
+        return false;
       }
       // Set it on the tile the player is facing, so it can be put against a
       // torch or into a pool without standing in either.

@@ -114,7 +114,7 @@ for (const [name, d] of TILES) {
 // meant to change colour has quietly changed where the player can walk — and
 // walk-dungeons would report it as a stranded room in a dungeon nobody edited.
 {
-  const THEMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
+  const THEMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie'];
   const SHARED = [['dFloor', 'dFloor%'], ['dFloorCrack', 'dFloor%Alt'],
     ['dWall', 'dWall%'], ['dWallCracked', 'dWall%X'], ['dBlock', 'dBlock%'],
     ['dUrn', 'dUrn%']];

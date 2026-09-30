@@ -299,8 +299,16 @@ export class Game {
     // leaves a dangling reference that looks live forever — cast the line,
     // walk through a door, and you can never throw it again for the rest of the
     // run. Nothing validates that; it just quietly stops working.
-    for (const e of this.entities) if (e !== this.player) e.remove = true;
-    this.entities = this.entities.filter(e => e === this.player);
+    //
+    // WHAT IS IN HIS HANDS COMES WITH HIM (S160), as it does in Seasons, where
+    // a pot carried off the edge of a screen is still overhead on the next.
+    // It used to be dropped from the list like everything else and left in
+    // `player.carrying` as a reference to nothing — drawn nowhere, and thrown
+    // into a room that did not hold it. The Salt Pan's lower vault is built on
+    // carrying a lit Kilnshell from the one room dry enough to strike it.
+    const held = this.player && this.player.carrying;
+    for (const e of this.entities) if (e !== this.player && e !== held) e.remove = true;
+    this.entities = this.entities.filter(e => e === this.player || e === held);
     this.boss = null;
     this.lure = null;
     this.dive = null;
@@ -1621,7 +1629,9 @@ export class Game {
   startGaleWarp() {
     const spots = [{ name: 'Tidewatch Village', map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64 }];
     for (const m of MAPS.values()) {
-      if (m.kind === 'dungeon' && m.dungeon && m.dungeon.entrance
+      // The optional dungeons (S160) are not on the list: they are reached
+      // through a cave or a cliff, and the gale's list is the route's.
+      if (m.kind === 'dungeon' && m.dungeon && m.dungeon.entrance && !m.dungeon.optional
         && this.progress.secrets['seen:' + m.id + ':' + '0,' + m.dungeon.startRoom]) {
         spots.push({ name: m.name, ...m.dungeon.entrance });
       }
@@ -1714,6 +1724,17 @@ export class Game {
     const s = p.respawn;
     this.mode = 'play';
     this.entities.length = 0;
+    // THE ROOM HE DIED IN IS LET GO OF FIRST (S160). The sea is reset below
+    // before the respawn room is entered, and a tide change is a room event —
+    // which asked the DEAD room whether its puzzle was solved, with every
+    // entity just cleared out of it. A miniboss room (`puzzle: { enemies:
+    // true }`) said yes: dying to the Saltwraith paid out its Piece of Heart,
+    // spawned into whichever room the player woke up in, and set its flag so
+    // the fight was over for good. The same was true of every enemies-puzzle
+    // room in the game. Nothing may be asked of a room nobody is in, so the
+    // room events are held off (`_enteringRoom`, the flag `enterMap` already
+    // holds them off with) until the new room is entered below.
+    this._enteringRoom = true;
     // The boss died with the room. Leaving the handle behind lets the HUD draw
     // a health bar for something that is not in the world any more.
     this.boss = null;
@@ -1749,6 +1770,7 @@ export class Game {
     this.tide.clearOverrides();
     this.tide.setLevel(s.tide != null ? s.tide : 1, { instant: true });
     p.tide = this.tide.level;
+    this._enteringRoom = false;
     this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir, { instant: true });
     this.fadeIn();
     // DEATH IS NOT A WAY TO LOSE AN HOUR. Everything the run has earned is

@@ -989,7 +989,9 @@ export class Player extends Entity {
     // a slide velocity ThrownObject never reads and left it at height 0, so it
     // broke at Link's feet on the next frame and never travelled.
     const n = LIFTED_THROW_NUDGE, v = LIFTED_THROW_SPEED;
-    if (c instanceof ThrownObject) {
+    // Anything that flies Seasons' arc as itself says so with `launch`: a
+    // lifted pot, and the Kilnshell (S160), which lands still burning.
+    if (c instanceof ThrownObject || typeof c.launch === 'function') {
       c.launch(this.x + dx * n, this.y + dy * n, dx * v, dy * v, CARRY_HEIGHT);
     } else if (c.thrownVx !== undefined) {
       c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;

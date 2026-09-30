@@ -447,6 +447,26 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **(S160) A death asked the room it happened in whether it had been won.**
+  `respawn` resets the sea before it enters the respawn room, a tide change is
+  a room event, and the room event ran `checkPuzzle` on the DEAD room with its
+  entities already cleared — so every `puzzle: { enemies: true }` room (every
+  miniboss in the game) paid its reward and set its flag when the player died
+  in it. Found only because a robot died to the Saltwraith and woke up next to
+  its Piece of Heart. `respawn` now holds room events off (`_enteringRoom`)
+  until the new room is entered; check-respawn section 10b proves it on D4.
+- **(S160) A thrown Kilnshell used to become a rock.** `throwCarried` threw
+  anything that was not a `ThrownObject` as a stand-in rock that shattered, so
+  lifting the shell destroyed it. Anything that flies as itself now says so
+  with `launch`. And a carried entity used to be dropped from the entity list
+  at a room seam and left dangling in `player.carrying`; it now comes along.
+- **(S160) A Seasons dungeon kit can be read straight off the cartridge.**
+  Every Seasons dungeon tileset lays out its metatiles on one plan (ring
+  $b8 $b0 $b9 / $b3 $b1 / $ba $b2 $bb, keys $70-73, bosses $74-77, shutters
+  $78-7b in N E S W order, pot $10, block $1d, the lit exit $00 between $e6
+  pillars); `rooms/seasons/large/room05xx.bin` are the uncompressed 16x11
+  layouts that prove it. `rip-dungeon-themes.py` takes `meta:NN` picks.
+
 - **(S159) A branch with no common history is copied, not merged, and its
   route-indexed pictures move with an LCS.** The guide branch predated a
   history rewrite; `git merge-base` finds nothing. Copy its directories, then

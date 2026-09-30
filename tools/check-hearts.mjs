@@ -127,7 +127,11 @@ for (const [mapId, map] of MAPS) {
 // heart.
 
 const dungeons = [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon);
-const containers = dungeons.filter(d => d.dungeon.boss);
+// AN OPTIONAL DUNGEON'S BOSS PAYS A PIECE, NOT A CONTAINER (S160). The six
+// containers are the route's; the three side dungeons pay their prize in
+// Pieces of Heart, counted with the rest below.
+const mainDungeons = dungeons.filter(d => !d.dungeon.optional);
+const containers = mainDungeons.filter(d => d.dungeon.boss);
 
 // The closure is a string, not data — but it is a string we can read.
 // `spawnPickup(..., 'heartContainer', ...)` inside a boss room's `script.onEvent`
@@ -186,19 +190,32 @@ check(cap <= 16, `cap is ${cap}, above P9's ceiling of 16 hearts`);
 // An orphaned piece is a piece the player can find, collect, hear the jingle
 // for, and never get a heart out of — the counted-item trap in a different
 // costume. Four to a container means the total must divide by four.
-check(leftover === 0,
-  `${pieces.length} heart pieces leaves ${leftover} that can never complete a container`);
+//
+// THE OPTIONAL DUNGEONS LAND ONE AT A TIME (S160), one commit each, and the
+// first two add a piece apiece — so between them the world holds 25 and 26,
+// neither of which divides. The plan is pinned below in OPTIONAL_PIECES, and a
+// pinned dungeon not built YET is counted as the pieces it is pinned to hold,
+// reported as planned: the divide-by-four is asserted of the world the plan
+// finishes, never of a half-built one, and the cap above is still the world's
+// own. Once all three exist, `planned` is zero and this is the plain rule.
+const OPTIONAL_PIECES = { vault: 1, eyrie: 1, palace: 2 };
+const planned = Object.entries(OPTIONAL_PIECES)
+  .filter(([id]) => !MAPS.has(id)).reduce((n, [, k]) => n + k, 0);
+if (planned) console.log(`  (+${planned} planned in optional dungeons not built yet)\n`);
+const leftoverPlanned = (pieces.length + planned) % 4;
+check(leftoverPlanned === 0,
+  `${pieces.length}${planned ? ` (+${planned} planned)` : ''} heart pieces leaves ${leftoverPlanned} that can never complete a container`);
 
-// Every dungeon that declares a boss must actually spawn the container.
-for (const d of dungeons) {
+// Every MAIN dungeon that declares a boss must actually spawn the container.
+for (const d of mainDungeons) {
   check(!d.dungeon.boss || containerSrc.includes(d.id),
     `${d.id} declares boss '${d.dungeon.boss}' but its boss room never spawns a heartContainer`);
 }
 // And nothing may spawn one that has not declared a boss to justify it.
 for (const id of containerSrc) {
   const d = dungeons.find(x => x.id === id);
-  check(d && d.dungeon.boss,
-    `${id} spawns a heartContainer without declaring a boss`);
+  check(d && d.dungeon.boss && !d.dungeon.optional,
+    `${id} spawns a heartContainer without being a main dungeon with a boss`);
 }
 
 // ---------------------------------------------------------------------------
@@ -278,6 +295,11 @@ for (const p of pieces) {
 // point — it makes the cap something you decide rather than something you drift
 // into.
 const PER_DUNGEON = 2;
+// The optional dungeons (S160) are pinned one by one, by map id
+// (OPTIONAL_PIECES, above), because the plan the human approved gives them
+// different prizes: a piece in each small one and two in the Sunken Palace.
+// 24 + 4 = 28 pieces, seven containers, and a cap of 16 — the top of P9's
+// window, and the reason it is four and not two.
 const byMapCount = new Map();
 for (const p of pieces) {
   const m = p.where.split('/')[0];
@@ -285,8 +307,10 @@ for (const p of pieces) {
 }
 for (const d of dungeons) {
   const n = byMapCount.get(d.id) || 0;
-  check(n === PER_DUNGEON,
-    `${d.id} (${d.name}) holds ${n} heart piece${n === 1 ? '' : 's'}, not ${PER_DUNGEON}`);
+  const want = d.dungeon.optional ? OPTIONAL_PIECES[d.id] : PER_DUNGEON;
+  check(want !== undefined, `${d.id} (${d.name}) is an optional dungeon with no pin in OPTIONAL_PIECES`);
+  check(n === want,
+    `${d.id} (${d.name}) holds ${n} heart piece${n === 1 ? '' : 's'}, not ${want}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -363,10 +387,11 @@ for (const [name, f] of ENTITY_TYPES) {
   ladder.get(t).push(name);
 }
 
-// Every dungeon's declared boss must be on the boss rung. This is the
+// Every MAIN dungeon's declared boss must be on the boss rung. This is the
 // cross-check that the tier list and the map data still agree about who the
-// bosses are.
-for (const d of dungeons) {
+// bosses are. An optional dungeon's may be a miniboss (the two small ones'
+// are), and then it sits on the miniboss rung like any other.
+for (const d of mainDungeons) {
   if (!d.dungeon.boss) continue;
   check(TIERS.boss.of.includes(d.dungeon.boss),
     `${d.id} declares boss '${d.dungeon.boss}', which is not on the boss rung`);

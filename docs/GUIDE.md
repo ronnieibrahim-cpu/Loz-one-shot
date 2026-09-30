@@ -4,7 +4,7 @@ A full, spoiler-inclusive walkthrough of *The Legend of Zelda: Oracle of Tides*,
 written in the style of a printed game guide: a straight line from the title
 screen to the Drowned King, with every dungeon walked room by room, every boss
 given a pattern-by-pattern strategy, and every optional thing in the world —
-24 Heart Pieces, 6 Heart Containers, the eleven-link Coastwise Chain, the four
+25 Heart Pieces, 6 Heart Containers, the eleven-link Coastwise Chain, the four
 caves, the charm cases, the two extra sword tiers — listed where you will
 actually pass it, and again in a checklist at the back.
 
@@ -18,7 +18,7 @@ guide can be cross-checked against the source with those keys, and
 `node tools/check-guide.mjs` proves every one of them resolves.
 
 **On a phone?** `docs/GUIDE.html` is the same guide built for a small screen —
-sticky chapter bar, a contents drawer, and tickable checklists for the 24 Heart
+sticky chapter bar, a contents drawer, and tickable checklists for the 25 Heart
 Pieces, the Coastwise Chain and the hand-placed charms that remember what you
 have collected. Open it from a `file://` URL or publish it; it needs no server.
 
@@ -57,7 +57,7 @@ layouts, item locations, puzzle solutions and boss patterns in full.
 18. [Mopping up: the Abyssal approach](#18-mopping-up-the-abyssal-approach)
 
 **Part III — 100% completion**
-- [All 24 Heart Pieces](#all-24-heart-pieces)
+- [All 25 Heart Pieces](#all-25-heart-pieces)
 - [The Coastwise Chain](#the-coastwise-chain)
 - [Every item, and where it is](#every-item-and-where-it-is)
 - [Charms and the scrimshander](#charms-and-the-scrimshander)
@@ -135,7 +135,7 @@ heart. The damage ladder is fixed and every enemy sits on a rung of it:
 | Miniboss (8) | ¾ heart | 4 hits |
 | Boss (8) | 1 heart | 3 hits |
 
-There are **24 Heart Pieces** in the world, four to a container, and **six Heart
+There are **25 Heart Pieces** in the world, four to a container, and **six Heart
 Containers** — one per dungeon boss. Collect everything and you finish on **15
 hearts**.
 
@@ -1399,6 +1399,18 @@ Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
   is the item that lets you carry Bottled Tide at all; refills are 40 rupees at
   the Tidewatch shop.
 
+  **The Lower Vault (optional).** A stair in the vault's top-right corner at
+  (7,1) goes down to `vault`, six rooms in Seasons' Hero's Cave stone. The air
+  below the first room is brine: **the Kilnshell will not strike** there. Strike
+  it in the dry kiln at the top (`vault/0,1,2`), lift it and carry it down lit;
+  A throws it. A thrown shell flies about two and a half tiles and lands still
+  burning — **unless its path crosses deep water**, which puts it out. So every
+  throw over a sump (a pit at LOW, over your head above) is a **LOW** throw, and
+  the vault's kelp is only dry enough to burn at **LOW** too. If the fire goes
+  out, walk back up to the kiln and strike another; the Kiln Walk (`vault/0,0,0`)
+  is a second dry room just before the fight. The `saltwraith` guards **Heart
+  Piece 25**; fight it at **HIGH**, where the brine thins its bolts.
+
   **What a Bottled Tide does:** forces **one tide step** in a room where the
   conch is suppressed, and it flatly refuses to work anywhere the conch already
   works. That means boss rooms and the Black Causeway, and nothing else. Carry
@@ -1780,7 +1792,7 @@ And the remaining buried rupee caches, all of them Dredge Line work:
 
 # Part III — 100% completion
 
-## All 24 Heart Pieces
+## All 25 Heart Pieces
 
 Four to a container; six containers from the six bosses; three hearts to start.
 **24 pieces + 6 containers + 3 = 15 hearts.**
@@ -1852,6 +1864,12 @@ Numbered in the order this walkthrough passes them.
     used to be, has 20 rupees.)
 24. **Heart Piece 24** — `overworld/0,1,9`, Witch's Hollow, buried at (3,4).
     **Dredge Line**.
+25. **Heart Piece 25** — `vault/0,1,0`, the Saltwraith's Pan, in **the Lower
+    Vault** under the Salt Pan Vault (`cave3`, the stair at (7,1)). An optional
+    dungeon of six rooms: strike the **Kilnshell** in the dry kiln at the top
+    of the stair, carry it down lit, and throw it at **LOW** over the sumps to
+    the braziers and into the dry kelp. Beat the `saltwraith` (fight it at
+    **HIGH**, where the brine thins its bolts) and the piece drops.
 
 **Heart Containers**, one from each boss: `gohmaraq` in `d1/0,3,1`, `anemos` in
 `d2/1,3,1`, `gloomtide` in `d3/0,3,1`, `wyverna` in `d4/0,3,1`, `rootmaw` in

@@ -83,6 +83,12 @@ TILESETS = {
     0x3a: 'the Dancing Dragon Dungeon',
     0x3c: 'the Ancient Ruins',
     0x42: "the Sword & Shield Maze, fire half",
+    # The three optional dungeons (S160) wear the three Seasons dungeons no
+    # main dungeon had taken: the Salt Pan's lower vault the Hero's Cave, the
+    # Gullwind Eyrie Snake's Remains, the Sunken Palace Unicorn's Cave.
+    0x36: "the Hero's Cave",
+    0x38: "Snake's Remains",
+    0x3b: "Unicorn's Cave",
 }
 
 # Our dungeon legend -> (sprite suffix, Seasons tileset).
@@ -93,6 +99,9 @@ THEMES = [
     ('dungeonCistern', 'cistern', 0x3a),
     ('dungeonWood', 'wood', 0x3c),
     ('dungeonAbyss', 'abyss', 0x42),
+    ('dungeonSalt', 'salt', 0x36),
+    ('dungeonEyrie', 'eyrie', 0x38),
+    ('dungeonPalace', 'palace', 0x3b),
 ]
 # A block or button outside those six dungeons draws the Grotto's.
 DEFAULT_THEME = 'grotto'
@@ -336,7 +345,7 @@ def build():
     for base in ('o_block', 'o_switch_up', 'o_switch_down'):
         art[base] = art[f'{base}_{DEFAULT_THEME}']
     notes.append(f'//   o_block, o_switch_up, o_switch_down: the {DEFAULT_THEME} ones, for a room '
-                 'outside the six dungeons')
+                 'outside the nine dungeons')
     return art, pals, notes, themes, len(lit)
 
 

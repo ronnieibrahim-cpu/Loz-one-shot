@@ -53,4 +53,7 @@ if (process.env.TRACE) {
   for (const l of tr) console.log(l);
 }
 console.log(JSON.stringify(st), err ? 'ERR ' + err : '');
+// `probe` (S160): an expression evaluated in the page at the end, with the
+// game as `g` — the one fact the step wanted, without editing this file.
+if (spec.probe) console.log('probe:', JSON.stringify(await page.evaluate(src => (new Function('g', 'return (' + src + ')'))(window.__game), spec.probe)));
 await browser.close(); server.close();

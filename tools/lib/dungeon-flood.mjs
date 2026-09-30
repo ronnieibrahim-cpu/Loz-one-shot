@@ -19,7 +19,7 @@
 
 import { MAPS, getRoom } from '../../src/world/maps.js';
 import { cellTiles } from '../../src/world/room.js';
-import { F } from '../../src/world/tileset.js';
+import { F, transformFor } from '../../src/world/tileset.js';
 import { DREDGE_RANGE } from '../../src/data/feel.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
 
@@ -153,6 +153,18 @@ export function floodDungeon(mapId) {
     const p0 = partnerOf(rk0, x0, y0);
     if (p0) puzzleDoors.add(`${p0[0]}:${p0[1]},${p0[2]}`);
   }
+  // FIRE IS TRAVERSAL TOO (S160). Drift-tangle and the Salt Pan's dry kelp
+  // burn, and burnt they are floor — the Kilnshell's movement verb. The shell
+  // comes out of the Reef Hollow on foot with nothing but the conch, so every
+  // dungeon's player holds it; a tile that burns at ANY sea is a way through
+  // (the kelp only at LOW, which the player can always sound). Whether the
+  // fire can actually be GOT to it — thrown over a sump, carried into a damp
+  // room — is tools/check-kiln.mjs's to prove, the way solve-switches proves a
+  // puzzle door this flood already walks through.
+  const burnable = (room, x, y) => [0, 1, 2].some(t => {
+    const d = room.tile(x, y, t);
+    return !!(transformFor(room.baseName(x, y), 'fire') || (d && transformFor(d.name, 'fire')));
+  });
   const isLock = (room, x, y) => room.baseName(x, y) === 'dDoorLocked';
   const isBossDoor = (room, x, y) => room.baseName(x, y) === 'dDoorBoss';
 
@@ -240,7 +252,7 @@ export function floodDungeon(mapId) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = x + dx, ny = y + dy;
         if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
-          if (passable(room, nx, ny) || puzzleDoors.has(`${rk}:${nx},${ny}`)) push(rk, nx, ny);
+          if (passable(room, nx, ny) || puzzleDoors.has(`${rk}:${nx},${ny}`) || burnable(room, nx, ny)) push(rk, nx, ny);
           else if (jumpable(room, nx, ny)) {
             const jx = x + dx * 2, jy = y + dy * 2;
             if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(room, jx, jy)) push(rk, jx, jy);
@@ -262,7 +274,7 @@ export function floodDungeon(mapId) {
         const out = stepOut(rk, nx, ny);
         if (!out) continue;
         const [nk, tx, ty] = out;
-        if (passable(ROOMS.get(nk), tx, ty) || puzzleDoors.has(`${nk}:${tx},${ty}`)) push(nk, tx, ty);
+        if (passable(ROOMS.get(nk), tx, ty) || puzzleDoors.has(`${nk}:${tx},${ty}`) || burnable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty);
       }
     }
     for (const l of lockedSeen) {
@@ -294,7 +306,7 @@ export function floodDungeon(mapId) {
   const floorAt = (rk, x, y) => {
     const room = ROOMS.get(rk);
     if (!room) return false;
-    return passable(room, x, y) || puzzleDoors.has(`${rk}:${x},${y}`)
+    return passable(room, x, y) || puzzleDoors.has(`${rk}:${x},${y}`) || burnable(room, x, y)
       || isLock(room, x, y) || isBossDoor(room, x, y);
   };
 

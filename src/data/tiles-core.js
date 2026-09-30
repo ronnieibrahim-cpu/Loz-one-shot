@@ -1456,9 +1456,45 @@ const HAND_ART = {
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
 // The dungeon themes, by the suffix every one of their tiles carries.
-const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
+const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie'];
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
+
+/**
+ * One whole Oracle kit for theme `T`, from the picks prefixed `P` (S160).
+ * Every piece names its own extracted palette, so the kit is the cartridge's
+ * colours throughout. The three optional dungeons are built alike, so they
+ * are built by one function; the six main kits predate it and stay spelled out.
+ */
+function optionalKit(T, P) {
+  const own = (n, flags, extra) => ({ art: ART[P + n], pal: P + n, flags, ...extra });
+  const out = {
+    ['dFloor' + T]: own('Floor', 0),
+    ['dFloor' + T + 'Alt']: own('FloorAlt', 0),
+    ['dWall' + T]: own('Fill', F.SOLID, { ring: {
+      TL: P + 'RingTL', TR: P + 'RingTR', BL: P + 'RingBL', BR: P + 'RingBR',
+      N: P + 'RingN', S: P + 'RingS', W: P + 'RingW', E: P + 'RingE',
+      lockN: P + 'KeyN', lockS: P + 'KeyS', lockE: P + 'KeyE', lockW: P + 'KeyW',
+      shutN: P + 'ShutN', shutS: P + 'ShutS', shutE: P + 'ShutE', shutW: P + 'ShutW',
+      bossN: P + 'BossN', bossS: P + 'BossS',
+      // Seasons walls its masonry round every block that cuts into a room.
+      faces: true,
+    } }),
+    ['dWall' + T + 'X']: { art: ART.dWallCracked, pal: P + 'RingN', flags: F.SOLID | F.BOMBABLE },
+    ['dBlock' + T]: own('Block', F.SOLID),
+    ['dUrn' + T]: own('Statue', F.SOLID, { underArt: 'dFloor' + T }),
+    ['dExit' + T]: own('ArchC2', F.WARP),
+    ['dPillar' + T + 'W']: own('ArchC1', F.SOLID, { ringWall: true }),
+    ['dPillar' + T + 'E']: own('ArchC3', F.SOLID, { ringWall: true }),
+  };
+  for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE']) {
+    out[P + n] = own(n, F.SOLID);
+  }
+  for (const n of ['KeyN', 'KeyS', 'KeyE', 'KeyW', 'ShutN', 'ShutS', 'ShutE', 'ShutW', 'BossN', 'BossS']) {
+    out[P + n] = own(n, F.SOLID | F.DOOR);
+  }
+  return out;
+}
 
 // --------------------------------------------------------------------------
 // THE DUNGEON MOUTH, TWO TILES WIDE.
@@ -2354,6 +2390,13 @@ export function installCoreTiles() {
     // the tile that exists to prove a blade does not.
     driftTangle: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'grass' },
     driftTangleDk: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'rockFloorDk' },
+    // THE SALT PAN'S LOWER VAULT (S160). Its own drift-tangle, on its own
+    // floor, and KELP: the same mat stranded in the pan, which is a tide tile —
+    // dry weed at LOW, which burns, and sodden green at MID and HIGH, which
+    // does not burn at all. Fire only takes it with the sea out.
+    dTangleSalt: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'dFloorSalt' },
+    dTangleSaltWet: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dFloorSalt' },
+    dKelpSalt: { tide: ['dTangleSalt', 'dTangleSaltWet', 'dTangleSaltWet'] },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
     // The Reefseed's snarl, outdoors — item-reuse (docs/prompts/STATE.md). Not
     // `dSnarl`: that one is drawn in `treeoakdk`, a ramp built for the Drowned
@@ -2752,29 +2795,21 @@ export function installCoreTiles() {
     rShutW: { art: ART.rShutW, pal: 'rShutW', flags: F.SOLID | F.DOOR },
     rBossN: { art: ART.rBossN, pal: 'rBossN', flags: F.SOLID | F.DOOR },
 
-    // d6 Salt Pan Vault — the ruin rosette bleached out to salt and bone.
-    //
-    // THE WALL IS A LATTICE, NOT A BEVEL, AND THAT IS LOAD-BEARING. It used to be
-    // `vaultBlock` in `marble` — which is exactly what `dBlockSalt` below still
-    // is, so the wall and the pushable block were the same sixteen lines in the
-    // same four colours. `vaultBlock` and `coralWall` also quantise to
-    // byte-identical art, so no palette swap could separate them either: both
-    // are bevelled block grids. `laceWall` is an ornate lattice and cannot be
-    // mistaken for a block at any tint. See tools/rip-dungeon-themes.py.
-    dFloorSalt: { art: ART.ruinFloorAlt, pal: 'marble' },
-    dFloorSaltAlt: { art: ART.ruinFloorAlt, pal: 'stonef' },
-    dWallSalt: { art: ART.laceWall, pal: 'marble', flags: F.SOLID },
-    dWallSaltX: { art: ART.dWallCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE },
-    dBlockSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
-    dUrnSalt: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorSalt' },
-
-    // d7 Reef Palace — the rosette in its own colours, walls studded gold.
-    dFloorPalace: { art: ART.ruinFloor, pal: 'ruinFloor' },
-    dFloorPalaceAlt: { art: ART.ruinFloorAlt, pal: 'ruinFloorAlt' },
-    dWallPalace: { art: ART.studWall, pal: 'studWall', flags: F.SOLID },
-    dWallPalaceX: { art: ART.dWallCracked, pal: 'gold', flags: F.SOLID | F.BOMBABLE },
-    dBlockPalace: { art: ART.vaultBlock, pal: 'gold', flags: F.SOLID },
-    dUrnPalace: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorPalace' },
+    // THE THREE OPTIONAL DUNGEONS (S160), each in the kit of a Seasons dungeon
+    // no main dungeon had taken, read out of the cartridge's own tilesets
+    // (`h*`, `n*` and `u*` picks in rip-dungeon-themes.py; the push block
+    // and floor button are the same tilesets' in rip-objects.py):
+    //   Salt    the Salt Pan's lower vault   the Hero's Cave
+    //   Eyrie   the Gullwind Eyrie           Snake's Remains
+    //   Palace  the Sunken Palace            Unicorn's Cave
+    // `Salt` and `Palace` were the pre-fold d6/d7 themes — palette swaps of
+    // sheet tiles that no room had drawn since the fold — and are replaced
+    // outright. None of the three Seasons tilesets draws a jamb beside an
+    // open doorway, so a gap in the ring is framed by plain runs; the way out
+    // is the lit step between two pillars in the south wall, `(C)`.
+    ...optionalKit('Salt', 'h'),
+    ...optionalKit('Eyrie', 'n'),
+    ...optionalKit('Palace', 'u'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &
@@ -3007,9 +3042,11 @@ export function installCoreTiles() {
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
       art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
-        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot : ART.pot,
+        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot
+        : T === 'Salt' ? ART.hPot : T === 'Eyrie' ? ART.nPot : T === 'Palace' ? ART.uPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
-        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot' : 'pot',
+        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot'
+        : T === 'Salt' ? 'hPot' : T === 'Eyrie' ? 'nPot' : T === 'Palace' ? 'uPot' : 'pot',
       // No `liftSprite`: lifted, a pot is drawn as the pot it was (S155).
       // It used to name `o_pot`, the hand-drawn stand-in, so every dungeon
       // pot turned into a different pot the moment Link picked it up.
@@ -3078,6 +3115,7 @@ export function installCoreTiles() {
     // the tile is that the tools the player already has do not answer it.
     driftTangle: { fire: 'grass', fx: 'cut', sfx: 'cut', persist: true },
     driftTangleDk: { fire: 'rockFloorDk', fx: 'cut', sfx: 'cut', persist: true },
+    dTangleSalt: { fire: 'dFloorSalt', fx: 'cut', sfx: 'cut', persist: true },
     flowers: { cut: 'grass', fx: 'cut', sfx: 'cut' },
     flowersDark: { cut: 'grassDark', fx: 'cut', sfx: 'cut' },
     // `cut` and nothing else, on purpose: see the tiledef. It persists because
