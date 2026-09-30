@@ -1385,6 +1385,10 @@ export const WHEEL_SPIN_BEAT = 4;
 export const TORCH_FLAME_FRAMES = 15;
 /** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
 export const RIPTIDE_ANIM_RATE = 4;
+/** f — how long the Sunken Palace's whirlpool holds each of its four frames.
+ *  derived: oracles-disasm data/ages/animationData.s, animationDataWhirlpool2
+ *  (the Ages sea's whirlpool, TILEINDEX_WHIRLPOOL $e9), `.db $06` per frame. */
+export const WHIRLPOOL_ANIM_RATE = 6;
 
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
@@ -1558,6 +1562,11 @@ export const LIFT_STRENGTH = 1;
  *  the charm exists to create, so it is the first number to move if the
  *  transition play does not read. */
 export const NEAP_GRACE_FRAMES = 180;
+/** f — the Coilbone's moment of safety: how long nothing can hurt you after
+ *  every turn of the tide, while the charm is live. guessed; one second, long
+ *  enough to sound the conch in the middle of a fight and not be punished for
+ *  standing still to do it, short enough that it is not a shield. */
+export const COILBONE_INVULN_FRAMES = 60;
 
 /** most charms one case can ever hold. guessed; the late-game case upgrade
  *  raises progress.charmCase from 1 to this. */

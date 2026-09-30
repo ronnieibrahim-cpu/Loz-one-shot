@@ -73,6 +73,7 @@ import {
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
   WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
   CAM_DEADZONE_W, CAM_DEADZONE_H,
+  COILBONE_INVULN_FRAMES,
 } from '../data/feel.js';
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
@@ -897,6 +898,28 @@ export class Game {
   }
 
   /**
+   * A WHIRLPOOL TAKES YOU DOWN (S161, the Sunken Palace). The tile carrying
+   * F.WHIRL is only ever a whirlpool at one sea (a tide tile: shallows, deep
+   * water, whirlpool), so it is the sea's height that decides whether this
+   * room is the floor you stay on. It drops you to the same place in the room
+   * directly under this one — one floor down, the same room coordinates, the
+   * same pixel — so where you land is something you can read off the map.
+   * A whirlpool with no room beneath it does nothing; tools/check-whirlpool.mjs
+   * proves every one in the world has one, and somewhere to stand in it.
+   */
+  enterWhirlpool() {
+    const room = this.room, p = this.player;
+    if (!room || !p || this.transition || this.veiled() || !this.map) return false;
+    const below = room.floor - 1;
+    if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
+    this.audio.sfx('whirl');
+    this.spawnEffect('splash', p.x, p.y);
+    this.warpTo(this.mapId, below, room.rx, room.ry, { x: p.x, y: p.y }, p.dir,
+      { banner: true, fade: STAIRS_FADE });
+    return true;
+  }
+
+  /**
    * THE DOORWAY PULL — walking into the wall beside a door slides you into it.
    *
    * A person got stuck inside Tidewash Grotto and could not find the way out.
@@ -987,6 +1010,10 @@ export class Game {
 
   onTideChanged(next, prev) {
     if (this.player) this.player.reconcileWithTide(this);
+    // The Coilbone (S161): a moment's safety each time the tide changes.
+    if (this.player && this.charm('coilbone')) {
+      this.player.invuln = Math.max(this.player.invuln || 0, COILBONE_INVULN_FRAMES);
+    }
     if (this.room) this.room.invalidate();
     // The Ferryman's Coin fires on the turn of the tide, not on a button. The
     // swap is DEFERRED rather than done here: this runs while the wave front
@@ -1544,7 +1571,7 @@ export class Game {
    */
   commissionCarving() {
     const p = this.progress;
-    const pool = Object.keys(CHARMS).filter(id => !p.charms[id]);
+    const pool = Object.keys(CHARMS).filter(id => !p.charms[id] && !CHARMS[id].found);
     if (!pool.length) return null;
     const id = pool[Math.floor(rngGlobal.float() * pool.length) % pool.length];
     p.carve = { id, turns: CARVE_TIDE_TURNS };
@@ -1646,15 +1673,12 @@ export class Game {
     });
   }
 
-  // `enterWhirlpool` WAS HERE, AND NOTHING COULD EVER CALL IT. It fired off
-  // `F.WHIRL`, and no tiledef in `src/data/tiles-core.js` has ever carried that
-  // flag — so the whole path was a feature in the engine that the world had no
-  // way to reach. Its no-destination branch (no room defines `whirlpool`
-  // either, so it was the only branch) sent the player to the last respawn
-  // point, which reads as a death he did not die. Deleted rather than given a
-  // destination: a whirlpool is a design decision about a screen, and inventing
-  // one to make an unreachable branch reachable is the tail wagging the dog.
-  // Thalassor's whirlpool is a boss behaviour and does not go through here.
+  // `enterWhirlpool` was once here with nothing able to call it — no tile
+  // carried F.WHIRL — and its only branch sent the player to his last respawn
+  // point, a death he did not die. It was deleted for that. The one above
+  // (S161) exists because the Sunken Palace's whirlpool tile carries the flag,
+  // and its destination is a room, never a respawn. Thalassor's whirlpool is a
+  // boss behaviour and does not go through either.
 
   onPlayerDied() {
     if (this.mode === 'gameover') return;

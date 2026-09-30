@@ -262,18 +262,27 @@ for (const name of TILES.keys()) {
   const open = [0, 1, 2].map(l => defWalkable(defTide(name, l), capsForMode('swim'), ROUTE_AVOID));
   if ((open[0] || open[1]) && !open[2]) shutsOnASwimmer.push(name);
 }
-check('no tide tile shuts on a swimmer as the water rises', shutsOnASwimmer.length === 0,
-  shutsOnASwimmer.join(', ') + ' — a gate in a swimming dungeon may now be possible; '
+// THE WHIRLPOOL IS THE FIRST (S161). The Sunken Palace's `dWhirlpool` is
+// shallows, deep water, and at HIGH a whirlpool that takes a swimmer to the
+// floor below — so it is open at LOW and MID and shut, as a way across, at
+// HIGH. That is the tile this tripwire was written for, and it is named here
+// on purpose: a room built on it can hold an anchor gate for a swimmer, and
+// the filter below lets exactly those rooms through.
+const SHUTS_ON_PURPOSE = new Set(['dWhirlpool']);
+const unexpected = shutsOnASwimmer.filter(n => !SHUTS_ON_PURPOSE.has(n));
+check('no tide tile shuts on a swimmer as the water rises, but the whirlpool', unexpected.length === 0,
+  unexpected.join(', ') + ' — a gate in a swimming dungeon may now be possible; '
   + 'see this file\'s header and re-open the filter below');
 console.log(`  note  HIGH is a swimmer's best base for every one of the game's `
-  + `tide tiles, so no anchor placement can add reach in a dungeon from D`
-  + `${CLEATS_DUNGEON_INDEX} on`);
+  + `tide tiles but the whirlpool, so no anchor placement can add reach in a dungeon from D`
+  + `${CLEATS_DUNGEON_INDEX} on unless the room has one`);
+const hasShut = (r) => r.grid.some(row => [...row].some(ch => shutsOnASwimmer.includes(r.legend[ch])));
 
 // Which rooms this tool can honestly prove. The overworld is crossed on foot;
 // a dungeon below the Cleats is too. From the Cleats on, the paragraph above
 // says an anchor gate cannot exist, so a declaration there is a room that does
 // not do what it claims rather than a tool that cannot see it.
-const late = [...gates, ...gauges].filter(r => r.index !== null && r.index >= CLEATS_DUNGEON_INDEX);
+const late = [...gates, ...gauges].filter(r => r.index !== null && r.index >= CLEATS_DUNGEON_INDEX && !hasShut(r));
 check('no anchor room stands in a dungeon where the player can swim', late.length === 0,
   late.map(r => `${r.mapId} ${r.key}`).join(', ')
   + ` — from D${CLEATS_DUNGEON_INDEX} on, base HIGH already goes everywhere an anchor could`);

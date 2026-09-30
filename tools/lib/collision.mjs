@@ -51,7 +51,11 @@ export function tileWalkable(room, tx, ty, tide, caps, avoid = 0) {
  * through this", on top of hard collision — falling in a pit or standing in a
  * hazard is not blocked by the engine, but it is not a route either.
  */
-export const ROUTE_AVOID = F.PIT | F.HAZARD;
+//
+// A WHIRLPOOL (S161) is on the list too: it is not blocked, but whoever
+// touches it is taken to the floor below, so it is not a way ACROSS. The way
+// DOWN it offers is taught to tools/lib/dungeon-flood.mjs on its own.
+export const ROUTE_AVOID = F.PIT | F.HAZARD | F.WHIRL;
 
 /**
  * The `caps` shape for one of the game's named traversal modes, so a checker

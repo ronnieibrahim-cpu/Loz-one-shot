@@ -79,9 +79,21 @@ SHEETS = {
     # metatile number: see `meta()` below.
     'heros': 'meta:36',
     'snakes': 'meta:38',
-    'unicorn': 'meta:3b',
+    # ORACLE OF AGES (S161): `ages:NN` is Ages tileset $NN, read the same way
+    # out of assets/objects/oracles-disasm/ages/. The Sunken Palace wears
+    # Mermaid's Cave's sunken past half ($3d), the human's pick from three Ages
+    # and Seasons kits shown side by side; its whirlpool is the Ages sea's own,
+    # as it is drawn UNDER the sea ($5f, the underwater present) — Seasons has
+    # no whirlpool at all. `@k` renders the tileset with every animation at its
+    # k-th step, which is how a whirlpool's four frames are each one pick.
+    'mermaid': 'ages:3d',
+    'whirl0': 'ages:5f@0',
+    'whirl1': 'ages:5f@1',
+    'whirl2': 'ages:5f@2',
+    'whirl3': 'ages:5f@3',
 }
-META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains", 'meta:3b': "Unicorn's Cave"}
+META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
+              'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor'}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -89,8 +101,10 @@ def meta(name, m, note, sheet, **opt):
     return (name, (m % 16) * 16, (m // 16) * 16, note, dict(sheet=sheet, **opt) if opt else sheet)
 
 
-def render_tileset(index):
-    """All 256 metatiles of Seasons tileset `index`, 16 to a row, as an RGB image.
+def render_tileset(index, frame=None):
+    """All 256 metatiles of tileset `index`, 16 to a row, as an RGB image.
+    `index` is a Seasons tileset number, or ('ages', number). With `frame`,
+    every animated metatile is drawn at that step of its animation.
 
     Each 8x8 quarter is drawn in its OWN palette, rather than asserting one
     palette a metatile the way rip-objects does: every metatile picked here is
@@ -104,9 +118,14 @@ def render_tileset(index):
     im = Image.new('RGB', (256, 256), (0, 0, 0))
     for m in range(256):
         tiles, attrs = t.map[m * 8:m * 8 + 4], t.map[m * 8 + 4:m * 8 + 8]
+        vram = t.vram
+        if frame is not None:
+            steps = t.animation_vram(m)
+            if steps:
+                vram = steps[frame % len(steps)][1]
         for q in range(4):
             a = attrs[q]
-            tile = t.vram[(a >> 3) & 1].get(ro.addr(tiles[q]))
+            tile = vram[(a >> 3) & 1].get(ro.addr(tiles[q]))
             pal = t.pals[a & 7]
             if tile is None or pal is None:
                 continue
@@ -122,6 +141,9 @@ def render_tileset(index):
 def open_sheet(path):
     if path.startswith('meta:'):
         return render_tileset(int(path[5:], 16))
+    if path.startswith('ages:'):
+        idx, _, frame = path[5:].partition('@')
+        return render_tileset(('ages', int(idx, 16)), int(frame) if frame else None)
     return Image.open(path).convert('RGB')
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
@@ -573,35 +595,57 @@ PICKS = [
     meta('nPit', 0xf4, 'the black of a chasm, Snake\'s Remains', 'snakes'),
     meta('nPitN', 0xf5, 'a chasm with the floor\'s lip along its top, Snake\'s Remains', 'snakes'),
     #
-    # THE SUNKEN PALACE wears Unicorn's Cave: red rock round a lavender floor,
-    # and the one Seasons dungeon built round standing water.
-    meta('uRingTL', 0xb8, 'ring corner, north-west, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingN', 0xb0, 'ring run, north wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingTR', 0xb9, 'ring corner, north-east, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingW', 0xb3, 'ring run, west wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingE', 0xb1, 'ring run, east wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingBL', 0xba, 'ring corner, south-west, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingS', 0xb2, 'ring run, south wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uRingBR', 0xbb, 'ring corner, south-east, Unicorn\'s Cave', 'unicorn'),
-    meta('uKeyN', 0x70, 'key door in a north wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uKeyE', 0x71, 'key door in an east wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uKeyS', 0x72, 'key door in a south wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uKeyW', 0x73, 'key door in a west wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uShutN', 0x78, 'shutter in a north wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uShutE', 0x79, 'shutter in an east wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uShutS', 0x7a, 'shutter in a south wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uShutW', 0x7b, 'shutter in a west wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uBossN', 0x74, 'boss door in a north wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uBossS', 0x76, 'boss door in a south wall, Unicorn\'s Cave', 'unicorn'),
-    meta('uFill', 0xa6, 'the flat red of solid rock, Unicorn\'s Cave', 'unicorn'),
-    meta('uFloor', 0xa0, 'the lavender diamond floor, Unicorn\'s Cave', 'unicorn'),
-    meta('uFloorAlt', 0xa5, 'the violet four-square slab, Unicorn\'s Cave', 'unicorn'),
-    meta('uBlock', 0x1d, 'the push block, Unicorn\'s Cave', 'unicorn'),
-    meta('uPot', 0x10, 'the pot, on its own floor, Unicorn\'s Cave', 'unicorn'),
-    meta('uStatue', 0x15, 'the olive crystal, Unicorn\'s Cave', 'unicorn'),
-    meta('uArchC1', 0xe6, 'entrance pillar, west, Unicorn\'s Cave', 'unicorn'),
-    meta('uArchC2', 0x00, 'the lit way out, Unicorn\'s Cave', 'unicorn'),
-    meta('uArchC3', 0xe6, 'entrance pillar, east, Unicorn\'s Cave', 'unicorn'),
+    # THE SUNKEN PALACE wears Oracle of Ages' Mermaid's Cave (S161), its
+    # sunken past half: blue-green stone round a drowned flagstone floor, the
+    # human's choice over Seasons' Unicorn's Cave. Ages draws a jamb either
+    # side of every gap in the ring (room $52e: $b7/$b6 north, $b5/$b4 south,
+    # $b6/$b4 down an east wall), so this kit has them and the others do not.
+    meta('uRingTL', 0xb8, 'ring corner, north-west, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingN', 0xb0, 'ring run, north wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingTR', 0xb9, 'ring corner, north-east, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingW', 0xb3, 'ring run, west wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingE', 0xb1, 'ring run, east wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingBL', 0xba, 'ring corner, south-west, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingS', 0xb2, 'ring run, south wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uRingBR', 0xbb, 'ring corner, south-east, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambNW', 0xb7, 'jamb west of a gap in a north wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambNE', 0xb6, 'jamb east of a gap in a north wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambSW', 0xb5, 'jamb west of a gap in a south wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambSE', 0xb4, 'jamb east of a gap in a south wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambWN', 0xb7, 'jamb north of a gap in a west wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambWS', 0xb5, 'jamb south of a gap in a west wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambEN', 0xb6, 'jamb north of a gap in an east wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uJambES', 0xb4, 'jamb south of a gap in an east wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uKeyN', 0x70, 'key door in a north wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uKeyE', 0x71, 'key door in an east wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uKeyS', 0x72, 'key door in a south wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uKeyW', 0x73, 'key door in a west wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uShutN', 0x78, 'shutter in a north wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uShutE', 0x79, 'shutter in an east wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uShutS', 0x7a, 'shutter in a south wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uShutW', 0x7b, 'shutter in a west wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uBossN', 0x74, 'boss door in a north wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uBossS', 0x76, 'boss door in a south wall, Mermaid\'s Cave', 'mermaid'),
+    meta('uFill', 0xa7, 'the flat blue of solid stone (room $534 fills with it), Mermaid\'s Cave', 'mermaid'),
+    meta('uFloor', 0xa0, 'the drowned flagstone, Mermaid\'s Cave', 'mermaid'),
+    meta('uFloorAlt', 0xa1, 'the grey four-square slab, Mermaid\'s Cave', 'mermaid'),
+    meta('uBlock', 0x1d, 'the push block, Mermaid\'s Cave', 'mermaid'),
+    meta('uPot', 0x10, 'the pot, on its own floor, Mermaid\'s Cave', 'mermaid'),
+    meta('uStatue', 0x15, 'the green crystal, Mermaid\'s Cave', 'mermaid'),
+    meta('uArchC1', 0xe6, 'entrance pillar, west, Mermaid\'s Cave', 'mermaid'),
+    meta('uArchC2', 0x00, 'the lit way out, Mermaid\'s Cave', 'mermaid'),
+    meta('uArchC3', 0xe6, 'entrance pillar, east, Mermaid\'s Cave', 'mermaid'),
+    # The Palace's water: Ages' dungeon puddle ($f9, TILETYPE_PUDDLE) and its
+    # deep water ($fa, TILETYPE_WATER), and a hole ($f4, TILETYPE_HOLE).
+    meta('uWaterS', 0xf9, 'the shallows, Mermaid\'s Cave', 'mermaid'),
+    meta('uWaterD', 0xfa, 'deep water, Mermaid\'s Cave', 'mermaid'),
+    meta('uPit', 0xf4, 'a hole in the floor, Mermaid\'s Cave', 'mermaid'),
+    # THE WHIRLPOOL: TILEINDEX_WHIRLPOOL $e9, as the Ages sea draws it under
+    # water (tileset $5f), through animationDataWhirlpool2's four steps.
+    meta('uWhirl0', 0xe9, 'the whirlpool, step 1 of 4, the Ages sea floor', 'whirl0'),
+    meta('uWhirl1', 0xe9, 'the whirlpool, step 2 of 4, the Ages sea floor', 'whirl1'),
+    meta('uWhirl2', 0xe9, 'the whirlpool, step 3 of 4, the Ages sea floor', 'whirl2'),
+    meta('uWhirl3', 0xe9, 'the whirlpool, step 4 of 4, the Ages sea floor', 'whirl3'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -824,7 +868,9 @@ def main():
         '//',
         '// The three optional dungeons\' kits (S160) are read instead out of the',
         '// cartridge\'s own tilesets: Stewmath\'s oracles-disasm (github.com/Stewmath/',
-        '// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/.',
+        '// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/ —',
+        '// and the Sunken Palace\'s (S161) out of Oracle of Ages\', from the same',
+        '// commit, assets/objects/oracles-disasm/ages/.',
         '// Credit: the oracles-disasm project and its contributors; the artwork is',
         '// Nintendo\'s and Capcom\'s. Fan-work art only.',
         '//',
@@ -840,6 +886,10 @@ def main():
         if sheet.startswith('meta:'):
             L.append('  // %s — Seasons tileset $%s (%s), metatile $%02x'
                      % (note, sheet[5:], META_NAMES[sheet], (y // 16) * 16 + x // 16))
+        elif sheet.startswith('ages:'):
+            base = sheet.split('@')[0]
+            L.append('  // %s — Ages tileset $%s (%s), metatile $%02x'
+                     % (note, base[5:], META_NAMES[base], (y // 16) * 16 + x // 16))
         else:
             L.append('  // %s — oracle-seasons-dungeon-backgrounds.png @ %d,%d' % (note, x, y))
         L.append('  %s: `' % name)

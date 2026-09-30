@@ -345,6 +345,7 @@ export class Player extends Entity {
   updateHazards(game) {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
+    if ((f & F.WHIRL) && game.enterWhirlpool()) return;
     if (f & F.PIT) { this.beginFall(game); return; }
     if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
   }

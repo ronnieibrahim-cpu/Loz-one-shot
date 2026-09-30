@@ -1,3 +1,79 @@
+## S161 — the Sunken Palace: all three optional dungeons are built
+
+Branch claude/oracle-tides-optional-dungeons-c5eytd (S160's, continued as the
+human asked), mirrored to claude/sunken-palace-dungeon-eqam6i. NOT MERGED:
+the human decides at the end of S161 (they said: merge S160+S161 together
+once the Palace is done — ask, do not move main unasked).
+
+### What landed
+- THE SUNKEN PALACE (`palace`, 16 rooms, floors 1 = the Palace and 0 = the
+  Undercroft, `cell: [15, 11]`, `index 5`, `opensAt 5`), under the Palace
+  Porch: `cave4` has an iron hatch at (7,4), `palaceSeal` (the Keep seal's
+  art), `keyFlag: 'keyD6'`, `openFlag: 'openedPalace'`, `openTo: 'stairsDown'`;
+  its warp is listed from the start and inert until the tile carries F.WARP.
+  Theme: THE SEA'S HEIGHT DECIDES WHICH FLOOR YOU'RE ON. Route, prizes and
+  every room's reason are in the comment above its `registerMap` in
+  src/data/dungeons-optional.js. Two Small Keys (Whirl Gallery island, Sluice
+  Court), Boss Key (the cellar under the Weir, only a whirlpool reaches it),
+  Thalassor under the Throne Pool (only a whirlpool reaches the lair; its stair
+  out has `needFlag: 'palace_eel'`). Piece 27: the Sunken Chapel (an
+  `anchorGate`: whirlpools against a drowned wall; the Anchor holds them LOW
+  while HIGH covers the wall). Piece 28: Thalassor (fight at LOW). The Coilbone
+  charm: the Pearl Vault's chest. 28 pieces, cap 16.
+- THE WHIRLPOOL: `F.WHIRL` (bit 20, reused — see its comment), tide tile
+  `dWhirlpool` (legend `6` in `dungeonPalace`: shallows / deep / whirlpool).
+  `Game.enterWhirlpool` drops Link to floor-1, same room coords, same pixel,
+  with the stairs fade; `Player.updateHazards` calls it. Only DOWN: stairs go
+  up. The dungeon flood learned it (`tools/lib/dungeon-flood.mjs`, and
+  `floodDungeon(map, { whirl: false })`); `ROUTE_AVOID` includes F.WHIRL (not
+  a way ACROSS).
+- ART FROM ORACLE OF AGES, the human's pick (shown Seasons' Unicorn's Cave,
+  Ages' Mermaid's Cave and the Ages Ancient Tomb side by side; and Ages' two
+  whirlpools): Mermaid's Cave's sunken past half (Ages tileset $3d) and the
+  Ages sea's whirlpool as drawn underwater (tileset $5f, TILEINDEX_WHIRLPOOL
+  $e9, 4 frames of 6, WHIRLPOOL_ANIM_RATE). SEASONS HAS NO WHIRLPOOL AT ALL
+  (its tile tables have no TILETYPE_WHIRLPOOL). Files copied into
+  assets/objects/oracles-disasm/ages/ (README there). rip-objects' `Tileset`
+  now takes `('ages', n)`; rip-dungeon-themes takes `ages:NN` and `ages:NN@k`
+  (animation step k). The Palace kit extracts Ages' jambs, so `optionalKit`
+  uses jambs when a kit has them. The Palace's block/button are Ages' too.
+- COILBONE: `CHARMS.coilbone` (slot any, `found: true` — the scrimshander's
+  pool skips found charms, so the carve RNG is unchanged), read in
+  `Game.onTideChanged` (invuln COILBONE_INVULN_FRAMES, guessed). 31 charms.
+- TOOLS: new `check-whirlpool.mjs` (in CLAUDE.md's table). check-anchor: the
+  whirlpool is the one tide tile that shuts on a swimmer, named on purpose, and
+  a swimming dungeon's anchor room is allowed when it has one. check-exits: a
+  warp on a keyhole is a SEALED door (the hatch popped its deny text and the
+  dialogue blocked every later walk — 37 false failures). check-bosses: the
+  Palace fight (optional, no Essence asserted). check-side: six Palace
+  scenarios (three prizes, three refusals). check-charms: Coilbone proved,
+  roster 31, a found charm is never carved. check-hearts: palace 2 pieces.
+- GUIDES: docs/GUIDE.md (pieces 27, 28; 16 hearts; the Palace paragraph in
+  ch. 15; charms 31/8 placed). The illustrated guide (docs/guide): heart list
+  28 with pictures of all four optional pieces (hp-vault, hp-eyrie,
+  hp-palacechapel, hp-palaceeel, via new STATIC_SHOTS `opt-*`), an "optional
+  dungeons" table, the Coilbone in the charm table, the Porch line fixed. Only
+  those figures were re-captured (`capture --only=opt-`, `annotate --only=hp-*`).
+
+### Verified
+Whole table green (validate, walk-dungeons, solve-switches, every check-*,
+replay, test, shoot-cutscene, watch-cutscenes); check-playthrough 44/44, THE
+END, 0 deaths. Built; dist committed.
+
+### Noticed, not chased
+- The robot spends ~38 hearts beating Thalassor at LOW (check-side hands it
+  200 quarter-hearts). Not tuned (S150 rule). At MID it dies; at HIGH it runs
+  out of time.
+- check-anchor's model still HOPS two tiles (a Roc's-Feather verb the game no
+  longer has — nothing calls `startJump`). Its printed Chapel solution uses the
+  hop; the real one (proved by check-side) is: stand 7,8 at LOW, throw north
+  (bites 7,6, holding rows 4-8), sound HIGH, walk up and swim the wall.
+- The Ferryman's Coin could probably cross the Chapel and the Gallery's hole
+  (the flood only models the coin where `dungeon.coin`). Harmless sequence
+  breaks inside an optional dungeon; not asserted either way.
+- The Palace's stairs are the shared grey `dStairs`, not Ages' own.
+- Thalassor's pull still reads `g.tide.level` (the base), not the field.
+
 ## S160 — two of the three optional dungeons: the Lower Vault and the Gullwind Eyrie
 
 Branch claude/oracle-tides-optional-dungeons-c5eytd, off main at 398006f.

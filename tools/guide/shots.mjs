@@ -327,6 +327,11 @@ for (const [map, keys] of Object.entries(DUNGEON_ROOMS)) for (const k of keys) {
 }
 for (const c of ['cave1', 'cave2', 'cave3', 'cave4', 'cave5', 'cave6', 'caveShipwright']) STATIC_SHOTS.push({ id: `${c}-room`, room: [c, 0, 0, 0], tide: 1 });
 STATIC_SHOTS.push({ id: 'cave2-low', room: ['cave2', 0, 0, 0], tide: 0 });
+// The optional dungeons' Pieces of Heart (S160, S161), for the heart list.
+STATIC_SHOTS.push({ id: 'opt-vault-pan', room: ['vault', 0, 1, 0], tide: 1 });
+STATIC_SHOTS.push({ id: 'opt-eyrie-roost', room: ['eyrie', 0, 1, 0], tide: 1 });
+STATIC_SHOTS.push({ id: 'opt-palace-chapel', room: ['palace', 1, 0, 2], tide: 0 });
+STATIC_SHOTS.push({ id: 'opt-palace-lair', room: ['palace', 0, 1, 0], tide: 1 });
 
 // The Slackwater Cave's mouth, open only at LOW (S155 side content).
 STATIC_SHOTS.push({ id: 'ow-t0-1-2', room: ['overworld', 0, 1, 2], tide: 0 });

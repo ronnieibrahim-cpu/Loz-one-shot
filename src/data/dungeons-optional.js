@@ -442,4 +442,423 @@ export function installOptionalDungeons() {
       },
     },
   });
+
+  // --- The Sunken Palace ---------------------------------------------------
+  //
+  // TIDE THEME: THE SEA'S HEIGHT DECIDES WHICH FLOOR YOU'RE ON. The Palace is
+  // two floors under the Palace Porch, and the sea is under both. Its pools
+  // (`6`, `dWhirlpool`) are shallows at LOW, deep water at MID, and at HIGH a
+  // WHIRLPOOL that takes whoever touches it to the same place in the room
+  // directly beneath (`Game.enterWhirlpool`). Nothing but a stair takes you
+  // back up. So LOW is a floor you walk across the pools on, and HIGH is the
+  // way down — and the lower floor's own water runs the other way: its sumps
+  // (`0`) are holes at LOW and a swim above it, and its drowned walls (`9`)
+  // stand until HIGH covers them. Every place only a whirlpool reaches says so
+  // with `whirlRoom`, and tools/check-whirlpool.mjs proves every whirlpool in
+  // the world in the engine and every such claim against the dungeon flood.
+  //
+  // It is drawn in ORACLE OF AGES' Mermaid's Cave — its sunken past half —
+  // and its whirlpool is the Ages sea's, as the sea draws it under water: the
+  // human's choice, S161, from Ages and Seasons kits shown side by side.
+  //
+  // Floor 1 is the Palace; floor 0, the Undercroft beneath it. Route:
+  //   1,1,2 the Palace Stair (in from the Porch): the pools teach the drop;
+  //     its stair goes down too
+  //   -> 0,1,2 Beneath the Stair -> 0,1,1 the Undercroft -> 0,0,1 Under the
+  //      Gallery: its stair comes up on the island in 1,0,1 the Whirl
+  //      Gallery, ringed by a hole — the Small Key
+  //   -> 0,1,1 east [locked] -> 0,2,1 Under the Court: swim the sumps above
+  //      LOW, up the stair to 1,2,1 the Sluice Court: the second Small Key, in
+  //      a pool you wade at LOW (at HIGH it takes you back down)
+  //   -> 0,2,1 north [locked] -> 0,2,0 Under the Weir -> up to 1,2,0 the
+  //      Weir: at HIGH swim the drowned rim into the whirlpool, down into the
+  //      sealed cellar under it — the Boss Key — and its stair up
+  //   -> back to 1,1,1 the Hall of Tides, north [boss] -> 1,1,0 the Throne
+  //      Pool: at HIGH, down into 0,1,0 Thalassor's Lair: a Piece of Heart
+  // Off the route: across the drowned band north of Under the Gallery, 0,0,0
+  // the Oyster Stair up to 1,0,0 the Pearl Vault — the Coilbone, inside a ring
+  // of whirlpools (sound LOW and walk it); across the sumps south, 0,0,2 the
+  // Chapel Crypt up to 1,0,2 the Sunken Chapel — a Piece of Heart behind a
+  // drowned wall and a band of whirlpools: no one sea crosses both, and the
+  // Tidewright's Anchor holds the pools at LOW while HIGH covers the wall.
+  const P = (floor, rx, ry, px, py, dir) => ({ map: 'palace', floor, rx, ry, px: px * 16, py: py * 16, dir });
+  const stair = (x, y, to) => ({ x, y, to });
+  registerMap({
+    id: 'palace',
+    kind: 'dungeon',
+    name: 'The Sunken Palace',
+    w: 3, h: 3, floors: 2,
+    cell: [15, 11],
+    legend: 'dungeonPalace',
+    music: 'dungeon',
+    tint: 'cave',
+    dungeon: {
+      optional: true,
+      // The Porch's hatch takes the Bell's Clapper, which the Maku Tree
+      // gives at five Essences; a player who has it has the first five
+      // dungeons' items.
+      index: 5,
+      opensAt: 5,
+      boss: 'thalassor',
+      bossRoom: '0,1,0',
+      startRoom: '1,1,2',
+      entrance: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 112, py: 80 },
+    },
+    rooms: {
+      // ---- floor 1: the Palace -------------------------------------------
+      '1,1,2': {
+        name: 'The Palace Stair',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#....66666....#',
+          '#....66666....#',
+          '#....66666....#',
+          '#.............#',
+          '#.............#',
+          '#.p........./.#',
+          '#.............#',
+          '######(C)######',
+        ],
+        warps: [
+          { x: 7, y: 10, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 112, py: 80, dir: 'down' } },
+          stair(12, 8, P(0, 1, 2, 12, 9, 'down')),
+        ],
+        readable: [
+          [2, 2, 'Cut in the pillar: "The sea is under this\nfloor. When it stands high it opens it,\nand takes whoever swims in down to it."'],
+          [12, 2, 'Older: "Low water, walk. High water, sink.\nThe stairs are for coming home."'],
+        ],
+      },
+      '1,1,1': {
+        name: 'The Hall of Tides',
+        map: [
+          '#######B#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['stalfos', 4, 4, { drops: 'good' }],
+          ['stalfos', 10, 6, { drops: 'good' }],
+        ],
+      },
+      '1,0,1': {
+        name: 'The Whirl Gallery',
+        // The Small Key on an island, a hole all round it: no sea crosses a
+        // hole, and the island's only way is the stair from beneath it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.66.OOOOOO.66#',
+          '#.66.O....O.66#',
+          '#....O....O...#',
+          '#....O....O....',
+          '#.66.O/...O.66#',
+          '#.66.OOOOOO.66#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 8, 4, { pickup: 'key' }],
+        ],
+        warps: [stair(6, 6, P(0, 0, 1, 7, 6, 'down'))],
+      },
+      '1,2,1': {
+        name: 'The Sluice Court',
+        // The second key in the middle of a pool: wade it at LOW; at HIGH it
+        // takes you back down to the room you came up from.
+        map: [
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...66666.....#',
+          '#...66666.....#',
+          '#...66.66.../.#',
+          '#...66666.....#',
+          '#...66666.....#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 6, 5, { pickup: 'key' }],
+        ],
+        warps: [stair(12, 5, P(0, 2, 1, 12, 6, 'down'))],
+      },
+      '1,2,0': {
+        name: 'The Weir',
+        // A whirlpool behind a drowned rim. Below HIGH the rim is a wall; at
+        // HIGH you swim it, and the whirlpool takes you into the cellar
+        // sealed under it, where the Boss Key is.
+        map: [
+          '###############',
+          '#.............#',
+          '#..99999......#',
+          '#..96669......#',
+          '#..96669......#',
+          '#..96669......#',
+          '#..99999......#',
+          '#.............#',
+          '#.U........./.#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair(12, 8, P(0, 2, 0, 12, 9, 'down'))],
+        whirlRoom: { lands: [[5, 4]] },
+      },
+      '1,1,0': {
+        name: 'The Throne Pool',
+        // Behind the boss door, the palace's great whirlpool. Thalassor is
+        // under it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U...999...U.#',
+          '#....96669....#',
+          '#....96669....#',
+          '#....96669....#',
+          '#.U...999...U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######B#######',
+        ],
+        readable: [
+          [2, 2, 'On the throne\'s step: "The king of this\nhouse is the eel beneath it. Go down at\nhigh water, and come up if you can."'],
+        ],
+        whirlRoom: { lands: [[7, 4]] },
+      },
+      '1,0,0': {
+        name: 'The Pearl Vault',
+        // The Coilbone in a ring of whirlpools. You came up here at HIGH —
+        // the drowned band below needs it — so the ring takes you straight
+        // back down. Sound LOW and walk it.
+        map: [
+          '###############',
+          '#.............#',
+          '#...6666666...#',
+          '#...6.....6...#',
+          '#...6.....6...#',
+          '#...6.....6...#',
+          '#...6666666...#',
+          '#.............#',
+          '#.........../.#',
+          '#.U.........U.#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 7, 4, { charm: 'coilbone' }],
+        ],
+        warps: [stair(12, 8, P(0, 0, 0, 12, 9, 'down'))],
+      },
+      '1,0,2': {
+        name: 'The Sunken Chapel',
+        // A Piece of Heart behind a drowned wall, and a band of whirlpools
+        // right up against it. Below HIGH the wall stands; at HIGH the band
+        // takes you down; and there is no dry step between the two to sound
+        // the conch from. No one sea crosses both — the Tidewright's Anchor
+        // holds the band at LOW while HIGH covers the wall.
+        map: [
+          '###############',
+          '#....U...U....#',
+          '#.............#',
+          '#9999999999999#',
+          '#6666666666666#',
+          '#6666666666666#',
+          '#6666666666666#',
+          '#.............#',
+          '#.............#',
+          '#./...........#',
+          '###############',
+        ],
+        entities: [
+          ['pickup', 7, 2, { kind: 'heartPiece' }],
+        ],
+        warps: [stair(2, 9, P(0, 0, 2, 3, 9, 'down'))],
+        anchorGate: { from: [3, 9], to: [7, 2] },
+      },
+      // ---- floor 0: the Undercroft ----------------------------------------
+      '0,1,2': {
+        name: 'Beneath the Stair',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.p........./.#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair(12, 8, P(1, 1, 2, 12, 9, 'up'))],
+      },
+      '0,1,1': {
+        name: 'The Undercroft',
+        map: [
+          '###############',
+          '#.............#',
+          '#.p.........p.#',
+          '#....33333....#',
+          '#....33333....#',
+          '.....33333....L',
+          '#....33333....#',
+          '#....33333....#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['keese', 3, 5, { drops: 'good' }],
+          ['keese', 11, 5, { drops: 'good' }],
+        ],
+      },
+      '0,0,1': {
+        name: 'Under the Gallery',
+        // A drowned band to the north, crossed only at HIGH, and sumps to
+        // the south, a hole at LOW.
+        map: [
+          '#######.#######',
+          '#9999999999999#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#...../.......#',
+          '#.............#',
+          '#0000000000000#',
+          '#0000000000000#',
+          '#######.#######',
+        ],
+        warps: [stair(6, 6, P(1, 0, 1, 7, 6, 'up'))],
+      },
+      '0,2,1': {
+        name: 'Under the Court',
+        map: [
+          '###########L###',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          'L.00......../.#',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          '###############',
+        ],
+        warps: [stair(12, 5, P(1, 2, 1, 12, 6, 'up'))],
+      },
+      '0,2,0': {
+        name: 'Under the Weir',
+        // The cellar under the Weir's whirlpool is sealed on every side; its
+        // stair goes up and nothing comes down it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.########....#',
+          '#.#......#....#',
+          '#.#......#....#',
+          '#.#......#....#',
+          '#.#...../#....#',
+          '#.########....#',
+          '#.........../.#',
+          '#.............#',
+          '###########L###',
+        ],
+        entities: [
+          ['chest', 8, 3, { pickup: 'bossKey' }],
+        ],
+        warps: [
+          stair(12, 8, P(1, 2, 0, 12, 9, 'up')),
+          stair(8, 6, P(1, 2, 0, 11, 8, 'up')),
+        ],
+      },
+      '0,0,0': {
+        name: 'The Oyster Stair',
+        map: [
+          '###############',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.........../.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          // Clear of the Pearl Vault's ring above: nobody lands on a keese.
+          ['keese', 2, 5, { drops: 'good' }],
+          ['keese', 12, 4, { drops: 'good' }],
+        ],
+        warps: [stair(12, 8, P(1, 0, 0, 12, 9, 'up'))],
+      },
+      '0,0,2': {
+        name: 'The Chapel Crypt',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#./...........#',
+          '###############',
+        ],
+        warps: [stair(2, 9, P(1, 0, 2, 3, 9, 'up'))],
+      },
+      '0,1,0': {
+        name: "Thalassor's Lair",
+        // Under the Throne Pool. The eel's whirlpool pulls only as hard as
+        // the sea (src/data/bosses.js): LOW beaches it, and it thrashes.
+        // The stair out goes up once the eel is beaten; nothing comes down it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.33333333333.#',
+          '#.33.......33.#',
+          '#.33.......33.#',
+          '#.33.......33.#',
+          '#.33.......33.#',
+          '#.33333333333.#',
+          '#.............#',
+          '#./...........#',
+          '###############',
+        ],
+        entities: [
+          // Up in the north of the lair, clear of where the Throne Pool puts
+          // you down.
+          ['thalassor', 7, 1],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'palace_eel',
+          reward: {
+            spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
+            say: 'The water goes still. Something glints where the eel went down.',
+          },
+        },
+        // The stair out works once the eel is beaten: a fight is not left by
+        // the back door.
+        warps: [{ ...stair(2, 9, P(1, 1, 0, 2, 9, 'up')), needFlag: 'palace_eel' }],
+      },
+    },
+  });
 }

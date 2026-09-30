@@ -225,7 +225,7 @@ export function installCaves() {
           '#..q..q..#',
           '#.5555...#',
           '#.5555.p.#',
-          '#.5555...#',
+          '#.5555.H.#',
           '#..q..q..#',
           '#....C...#',
           '##########',
@@ -236,7 +236,12 @@ export function installCaves() {
           ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [[7, 2, 'A palace notice, in a hand that gave up halfway: "The rest of it is under. Do not go and look."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } }],
+        warps: [
+          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
+          // THE SUNKEN PALACE (S161), an optional dungeon, under a hatch the
+          // Bell's Clapper unbolts. See src/data/dungeons-optional.js.
+          { x: 7, y: 4, to: { map: 'palace', floor: 1, rx: 1, ry: 2, px: 112, py: 144, dir: 'up' } },
+        ],
       },
     },
   });

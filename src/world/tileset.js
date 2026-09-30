@@ -71,12 +71,13 @@ export const F = {
   DOOR:      1 << 17,  // dungeon door (state in room)
   SWITCHF:   1 << 18,  // floor switch
   CURRENT:   1 << 19,  // pushes the player while swimming (see `push`)
-  // 1 << 20 was WHIRL — "whirlpool: pulls in, warps". No tiledef ever carried
-  // it, so nothing in the world could reach `Game.enterWhirlpool`, and that
-  // function's only live branch sent the player to his last respawn point: a
-  // death he did not die. Both are gone and the bit is free. Same drift as the
-  // MAGNETIC note below — a flag whose comment names a mechanic the world does
-  // not have reads as true and is not.
+  // A WHIRLPOOL (S161, the Sunken Palace): touch it and the sea takes you to
+  // the floor below, to the same place in the room under this one
+  // (`Game.enterWhirlpool`). The bit was once a WHIRL no tile ever carried,
+  // whose only live branch sent the player to his last respawn point — a death
+  // he did not die — and was removed for it. It is back because a tile now
+  // carries it, and tools/check-whirlpool.mjs proves every one in the engine.
+  WHIRL:     1 << 20,
   VOID:      1 << 21,  // outside the map: solid and never rendered as floor
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut

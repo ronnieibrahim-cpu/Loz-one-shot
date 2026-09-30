@@ -54,7 +54,7 @@ played strictly in order; check-progression and check-playthrough prove it.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
-### The optional dungeons (S159 plan) — APPROVED; BEING BUILT (S160)
+### The optional dungeons (S159 plan) — APPROVED; ALL THREE BUILT (S160, S161)
 
 The human chose "both smaller side dungeons AND a bigger optional dungeon",
 more fleshed out, for the three bosses the six-dungeon fold left without a room
@@ -68,7 +68,7 @@ player already owns:
 |---|---|---|---|---|---|---|
 | The Salt Pan Vault, lower vault | stair down inside `cave3` (Vault Approach 0,9,1) | 6 | fire the sea puts out (Kilnshell: damp rooms will not strike it; carry it down lit and throw it at LOW over the sumps and into the dry kelp) | `saltwraith` | Piece of Heart | **DONE S160** — map `vault`, the Hero's Cave kit; proved by `check-kiln.mjs` and `check-side.mjs` |
 | The Gullwind Eyrie | NEW cave mouth in the north cliff of Kell Corner 0,3,2 | 6 | the tide change is how you move (Ferryman's Coin: throw, sound, swap; the High Water Wall only at HIGH) | `gustharpy` | Piece of Heart | **DONE S160** — map `eyrie`, the Snake's Remains kit; proved by `check-coin.mjs` and `check-side.mjs` |
-| The Sunken Palace | stair down inside `cave4` (Palace Mouth 0,15,1; its notice "The rest of it is under") | 16-18, 2 floors | the sea's height decides which floor you're on (a NEW whirlpool tile) | `thalassor` | 2 Pieces of Heart + the charm "Coilbone" (any case: a moment's safety each tide change) | to do (S161); opens after D5; its kit (`dungeonPalace`, Unicorn's Cave) is ready |
+| The Sunken Palace | stair down inside `cave4` (Palace Mouth 0,15,1; its notice "The rest of it is under") | 16-18, 2 floors | the sea's height decides which floor you're on (a NEW whirlpool tile) | `thalassor` | 2 Pieces of Heart + the charm "Coilbone" (any case: a moment's safety each tide change) | **DONE S161** — map `palace`, 16 rooms on 2 floors, Oracle of **Ages**' Mermaid's Cave (sunken past) kit and the Ages sea's whirlpool; a hatch in `cave4` the Bell's Clapper opens; proved by `check-whirlpool.mjs`, `check-anchor.mjs` (the Sunken Chapel), `check-side.mjs`, `check-bosses.mjs` |
 
 HOW AN OPTIONAL DUNGEON DECLARES ITSELF (S160): `dungeon.optional: true`,
 no `essence`, no `item`, and `opensAt` (Essences) for check-progression;

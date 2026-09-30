@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
-import { F } from '../src/world/tileset.js';
+import { F, getTileDef } from '../src/world/tileset.js';
 import { tileWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
@@ -108,7 +108,17 @@ function planFor(map) {
     // harmless but a signpost is not, and a probe has no business standing on
     // either of them.
     const occupied = new Set((def.entities || []).map(e => `${e[1]},${e[2]}`));
-    out.push({ mapId: map.id, kind: map.kind, key, floor, rx, ry, room, exits, doorCells, occupied });
+    // A SEALED DOOR (S161): a warp on a keyhole — the Palace Porch's hatch,
+    // which the Bell's Clapper unbolts into a stair — is inert until the key
+    // is turned. It is not a doorway yet and is not walked at; what is asked
+    // of it is that the tile it opens INTO is one.
+    const sealedAt = (w) => {
+      const d = getTileDef(room.baseName(w.x, w.y));
+      return !!(d && d.keyFlag && d.openTo && (getTileDef(d.openTo).flags & F.WARP));
+    };
+    const sealed = exits.filter(sealedAt);
+    out.push({ mapId: map.id, kind: map.kind, key, floor, rx, ry, room,
+      exits: exits.filter(w => !sealedAt(w)), sealed, doorCells, occupied });
   }
   return out;
 }
@@ -354,7 +364,9 @@ for (const plan of PLANS) {
   console.log(`--- ${plan.mapId} (${plan.kind}) ${plan.key} ---`);
 
   // 1. doorways and warps agree, both ways.
-  const named = new Set((plan.room.warps || []).map(w => `${w.x},${w.y}`));
+  const sealedKeys = new Set(plan.sealed.map(w => `${w.x},${w.y}`));
+  const named = new Set((plan.room.warps || []).map(w => `${w.x},${w.y}`).filter(k => !sealedKeys.has(k)));
+  for (const w of plan.sealed) console.log(`  note ${plan.mapId}: ${w.x},${w.y} is a sealed door (a keyhole that opens into one)`);
   const drawn = new Set(plan.doorCells.map(([x, y]) => `${x},${y}`));
   check(`${plan.mapId}: every doorway tile is named by a warp`,
     [...drawn].every(k => named.has(k)),

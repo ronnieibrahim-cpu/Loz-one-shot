@@ -20,7 +20,9 @@
 //
 // The three optional dungeons' kits (S160) are read instead out of the
 // cartridge's own tilesets: Stewmath's oracles-disasm (github.com/Stewmath/
-// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/.
+// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/ —
+// and the Sunken Palace's (S161) out of Oracle of Ages', from the same
+// commit, assets/objects/oracles-disasm/ages/.
 // Credit: the oracles-disasm project and its contributors; the artwork is
 // Nintendo's and Capcom's. Fan-work art only.
 //
@@ -4363,159 +4365,311 @@ export const DUNGEON_THEME_ART = {
     2222222222222222
     2222222222222222`,
 
-  // ring corner, north-west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b8
+  // ring corner, north-west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b8
   uRingTL: `
-    0000000000000000
-    0011000010000001
-    0122100011000011
-    0123311121111112
-    0012332222111122
-    0001233222222222
-    0001233322222222
-    0011223322222222
-    0112222233222111
-    0011222233321111
-    0001122223331122
-    0001122222333222
-    0001122221233323
-    0001122211133333
-    0011222221122333
-    0112222221123333`,
+    1000000000110000
+    0000011010000001
+    0011111010011100
+    0013221121111111
+    0013322111212111
+    0112332212222112
+    0011233222122221
+    0101223322222222
+    0101121232222222
+    0001112233222222
+    0011112223322222
+    0011222222332222
+    1011122222233222
+    1001221231223322
+    0001122222222332
+    0112112222222233`,
 
-  // ring run, north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b0
+  // ring run, north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b0
   uRingN: `
-    0000000000000000
+    0011000000110000
     1000000110000001
-    1100001111000011
-    2111111221111112
-    2211112222111122
+    1001110010011100
+    2111111121111111
+    1121211111212111
+    1222211212222112
+    2212222122122221
+    2222222222222222
+    2223222222232222
+    2221222222212222
     2222222222222222
     2222222222222222
     2222222222222222
-    1122211111222111
-    1111111111111111
-    2211112222111122
-    2222222222222222
-    2222222222222222
-    2233223322332233
-    3333333333333333
-    3322332233223322`,
+    2233332222333322
+    2332233223322332
+    3321123333211233`,
 
-  // ring corner, north-east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b9
+  // ring corner, north-east, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b9
   uRingTR: `
-    0000000000000000
-    1000000100001100
-    1100001100012210
-    2111111211133210
-    2211112222332100
-    2222222223321000
-    2222222233321000
-    2222222233221100
-    1112223322222110
-    1111233322221100
-    2211333222211000
-    2223332222211000
-    3233321222211000
-    3333311122211000
-    3332211222221100
-    3333211222222110`,
+    0000110000000001
+    1000000101100000
+    0011100101111100
+    1111111211223100
+    1112121112233100
+    2112222122332110
+    1222212223321100
+    2222222233221010
+    2222222321211010
+    2222223322111000
+    2222233222111100
+    2222332222221100
+    2223322222211101
+    2233221321221001
+    2332222222211000
+    3322222222112110`,
 
-  // ring run, west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b3
+  // ring run, west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b3
   uRingW: `
-    0112222211222332
-    0011222211222332
-    0001122211122233
-    0001122221122233
-    0001122221122332
-    0001122221122332
-    0011222211222233
-    0112222211222233
-    0112222211222332
-    0011222211222332
-    0001122211122233
-    0001122221122233
-    0001122221122332
-    0001122221122332
-    0011222211222233
-    0112222211222233`,
+    0101121222222223
+    0001112222222233
+    0011112222222332
+    0011222222222321
+    1011122231222321
+    1001221222222332
+    0001122222222233
+    0112112222222223
+    0101121222222223
+    0001112222222233
+    0011112222222332
+    0011222222222321
+    1011122231222321
+    1001221222222332
+    0001122222222233
+    0112112222222223`,
 
-  // ring run, east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b1
+  // ring run, east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b1
   uRingE: `
-    2332221122222110
-    2332221122221100
-    3322211122211000
-    3322211222211000
-    2332211222211000
-    2332211222211000
-    3322221122221100
-    3322221122222110
-    2332221122222110
-    2332221122221100
-    3322211122211000
-    3322211222211000
-    2332211222211000
-    2332211222211000
-    3322221122221100
-    3322221122222110`,
+    3222222221211010
+    3322222222111000
+    2332222222111100
+    1232222222221100
+    1232221322211101
+    2332222221221001
+    3322222222211000
+    3222222222112110
+    3222222221211010
+    3322222222111000
+    2332222222111100
+    1232222222221100
+    1232221322211101
+    2332222221221001
+    3322222222211000
+    3222222222112110`,
 
-  // ring corner, south-west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $ba
+  // ring corner, south-west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $ba
   uRingBL: `
-    0112222221123333
-    0011222221122333
-    0001122211133333
-    0001122221233323
-    0001122222333222
-    0001122223331122
-    0011222233321111
-    0112222233222111
-    0011223322222222
-    0001233322222222
-    0001233222222222
-    0012332222111122
-    0123311121111112
-    0122100011000011
-    0011000010000001
-    0000000000000000`,
+    0112112222222233
+    0001122222222332
+    1001221231223322
+    1011122222233222
+    0011222222332222
+    0011112223322222
+    0001112233222222
+    0101121232222222
+    0101223322222222
+    0011233222122221
+    0112332212222112
+    0013322111212111
+    0013221121111111
+    0011111010011100
+    0000011010000001
+    1000000000110000`,
 
-  // ring run, south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b2
+  // ring run, south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b2
   uRingS: `
-    3322332233223322
-    3333333333333333
-    2233223322332233
-    2222222222222222
-    2222222222222222
-    2211112222111122
-    1111111111111111
-    1122211111222111
+    3321123333211233
+    2332233223322332
+    2233332222333322
     2222222222222222
     2222222222222222
     2222222222222222
-    2211112222111122
-    2111111221111112
-    1100001111000011
+    2221222222212222
+    2223222222232222
+    2222222222222222
+    2212222122122221
+    1222211212222112
+    1121211111212111
+    2111111121111111
+    1001110010011100
     1000000110000001
-    0000000000000000`,
+    0011000000110000`,
 
-  // ring corner, south-east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $bb
+  // ring corner, south-east, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $bb
   uRingBR: `
-    3333211222222110
-    3332211222221100
-    3333311122211000
-    3233321222211000
-    2223332222211000
-    2211333222211000
-    1111233322221100
-    1112223322222110
-    2222222233221100
-    2222222233321000
-    2222222223321000
-    2211112222332100
-    2111111211133210
-    1100001100012210
-    1000000100001100
-    0000000000000000`,
+    3322222222112110
+    2332222222211000
+    2233221321221001
+    2223322222211101
+    2222332222221100
+    2222233222111100
+    2222223322111000
+    2222222321211010
+    2222222233221010
+    1222212223321100
+    2112222122332110
+    1112121112233100
+    1111111211223100
+    0011100101111100
+    1000000101100000
+    0000110000000001`,
 
-  // key door in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $70
+  // jamb west of a gap in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b7
+  uJambNW: `
+    1001222322222223
+    0100112222222233
+    0000111222222332
+    1000111222222321
+    2111011231222321
+    2111101222222332
+    3211112222222233
+    3222222222222223
+    2223222232222223
+    2221222223333332
+    2222222223112331
+    2222222223111231
+    2222222223211231
+    2233332223322321
+    2332233223333211
+    3321123333211112`,
+
+  // jamb east of a gap in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b6
+  uJambNE: `
+    3222222232221001
+    3322222222110010
+    2332222221110000
+    1232222221110001
+    1232221321101112
+    2332222221011112
+    3322222222111123
+    3222222222222223
+    3222222322223222
+    2333333222221222
+    1332113222222222
+    1321113222222222
+    1321123222222222
+    1232233222333322
+    1123333223322332
+    2111123333211233`,
+
+  // jamb west of a gap in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b5
+  uJambSW: `
+    3321123333211112
+    2332233223333211
+    2233332223322321
+    2222222223211231
+    2222222223111231
+    2222222223112331
+    2221222223333332
+    2223222232222223
+    3222222222222223
+    3211112222222233
+    2111101222222332
+    2111011231222321
+    1000111222222321
+    0000111222222332
+    0100112222222233
+    1001222322222223`,
+
+  // jamb east of a gap in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b4
+  uJambSE: `
+    2111123333211233
+    1123333223322332
+    1232233222333322
+    1321123222222222
+    1321113222222222
+    1332113222222222
+    2333333222221222
+    3222222322223222
+    3222222222222223
+    3322222222111123
+    2332222221011112
+    1232221321101112
+    1232222221110001
+    2332222221110000
+    3322222222110010
+    3222222232221001`,
+
+  // jamb north of a gap in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b7
+  uJambWN: `
+    1001222322222223
+    0100112222222233
+    0000111222222332
+    1000111222222321
+    2111011231222321
+    2111101222222332
+    3211112222222233
+    3222222222222223
+    2223222232222223
+    2221222223333332
+    2222222223112331
+    2222222223111231
+    2222222223211231
+    2233332223322321
+    2332233223333211
+    3321123333211112`,
+
+  // jamb south of a gap in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b5
+  uJambWS: `
+    3321123333211112
+    2332233223333211
+    2233332223322321
+    2222222223211231
+    2222222223111231
+    2222222223112331
+    2221222223333332
+    2223222232222223
+    3222222222222223
+    3211112222222233
+    2111101222222332
+    2111011231222321
+    1000111222222321
+    0000111222222332
+    0100112222222233
+    1001222322222223`,
+
+  // jamb north of a gap in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b6
+  uJambEN: `
+    3222222232221001
+    3322222222110010
+    2332222221110000
+    1232222221110001
+    1232221321101112
+    2332222221011112
+    3322222222111123
+    3222222222222223
+    3222222322223222
+    2333333222221222
+    1332113222222222
+    1321113222222222
+    1321123222222222
+    1232233222333322
+    1123333223322332
+    2111123333211233`,
+
+  // jamb south of a gap in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b4
+  uJambES: `
+    2111123333211233
+    1123333223322332
+    1232233222333322
+    1321123222222222
+    1321113222222222
+    1332113222222222
+    2333333222221222
+    3222222322223222
+    3222222222222223
+    3322222222111123
+    2332222221011112
+    1232221321101112
+    1232222221110001
+    2332222221110000
+    3322222222110010
+    3222222232221001`,
+
+  // key door in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $70
   uKeyN: `
     3000000000000003
     3000000000000003
@@ -4534,7 +4688,7 @@ export const DUNGEON_THEME_ART = {
     3122220000222213
     3333333333333333`,
 
-  // key door in an east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $71
+  // key door in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $71
   uKeyE: `
     3333333333333333
     3111111111111000
@@ -4553,7 +4707,7 @@ export const DUNGEON_THEME_ART = {
     3111111111111000
     3333333333333333`,
 
-  // key door in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $72
+  // key door in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $72
   uKeyS: `
     3333333333333333
     3122220000222213
@@ -4572,7 +4726,7 @@ export const DUNGEON_THEME_ART = {
     3000000000000003
     3000000000000003`,
 
-  // key door in a west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $73
+  // key door in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $73
   uKeyW: `
     3333333333333333
     0001111111111113
@@ -4591,7 +4745,7 @@ export const DUNGEON_THEME_ART = {
     0001111111111113
     3333333333333333`,
 
-  // shutter in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $78
+  // shutter in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $78
   uShutN: `
     3000000000000003
     3000000000000003
@@ -4610,7 +4764,7 @@ export const DUNGEON_THEME_ART = {
     3113333113333113
     3333333333333333`,
 
-  // shutter in an east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $79
+  // shutter in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $79
   uShutE: `
     3333333333333333
     3111111111111000
@@ -4629,7 +4783,7 @@ export const DUNGEON_THEME_ART = {
     3111111111111000
     3333333333333333`,
 
-  // shutter in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $7a
+  // shutter in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $7a
   uShutS: `
     3333333333333333
     3113333113333113
@@ -4648,7 +4802,7 @@ export const DUNGEON_THEME_ART = {
     3000000000000003
     3000000000000003`,
 
-  // shutter in a west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $7b
+  // shutter in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $7b
   uShutW: `
     3333333333333333
     0001111111111113
@@ -4667,7 +4821,7 @@ export const DUNGEON_THEME_ART = {
     0001111111111113
     3333333333333333`,
 
-  // boss door in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $74
+  // boss door in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $74
   uBossN: `
     3000000000000003
     3300000000000033
@@ -4686,7 +4840,7 @@ export const DUNGEON_THEME_ART = {
     3122223113222213
     3333333333333333`,
 
-  // boss door in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $76
+  // boss door in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $76
   uBossS: `
     3333333333333333
     3122223113222213
@@ -4705,7 +4859,7 @@ export const DUNGEON_THEME_ART = {
     3300000000000033
     3000000000000003`,
 
-  // the flat red of solid rock, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a6
+  // the flat blue of solid stone (room $534 fills with it), Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $a7
   uFill: `
     0000000000000000
     0000000000000000
@@ -4724,45 +4878,45 @@ export const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
-  // the lavender diamond floor, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a0
+  // the drowned flagstone, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $a0
   uFloor: `
-    0000100110010000
-    0001001111001000
-    0010011001100100
-    0100110110110010
-    1001101111011001
-    0011011011101100
-    0110111111110110
-    1101111111111011
-    1101101111111011
-    0110111110110110
-    0011011111101100
-    1001101111011001
-    0100110110110010
-    0010011001100100
-    0001001111001000
-    0000100110010000`,
+    1111112111111111
+    1111112111111111
+    1111112111111111
+    1111112111111111
+    1111111211111111
+    1111111211100011
+    0011110200022200
+    2200022222211221
+    1122211111111121
+    1111111111111111
+    1111111111111112
+    1111111111111112
+    1111111111111121
+    1100001111000121
+    0012210000222121
+    2221122222111221`,
 
-  // the violet four-square slab, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a5
+  // the grey four-square slab, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $a1
   uFloorAlt: `
-    2222222222222222
-    2000000000000002
-    2011111111111102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2011111111111102
-    2011111111111102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2011111111111102
-    2000000000000002
-    2222222222222222`,
+    0000000000000000
+    0111111001111110
+    0111101001111010
+    0101111001011110
+    0111111001111110
+    0111011001110110
+    0111111001111110
+    0000000000000000
+    0000000000000000
+    0111111001111110
+    0111101001111010
+    0101111001011110
+    0111111001111110
+    0111011001110110
+    0111111001111110
+    0000000000000000`,
 
-  // the push block, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $1d
+  // the push block, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $1d
   uBlock: `
     2222222222222222
     2001111111111112
@@ -4781,7 +4935,7 @@ export const DUNGEON_THEME_ART = {
     2222222222222212
     2222222222222222`,
 
-  // the pot, on its own floor, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $10
+  // the pot, on its own floor, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $10
   uPot: `
     ......33333.....
     .....3000003....
@@ -4800,7 +4954,7 @@ export const DUNGEON_THEME_ART = {
     ...33200000233..
     .....3333333....`,
 
-  // the olive crystal, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $15
+  // the green crystal, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $15
   uStatue: `
     ................
     ......33333.....
@@ -4819,7 +4973,7 @@ export const DUNGEON_THEME_ART = {
     ...33222222233..
     .....3333333....`,
 
-  // entrance pillar, west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $e6
+  // entrance pillar, west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $e6
   uArchC1: `
     3321222222221233
     3221222222221223
@@ -4835,10 +4989,10 @@ export const DUNGEON_THEME_ART = {
     3100000000000013
     3100000000000013
     3100000000000013
-    0000000000000000
-    0000000000000000`,
+    3100000000000013
+    3100000000000013`,
 
-  // the lit way out, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $00
+  // the lit way out, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $00
   uArchC2: `
     0000000000000000
     0000000000000000
@@ -4857,7 +5011,7 @@ export const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
-  // entrance pillar, east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $e6
+  // entrance pillar, east, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $e6
   uArchC3: `
     3321222222221233
     3221222222221223
@@ -4873,8 +5027,141 @@ export const DUNGEON_THEME_ART = {
     3100000000000013
     3100000000000013
     3100000000000013
+    3100000000000013
+    3100000000000013`,
+
+  // the shallows, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f9
+  uWaterS: `
+    1111111111111111
+    0011111100111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111100111111001
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0011111100111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111100111111001
+    1111111111111111
+    1111111111111111`,
+
+  // deep water, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $fa
+  uWaterD: `
+    0111110001111100
+    1000001110000011
+    1111111111111111
+    1111111111111111
+    0001111100011111
+    1110000011100000
+    1111111111111111
+    1111111111111111
+    0111110001111100
+    1000001110000011
+    1111111111111111
+    1111111111111111
+    0001111100011111
+    1110000011100000
+    1111111111111111
+    1111111111111111`,
+
+  // a hole in the floor, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f4
+  uPit: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
     0000000000000000
     0000000000000000`,
+
+  // the whirlpool, step 1 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl0: `
+    1111222222221111
+    1122222222222211
+    1222210000122221
+    2221001222211222
+    2210122211222122
+    2201221000012212
+    2202220122101221
+    1201220222210121
+    1210122220221021
+    1221012210222022
+    2122100001221022
+    2212221122210122
+    2221122221001222
+    1222210000122221
+    1122222222222211
+    1111222222221111`,
+
+  // the whirlpool, step 2 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl1: `
+    1111122222211111
+    1122222222222211
+    1222221111122221
+    2222101222211222
+    2221012211222122
+    2220121000012222
+    2220220011001222
+    2220120100200222
+    2220020010210222
+    2221001100220222
+    2222100001210222
+    2212221122101222
+    2221122221012222
+    1222211111222221
+    1122222222222211
+    1111122222211111`,
+
+  // the whirlpool, step 3 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl2: `
+    1111122222221111
+    1122222222222211
+    1222222222222221
+    2222222221122222
+    2222221112212222
+    2122210001221222
+    2122002100221222
+    1221021010210221
+    1220120101201221
+    2221220012002212
+    2221221000122212
+    2222122111222222
+    2222211222222222
+    1222222222222221
+    1122222222222211
+    1111222222221111`,
+
+  // the whirlpool, step 4 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl3: `
+    1111222222221111
+    1122222222222211
+    1222222111122221
+    2222222222212222
+    2222222222222222
+    2222222111122222
+    2222221012212222
+    2221220101221222
+    2221221010221222
+    2222122101222222
+    2222211112222222
+    2222222222222222
+    2222122222222222
+    1222211112222221
+    1122222222222211
+    1111222222221111`,
 
   // the Seasons pot, on its own floor — oracle-seasons-dungeon-backgrounds.png @ 2195,750
   gPot: `
@@ -5147,33 +5434,48 @@ export const DUNGEON_THEME_PALETTES = {
   nArchC3: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
   nPit: ['#000000', '#000000', '#000000', '#000000'],
   nPitN: ['#944a8c', '#63185a', '#000000', '#000000'],
-  uRingTL: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingN: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingTR: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingW: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingE: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingBL: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingS: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingBR: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uKeyN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uKeyE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uKeyS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uKeyW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uBossN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uBossS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uFill: ['#ce635a', '#ce635a', '#ce635a', '#ce635a'],
-  uFloor: ['#a584ce', '#73529c', '#73529c', '#73529c'],
-  uFloorAlt: ['#a584ce', '#73529c', '#422163', '#422163'],
-  uBlock: ['#f78c18', '#7b2100', '#000000', '#000000'],
-  uPot: ['#c6b531', '#a584ce', '#6b5a08', '#000000'],
-  uStatue: ['#c6b531', '#a584ce', '#6b5a08', '#000000'],
-  uArchC1: ['#a584ce', '#73529c', '#422163', '#000000'],
-  uArchC2: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
-  uArchC3: ['#a584ce', '#73529c', '#422163', '#000000'],
+  uRingTL: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingN: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingTR: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingW: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingE: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingBL: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingS: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingBR: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambNW: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambNE: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambSW: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambSE: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambWN: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambWS: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambEN: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambES: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uKeyN: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uKeyE: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uKeyS: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uKeyW: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutN: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutE: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutS: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutW: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uBossN: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uBossS: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uFill: ['#427394', '#427394', '#427394', '#427394'],
+  uFloor: ['#94b5ad', '#5a7384', '#214a42', '#214a42'],
+  uFloorAlt: ['#94b5ad', '#5a7384', '#5a7384', '#5a7384'],
+  uBlock: ['#b54a9c', '#6b0052', '#000000', '#000000'],
+  uPot: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
+  uStatue: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
+  uArchC1: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uArchC2: ['#d6e7b5', '#d6e7b5', '#d6e7b5', '#d6e7b5'],
+  uArchC3: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uWaterS: ['#bddeff', '#5a7bbd', '#5a7bbd', '#5a7bbd'],
+  uWaterD: ['#5a7bbd', '#003184', '#003184', '#003184'],
+  uPit: ['#000000', '#000000', '#000000', '#000000'],
+  uWhirl0: ['#5aadef', '#426be7', '#314aad', '#314aad'],
+  uWhirl1: ['#5aadef', '#426be7', '#314aad', '#314aad'],
+  uWhirl2: ['#5aadef', '#426be7', '#314aad', '#314aad'],
+  uWhirl3: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   gPot: ['#f8a800', '#7090c0', '#884800', '#000000'],
   gBlock: ['#f878f8', '#802868', '#000000', '#000000'],
 };

@@ -2205,6 +2205,10 @@ const WHEEL_SPIN_BEAT = 4;
 const TORCH_FLAME_FRAMES = 15;
 /** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
 const RIPTIDE_ANIM_RATE = 4;
+/** f — how long the Sunken Palace's whirlpool holds each of its four frames.
+ *  derived: oracles-disasm data/ages/animationData.s, animationDataWhirlpool2
+ *  (the Ages sea's whirlpool, TILEINDEX_WHIRLPOOL $e9), `.db $06` per frame. */
+const WHIRLPOOL_ANIM_RATE = 6;
 
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
@@ -2378,6 +2382,11 @@ const LIFT_STRENGTH = 1;
  *  the charm exists to create, so it is the first number to move if the
  *  transition play does not read. */
 const NEAP_GRACE_FRAMES = 180;
+/** f — the Coilbone's moment of safety: how long nothing can hurt you after
+ *  every turn of the tide, while the charm is live. guessed; one second, long
+ *  enough to sound the conch in the middle of a fight and not be punished for
+ *  standing still to do it, short enough that it is not a shield. */
+const COILBONE_INVULN_FRAMES = 60;
 
 /** most charms one case can ever hold. guessed; the late-game case upgrade
  *  raises progress.charmCase from 1 to this. */
@@ -3226,6 +3235,7 @@ __exports["TORRENT_ANIM_RATE"] = TORRENT_ANIM_RATE;
 __exports["WHEEL_SPIN_BEAT"] = WHEEL_SPIN_BEAT;
 __exports["TORCH_FLAME_FRAMES"] = TORCH_FLAME_FRAMES;
 __exports["RIPTIDE_ANIM_RATE"] = RIPTIDE_ANIM_RATE;
+__exports["WHIRLPOOL_ANIM_RATE"] = WHIRLPOOL_ANIM_RATE;
 __exports["SINK_ENTER_FRAMES"] = SINK_ENTER_FRAMES;
 __exports["CLEATS_BREATH_FRAMES"] = CLEATS_BREATH_FRAMES;
 __exports["CLEATS_BREATH_WARN_FRAMES"] = CLEATS_BREATH_WARN_FRAMES;
@@ -3264,6 +3274,7 @@ __exports["BOTTLE_POUR_FRAMES"] = BOTTLE_POUR_FRAMES;
 __exports["GAP_HOP_MAX_SPAN"] = GAP_HOP_MAX_SPAN;
 __exports["LIFT_STRENGTH"] = LIFT_STRENGTH;
 __exports["NEAP_GRACE_FRAMES"] = NEAP_GRACE_FRAMES;
+__exports["COILBONE_INVULN_FRAMES"] = COILBONE_INVULN_FRAMES;
 __exports["CHARM_CASE_MAX"] = CHARM_CASE_MAX;
 __exports["RIPTIDE_FIN_FACTOR"] = RIPTIDE_FIN_FACTOR;
 __exports["DEADWEIGHT_FACTOR"] = DEADWEIGHT_FACTOR;
@@ -5341,12 +5352,13 @@ const F = {
   DOOR:      1 << 17,  // dungeon door (state in room)
   SWITCHF:   1 << 18,  // floor switch
   CURRENT:   1 << 19,  // pushes the player while swimming (see `push`)
-  // 1 << 20 was WHIRL — "whirlpool: pulls in, warps". No tiledef ever carried
-  // it, so nothing in the world could reach `Game.enterWhirlpool`, and that
-  // function's only live branch sent the player to his last respawn point: a
-  // death he did not die. Both are gone and the bit is free. Same drift as the
-  // MAGNETIC note below — a flag whose comment names a mechanic the world does
-  // not have reads as true and is not.
+  // A WHIRLPOOL (S161, the Sunken Palace): touch it and the sea takes you to
+  // the floor below, to the same place in the room under this one
+  // (`Game.enterWhirlpool`). The bit was once a WHIRL no tile ever carried,
+  // whose only live branch sent the player to his last respawn point — a death
+  // he did not die — and was removed for it. It is back because a tile now
+  // carries it, and tools/check-whirlpool.mjs proves every one in the engine.
+  WHIRL:     1 << 20,
   VOID:      1 << 21,  // outside the map: solid and never rendered as floor
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
@@ -8162,7 +8174,7 @@ const { NEAP_GRACE_FRAMES, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENC
 const CHARM_SLOTS = ['low', 'mid', 'high'];
 
 /**
- * The roster. Thirty charms; every one of them is read somewhere in src/, and
+ * The roster. Thirty-one charms; every one of them is read somewhere in src/, and
  * tools/check-charms.mjs proves each in-engine.
  *
  * `slot`  which case it fits ('any' fits all three)
@@ -8237,6 +8249,11 @@ const CHARMS = {
     desc: 'One hit in four passes straight through you.' },
   seawolfsTooth: { slot: 'any', name: "Sea-Wolf's Tooth", color: 'enemyr',
     desc: 'Your sword knocks enemies twice as far.' },
+  // FOUND, NOT CARVED (S161): the Sunken Palace's Pearl Vault holds it, and
+  // the scrimshander's random carve leaves a `found` charm out of her pool —
+  // so adding one does not change what she carves for anyone.
+  coilbone: { slot: 'any', name: 'Coilbone', color: 'water', found: true,
+    desc: 'A moment\'s safety each time the tide changes.' },
 };
 
 const CHARM_COUNT = Object.keys(CHARMS).length;
@@ -14502,6 +14519,7 @@ class Player extends Entity {
   updateHazards(game) {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
+    if ((f & F.WHIRL) && game.enterWhirlpool()) return;
     if (f & F.PIT) { this.beginFall(game); return; }
     if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
   }
@@ -15810,7 +15828,8 @@ __exports["ERRANDS"] = ERRANDS;
 /* ===== src/data/sprites-objects.js ===== */
 __define("data/sprites-objects.js", function (__exports, __require) {
 // Chests, the sign, torches, push blocks and floor buttons, cut from Oracle of
-// Seasons' own room graphics.
+// Seasons' own room graphics (and the Sunken Palace's block and button from
+// Oracle of Ages', assets/objects/oracles-disasm/ages/).
 //
 // Generated by tools/rip-objects.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
@@ -15852,8 +15871,8 @@ __define("data/sprites-objects.js", function (__exports, __require) {
 //   o_block_eyrie: TILEINDEX_PUSHABLE_BLOCK $1d, Snake's Remains
 //   o_switch_up_eyrie: TILEINDEX_BUTTON $0c, Snake's Remains, floor keyed out
 //   o_switch_down_eyrie: TILEINDEX_PRESSED_BUTTON $0d, the same
-//   o_block_palace: TILEINDEX_PUSHABLE_BLOCK $1d, Unicorn's Cave
-//   o_switch_up_palace: TILEINDEX_BUTTON $0c, Unicorn's Cave, floor keyed out
+//   o_block_palace: TILEINDEX_PUSHABLE_BLOCK $1d, Ages' Mermaid's Cave, the sunken past
+//   o_switch_up_palace: TILEINDEX_BUTTON $0c, Ages' Mermaid's Cave, the sunken past, floor keyed out
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
 
@@ -16618,8 +16637,8 @@ const OBJECT_PALETTES = {
   o_switch_salt: ['#948c84', '#735a73', '#4a315a', '#000000'],
   o_block_eyrie: ['#ffff8c', '#d65a52', '#8c1818', '#000000'],
   o_switch_eyrie: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
-  o_block_palace: ['#ffff8c', '#f78c18', '#7b2100', '#000000'],
-  o_switch_palace: ['#a584ce', '#73529c', '#422163', '#000000'],
+  o_block_palace: ['#decee7', '#b54a9c', '#6b0052', '#000000'],
+  o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
 };
 
 function installObjectSprites() {
@@ -28446,7 +28465,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -29270,6 +29289,28 @@ class Game {
   }
 
   /**
+   * A WHIRLPOOL TAKES YOU DOWN (S161, the Sunken Palace). The tile carrying
+   * F.WHIRL is only ever a whirlpool at one sea (a tide tile: shallows, deep
+   * water, whirlpool), so it is the sea's height that decides whether this
+   * room is the floor you stay on. It drops you to the same place in the room
+   * directly under this one — one floor down, the same room coordinates, the
+   * same pixel — so where you land is something you can read off the map.
+   * A whirlpool with no room beneath it does nothing; tools/check-whirlpool.mjs
+   * proves every one in the world has one, and somewhere to stand in it.
+   */
+  enterWhirlpool() {
+    const room = this.room, p = this.player;
+    if (!room || !p || this.transition || this.veiled() || !this.map) return false;
+    const below = room.floor - 1;
+    if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
+    this.audio.sfx('whirl');
+    this.spawnEffect('splash', p.x, p.y);
+    this.warpTo(this.mapId, below, room.rx, room.ry, { x: p.x, y: p.y }, p.dir,
+      { banner: true, fade: STAIRS_FADE });
+    return true;
+  }
+
+  /**
    * THE DOORWAY PULL — walking into the wall beside a door slides you into it.
    *
    * A person got stuck inside Tidewash Grotto and could not find the way out.
@@ -29360,6 +29401,10 @@ class Game {
 
   onTideChanged(next, prev) {
     if (this.player) this.player.reconcileWithTide(this);
+    // The Coilbone (S161): a moment's safety each time the tide changes.
+    if (this.player && this.charm('coilbone')) {
+      this.player.invuln = Math.max(this.player.invuln || 0, COILBONE_INVULN_FRAMES);
+    }
     if (this.room) this.room.invalidate();
     // The Ferryman's Coin fires on the turn of the tide, not on a button. The
     // swap is DEFERRED rather than done here: this runs while the wave front
@@ -29917,7 +29962,7 @@ class Game {
    */
   commissionCarving() {
     const p = this.progress;
-    const pool = Object.keys(CHARMS).filter(id => !p.charms[id]);
+    const pool = Object.keys(CHARMS).filter(id => !p.charms[id] && !CHARMS[id].found);
     if (!pool.length) return null;
     const id = pool[Math.floor(rngGlobal.float() * pool.length) % pool.length];
     p.carve = { id, turns: CARVE_TIDE_TURNS };
@@ -30019,15 +30064,12 @@ class Game {
     });
   }
 
-  // `enterWhirlpool` WAS HERE, AND NOTHING COULD EVER CALL IT. It fired off
-  // `F.WHIRL`, and no tiledef in `src/data/tiles-core.js` has ever carried that
-  // flag — so the whole path was a feature in the engine that the world had no
-  // way to reach. Its no-destination branch (no room defines `whirlpool`
-  // either, so it was the only branch) sent the player to the last respawn
-  // point, which reads as a death he did not die. Deleted rather than given a
-  // destination: a whirlpool is a design decision about a screen, and inventing
-  // one to make an unreachable branch reachable is the tail wagging the dog.
-  // Thalassor's whirlpool is a boss behaviour and does not go through here.
+  // `enterWhirlpool` was once here with nothing able to call it — no tile
+  // carried F.WHIRL — and its only branch sent the player to his last respawn
+  // point, a death he did not die. It was deleted for that. The one above
+  // (S161) exists because the Sunken Palace's whirlpool tile carries the flag,
+  // and its destination is a room, never a respawn. Thalassor's whirlpool is a
+  // boss behaviour and does not go through either.
 
   onPlayerDied() {
     if (this.mode === 'gameover') return;
@@ -34048,7 +34090,9 @@ __define("data/tiles-dungeon-themes.js", function (__exports, __require) {
 //
 // The three optional dungeons' kits (S160) are read instead out of the
 // cartridge's own tilesets: Stewmath's oracles-disasm (github.com/Stewmath/
-// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/.
+// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/ —
+// and the Sunken Palace's (S161) out of Oracle of Ages', from the same
+// commit, assets/objects/oracles-disasm/ages/.
 // Credit: the oracles-disasm project and its contributors; the artwork is
 // Nintendo's and Capcom's. Fan-work art only.
 //
@@ -38391,159 +38435,311 @@ const DUNGEON_THEME_ART = {
     2222222222222222
     2222222222222222`,
 
-  // ring corner, north-west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b8
+  // ring corner, north-west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b8
   uRingTL: `
-    0000000000000000
-    0011000010000001
-    0122100011000011
-    0123311121111112
-    0012332222111122
-    0001233222222222
-    0001233322222222
-    0011223322222222
-    0112222233222111
-    0011222233321111
-    0001122223331122
-    0001122222333222
-    0001122221233323
-    0001122211133333
-    0011222221122333
-    0112222221123333`,
+    1000000000110000
+    0000011010000001
+    0011111010011100
+    0013221121111111
+    0013322111212111
+    0112332212222112
+    0011233222122221
+    0101223322222222
+    0101121232222222
+    0001112233222222
+    0011112223322222
+    0011222222332222
+    1011122222233222
+    1001221231223322
+    0001122222222332
+    0112112222222233`,
 
-  // ring run, north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b0
+  // ring run, north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b0
   uRingN: `
-    0000000000000000
+    0011000000110000
     1000000110000001
-    1100001111000011
-    2111111221111112
-    2211112222111122
+    1001110010011100
+    2111111121111111
+    1121211111212111
+    1222211212222112
+    2212222122122221
+    2222222222222222
+    2223222222232222
+    2221222222212222
     2222222222222222
     2222222222222222
     2222222222222222
-    1122211111222111
-    1111111111111111
-    2211112222111122
-    2222222222222222
-    2222222222222222
-    2233223322332233
-    3333333333333333
-    3322332233223322`,
+    2233332222333322
+    2332233223322332
+    3321123333211233`,
 
-  // ring corner, north-east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b9
+  // ring corner, north-east, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b9
   uRingTR: `
-    0000000000000000
-    1000000100001100
-    1100001100012210
-    2111111211133210
-    2211112222332100
-    2222222223321000
-    2222222233321000
-    2222222233221100
-    1112223322222110
-    1111233322221100
-    2211333222211000
-    2223332222211000
-    3233321222211000
-    3333311122211000
-    3332211222221100
-    3333211222222110`,
+    0000110000000001
+    1000000101100000
+    0011100101111100
+    1111111211223100
+    1112121112233100
+    2112222122332110
+    1222212223321100
+    2222222233221010
+    2222222321211010
+    2222223322111000
+    2222233222111100
+    2222332222221100
+    2223322222211101
+    2233221321221001
+    2332222222211000
+    3322222222112110`,
 
-  // ring run, west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b3
+  // ring run, west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b3
   uRingW: `
-    0112222211222332
-    0011222211222332
-    0001122211122233
-    0001122221122233
-    0001122221122332
-    0001122221122332
-    0011222211222233
-    0112222211222233
-    0112222211222332
-    0011222211222332
-    0001122211122233
-    0001122221122233
-    0001122221122332
-    0001122221122332
-    0011222211222233
-    0112222211222233`,
+    0101121222222223
+    0001112222222233
+    0011112222222332
+    0011222222222321
+    1011122231222321
+    1001221222222332
+    0001122222222233
+    0112112222222223
+    0101121222222223
+    0001112222222233
+    0011112222222332
+    0011222222222321
+    1011122231222321
+    1001221222222332
+    0001122222222233
+    0112112222222223`,
 
-  // ring run, east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b1
+  // ring run, east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b1
   uRingE: `
-    2332221122222110
-    2332221122221100
-    3322211122211000
-    3322211222211000
-    2332211222211000
-    2332211222211000
-    3322221122221100
-    3322221122222110
-    2332221122222110
-    2332221122221100
-    3322211122211000
-    3322211222211000
-    2332211222211000
-    2332211222211000
-    3322221122221100
-    3322221122222110`,
+    3222222221211010
+    3322222222111000
+    2332222222111100
+    1232222222221100
+    1232221322211101
+    2332222221221001
+    3322222222211000
+    3222222222112110
+    3222222221211010
+    3322222222111000
+    2332222222111100
+    1232222222221100
+    1232221322211101
+    2332222221221001
+    3322222222211000
+    3222222222112110`,
 
-  // ring corner, south-west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $ba
+  // ring corner, south-west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $ba
   uRingBL: `
-    0112222221123333
-    0011222221122333
-    0001122211133333
-    0001122221233323
-    0001122222333222
-    0001122223331122
-    0011222233321111
-    0112222233222111
-    0011223322222222
-    0001233322222222
-    0001233222222222
-    0012332222111122
-    0123311121111112
-    0122100011000011
-    0011000010000001
-    0000000000000000`,
+    0112112222222233
+    0001122222222332
+    1001221231223322
+    1011122222233222
+    0011222222332222
+    0011112223322222
+    0001112233222222
+    0101121232222222
+    0101223322222222
+    0011233222122221
+    0112332212222112
+    0013322111212111
+    0013221121111111
+    0011111010011100
+    0000011010000001
+    1000000000110000`,
 
-  // ring run, south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b2
+  // ring run, south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b2
   uRingS: `
-    3322332233223322
-    3333333333333333
-    2233223322332233
-    2222222222222222
-    2222222222222222
-    2211112222111122
-    1111111111111111
-    1122211111222111
+    3321123333211233
+    2332233223322332
+    2233332222333322
     2222222222222222
     2222222222222222
     2222222222222222
-    2211112222111122
-    2111111221111112
-    1100001111000011
+    2221222222212222
+    2223222222232222
+    2222222222222222
+    2212222122122221
+    1222211212222112
+    1121211111212111
+    2111111121111111
+    1001110010011100
     1000000110000001
-    0000000000000000`,
+    0011000000110000`,
 
-  // ring corner, south-east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $bb
+  // ring corner, south-east, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $bb
   uRingBR: `
-    3333211222222110
-    3332211222221100
-    3333311122211000
-    3233321222211000
-    2223332222211000
-    2211333222211000
-    1111233322221100
-    1112223322222110
-    2222222233221100
-    2222222233321000
-    2222222223321000
-    2211112222332100
-    2111111211133210
-    1100001100012210
-    1000000100001100
-    0000000000000000`,
+    3322222222112110
+    2332222222211000
+    2233221321221001
+    2223322222211101
+    2222332222221100
+    2222233222111100
+    2222223322111000
+    2222222321211010
+    2222222233221010
+    1222212223321100
+    2112222122332110
+    1112121112233100
+    1111111211223100
+    0011100101111100
+    1000000101100000
+    0000110000000001`,
 
-  // key door in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $70
+  // jamb west of a gap in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b7
+  uJambNW: `
+    1001222322222223
+    0100112222222233
+    0000111222222332
+    1000111222222321
+    2111011231222321
+    2111101222222332
+    3211112222222233
+    3222222222222223
+    2223222232222223
+    2221222223333332
+    2222222223112331
+    2222222223111231
+    2222222223211231
+    2233332223322321
+    2332233223333211
+    3321123333211112`,
+
+  // jamb east of a gap in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b6
+  uJambNE: `
+    3222222232221001
+    3322222222110010
+    2332222221110000
+    1232222221110001
+    1232221321101112
+    2332222221011112
+    3322222222111123
+    3222222222222223
+    3222222322223222
+    2333333222221222
+    1332113222222222
+    1321113222222222
+    1321123222222222
+    1232233222333322
+    1123333223322332
+    2111123333211233`,
+
+  // jamb west of a gap in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b5
+  uJambSW: `
+    3321123333211112
+    2332233223333211
+    2233332223322321
+    2222222223211231
+    2222222223111231
+    2222222223112331
+    2221222223333332
+    2223222232222223
+    3222222222222223
+    3211112222222233
+    2111101222222332
+    2111011231222321
+    1000111222222321
+    0000111222222332
+    0100112222222233
+    1001222322222223`,
+
+  // jamb east of a gap in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b4
+  uJambSE: `
+    2111123333211233
+    1123333223322332
+    1232233222333322
+    1321123222222222
+    1321113222222222
+    1332113222222222
+    2333333222221222
+    3222222322223222
+    3222222222222223
+    3322222222111123
+    2332222221011112
+    1232221321101112
+    1232222221110001
+    2332222221110000
+    3322222222110010
+    3222222232221001`,
+
+  // jamb north of a gap in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b7
+  uJambWN: `
+    1001222322222223
+    0100112222222233
+    0000111222222332
+    1000111222222321
+    2111011231222321
+    2111101222222332
+    3211112222222233
+    3222222222222223
+    2223222232222223
+    2221222223333332
+    2222222223112331
+    2222222223111231
+    2222222223211231
+    2233332223322321
+    2332233223333211
+    3321123333211112`,
+
+  // jamb south of a gap in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b5
+  uJambWS: `
+    3321123333211112
+    2332233223333211
+    2233332223322321
+    2222222223211231
+    2222222223111231
+    2222222223112331
+    2221222223333332
+    2223222232222223
+    3222222222222223
+    3211112222222233
+    2111101222222332
+    2111011231222321
+    1000111222222321
+    0000111222222332
+    0100112222222233
+    1001222322222223`,
+
+  // jamb north of a gap in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b6
+  uJambEN: `
+    3222222232221001
+    3322222222110010
+    2332222221110000
+    1232222221110001
+    1232221321101112
+    2332222221011112
+    3322222222111123
+    3222222222222223
+    3222222322223222
+    2333333222221222
+    1332113222222222
+    1321113222222222
+    1321123222222222
+    1232233222333322
+    1123333223322332
+    2111123333211233`,
+
+  // jamb south of a gap in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $b4
+  uJambES: `
+    2111123333211233
+    1123333223322332
+    1232233222333322
+    1321123222222222
+    1321113222222222
+    1332113222222222
+    2333333222221222
+    3222222322223222
+    3222222222222223
+    3322222222111123
+    2332222221011112
+    1232221321101112
+    1232222221110001
+    2332222221110000
+    3322222222110010
+    3222222232221001`,
+
+  // key door in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $70
   uKeyN: `
     3000000000000003
     3000000000000003
@@ -38562,7 +38758,7 @@ const DUNGEON_THEME_ART = {
     3122220000222213
     3333333333333333`,
 
-  // key door in an east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $71
+  // key door in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $71
   uKeyE: `
     3333333333333333
     3111111111111000
@@ -38581,7 +38777,7 @@ const DUNGEON_THEME_ART = {
     3111111111111000
     3333333333333333`,
 
-  // key door in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $72
+  // key door in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $72
   uKeyS: `
     3333333333333333
     3122220000222213
@@ -38600,7 +38796,7 @@ const DUNGEON_THEME_ART = {
     3000000000000003
     3000000000000003`,
 
-  // key door in a west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $73
+  // key door in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $73
   uKeyW: `
     3333333333333333
     0001111111111113
@@ -38619,7 +38815,7 @@ const DUNGEON_THEME_ART = {
     0001111111111113
     3333333333333333`,
 
-  // shutter in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $78
+  // shutter in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $78
   uShutN: `
     3000000000000003
     3000000000000003
@@ -38638,7 +38834,7 @@ const DUNGEON_THEME_ART = {
     3113333113333113
     3333333333333333`,
 
-  // shutter in an east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $79
+  // shutter in an east wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $79
   uShutE: `
     3333333333333333
     3111111111111000
@@ -38657,7 +38853,7 @@ const DUNGEON_THEME_ART = {
     3111111111111000
     3333333333333333`,
 
-  // shutter in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $7a
+  // shutter in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $7a
   uShutS: `
     3333333333333333
     3113333113333113
@@ -38676,7 +38872,7 @@ const DUNGEON_THEME_ART = {
     3000000000000003
     3000000000000003`,
 
-  // shutter in a west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $7b
+  // shutter in a west wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $7b
   uShutW: `
     3333333333333333
     0001111111111113
@@ -38695,7 +38891,7 @@ const DUNGEON_THEME_ART = {
     0001111111111113
     3333333333333333`,
 
-  // boss door in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $74
+  // boss door in a north wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $74
   uBossN: `
     3000000000000003
     3300000000000033
@@ -38714,7 +38910,7 @@ const DUNGEON_THEME_ART = {
     3122223113222213
     3333333333333333`,
 
-  // boss door in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $76
+  // boss door in a south wall, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $76
   uBossS: `
     3333333333333333
     3122223113222213
@@ -38733,7 +38929,7 @@ const DUNGEON_THEME_ART = {
     3300000000000033
     3000000000000003`,
 
-  // the flat red of solid rock, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a6
+  // the flat blue of solid stone (room $534 fills with it), Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $a7
   uFill: `
     0000000000000000
     0000000000000000
@@ -38752,45 +38948,45 @@ const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
-  // the lavender diamond floor, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a0
+  // the drowned flagstone, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $a0
   uFloor: `
-    0000100110010000
-    0001001111001000
-    0010011001100100
-    0100110110110010
-    1001101111011001
-    0011011011101100
-    0110111111110110
-    1101111111111011
-    1101101111111011
-    0110111110110110
-    0011011111101100
-    1001101111011001
-    0100110110110010
-    0010011001100100
-    0001001111001000
-    0000100110010000`,
+    1111112111111111
+    1111112111111111
+    1111112111111111
+    1111112111111111
+    1111111211111111
+    1111111211100011
+    0011110200022200
+    2200022222211221
+    1122211111111121
+    1111111111111111
+    1111111111111112
+    1111111111111112
+    1111111111111121
+    1100001111000121
+    0012210000222121
+    2221122222111221`,
 
-  // the violet four-square slab, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a5
+  // the grey four-square slab, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $a1
   uFloorAlt: `
-    2222222222222222
-    2000000000000002
-    2011111111111102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2011111111111102
-    2011111111111102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2012222112222102
-    2011111111111102
-    2000000000000002
-    2222222222222222`,
+    0000000000000000
+    0111111001111110
+    0111101001111010
+    0101111001011110
+    0111111001111110
+    0111011001110110
+    0111111001111110
+    0000000000000000
+    0000000000000000
+    0111111001111110
+    0111101001111010
+    0101111001011110
+    0111111001111110
+    0111011001110110
+    0111111001111110
+    0000000000000000`,
 
-  // the push block, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $1d
+  // the push block, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $1d
   uBlock: `
     2222222222222222
     2001111111111112
@@ -38809,7 +39005,7 @@ const DUNGEON_THEME_ART = {
     2222222222222212
     2222222222222222`,
 
-  // the pot, on its own floor, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $10
+  // the pot, on its own floor, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $10
   uPot: `
     ......33333.....
     .....3000003....
@@ -38828,7 +39024,7 @@ const DUNGEON_THEME_ART = {
     ...33200000233..
     .....3333333....`,
 
-  // the olive crystal, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $15
+  // the green crystal, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $15
   uStatue: `
     ................
     ......33333.....
@@ -38847,7 +39043,7 @@ const DUNGEON_THEME_ART = {
     ...33222222233..
     .....3333333....`,
 
-  // entrance pillar, west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $e6
+  // entrance pillar, west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $e6
   uArchC1: `
     3321222222221233
     3221222222221223
@@ -38863,10 +39059,10 @@ const DUNGEON_THEME_ART = {
     3100000000000013
     3100000000000013
     3100000000000013
-    0000000000000000
-    0000000000000000`,
+    3100000000000013
+    3100000000000013`,
 
-  // the lit way out, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $00
+  // the lit way out, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $00
   uArchC2: `
     0000000000000000
     0000000000000000
@@ -38885,7 +39081,7 @@ const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
-  // entrance pillar, east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $e6
+  // entrance pillar, east, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $e6
   uArchC3: `
     3321222222221233
     3221222222221223
@@ -38901,8 +39097,141 @@ const DUNGEON_THEME_ART = {
     3100000000000013
     3100000000000013
     3100000000000013
+    3100000000000013
+    3100000000000013`,
+
+  // the shallows, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f9
+  uWaterS: `
+    1111111111111111
+    0011111100111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111100111111001
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0011111100111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111100111111001
+    1111111111111111
+    1111111111111111`,
+
+  // deep water, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $fa
+  uWaterD: `
+    0111110001111100
+    1000001110000011
+    1111111111111111
+    1111111111111111
+    0001111100011111
+    1110000011100000
+    1111111111111111
+    1111111111111111
+    0111110001111100
+    1000001110000011
+    1111111111111111
+    1111111111111111
+    0001111100011111
+    1110000011100000
+    1111111111111111
+    1111111111111111`,
+
+  // a hole in the floor, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f4
+  uPit: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
     0000000000000000
     0000000000000000`,
+
+  // the whirlpool, step 1 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl0: `
+    1111222222221111
+    1122222222222211
+    1222210000122221
+    2221001222211222
+    2210122211222122
+    2201221000012212
+    2202220122101221
+    1201220222210121
+    1210122220221021
+    1221012210222022
+    2122100001221022
+    2212221122210122
+    2221122221001222
+    1222210000122221
+    1122222222222211
+    1111222222221111`,
+
+  // the whirlpool, step 2 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl1: `
+    1111122222211111
+    1122222222222211
+    1222221111122221
+    2222101222211222
+    2221012211222122
+    2220121000012222
+    2220220011001222
+    2220120100200222
+    2220020010210222
+    2221001100220222
+    2222100001210222
+    2212221122101222
+    2221122221012222
+    1222211111222221
+    1122222222222211
+    1111122222211111`,
+
+  // the whirlpool, step 3 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl2: `
+    1111122222221111
+    1122222222222211
+    1222222222222221
+    2222222221122222
+    2222221112212222
+    2122210001221222
+    2122002100221222
+    1221021010210221
+    1220120101201221
+    2221220012002212
+    2221221000122212
+    2222122111222222
+    2222211222222222
+    1222222222222221
+    1122222222222211
+    1111222222221111`,
+
+  // the whirlpool, step 4 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
+  uWhirl3: `
+    1111222222221111
+    1122222222222211
+    1222222111122221
+    2222222222212222
+    2222222222222222
+    2222222111122222
+    2222221012212222
+    2221220101221222
+    2221221010221222
+    2222122101222222
+    2222211112222222
+    2222222222222222
+    2222122222222222
+    1222211112222221
+    1122222222222211
+    1111222222221111`,
 
   // the Seasons pot, on its own floor — oracle-seasons-dungeon-backgrounds.png @ 2195,750
   gPot: `
@@ -39175,33 +39504,48 @@ const DUNGEON_THEME_PALETTES = {
   nArchC3: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
   nPit: ['#000000', '#000000', '#000000', '#000000'],
   nPitN: ['#944a8c', '#63185a', '#000000', '#000000'],
-  uRingTL: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingN: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingTR: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingW: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingE: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingBL: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingS: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uRingBR: ['#ce635a', '#a53139', '#6b0000', '#000000'],
-  uKeyN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uKeyE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uKeyS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uKeyW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uShutW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uBossN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uBossS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
-  uFill: ['#ce635a', '#ce635a', '#ce635a', '#ce635a'],
-  uFloor: ['#a584ce', '#73529c', '#73529c', '#73529c'],
-  uFloorAlt: ['#a584ce', '#73529c', '#422163', '#422163'],
-  uBlock: ['#f78c18', '#7b2100', '#000000', '#000000'],
-  uPot: ['#c6b531', '#a584ce', '#6b5a08', '#000000'],
-  uStatue: ['#c6b531', '#a584ce', '#6b5a08', '#000000'],
-  uArchC1: ['#a584ce', '#73529c', '#422163', '#000000'],
-  uArchC2: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
-  uArchC3: ['#a584ce', '#73529c', '#422163', '#000000'],
+  uRingTL: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingN: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingTR: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingW: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingE: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingBL: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingS: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uRingBR: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambNW: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambNE: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambSW: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambSE: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambWN: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambWS: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambEN: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uJambES: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uKeyN: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uKeyE: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uKeyS: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uKeyW: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutN: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutE: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutS: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uShutW: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uBossN: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uBossS: ['#d6e7b5', '#b5b563', '#6b6321', '#000000'],
+  uFill: ['#427394', '#427394', '#427394', '#427394'],
+  uFloor: ['#94b5ad', '#5a7384', '#214a42', '#214a42'],
+  uFloorAlt: ['#94b5ad', '#5a7384', '#5a7384', '#5a7384'],
+  uBlock: ['#b54a9c', '#6b0052', '#000000', '#000000'],
+  uPot: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
+  uStatue: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
+  uArchC1: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uArchC2: ['#d6e7b5', '#d6e7b5', '#d6e7b5', '#d6e7b5'],
+  uArchC3: ['#739cd6', '#427394', '#104a5a', '#000000'],
+  uWaterS: ['#bddeff', '#5a7bbd', '#5a7bbd', '#5a7bbd'],
+  uWaterD: ['#5a7bbd', '#003184', '#003184', '#003184'],
+  uPit: ['#000000', '#000000', '#000000', '#000000'],
+  uWhirl0: ['#5aadef', '#426be7', '#314aad', '#314aad'],
+  uWhirl1: ['#5aadef', '#426be7', '#314aad', '#314aad'],
+  uWhirl2: ['#5aadef', '#426be7', '#314aad', '#314aad'],
+  uWhirl3: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   gPot: ['#f8a800', '#7090c0', '#884800', '#000000'],
   gBlock: ['#f878f8', '#802868', '#000000', '#000000'],
 };
@@ -41131,7 +41475,7 @@ const { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, HORON_GROUND } = __re
 const { registerPalettes, PALETTES } = __require("gfx/palettes.js");
 const { DUNGEON_THEME_ART, installDungeonThemePalettes } = __require("data/tiles-dungeon-themes.js");
 const { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } = __require("data/tiles-maku.js");
-const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE } = __require("data/feel.js");
+const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE } = __require("data/feel.js");
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -42597,6 +42941,12 @@ function optionalKit(T, P) {
       lockN: P + 'KeyN', lockS: P + 'KeyS', lockE: P + 'KeyE', lockW: P + 'KeyW',
       shutN: P + 'ShutN', shutS: P + 'ShutS', shutE: P + 'ShutE', shutW: P + 'ShutW',
       bossN: P + 'BossN', bossS: P + 'BossS',
+      // Ages draws a jamb either side of a gap in the ring; a kit that
+      // extracted them (the Sunken Palace's) uses them.
+      ...(ART[P + 'JambNW'] ? {
+        jNW: P + 'JambNW', jNE: P + 'JambNE', jSW: P + 'JambSW', jSE: P + 'JambSE',
+        jWN: P + 'JambWN', jWS: P + 'JambWS', jEN: P + 'JambEN', jES: P + 'JambES',
+      } : {}),
       // Seasons walls its masonry round every block that cuts into a room.
       faces: true,
     } }),
@@ -42607,8 +42957,9 @@ function optionalKit(T, P) {
     ['dPillar' + T + 'W']: own('ArchC1', F.SOLID, { ringWall: true }),
     ['dPillar' + T + 'E']: own('ArchC3', F.SOLID, { ringWall: true }),
   };
-  for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE']) {
-    out[P + n] = own(n, F.SOLID);
+  for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE',
+    'JambNW', 'JambNE', 'JambSW', 'JambSE', 'JambWN', 'JambWS', 'JambEN', 'JambES']) {
+    if (ART[P + n]) out[P + n] = own(n, F.SOLID);
   }
   for (const n of ['KeyN', 'KeyS', 'KeyE', 'KeyW', 'ShutN', 'ShutS', 'ShutE', 'ShutW', 'BossN', 'BossS']) {
     out[P + n] = own(n, F.SOLID | F.DOOR);
@@ -43443,6 +43794,17 @@ function installCoreTiles() {
       openDeny: 'Iron, bolted across the road down.\nThe lock in it is a hollow the shape\nof the inside of a bell.',
     },
 
+    // THE PALACE PORCH'S HATCH (S161): the way down to the Sunken Palace,
+    // bolted with the same iron as the Keep's seal, and it takes the same key
+    // — the Bell's Clapper, which the Maku Tree gives at five Essences. Turned,
+    // it is a stair down; the Porch's room lists the warp on this cell from
+    // the start, inert until the tile under it carries F.WARP.
+    palaceSeal: {
+      art: ART.keepSeal, pal: 'rust', flags: F.SOLID, underArt: 'rockFloorDk',
+      keyFlag: 'keyD6', openFlag: 'openedPalace', openTo: 'stairsDown',
+      openDeny: 'An iron hatch, bolted over a stair going\ndown. The lock in it is the same bell-\nshaped hollow as the Keep\'s.',
+    },
+
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
     // tile physically is, and a marker naming the item that gets you past it.
@@ -43939,6 +44301,29 @@ function installCoreTiles() {
     nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
     dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
     ...optionalKit('Palace', 'u'),
+    // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
+    // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
+    // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile
+    // (`6`): shallows at LOW, deep water at MID, and only at HIGH the
+    // whirlpool, which takes whoever touches it to the floor below
+    // (`F.WHIRL`, `Game.enterWhirlpool`). So the sea's height decides which
+    // floor you are on: sound HIGH standing in the pool and you go down.
+    dWaterPalaceS: { art: ART.uWaterS, pal: 'uWaterS', flags: F.WATER },
+    dWaterPalaceD: { art: ART.uWaterD, pal: 'uWaterD', flags: F.DEEP },
+    dPitPalace: { art: ART.uPit, pal: 'uPit', flags: F.PIT },
+    dWhirlPalace: {
+      art: ART.uWhirl0, pal: 'uWhirl0', flags: F.DEEP | F.WHIRL,
+      anim: ['uWhirl0', 'uWhirl1', 'uWhirl2', 'uWhirl3'], animRate: WHIRLPOOL_ANIM_RATE,
+    },
+    dWhirlpool: { tide: ['dWaterPalaceS', 'dWaterPalaceD', 'dWhirlPalace'] },
+    // The Palace's own versions of the shared indoor tide digits, in its water.
+    dSluicePalace: { tide: ['dFloorPalace', 'dWaterPalaceS', 'dWaterPalaceD'] },
+    dWellPalace: { tide: ['dWaterPalaceS', 'dWaterPalaceD', 'dWaterPalaceD'] },
+    dSumpPalace: { tide: ['dPitPalace', 'dWaterPalaceD', 'dWaterPalaceD'] },
+    // A wall of the Palace's own stone that only HIGH covers (the Eyrie's
+    // `dDrownEyrie`, the Keep's `dLintel`): swum over at HIGH, and at HIGH
+    // the whirlpools are turning.
+    dDrownPalace: { tide: ['dWallPalace', 'dWallPalace', 'dWaterPalaceD'] },
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &
@@ -44669,6 +45054,16 @@ function installLegends() {
   // The Eyrie's chasm `O` is Snake's Remains' own black drop, and its `9` is a
   // wall of its own stone that the sea covers only at HIGH (`dDrownEyrie`).
   registerLegend('dungeonEyrie', { 'O': 'dPitEyrie', '9': 'dDrownEyrie' }, 'dungeonEyrie');
+  // The Sunken Palace (S161) is drawn in Oracle of Ages' Mermaid's Cave, and
+  // its water is that cave's own. `6` is the WHIRLPOOL — shallows, deep, and a
+  // whirlpool only at HIGH — and `0`/`1`/`3`/`9` are the shared indoor digits
+  // (sump, sluice, well, drowned wall) in the Palace's water and stone. `6` is
+  // the Sanctum's `dRaceE` in the shared legend, which no room outside d3
+  // places, so repointing it here moves nothing outside this dungeon.
+  registerLegend('dungeonPalace', {
+    '6': 'dWhirlpool', '0': 'dSumpPalace', '1': 'dSluicePalace', '3': 'dWellPalace',
+    '9': 'dDrownPalace', 'O': 'dPitPalace', 'w': 'dWaterPalaceS', 'W': 'dWaterPalaceD',
+  }, 'dungeonPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in
   // the shared vocabulary is already spoken for. `6` is `dRaceE`, one of the
@@ -44714,6 +45109,8 @@ function installLegends() {
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
     // Drift-tangle: burns, and burns only. See tiles-core.js.
     'T': 'driftTangleDk',
+    // The Palace Porch's hatch down to the Sunken Palace (S161).
+    'H': 'palaceSeal',
   });
 
   // The Maku Tree's grove: one extracted Seasons screen, placed whole.
@@ -44956,7 +45353,7 @@ function installCaves() {
           '#..q..q..#',
           '#.5555...#',
           '#.5555.p.#',
-          '#.5555...#',
+          '#.5555.H.#',
           '#..q..q..#',
           '#....C...#',
           '##########',
@@ -44967,7 +45364,12 @@ function installCaves() {
           ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [[7, 2, 'A palace notice, in a hand that gave up halfway: "The rest of it is under. Do not go and look."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } }],
+        warps: [
+          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
+          // THE SUNKEN PALACE (S161), an optional dungeon, under a hatch the
+          // Bell's Clapper unbolts. See src/data/dungeons-optional.js.
+          { x: 7, y: 4, to: { map: 'palace', floor: 1, rx: 1, ry: 2, px: 112, py: 144, dir: 'up' } },
+        ],
       },
     },
   });
@@ -53959,6 +54361,425 @@ function installOptionalDungeons() {
             say: 'The wind drops. A feather of light settles on the floor.',
           },
         },
+      },
+    },
+  });
+
+  // --- The Sunken Palace ---------------------------------------------------
+  //
+  // TIDE THEME: THE SEA'S HEIGHT DECIDES WHICH FLOOR YOU'RE ON. The Palace is
+  // two floors under the Palace Porch, and the sea is under both. Its pools
+  // (`6`, `dWhirlpool`) are shallows at LOW, deep water at MID, and at HIGH a
+  // WHIRLPOOL that takes whoever touches it to the same place in the room
+  // directly beneath (`Game.enterWhirlpool`). Nothing but a stair takes you
+  // back up. So LOW is a floor you walk across the pools on, and HIGH is the
+  // way down — and the lower floor's own water runs the other way: its sumps
+  // (`0`) are holes at LOW and a swim above it, and its drowned walls (`9`)
+  // stand until HIGH covers them. Every place only a whirlpool reaches says so
+  // with `whirlRoom`, and tools/check-whirlpool.mjs proves every whirlpool in
+  // the world in the engine and every such claim against the dungeon flood.
+  //
+  // It is drawn in ORACLE OF AGES' Mermaid's Cave — its sunken past half —
+  // and its whirlpool is the Ages sea's, as the sea draws it under water: the
+  // human's choice, S161, from Ages and Seasons kits shown side by side.
+  //
+  // Floor 1 is the Palace; floor 0, the Undercroft beneath it. Route:
+  //   1,1,2 the Palace Stair (in from the Porch): the pools teach the drop;
+  //     its stair goes down too
+  //   -> 0,1,2 Beneath the Stair -> 0,1,1 the Undercroft -> 0,0,1 Under the
+  //      Gallery: its stair comes up on the island in 1,0,1 the Whirl
+  //      Gallery, ringed by a hole — the Small Key
+  //   -> 0,1,1 east [locked] -> 0,2,1 Under the Court: swim the sumps above
+  //      LOW, up the stair to 1,2,1 the Sluice Court: the second Small Key, in
+  //      a pool you wade at LOW (at HIGH it takes you back down)
+  //   -> 0,2,1 north [locked] -> 0,2,0 Under the Weir -> up to 1,2,0 the
+  //      Weir: at HIGH swim the drowned rim into the whirlpool, down into the
+  //      sealed cellar under it — the Boss Key — and its stair up
+  //   -> back to 1,1,1 the Hall of Tides, north [boss] -> 1,1,0 the Throne
+  //      Pool: at HIGH, down into 0,1,0 Thalassor's Lair: a Piece of Heart
+  // Off the route: across the drowned band north of Under the Gallery, 0,0,0
+  // the Oyster Stair up to 1,0,0 the Pearl Vault — the Coilbone, inside a ring
+  // of whirlpools (sound LOW and walk it); across the sumps south, 0,0,2 the
+  // Chapel Crypt up to 1,0,2 the Sunken Chapel — a Piece of Heart behind a
+  // drowned wall and a band of whirlpools: no one sea crosses both, and the
+  // Tidewright's Anchor holds the pools at LOW while HIGH covers the wall.
+  const P = (floor, rx, ry, px, py, dir) => ({ map: 'palace', floor, rx, ry, px: px * 16, py: py * 16, dir });
+  const stair = (x, y, to) => ({ x, y, to });
+  registerMap({
+    id: 'palace',
+    kind: 'dungeon',
+    name: 'The Sunken Palace',
+    w: 3, h: 3, floors: 2,
+    cell: [15, 11],
+    legend: 'dungeonPalace',
+    music: 'dungeon',
+    tint: 'cave',
+    dungeon: {
+      optional: true,
+      // The Porch's hatch takes the Bell's Clapper, which the Maku Tree
+      // gives at five Essences; a player who has it has the first five
+      // dungeons' items.
+      index: 5,
+      opensAt: 5,
+      boss: 'thalassor',
+      bossRoom: '0,1,0',
+      startRoom: '1,1,2',
+      entrance: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 112, py: 80 },
+    },
+    rooms: {
+      // ---- floor 1: the Palace -------------------------------------------
+      '1,1,2': {
+        name: 'The Palace Stair',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#....66666....#',
+          '#....66666....#',
+          '#....66666....#',
+          '#.............#',
+          '#.............#',
+          '#.p........./.#',
+          '#.............#',
+          '######(C)######',
+        ],
+        warps: [
+          { x: 7, y: 10, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 112, py: 80, dir: 'down' } },
+          stair(12, 8, P(0, 1, 2, 12, 9, 'down')),
+        ],
+        readable: [
+          [2, 2, 'Cut in the pillar: "The sea is under this\nfloor. When it stands high it opens it,\nand takes whoever swims in down to it."'],
+          [12, 2, 'Older: "Low water, walk. High water, sink.\nThe stairs are for coming home."'],
+        ],
+      },
+      '1,1,1': {
+        name: 'The Hall of Tides',
+        map: [
+          '#######B#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['stalfos', 4, 4, { drops: 'good' }],
+          ['stalfos', 10, 6, { drops: 'good' }],
+        ],
+      },
+      '1,0,1': {
+        name: 'The Whirl Gallery',
+        // The Small Key on an island, a hole all round it: no sea crosses a
+        // hole, and the island's only way is the stair from beneath it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.66.OOOOOO.66#',
+          '#.66.O....O.66#',
+          '#....O....O...#',
+          '#....O....O....',
+          '#.66.O/...O.66#',
+          '#.66.OOOOOO.66#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 8, 4, { pickup: 'key' }],
+        ],
+        warps: [stair(6, 6, P(0, 0, 1, 7, 6, 'down'))],
+      },
+      '1,2,1': {
+        name: 'The Sluice Court',
+        // The second key in the middle of a pool: wade it at LOW; at HIGH it
+        // takes you back down to the room you came up from.
+        map: [
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...66666.....#',
+          '#...66666.....#',
+          '#...66.66.../.#',
+          '#...66666.....#',
+          '#...66666.....#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 6, 5, { pickup: 'key' }],
+        ],
+        warps: [stair(12, 5, P(0, 2, 1, 12, 6, 'down'))],
+      },
+      '1,2,0': {
+        name: 'The Weir',
+        // A whirlpool behind a drowned rim. Below HIGH the rim is a wall; at
+        // HIGH you swim it, and the whirlpool takes you into the cellar
+        // sealed under it, where the Boss Key is.
+        map: [
+          '###############',
+          '#.............#',
+          '#..99999......#',
+          '#..96669......#',
+          '#..96669......#',
+          '#..96669......#',
+          '#..99999......#',
+          '#.............#',
+          '#.U........./.#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair(12, 8, P(0, 2, 0, 12, 9, 'down'))],
+        whirlRoom: { lands: [[5, 4]] },
+      },
+      '1,1,0': {
+        name: 'The Throne Pool',
+        // Behind the boss door, the palace's great whirlpool. Thalassor is
+        // under it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U...999...U.#',
+          '#....96669....#',
+          '#....96669....#',
+          '#....96669....#',
+          '#.U...999...U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######B#######',
+        ],
+        readable: [
+          [2, 2, 'On the throne\'s step: "The king of this\nhouse is the eel beneath it. Go down at\nhigh water, and come up if you can."'],
+        ],
+        whirlRoom: { lands: [[7, 4]] },
+      },
+      '1,0,0': {
+        name: 'The Pearl Vault',
+        // The Coilbone in a ring of whirlpools. You came up here at HIGH —
+        // the drowned band below needs it — so the ring takes you straight
+        // back down. Sound LOW and walk it.
+        map: [
+          '###############',
+          '#.............#',
+          '#...6666666...#',
+          '#...6.....6...#',
+          '#...6.....6...#',
+          '#...6.....6...#',
+          '#...6666666...#',
+          '#.............#',
+          '#.........../.#',
+          '#.U.........U.#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 7, 4, { charm: 'coilbone' }],
+        ],
+        warps: [stair(12, 8, P(0, 0, 0, 12, 9, 'down'))],
+      },
+      '1,0,2': {
+        name: 'The Sunken Chapel',
+        // A Piece of Heart behind a drowned wall, and a band of whirlpools
+        // right up against it. Below HIGH the wall stands; at HIGH the band
+        // takes you down; and there is no dry step between the two to sound
+        // the conch from. No one sea crosses both — the Tidewright's Anchor
+        // holds the band at LOW while HIGH covers the wall.
+        map: [
+          '###############',
+          '#....U...U....#',
+          '#.............#',
+          '#9999999999999#',
+          '#6666666666666#',
+          '#6666666666666#',
+          '#6666666666666#',
+          '#.............#',
+          '#.............#',
+          '#./...........#',
+          '###############',
+        ],
+        entities: [
+          ['pickup', 7, 2, { kind: 'heartPiece' }],
+        ],
+        warps: [stair(2, 9, P(0, 0, 2, 3, 9, 'down'))],
+        anchorGate: { from: [3, 9], to: [7, 2] },
+      },
+      // ---- floor 0: the Undercroft ----------------------------------------
+      '0,1,2': {
+        name: 'Beneath the Stair',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.p........./.#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair(12, 8, P(1, 1, 2, 12, 9, 'up'))],
+      },
+      '0,1,1': {
+        name: 'The Undercroft',
+        map: [
+          '###############',
+          '#.............#',
+          '#.p.........p.#',
+          '#....33333....#',
+          '#....33333....#',
+          '.....33333....L',
+          '#....33333....#',
+          '#....33333....#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['keese', 3, 5, { drops: 'good' }],
+          ['keese', 11, 5, { drops: 'good' }],
+        ],
+      },
+      '0,0,1': {
+        name: 'Under the Gallery',
+        // A drowned band to the north, crossed only at HIGH, and sumps to
+        // the south, a hole at LOW.
+        map: [
+          '#######.#######',
+          '#9999999999999#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#...../.......#',
+          '#.............#',
+          '#0000000000000#',
+          '#0000000000000#',
+          '#######.#######',
+        ],
+        warps: [stair(6, 6, P(1, 0, 1, 7, 6, 'up'))],
+      },
+      '0,2,1': {
+        name: 'Under the Court',
+        map: [
+          '###########L###',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          'L.00......../.#',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          '#.00..........#',
+          '###############',
+        ],
+        warps: [stair(12, 5, P(1, 2, 1, 12, 6, 'up'))],
+      },
+      '0,2,0': {
+        name: 'Under the Weir',
+        // The cellar under the Weir's whirlpool is sealed on every side; its
+        // stair goes up and nothing comes down it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.########....#',
+          '#.#......#....#',
+          '#.#......#....#',
+          '#.#......#....#',
+          '#.#...../#....#',
+          '#.########....#',
+          '#.........../.#',
+          '#.............#',
+          '###########L###',
+        ],
+        entities: [
+          ['chest', 8, 3, { pickup: 'bossKey' }],
+        ],
+        warps: [
+          stair(12, 8, P(1, 2, 0, 12, 9, 'up')),
+          stair(8, 6, P(1, 2, 0, 11, 8, 'up')),
+        ],
+      },
+      '0,0,0': {
+        name: 'The Oyster Stair',
+        map: [
+          '###############',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.........../.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          // Clear of the Pearl Vault's ring above: nobody lands on a keese.
+          ['keese', 2, 5, { drops: 'good' }],
+          ['keese', 12, 4, { drops: 'good' }],
+        ],
+        warps: [stair(12, 8, P(1, 0, 0, 12, 9, 'up'))],
+      },
+      '0,0,2': {
+        name: 'The Chapel Crypt',
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#./...........#',
+          '###############',
+        ],
+        warps: [stair(2, 9, P(1, 0, 2, 3, 9, 'up'))],
+      },
+      '0,1,0': {
+        name: "Thalassor's Lair",
+        // Under the Throne Pool. The eel's whirlpool pulls only as hard as
+        // the sea (src/data/bosses.js): LOW beaches it, and it thrashes.
+        // The stair out goes up once the eel is beaten; nothing comes down it.
+        map: [
+          '###############',
+          '#.............#',
+          '#.33333333333.#',
+          '#.33.......33.#',
+          '#.33.......33.#',
+          '#.33.......33.#',
+          '#.33.......33.#',
+          '#.33333333333.#',
+          '#.............#',
+          '#./...........#',
+          '###############',
+        ],
+        entities: [
+          // Up in the north of the lair, clear of where the Throne Pool puts
+          // you down.
+          ['thalassor', 7, 1],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'palace_eel',
+          reward: {
+            spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
+            say: 'The water goes still. Something glints where the eel went down.',
+          },
+        },
+        // The stair out works once the eel is beaten: a fight is not left by
+        // the back door.
+        warps: [{ ...stair(2, 9, P(1, 1, 0, 2, 9, 'up')), needFlag: 'palace_eel' }],
       },
     },
   });

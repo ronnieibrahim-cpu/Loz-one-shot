@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A locked door that TALKS can take down every probe after it (S161).**
+  `check-exits` walks at every warp in every interior. A warp listed on a
+  keyhole (the Palace Porch's hatch) is inert until the key turns, and leaning
+  on it opens its `openDeny` text box — which nothing in the probe closed, so
+  every later walk in the run stood still behind a dialogue: 37 failures in
+  six dungeons and three caves, none of them about those rooms. The fix was to
+  treat a warp on a keyhole as a sealed door; the lesson is that a probe run
+  sharing one page is only as isolated as its teardown.
+- **Seasons has no whirlpool (S161).** Its tile-type tables carry no
+  TILETYPE_WHIRLPOOL; only Ages does ($e9 on its sea, plus $3c-$3f "current
+  pits" in its underwater dungeons). Look in the other cartridge before
+  deciding a thing has to be drawn.
+
 - **(S160) A boss nobody had placed was unhittable.** The Gustharpy set
   `e.z = 8` in `init` and declared no `z` in its spec, so `enemyHurtRect` read
   it as eight pixels into a JUMP — at or over ENEMY_CONTACT_Z — and returned no

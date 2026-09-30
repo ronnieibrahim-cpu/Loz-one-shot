@@ -11,7 +11,7 @@ import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, HORON_GROUND } from 
 import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } from './tiles-maku.js';
-import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE } from './feel.js';
+import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE } from './feel.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -1477,6 +1477,12 @@ function optionalKit(T, P) {
       lockN: P + 'KeyN', lockS: P + 'KeyS', lockE: P + 'KeyE', lockW: P + 'KeyW',
       shutN: P + 'ShutN', shutS: P + 'ShutS', shutE: P + 'ShutE', shutW: P + 'ShutW',
       bossN: P + 'BossN', bossS: P + 'BossS',
+      // Ages draws a jamb either side of a gap in the ring; a kit that
+      // extracted them (the Sunken Palace's) uses them.
+      ...(ART[P + 'JambNW'] ? {
+        jNW: P + 'JambNW', jNE: P + 'JambNE', jSW: P + 'JambSW', jSE: P + 'JambSE',
+        jWN: P + 'JambWN', jWS: P + 'JambWS', jEN: P + 'JambEN', jES: P + 'JambES',
+      } : {}),
       // Seasons walls its masonry round every block that cuts into a room.
       faces: true,
     } }),
@@ -1487,8 +1493,9 @@ function optionalKit(T, P) {
     ['dPillar' + T + 'W']: own('ArchC1', F.SOLID, { ringWall: true }),
     ['dPillar' + T + 'E']: own('ArchC3', F.SOLID, { ringWall: true }),
   };
-  for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE']) {
-    out[P + n] = own(n, F.SOLID);
+  for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE',
+    'JambNW', 'JambNE', 'JambSW', 'JambSE', 'JambWN', 'JambWS', 'JambEN', 'JambES']) {
+    if (ART[P + n]) out[P + n] = own(n, F.SOLID);
   }
   for (const n of ['KeyN', 'KeyS', 'KeyE', 'KeyW', 'ShutN', 'ShutS', 'ShutE', 'ShutW', 'BossN', 'BossS']) {
     out[P + n] = own(n, F.SOLID | F.DOOR);
@@ -2323,6 +2330,17 @@ export function installCoreTiles() {
       openDeny: 'Iron, bolted across the road down.\nThe lock in it is a hollow the shape\nof the inside of a bell.',
     },
 
+    // THE PALACE PORCH'S HATCH (S161): the way down to the Sunken Palace,
+    // bolted with the same iron as the Keep's seal, and it takes the same key
+    // — the Bell's Clapper, which the Maku Tree gives at five Essences. Turned,
+    // it is a stair down; the Porch's room lists the warp on this cell from
+    // the start, inert until the tile under it carries F.WARP.
+    palaceSeal: {
+      art: ART.keepSeal, pal: 'rust', flags: F.SOLID, underArt: 'rockFloorDk',
+      keyFlag: 'keyD6', openFlag: 'openedPalace', openTo: 'stairsDown',
+      openDeny: 'An iron hatch, bolted over a stair going\ndown. The lock in it is the same bell-\nshaped hollow as the Keep\'s.',
+    },
+
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
     // tile physically is, and a marker naming the item that gets you past it.
@@ -2819,6 +2837,29 @@ export function installCoreTiles() {
     nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
     dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
     ...optionalKit('Palace', 'u'),
+    // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
+    // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
+    // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile
+    // (`6`): shallows at LOW, deep water at MID, and only at HIGH the
+    // whirlpool, which takes whoever touches it to the floor below
+    // (`F.WHIRL`, `Game.enterWhirlpool`). So the sea's height decides which
+    // floor you are on: sound HIGH standing in the pool and you go down.
+    dWaterPalaceS: { art: ART.uWaterS, pal: 'uWaterS', flags: F.WATER },
+    dWaterPalaceD: { art: ART.uWaterD, pal: 'uWaterD', flags: F.DEEP },
+    dPitPalace: { art: ART.uPit, pal: 'uPit', flags: F.PIT },
+    dWhirlPalace: {
+      art: ART.uWhirl0, pal: 'uWhirl0', flags: F.DEEP | F.WHIRL,
+      anim: ['uWhirl0', 'uWhirl1', 'uWhirl2', 'uWhirl3'], animRate: WHIRLPOOL_ANIM_RATE,
+    },
+    dWhirlpool: { tide: ['dWaterPalaceS', 'dWaterPalaceD', 'dWhirlPalace'] },
+    // The Palace's own versions of the shared indoor tide digits, in its water.
+    dSluicePalace: { tide: ['dFloorPalace', 'dWaterPalaceS', 'dWaterPalaceD'] },
+    dWellPalace: { tide: ['dWaterPalaceS', 'dWaterPalaceD', 'dWaterPalaceD'] },
+    dSumpPalace: { tide: ['dPitPalace', 'dWaterPalaceD', 'dWaterPalaceD'] },
+    // A wall of the Palace's own stone that only HIGH covers (the Eyrie's
+    // `dDrownEyrie`, the Keep's `dLintel`): swum over at HIGH, and at HIGH
+    // the whirlpools are turning.
+    dDrownPalace: { tide: ['dWallPalace', 'dWallPalace', 'dWaterPalaceD'] },
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &

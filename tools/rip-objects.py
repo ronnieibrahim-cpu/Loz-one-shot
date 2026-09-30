@@ -67,6 +67,13 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets', 'objects', 'oracles-disasm', 'seasons')
+# Oracle of Ages (S161): the same disassembly's other cartridge, copied into
+# assets/objects/oracles-disasm/ages/. Its tables are the same shapes with
+# three differences this file absorbs: tilesets.s has no seasonal entries,
+# a label may carry a `; 0x...` address comment, and animation groups that
+# share a body are stacked with no blank line between. A Seasons tileset is
+# named by its index; an Ages one by ('ages', index).
+AGES = os.path.join(ROOT, 'assets', 'objects', 'oracles-disasm', 'ages')
 OUT = os.path.join(ROOT, 'src', 'data', 'sprites-objects.js')
 
 CHEST, CHEST_OPENED, SIGN = 0xf1, 0xf0, 0xf2
@@ -83,12 +90,13 @@ TILESETS = {
     0x3a: 'the Dancing Dragon Dungeon',
     0x3c: 'the Ancient Ruins',
     0x42: "the Sword & Shield Maze, fire half",
-    # The three optional dungeons (S160) wear the three Seasons dungeons no
-    # main dungeon had taken: the Salt Pan's lower vault the Hero's Cave, the
-    # Gullwind Eyrie Snake's Remains, the Sunken Palace Unicorn's Cave.
+    # The three optional dungeons (S160) wear dungeons no main dungeon had
+    # taken: the Salt Pan's lower vault the Hero's Cave, the Gullwind Eyrie
+    # Snake's Remains — and the Sunken Palace (S161, the human's choice) Oracle
+    # of AGES' Mermaid's Cave, its sunken past half, tileset $3d.
     0x36: "the Hero's Cave",
     0x38: "Snake's Remains",
-    0x3b: "Unicorn's Cave",
+    ('ages', 0x3d): "Ages' Mermaid's Cave, the sunken past",
 }
 
 # Our dungeon legend -> (sprite suffix, Seasons tileset).
@@ -101,14 +109,14 @@ THEMES = [
     ('dungeonAbyss', 'abyss', 0x42),
     ('dungeonSalt', 'salt', 0x36),
     ('dungeonEyrie', 'eyrie', 0x38),
-    ('dungeonPalace', 'palace', 0x3b),
+    ('dungeonPalace', 'palace', ('ages', 0x3d)),
 ]
 # A block or button outside those six dungeons draws the Grotto's.
 DEFAULT_THEME = 'grotto'
 
 
-def text(name):
-    with open(os.path.join(SRC, name)) as f:
+def text(name, src=SRC):
+    with open(os.path.join(src, name)) as f:
         return f.read()
 
 
@@ -117,8 +125,8 @@ def rgb(line):
     return tuple((int(m.group(k), 16) << 3) | (int(m.group(k), 16) >> 2) for k in (1, 2, 3)) if m else None
 
 
-def palettes(label, count):
-    ls = text('paletteData.s').split('\n')
+def palettes(label, count, src=SRC):
+    ls = [l.split(';')[0].rstrip() for l in text('paletteData.s', src).split('\n')]
     i = ls.index(label + ':') + 1
     cols = []
     for l in ls[i:]:
@@ -130,9 +138,23 @@ def palettes(label, count):
     return [cols[k * 4:k * 4 + 4] for k in range(count)]
 
 
-def tileset(index):
+def tileset(index, src=SRC):
     """The 8 bytes of Seasons tileset `index`, as source tokens. A seasonal
-    tileset is followed to its spring entry."""
+    tileset is followed to its spring entry. An Ages tileset is the index-th
+    record of tilesetData, in order."""
+    if src == AGES:
+        recs, cur = [], []
+        ls = text('tilesets.s', src).split('\n')
+        for l in ls[ls.index('tilesetData:') + 1:]:
+            l = l.split(';')[0].strip()
+            if l.startswith('.db'):
+                cur += [x.strip() for x in l[3:].split(',')]
+                if len(cur) == 8:
+                    recs.append(cur)
+                    cur = []
+            elif l.endswith(':'):
+                break
+        return recs[index]
     ls = text('tilesets.s').split('\n')
     i = ls.index('tilesetData:') + 1
     n, cur, recs, seasonal = 0, [], {}, {}
@@ -158,14 +180,14 @@ def tileset(index):
     return recs[index]
 
 
-def gfx_files(header):
+def gfx_files(header, src=SRC):
     body = re.search(r'm_GfxHeaderStart \$\w+, ' + header + r'\n(.*?)m_GfxHeaderEnd',
-                     text('gfxHeaders.s'), re.S).group(1)
+                     text('gfxHeaders.s', src), re.S).group(1)
     return [(f, int(a, 16)) for f, a in re.findall(r'm_GfxHeader (\w+), \$(\w+)', body)]
 
 
-def png_tiles(name):
-    im = Image.open(os.path.join(SRC, name + '.png'))
+def png_tiles(name, src=SRC):
+    im = Image.open(os.path.join(src, name + '.png'))
     assert im.mode == 'P', f'{name}.png is not indexed'
     w, h = im.size
     out = []
@@ -175,10 +197,10 @@ def png_tiles(name):
     return out
 
 
-def load_vram(header):
+def load_vram(header, src=SRC):
     vram = {0: {}, 1: {}}
-    for f, a in gfx_files(header):
-        for t, tile in enumerate(png_tiles(f)):
+    for f, a in gfx_files(header, src):
+        for t, tile in enumerate(png_tiles(f, src)):
             vram[a & 1][(a & 0xfff0) + t * 16] = tile
     return vram
 
@@ -187,24 +209,42 @@ def addr(index):
     return 0x9000 + index * 16 if index < 0x80 else 0x8800 + (index - 0x80) * 16
 
 
-def bg_palettes(pal_header):
+def bg_palettes(pal_header, src=SRC):
     m = re.search(r'PALH_' + pal_header[5:] + r'\n\s*m_PaletteHeaderBg\s+2, 6, (\w+)',
-                  text('paletteHeaders.s'))
-    common = re.search(r'PALH_0f\n\s*m_PaletteHeaderBg\s+0, 1, (\w+)', text('paletteHeaders.s'))
+                  text('paletteHeaders.s', src))
+    common = re.search(r'PALH_0f\n\s*m_PaletteHeaderBg\s+0, 1, (\w+)', text('paletteHeaders.s', src))
     # BG palette 1 is not loaded by PALH_0f; no object below is drawn in it.
-    return palettes(common.group(1), 1) + [None] + palettes(m.group(1), 6)
+    return palettes(common.group(1), 1, src) + [None] + palettes(m.group(1), 6, src)
+
+
+def anim_group(src, group):
+    """The animation data labels of animation group `group`. A group may
+    share its body with the labels stacked round it, and the body ends at a
+    blank line (Seasons) or at the next label (Ages)."""
+    ls = [l.split(';')[0].strip() for l in text('animationGroups.s', src).split('\n')]
+    i = ls.index('animationGroup%02x:' % group) + 1
+    while i < len(ls) and ls[i].endswith(':'):
+        i += 1
+    out = []
+    while i < len(ls) and ls[i] and not ls[i].endswith(':'):
+        out += re.findall(r'\.dw (\w+)', ls[i])
+        i += 1
+    return out
 
 
 class Tileset:
     def __init__(self, index):
-        rec = tileset(index)
+        self.src = AGES if isinstance(index, tuple) else SRC
+        if isinstance(index, tuple):
+            index = index[1]
+        rec = tileset(index, self.src)
         self.index = index
         self.gfx, self.pal_header = rec[3], rec[4]
         self.layout = int(rec[5][1:], 16)
         self.anim_group = int(rec[7][1:], 16)
-        self.vram = load_vram(self.gfx)
-        self.pals = bg_palettes(self.pal_header)
-        with open(os.path.join(SRC, f'tilesetMappings{self.layout:02x}.bin'), 'rb') as f:
+        self.vram = load_vram(self.gfx, self.src)
+        self.pals = bg_palettes(self.pal_header, self.src)
+        with open(os.path.join(self.src, f'tilesetMappings{self.layout:02x}.bin'), 'rb') as f:
             self.map = f.read()
 
     def metatile(self, m, vram=None):
@@ -234,19 +274,16 @@ class Tileset:
     def animation_frames(self, m):
         """[(frames held, 16x16 grid)] of metatile `m` through the tileset's
         animation, or [] when nothing animates it."""
-        groups = re.search(r'animationGroup%02x:\n(?:animationGroup\w+:\n)*(.*?)\n\n' % self.anim_group,
-                           text('animationGroups.s') + '\n\n', re.S)
-        if not groups:
-            ls = text('animationGroups.s')
-            # A group can share its body with the labels stacked above it.
-            k = ls.index('animationGroup%02x:' % self.anim_group)
-            groups = re.search(r'(\s*\.db.*?)\n\n', ls[k:], re.S)
-        datas = re.findall(r'\.dw (\w+)', groups.group(1))
+        return [(held, self.metatile(m, vram)[0]) for held, vram in self.animation_vram(m)]
+
+    def animation_vram(self, m):
+        """[(frames held, VRAM)] through whichever of the tileset's animations
+        writes the tiles metatile `m` reads, or [] when none does."""
         headers = re.findall(r'm_GfxHeaderAnim (\w+), \$(\w+), \$(\w+), \$(\w+)',
-                             text('animationGfxHeaders.s'))
+                             text('animationGfxHeaders.s', self.src))
         need = self.metatile_vram(m)
-        for label in datas:
-            body = re.search(label + r':\n(.*?)m_AnimationLoop', text('animationData.s'), re.S).group(1)
+        for label in anim_group(self.src, self.anim_group):
+            body = re.search(label + r':[^\n]*\n(.*?)m_AnimationLoop', text('animationData.s', self.src), re.S).group(1)
             steps = [tuple(int(v, 16) for v in re.findall(r'\$(\w+)', l)) for l in body.split('\n') if '.db' in l]
             f0, d0, n0, _ = headers[steps[0][1]]
             dest, count = int(d0, 16), int(n0, 16)
@@ -256,12 +293,12 @@ class Tileset:
             frames = []
             for held, h in steps:
                 f, d, n, off = headers[h]
-                src = png_tiles(f)
+                src = png_tiles(f, self.src)
                 vram = {0: dict(self.vram[0]), 1: dict(self.vram[1])}
                 dst = int(d, 16)
                 for i in range(int(n, 16)):
                     vram[dst & 1][(dst & 0xfff0) + i * 16] = src[int(off, 16) // 16 + i]
-                frames.append((held, self.metatile(m, vram)[0]))
+                frames.append((held, vram))
             return frames
         return []
 
@@ -364,7 +401,8 @@ def pal_of(name):
 
 
 HEADER = '''// Chests, the sign, torches, push blocks and floor buttons, cut from Oracle of
-// Seasons' own room graphics.
+// Seasons' own room graphics (and the Sunken Palace's block and button from
+// Oracle of Ages', assets/objects/oracles-disasm/ages/).
 //
 // Generated by tools/rip-objects.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,

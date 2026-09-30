@@ -2,7 +2,8 @@
 // door counted against the dungeon's own key supply, the boss door counted
 // against its Boss Key, every one-way ledge, every puzzle-opened door and
 // gust-wheel sill and kelp snarl, the Dredge Line's mooring cast, and the
-// Kelp-Soled Cleats' swim, all taught in exactly one place.
+// Kelp-Soled Cleats' swim, the Sunken Palace's whirlpools, all taught in
+// exactly one place.
 //
 // This used to live only inside tools/walk-dungeons.mjs, which reduces it to
 // room-level reachability. tools/check-dungeon-strands.mjs needs the same
@@ -35,7 +36,8 @@ function sillsOf(def) {
 }
 
 /**
- * Flood one dungeon map from its start room.
+ * Flood one dungeon map from its start room. `opts.whirl: false` floods as
+ * if no whirlpool took anyone anywhere (tools/check-whirlpool.mjs asks it).
  *
  * Returns:
  *   seen         Set<'rk:x,y'>  every cell the flood actually stood on
@@ -57,7 +59,7 @@ function sillsOf(def) {
  *   bossReached  bool
  *   total        number
  */
-export function floodDungeon(mapId) {
+export function floodDungeon(mapId, opts = {}) {
   const m = MAPS.get(mapId);
   // Tiles per map cell: the screen, or an Oracle room. The engine's own rule.
   const [SW, SH] = cellTiles(m);
@@ -252,6 +254,14 @@ export function floodDungeon(mapId) {
       if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy); }
       const D = dims.get(rk);
       const W = D.W, H = D.H;
+      // A WHIRLPOOL IS TRAVERSAL (S161, the Sunken Palace): a cell that is a
+      // whirlpool at some sea takes the player to the same cell of the room
+      // directly beneath, one floor down (`Game.enterWhirlpool`). Only down:
+      // the way back up is a stair. tools/check-whirlpool.mjs proves each one.
+      if (opts.whirl !== false && [0, 1, 2].some(t => room.flagsAt(x, y, t) & F.WHIRL)) {
+        const below = `${D.f - 1},${D.rx},${D.ry}`;
+        if (m.roomDefs[below]) push(below, x, y);
+      }
       if (canCoin) {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const lx = x + dx * COIN_TILES, ly = y + dy * COIN_TILES;

@@ -33,7 +33,7 @@ import {
 export const CHARM_SLOTS = ['low', 'mid', 'high'];
 
 /**
- * The roster. Thirty charms; every one of them is read somewhere in src/, and
+ * The roster. Thirty-one charms; every one of them is read somewhere in src/, and
  * tools/check-charms.mjs proves each in-engine.
  *
  * `slot`  which case it fits ('any' fits all three)
@@ -108,6 +108,11 @@ export const CHARMS = {
     desc: 'One hit in four passes straight through you.' },
   seawolfsTooth: { slot: 'any', name: "Sea-Wolf's Tooth", color: 'enemyr',
     desc: 'Your sword knocks enemies twice as far.' },
+  // FOUND, NOT CARVED (S161): the Sunken Palace's Pearl Vault holds it, and
+  // the scrimshander's random carve leaves a `found` charm out of her pool —
+  // so adding one does not change what she carves for anyone.
+  coilbone: { slot: 'any', name: 'Coilbone', color: 'water', found: true,
+    desc: 'A moment\'s safety each time the tide changes.' },
 };
 
 export const CHARM_COUNT = Object.keys(CHARMS).length;

@@ -489,4 +489,7 @@ FIGURES.push(
   hp('d4rung', 'd4map-0-4-5', 9, 4), hp('d4east', 'd4map-0-4-1', 1, 3),
   hp('d5cloister', 'd5map-0-1-5', 7, 4), hp('d5bower', 'd5map-0-5-5', 4, 2),
   hp('d6slack', 'd6map-0-5-3', 7, 5), hp('d6bar', 'd6map-1-2-3', 5, 2),
+  // The optional dungeons (S160, S161).
+  hp('vault', 'opt-vault-pan', 7, 6), hp('eyrie', 'opt-eyrie-roost', 7, 6),
+  hp('palacechapel', 'opt-palace-chapel', 7, 2), hp('palaceeel', 'opt-palace-lair', 7, 6),
 );

@@ -4,7 +4,7 @@ A full, spoiler-inclusive walkthrough of *The Legend of Zelda: Oracle of Tides*,
 written in the style of a printed game guide: a straight line from the title
 screen to the Drowned King, with every dungeon walked room by room, every boss
 given a pattern-by-pattern strategy, and every optional thing in the world —
-26 Heart Pieces, 6 Heart Containers, the eleven-link Coastwise Chain, the four
+28 Heart Pieces, 6 Heart Containers, the eleven-link Coastwise Chain, the four
 caves, the charm cases, the two extra sword tiers — listed where you will
 actually pass it, and again in a checklist at the back.
 
@@ -18,7 +18,7 @@ guide can be cross-checked against the source with those keys, and
 `node tools/check-guide.mjs` proves every one of them resolves.
 
 **On a phone?** `docs/GUIDE.html` is the same guide built for a small screen —
-sticky chapter bar, a contents drawer, and tickable checklists for the 26 Heart
+sticky chapter bar, a contents drawer, and tickable checklists for the 28 Heart
 Pieces, the Coastwise Chain and the hand-placed charms that remember what you
 have collected. Open it from a `file://` URL or publish it; it needs no server.
 
@@ -57,7 +57,7 @@ layouts, item locations, puzzle solutions and boss patterns in full.
 18. [Mopping up: the Abyssal approach](#18-mopping-up-the-abyssal-approach)
 
 **Part III — 100% completion**
-- [All 26 Heart Pieces](#all-26-heart-pieces)
+- [All 28 Heart Pieces](#all-28-heart-pieces)
 - [The Coastwise Chain](#the-coastwise-chain)
 - [Every item, and where it is](#every-item-and-where-it-is)
 - [Charms and the scrimshander](#charms-and-the-scrimshander)
@@ -135,8 +135,8 @@ heart. The damage ladder is fixed and every enemy sits on a rung of it:
 | Miniboss (8) | ¾ heart | 4 hits |
 | Boss (8) | 1 heart | 3 hits |
 
-There are **26 Heart Pieces** in the world, four to a container, and **six Heart
-Containers** — one per dungeon boss. Collect everything and you finish on **15
+There are **28 Heart Pieces** in the world, four to a container, and **six Heart
+Containers** — one per dungeon boss. Collect everything and you finish on **16
 hearts**.
 
 Rupees come from enemies, grass, pots, chests and the four `rupee20` caches on
@@ -150,7 +150,7 @@ Charms are carved bone, and they are slotted **by tide level**. You carry three
 cases — LOW, MID and HIGH — and a charm only works while the water under your
 feet is at its case's level. You start with the MID case only. The LOW case cuts
 itself at **2 Essences**, the HIGH case at **4**, and at **6** every case holds
-two charms instead of one. Seven charms are placed by hand in the world; the
+two charms instead of one. Eight charms are placed by hand in the world; the
 other twenty-three come from the scrimshander in Tidewatch, who takes a blank
 and 60 rupees and gives you back whichever charm the bone wanted to be.
 
@@ -1494,6 +1494,30 @@ Two things on that road:
   for 90 frames if you ring the Rod at them. Wizzrobes blink in, fire, blink out
   — hit them in the window between.
 
+**The Sunken Palace (optional).** The Bell's Clapper opens more than the
+Keep's seal: in the **Palace Porch** (`cave4/0,0,0`, off Palace Mouth) an iron
+hatch at (7,4) takes the same key, and under it a stair goes down to `palace`,
+sixteen rooms on two floors in Oracle of Ages' Mermaid's Cave stone. The rule
+of the place is that **the sea's height decides which floor you're on**: its
+pools are shallows at **LOW**, deep water at **MID**, and at **HIGH** a
+**whirlpool** that takes you down to the same spot in the room beneath. Only
+stairs bring you back up. So walk across the pools at LOW and ride them down at
+HIGH. The route: down to the Undercroft (the Palace Stair's pool or its stair),
+west to **Under the Gallery**, whose stair comes up on the **Whirl Gallery**'s
+island (a Small Key); east through the locked door to **Under the Court**
+(swim its sumps above LOW) and up to the **Sluice Court** (a Small Key in a pool
+you wade at LOW); north through the second lock and up to **the Weir**: at
+HIGH swim its drowned rim into the whirlpool, down into the sealed cellar with
+the **Boss Key**. The boss door is north of the Hall of Tides; behind it the
+**Throne Pool**'s whirlpool at HIGH drops you on `thalassor` — fight it at
+**LOW**, where it is beached: **Heart Piece 28**. Off the route: across the
+drowned band north of Under the Gallery (HIGH), the Oyster Stair goes up to the
+**Pearl Vault** — the **Coilbone** charm inside a ring of whirlpools (sound LOW
+and wade in); across the sumps south, the **Sunken Chapel** — **Heart Piece
+27** behind a drowned wall with whirlpools right against it. No one sea
+crosses both: throw the **Anchor** onto the whirlpools at LOW, then sound HIGH
+and swim the wall.
+
 ## 16. Dungeon 6: the Abyssal Keep
 
 **Entrance:** `overworld/0,1,0`, tile (4,1).
@@ -1807,10 +1831,10 @@ And the remaining buried rupee caches, all of them Dredge Line work:
 
 # Part III — 100% completion
 
-## All 26 Heart Pieces
+## All 28 Heart Pieces
 
 Four to a container; six containers from the six bosses; three hearts to start.
-**24 pieces + 6 containers + 3 = 15 hearts.**
+**28 pieces + 6 containers + 3 = 16 hearts.**
 
 Numbered in the order this walkthrough passes them.
 
@@ -1891,6 +1915,15 @@ Numbered in the order this walkthrough passes them.
     every drop in it is crossed by throwing the coin over and sounding the
     conch. Beat the `gustharpy` (at **LOW** its downdraught has nothing to push
     with) and the piece drops.
+27. **Heart Piece 27** — `palace/1,0,2`, the Sunken Chapel, in **the Sunken
+    Palace** under the Palace Porch (`cave4`, the hatch the **Bell's Clapper**
+    opens). A drowned wall with a band of whirlpools right against it: throw
+    the **Anchor** onto the whirlpools at **LOW** so it holds them there, then
+    sound the conch to **HIGH** and swim over the wall.
+28. **Heart Piece 28** — `palace/0,1,0`, Thalassor's Lair, under the Throne
+    Pool. Swim into the Throne Pool's whirlpool at **HIGH** to go down, then
+    fight `thalassor` at **LOW**, where it is beached and its pull dies. An
+    optional boss pays a piece, not a container.
 
 **Heart Containers**, one from each boss: `gohmaraq` in `d1/0,3,1`, `anemos` in
 `d2/1,3,1`, `gloomtide` in `d3/0,3,1`, `wyverna` in `d4/0,3,1`, `rootmaw` in
@@ -1969,8 +2002,8 @@ numbered in the heart list above); they are all optional.
 
 ## Charms and the scrimshander
 
-Thirty charms exist. Seven are placed by hand; the other twenty-three come out of
-the scrimshander's bench.
+Thirty-one charms exist. Eight are placed by hand; the other twenty-three come out
+of the scrimshander's bench. (She never carves the Coilbone: it is only found.)
 
 **How to get one carved.** Bring her a **blank** — raw bone, shell, anything the
 sea has finished with — and 60 rupees. She chooses what it becomes. It is ready
@@ -1979,9 +2012,9 @@ after **three turns of the tide**: sound the conch three times and come back.
 **Where blanks come from.** Three are placed in the world, in `d1/0,2,6`,
 `d2/0,2,6` and `d3/0,4,6`. After that they are a rare drop from tougher enemies —
 and a **common** one in dredged loot, which is what the Dredge Line is really for
-if you want all thirty charms.
+if you want all thirty-one charms.
 
-**The seven hand-placed charms:**
+**The eight hand-placed charms:**
 
 | Charm | Case | Where |
 |---|---|---|
@@ -1992,6 +2025,7 @@ if you want all thirty charms.
 | `gillcarve` — unlimited seafloor breath | HIGH | `d5/0,4,5` Thicket Cell |
 | `coilrope` — the Dredge Line reaches one tile further | MID | `d6/1,2,4` Colonnade of the Drowned |
 | `ballastHeart` — knockback halved | MID | Village shop, 80 rupees |
+| `coilbone` — a moment's safety each time the tide changes | any | `palace/1,0,0` Pearl Vault (optional dungeon) |
 
 **Case unlocks**, on total Essences held — not on visiting the scrimshander:
 

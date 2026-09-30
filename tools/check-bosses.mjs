@@ -63,6 +63,11 @@ const FIGHTS = [
   { id: 'd6', boss: 'nereth',    tide: MID,  why: 'pins the tide per phase; break the pin to hurt him',
     items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1,
              reefseed: 1, rod: 1, dredge: 1 } },
+  // The Sunken Palace (S161), an optional dungeon: its boss pays a Piece of
+  // Heart, not an Essence. Thalassor's whirlpool pulls only as hard as the
+  // sea, so its fight is meant at LOW, where the eel is beached and thrashes.
+  { id: 'palace', boss: 'thalassor', tide: LOW, why: 'its whirlpool pulls with the sea; LOW beaches it', optional: true,
+    items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1, reefseed: 1 } },
 ];
 
 const MIME = {
@@ -137,8 +142,8 @@ console.log(`boss checker: seed ${SEED}, GOD MODE ON (structure, not difficulty)
 
 for (const f of FIGHTS) {
   const info = await page.evaluate(async (id) => {
-    const { dungeons } = await import('/src/world/maps.js');
-    const d = dungeons().find(x => x.id === id);
+    const { dungeons, optionalDungeons } = await import('/src/world/maps.js');
+    const d = [...dungeons(), ...optionalDungeons()].find(x => x.id === id);
     // Where the Essence appears: the middle of the arena, which is 4,3 in a
     // Game Boy screen and the middle column, row 4, of an Oracle room — 7,4
     // in one screen, 15,4 in Nereth's two (Game.onBossDefeated).
@@ -255,7 +260,7 @@ for (const f of FIGHTS) {
   // total above); assert it for whichever fights actually reach 0 this run
   // rather than hard-coding which those are, so a future change to the AI
   // that lets Gohmaraq finish too picks this assertion up for free.
-  if (st.beaten) {
+  if (st.beaten && !f.optional) {
     check(`${f.id}: killing ${f.boss} marks the dungeon beaten and grants essence ${info.index}`,
       st.essences.includes(info.index),
       `beaten=true but claimed essences [${st.essences}] do not include ${info.index}`);

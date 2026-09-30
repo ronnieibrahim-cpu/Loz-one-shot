@@ -324,6 +324,63 @@ const SCENARIOS = [
     steps: [['goto', 7, 7, 300], ['use', 'conch', 1, 90], ['use', 'conch', 1, 90], ['use', 'conch', 1, 90], ['wait', 30]],
     expect: `g.room.key === '0,1,2' && g.player.y > 100 || ('got to ' + g.room.key + ' at ' + g.player.x + ',' + g.player.y)`,
   },
+  // THE SUNKEN PALACE (S161), an optional dungeon: the whirlpools'. HIGH takes
+  // you down through them, LOW walks across them. Each prize is taken from a
+  // stated world in its own room (tools/check-whirlpool.mjs proves every
+  // whirlpool, and walk-dungeons that the rooms join up), and each is refused
+  // at the sea that should refuse it.
+  {
+    name: "The Sunken Palace: the Anchor holds the Chapel's whirlpools at LOW while HIGH covers the wall — a Piece of Heart",
+    setup: setup({ items: { sword: 2, conch: 1, anchor: 1, cleats: 1 }, equipA: 'anchor', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 0, enter: ['palace', 1, 0, 2, 48, 144, 'up'] }),
+    steps: [
+      ['goto', 7, 8, 300], ['hold', ['up'], 2], ['use', 'anchor', 1, 60],
+      ['tide', 2, 20, 900], ['wait', 60],
+      ['goto', 7, 4, 300], ['hold', ['up'], 50], ['wait', 60],
+    ],
+    expect: `g.progress.heartPieces === 1 && g.room.key === '1,0,2' || ('pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
+  },
+  {
+    name: 'The Sunken Palace: without the Anchor, HIGH takes you down through the Chapel\'s whirlpools',
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 2, enter: ['palace', 1, 0, 2, 48, 144, 'up'] }),
+    steps: [['goto', 7, 8, 300], ['hold', ['up'], 120], ['wait', 90]],
+    expect: `g.progress.heartPieces === 0 && g.room.key === '0,0,2' || ('pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
+  },
+  {
+    name: 'The Sunken Palace: sound LOW and wade the Pearl Vault\'s ring — the Coilbone',
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 2, enter: ['palace', 1, 0, 0, 192, 144, 'up'] }),
+    steps: [['tide', 0, 20, 900], ['wait', 60], ['goto', 7, 5, 400], ['hold', ['up'], 2], ['tap', 'a', 60], ['dialogue', 300], ['wait', 20]],
+    expect: `!!g.progress.charms.coilbone || ('no Coilbone; in ' + g.room.key)`,
+  },
+  {
+    name: 'The Sunken Palace: at HIGH the Pearl Vault\'s ring takes you back down',
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 2, enter: ['palace', 1, 0, 0, 112, 144, 'up'] }),
+    steps: [['hold', ['up'], 160], ['wait', 90]],
+    expect: `!g.progress.charms.coilbone && g.room.key === '0,0,0' || ('coilbone ' + !!g.progress.charms.coilbone + ' in ' + g.room.key)`,
+  },
+  {
+    name: "The Sunken Palace: at HIGH the Throne Pool takes you down to Thalassor — beaten at LOW, a Piece of Heart",
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1 }, equipA: 'sword', equipB: 'conch',
+      // The robot is a clumsy fighter (it spent ~38 hearts here at S161); the
+      // fight is not tuned to it (S150), so it is handed the bar it needs.
+      maxHearts: 200, hearts: 200, tide: 2, enter: ['palace', 1, 1, 0, 112, 144, 'up'] }),
+    steps: [
+      ['hold', ['up'], 200], ['wait', 90],
+      ['tide', 0, 20, 900], ['wait', 30],
+      ['boss', 20000, 'thalassor'], ['wait', 120], ['loot', 900], ['wait', 60],
+    ],
+    expect: `g.progress.flags.palace_eel && g.progress.heartPieces === 1 || ('eel ' + !!g.progress.flags.palace_eel + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
+  },
+  {
+    name: 'The Sunken Palace: below HIGH the Throne Pool\'s rim is a wall',
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 1, enter: ['palace', 1, 1, 0, 112, 144, 'up'] }),
+    steps: [['hold', ['up'], 200], ['wait', 30]],
+    expect: `g.room.key === '1,1,0' || ('got to ' + g.room.key)`,
+  },
 ];
 
 const server = createServer(async (req, res) => {

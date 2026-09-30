@@ -177,6 +177,9 @@ for (const [name, d] of TILES) {
   // ruinFloorAlt), so a name-keyed index silently collapses them.
   const drawnArt = new Set();
   for (const [, d] of TILES) if (d.art) drawnArt.add(d.art);
+  // An animated tile draws every frame it names, not only its first (S161,
+  // the Sunken Palace's whirlpool).
+  for (const [, d] of TILES) for (const a of d.anim || []) if (DUNGEON_THEME_ART[a]) drawnArt.add(DUNGEON_THEME_ART[a]);
   for (const [name, art] of Object.entries(DUNGEON_THEME_ART)) {
     if (drawnArt.has(art)) {
       if (UNUSED_ART[name]) {

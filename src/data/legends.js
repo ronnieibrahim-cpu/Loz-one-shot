@@ -361,6 +361,16 @@ export function installLegends() {
   // The Eyrie's chasm `O` is Snake's Remains' own black drop, and its `9` is a
   // wall of its own stone that the sea covers only at HIGH (`dDrownEyrie`).
   registerLegend('dungeonEyrie', { 'O': 'dPitEyrie', '9': 'dDrownEyrie' }, 'dungeonEyrie');
+  // The Sunken Palace (S161) is drawn in Oracle of Ages' Mermaid's Cave, and
+  // its water is that cave's own. `6` is the WHIRLPOOL — shallows, deep, and a
+  // whirlpool only at HIGH — and `0`/`1`/`3`/`9` are the shared indoor digits
+  // (sump, sluice, well, drowned wall) in the Palace's water and stone. `6` is
+  // the Sanctum's `dRaceE` in the shared legend, which no room outside d3
+  // places, so repointing it here moves nothing outside this dungeon.
+  registerLegend('dungeonPalace', {
+    '6': 'dWhirlpool', '0': 'dSumpPalace', '1': 'dSluicePalace', '3': 'dWellPalace',
+    '9': 'dDrownPalace', 'O': 'dPitPalace', 'w': 'dWaterPalaceS', 'W': 'dWaterPalaceD',
+  }, 'dungeonPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in
   // the shared vocabulary is already spoken for. `6` is `dRaceE`, one of the
@@ -406,6 +416,8 @@ export function installLegends() {
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
     // Drift-tangle: burns, and burns only. See tiles-core.js.
     'T': 'driftTangleDk',
+    // The Palace Porch's hatch down to the Sunken Palace (S161).
+    'H': 'palaceSeal',
   });
 
   // The Maku Tree's grove: one extracted Seasons screen, placed whole.

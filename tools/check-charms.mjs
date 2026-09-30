@@ -765,6 +765,43 @@ r = await read(() => {
 check('the Hagstone turns some hits aside', r.taken > 0 && r.taken < 400,
   `landed ${r.taken}/400`);
 
+// Coilbone (S161) — a moment's safety each time the tide changes. Found in the
+// Sunken Palace, never carved: the scrimshander's pool leaves it out.
+await nocharms();
+r = await read(async () => {
+  const g = window.__game;
+  const feel = await import('/src/data/feel.js');
+  g.tide.setLevel(1, { instant: true });
+  g.player.invuln = 0; g.player.hurtTime = 0;
+  g.onTideChanged(2, 1);
+  return { plain: g.player.invuln };
+});
+const plainInvuln = r.plain;
+await charm('coilbone');
+r = await read(async () => {
+  const g = window.__game, p = g.progress;
+  const feel = await import('/src/data/feel.js');
+  g.player.invuln = 0; g.player.hurtTime = 0;
+  g.onTideChanged(2, 1);
+  const after = g.player.invuln;
+  g.progress.hearts = 40;
+  g.player.takeDamage(g, 4, null, { noKnockDir: true });
+  const hurtInside = g.progress.hearts < 40;
+  for (let i = 0; i < feel.COILBONE_INVULN_FRAMES + 2; i++) window.__harness.step(1);
+  g.progress.hearts = 40; g.player.hurtTime = 0;
+  g.player.takeDamage(g, 4, null, { noKnockDir: true });
+  const hurtAfter = g.progress.hearts < 40;
+  const { CHARMS } = window.__S;
+  const pool = Object.keys(CHARMS).filter(id => !p.charms[id] && !CHARMS[id].found);
+  return { after, want: feel.COILBONE_INVULN_FRAMES, hurtInside, hurtAfter,
+           found: !!CHARMS.coilbone.found };
+});
+check('the Coilbone makes Link safe the moment the tide changes', r.after >= r.want && plainInvuln === 0,
+  `without ${plainInvuln}, with ${r.after} (want ${r.want})`);
+check('...nothing hurts him inside that moment', !r.hurtInside);
+check('...and it wears off', r.hurtAfter);
+check('the Coilbone is found, never carved', r.found);
+
 // Neap Charm — the case stays awake for a while after the tide leaves it.
 await nocharms();
 r = await read(async () => {
@@ -860,8 +897,13 @@ r = await read(() => {
     window.__S.giveCharm(p, id);
     p.carve = null;
   }
-  return { n: ids.size, total: Object.keys(window.__S.CHARMS).length, exhausted };
+  // A FOUND charm (the Coilbone, S161) is never carved: the count to carve is
+  // the roster less those.
+  const S = window.__S;
+  return { n: ids.size, total: Object.keys(S.CHARMS).filter(id => !S.CHARMS[id].found).length, exhausted,
+           foundCarved: [...ids].some(id => S.CHARMS[id].found) };
 });
+check('a commission never carves a found charm', !r.foundCarved);
 check('a commission never repeats a charm you already own', r.n === r.total,
   `${r.n} distinct of ${r.total}`);
 check('...and refuses once you own them all', r.exhausted);
@@ -941,7 +983,7 @@ section('no charm is an orphan');
     check('...and the two system charms are read by the runtime itself',
       missing.length === 0, `missing=[${missing.join(', ')}]`);
   }
-  check('the roster is thirty charms', ids.length === 30, `n=${ids.length}`);
+  check('the roster is thirty-one charms', ids.length === 31, `n=${ids.length}`);
 }
 
 // ===========================================================================
