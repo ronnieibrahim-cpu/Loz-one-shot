@@ -6930,6 +6930,14 @@ __define("world/maps.js", function (__exports, __require) {
 //       boss: 'gohmaCrab',
 //       bossRoom: '0,3,1',
 //       entrance: { map: 'overworld', floor: 0, rx: 4, ry: 6, px: 80, py: 100 },
+//       // AN OPTIONAL DUNGEON (S160) says so: `optional: true`, and no
+//       // `essence` and no `item`. It is side content — none of the six
+//       // Essences, nothing the main route needs — and its `index` means only
+//       // what it means to every tool that reads it: "the player owns what
+//       // the first `index` dungeons hand over by the time they are in here"
+//       // (which is what gives a flood the Cleats' swim from index 3 on).
+//       // `dungeons()` is the six; `optionalDungeons()` the rest.
+//       optional: false,
 //     },
 //   }
 
@@ -7057,10 +7065,22 @@ function resetRooms() {
   for (const m of MAPS.values()) m._rooms.clear();
 }
 
-/** All dungeon maps in index order. */
+/**
+ * The MAIN dungeons, in index order: the six that hold an Essence each and
+ * make up the route. An optional dungeon (S160, `dungeon.optional`) is not in
+ * this list — everything that reads it means "the route", its order or its
+ * Essences — and is in `optionalDungeons()` instead. A tool that wants every
+ * dungeon interior, the way a flood does, filters MAPS on `m.dungeon` itself.
+ */
 function dungeons() {
-  return [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon)
+  return [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon && !m.dungeon.optional)
     .sort((a, b) => a.dungeon.index - b.dungeon.index);
+}
+
+/** The optional dungeons (S160): side content, in the order they open. */
+function optionalDungeons() {
+  return [...MAPS.values()].filter(m => m.kind === 'dungeon' && m.dungeon && m.dungeon.optional)
+    .sort((a, b) => a.dungeon.index - b.dungeon.index || a.id.localeCompare(b.id));
 }
 
 /**
@@ -7150,6 +7170,7 @@ __exports["hasRoom"] = hasRoom;
 __exports["liveRooms"] = liveRooms;
 __exports["resetRooms"] = resetRooms;
 __exports["dungeons"] = dungeons;
+__exports["optionalDungeons"] = optionalDungeons;
 __exports["essenceCount"] = essenceCount;
 __exports["validateMaps"] = validateMaps;
 });
@@ -9064,13 +9085,18 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '##########',
-      '#155551Gg#',
+      '#15##C#Gg#',
       '115o..o.g#',
       '555.....g#',
       'g1.o..o.g#',
       'ggGGGGGGg#',
       '#gggggggg#',
       '###gggg###',
+    ],
+    // THE GULLWIND EYRIE (S160), an optional dungeon: the Ferryman's Coin's.
+    // Its mouth is cut in the north cliff. See src/data/dungeons-optional.js.
+    warps: [
+      { x: 5, y: 1, to: { map: 'eyrie', floor: 0, rx: 1, ry: 2, px: 112, py: 128, dir: 'up' } },
     ],
     entities: [
       ['beetle', 4, 3],
@@ -12976,6 +13002,7 @@ class Kilnshell extends Entity {
     this.lit = !!o.lit;
     this.burn = 0;
     this.depth = -1;
+    this.flight = null;
   }
 
   /** The flags under the shell — or under the player, while being carried. */
@@ -12989,8 +13016,51 @@ class Kilnshell extends Entity {
     return room.flagsAt(tx, ty, game.tide);
   }
 
+  /**
+   * THROWN, IT FLIES AS ITSELF (S160). Lifted and thrown, the shell used to
+   * take the player's catch-all branch — removed, and a stand-in rock thrown
+   * in its place that shattered where it landed — so the carry the item is
+   * documented around ended by destroying it. Now it flies the same arc a
+   * lifted pot does (`ThrownObject.launch`, Seasons' itemBeginThrow) and
+   * comes down as the shell, still burning — unless its line took it over
+   * deep water, which puts it out in the air exactly as it would on the
+   * ground. That is the Salt Pan's lower vault's whole lesson: a flame can
+   * cross a gap no one can walk, but only while the sea under it is low.
+   * A wall stops it where it hits; a pit or deep water takes it (it is gone,
+   * and the button strikes a new one).
+   */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.flight = { vx, vy };
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
+    this.shadow = true;
+  }
+
+  fly(game) {
+    this.fz += this.vz;
+    this.vz -= LIFTED_THROW_GRAVITY;
+    const r = moveEntity(game, this, this.flight.vx, this.flight.vy, { jumping: true, swim: true });
+    if (r.hitX) this.flight.vx = 0;
+    if (r.hitY) this.flight.vy = 0;
+    if (this.fz > 0) return;
+    this.fz = 0; this.vz = 0; this.flight = null; this.shadow = false;
+    const f = this.groundFlags(game);
+    if (f & (F.PIT | F.VOID | F.DEEP)) {
+      // Into the sump or the sea: the shell is lost, and a new one strikes.
+      this.remove = true;
+      game.spawnEffect(f & F.DEEP ? 'splash' : 'puff', this.cx - 8, this.cy - 8);
+      game.audio.sfx(f & F.DEEP ? 'splash' : 'fall');
+      return;
+    }
+    game.audio.sfx('place');
+  }
+
   update(game) {
     this.frame++;
+    if (this.flight) this.fly(game);
+    if (this.remove) return;
     const f = this.groundFlags(game);
 
     // The one thing the sea still decides. A shell carried into deep water
@@ -13007,9 +13077,14 @@ class Kilnshell extends Entity {
     // What a flame touches. Grown by half a tile so a shell set down BESIDE a
     // torch lights it, rather than having to be standing in the same tile as
     // one — which, a torch being solid, it cannot be.
+    //
+    // THE SHELL'S WHOLE CELL, grown by half a tile (S160) — not its hitbox,
+    // which sits low in the cell, so the reach used to run two pixels further
+    // south than north and a shell thrown to the tile below a brazier (a
+    // player's feet stand a pixel off the grid) could land beside it and not
+    // light it. Beside is beside, from any side.
     if (this.burn % 4 === 0) {
-      const r = this.rect();
-      game.checkTileAction({ x: r.x - 8, y: r.y - 8, w: r.w + 16, h: r.h + 16 }, 'fire');
+      game.checkTileAction({ x: this.x - 8, y: this.y - 8, w: 32, h: 32 }, 'fire');
       for (const e of game.entities) {
         if (e === this || e.dead || !e.isEnemy) continue;
         if (this.overlaps(e)) e.hurt(game, KILNSHELL_BURN_DAMAGE, null, 0);
@@ -13668,7 +13743,16 @@ class FerrymanCoin extends Entity {
       this.vx = dx * COIN_THROW_SPEED;
       this.vy = dy * COIN_THROW_SPEED;
       this.z = 10;
-      this.vz = THROW_ARC_RISE;
+      // THE ARC LASTS THE FLIGHT (S160). COIN_SETTLE_FRAMES says how long the
+      // coin is in the air, and it used to borrow the bomb's arc
+      // (THROW_ARC_RISE), which brings anything thrown from ten pixels up back
+      // down in thirteen frames — so every coin landed at half its own flight,
+      // two and a bit tiles out, which is a gap Link can hop anyway. The rise
+      // is solved from the flight instead: on this gravity, the coin touches
+      // down on the frame it settles, four tiles out, and a chasm too wide to
+      // hop is one it can cross.
+      const n = COIN_SETTLE_FRAMES;
+      this.vz = Math.ceil((THROW_ARC_GRAVITY * n * (n - 1) / 2 - this.fz) / n);
     }
   }
 
@@ -13970,6 +14054,16 @@ const ITEMS = {
         placed.remove = true;
         game.audio.sfx('place');
         return true;
+      }
+      // A DAMP ROOM WILL NOT STRIKE IT (S160). The Salt Pan's lower vault
+      // holds brine in the air, and a room that says `damp` refuses the
+      // strike: fire has to be carried in, lit, from a room dry enough to
+      // make it — and whatever the sea puts out down there stays out until it
+      // is carried in again. Recall above still works everywhere.
+      if (game.room && game.room.def.damp) {
+        if (!game.dialogue.active) game.say('The brine hangs too thick in the air.\nThe shell will not strike here.');
+        game.audio.sfx('deny');
+        return false;
       }
       // Set it on the tile the player is facing, so it can be put against a
       // torch or into a pool without standing in either.
@@ -15052,7 +15146,9 @@ class Player extends Entity {
     // a slide velocity ThrownObject never reads and left it at height 0, so it
     // broke at Link's feet on the next frame and never travelled.
     const n = LIFTED_THROW_NUDGE, v = LIFTED_THROW_SPEED;
-    if (c instanceof ThrownObject) {
+    // Anything that flies Seasons' arc as itself says so with `launch`: a
+    // lifted pot, and the Kilnshell (S160), which lands still burning.
+    if (c instanceof ThrownObject || typeof c.launch === 'function') {
       c.launch(this.x + dx * n, this.y + dy * n, dx * v, dy * v, CARRY_HEIGHT);
     } else if (c.thrownVx !== undefined) {
       c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;
@@ -15750,7 +15846,16 @@ __define("data/sprites-objects.js", function (__exports, __require) {
 //   o_block_abyss: TILEINDEX_PUSHABLE_BLOCK $1d, the Sword & Shield Maze, fire half
 //   o_switch_up_abyss: TILEINDEX_BUTTON $0c, the Sword & Shield Maze, fire half, floor keyed out
 //   o_switch_down_abyss: TILEINDEX_PRESSED_BUTTON $0d, the same
-//   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the six dungeons
+//   o_block_salt: TILEINDEX_PUSHABLE_BLOCK $1d, the Hero's Cave
+//   o_switch_up_salt: TILEINDEX_BUTTON $0c, the Hero's Cave, floor keyed out
+//   o_switch_down_salt: TILEINDEX_PRESSED_BUTTON $0d, the same
+//   o_block_eyrie: TILEINDEX_PUSHABLE_BLOCK $1d, Snake's Remains
+//   o_switch_up_eyrie: TILEINDEX_BUTTON $0c, Snake's Remains, floor keyed out
+//   o_switch_down_eyrie: TILEINDEX_PRESSED_BUTTON $0d, the same
+//   o_block_palace: TILEINDEX_PUSHABLE_BLOCK $1d, Unicorn's Cave
+//   o_switch_up_palace: TILEINDEX_BUTTON $0c, Unicorn's Cave, floor keyed out
+//   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
+//   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
 
 const { sprites } = __require("gfx/art.js");
 const { registerPalettes } = __require("gfx/palettes.js");
@@ -15763,6 +15868,9 @@ const OBJECT_THEMES = {
   dungeonCistern: 'cistern',
   dungeonWood: 'wood',
   dungeonAbyss: 'abyss',
+  dungeonSalt: 'salt',
+  dungeonEyrie: 'eyrie',
+  dungeonPalace: 'palace',
 };
 
 const TORCH_FLAME_COUNT = 4;
@@ -16273,6 +16381,168 @@ const OBJECT_ART = {
     ................
     ................` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_block_salt: { pal: 'o_block_salt', art: `
+    3333333333333333
+    3112222222222223
+    3221222222222333
+    3222111111113333
+    3222122222213333
+    3222121111213333
+    3222121111213333
+    3222121111213333
+    3222121111213333
+    3222122222213333
+    3222111111113333
+    3222333333323333
+    3223333333332333
+    3233333333333233
+    3333333333333323
+    3333333333333333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_switch_up_salt: { pal: 'o_switch_salt', art: `
+    ................
+    ................
+    ................
+    .....333333.....
+    ....31000013....
+    ...3101111013...
+    ...3011111103...
+    ...3011111103...
+    ...3011111103...
+    ...3101111013...
+    ...3210000123...
+    ....32222223....
+    .....333333.....
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_switch_down_salt: { pal: 'o_switch_salt', art: `
+    ................
+    ................
+    ................
+    ................
+    .....222222.....
+    ....21000012....
+    ...2101111012...
+    ...2011111102...
+    ...2011111102...
+    ...2011111102...
+    ...2101111012...
+    ....21000012....
+    .....222222.....
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_block_eyrie: { pal: 'o_block_eyrie', art: `
+    3333333333333333
+    3112222222222223
+    3221222222222333
+    3222111111113333
+    3222122222213333
+    3222121111213333
+    3222121111213333
+    3222121111213333
+    3222121111213333
+    3222122222213333
+    3222111111113333
+    3222333333323333
+    3223333333332333
+    3233333333333233
+    3333333333333323
+    3333333333333333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_switch_up_eyrie: { pal: 'o_switch_eyrie', art: `
+    ................
+    ................
+    ................
+    .....333333.....
+    ....31000013....
+    ...3101111013...
+    ...3011111103...
+    ...3011111103...
+    ...3011111103...
+    ...3101111013...
+    ...3210000123...
+    ....32222223....
+    .....333333.....
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_switch_down_eyrie: { pal: 'o_switch_eyrie', art: `
+    ................
+    ................
+    ................
+    ................
+    .....222222.....
+    ....21000012....
+    ...2101111012...
+    ...2011111102...
+    ...2011111102...
+    ...2011111102...
+    ...2101111012...
+    ....21000012....
+    .....222222.....
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_block_palace: { pal: 'o_block_palace', art: `
+    3333333333333333
+    3112222222222223
+    3221222222222333
+    3222111111113333
+    3222122222213333
+    3222121111213333
+    3222121111213333
+    3222121111213333
+    3222121111213333
+    3222122222213333
+    3222111111113333
+    3222333333323333
+    3223333333332333
+    3233333333333233
+    3333333333333323
+    3333333333333333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_switch_up_palace: { pal: 'o_switch_palace', art: `
+    ................
+    ................
+    ................
+    .....333333.....
+    ....31000013....
+    ...3101111013...
+    ...3011111103...
+    ...3011111103...
+    ...3011111103...
+    ...3101111013...
+    ...3210000123...
+    ....32222223....
+    .....333333.....
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_switch_down_palace: { pal: 'o_switch_palace', art: `
+    ................
+    ................
+    ................
+    ................
+    .....222222.....
+    ....21000012....
+    ...2101111012...
+    ...2011111102...
+    ...2011111102...
+    ...2011111102...
+    ...2101111012...
+    ....21000012....
+    .....222222.....
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_block: { pal: 'o_block_grotto', art: `
     3333333333333333
     3112222222222223
@@ -16344,6 +16614,12 @@ const OBJECT_PALETTES = {
   o_switch_wood: ['#c6b518', '#9c7b08', '#5a4a00', '#000000'],
   o_block_abyss: ['#ffff8c', '#7ba5b5', '#293163', '#000000'],
   o_switch_abyss: ['#cebd8c', '#737b39', '#633973', '#000000'],
+  o_block_salt: ['#ffff8c', '#e79400', '#9c4210', '#000000'],
+  o_switch_salt: ['#948c84', '#735a73', '#4a315a', '#000000'],
+  o_block_eyrie: ['#ffff8c', '#d65a52', '#8c1818', '#000000'],
+  o_switch_eyrie: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
+  o_block_palace: ['#ffff8c', '#f78c18', '#7b2100', '#000000'],
+  o_switch_palace: ['#a584ce', '#73529c', '#422163', '#000000'],
 };
 
 function installObjectSprites() {
@@ -28396,8 +28672,16 @@ class Game {
     // leaves a dangling reference that looks live forever — cast the line,
     // walk through a door, and you can never throw it again for the rest of the
     // run. Nothing validates that; it just quietly stops working.
-    for (const e of this.entities) if (e !== this.player) e.remove = true;
-    this.entities = this.entities.filter(e => e === this.player);
+    //
+    // WHAT IS IN HIS HANDS COMES WITH HIM (S160), as it does in Seasons, where
+    // a pot carried off the edge of a screen is still overhead on the next.
+    // It used to be dropped from the list like everything else and left in
+    // `player.carrying` as a reference to nothing — drawn nowhere, and thrown
+    // into a room that did not hold it. The Salt Pan's lower vault is built on
+    // carrying a lit Kilnshell from the one room dry enough to strike it.
+    const held = this.player && this.player.carrying;
+    for (const e of this.entities) if (e !== this.player && e !== held) e.remove = true;
+    this.entities = this.entities.filter(e => e === this.player || e === held);
     this.boss = null;
     this.lure = null;
     this.dive = null;
@@ -29718,7 +30002,9 @@ class Game {
   startGaleWarp() {
     const spots = [{ name: 'Tidewatch Village', map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64 }];
     for (const m of MAPS.values()) {
-      if (m.kind === 'dungeon' && m.dungeon && m.dungeon.entrance
+      // The optional dungeons (S160) are not on the list: they are reached
+      // through a cave or a cliff, and the gale's list is the route's.
+      if (m.kind === 'dungeon' && m.dungeon && m.dungeon.entrance && !m.dungeon.optional
         && this.progress.secrets['seen:' + m.id + ':' + '0,' + m.dungeon.startRoom]) {
         spots.push({ name: m.name, ...m.dungeon.entrance });
       }
@@ -29811,6 +30097,17 @@ class Game {
     const s = p.respawn;
     this.mode = 'play';
     this.entities.length = 0;
+    // THE ROOM HE DIED IN IS LET GO OF FIRST (S160). The sea is reset below
+    // before the respawn room is entered, and a tide change is a room event —
+    // which asked the DEAD room whether its puzzle was solved, with every
+    // entity just cleared out of it. A miniboss room (`puzzle: { enemies:
+    // true }`) said yes: dying to the Saltwraith paid out its Piece of Heart,
+    // spawned into whichever room the player woke up in, and set its flag so
+    // the fight was over for good. The same was true of every enemies-puzzle
+    // room in the game. Nothing may be asked of a room nobody is in, so the
+    // room events are held off (`_enteringRoom`, the flag `enterMap` already
+    // holds them off with) until the new room is entered below.
+    this._enteringRoom = true;
     // The boss died with the room. Leaving the handle behind lets the HUD draw
     // a health bar for something that is not in the world any more.
     this.boss = null;
@@ -29846,6 +30143,7 @@ class Game {
     this.tide.clearOverrides();
     this.tide.setLevel(s.tide != null ? s.tide : 1, { instant: true });
     p.tide = this.tide.level;
+    this._enteringRoom = false;
     this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir, { instant: true });
     this.fadeIn();
     // DEATH IS NOT A WAY TO LOSE AN HOUR. Everything the run has earned is
@@ -33748,6 +34046,12 @@ __define("data/tiles-dungeon-themes.js", function (__exports, __require) {
 // tile occurs on the map — frequency is what separates a wall from a one-off
 // decoration. See tools/rip-dungeon-maps.py and assets/tilesets/.
 //
+// The three optional dungeons' kits (S160) are read instead out of the
+// cartridge's own tilesets: Stewmath's oracles-disasm (github.com/Stewmath/
+// oracles-disasm, commit 7584d87), assets/objects/oracles-disasm/seasons/.
+// Credit: the oracles-disasm project and its contributors; the artwork is
+// Nintendo's and Capcom's. Fan-work art only.
+//
 // A tile in KEY_BACKGROUND is an OBJECT, and the floor the source drew behind
 // it has been keyed to `.` — transparent. Its tiledef must name an `underArt`,
 // or it draws a hole.
@@ -33772,25 +34076,6 @@ const DUNGEON_THEME_ART = {
     1110001111000111
     1111000110001111
     1011000110001101
-    1111111111111111`,
-
-  // x94 the same flagstone, worn smooth — oracle-seasons-dungeon-backgrounds.png @ 756,1290
-  ruinFloorAlt: `
-    1111111111111111
-    1000101111010001
-    1001011001101001
-    1010110110110101
-    1101101001011011
-    1011010000101101
-    1110100110010111
-    1101001001001011
-    1101001001001011
-    1110100110010111
-    1011010000101101
-    1101101001011011
-    1010110110110101
-    1001011001101001
-    1000101111010001
     1111111111111111`,
 
   // x1244 pale mottled flagstone, the commonest floor on the map — oracle-seasons-dungeon-backgrounds.png @ 1986,42
@@ -33831,25 +34116,6 @@ const DUNGEON_THEME_ART = {
     0011110000111100
     0000000000000000`,
 
-  // x19 olive floor under a gold lattice — oracle-seasons-dungeon-backgrounds.png @ 2725,444
-  gildFloor: `
-    1111111111111111
-    1000101111010001
-    1001011001101001
-    1010110110110101
-    1101101001011011
-    1011010000101101
-    1110100110010111
-    1101001001001011
-    1101001001001011
-    1110100110010111
-    1011010000101101
-    1101101001011011
-    1010110110110101
-    1001011001101001
-    1000101111010001
-    1111111111111111`,
-
   // x266 rose-bevelled block grid — oracle-seasons-dungeon-backgrounds.png @ 17,58
   coralWall: `
     2222222222222222
@@ -33868,25 +34134,6 @@ const DUNGEON_THEME_ART = {
     2122222222222122
     2222222222222212
     2222222222222222`,
-
-  // x16 blue-grey wall banded with gold studs — oracle-seasons-dungeon-backgrounds.png @ 225,396
-  studWall: `
-    0011111132333323
-    0111111132222223
-    1111111032000023
-    1111110032022223
-    1111110032022223
-    1111110032022223
-    1100011032222223
-    1001001123333332
-    1111110032333323
-    1111111032222223
-    0111111132000023
-    0011111132022223
-    1011111132022223
-    0011111132022223
-    0110001132222223
-    1100100123333332`,
 
   // x196 pale wall RUN, lit face and hatched base — oracle-seasons-dungeon-backgrounds.png @ 1,42
   hatchWall: `
@@ -33925,25 +34172,6 @@ const DUNGEON_THEME_ART = {
     3110000000001113
     3221110000112223
     3222111001111223`,
-
-  // ornate lattice, tiles in both axes — oracle-seasons-dungeon-backgrounds.png @ 1280,1492
-  laceWall: `
-    1221222222221221
-    2002100000012002
-    2001000000001002
-    2101000000001012
-    2221100000011222
-    1211102222011121
-    2111022112201112
-    2110221001220112
-    2210122112210122
-    1220022222200221
-    2122002222002212
-    2022200220022202
-    2022200220022202
-    2002222222222002
-    2200000000000022
-    2222222222222222`,
 
   // x324 deeply bevelled block — also tiles as a wall — oracle-seasons-dungeon-backgrounds.png @ 2066,1467
   vaultBlock: `
@@ -37099,6 +37327,1583 @@ const DUNGEON_THEME_ART = {
     3122223113222213
     3333333333333333`,
 
+  // ring corner, north-west, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b8
+  hRingTL: `
+    0000000000000000
+    0332100110011001
+    0333211111111112
+    0233321221131133
+    0123332333323322
+    0012333222112211
+    0011233311211122
+    0112323322222222
+    0123212233222322
+    0013212233333222
+    0011321233332211
+    0111321232333122
+    0113211232133322
+    0011312232133333
+    0011321223212333
+    0112321223212233`,
+
+  // ring run, north wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b0
+  hRingN: `
+    0000000000000000
+    1001100110011001
+    1111111211111112
+    2113113321131133
+    3332332233323322
+    2211221122112211
+    1121112211211122
+    2222222222222222
+    2233223322332233
+    3322332233223322
+    2211221122112211
+    1122112211221122
+    2222222222222222
+    2233223322332233
+    3333333333333333
+    3322332233223322`,
+
+  // ring corner, north-east, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b9
+  hRingTR: `
+    0000000000000000
+    1001100110012330
+    2111111111123330
+    3311311221233320
+    2233233332333210
+    1122112223332100
+    2211121133321100
+    2222222233232110
+    2232223322123210
+    2223333322123100
+    1122333321231100
+    2213332321231110
+    2233312321123110
+    3333312322131100
+    3332123221231100
+    3322123221232110`,
+
+  // ring run, west wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b3
+  hRingW: `
+    0123212232122332
+    0013212232122332
+    0011321223212233
+    0111321223212233
+    0113211232122332
+    0011312232122332
+    0011321223212233
+    0112321223212233
+    0123212232122332
+    0013212232122332
+    0011321223212233
+    0111321223212233
+    0113211232122332
+    0011312232122332
+    0011321223212233
+    0112321223212233`,
+
+  // ring run, east wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b1
+  hRingE: `
+    2332212322123210
+    2332212322123100
+    3322123221231100
+    3322123221231110
+    2332212321123110
+    2332212322131100
+    3322123221231100
+    3322123221232110
+    2332212322123210
+    2332212322123100
+    3322123221231100
+    3322123221231110
+    2332212321123110
+    2332212322131100
+    3322123221231100
+    3322123221232110`,
+
+  // ring corner, south-west, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $ba
+  hRingBL: `
+    0112321223212233
+    0011321223212333
+    0011312232133333
+    0113211232133322
+    0111321232333122
+    0011321233332211
+    0013212233333222
+    0123212233222322
+    0112323322222222
+    0011233311211122
+    0012333222112211
+    0123332333323322
+    0233321221131133
+    0333211111111112
+    0332100110011001
+    0000000000000000`,
+
+  // ring run, south wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b2
+  hRingS: `
+    3322332233223322
+    3333333333333333
+    2233223322332233
+    2222222222222222
+    1122112211221122
+    2211221122112211
+    3322332233223322
+    2233223322332233
+    2222222222222222
+    1121112211211122
+    2211221122112211
+    3332332233323322
+    2113113321131133
+    1111111211111112
+    1001100110011001
+    0000000000000000`,
+
+  // ring corner, south-east, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $bb
+  hRingBR: `
+    3322123221232110
+    3332123221231100
+    3333312322131100
+    2233312321123110
+    2213332321231110
+    1122333321231100
+    2223333322123100
+    2232223322123210
+    2222222233232110
+    2211121133321100
+    1122112223332100
+    2233233332333210
+    3311311221233320
+    2111111111123330
+    1001100110012330
+    0000000000000000`,
+
+  // key door in a north wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $70
+  hKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in an east wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $71
+  hKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // key door in a south wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $72
+  hKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in a west wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $73
+  hKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in a north wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $78
+  hShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in an east wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $79
+  hShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a south wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $7a
+  hShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in a west wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $7b
+  hShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // boss door in a north wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $74
+  hBossN: `
+    3000000000000003
+    3300000000000033
+    3030000000000303
+    3003133333313003
+    3100300000030013
+    3310100000010133
+    3131001331001313
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3123100330013213
+    3130010330100313
+    3130330330330313
+    3133231001323313
+    3122223113222213
+    3333333333333333`,
+
+  // boss door in a south wall, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $76
+  hBossS: `
+    3333333333333333
+    3122223113222213
+    3133231001323313
+    3130330330330313
+    3130010330100313
+    3123100330013213
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3131001331001313
+    3310100000010133
+    3100300000030013
+    3003133333313003
+    3030000000000303
+    3300000000000033
+    3000000000000003`,
+
+  // the gold masonry of a wall run, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $b0
+  hFill: `
+    0000000000000000
+    1001100110011001
+    1111111211111112
+    2113113321131133
+    3332332233323322
+    2211221122112211
+    1121112211211122
+    2222222222222222
+    2233223322332233
+    3322332233223322
+    2211221122112211
+    1122112211221122
+    2222222222222222
+    2233223322332233
+    3333333333333333
+    3322332233223322`,
+
+  // the grey gravel floor, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $a0
+  hFloor: `
+    0000001000000010
+    0010000000100000
+    0000000100000001
+    0000100000001000
+    1000000010000000
+    0000000000000000
+    0010001000100010
+    0000100000001000
+    0000001000000010
+    0010000000100000
+    0000000100000001
+    0000100000001000
+    1000000010000000
+    0000000000000000
+    0010001000100010
+    0000100000001000`,
+
+  // the pebbled gravel floor, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $a5
+  hFloorAlt: `
+    0000011000100000
+    0010120300000000
+    0000113300000000
+    0000000000010000
+    0010000000123000
+    0000001000131000
+    0110000000000000
+    1211000110000000
+    1113000121000010
+    0331000111000000
+    0000000000000000
+    0000110000000000
+    0101201000011000
+    0003013000120100
+    0001331000101300
+    0000000000033100`,
+
+  // the push block, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $1d
+  hBlock: `
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
+  // the pot, on its own floor, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $10
+  hPot: `
+    ......33333.....
+    .....3000003....
+    ....300222003...
+    ...33023332033..
+    ..3230233320323.
+    ..3230033300323.
+    .322320000023223
+    .322232000232223
+    .322223333322223
+    .332220000022233
+    .323222000222323
+    .320332222233023
+    ..3000333330003.
+    ..3200000000023.
+    ...33200000233..
+    .....3333333....`,
+
+  // the blue crystal, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $15
+  hStatue: `
+    ................
+    ......33333.....
+    .....3000223....
+    ....300002223...
+    ...30000022223..
+    ..3000000222223.
+    .300000002222203
+    .320000020222033
+    .322000222020333
+    .322202222203333
+    .322202222203333
+    .322202222203333
+    .322202222203333
+    ..3220222220333.
+    ...33222222233..
+    .....3333333....`,
+
+  // entrance pillar, west, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $e6
+  hArchC1: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
+  // the lit way out, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $00
+  hArchC2: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // entrance pillar, east, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $e6
+  hArchC3: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
+  // ring corner, north-west, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $b8
+  nRingTL: `
+    0000000000000000
+    0332111110011001
+    0333212111111112
+    0233321221211211
+    0123332212222122
+    0112333222222222
+    0121233322232222
+    0112223322222232
+    0121222233222222
+    0011222333322322
+    0012122223332222
+    0111222222333232
+    0111223222233323
+    0012222232233333
+    0011222222222333
+    0112122222323333`,
+
+  // ring run, north wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $b0
+  nRingN: `
+    0000000000000000
+    1001100110011001
+    1111111211111112
+    2121121121211211
+    1222212212222122
+    2222222222222222
+    2223222222232222
+    2222223222222232
+    2322222223222222
+    2223222322232223
+    2322232223222322
+    3323233333232333
+    2333332323333323
+    3332333233323332
+    3333333333333333
+    3333333333333333`,
+
+  // ring corner, north-east, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $b9
+  nRingTR: `
+    0000000000000000
+    1001100111112330
+    2111111112123330
+    1121121221233320
+    2212222122333210
+    2222222223332110
+    2222322233321210
+    2322222233222110
+    2222223322221210
+    2232233332221100
+    2222333222212100
+    2323332222221110
+    3233322223221110
+    3333322322222100
+    3332222222221100
+    3333232222212110`,
+
+  // ring run, west wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $b3
+  nRingW: `
+    0121222222232333
+    0011222332333333
+    0012122222223333
+    0111222223233233
+    0111223222223333
+    0012222222333333
+    0011222222232333
+    0112122223233233
+    0121222222232333
+    0011222332333333
+    0012122222223333
+    0111222223233233
+    0111223222223333
+    0012222222333333
+    0011222222232333
+    0112122223233233`,
+
+  // ring run, east wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $b1
+  nRingE: `
+    3332322222221210
+    3333332332221100
+    3333222222212100
+    3323323222221110
+    3333222223221110
+    3333332222222100
+    3332322222221100
+    3323323222212110
+    3332322222221210
+    3333332332221100
+    3333222222212100
+    3323323222221110
+    3333222223221110
+    3333332222222100
+    3332322222221100
+    3323323222212110`,
+
+  // ring corner, south-west, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $ba
+  nRingBL: `
+    0112122222323333
+    0011222222222333
+    0012222232233333
+    0111223222233323
+    0111222222333232
+    0012122223332222
+    0011222333322322
+    0121222233222222
+    0112223322222232
+    0121233322232222
+    0112333222222222
+    0123332212222122
+    0233321221211211
+    0333212111111112
+    0332111110011001
+    0000000000000000`,
+
+  // ring run, south wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $b2
+  nRingS: `
+    3333333333333333
+    3333333333333333
+    3332333233323332
+    2333332323333323
+    3323233333232333
+    2322232223222322
+    2223222322232223
+    2322222223222222
+    2222223222222232
+    2223222222232222
+    2222222222222222
+    1222212212222122
+    2121121121211211
+    1111111211111112
+    1001100110011001
+    0000000000000000`,
+
+  // ring corner, south-east, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $bb
+  nRingBR: `
+    3333232222212110
+    3332222222221100
+    3333322322222100
+    3233322223221110
+    2323332222221110
+    2222333222212100
+    2232233332221100
+    2222223322221210
+    2322222233222110
+    2222322233321210
+    2222222223332110
+    2212222122333210
+    1121121221233320
+    2111111112123330
+    1001100111112330
+    0000000000000000`,
+
+  // key door in a north wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $70
+  nKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in an east wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $71
+  nKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // key door in a south wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $72
+  nKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in a west wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $73
+  nKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in a north wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $78
+  nShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in an east wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $79
+  nShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a south wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $7a
+  nShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in a west wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $7b
+  nShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // boss door in a north wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $74
+  nBossN: `
+    3000000000000003
+    3300000000000033
+    3030000000000303
+    3003133333313003
+    3100300000030013
+    3310100000010133
+    3131001331001313
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3123100330013213
+    3130010330100313
+    3130330330330313
+    3133231001323313
+    3122223113222213
+    3333333333333333`,
+
+  // boss door in a south wall, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $76
+  nBossS: `
+    3333333333333333
+    3122223113222213
+    3133231001323313
+    3130330330330313
+    3130010330100313
+    3123100330013213
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3131001331001313
+    3310100000010133
+    3100300000030013
+    3003133333313003
+    3030000000000303
+    3300000000000033
+    3000000000000003`,
+
+  // the flat lilac of solid stone, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $a6
+  nFill: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the rose flagstone, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $a0
+  nFloor: `
+    1100100000010011
+    1100100000010011
+    0000100000010000
+    0002211111122000
+    1112200000022111
+    0001000000001000
+    0001001111001000
+    0001001111001000
+    0001001111001000
+    0001001111001000
+    0001000000001000
+    1112200000022111
+    0002211111122000
+    0000100000010000
+    1100100000010011
+    1100100000010011`,
+
+  // the violet four-square slab, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $a4
+  nFloorAlt: `
+    0000000000000000
+    0111111001111110
+    0111101001111010
+    0101111001011110
+    0111111001111110
+    0111011001110110
+    0111111001111110
+    0000000000000000
+    0000000000000000
+    0111111001111110
+    0111101001111010
+    0101111001011110
+    0111111001111110
+    0111011001110110
+    0111111001111110
+    0000000000000000`,
+
+  // the push block, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $1d
+  nBlock: `
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
+  // the pot, on its own floor, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $10
+  nPot: `
+    ......33333.....
+    .....3111113....
+    ....311222113...
+    ...33123332133..
+    ..3231233321323.
+    ..3231133311323.
+    .322321111123223
+    .322232111232223
+    .322223333322223
+    .332221111122233
+    .323222111222323
+    .321332222233123
+    ..3111333331113.
+    ..3211111111123.
+    ...33211111233..
+    .....3333333....`,
+
+  // the green crystal, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $15
+  nStatue: `
+    ................
+    ......33333.....
+    .....3111223....
+    ....311112223...
+    ...31111122223..
+    ..3111111222223.
+    .311111112222213
+    .321111121222133
+    .322111222121333
+    .322212222213333
+    .322212222213333
+    .322212222213333
+    .322212222213333
+    ..3221222221333.
+    ...33222222233..
+    .....3333333....`,
+
+  // entrance pillar, west, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $e6
+  nArchC1: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
+  // the lit way out, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $00
+  nArchC2: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // entrance pillar, east, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $e6
+  nArchC3: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
+  // the black of a chasm, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $f4
+  nPit: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // a chasm with the floor's lip along its top, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $f5
+  nPitN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // ring corner, north-west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b8
+  uRingTL: `
+    0000000000000000
+    0011000010000001
+    0122100011000011
+    0123311121111112
+    0012332222111122
+    0001233222222222
+    0001233322222222
+    0011223322222222
+    0112222233222111
+    0011222233321111
+    0001122223331122
+    0001122222333222
+    0001122221233323
+    0001122211133333
+    0011222221122333
+    0112222221123333`,
+
+  // ring run, north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b0
+  uRingN: `
+    0000000000000000
+    1000000110000001
+    1100001111000011
+    2111111221111112
+    2211112222111122
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    1122211111222111
+    1111111111111111
+    2211112222111122
+    2222222222222222
+    2222222222222222
+    2233223322332233
+    3333333333333333
+    3322332233223322`,
+
+  // ring corner, north-east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b9
+  uRingTR: `
+    0000000000000000
+    1000000100001100
+    1100001100012210
+    2111111211133210
+    2211112222332100
+    2222222223321000
+    2222222233321000
+    2222222233221100
+    1112223322222110
+    1111233322221100
+    2211333222211000
+    2223332222211000
+    3233321222211000
+    3333311122211000
+    3332211222221100
+    3333211222222110`,
+
+  // ring run, west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b3
+  uRingW: `
+    0112222211222332
+    0011222211222332
+    0001122211122233
+    0001122221122233
+    0001122221122332
+    0001122221122332
+    0011222211222233
+    0112222211222233
+    0112222211222332
+    0011222211222332
+    0001122211122233
+    0001122221122233
+    0001122221122332
+    0001122221122332
+    0011222211222233
+    0112222211222233`,
+
+  // ring run, east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b1
+  uRingE: `
+    2332221122222110
+    2332221122221100
+    3322211122211000
+    3322211222211000
+    2332211222211000
+    2332211222211000
+    3322221122221100
+    3322221122222110
+    2332221122222110
+    2332221122221100
+    3322211122211000
+    3322211222211000
+    2332211222211000
+    2332211222211000
+    3322221122221100
+    3322221122222110`,
+
+  // ring corner, south-west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $ba
+  uRingBL: `
+    0112222221123333
+    0011222221122333
+    0001122211133333
+    0001122221233323
+    0001122222333222
+    0001122223331122
+    0011222233321111
+    0112222233222111
+    0011223322222222
+    0001233322222222
+    0001233222222222
+    0012332222111122
+    0123311121111112
+    0122100011000011
+    0011000010000001
+    0000000000000000`,
+
+  // ring run, south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $b2
+  uRingS: `
+    3322332233223322
+    3333333333333333
+    2233223322332233
+    2222222222222222
+    2222222222222222
+    2211112222111122
+    1111111111111111
+    1122211111222111
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2211112222111122
+    2111111221111112
+    1100001111000011
+    1000000110000001
+    0000000000000000`,
+
+  // ring corner, south-east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $bb
+  uRingBR: `
+    3333211222222110
+    3332211222221100
+    3333311122211000
+    3233321222211000
+    2223332222211000
+    2211333222211000
+    1111233322221100
+    1112223322222110
+    2222222233221100
+    2222222233321000
+    2222222223321000
+    2211112222332100
+    2111111211133210
+    1100001100012210
+    1000000100001100
+    0000000000000000`,
+
+  // key door in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $70
+  uKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in an east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $71
+  uKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // key door in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $72
+  uKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in a west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $73
+  uKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $78
+  uShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in an east wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $79
+  uShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $7a
+  uShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in a west wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $7b
+  uShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // boss door in a north wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $74
+  uBossN: `
+    3000000000000003
+    3300000000000033
+    3030000000000303
+    3003133333313003
+    3100300000030013
+    3310100000010133
+    3131001331001313
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3123100330013213
+    3130010330100313
+    3130330330330313
+    3133231001323313
+    3122223113222213
+    3333333333333333`,
+
+  // boss door in a south wall, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $76
+  uBossS: `
+    3333333333333333
+    3122223113222213
+    3133231001323313
+    3130330330330313
+    3130010330100313
+    3123100330013213
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3131001331001313
+    3310100000010133
+    3100300000030013
+    3003133333313003
+    3030000000000303
+    3300000000000033
+    3000000000000003`,
+
+  // the flat red of solid rock, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a6
+  uFill: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the lavender diamond floor, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a0
+  uFloor: `
+    0000100110010000
+    0001001111001000
+    0010011001100100
+    0100110110110010
+    1001101111011001
+    0011011011101100
+    0110111111110110
+    1101111111111011
+    1101101111111011
+    0110111110110110
+    0011011111101100
+    1001101111011001
+    0100110110110010
+    0010011001100100
+    0001001111001000
+    0000100110010000`,
+
+  // the violet four-square slab, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $a5
+  uFloorAlt: `
+    2222222222222222
+    2000000000000002
+    2011111111111102
+    2012222112222102
+    2012222112222102
+    2012222112222102
+    2012222112222102
+    2011111111111102
+    2011111111111102
+    2012222112222102
+    2012222112222102
+    2012222112222102
+    2012222112222102
+    2011111111111102
+    2000000000000002
+    2222222222222222`,
+
+  // the push block, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $1d
+  uBlock: `
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
+  // the pot, on its own floor, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $10
+  uPot: `
+    ......33333.....
+    .....3000003....
+    ....300222003...
+    ...33023332033..
+    ..3230233320323.
+    ..3230033300323.
+    .322320000023223
+    .322232000232223
+    .322223333322223
+    .332220000022233
+    .323222000222323
+    .320332222233023
+    ..3000333330003.
+    ..3200000000023.
+    ...33200000233..
+    .....3333333....`,
+
+  // the olive crystal, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $15
+  uStatue: `
+    ................
+    ......33333.....
+    .....3000223....
+    ....300002223...
+    ...30000022223..
+    ..3000000222223.
+    .300000002222203
+    .320000020222033
+    .322000222020333
+    .322202222203333
+    .322202222203333
+    .322202222203333
+    .322202222203333
+    ..3220222220333.
+    ...33222222233..
+    .....3333333....`,
+
+  // entrance pillar, west, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $e6
+  uArchC1: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
+  // the lit way out, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $00
+  uArchC2: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // entrance pillar, east, Unicorn's Cave — Seasons tileset $3b (Unicorn's Cave), metatile $e6
+  uArchC3: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
   // the Seasons pot, on its own floor — oracle-seasons-dungeon-backgrounds.png @ 2195,750
   gPot: `
     ......33333.....
@@ -37143,15 +38948,11 @@ const DUNGEON_THEME_ART = {
 // installed — tiledefs in tiles-core.js name them.
 const DUNGEON_THEME_PALETTES = {
   ruinFloor: ['#ecdcc4', '#a39968', '#a39968', '#a39968'],
-  ruinFloorAlt: ['#c4b55e', '#71614b', '#71614b', '#71614b'],
   paleFloor: ['#7090c0', '#5070a0', '#305080', '#305080'],
   reefFloor: ['#85b2cf', '#5c8eb0', '#5c8eb0', '#5c8eb0'],
-  gildFloor: ['#b0a030', '#585000', '#585000', '#585000'],
   coralWall: ['#fbd1fb', '#b17399', '#000000', '#000000'],
-  studWall: ['#abcfe6', '#85b2cf', '#856b2b', '#000000'],
   hatchWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   forgeWall: ['#f7bb4d', '#e47a3d', '#944826', '#000000'],
-  laceWall: ['#9878c0', '#503070', '#000000', '#000000'],
   vaultBlock: ['#78a0b0', '#283060', '#000000', '#000000'],
   lionHead: ['#fdeec7', '#dbb969', '#856b2b', '#000000'],
   urn: ['#abcfe6', '#f7bb4d', '#b76b33', '#000000'],
@@ -37318,6 +39119,89 @@ const DUNGEON_THEME_PALETTES = {
   kShutW: ['#f8f888', '#c4b55e', '#71614b', '#000000'],
   kShutE: ['#f8f888', '#c4b55e', '#71614b', '#000000'],
   kBossN: ['#f8f888', '#90a028', '#484028', '#000000'],
+  hRingTL: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingN: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingTR: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingW: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingE: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingBL: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingS: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hRingBR: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hKeyN: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hKeyE: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hKeyS: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hKeyW: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hShutN: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hShutE: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hShutS: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hShutW: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hBossN: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hBossS: ['#ffff8c', '#d642ff', '#8c004a', '#000000'],
+  hFill: ['#dece42', '#ad8c10', '#5a4200', '#000000'],
+  hFloor: ['#948c84', '#735a73', '#735a73', '#735a73'],
+  hFloorAlt: ['#948c84', '#735a73', '#4a315a', '#000000'],
+  hBlock: ['#e79400', '#9c4210', '#000000', '#000000'],
+  hPot: ['#739cb5', '#948c84', '#00527b', '#000000'],
+  hStatue: ['#739cb5', '#948c84', '#00527b', '#000000'],
+  hArchC1: ['#948c84', '#735a73', '#4a315a', '#000000'],
+  hArchC2: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
+  hArchC3: ['#948c84', '#735a73', '#4a315a', '#000000'],
+  nRingTL: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingN: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingTR: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingW: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingE: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingBL: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingS: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nRingBR: ['#9c8cc6', '#7342bd', '#522194', '#000000'],
+  nKeyN: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nKeyE: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nKeyS: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nKeyW: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nShutN: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nShutE: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nShutS: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nShutW: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nBossN: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nBossS: ['#ffff8c', '#ffa500', '#943900', '#000000'],
+  nFill: ['#9c8cc6', '#9c8cc6', '#9c8cc6', '#9c8cc6'],
+  nFloor: ['#c67bb5', '#944a8c', '#63185a', '#63185a'],
+  nFloorAlt: ['#9c8cc6', '#7342bd', '#7342bd', '#7342bd'],
+  nBlock: ['#d65a52', '#8c1818', '#000000', '#000000'],
+  nPot: ['#c67bb5', '#73b55a', '#296300', '#000000'],
+  nStatue: ['#c67bb5', '#73b55a', '#296300', '#000000'],
+  nArchC1: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
+  nArchC2: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
+  nArchC3: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
+  nPit: ['#000000', '#000000', '#000000', '#000000'],
+  nPitN: ['#944a8c', '#63185a', '#000000', '#000000'],
+  uRingTL: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingN: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingTR: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingW: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingE: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingBL: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingS: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uRingBR: ['#ce635a', '#a53139', '#6b0000', '#000000'],
+  uKeyN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uKeyE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uKeyS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uKeyW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uShutN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uShutE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uShutS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uShutW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uBossN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uBossS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  uFill: ['#ce635a', '#ce635a', '#ce635a', '#ce635a'],
+  uFloor: ['#a584ce', '#73529c', '#73529c', '#73529c'],
+  uFloorAlt: ['#a584ce', '#73529c', '#422163', '#422163'],
+  uBlock: ['#f78c18', '#7b2100', '#000000', '#000000'],
+  uPot: ['#c6b531', '#a584ce', '#6b5a08', '#000000'],
+  uStatue: ['#c6b531', '#a584ce', '#6b5a08', '#000000'],
+  uArchC1: ['#a584ce', '#73529c', '#422163', '#000000'],
+  uArchC2: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
+  uArchC3: ['#a584ce', '#73529c', '#422163', '#000000'],
   gPot: ['#f8a800', '#7090c0', '#884800', '#000000'],
   gBlock: ['#f878f8', '#802868', '#000000', '#000000'],
 };
@@ -40692,9 +42576,45 @@ const HAND_ART = {
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
 // The dungeon themes, by the suffix every one of their tiles carries.
-const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
+const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie'];
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
+
+/**
+ * One whole Oracle kit for theme `T`, from the picks prefixed `P` (S160).
+ * Every piece names its own extracted palette, so the kit is the cartridge's
+ * colours throughout. The three optional dungeons are built alike, so they
+ * are built by one function; the six main kits predate it and stay spelled out.
+ */
+function optionalKit(T, P) {
+  const own = (n, flags, extra) => ({ art: ART[P + n], pal: P + n, flags, ...extra });
+  const out = {
+    ['dFloor' + T]: own('Floor', 0),
+    ['dFloor' + T + 'Alt']: own('FloorAlt', 0),
+    ['dWall' + T]: own('Fill', F.SOLID, { ring: {
+      TL: P + 'RingTL', TR: P + 'RingTR', BL: P + 'RingBL', BR: P + 'RingBR',
+      N: P + 'RingN', S: P + 'RingS', W: P + 'RingW', E: P + 'RingE',
+      lockN: P + 'KeyN', lockS: P + 'KeyS', lockE: P + 'KeyE', lockW: P + 'KeyW',
+      shutN: P + 'ShutN', shutS: P + 'ShutS', shutE: P + 'ShutE', shutW: P + 'ShutW',
+      bossN: P + 'BossN', bossS: P + 'BossS',
+      // Seasons walls its masonry round every block that cuts into a room.
+      faces: true,
+    } }),
+    ['dWall' + T + 'X']: { art: ART.dWallCracked, pal: P + 'RingN', flags: F.SOLID | F.BOMBABLE },
+    ['dBlock' + T]: own('Block', F.SOLID),
+    ['dUrn' + T]: own('Statue', F.SOLID, { underArt: 'dFloor' + T }),
+    ['dExit' + T]: own('ArchC2', F.WARP),
+    ['dPillar' + T + 'W']: own('ArchC1', F.SOLID, { ringWall: true }),
+    ['dPillar' + T + 'E']: own('ArchC3', F.SOLID, { ringWall: true }),
+  };
+  for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE']) {
+    out[P + n] = own(n, F.SOLID);
+  }
+  for (const n of ['KeyN', 'KeyS', 'KeyE', 'KeyW', 'ShutN', 'ShutS', 'ShutE', 'ShutW', 'BossN', 'BossS']) {
+    out[P + n] = own(n, F.SOLID | F.DOOR);
+  }
+  return out;
+}
 
 // --------------------------------------------------------------------------
 // THE DUNGEON MOUTH, TWO TILES WIDE.
@@ -41590,6 +43510,13 @@ function installCoreTiles() {
     // the tile that exists to prove a blade does not.
     driftTangle: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'grass' },
     driftTangleDk: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'rockFloorDk' },
+    // THE SALT PAN'S LOWER VAULT (S160). Its own drift-tangle, on its own
+    // floor, and KELP: the same mat stranded in the pan, which is a tide tile —
+    // dry weed at LOW, which burns, and sodden green at MID and HIGH, which
+    // does not burn at all. Fire only takes it with the sea out.
+    dTangleSalt: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'dFloorSalt' },
+    dTangleSaltWet: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dFloorSalt' },
+    dKelpSalt: { tide: ['dTangleSalt', 'dTangleSaltWet', 'dTangleSaltWet'] },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
     // The Reefseed's snarl, outdoors — item-reuse (docs/prompts/STATE.md). Not
     // `dSnarl`: that one is drawn in `treeoakdk`, a ramp built for the Drowned
@@ -41988,29 +43915,30 @@ function installCoreTiles() {
     rShutW: { art: ART.rShutW, pal: 'rShutW', flags: F.SOLID | F.DOOR },
     rBossN: { art: ART.rBossN, pal: 'rBossN', flags: F.SOLID | F.DOOR },
 
-    // d6 Salt Pan Vault — the ruin rosette bleached out to salt and bone.
-    //
-    // THE WALL IS A LATTICE, NOT A BEVEL, AND THAT IS LOAD-BEARING. It used to be
-    // `vaultBlock` in `marble` — which is exactly what `dBlockSalt` below still
-    // is, so the wall and the pushable block were the same sixteen lines in the
-    // same four colours. `vaultBlock` and `coralWall` also quantise to
-    // byte-identical art, so no palette swap could separate them either: both
-    // are bevelled block grids. `laceWall` is an ornate lattice and cannot be
-    // mistaken for a block at any tint. See tools/rip-dungeon-themes.py.
-    dFloorSalt: { art: ART.ruinFloorAlt, pal: 'marble' },
-    dFloorSaltAlt: { art: ART.ruinFloorAlt, pal: 'stonef' },
-    dWallSalt: { art: ART.laceWall, pal: 'marble', flags: F.SOLID },
-    dWallSaltX: { art: ART.dWallCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE },
-    dBlockSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
-    dUrnSalt: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorSalt' },
-
-    // d7 Reef Palace — the rosette in its own colours, walls studded gold.
-    dFloorPalace: { art: ART.ruinFloor, pal: 'ruinFloor' },
-    dFloorPalaceAlt: { art: ART.ruinFloorAlt, pal: 'ruinFloorAlt' },
-    dWallPalace: { art: ART.studWall, pal: 'studWall', flags: F.SOLID },
-    dWallPalaceX: { art: ART.dWallCracked, pal: 'gold', flags: F.SOLID | F.BOMBABLE },
-    dBlockPalace: { art: ART.vaultBlock, pal: 'gold', flags: F.SOLID },
-    dUrnPalace: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorPalace' },
+    // THE THREE OPTIONAL DUNGEONS (S160), each in the kit of a Seasons dungeon
+    // no main dungeon had taken, read out of the cartridge's own tilesets
+    // (`h*`, `n*` and `u*` picks in rip-dungeon-themes.py; the push block
+    // and floor button are the same tilesets' in rip-objects.py):
+    //   Salt    the Salt Pan's lower vault   the Hero's Cave
+    //   Eyrie   the Gullwind Eyrie           Snake's Remains
+    //   Palace  the Sunken Palace            Unicorn's Cave
+    // `Salt` and `Palace` were the pre-fold d6/d7 themes — palette swaps of
+    // sheet tiles that no room had drawn since the fold — and are replaced
+    // outright. None of the three Seasons tilesets draws a jamb beside an
+    // open doorway, so a gap in the ring is framed by plain runs; the way out
+    // is the lit step between two pillars in the south wall, `(C)`.
+    ...optionalKit('Salt', 'h'),
+    ...optionalKit('Eyrie', 'n'),
+    // THE GULLWIND EYRIE'S CHASM (S160): Snake's Remains' own black drop, with
+    // the floor's lip drawn along its top wherever floor is north of it — the
+    // two metatiles the cartridge's rooms use, placed the way they place
+    // them. And its high-water wall: the Eyrie's own masonry, standing until
+    // the sea covers it at HIGH (the Keep's `dLintel`, in this dungeon's
+    // stone), which is the only sea a thrown Ferryman's Coin can cross it at.
+    dPitEyrie: { art: ART.nPit, pal: 'nPit', flags: F.PIT, family: 'pitEyrie', edgeArt: { up: 'nPitN' } },
+    nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
+    dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
+    ...optionalKit('Palace', 'u'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &
@@ -42243,9 +44171,11 @@ function installCoreTiles() {
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
       art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
-        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot : ART.pot,
+        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot
+        : T === 'Salt' ? ART.hPot : T === 'Eyrie' ? ART.nPot : T === 'Palace' ? ART.uPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
-        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot' : 'pot',
+        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot'
+        : T === 'Salt' ? 'hPot' : T === 'Eyrie' ? 'nPot' : T === 'Palace' ? 'uPot' : 'pot',
       // No `liftSprite`: lifted, a pot is drawn as the pot it was (S155).
       // It used to name `o_pot`, the hand-drawn stand-in, so every dungeon
       // pot turned into a different pot the moment Link picked it up.
@@ -42314,6 +44244,7 @@ function installCoreTiles() {
     // the tile is that the tools the player already has do not answer it.
     driftTangle: { fire: 'grass', fx: 'cut', sfx: 'cut', persist: true },
     driftTangleDk: { fire: 'rockFloorDk', fx: 'cut', sfx: 'cut', persist: true },
+    dTangleSalt: { fire: 'dFloorSalt', fx: 'cut', sfx: 'cut', persist: true },
     flowers: { cut: 'grass', fx: 'cut', sfx: 'cut' },
     flowersDark: { cut: 'grassDark', fx: 'cut', sfx: 'cut' },
     // `cut` and nothing else, on purpose: see the tiledef. It persists because
@@ -42720,8 +44651,24 @@ function installLegends() {
   registerLegend('dungeonWood', {
     'C': 'dExitWood', '(': 'dPillarWoodW', ')': 'dPillarWoodE', '9': 'dDrownWood',
   }, 'dungeonWood');
-  theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
-  theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
+  // THE THREE OPTIONAL DUNGEONS (S160), each an Oracle dungeon in the kit of
+  // a Seasons dungeon no main one had taken (see `optionalKit` in
+  // tiles-core.js): the Salt Pan's lower vault, the Gullwind Eyrie and the
+  // Sunken Palace. Each leaves by the lit step between two pillars, `(C)`.
+  for (const T of ['Salt', 'Eyrie', 'Palace']) {
+    theme('dungeon' + T, 'dFloor' + T, 'dFloor' + T + 'Alt', 'dWall' + T, 'dWall' + T + 'X', 'dBlock' + T, 'dUrn' + T);
+    registerLegend('dungeon' + T, {
+      'C': 'dExit' + T, '(': 'dPillar' + T + 'W', ')': 'dPillar' + T + 'E',
+    }, 'dungeon' + T);
+  }
+  // The lower vault's drift-tangle `&`, and its kelp `5` — a tide tile, so
+  // a digit: dry and burnable at LOW, sodden above it. `5` is the outdoor
+  // `channel`, which no indoor room places, so repointing it moves nothing
+  // outside this dungeon (the Shrine's and the Spire's argument).
+  registerLegend('dungeonSalt', { '&': 'dTangleSalt', '5': 'dKelpSalt' }, 'dungeonSalt');
+  // The Eyrie's chasm `O` is Snake's Remains' own black drop, and its `9` is a
+  // wall of its own stone that the sea covers only at HIGH (`dDrownEyrie`).
+  registerLegend('dungeonEyrie', { 'O': 'dPitEyrie', '9': 'dDrownEyrie' }, 'dungeonEyrie');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in
   // the shared vocabulary is already spoken for. `6` is `dRaceE`, one of the
@@ -42967,7 +44914,7 @@ function installCaves() {
       '0,0,0': {
         map: [
           '##########',
-          '#........#',
+          '#....../.#',
           '#.2222...#',
           '#.2222.o.#',
           '#.2222...#',
@@ -42983,7 +44930,12 @@ function installCaves() {
           ['chest', 4, 3, { big: true, item: 'bottle', level: 1 }],
         ],
         readable: [[7, 3, 'Salt-etched: "One swallow of the sea, kept where the sea cannot follow it."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } }],
+        warps: [
+          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
+          // THE LOWER VAULT (S160), an optional dungeon: the Kilnshell's.
+          // See src/data/dungeons-optional.js.
+          { x: 7, y: 1, to: { map: 'vault', floor: 0, rx: 1, ry: 2, px: 112, py: 128, dir: 'up' } },
+        ],
       },
     },
   });
@@ -45530,6 +47482,13 @@ function installBosses() {
     w: 24, h: 24, hb: { x: 3, y: 6, w: 18, h: 15 },
     frames: ['mini_gustharpy_0', 'mini_gustharpy_1'],
     intro: 40, terrain: 'air', drops: 'rich',
+    // A HOVERER, SAID SO (S160): `z` is how high it is drawn, and it is what
+    // `enemyHurtRect` lifts the box by. Set only in `init`, the eight pixels
+    // read as a jump — at or over ENEMY_CONTACT_Z, which the cartridge treats
+    // as out of reach — and no sword could touch it. Nothing noticed because
+    // no room had ever placed it; the Gullwind Eyrie's robot swung at it for
+    // fourteen thousand frames in god mode.
+    z: 8,
     init(e) { miniInit(e); e.z = 8; e.shadow = true; },
     onDie: miniDie,
     phases: [
@@ -51555,6 +53514,456 @@ function installDungeonsB() {
   });
 }
 __exports["installDungeonsB"] = installDungeonsB;
+});
+
+/* ===== src/data/dungeons-optional.js ===== */
+__define("data/dungeons-optional.js", function (__exports, __require) {
+// The three optional dungeons (S160). See docs/DUNGEON-STATUS.md, "The
+// optional dungeons (S159 plan)": the human chose two small side dungeons and
+// one big one, for the three bosses the six-dungeon fold left without a room.
+//
+// ALL THREE ARE SIDE CONTENT. Each declares `optional: true` and neither an
+// Essence nor an item (src/world/maps.js), so `dungeons()` — the route — does
+// not list them, and check-progression proves nothing in them can open
+// anything the route needs. What they pay is Pieces of Heart (and the Sunken
+// Palace a charm). Each leans on a tide consequence no main dungeon states,
+// through a SIDE item the player already owns.
+//
+// Each is built at Oracle size, in the kit of a Seasons dungeon no main one
+// had taken (`optionalKit` in tiles-core.js).
+
+const { registerMap } = __require("world/maps.js");
+
+function installOptionalDungeons() {
+
+  // --- The Salt Pan's lower vault -----------------------------------------
+  //
+  // TIDE THEME: FIRE THE SEA PUTS OUT. The Kilnshell burns what it touches,
+  // and deep water puts it out — on the ground, in your hands, or in the air.
+  // Every room below the kiln is DAMP (`damp: true`): the brine in the air
+  // will not let the shell strike, so the fire has to be struck in the one
+  // dry room at the top of the stair and CARRIED down, lit, and thrown where
+  // it is needed. A thrown shell flies Seasons' arc and lands still burning —
+  // unless its line crossed deep water, and then it lands dark, and the only
+  // way to get it back is to walk to the kiln and strike another.
+  //
+  // So the conch decides whether the fire survives the trip. A sump — an open
+  // pit at LOW, over your head above it — is a gap no one can walk at any sea,
+  // and a gap a flame can be thrown over only while the sea is out of it. And
+  // the vault's kelp is drift-tangle stranded in the pan: dry and burnable at
+  // LOW, too sodden to burn at all above it.
+  //
+  // `kilnRoom` states each room's claim and tools/check-kiln.mjs proves it in
+  // the real engine: the room will not strike, the target cannot be walked
+  // up to at any sea (unless `reach` says the claim is about the sea and not
+  // the gap), and a lit shell thrown from `from` lights or burns it at exactly
+  // `levels`.
+  //
+  // Intended route (6 rooms):
+  //   1,2 the Kiln Stair: strike the shell, burn the tangle north
+  //   -> 1,1 the Sump: carry it in lit; at LOW throw it to the brazier on
+  //      the island; the east shutter opens
+  //   -> 2,1 the Kelp Cell: at LOW wade the pool carrying it, throw it into
+  //      the dry kelp; the Small Key is behind it
+  //   -> 1,1 west [locked] -> 0,1 the Brine Gallery: burn the tangle in
+  //      front of one brazier, light it, lift the shell again, and at LOW
+  //      throw it to the second brazier's island; the north shutter opens
+  //   -> 0,0 the Kiln Walk (dry again): strike, burn the tangle east
+  //   -> 1,0 the Saltwraith's Pan: the Piece of Heart
+  registerMap({
+    id: 'vault',
+    kind: 'dungeon',
+    name: 'The Lower Vault',
+    w: 3, h: 3, floors: 1,
+    cell: [15, 11],
+    legend: 'dungeonSalt',
+    music: 'dungeon',
+    tint: 'cave',
+    dungeon: {
+      optional: true,
+      // The Salt Pans open with the Resonance Rod, the end of the Coastwise
+      // Chain; check-progression finds the stair at two Essences.
+      index: 2,
+      opensAt: 2,
+      boss: 'saltwraith',
+      bossRoom: '0,1,0',
+      startRoom: '1,2',
+      entrance: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 112, py: 32 },
+    },
+    rooms: {
+      '0,1,2': {
+        name: 'The Kiln Stair',
+        // The one dry room. The tangle across the only way on is the
+        // Kilnshell's movement verb, taught where it costs nothing.
+        // The pebbled floor (`,`) lies where Seasons' own Hero's Cave rooms
+        // scatter theirs (rooms $504, $507, $505, $508, $503, $502 of
+        // oracles-disasm, one to each room here), so the texture is theirs.
+        map: [
+          '#######.#######',
+          '#....,,.,.....#',
+          '#.p..,,,....p.#',
+          '#######&#######',
+          '#....,.,.,..,,#',
+          '#..U.......U..#',
+          '#,.....,.,..,.#',
+          '#,,.........,.#',
+          '#.,.........,.#',
+          '#....,.....,,.#',
+          '######(C)######',
+        ],
+        warps: [
+          { x: 7, y: 10, to: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 112, py: 32, dir: 'down' } },
+        ],
+        readable: [
+          [3, 5, 'Scratched in the salt: "Strike it here, where\nthe kiln keeps the air dry. Below, the\nbrine will not let it catch."'],
+          [11, 5, 'Older: "What the sea puts out, the sea\nkeeps. Carry the fire. Mind the water."'],
+        ],
+      },
+      '0,1,1': {
+        name: 'The Sump',
+        damp: true,
+        // A brazier on an island, a sump two tiles wide all round it. The pit
+        // at LOW is too wide to hop and the water above it is over your head,
+        // so nobody walks to the brazier at any sea; a lit shell thrown from
+        // the bank reaches it at LOW and drowns in flight above it.
+        map: [
+          '###############',
+          '#...,......,..#',
+          '#.........,.,.#',
+          '#...0000000...#',
+          '#,.,0000000...#',
+          'L...00...00...D',
+          '#,,.00..,00.,,#',
+          '#,,.0000000...#',
+          '#,,,.......,.,#',
+          '#.,,.......,,.#',
+          '#######.#######',
+        ],
+        entities: [
+          ['torch', 6, 4],
+        ],
+        puzzle: {
+          torches: 'all',
+          flag: 'vault_sump',
+          reward: { openDoors: [[14, 5]], say: 'The brazier takes. Something grinds open to the east.' },
+        },
+        kilnRoom: { target: [6, 4], from: [3, 5], dir: 'right', levels: [0] },
+        readable: [
+          [1, 9, 'A plate by the stair: "Down here the fire\ngoes where it is thrown, and the sea\ndecides whether it arrives."'],
+        ],
+      },
+      '0,2,1': {
+        name: 'The Kelp Cell',
+        damp: true,
+        // The key behind a plug of kelp, and the kelp in a pool: shallow at
+        // LOW, over your head above. It burns only dry — at LOW — and the only
+        // place to throw from is standing in the pool, which is only possible
+        // at LOW. Either way round, the sea has to be out.
+        map: [
+          '###############',
+          '#....#...#..,,#',
+          '#....#...#....#',
+          '#....##5##....#',
+          '#.,.3333333...#',
+          'D...3333333...#',
+          '#.,,3333333...#',
+          '#....,........#',
+          '#,p,,,,.....p.#',
+          '#,,,,,,.....,.#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 6, 2, { pickup: 'key' }],
+        ],
+        kilnRoom: { target: [7, 3], from: [7, 4], dir: 'up', levels: [0], reach: true },
+      },
+      '0,0,1': {
+        name: 'The Brine Gallery',
+        damp: true,
+        // Two braziers and one shell. The near one stands at the head of a
+        // blind passage stopped with tangle; the far one on an island in a
+        // sump. Throw the shell up the passage and it burns the tangle and
+        // drops where you can lift it again; throw it again and it lights the
+        // near brazier and drops again. Only THEN throw it to the island, at
+        // LOW — because a shell thrown at the island is not coming back.
+        map: [
+          '#######D#######',
+          '#.,,..........#',
+          '#,###....,.,..#',
+          '#.#.#...,.....#',
+          '#.#&#.......,.#',
+          '#.............L',
+          '#......0000...#',
+          '#......0000...#',
+          '#......00.0,..#',
+          '#......0000...#',
+          '###############',
+        ],
+        entities: [
+          ['torch', 3, 3],
+          ['torch', 9, 8],
+        ],
+        puzzle: {
+          torches: 'all',
+          flag: 'vault_gallery',
+          reward: { openDoors: [[7, 0]], say: 'Both braziers burn. The way north opens.' },
+        },
+        kilnRoom: { target: [9, 8], from: [9, 5], dir: 'down', levels: [0] },
+      },
+      '0,0,0': {
+        name: 'The Kiln Walk',
+        // Dry again: a second kiln, so the fight beyond it is never a long
+        // walk back to the top of the stair. The tangle is its door.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U...,....,U.#',
+          '#..,....,.....#',
+          '#.....,.....###',
+          '#.,.,.......&..',
+          '#......,.,..###',
+          '#..,.,......,.#',
+          '#.U....,.,.,U.#',
+          '#.............#',
+          '#######D#######',
+        ],
+        entities: [
+          ['stalfos', 4, 3, { drops: 'good' }],
+          ['stalfos', 9, 7, { drops: 'good' }],
+        ],
+      },
+      '0,1,0': {
+        name: "The Saltwraith's Pan",
+        // The miniboss, in a pan the conch still reaches: brine blunts it, so
+        // its bolts come thinner at HIGH (src/data/bosses.js).
+        map: [
+          '###############',
+          '#......,......#',
+          '#.,...........#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '....2222222,..#',
+          '#..,2222222...#',
+          '#...2222222...#',
+          '#.............#',
+          '#.......,.,...#',
+          '###############',
+        ],
+        entities: [
+          ['saltwraith', 7, 4],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'vault_wraith',
+          reward: {
+            spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
+            say: 'The salt settles. Something glints where it stood.',
+          },
+        },
+      },
+    },
+  });
+
+  // --- The Gullwind Eyrie --------------------------------------------------
+  //
+  // TIDE THEME: THE TIDE CHANGE IS HOW YOU MOVE. The Ferryman's Coin, thrown,
+  // flies four tiles over anything a flier crosses — a chasm, deep water — and
+  // on the NEXT turn of the tide, Link and the coin trade places. Up here the
+  // eyrie is cut by drops nobody walks, so every crossing is a throw and a
+  // conch: and because the conch only ever turns the sea one way (LOW, MID,
+  // HIGH, LOW), you always land one sea later than you threw. One wall of the
+  // eyrie's own stone stands until HIGH covers it: the coin clears it only then,
+  // and Link follows it down to LOW on the far side.
+  //
+  // `coinRoom` states each crossing (one, or a list) and tools/check-coin.mjs
+  // proves it in the engine: the landing cannot be walked to from the throw,
+  // and the coin thrown from `from` rests on `lands` and brings Link there at
+  // exactly the seas in `levels`. `dungeon.coin` teaches the dungeon flood the
+  // same verb (tools/lib/dungeon-flood.mjs).
+  //
+  // Intended route (6 rooms):
+  //   1,2 the Gull Stair: throw the coin over the chasm, sound the conch
+  //   -> 1,1 the Roost -> 2,1 the Key Ledge: swap onto the island, take the
+  //      Small Key, and the coin — lying where you stood — swaps you home
+  //   -> 1,1 west [locked] -> 0,1 the High Water Wall: at HIGH the coin
+  //      clears the drowned wall and the chasm behind it; conch to LOW
+  //   -> 0,0 the Updraft: coin to the pillar, recall it, coin to the ledge
+  //   -> 1,0 the Gustharpy's Roost: the Piece of Heart
+  registerMap({
+    id: 'eyrie',
+    kind: 'dungeon',
+    name: 'Gullwind Eyrie',
+    w: 3, h: 3, floors: 1,
+    cell: [15, 11],
+    legend: 'dungeonEyrie',
+    music: 'dungeon',
+    tint: 'cave',
+    dungeon: {
+      optional: true,
+      // The coin comes from the village digger at three Essences; a player
+      // who has it has the Cleats too.
+      index: 3,
+      opensAt: 2,
+      coin: true,
+      boss: 'gustharpy',
+      bossRoom: '0,1,0',
+      startRoom: '1,2',
+      entrance: { map: 'overworld', floor: 0, rx: 3, ry: 2, px: 80, py: 32 },
+    },
+    rooms: {
+      '0,1,2': {
+        name: 'The Gull Stair',
+        // The lesson in one room: a drop three tiles wide from wall to wall,
+        // and the way on beyond it. Throw, sound the conch, and you are over.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '######(C)######',
+        ],
+        entities: [
+          ['keese', 4, 5],
+        ],
+        warps: [
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 3, ry: 2, px: 80, py: 32, dir: 'down' } },
+        ],
+        readable: [
+          [2, 2, 'Scratched by the stair: "The gulls cross\nwhere nobody walks. Throw the fare over,\nand let the turning sea carry you after."'],
+        ],
+        coinRoom: { from: [7, 7], dir: 'up', lands: [7, 3], levels: [0, 1, 2] },
+      },
+      '0,1,1': {
+        name: 'The Roost',
+        map: [
+          '###############',
+          '#.............#',
+          '#..OO.....OO..#',
+          '#..OO.....OO..#',
+          '#.............#',
+          'L..............',
+          '#.............#',
+          '#..OO.....OO..#',
+          '#..OO.....OO..#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['keese', 3, 5, { drops: 'good' }],
+          ['keese', 11, 5, { drops: 'good' }],
+        ],
+      },
+      '0,2,1': {
+        name: 'The Key Ledge',
+        // The key on an island, a drop three wide all round it. Swap onto it
+        // — and the coin is lying where you stood, so the next turn of the
+        // tide swaps you home. The coin is your way back as well as your way
+        // there.
+        map: [
+          '###############',
+          '#.............#',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          '#..OOO...OOO..#',
+          '...OOO...OOO..#',
+          '#..OOO...OOO..#',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 7, 5, { pickup: 'key' }],
+        ],
+        coinRoom: { from: [2, 5], dir: 'right', lands: [6, 5], levels: [0, 1, 2] },
+      },
+      '0,0,1': {
+        name: 'The High Water Wall',
+        // A wall of the eyrie's own stone, and a drop behind it, between you
+        // and the way north. At LOW and MID the wall stops the coin dead; at
+        // HIGH the sea is over it, and the coin flies the wall and the drop
+        // together. The conch goes round HIGH -> LOW, so you land on the far
+        // side with the sea out.
+        map: [
+          '###.###########',
+          '#...........###',
+          '#...........###',
+          '#OOOOOOOOOOO###',
+          '#OOOOOOOOOOO###',
+          '#99999999999..L',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        coinRoom: { from: [3, 6], dir: 'up', lands: [3, 2], levels: [2] },
+      },
+      '0,0,0': {
+        name: 'The Updraft',
+        // Two drops and one pillar between them: the coin to the pillar, a
+        // turn of the tide; recall it, the coin to the far ledge, another.
+        map: [
+          '###############',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOO.OOO....',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '###.###########',
+        ],
+        entities: [
+          ['keese', 6, 2],
+          ['keese', 8, 8],
+        ],
+        coinRoom: [
+          { from: [3, 5], dir: 'right', lands: [7, 5], levels: [0, 1, 2] },
+          { from: [7, 5], dir: 'right', lands: [11, 5], levels: [0, 1, 2] },
+        ],
+      },
+      '0,1,0': {
+        name: "The Gustharpy's Roost",
+        // The miniboss. Its downdraught shoves you, and the shove is only as
+        // strong as the sea under it (src/data/bosses.js): at LOW it has none.
+        map: [
+          '###############',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['gustharpy', 7, 4],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'eyrie_harpy',
+          reward: {
+            spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
+            say: 'The wind drops. A feather of light settles on the floor.',
+          },
+        },
+      },
+    },
+  });
+}
+__exports["installOptionalDungeons"] = installOptionalDungeons;
 });
 
 /* ===== src/data/story.js ===== */
@@ -62064,6 +64473,7 @@ const { installEnemies } = __require("data/enemies.js");
 const { installBosses } = __require("data/bosses.js");
 const { installDungeonsA } = __require("data/dungeons-a.js");
 const { installDungeonsB } = __require("data/dungeons-b.js");
+const { installOptionalDungeons } = __require("data/dungeons-optional.js");
 const { installStory } = __require("data/story.js");
 const { installAudio } = __require("data/audio.js");
 const { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } = __require("data/sprites-link.js");
@@ -62174,6 +64584,7 @@ function installData() {
   installCaves();
   installDungeonsA();
   installDungeonsB();
+  installOptionalDungeons();
   installStory();
   installAudio();
 }

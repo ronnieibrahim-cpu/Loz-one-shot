@@ -1,3 +1,69 @@
+## S160 — two of the three optional dungeons: the Lower Vault and the Gullwind Eyrie
+
+Branch claude/oracle-tides-optional-dungeons-c5eytd, off main at 398006f.
+NOT MERGED: the human is asked at the end of the session. The Sunken Palace
+is the next session's (docs/prompts/NEXT-PROMPT.md); the session stopped at a
+clean point because the conversation had grown long, as the human asked.
+
+### What landed
+- 49529d1 THE LOWER VAULT (`vault`, 6 rooms, Hero's Cave kit), a stair at
+  (7,1) of `cave3`. Theme: fire the sea puts out. Rooms below the kiln are
+  `damp: true` (the Kilnshell will not strike there); the flame is struck in
+  the Kiln Stair (1,2) or the Kiln Walk (0,0), carried down lit and THROWN; a
+  throw over deep water lands dark. Sumps (`0`) are LOW throws; the vault's kelp
+  (`5`, `dKelpSalt`: dry at LOW, sodden above) burns only at LOW; tangle is `&`.
+  Saltwraith (fought at HIGH) pays Piece of Heart 25. Prover
+  `tools/check-kiln.mjs` (`kilnRoom` claims). opensAt 2, index 2.
+- 640b2f1 THE GULLWIND EYRIE (`eyrie`, 6 rooms, Snake's Remains kit), a cave
+  mouth at (5,1) of Kell Corner 0,3,2 (row 1 `#15##C#Gg#`). Theme: the tide
+  change is how you move — Ferryman's Coin over drops (`O`, Snake's Remains'
+  black chasm `dPitEyrie`, lip `nPitN` via edgeArt); the High Water Wall (0,1)
+  is `9` = `dDrownEyrie` (the Eyrie's wall until HIGH): throw at HIGH, conch
+  to LOW. Gustharpy (fought at LOW) pays Piece of Heart 26. Prover
+  `tools/check-coin.mjs` (`coinRoom` claims, one or a list); `dungeon.coin`
+  teaches the flood. opensAt 2, index 3.
+- OPTIONAL DUNGEONS in the tools: `dungeon.optional: true`, no essence, no
+  item, `opensAt`. `dungeons()` (maps.js) is the six; `optionalDungeons()` the
+  rest. check-progression: each optional door reached at exactly `opensAt`,
+  grants nothing, and (for a keyhole in its host cave) the seal holds without
+  its key. check-hearts: optional bosses pay pieces not containers,
+  OPTIONAL_PIECES { vault 1, eyrie 1, palace 2 }, an unbuilt one counted as
+  planned. Gale warp lists only the six.
+- ART: `rip-dungeon-themes.py` reads `meta:NN` picks straight off a Seasons
+  tileset (via rip-objects' `Tileset`); the old unused `dungeonSalt` /
+  `dungeonPalace` themes are replaced by the Hero's Cave and Unicorn's Cave
+  kits, plus `dungeonEyrie` (Snake's Remains), built by `optionalKit` in
+  tiles-core.js; rip-objects gives each its block and button. Files for
+  tilesets $36 $38 $3b copied into assets/objects/oracles-disasm/seasons/.
+  Floor texture in the vault copies where Seasons' own Hero's Cave rooms put
+  their pebbles. To render a cartridge room for a comparison picture: sparse-
+  clone oracles-disasm `rooms/seasons` (room05xx/06xx.bin are 16x11 metatile
+  layouts, group4/5Tilesets.bin give each room's tileset) and draw metatiles
+  with rip-objects' `Tileset`.
+- ENGINE FIXES: a thrown Kilnshell flies as itself (`launch`), a carried
+  entity follows Link across a room seam, the shell's fire reaches from its
+  whole cell; the Ferryman's Coin's arc lasts COIN_SETTLE_FRAMES (it landed at
+  half, 2 tiles; now 4); the Gustharpy declares `z: 8` (it was unhittable);
+  a death no longer wins an enemies-puzzle room (every miniboss paid out on a
+  death — check-respawn 10b); the dungeon flood burns tangle/kelp.
+- New tools: check-kiln, check-coin, shoot-dungeon (whole dungeon floor as a
+  picture); try-room takes `probe`. docs/GUIDE.md has pieces 25 and 26.
+
+### Verified
+Whole table (47 tools, check-kiln and check-coin included) green on 640b2f1;
+check-playthrough 44/44, THE END, 0 deaths. replay 51/51 unchanged. Built;
+dist committed.
+
+### Noticed, not chased
+- The illustrated guide (docs/guide) does not list the two new pieces yet:
+  regenerate it once, after the Palace.
+- The main dungeons' flood does not model the coin (D4-D6 could have coin
+  shortcuts nobody has looked for); only a map declaring `dungeon.coin` does.
+- Lit torches are not remembered on re-entry (the puzzle's flag and door are).
+- The robot needs 8 hearts to beat the Saltwraith/Gustharpy (it is clumsy;
+  the fights are not tuned, per the S150 rule).
+- Kilnshell `desc` still says "The sea lights it" (it is struck).
+
 ## S159 — boss art from both cartridges; the picture guide merged; the optional-dungeon plan approved
 
 Branch claude/oracle-tides-optional-content-sokhsn (off S158's

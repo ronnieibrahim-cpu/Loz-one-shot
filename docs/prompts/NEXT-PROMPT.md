@@ -1,57 +1,65 @@
-# Next session (S160) — build the three optional dungeons
+# Next session (S161) — build the Sunken Palace
 
 ## Read first
-- CLAUDE.md, all of it.
-- `docs/NEXT-SESSION.md`, the S159 entry: the human APPROVED the plan below,
-  and the boss art is already done.
-- `docs/DUNGEON-STATUS.md`, section "The optional dungeons (S159 plan)".
+- CLAUDE.md, all of it (S160 added `check-kiln.mjs`, `check-coin.mjs` and
+  `shoot-dungeon.mjs` to the table).
+- `docs/NEXT-SESSION.md`, the S160 entry: how an optional dungeon declares
+  itself and what the two finished ones taught.
+- `docs/DUNGEON-STATUS.md`, "The optional dungeons (S159 plan)".
+- `src/data/dungeons-optional.js`: the Lower Vault and the Gullwind Eyrie are
+  the worked examples to copy.
 
 ## State
-- MAIN is at the end of S159 (the human said merge everything): the S158
-  opening, get-item fix and town themes, and S159's boss art and picture
-  guide are all on main. Branch from main.
-- check-playthrough 44/44, THE END, never died. `test.mjs` fails only its
-  frame-rate check in the cloud sandbox (fps 18-25), and it failed the same
-  way on the untouched base commit: that is the machine, not the game.
-- Thalassor, Gustharpy and the Saltwraith have their art (S159) but no room.
+- Branch `claude/oracle-tides-optional-dungeons-c5eytd` (S160), NOT merged to
+  main: the human is asked at the end of S160. Continue ON THAT BRANCH if main
+  has not moved (`git log origin/main -1`); if it has been merged, branch from
+  main.
+- Two of three optional dungeons DONE: the Lower Vault (`vault`, 49529d1) and
+  the Gullwind Eyrie (`eyrie`, 640b2f1). 26 heart pieces, cap 15; check-hearts
+  counts the Palace's two as planned.
+- Whole table green (47 tools) on 640b2f1; check-playthrough 44/44, THE END,
+  never died. `test.mjs` passed in S160 (its fps check is sometimes red in the
+  sandbox: stash and re-run before believing it).
 
 ## The task
-Build the approved plan, in this order, one commit per dungeon, the whole
-checker table green before each:
-1. THE SALT PAN VAULT'S LOWER VAULT (small, about 6 Oracle-size rooms), under
-   the existing Salt Pan Vault cave (`cave3`, Vault Approach 0,9,1): a stair
-   down. Theme: the KILNSHELL, "fire the sea puts out" (carry and set down the
-   flame through salt halls where the tide decides whether it survives; light
-   braziers, burn drift-tangle). Saltwraith miniboss. Prize: a Piece of Heart.
-2. THE GULLWIND EYRIE (small, about 6 rooms), a NEW cave mouth in the north
-   cliff of Kell Corner (0,3,2; mock-up in S159: row 1 `#15##C#Gg#`). Theme:
-   the FERRYMAN'S COIN, "the tide change is how you move" (throw it where you
-   can't walk, sound the conch, swap). Gustharpy miniboss. Prize: a Piece of
-   Heart.
-3. THE SUNKEN PALACE (big, 16-18 rooms on two floors), under the Palace Porch
-   cave (`cave4`, Palace Mouth 0,15,1). Theme: WHIRLPOOLS, "the sea's height
-   decides which floor you're on" (a NEW tile; the human approved building it;
-   add it to the dungeon flood in the same commit, CLAUDE.md trap). Opens after
-   D5. Thalassor boss. Prizes: two Pieces of Heart inside, and a new charm,
-   "Coilbone" (fits any case: a moment's safety each time the tide changes).
-Hearts: 4 new pieces -> 28 -> cap 16 (inside the 14-16 window). Update
-check-hearts' expectations and the guide's heart list (docs/guide) as each
-lands. `check-side` must prove each prize can be won AND is refused without
-its item. Each dungeon needs its own prover of its theme, written first (the
-DUNGEON-STATUS checklist).
-
-The three dungeons are OPTIONAL: none may gate the main route, and
-check-progression/check-playthrough must not change what they prove. Most
-tools enumerate `m.dungeon` maps and read `dungeon.index` as "what the player
-owns by now"; decide early how an optional dungeon declares that (e.g. an
-`optional: true` flag with no essence), and teach the tools in one commit.
+Build THE SUNKEN PALACE, the approved plan's third dungeon, in one commit,
+whole table green, then show the human pictures (Seasons' Unicorn's Cave
+beside it: `docs/NEXT-SESSION.md` S160 says how the cartridge rooms render).
+- 16-18 rooms on TWO floors, map id `palace` (OPTIONAL_PIECES in
+  check-hearts already expects it, with 2 pieces), under the Palace Porch
+  (`cave4`, Palace Mouth 0,15,1; its notice "The rest of it is under").
+- Kit: `dungeonPalace` legend, READY (Unicorn's Cave, extracted S160: ring,
+  doors, `(C)` exit, pot, statue, block, button).
+- Theme: WHIRLPOOLS, "the sea's height decides which floor you're on". A NEW
+  whirlpool tile (the human approved it): find Seasons' whirlpool art first
+  (TILEINDEX_WHIRLPOOL $e9 in an overworld tileset; `tools/rip-objects.py`'s
+  `Tileset` reads any Seasons tileset — fetch its files into
+  assets/objects/oracles-disasm/seasons/ as S160 did). Teach the dungeon flood
+  (tools/lib/dungeon-flood.mjs) the whirlpool in the SAME commit, and write the
+  dungeon's own prover FIRST (check-kiln / check-coin are the pattern).
+- Opens after D5. Suggested gate: a keyhole in cave4 keyed on `keyD6` (the
+  Bell's Clapper the Maku Tree gives at five Essences), with its own
+  `openFlag`; check-progression already reads a keyhole in a host cave and
+  asserts the seal holds without its key. Declare `opensAt: 5`.
+- Boss: `thalassor` — a REAL boss (isBoss), on the boss rung already; its
+  pull reads `g.tide.level`. Add it to check-bosses' FIGHTS. It must NOT spawn
+  a Heart Container (check-hearts: optional bosses pay pieces).
+- Prizes: two Pieces of Heart inside (-> 28, cap 16) and the new charm
+  "Coilbone", slot `any`: "a moment's safety each time the tide changes" —
+  an invulnerability window on every tide change, its length a `guessed`
+  constant in feel.js; read in the engine, proved in check-charms, given by a
+  chest (`chest.charm`), added to docs/ITEMS or the charm docs as they list.
+- `check-side`: the prizes can be won, and are refused without the thing they
+  need. Update docs/GUIDE.md (pieces 27, 28; counts), and REGENERATE the
+  illustrated guide's heart list for all three optional dungeons
+  (docs/guide: tools/guide/*; S160 did not, to do it once).
 
 ## Done means
 - Whole table green; check-playthrough 44/44 or more, THE END, never died.
-- Show the human pictures of each finished dungeon (Seasons beside it).
+- Pictures of the Palace shown to the human.
 - `npm run build`, dist/ committed, NEXT-SESSION.md and this file updated,
-  pushed; ask before moving main.
+  pushed; ask the human before moving main.
 
 ## Out of scope
 - Enemy damage and health (S150). A camera that frames bosses (S153).
-- The pixel-art intro cutscene (tabled by the human for its own session).
+- The pixel-art intro cutscene (tabled by the human).
