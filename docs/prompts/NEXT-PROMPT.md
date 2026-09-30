@@ -11,9 +11,8 @@
 
 ## State
 - Branch `claude/oracle-tides-optional-dungeons-c5eytd` (S160), NOT merged to
-  main: the human is asked at the end of S160. Continue ON THAT BRANCH if main
-  has not moved (`git log origin/main -1`); if it has been merged, branch from
-  main.
+  main, BY THE HUMAN'S CHOICE: merge only once the Palace is done. Continue ON
+  THAT BRANCH, and at the end ask the human before moving main.
 - Two of three optional dungeons DONE: the Lower Vault (`vault`, 49529d1) and
   the Gullwind Eyrie (`eyrie`, 640b2f1). 26 heart pieces, cap 15; check-hearts
   counts the Palace's two as planned.

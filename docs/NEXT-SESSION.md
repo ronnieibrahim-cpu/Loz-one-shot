@@ -57,8 +57,9 @@ dist committed.
 ### The human, at the end of S160
 "Can use Ages for inspiration also. Not just Seasons. 2 games worth of
 assets." Art for anything still to come (the Palace first) may be extracted
-from Oracle of Ages as well as Seasons. Not yet asked/answered: whether to
-merge S160 into main now or after the Palace.
+from Oracle of Ages as well as Seasons. Merge decision: WAIT — the human said to
+merge S160 into main only once the Palace is done (keep building on this
+branch, then ask).
 
 ### Noticed, not chased
 - The illustrated guide (docs/guide) does not list the two new pieces yet:
