@@ -2809,6 +2809,15 @@ export function installCoreTiles() {
     // is the lit step between two pillars in the south wall, `(C)`.
     ...optionalKit('Salt', 'h'),
     ...optionalKit('Eyrie', 'n'),
+    // THE GULLWIND EYRIE'S CHASM (S160): Snake's Remains' own black drop, with
+    // the floor's lip drawn along its top wherever floor is north of it — the
+    // two metatiles the cartridge's rooms use, placed the way they place
+    // them. And its high-water wall: the Eyrie's own masonry, standing until
+    // the sea covers it at HIGH (the Keep's `dLintel`, in this dungeon's
+    // stone), which is the only sea a thrown Ferryman's Coin can cross it at.
+    dPitEyrie: { art: ART.nPit, pal: 'nPit', flags: F.PIT, family: 'pitEyrie', edgeArt: { up: 'nPitN' } },
+    nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
+    dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
     ...optionalKit('Palace', 'u'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.

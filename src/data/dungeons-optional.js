@@ -243,4 +243,203 @@ export function installOptionalDungeons() {
       },
     },
   });
+
+  // --- The Gullwind Eyrie --------------------------------------------------
+  //
+  // TIDE THEME: THE TIDE CHANGE IS HOW YOU MOVE. The Ferryman's Coin, thrown,
+  // flies four tiles over anything a flier crosses — a chasm, deep water — and
+  // on the NEXT turn of the tide, Link and the coin trade places. Up here the
+  // eyrie is cut by drops nobody walks, so every crossing is a throw and a
+  // conch: and because the conch only ever turns the sea one way (LOW, MID,
+  // HIGH, LOW), you always land one sea later than you threw. One wall of the
+  // eyrie's own stone stands until HIGH covers it: the coin clears it only then,
+  // and Link follows it down to LOW on the far side.
+  //
+  // `coinRoom` states each crossing (one, or a list) and tools/check-coin.mjs
+  // proves it in the engine: the landing cannot be walked to from the throw,
+  // and the coin thrown from `from` rests on `lands` and brings Link there at
+  // exactly the seas in `levels`. `dungeon.coin` teaches the dungeon flood the
+  // same verb (tools/lib/dungeon-flood.mjs).
+  //
+  // Intended route (6 rooms):
+  //   1,2 the Gull Stair: throw the coin over the chasm, sound the conch
+  //   -> 1,1 the Roost -> 2,1 the Key Ledge: swap onto the island, take the
+  //      Small Key, and the coin — lying where you stood — swaps you home
+  //   -> 1,1 west [locked] -> 0,1 the High Water Wall: at HIGH the coin
+  //      clears the drowned wall and the chasm behind it; conch to LOW
+  //   -> 0,0 the Updraft: coin to the pillar, recall it, coin to the ledge
+  //   -> 1,0 the Gustharpy's Roost: the Piece of Heart
+  registerMap({
+    id: 'eyrie',
+    kind: 'dungeon',
+    name: 'Gullwind Eyrie',
+    w: 3, h: 3, floors: 1,
+    cell: [15, 11],
+    legend: 'dungeonEyrie',
+    music: 'dungeon',
+    tint: 'cave',
+    dungeon: {
+      optional: true,
+      // The coin comes from the village digger at three Essences; a player
+      // who has it has the Cleats too.
+      index: 3,
+      opensAt: 2,
+      coin: true,
+      boss: 'gustharpy',
+      bossRoom: '0,1,0',
+      startRoom: '1,2',
+      entrance: { map: 'overworld', floor: 0, rx: 3, ry: 2, px: 80, py: 32 },
+    },
+    rooms: {
+      '0,1,2': {
+        name: 'The Gull Stair',
+        // The lesson in one room: a drop three tiles wide from wall to wall,
+        // and the way on beyond it. Throw, sound the conch, and you are over.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '######(C)######',
+        ],
+        entities: [
+          ['keese', 4, 5],
+        ],
+        warps: [
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 3, ry: 2, px: 80, py: 32, dir: 'down' } },
+        ],
+        readable: [
+          [2, 2, 'Scratched by the stair: "The gulls cross\nwhere nobody walks. Throw the fare over,\nand let the turning sea carry you after."'],
+        ],
+        coinRoom: { from: [7, 7], dir: 'up', lands: [7, 3], levels: [0, 1, 2] },
+      },
+      '0,1,1': {
+        name: 'The Roost',
+        map: [
+          '###############',
+          '#.............#',
+          '#..OO.....OO..#',
+          '#..OO.....OO..#',
+          '#.............#',
+          'L..............',
+          '#.............#',
+          '#..OO.....OO..#',
+          '#..OO.....OO..#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['keese', 3, 5, { drops: 'good' }],
+          ['keese', 11, 5, { drops: 'good' }],
+        ],
+      },
+      '0,2,1': {
+        name: 'The Key Ledge',
+        // The key on an island, a drop three wide all round it. Swap onto it
+        // — and the coin is lying where you stood, so the next turn of the
+        // tide swaps you home. The coin is your way back as well as your way
+        // there.
+        map: [
+          '###############',
+          '#.............#',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          '#..OOO...OOO..#',
+          '...OOO...OOO..#',
+          '#..OOO...OOO..#',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 7, 5, { pickup: 'key' }],
+        ],
+        coinRoom: { from: [2, 5], dir: 'right', lands: [6, 5], levels: [0, 1, 2] },
+      },
+      '0,0,1': {
+        name: 'The High Water Wall',
+        // A wall of the eyrie's own stone, and a drop behind it, between you
+        // and the way north. At LOW and MID the wall stops the coin dead; at
+        // HIGH the sea is over it, and the coin flies the wall and the drop
+        // together. The conch goes round HIGH -> LOW, so you land on the far
+        // side with the sea out.
+        map: [
+          '###.###########',
+          '#...........###',
+          '#...........###',
+          '#OOOOOOOOOOO###',
+          '#OOOOOOOOOOO###',
+          '#99999999999..L',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        coinRoom: { from: [3, 6], dir: 'up', lands: [3, 2], levels: [2] },
+      },
+      '0,0,0': {
+        name: 'The Updraft',
+        // Two drops and one pillar between them: the coin to the pillar, a
+        // turn of the tide; recall it, the coin to the far ledge, another.
+        map: [
+          '###############',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOO.OOO....',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '###.###########',
+        ],
+        entities: [
+          ['keese', 6, 2],
+          ['keese', 8, 8],
+        ],
+        coinRoom: [
+          { from: [3, 5], dir: 'right', lands: [7, 5], levels: [0, 1, 2] },
+          { from: [7, 5], dir: 'right', lands: [11, 5], levels: [0, 1, 2] },
+        ],
+      },
+      '0,1,0': {
+        name: "The Gustharpy's Roost",
+        // The miniboss. Its downdraught shoves you, and the shove is only as
+        // strong as the sea under it (src/data/bosses.js): at LOW it has none.
+        map: [
+          '###############',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['gustharpy', 7, 4],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'eyrie_harpy',
+          reward: {
+            spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
+            say: 'The wind drops. A feather of light settles on the floor.',
+          },
+        },
+      },
+    },
+  });
 }

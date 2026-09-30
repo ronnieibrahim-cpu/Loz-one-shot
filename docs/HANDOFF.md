@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **(S160) A boss nobody had placed was unhittable.** The Gustharpy set
+  `e.z = 8` in `init` and declared no `z` in its spec, so `enemyHurtRect` read
+  it as eight pixels into a JUMP — at or over ENEMY_CONTACT_Z — and returned no
+  box: no sword could touch it, and god mode swung at it for 14000 frames. A
+  hoverer says `z:` in its spec. The same pass found the Ferryman's Coin landing
+  at half its own `COIN_SETTLE_FRAMES`, because it borrowed the bomb's arc.
+  Anything never placed in a room is untested, however long it has existed.
+
 - **(S160) A death asked the room it happened in whether it had been won.**
   `respawn` resets the sea before it enters the respawn room, a tide change is
   a room event, and the room event ran `checkPuzzle` on the DEAD room with its

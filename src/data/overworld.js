@@ -646,13 +646,18 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '##########',
-      '#155551Gg#',
+      '#15##C#Gg#',
       '115o..o.g#',
       '555.....g#',
       'g1.o..o.g#',
       'ggGGGGGGg#',
       '#gggggggg#',
       '###gggg###',
+    ],
+    // THE GULLWIND EYRIE (S160), an optional dungeon: the Ferryman's Coin's.
+    // Its mouth is cut in the north cliff. See src/data/dungeons-optional.js.
+    warps: [
+      { x: 5, y: 1, to: { map: 'eyrie', floor: 0, rx: 1, ry: 2, px: 112, py: 128, dir: 'up' } },
     ],
     entities: [
       ['beetle', 4, 3],

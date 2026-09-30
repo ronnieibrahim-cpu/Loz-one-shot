@@ -1361,6 +1361,13 @@ export function installBosses() {
     w: 24, h: 24, hb: { x: 3, y: 6, w: 18, h: 15 },
     frames: ['mini_gustharpy_0', 'mini_gustharpy_1'],
     intro: 40, terrain: 'air', drops: 'rich',
+    // A HOVERER, SAID SO (S160): `z` is how high it is drawn, and it is what
+    // `enemyHurtRect` lifts the box by. Set only in `init`, the eight pixels
+    // read as a jump — at or over ENEMY_CONTACT_Z, which the cartridge treats
+    // as out of reach — and no sword could touch it. Nothing noticed because
+    // no room had ever placed it; the Gullwind Eyrie's robot swung at it for
+    // fourteen thousand frames in god mode.
+    z: 8,
     init(e) { miniInit(e); e.z = 8; e.shadow = true; },
     onDie: miniDie,
     phases: [

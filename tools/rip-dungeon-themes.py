@@ -567,6 +567,11 @@ PICKS = [
     meta('nArchC1', 0xe6, 'entrance pillar, west, Snake\'s Remains', 'snakes'),
     meta('nArchC2', 0x00, 'the lit way out, Snake\'s Remains', 'snakes'),
     meta('nArchC3', 0xe6, 'entrance pillar, east, Snake\'s Remains', 'snakes'),
+    # Snake's Remains' chasm: the black of a drop, and the same with the lip
+    # of the floor above it (the room layouts put $f5 wherever floor is north
+    # of the drop and $f4 everywhere else; room $527 is the plainest).
+    meta('nPit', 0xf4, 'the black of a chasm, Snake\'s Remains', 'snakes'),
+    meta('nPitN', 0xf5, 'a chasm with the floor\'s lip along its top, Snake\'s Remains', 'snakes'),
     #
     # THE SUNKEN PALACE wears Unicorn's Cave: red rock round a lavender floor,
     # and the one Seasons dungeon built round standing water.

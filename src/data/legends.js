@@ -358,6 +358,9 @@ export function installLegends() {
   // `channel`, which no indoor room places, so repointing it moves nothing
   // outside this dungeon (the Shrine's and the Spire's argument).
   registerLegend('dungeonSalt', { '&': 'dTangleSalt', '5': 'dKelpSalt' }, 'dungeonSalt');
+  // The Eyrie's chasm `O` is Snake's Remains' own black drop, and its `9` is a
+  // wall of its own stone that the sea covers only at HIGH (`dDrownEyrie`).
+  registerLegend('dungeonEyrie', { 'O': 'dPitEyrie', '9': 'dDrownEyrie' }, 'dungeonEyrie');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in
   // the shared vocabulary is already spoken for. `6` is `dRaceE`, one of the

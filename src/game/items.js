@@ -846,7 +846,16 @@ export class FerrymanCoin extends Entity {
       this.vx = dx * COIN_THROW_SPEED;
       this.vy = dy * COIN_THROW_SPEED;
       this.z = 10;
-      this.vz = THROW_ARC_RISE;
+      // THE ARC LASTS THE FLIGHT (S160). COIN_SETTLE_FRAMES says how long the
+      // coin is in the air, and it used to borrow the bomb's arc
+      // (THROW_ARC_RISE), which brings anything thrown from ten pixels up back
+      // down in thirteen frames — so every coin landed at half its own flight,
+      // two and a bit tiles out, which is a gap Link can hop anyway. The rise
+      // is solved from the flight instead: on this gravity, the coin touches
+      // down on the frame it settles, four tiles out, and a chasm too wide to
+      // hop is one it can cross.
+      const n = COIN_SETTLE_FRAMES;
+      this.vz = Math.ceil((THROW_ARC_GRAVITY * n * (n - 1) / 2 - this.fz) / n);
     }
   }
 

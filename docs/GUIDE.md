@@ -4,7 +4,7 @@ A full, spoiler-inclusive walkthrough of *The Legend of Zelda: Oracle of Tides*,
 written in the style of a printed game guide: a straight line from the title
 screen to the Drowned King, with every dungeon walked room by room, every boss
 given a pattern-by-pattern strategy, and every optional thing in the world —
-25 Heart Pieces, 6 Heart Containers, the eleven-link Coastwise Chain, the four
+26 Heart Pieces, 6 Heart Containers, the eleven-link Coastwise Chain, the four
 caves, the charm cases, the two extra sword tiers — listed where you will
 actually pass it, and again in a checklist at the back.
 
@@ -18,7 +18,7 @@ guide can be cross-checked against the source with those keys, and
 `node tools/check-guide.mjs` proves every one of them resolves.
 
 **On a phone?** `docs/GUIDE.html` is the same guide built for a small screen —
-sticky chapter bar, a contents drawer, and tickable checklists for the 25 Heart
+sticky chapter bar, a contents drawer, and tickable checklists for the 26 Heart
 Pieces, the Coastwise Chain and the hand-placed charms that remember what you
 have collected. Open it from a `file://` URL or publish it; it needs no server.
 
@@ -57,7 +57,7 @@ layouts, item locations, puzzle solutions and boss patterns in full.
 18. [Mopping up: the Abyssal approach](#18-mopping-up-the-abyssal-approach)
 
 **Part III — 100% completion**
-- [All 25 Heart Pieces](#all-25-heart-pieces)
+- [All 26 Heart Pieces](#all-26-heart-pieces)
 - [The Coastwise Chain](#the-coastwise-chain)
 - [Every item, and where it is](#every-item-and-where-it-is)
 - [Charms and the scrimshander](#charms-and-the-scrimshander)
@@ -135,7 +135,7 @@ heart. The damage ladder is fixed and every enemy sits on a rung of it:
 | Miniboss (8) | ¾ heart | 4 hits |
 | Boss (8) | 1 heart | 3 hits |
 
-There are **25 Heart Pieces** in the world, four to a container, and **six Heart
+There are **26 Heart Pieces** in the world, four to a container, and **six Heart
 Containers** — one per dungeon boss. Collect everything and you finish on **15
 hearts**.
 
@@ -1446,6 +1446,21 @@ conch, but the coin is somewhere else in the meantime, and so is your escape
 route. Its real use is getting the coin somewhere you cannot walk to and then
 changing the tide.
 
+**The Gullwind Eyrie (optional).** With the coin in hand, go to Kell Corner
+(`overworld/0,3,2`) on the Cliffs of Kell: a cave mouth is cut in its north
+cliff at (5,1). Six rooms in Seasons' Snake's Remains stone, cut by drops too
+wide to hop. Throw the coin over (it flies about four tiles, over a drop or
+deep water but not a wall) and sound the conch: on the turn of the tide you
+and the coin trade places. **After a swap the coin lies where you stood** —
+which is how the Key Ledge's island gets you home (sound the conch again), and
+why you recall it (press the coin again) before the next throw. The conch only
+ever turns the sea LOW → MID → HIGH → LOW, so you always land one sea after you
+threw. The **High Water Wall** (`eyrie/0,0,1`) is the Eyrie's own stone until
+**HIGH** covers it: throw at HIGH, over the wall and the drop behind it, then
+sound the sea round to **LOW**. Recall the coin before the Gustharpy's Roost:
+a coin left lying elsewhere would swap you out of the fight on the next tide
+change. The `gustharpy` guards **Heart Piece 26**.
+
 ## 15. The Maku Tree opens the road
 
 Go back to `houseMaku/0,0,0` holding **five Essences**. The `makuMaster` scene
@@ -1792,7 +1807,7 @@ And the remaining buried rupee caches, all of them Dredge Line work:
 
 # Part III — 100% completion
 
-## All 25 Heart Pieces
+## All 26 Heart Pieces
 
 Four to a container; six containers from the six bosses; three hearts to start.
 **24 pieces + 6 containers + 3 = 15 hearts.**
@@ -1870,6 +1885,12 @@ Numbered in the order this walkthrough passes them.
     of the stair, carry it down lit, and throw it at **LOW** over the sumps to
     the braziers and into the dry kelp. Beat the `saltwraith` (fight it at
     **HIGH**, where the brine thins its bolts) and the piece drops.
+26. **Heart Piece 26** — `eyrie/0,1,0`, the Gustharpy's Roost, in **the
+    Gullwind Eyrie**, an optional dungeon whose mouth is in the north cliff of
+    Kell Corner (`overworld/0,3,2`, tile (5,1)). Needs the **Ferryman's Coin**:
+    every drop in it is crossed by throwing the coin over and sounding the
+    conch. Beat the `gustharpy` (at **LOW** its downdraught has nothing to push
+    with) and the piece drops.
 
 **Heart Containers**, one from each boss: `gohmaraq` in `d1/0,3,1`, `anemos` in
 `d2/1,3,1`, `gloomtide` in `d3/0,3,1`, `wyverna` in `d4/0,3,1`, `rootmaw` in

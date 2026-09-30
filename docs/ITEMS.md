@@ -324,6 +324,14 @@ meantime and so is your escape route.
 | Combat | An escape from a corner, or a boss room re-entry, spent at the cost of the tide state you wanted |
 | Puzzle | Get the coin somewhere you cannot walk to, then change the tide |
 
+**It flies four tiles (S160).** `COIN_SETTLE_FRAMES` always said how long the
+coin is in the air; it borrowed the bomb's arc and came down in half that, two
+tiles out — a gap Link can hop anyway. The arc is now solved from the flight,
+so it clears a drop too wide to hop. It crosses what a flier crosses (a drop,
+deep water) and stops at a wall. After a swap it lies where Link stood, so the
+next turn of the tide swaps him back — unless he recalls it. The Gullwind
+Eyrie is built on all of that (`tools/check-coin.mjs`).
+
 ### 9. Chartstone — replaces the Compass
 
 One per dungeon. Marks which rooms **change** at which tide level — information

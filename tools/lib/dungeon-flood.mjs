@@ -20,10 +20,14 @@
 import { MAPS, getRoom } from '../../src/world/maps.js';
 import { cellTiles } from '../../src/world/room.js';
 import { F, transformFor } from '../../src/world/tileset.js';
-import { DREDGE_RANGE } from '../../src/data/feel.js';
+import { DREDGE_RANGE, COIN_THROW_SPEED, COIN_SETTLE_FRAMES } from '../../src/data/feel.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
 
 const DREDGE_TILES = Math.floor(DREDGE_RANGE / 16);
+// Where a thrown Ferryman's Coin comes down: its flight (speed x settle
+// frames, in 8.8 subpixels) plus the six pixels it leaves the hand ahead of
+// Link (`coin.use` in src/game/items.js), in whole tiles.
+const COIN_TILES = Math.round((COIN_THROW_SPEED * COIN_SETTLE_FRAMES / 256 + 6) / 16);
 
 // A room declares one sill or a list of them; normalise before reading.
 function sillsOf(def) {
@@ -129,6 +133,19 @@ export function floodDungeon(mapId) {
   // player to it, crossing a chasm wider than a hop. On from the dungeon that
   // hands the line over, off before it — the same rule as the Cleats above.
   const canDredge = (m.dungeon.index | 0) >= DREDGE_INDEX;
+
+  // THE FERRYMAN'S COIN IS TRAVERSAL (S160), in a dungeon that says it is
+  // built on it (`dungeon.coin`): thrown, it flies COIN_TILES over anything a
+  // flier crosses — a chasm, deep water — and stops at a wall; on the next
+  // tide change Link and the coin trade places. So a cell four tiles along a
+  // clear line is reachable if, at some sea L, nothing on the line is solid,
+  // the landing is somewhere the coin can rest (standable at L) and somewhere
+  // Link can stand when he arrives, one conch step later ((L + 1) % 3). The
+  // main dungeons do not declare it: the coin comes at three Essences, and
+  // whether it breaks D4-D6 open is a question this flood does not ask of
+  // them. tools/check-coin.mjs proves each crossing in the engine.
+  const canCoin = !!m.dungeon.coin;
+  const flierBlocked = (room, x, y, t) => !!(room.flagsAt(x, y, t) & F.SOLID);
   const snagAt = (room, x, y) => [0, 1, 2].some(t => room.flagsAt(x, y, t) & F.SNAG);
   const castStops = (room, x, y) => [0, 1, 2].every(t => room.flagsAt(x, y, t) & (F.SOLID | F.VOID));
 
@@ -235,6 +252,17 @@ export function floodDungeon(mapId) {
       if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy); }
       const D = dims.get(rk);
       const W = D.W, H = D.H;
+      if (canCoin) {
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const lx = x + dx * COIN_TILES, ly = y + dy * COIN_TILES;
+          if (lx < 0 || ly < 0 || lx >= W || ly >= H) continue;
+          for (const t of [0, 1, 2]) {
+            let clear = true;
+            for (let n = 1; n < COIN_TILES && clear; n++) if (flierBlocked(room, x + dx * n, y + dy * n, t)) clear = false;
+            if (clear && walkableAt(room, lx, ly, t) && walkableAt(room, lx, ly, (t + 1) % 3)) { push(rk, lx, ly); break; }
+          }
+        }
+      }
       if (canDredge) {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           for (let n = 1; n <= DREDGE_TILES; n++) {
