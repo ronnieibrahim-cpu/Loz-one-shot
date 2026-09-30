@@ -7,10 +7,9 @@
 - `docs/DUNGEON-STATUS.md`, section "The optional dungeons (S159 plan)".
 
 ## State
-- Main is at 8bb1e34. Branch claude/oracle-tides-optional-content-sokhsn
-  (off S158's claude/oracle-tides-countryside-y6ejle) holds S158 (new
-  opening, get-item fix, town themes) and S159 (boss art, picture guide).
-  NEITHER is on main: ask the human before moving it.
+- MAIN is at the end of S159 (the human said merge everything): the S158
+  opening, get-item fix and town themes, and S159's boss art and picture
+  guide are all on main. Branch from main.
 - check-playthrough 44/44, THE END, never died. `test.mjs` fails only its
   frame-rate check in the cloud sandbox (fps 18-25), and it failed the same
   way on the untouched base commit: that is the machine, not the game.

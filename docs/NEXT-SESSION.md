@@ -1,8 +1,9 @@
 ## S159 — boss art from both cartridges; the picture guide merged; the optional-dungeon plan approved
 
 Branch claude/oracle-tides-optional-content-sokhsn (off S158's
-claude/oracle-tides-countryside-y6ejle at 8d6dfb9). Main is still at 8bb1e34:
-S158 and S159 are NOT on main until the human says so.
+claude/oracle-tides-countryside-y6ejle at 8d6dfb9). At the end of the session
+the human said to merge everything: main was fast-forwarded to 6866379, so
+S158 and S159 are both ON MAIN.
 
 ### The human's decisions (bind the next session)
 1. OPTIONAL CONTENT: plan APPROVED ("Yes, build it"): two small side dungeons
