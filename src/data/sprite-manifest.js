@@ -184,6 +184,9 @@ const SEASONS_BOSS_CANVAS = {
   boss_brinehulk: [48, 48],  // a salt golem with Seasons' boulders for fists
   boss_nereth: [43, 48],     // General Onox crowned and drowned
   boss_gloomtide: [48, 45],  // Digdogger turned to muck (drawn over, sprites-bosses.js)
+  boss_thalassor: [24, 56],  // Syger's face on Gleeok's neck out of Omuai's spiral, an Ages lure (S159)
+  mini_gustharpy: [32, 28],  // Ages' Swoop in Mothula's teal, Vire's face (S159)
+  mini_saltwraith: [32, 43], // Ages' Giant Ghini gone pale, Frypolar's cold flame (S159)
 };
 
 /** Expected pixel size for a sprite name, used by the validator. */

@@ -25,3 +25,17 @@ proves the rip reproduces byte for byte.
 
 Which of our bosses is built from which Seasons boss is the `BOSSES` table in
 `tools/rip-bosses.py`; the look is Seasons', what the boss does is ours.
+
+## Ages (S159)
+
+`../oracles-disasm-ages/` holds the same kind of files from Oracle of **Ages**,
+copied verbatim from the same oracles-disasm commit (7584d87): `data/ages/`'s
+`enemyData.s`, `enemyAnimations.s`, `enemyOamData.s`, `objectGfxHeaders.s`,
+`paletteData.s`, `paletteHeaders.s`, and from `gfx_compressible/ages/` only
+the sheets a boss actually draws from (`spr_swoop`, `spr_giantghini_1`,
+`spr_anglerfish`). The human asked for Ages' creatures to be blended in with
+Seasons' for Thalassor, Gustharpy and the Saltwraith; `tools/rip-bosses.py`
+reads a part from Ages' tables when its source says `game='ages'`, and may
+colour it with the other cartridge's palettes (`palgame`). Same credit and the
+same fan-work note: the artwork is Nintendo's and Capcom's; the disassembly is
+the oracles-disasm project's.

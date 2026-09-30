@@ -13,6 +13,10 @@ colours (paletteData.s, standardSpritePaletteData). Credit: the
 oracles-disasm project and its contributors, who took the cartridge apart;
 the artwork is Nintendo's and Capcom's. Fan-work use only.
 
+Since S159 it also reads Oracle of Ages from assets/bosses/oracles-disasm-ages/
+(the same commit's data/ages/ tables and the few gfx sheets used), for the
+three bosses the human asked to be blends of both cartridges' creatures.
+
 WHY THIS AND NOT A SHEET. No sheet in assets/sheets/ carries a boss. The
 cartridge carries all of them, and a boss on the cartridge is not a picture:
 it is a list of 8x16 hardware sprites, each placed at an offset from the
@@ -51,6 +55,7 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets', 'bosses', 'oracles-disasm')
+SRC_AGES = os.path.join(ROOT, 'assets', 'bosses', 'oracles-disasm-ages')
 OUT = os.path.join(ROOT, 'src', 'data', 'sprites-bosses-seasons.js')
 
 # ---------------------------------------------------------------------------
@@ -75,6 +80,32 @@ BLOCK = (7, -1)
 MEDUSA = dict(enemy=0x7f, gfx=0xba, b3=0x00, palh=0x88)  # enemyData.s 0x7f: $ba / $00
 # Manhandla's stalk (enemy7dSubidData, subid 1: $60) worn in Medusa's colours.
 STALK = dict(enemy=0x7d, gfx=0xb6, b3=0x60, palh=0x88)
+
+# S159: the three bosses the six-dungeon fold left without a room, given one
+# each in the optional dungeons, and built — at the human's asking — as BLENDS
+# of Seasons and Ages creatures. Ages' parts are read out of Ages' own tables
+# (`game='ages'`, assets/bosses/oracles-disasm-ages/); a part may wear the
+# other cartridge's colours (`palgame`).
+SYGER_SEA = dict(enemy=0x74, gfx=0x9b, b3=0x60, palh=0x88)   # Syger $74, in Medusa's sea-green
+NECK_SEA = dict(enemy=0x06, gfx=0xb8, b3=0x60, palh=0x88)    # Gleeok $06's neck, the same
+SPIRAL = dict(enemy=0x72, gfx=0x96, b3=0x10)                 # Omuai $72's spiral, palette 1
+LURE = dict(game='ages', enemy=0x76, gfx=0xb8, b3=0x10)      # Ages' Angler Fish $76, its lure
+# Ages' Swoop $71 in Mothula's teal (Seasons palette header $82).
+SWOOP_TEAL = dict(game='ages', palgame='seasons', enemy=0x71, gfx=0xaf, b3=0x60, palh=0x82)
+VIRE = dict(enemy=0x75, gfx=0x30, b3=0x20)                   # Vire $75, palette 2
+# Ages' Giant Ghini $70 in the pale lilac of Ages' palette header $c7.
+GHINI_PALE = dict(game='ages', enemy=0x70, gfx=0xad, b3=0x60, palh=0xc7)
+FLAME_ICE = dict(enemy=0x77, gfx=0xa0, b3=0x40)              # Frypolar $77's flame, palette 4
+
+
+def eel(face, spiral, lift=0):
+    """Syger's face (its top row) on three joints of Gleeok's neck, rising out
+    of Omuai's whirlpool, with the Angler Fish's lure hung over its brow."""
+    # Everything sits 8 px low so the boss's position — the centre of its
+    # hitbox — falls on the head and upper neck, not the water.
+    return [(SPIRAL, spiral, 0, 22), (NECK_SEA, 2, 1, 13), (NECK_SEA, 2, 0, 6),
+            (SYGER_SEA, face, 0, 5 - lift, (0,)), (LURE, 12, 0, -16 - lift)]
+
 
 BOSSES = {
     'gohmaraq': dict(
@@ -115,123 +146,171 @@ BOSSES = {
             'boss_anemos_hurt': [(MEDUSA, 7, 0, -6, (248,)), (STALK, 0, 0, -4)],
         },
     ),
+    # Thalassor, the eel. Its whirlpool is the one the fight drags you into.
+    'thalassor': dict(
+        source="Syger's face (ENEMY_SYGER $74, Seasons D5) on Gleeok's neck "
+               "(ENEMY_GLEEOK $06, Seasons D7), rising out of Omuai's spiral "
+               "(ENEMY_OMUAI $72, Seasons D2), with the lure of Ages' Angler "
+               "Fish (ENEMY_ANGLER_FISH $76, Ages D7)",
+        canvas=(24, 56), origin=(12, 27),
+        frames={
+            'boss_thalassor_0': eel(0, 0),
+            'boss_thalassor_1': eel(1, 1),
+            'boss_thalassor_2': eel(1, 0),
+            'boss_thalassor_hurt': eel(0, 1, lift=3),
+        },
+    ),
+    # Gustharpy: Ages' Swoop, wing-beat and all, wearing Vire's horned face.
+    'gustharpy': dict(
+        source="Ages' Swoop (ENEMY_SWOOP $71, Ages D2) in Mothula's teal "
+               "(Seasons palette header $82), with Vire's face (ENEMY_VIRE $75)",
+        canvas=(32, 28), origin=(16, 19),
+        frames={
+            'mini_gustharpy_0': [(SWOOP_TEAL, 0, 0, -4), (VIRE, 0, 0, -6, None, (4,))],
+            'mini_gustharpy_1': [(SWOOP_TEAL, 1, 0, -4), (VIRE, 0, 0, -6, None, (4,))],
+        },
+    ),
+    # The Saltwraith: Ages' Giant Ghini gone pale, Frypolar's flame burning
+    # cold off the top of it.
+    'saltwraith': dict(
+        source="Ages' Giant Ghini (ENEMY_GIANT_GHINI $70, Ages D1) in Ages' "
+               "palette header $c7, crowned with Frypolar's flame "
+               "(ENEMY_FRYPOLAR $77, Seasons D8) in palette 4",
+        canvas=(32, 43), origin=(16, 27),
+        frames={
+            'mini_saltwraith_0': [(GHINI_PALE, 0, 0, 0), (FLAME_ICE, 0, 0, -10, (255,))],
+            'mini_saltwraith_1': [(GHINI_PALE, 1, 0, 0), (FLAME_ICE, 1, 0, -10, (255,))],
+        },
+    ),
 }
 
 
 # ---------------------------------------------------------------------------
 # Reading the disassembly
 # ---------------------------------------------------------------------------
-def read(name):
-    with open(os.path.join(SRC, name)) as f:
-        return f.read().split('\n')
+class Cart:
+    """One cartridge's disassembly: its tables, its graphics and its colours.
 
-
-def labels(name):
-    """label -> list of ('db', [bytes]) / ('dw', label) / ('loop', label)."""
-    out, cur = {}, None
-    for line in read(name):
-        line = line.split(';')[0].rstrip()
-        m = re.match(r'^(\w+):', line)
-        if m:
-            cur = m.group(1)
-            out[cur] = []
-            continue
-        if cur is None:
-            continue
-        s = line.strip()
-        if s.startswith('.db'):
-            out[cur].append(('db', [int(x[1:], 16) for x in s[3:].split()]))
-        elif s.startswith('.dw'):
-            out[cur].append(('dw', s[3:].strip()))
-    return out
-
-
-ANIM = labels('enemyAnimations.s')
-OAM = labels('enemyOamData.s')
-
-GFX = {}
-for line in read('objectGfxHeaders.s'):
-    m = re.search(r'/\* \$(\w+) \*/ m_ObjectGfxHeader (\w+)(, 1)?', line)
-    if m:
-        GFX[int(m.group(1), 16)] = (m.group(2), bool(m.group(3)))
-
-
-def gfx_chain(index):
-    """The graphics a header loads: it and the ones after it, up to the ', 1'."""
-    files = []
-    while True:
-        name, last = GFX[index]
-        files.append(name)
-        index += 1
-        if last:
-            return files
-
-
-def palette_data(label, count):
-    """`count` palettes of four colours from paletteData.s, starting at `label`."""
-    lines = read('paletteData.s')
-    start = lines.index(label + ':') + 1
-    pals, cur = [], []
-    for line in lines[start:]:
-        m = re.search(r'm_RGB16 \$(\w+) \$(\w+) \$(\w+)', line)
-        if not m:
-            continue
-        cur.append('#' + ''.join('%02x' % round(int(m.group(k), 16) * 255 / 31)
-                                 for k in (1, 2, 3)))
-        if len(cur) == 4:
-            pals.append(cur)
-            cur = []
-        if len(pals) == count:
-            return pals
-
-
-def boss_palettes(palh):
-    """The eight sprite palettes in a boss fight.
-
-    Sprite palettes 0-5 are standardSpritePaletteData, loaded once and never
-    replaced; 6 and 7 belong to whoever loaded them last. A boss loads its own
-    through enemyBoss_initializeRoom with a palette header (`ld b,PALH_...`
-    in its object_code file), which paletteHeaders.s spells out.
+    Seasons is the default; a part whose source says `game='ages'` is read out
+    of Ages' own tables instead (S159: the human asked for Ages' creatures in
+    the blends too). Both were copied from the same oracles-disasm commit.
     """
-    pals = palette_data('standardSpritePaletteData', 6) + [None, None]
-    if palh is None:
+
+    def __init__(self, src):
+        self.src = src
+        self.anim = self.labels('enemyAnimations.s')
+        self.oam = self.labels('enemyOamData.s')
+        self.gfx = {}
+        for line in self.read('objectGfxHeaders.s'):
+            m = re.search(r'/\* \$(\w+) \*/ m_ObjectGfxHeader (\w+)(, 1)?', line)
+            if m:
+                self.gfx[int(m.group(1), 16)] = (m.group(2), bool(m.group(3)))
+        self._vram = {}
+
+    def read(self, name):
+        with open(os.path.join(self.src, name)) as f:
+            return f.read().split('\n')
+
+    def labels(self, name):
+        """label -> list of ('db', [bytes]) / ('dw', label) / ('loop', label)."""
+        out, cur = {}, None
+        for line in self.read(name):
+            line = line.split(';')[0].rstrip()
+            m = re.match(r'^(\w+):', line)
+            if m:
+                cur = m.group(1)
+                out[cur] = []
+                continue
+            if cur is None:
+                continue
+            s = line.strip()
+            if s.startswith('.db'):
+                out[cur].append(('db', [int(x[1:], 16) for x in s[3:].split()]))
+            elif s.startswith('.dw'):
+                out[cur].append(('dw', s[3:].strip()))
+        return out
+
+    def gfx_chain(self, index):
+        """The graphics a header loads: it and the ones after it, up to the ', 1'."""
+        files = []
+        while True:
+            name, last = self.gfx[index]
+            files.append(name)
+            index += 1
+            if last:
+                return files
+
+    def palette_data(self, label, count):
+        """`count` palettes of four colours from paletteData.s, starting at `label`."""
+        lines = self.read('paletteData.s')
+        start = lines.index(label + ':') + 1
+        pals, cur = [], []
+        for line in lines[start:]:
+            m = re.search(r'm_RGB16 \$(\w+) \$(\w+) \$(\w+)', line)
+            if not m:
+                continue
+            cur.append('#' + ''.join('%02x' % round(int(m.group(k), 16) * 255 / 31)
+                                     for k in (1, 2, 3)))
+            if len(cur) == 4:
+                pals.append(cur)
+                cur = []
+            if len(pals) == count:
+                return pals
+
+    def boss_palettes(self, palh):
+        """The eight sprite palettes in a boss fight.
+
+        Sprite palettes 0-5 are standardSpritePaletteData, loaded once and never
+        replaced; 6 and 7 belong to whoever loaded them last. A boss loads its own
+        through enemyBoss_initializeRoom with a palette header (`ld b,PALH_...`
+        in its object_code file), which paletteHeaders.s spells out.
+        """
+        pals = self.palette_data('standardSpritePaletteData', 6) + [None, None]
+        if palh is None:
+            return pals
+        lines = self.read('paletteHeaders.s')
+        at = next(i for i, l in enumerate(lines)
+                  if re.match(r'm_PaletteHeaderStart \$%02x,' % palh, l))
+        for line in lines[at + 1:]:
+            if 'm_PaletteHeaderEnd' in line:
+                break
+            m = re.search(r'm_PaletteHeaderSpr (\d+), (\d+), (\w+)', line)
+            if m:
+                first, n = int(m.group(1)), int(m.group(2))
+                pals[first:first + n] = self.palette_data(m.group(3), n)
         return pals
-    lines = read('paletteHeaders.s')
-    at = next(i for i, l in enumerate(lines)
-              if re.match(r'm_PaletteHeaderStart \$%02x,' % palh, l))
-    for line in lines[at + 1:]:
-        if 'm_PaletteHeaderEnd' in line:
-            break
-        m = re.search(r'm_PaletteHeaderSpr (\d+), (\d+), (\w+)', line)
-        if m:
-            first, n = int(m.group(1)), int(m.group(2))
-            pals[first:first + n] = palette_data(m.group(3), n)
-    return pals
 
-_vram = {}
+    def vram(self, index):
+        """The files a header loads, opened only when a tile is read from one.
+
+        Vire's header ($30) is the common one that loads a hundred files; only
+        the few a boss actually draws from are copied into assets/.
+        """
+        return [(self, f) for f in self.gfx_chain(index)]
+
+    def sheet(self, f):
+        if f not in self._vram:
+            self._vram[f] = Image.open(os.path.join(self.src, 'gfx', f + '.png'))
+        return self._vram[f]
+
+    def oam_entries(self, enemy, index):
+        ptrs = [d for k, d in self.anim['enemy%02xOamDataPointers' % enemy]]
+        rows = self.oam[ptrs[index]]
+        n = rows[0][1][0]
+        flat = sum((r[1] for r in rows[1:]), [])
+        assert len(flat) >= n * 4, (enemy, index)
+        return [flat[i * 4:i * 4 + 4] for i in range(n)]
 
 
-def vram(index):
-    if index not in _vram:
-        _vram[index] = [Image.open(os.path.join(SRC, 'gfx', f + '.png'))
-                        for f in gfx_chain(index)]
-    return _vram[index]
+CARTS = {'seasons': Cart(SRC), 'ages': Cart(SRC_AGES)}
 
 
 def sprite_tile(ims, t):
     """8x16 sprite `t` (an even tile number): each 128x16 file holds 32 tiles."""
-    im = ims[t // 32]
+    cart, f = ims[t // 32]
+    im = cart.sheet(f)
     c = (t % 32) // 2
     return im.crop((c * 8, 0, c * 8 + 8, 16))
-
-
-def oam_entries(enemy, index):
-    ptrs = [d for k, d in ANIM['enemy%02xOamDataPointers' % enemy]]
-    rows = OAM[ptrs[index]]
-    n = rows[0][1][0]
-    flat = sum((r[1] for r in rows[1:]), [])
-    assert len(flat) >= n * 4, (enemy, index)
-    return [flat[i * 4:i * 4 + 4] for i in range(n)]
 
 
 def signed(v):
@@ -239,21 +318,28 @@ def signed(v):
 
 
 def draw_part(canvas, part, ox, oy):
-    """Draw one object frame onto `canvas`: (x,y) -> ((palette header, palette), index).
+    """Draw one object frame onto `canvas`: (x,y) -> ((cart, palette header, palette), index).
 
-    A part is (source, oam frame, dx, dy) or (source, oam frame, dx, dy, rows):
-    `rows` keeps only the hardware sprites whose oam y is listed — one row of
-    8x16 sprites out of a frame, so a boss can wear one Seasons creature's
-    crown on another's body.
+    A part is (source, oam frame, dx, dy[, rows[, cols]]): `rows` keeps only
+    the hardware sprites whose oam y is listed and `cols` only those whose
+    oam x is — one row or column of 8x16 sprites out of a frame, so a boss can
+    wear one creature's crown, wings or face on another's body. Either may be
+    None. A source reads its graphics from `game` (default Seasons) and its
+    colours from `palgame` (default: the same cartridge).
     """
     src, index, dx, dy = part[:4]
     rows = part[4] if len(part) > 4 else None
-    ims = vram(src['gfx'])
+    cols = part[5] if len(part) > 5 else None
+    cart = CARTS[src.get('game', 'seasons')]
+    palgame = src.get('palgame', src.get('game', 'seasons'))
+    ims = cart.vram(src['gfx'])
     oam_flags = src['b3'] >> 4
     base = (src['b3'] & 0x0f) * 2
     # Earlier hardware sprites are in front: paint back to front.
-    for y, x, t, f in reversed(oam_entries(src['enemy'], index)):
+    for y, x, t, f in reversed(cart.oam_entries(src['enemy'], index)):
         if rows is not None and y not in rows:
+            continue
+        if cols is not None and x not in cols:
             continue
         flags = oam_flags ^ f
         tile = sprite_tile(ims, (base + t) & 0xff)
@@ -267,7 +353,7 @@ def draw_part(canvas, part, ox, oy):
             for xx in range(8):
                 v = tile.getpixel((xx, yy))
                 if v:
-                    canvas[(left + xx, top + yy)] = ((src.get('palh'), flags & 7), v)
+                    canvas[(left + xx, top + yy)] = ((palgame, src.get('palh'), flags & 7), v)
 
 
 # GB colour index -> art index. The cartridge's sprite palettes run
@@ -287,7 +373,7 @@ def build():
             for (x, y) in canvas:
                 if not (0 <= x < cw and 0 <= y < ch):
                     sys.exit(f'{name}: pixel at {x},{y} falls outside its {cw}x{ch} canvas')
-            used = sorted({p for p, v in canvas.values()}, key=lambda k: (k[0] or 0, k[1]))
+            used = sorted({p for p, v in canvas.values()}, key=lambda k: (k[0] != 'seasons', k[1] or 0, k[2]))
             layers = []
             for i, pal in enumerate(used):
                 layer = name if i == 0 else f'{name}@{i}'
@@ -299,8 +385,8 @@ def build():
                         row += TO_ART[c[1]] if c and c[0] == pal else '.'
                     rows.append(row)
                 art[layer] = rows
-                p = boss_palettes(pal[0])[pal[1]]
-                assert p, f'{name}: palette {pal[1]} is never loaded by header {pal[0]}'
+                p = CARTS[pal[0]].boss_palettes(pal[1])[pal[2]]
+                assert p, f'{name}: palette {pal[2]} is never loaded by header {pal[1]}'
                 # light, mid, (mid), black — the '2' slot is never written.
                 pals[layer] = [p[3], p[2], p[2], p[1]]
                 layers.append(layer)
@@ -312,7 +398,8 @@ HEADER = '''// Boss frames assembled from Oracle of Seasons' own boss graphics.
 //
 // Generated by tools/rip-bosses.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
-// commit 7584d87), assets/bosses/oracles-disasm/: the cartridge's boss
+// commit 7584d87), assets/bosses/oracles-disasm/ (Seasons) and
+// assets/bosses/oracles-disasm-ages/ (Ages): the cartridges' boss
 // sprite graphics, frame layouts and palettes. Credit: the oracles-disasm
 // project and its contributors; the artwork is Nintendo's and Capcom's.
 // This is fan-work art only.
