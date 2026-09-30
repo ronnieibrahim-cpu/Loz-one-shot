@@ -28,13 +28,22 @@ beside it: `docs/NEXT-SESSION.md` S160 says how the cartridge rooms render).
 - 16-18 rooms on TWO floors, map id `palace` (OPTIONAL_PIECES in
   check-hearts already expects it, with 2 pieces), under the Palace Porch
   (`cave4`, Palace Mouth 0,15,1; its notice "The rest of it is under").
-- Kit: `dungeonPalace` legend, READY (Unicorn's Cave, extracted S160: ring,
-  doors, `(C)` exit, pot, statue, block, button).
+- ART FROM BOTH CARTRIDGES (the human, end of S160: "Can use Ages for
+  inspiration also. Not just Seasons. 2 games worth of assets."). Ages is
+  built on water — Jabu-Jabu's Belly, Mermaid's Cave, the Ancient Tomb — and
+  its sea has real whirlpools, so look there FIRST for the Palace's kit and
+  its whirlpool tile. The Ages disassembly (same commit 7584d87) has the same
+  file layout as Seasons (tileset_layouts/ages/, gfx_compressible/ages/,
+  data/ages/tilesets.s, rooms/ages/large/); S159's rip-bosses.py already reads
+  both cartridges, and rip-objects.py's `Tileset` needs only an Ages source
+  directory. Offer the human an Ages kit beside the ready Seasons one before
+  building on either.
+- Kit already extracted as a fallback: `dungeonPalace` legend (Unicorn's Cave,
+  S160: ring, doors, `(C)` exit, pot, statue, block, button).
 - Theme: WHIRLPOOLS, "the sea's height decides which floor you're on". A NEW
-  whirlpool tile (the human approved it): find Seasons' whirlpool art first
-  (TILEINDEX_WHIRLPOOL $e9 in an overworld tileset; `tools/rip-objects.py`'s
-  `Tileset` reads any Seasons tileset — fetch its files into
-  assets/objects/oracles-disasm/seasons/ as S160 did). Teach the dungeon flood
+  whirlpool tile (the human approved it): extract it — Ages' sea whirlpool
+  or Seasons' (TILEINDEX_WHIRLPOOL $e9 in an overworld tileset); fetch the
+  files into assets/ as S160 did, and credit them. Teach the dungeon flood
   (tools/lib/dungeon-flood.mjs) the whirlpool in the SAME commit, and write the
   dungeon's own prover FIRST (check-kiln / check-coin are the pattern).
 - Opens after D5. Suggested gate: a keyhole in cave4 keyed on `keyD6` (the

@@ -54,6 +54,12 @@ Whole table (47 tools, check-kiln and check-coin included) green on 640b2f1;
 check-playthrough 44/44, THE END, 0 deaths. replay 51/51 unchanged. Built;
 dist committed.
 
+### The human, at the end of S160
+"Can use Ages for inspiration also. Not just Seasons. 2 games worth of
+assets." Art for anything still to come (the Palace first) may be extracted
+from Oracle of Ages as well as Seasons. Not yet asked/answered: whether to
+merge S160 into main now or after the Palace.
+
 ### Noticed, not chased
 - The illustrated guide (docs/guide) does not list the two new pieces yet:
   regenerate it once, after the Palace.
