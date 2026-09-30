@@ -1,3 +1,62 @@
+## S159 — boss art from both cartridges; the picture guide merged; the optional-dungeon plan approved
+
+Branch claude/oracle-tides-optional-content-sokhsn (off S158's
+claude/oracle-tides-countryside-y6ejle at 8d6dfb9). Main is still at 8bb1e34:
+S158 and S159 are NOT on main until the human says so.
+
+### The human's decisions (bind the next session)
+1. OPTIONAL CONTENT: plan APPROVED ("Yes, build it"): two small side dungeons
+   and one big one. Full plan in docs/DUNGEON-STATUS.md "The optional
+   dungeons (S159 plan)" and docs/prompts/NEXT-PROMPT.md. NOT STARTED.
+2. BOSS ART: shown single-creature candidates, the human asked for "a blend
+   with unique elements" for all three, then "use Ages creatures too". Shown
+   blends (Seasons-only and with Ages); the human said "Continue" without
+   picking, so the recommended ones were built (d11ee3d). Offer to swap:
+   - Thalassor = Syger's face (Seasons $74, top row) on three joints of
+     Gleeok's neck ($06 frame 2) out of Omuai's spiral ($72), Ages' Angler
+     Fish lure ($76 frame 12) on its brow; Medusa's sea-green (palh $88).
+   - Gustharpy = Ages' Swoop ($71) in Mothula's teal (Seasons palh $82) with
+     Vire's face column ($75 frame 0, oam x 4).
+   - Saltwraith = Ages' Giant Ghini ($70) in Ages palh $c7 (pale lilac), with
+     Frypolar's flame row ($77, oam y -1) in standard palette 4.
+   The other candidates' recipes are in the scratch scripts' logic, easy to
+   rebuild: Seasons-only blends (Syger coil, Gleeok eel, Mothula+Vire, Agunima
+   robe + Frypolar face) and Ages ones (Angler body + Gleeok tail, Swoop red,
+   Ghini salt-grey palh $9d).
+3. PICTURE GUIDE: merged (3fdd6bd) and the artifact
+   https://claude.ai/artifact/NoB5f92jjjavWAoZgykKeN republished (version 3).
+
+### What landed
+- d11ee3d `tools/rip-bosses.py` reads BOTH cartridges: a `Cart` class per
+  disassembly (Seasons `assets/bosses/oracles-disasm/`, Ages
+  `assets/bosses/oracles-disasm-ages/`, same commit 7584d87); a part's source
+  may say `game='ages'` and `palgame=` for the other cartridge's colours; a
+  part may filter hardware sprites by oam x (`cols`) as well as oam y. Sheets
+  are opened lazily, so only the gfx a boss draws from are copied (Vire's
+  header $30 chains a hundred files). Existing output byte-identical before the
+  three were added. Hand-drawn thalassor/gustharpy/saltwraith frames removed
+  from sprites-bosses.js; canvases in sprite-manifest.js.
+- 3fdd6bd the guide: docs/guide + tools/guide copied from the guide branch
+  (no common history). Route indices remapped by an LCS of old vs new ROUTE
+  (48/1584 directives differ); overworld x remapped with widenOverworldX; the
+  static overworld shots read OVERWORLD_W. New chapter 2 (the S158 opening,
+  new figures ow-opening, intro-*); each road chapter names the S154 key giver;
+  hp list, Side quests table and chapter 12 carried over from the artifact
+  (they had only been edited there). Two shots whose moment moved were fixed
+  (d1-essence, d2-glass-lens: `lensHeld` is now `lensT > 0`).
+- Built, dist committed.
+
+### Verified
+Whole table green on d11ee3d; check-playthrough 44/44, THE END, 0 deaths.
+`test.mjs` fails ONLY "frame rate is healthy" (fps 18/25) — it fails
+identically with the tree stashed back to 8d6dfb9: the sandbox, not the game.
+
+### Noticed, not chased
+- The guide's leg maps widened with the world (leg2 is now 13 screens wide);
+  the trails are right, the pictures just big.
+- Farore still speaks off-screen in the Essence scenes; houses still play
+  `village` (both from S158).
+
 ## S158 — the 42 placeholder countryside screens are real
 
 Branch claude/oracle-tides-countryside-y6ejle (off S157's

@@ -54,6 +54,28 @@ played strictly in order; check-progression and check-playthrough prove it.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
+### The optional dungeons (S159 plan) — APPROVED, NOT BUILT
+
+The human chose "both smaller side dungeons AND a bigger optional dungeon",
+more fleshed out, for the three bosses the six-dungeon fold left without a room
+(the "What the fold cost" paragraph below). Plan approved in S159; the boss art
+is done (Seasons + Ages blends, `tools/rip-bosses.py`). None of the three may
+gate the main route. Each leans on a tide consequence no main dungeon states
+(the six are in docs/ITEMS.md "The six dungeon items"), using a SIDE item the
+player already owns:
+
+| Optional | Where | Rooms | Theme (item) | Boss | Prize | Status |
+|---|---|---|---|---|---|---|
+| The Salt Pan Vault, lower vault | stair down inside `cave3` (Vault Approach 0,9,1) | ~6 | fire the sea puts out (Kilnshell: deep water douses it; carry and set it through the tide) | `saltwraith` | Piece of Heart | to do |
+| The Gullwind Eyrie | NEW cave mouth in the north cliff of Kell Corner 0,3,2 | ~6 | the tide change is how you move (Ferryman's Coin: throw, sound, swap) | `gustharpy` | Piece of Heart | to do |
+| The Sunken Palace | stair down inside `cave4` (Palace Mouth 0,15,1; its notice "The rest of it is under") | 16-18, 2 floors | the sea's height decides which floor you're on (a NEW whirlpool tile) | `thalassor` | 2 Pieces of Heart + the charm "Coilbone" (any case: a moment's safety each tide change) | to do; opens after D5 |
+
+Hearts: 24 + 4 = 28 pieces -> 7 containers -> cap 16, inside P9's 14-16
+window (2 new pieces would leave a remainder; 4 is the number). Build order:
+Salt Vault, Eyrie, Palace; one commit each, whole table green. Each needs its
+own prover written first, a `check-side` proof that its prize can be won and
+is refused without its item, and pictures shown to the human.
+
 ### S104-S105 — D5 and D6 each gained one optional Lens fork
 
 Neither dungeon's completion checklist moves. The Brineglass Lens had two

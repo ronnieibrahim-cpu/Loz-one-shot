@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **(S159) A branch with no common history is copied, not merged, and its
+  route-indexed pictures move with an LCS.** The guide branch predated a
+  history rewrite; `git merge-base` finds nothing. Copy its directories, then
+  remap every `after`/`by`/trail index by a longest-common-subsequence match of
+  the old ROUTE against the new (JSON-string equality per directive): 1536 of
+  1584 matched, and each unmatched index takes its nearest earlier match plus
+  the offset. Two shots still missed; `capture.mjs` prints `MISS` for exactly
+  those, so read its log rather than the pictures to find them.
+- **(S159) `test.mjs`'s frame-rate check fails in the cloud sandbox on an
+  untouched tree** (fps 18-25). Stash and re-run before believing it is yours.
+
 - **An entity added to a room the playthrough visits re-phases every enemy
   after it (S155).** Entity ids are global and `every(e, n)` phases enemies
   off them. Side content kept the robot's world identical by (a) placing new
