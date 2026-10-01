@@ -111,6 +111,20 @@ for (const f of files) {
   }
 }
 
+// A table of sound names a call site indexes into: any `const X_SOUNDS = [...]`
+// in src/. The sword's swing picks from one (S163, the cartridge's own
+// eight-entry table), and `sfx(SWORD_SOUNDS[i])` names nothing a scan can read.
+for (const f of files) {
+  const src = await readFile(f, 'utf8');
+  const rel = relative(ROOT, f);
+  for (const m of src.matchAll(/const\s+\w+_SOUNDS\s*=\s*\[([^\]]*)\]/g)) {
+    for (const [, n] of m[1].matchAll(/'([^']*)'/g)) {
+      used.add(n);
+      if (!defined.has(n)) problems.push(`${rel}  sound table names '${n}', which is not defined in src/data/audio.js`);
+    }
+  }
+}
+
 // ------------------------------------------------------------------- 2. data
 //
 // Import the data modules and read every `sfx:` field out of the structures the
@@ -151,6 +165,34 @@ for (const rel of dataFiles) {
   }
 }
 
+// ---------------------------------------------------- 4. the cartridge's own
+//
+// A `{ seasons: name }` effect (S163) is played by gbsound.js from the ripped
+// channel scripts. `_renderSfx` returns SILENTLY if the name was never ripped
+// or carries no priority row, which is this file's whole subject over again.
+// Each one must be ripped, have a priority for every channel it plays on, end
+// (a sound effect that loops for ever would hold its channel for ever), and
+// render to something audible.
+const { SEASONS_MUSIC } = await import('../src/data/music-seasons.js');
+const { renderSeasons, sfxVoices } = await import('../src/core/gbsound.js');
+let cartridge = 0;
+for (const [n, d] of Object.entries(SFX)) {
+  if (!d.seasons) continue;
+  cartridge++;
+  const tr = SEASONS_MUSIC[d.seasons];
+  if (!tr) { problems.push(`'${n}' plays the cartridge's '${d.seasons}', which tools/rip-music.py never ripped`); continue; }
+  const voices = sfxVoices(d.seasons);
+  if (!voices) { problems.push(`'${n}': '${d.seasons}' has no priority row (soundChannelPointers)`); continue; }
+  for (const v of voices) {
+    if (!(v.prio >= 1)) problems.push(`'${n}': '${d.seasons}' channel ${v.k} has no priority`);
+    if (!Number.isFinite(v.secs)) problems.push(`'${n}': '${d.seasons}' channel ${v.k} never ends`);
+  }
+  const r = renderSeasons(d.seasons, 8192);
+  let peak = 0;
+  for (const x of r.data) peak = Math.max(peak, Math.abs(x));
+  if (!(peak > 0.01)) problems.push(`'${n}': '${d.seasons}' renders as silence`);
+}
+
 // ------------------------------------------------------------------- 3. dead
 
 for (const n of defined) {
@@ -160,7 +202,7 @@ for (const n of defined) {
 // ------------------------------------------------------------------- report
 
 console.log(`check-sfx: ${defined.size} sfx defined, ${used.size} referenced `
-  + `(${dataChecks.length} of them from data tables)`);
+  + `(${dataChecks.length} of them from data tables), ${cartridge} the cartridge's own`);
 for (const w of warnings) console.log(`  warn: ${w}`);
 if (problems.length) {
   console.log('');

@@ -13,6 +13,9 @@ music itself is Nintendo's and Capcom's.
 | `mus/overworld.s` | `audio/common/mus/` | the `overworld` track (Holodrum) |
 | `mus/intro1.s`, `mus/intro2.s` | `audio/common/mus/` | ripped, not yet played — the Seasons opening, kept to match recordings against |
 | `sfx/getItem.s` | `audio/common/sfx/` | the `itemGet` jingle |
+| `sfx/*.s` (all of it, S163) | `audio/common/sfx/` | every sound effect both games share; `rip-music.py`'s `SFX` list names the ones the game plays |
+| `sfx-seasons/*.s`, `sfx-ages/*.s` | `audio/seasons/sfx/`, `audio/ages/sfx/` | each game's own sound effects |
+| `soundChannelPointers-seasons.s`, `-ages.s` | `audio/seasons/`, `audio/ages/` | which channels each sound uses, and the priority it holds them with |
 | `waveforms.s` | `audio/common/` | the wave channel's waveforms |
 | `noise.s` | `audio/common/` | the noise channel's drum table |
 | `audio-tables.s` | `code/audio.s`, lines 1811-1929 | frequency, envelope-wait and vibrato tables |

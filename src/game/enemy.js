@@ -530,7 +530,8 @@ export class Boss extends Enemy {
     // whole reason the override exists, and neither should freeze anything.
     game.freeze(HITSTOP_HIT_FRAMES);
     if (this.hp <= 0) { this.beginDeath(game); return true; }
-    game.audio.sfx('enemyHit');
+    // A boss has its own hit sound (code/collisionEffects.s: SND_BOSS_DAMAGE).
+    game.audio.sfx('bossHit');
     return true;
   }
 

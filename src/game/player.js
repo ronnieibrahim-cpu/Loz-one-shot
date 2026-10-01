@@ -21,6 +21,7 @@ import { F, transformFor } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
+import { noise1 } from '../core/rng.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
@@ -72,6 +73,10 @@ const SWING_DIAG = {
 // The spin's blade, placed against Link's cell exactly as the sheet's Spin
 // Attack band places it (tools/rip-link.py): [x, y] for position 0..7,
 // clockwise from up, even = cardinal, odd = the diagonal after it.
+// The swing's sound table, in the cartridge's own order: SND_SWORDSLASH,
+// SND_UNKNOWN5, SND_BOOMERANG, then the rest (object_code/common/items/sword.s).
+const SWORD_SOUNDS = ['sword1', 'sword2', 'sword3', 'sword1', 'sword1', 'sword2', 'sword1', 'sword1'];
+
 const SPIN_BLADE = [[0, -16], [16, -13], [16, 0], [13, 16], [0, 16], [-13, 12], [-16, 0], [-10, -13]];
 const SPIN_START = { up: 0, right: 2, down: 4, left: 6 };
 
@@ -806,7 +811,11 @@ export class Player extends Entity {
     this.holdT = 0;
     this.swordLevel = level;
     this.swingHit = new Set();
-    game.audio.sfx(level >= 3 ? 'sword3' : (level >= 2 ? 'sword2' : 'sword1'));
+    // Oracle of Seasons does not give each sword its own sound: every swing
+    // picks one of three slashes from an eight-entry table at random
+    // (object_code/common/items/sword.s, @swordSounds). The pick is a hash of
+    // the frame, not a draw from a stream, so a sound cannot shift the RNG.
+    game.audio.sfx(SWORD_SOUNDS[Math.floor((noise1(game.frame) + 1) * 4) & 7]);
     return true;
   }
 

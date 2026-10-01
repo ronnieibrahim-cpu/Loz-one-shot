@@ -4,27 +4,22 @@ import { audio } from '../core/audio.js';
 
 const SFX = {
   // --- Link ---------------------------------------------------------------
-  sword1: { type: 'noise', freq: 3200, freq2: 900, dur: 0.09, q: 1.4, vol: 0.16 },
-  sword2: { type: 'noise', freq: 3800, freq2: 800, dur: 0.11, q: 1.6, vol: 0.18 },
-  sword3: {
-    type: 'multi', parts: [
-      { type: 'noise', freq: 4200, freq2: 700, dur: 0.12, q: 1.8, vol: 0.18 },
-      { type: 'blip', freq: 1400, freq2: 2600, dur: 0.1, duty: 0.25, vol: 0.08, delay: 0.01 },
-    ],
-  },
+  sword1: { seasons: 'swordSlash' },
+  sword2: { seasons: 'unknown5' },
+  sword3: { seasons: 'boomerang' },
   // Oracle of Seasons' own spin whoosh (sfx/swordSpin.s), played by its own
   // sound engine: the noise channel swept up and back down over 32 frames.
   spin: { seasons: 'swordSpin' },
-  charged: { type: 'blip', freq: 900, freq2: 1800, dur: 0.14, duty: 0.125, vol: 0.07 },
-  linkHurt: { type: 'blip', freq: 420, freq2: 130, dur: 0.24, duty: 0.5, wave: 'saw', vol: 0.15 },
-  jump: { type: 'blip', freq: 500, freq2: 950, dur: 0.11, duty: 0.25, vol: 0.11 },
-  land: { type: 'noise', freq: 700, freq2: 240, dur: 0.07, q: 0.9, vol: 0.1, lp: true },
-  splash: { type: 'noise', freq: 2400, freq2: 400, dur: 0.2, q: 0.8, vol: 0.13 },
-  dive: { type: 'blip', freq: 700, freq2: 220, dur: 0.22, duty: 0.5, wave: 'tri', vol: 0.12 },
-  lift: { type: 'blip', freq: 380, freq2: 720, dur: 0.1, duty: 0.5, vol: 0.1 },
-  throw: { type: 'blip', freq: 800, freq2: 340, dur: 0.09, duty: 0.25, vol: 0.1 },
-  shatter: { type: 'noise', freq: 4200, freq2: 1100, dur: 0.14, q: 2.0, vol: 0.14 },
-  fall: { type: 'blip', freq: 900, freq2: 90, dur: 0.55, duty: 0.5, wave: 'tri', vol: 0.13 },
+  charged: { seasons: 'chargeSword' },
+  linkHurt: { seasons: 'damageLink' },
+  jump: { seasons: 'jump' },
+  land: { seasons: 'land' },
+  splash: { seasons: 'splash' },
+  dive: { seasons: 'linkSwim' },
+  lift: { seasons: 'pickUp' },
+  throw: { seasons: 'throw' },
+  shatter: { seasons: 'breakRock' },
+  fall: { seasons: 'linkFall' },
 
   // --- items --------------------------------------------------------------
   conch: {
@@ -38,13 +33,8 @@ const SFX = {
   dredgeCast: { type: 'noise', freq: 2600, freq2: 1800, dur: 0.24, q: 3.0, vol: 0.1 },
   hookHit: { type: 'blip', freq: 1600, freq2: 500, dur: 0.09, duty: 0.25, vol: 0.12 },
   place: { type: 'blip', freq: 300, freq2: 200, dur: 0.07, duty: 0.5, vol: 0.1 },
-  explode: {
-    type: 'multi', parts: [
-      { type: 'noise', freq: 900, freq2: 60, dur: 0.42, q: 0.5, vol: 0.26, lp: true },
-      { type: 'blip', freq: 220, freq2: 40, dur: 0.34, duty: 0.5, wave: 'tri', vol: 0.14 },
-    ],
-  },
-  fire: { type: 'noise', freq: 1800, freq2: 700, dur: 0.28, q: 0.8, vol: 0.11 },
+  explode: { seasons: 'explosion' },
+  fire: { seasons: 'lightTorch' },
   // THREE DEFINITIONS WERE REMOVED FROM HERE, and the removal is the point.
   // `dig`, `shoot` and `pegasus` were defined, correct, and played by nothing:
   // this game has no shovel, no player projectile and no Pegasus Seed, and a
@@ -116,51 +106,42 @@ const SFX = {
 
   // The low-health pulse. Quiet and short by design: it repeats for as long as
   // the player is in danger, so a loud one becomes the reason to stop playing.
-  lowHeart: { type: 'blip', freq: 1046, freq2: 1046, dur: 0.05, duty: 0.5, vol: 0.055 },
+  lowHeart: { seasons: 'heartBeep' },
   valve: { type: 'noise', freq: 700, freq2: 260, dur: 0.4, q: 1.4, vol: 0.12 },
 
   // --- combat -------------------------------------------------------------
-  enemyHit: { type: 'noise', freq: 2000, freq2: 600, dur: 0.08, q: 1.2, vol: 0.13 },
-  enemyDie: {
-    type: 'multi', parts: [
-      { type: 'noise', freq: 2600, freq2: 300, dur: 0.16, q: 1.0, vol: 0.15 },
-      { type: 'blip', freq: 700, freq2: 180, dur: 0.14, duty: 0.5, vol: 0.09, delay: 0.02 },
-    ],
-  },
-  bossDie: {
-    type: 'multi', parts: [
-      { type: 'noise', freq: 1200, freq2: 80, dur: 0.7, q: 0.5, vol: 0.24, lp: true },
-      { type: 'blip', freq: 300, freq2: 50, dur: 0.6, duty: 0.5, wave: 'tri', vol: 0.16, delay: 0.05 },
-    ],
-  },
-  enemyShoot: { type: 'blip', freq: 700, freq2: 420, dur: 0.09, duty: 0.125, vol: 0.09 },
-  block: { type: 'noise', freq: 3600, freq2: 2600, dur: 0.06, q: 3.0, vol: 0.13 },
-  ricochet: { type: 'blip', freq: 2000, freq2: 1200, dur: 0.05, duty: 0.25, vol: 0.1 },
+  enemyHit: { seasons: 'damageEnemy' },
+  bossHit: { seasons: 'bossDamage' },
+  enemyDie: { seasons: 'killEnemy' },
+  bossDie: { seasons: 'bossDead' },
+  enemyShoot: { seasons: 'beam' },
+  block: { seasons: 'clink' },
+  ricochet: { seasons: 'clink' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
-  hop: { type: 'blip', freq: 420, freq2: 700, dur: 0.07, duty: 0.5, vol: 0.07 },
+  hop: { seasons: 'enemyJump' },
 
   // --- pickups & UI -------------------------------------------------------
-  rupee: { type: 'arp', notes: ['E6', 'B6'], step: 0.05, duty: 0.5, vol: 0.09 },
-  rupeeBig: { type: 'arp', notes: ['E6', 'G6', 'B6'], step: 0.05, duty: 0.5, vol: 0.1 },
-  heart: { type: 'arp', notes: ['G5', 'C6'], step: 0.06, duty: 0.5, vol: 0.1 },
-  fairy: { type: 'arp', notes: ['C6', 'E6', 'G6', 'C7'], step: 0.05, duty: 0.25, vol: 0.09 },
-  key: { type: 'arp', notes: ['A5', 'D6'], step: 0.07, duty: 0.5, vol: 0.1 },
-  unlock: { type: 'arp', notes: ['D5', 'A5', 'D6'], step: 0.07, duty: 0.5, vol: 0.11 },
-  chest: { type: 'arp', notes: ['C5', 'F5', 'A5'], step: 0.07, duty: 0.5, vol: 0.1 },
-  puzzle: { type: 'arp', notes: ['C5', 'E5', 'G5', 'C6'], step: 0.08, duty: 0.5, vol: 0.11 },
-  switchOn: { type: 'blip', freq: 900, freq2: 1300, dur: 0.07, duty: 0.5, vol: 0.1 },
-  switchOff: { type: 'blip', freq: 1300, freq2: 900, dur: 0.07, duty: 0.5, vol: 0.09 },
-  push: { type: 'noise', freq: 500, freq2: 300, dur: 0.22, q: 0.8, vol: 0.09, lp: true },
-  cut: { type: 'noise', freq: 3000, freq2: 1400, dur: 0.08, q: 1.6, vol: 0.12 },
-  break: { type: 'noise', freq: 2200, freq2: 500, dur: 0.16, q: 1.0, vol: 0.14 },
-  stairs: { type: 'blip', freq: 600, freq2: 900, dur: 0.1, duty: 0.5, vol: 0.09 },
+  rupee: { seasons: 'rupee' },
+  rupeeBig: { seasons: 'rupee' },
+  heart: { seasons: 'gainHeart' },
+  fairy: { seasons: 'unknown7' },
+  key: { seasons: 'getSeed' },
+  unlock: { seasons: 'openChest' },
+  chest: { seasons: 'openChest' },
+  puzzle: { seasons: 'solvePuzzle' },
+  switchOn: { seasons: 'switch' },
+  switchOff: { seasons: 'switch' },
+  push: { seasons: 'moveBlock' },
+  cut: { seasons: 'cutGrass' },
+  break: { seasons: 'breakRock' },
+  stairs: { seasons: 'enterCave' },
   whirl: { type: 'noise', freq: 400, freq2: 2200, dur: 0.6, q: 1.6, vol: 0.14 },
-  text: { type: 'blip', freq: 1500, dur: 0.014, duty: 0.5, vol: 0.05 },
-  textNext: { type: 'blip', freq: 1000, freq2: 1400, dur: 0.04, duty: 0.5, vol: 0.07 },
-  cursor: { type: 'blip', freq: 1200, dur: 0.03, duty: 0.5, vol: 0.08 },
-  confirm: { type: 'arp', notes: ['C6', 'G6'], step: 0.045, duty: 0.5, vol: 0.09 },
-  deny: { type: 'blip', freq: 300, freq2: 180, dur: 0.12, duty: 0.5, vol: 0.09 },
-  pause: { type: 'blip', freq: 800, freq2: 1200, dur: 0.06, duty: 0.25, vol: 0.08 },
+  text: { seasons: 'text' },
+  textNext: { seasons: 'text2' },
+  cursor: { seasons: 'menuMove' },
+  confirm: { seasons: 'selectItem' },
+  deny: { seasons: 'error' },
+  pause: { seasons: 'openMenu' },
 };
 
 // --------------------------------------------------------------------------

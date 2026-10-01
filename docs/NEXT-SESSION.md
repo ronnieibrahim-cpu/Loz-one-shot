@@ -1,3 +1,38 @@
+## S163 — the cartridges' own sound effects (IN PROGRESS)
+
+Branch claude/oracle-tides-s163-6cqrq2, off main at d0a5a22. The human chose
+FUTURE ACTION ITEM 1 (sound effects).
+
+### What landed (first commit)
+- 45 of the 60 sfx in src/data/audio.js are now `{ seasons: name }`, played by
+  gbsound.js from the cartridge's own scripts (oracles-disasm audio/common/sfx,
+  copied whole into assets/music/oracles-disasm/sfx/, plus sfx-seasons/ and
+  sfx-ages/). Mapping chosen from where the disassembly plays each SND_ (e.g.
+  unlock -> openChest from code/interactableTiles.s's key block, key ->
+  getSeed from dungeonKeySprite.s, fairy -> unknown7 = SND_FAIRY_HEAL).
+- rip-music.py now ASSEMBLES each file to bytes (include/musicMacros.s) and
+  reads them back as code/audio.s does: cmdf0 arbitrary-frequency notes
+  (`.db hi lo len`), the square length timer, $61 rest2, channel 7 notes as
+  NR43. Music output is identical except fileSelect's `env $0 $08`, which the
+  engine masks to 0 (it did, we didn't). Each sfx carries `prio` from
+  soundChannelPointers-*.s.
+- gbsound.js: ops 11/12/13, ch7 retriggers only after cmdf0, frequency
+  registers wrap to 11 bits, channels start at volume 8 (playSound),
+  renderSeasons(name, rate, only) renders one channel; sfxVoices(name).
+- audio.js: per-channel arbitration as playSound does it (higher priority
+  holds the channel; equal/higher cuts the old sound off).
+- The sword picks from Seasons' own 8-entry table (sword.s @swordSounds) with
+  a noise1 hash of game.frame, so no RNG draw. New `bossHit` (SND_BOSS_DAMAGE).
+- check-sfx: every cartridge sfx is ripped, has a priority per channel, ends,
+  and is audible; reads `*_SOUNDS` tables. NEW tools/render-sfx.mjs.
+- Listening page for the human: https://claude.ai/artifact/QiMcy311WmNecVuSvF5AeW
+
+### Waiting on the human
+The 15 sounds of our own items (conch, tideSweep, chime, valve, gust, reel,
+dredgeCast, hookHit, catch, place, seed, rumble, whirl, bossPhase, charge)
+are still synthesized; the page offers cartridge candidates per row. Not
+done: music channels are not ducked while an sfx holds channels 2/3/5/7.
+
 ## S162 — the optional dungeons toured, filmed, and the Palace made finishable
 
 Branch claude/s162, off main at 44fa332 (S160 + S161 were already merged).

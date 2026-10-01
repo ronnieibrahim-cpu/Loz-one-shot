@@ -82,7 +82,7 @@
 //
 // The noise channel is percussion only and takes none of the above.
 
-import { renderSeasons } from './gbsound.js';
+import { renderSeasons, sfxVoices } from './gbsound.js';
 import { GB_RENDER_RATE } from '../data/feel.js';
 import { Stream } from './rng.js';
 import { VIBRATO_DELAY_FRAMES, VIBRATO_STEP_FRAMES, VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } from '../data/feel.js';
@@ -658,23 +658,36 @@ export class Audio {
   _renderSfx(d, t0, pitch, volMul) {
     const ctx = this.ctx;
     if (d.seasons) {
-      // Oracle of Seasons' own sound effect, rendered once by its own engine
-      // (gbsound.js) and replayed from the buffer on the effects bus.
+      // The cartridge's own sound effect, rendered once per channel by its
+      // own engine (gbsound.js) and replayed from buffers on the effects bus.
+      // playSound's arbitration, channel by channel: a channel still held by
+      // a sound of HIGHER priority is not taken (that part of the new sound
+      // is simply not heard), and one that is taken cuts its old sound off.
       this._gbSfx = this._gbSfx || new Map();
-      let buf = this._gbSfx.get(d.seasons);
-      if (!buf) {
-        const r = renderSeasons(d.seasons, GB_RENDER_RATE);
-        if (!r) return;
-        buf = ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
-        buf.getChannelData(0).set(r.data);
-        this._gbSfx.set(d.seasons, buf);
+      this._gbVoice = this._gbVoice || {};
+      const voices = sfxVoices(d.seasons);
+      if (!voices) return;
+      for (const { k, prio, secs } of voices) {
+        const held = this._gbVoice[k];
+        if (held && held.end > t0 && held.prio > prio) continue;
+        if (held && held.end > t0) { try { held.src.stop(t0); } catch (e) { /* already stopped */ } }
+        const key = d.seasons + '#' + k;
+        let buf = this._gbSfx.get(key);
+        if (!buf) {
+          const r = renderSeasons(d.seasons, GB_RENDER_RATE, k);
+          if (!r) return;
+          buf = ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
+          buf.getChannelData(0).set(r.data);
+          this._gbSfx.set(key, buf);
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const g = ctx.createGain();
+        g.gain.value = (d.vol ?? 1) * volMul;
+        src.connect(g); g.connect(this.sfxBus);
+        src.start(t0);
+        this._gbVoice[k] = { src, prio, end: t0 + secs };
       }
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      const g = ctx.createGain();
-      g.gain.value = (d.vol ?? 1) * volMul;
-      src.connect(g); g.connect(this.sfxBus);
-      src.start(t0);
       return;
     }
     switch (d.type) {

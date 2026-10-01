@@ -56,6 +56,28 @@ TRACKS = [
     ('swordSpin', 'sfx/swordSpin.s', 'sndSwordSpin'),
 ]
 
+# THE SOUND EFFECTS (S163): every effect the game plays that one of the two
+# cartridges also plays, under the cartridge's own name. Each is a file in
+# sfx/ (audio/common/sfx, both games), sfx-seasons/ or sfx-ages/; the label
+# prefix is read from the file's own `...Start:` label. The ROM picks which
+# side of an `.ifdef ROM_SEASONS` / `ROM_AGES` is built.
+SFX = [
+    # file stem, ROM
+    ('swordSlash', 'ROM_SEASONS'), ('unknown5', 'ROM_SEASONS'), ('boomerang', 'ROM_SEASONS'),
+    ('chargeSword', 'ROM_SEASONS'), ('damageLink', 'ROM_SEASONS'), ('jump', 'ROM_SEASONS'),
+    ('land', 'ROM_SEASONS'), ('splash', 'ROM_SEASONS'), ('linkSwim', 'ROM_SEASONS'),
+    ('pickUp', 'ROM_SEASONS'), ('throw', 'ROM_SEASONS'), ('breakRock', 'ROM_SEASONS'),
+    ('linkFall', 'ROM_SEASONS'), ('explosion', 'ROM_SEASONS'), ('lightTorch', 'ROM_SEASONS'),
+    ('damageEnemy', 'ROM_SEASONS'), ('killEnemy', 'ROM_SEASONS'), ('bossDamage', 'ROM_SEASONS'),
+    ('bossDead', 'ROM_SEASONS'), ('beam', 'ROM_SEASONS'), ('clink', 'ROM_SEASONS'),
+    ('enemyJump', 'ROM_SEASONS'), ('rupee', 'ROM_SEASONS'), ('gainHeart', 'ROM_SEASONS'),
+    ('unknown7', 'ROM_SEASONS'), ('getSeed', 'ROM_SEASONS'), ('openChest', 'ROM_SEASONS'),
+    ('solvePuzzle', 'ROM_SEASONS'), ('switch', 'ROM_SEASONS'), ('moveBlock', 'ROM_SEASONS'),
+    ('cutGrass', 'ROM_SEASONS'), ('enterCave', 'ROM_SEASONS'), ('text', 'ROM_SEASONS'),
+    ('text2', 'ROM_SEASONS'), ('menuMove', 'ROM_SEASONS'), ('selectItem', 'ROM_SEASONS'),
+    ('error', 'ROM_SEASONS'), ('openMenu', 'ROM_SEASONS'), ('heartBeep', 'ROM_SEASONS'),
+]
+
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']
 
 
@@ -81,9 +103,16 @@ def lines_of(path):
             yield raw.split(';', 1)[0].strip()
 
 
-def parse_track(path, prefix):
-    """Flatten a channel-script file into (events, labels, channel starts)."""
-    # Expand .rept/.endr and .ifdef first, keeping labels in place.
+def parse_track(path, prefix, rom='ROM_SEASONS'):
+    """Assemble a channel-script file to the cartridge's bytes, then read the
+    bytes back the way code/audio.s reads them (S163).
+
+    Two passes because the meaning of a byte depends on the channel's state,
+    not on how the disassembly happened to spell it: after `cmdf0` on a square
+    or wave channel the engine reads every note as a raw frequency (high byte,
+    low byte, length), which the disassembly writes as `.db`; on channel 7 a
+    note is a value for the noise register itself. Returns (events, starts)."""
+    # Expand .rept/.endr first, keeping labels in place.
     src = list(lines_of(path))
     out = []
 
@@ -104,11 +133,11 @@ def parse_track(path, prefix):
         return i
     expand(0, out)
 
-    # Conditionals: this is Seasons, built as the cartridge was.
+    # Conditionals: the cartridge named by `rom`, built as it shipped.
     lines, stack = [], []
     for ln in out:
         if ln.startswith('.ifdef'):
-            stack.append(ln.split()[1] in ('ROM_SEASONS', 'BUILD_VANILLA'))
+            stack.append(ln.split()[1] in (rom, 'BUILD_VANILLA'))
             continue
         if ln == '.else':
             stack[-1] = not stack[-1]
@@ -119,56 +148,142 @@ def parse_track(path, prefix):
         if all(stack):
             lines.append(ln)
 
-    events, labels, pending = [], {}, []
+    # Pass 1: assemble (include/musicMacros.s). A goto's target stays a name.
+    code, labels = [], {}
     for ln in lines:
-        if not ln or ln.startswith('.define') or ln.startswith('.db'):
+        if not ln or ln.startswith('.define'):
             # `.define ...Channel6 MUSIC_CHANNEL_FALLBACK`: no such channel.
-            # `.db $ff ...`: bank padding after the last channel, unreachable.
             continue
         if ln.endswith(':'):
-            labels[ln[:-1]] = len(events)
+            labels[ln[:-1]] = len(code)
             continue
         parts = ln.replace(',', ' ').split()
         op, args = parts[0], parts[1:]
-        if op == 'note':
+        if op == '.db':
+            code += [num(t) & 0xff for t in args]
+        elif op == 'note':
             if len(args) != 2:
                 sys.exit('%s: multi-note line not supported: %s' % (path, ln))
-            events.append([0, note_value(args[0]), num(args[1])])
+            code += [note_value(args[0]) & 0xff, num(args[1])]
         elif op == 'rest':
-            events.append([1, num(args[0])])
+            code += [0x60, num(args[0])]
         elif op == 'vol':
-            events.append([2, num(args[0])])
+            code += [0xd0 | num(args[0])]
         elif op == 'env':
-            events.append([3, num(args[0]), num(args[1])])
-        elif op == 'duty':
-            events.append([4, num(args[0])])
-        elif op == 'vibrato':
-            events.append([5, num(args[0])])
+            code += [0xe0 | num(args[0]), num(args[1])]
+        elif op in ('cmdf0', 'duty', 'cmdf8', 'vibrato', 'cmdfd'):
+            code += [{'cmdf0': 0xf0, 'duty': 0xf6, 'cmdf8': 0xf8,
+                      'vibrato': 0xf9, 'cmdfd': 0xfd}[op], num(args[0]) & 0xff]
         elif op == 'goto':
-            events.append([6, args[0]])
-        elif op == 'cmdff':
-            events.append([7])
-        elif op == 'cmdf8':
-            events.append([8, num(args[0])])
-        elif op == 'cmdfd':
-            events.append([9, num(args[0])])
-        elif op == 'cmdf0':
-            events.append([10, num(args[0])])
-        elif op in ('cmdf1', 'cmdf2', 'cmdf3'):
-            continue            # "does nothing" (code/audio.s)
+            code += [0xfe, ('label', args[0])]
+        elif op in ('cmdf1', 'cmdf2', 'cmdf3', 'cmdff'):
+            code += [{'cmdf1': 0xf1, 'cmdf2': 0xf2, 'cmdf3': 0xf3, 'cmdff': 0xff}[op]]
         else:
             sys.exit('%s: unknown command: %s' % (path, ln))
-    for ev in events:
-        if ev[0] == 6:
-            if ev[1] not in labels:
-                sys.exit('%s: goto to unknown label %s' % (path, ev[1]))
-            ev[1] = labels[ev[1]]
+
+    # Which channel owns each byte: the last `...ChannelN:` label before it.
+    owner = {}
+    for name, at in labels.items():
+        m = re.fullmatch(re.escape(prefix) + r'Channel(\d)', name)
+        if m:
+            owner.setdefault(at, int(m.group(1)))
+
+    # Pass 2: read the bytes as doNextChannelCommand does. `arb` is the
+    # channel's arbitrary-frequency mode (channelCmdf0), reset at each
+    # channel's own start.
+    events, at_event, gotos = [], {}, []
+    i, ch, arb = 0, None, False
+    while i < len(code):
+        if i in owner:
+            ch, arb = owner[i], False
+        at_event[i] = len(events)
+        b = code[i]
+        if isinstance(b, tuple):
+            sys.exit('%s: a goto target read as a command' % path)
+        if ch is None:
+            # Bytes before any channel of this sound: nothing plays them.
+            i += 1
+            continue
+        if b >= 0xf0:
+            if b == 0xfe:
+                gotos.append(len(events))
+                events.append([6, code[i + 1][1]])
+                i += 2
+            elif b in (0xff, 0xfc, 0xfb, 0xfa, 0xf7, 0xf5, 0xf4):
+                events.append([7])
+                i += 1
+            elif b in (0xf1, 0xf2, 0xf3):
+                i += 1          # "does nothing" (code/audio.s)
+            elif b == 0xf0:
+                if ch == 7:
+                    events.append([10, code[i + 1]])
+                elif ch <= 5:
+                    events.append([11, code[i + 1]])
+                    arb = True
+                i += 2
+            else:
+                x = code[i + 1]
+                if ch < 6 or b == 0xf6:
+                    events.append([{0xf6: 4, 0xf8: 8, 0xf9: 5, 0xfd: 9}[b], x])
+                i += 2
+        elif b >= 0xe0:
+            events.append([3, b & 7, code[i + 1] & 7])
+            i += 2
+        elif b >= 0xd0:
+            events.append([2, b & 15])
+            i += 1
+        elif ch == 7:
+            events.append([0, b, code[i + 1]])
+            i += 2
+        elif ch <= 5 and arb:
+            events.append([12, (b << 8) | code[i + 1], code[i + 2]])
+            i += 3
+        elif b == 0x60:
+            events.append([1, code[i + 1]])
+            i += 2
+        elif b == 0x61 and ch <= 3:
+            events.append([13, code[i + 1]])
+            i += 2
+        else:
+            events.append([0, b, code[i + 1]])
+            i += 2
+    for k in gotos:
+        name = events[k][1]
+        if name not in labels:
+            sys.exit('%s: goto to unknown label %s' % (path, name))
+        events[k][1] = at_event[labels[name]]
     starts = {}
     for k in range(8):
         name = '%sChannel%d' % (prefix, k)
         if name in labels:
-            starts[k] = labels[name]
+            starts[k] = at_event.get(labels[name], len(events))
     return events, starts
+
+
+def parse_priorities(rom):
+    """soundChannelPointers.s: each sound's channels, each with the priority
+    playSound compares (the entry byte's high nibble, plus one). A sound takes
+    a channel only from one of equal or lower priority."""
+    path = os.path.join(SRC, 'soundChannelPointers-%s.s' % ('ages' if rom == 'ROM_AGES' else 'seasons'))
+    out, cur, pend = {}, [], None
+    for ln in lines_of(path):
+        if ln.endswith(':'):
+            if not cur or out.get(cur[-1]):
+                cur = []
+            cur.append(ln[:-1])
+            out[ln[:-1]] = {}
+            continue
+        if ln.startswith('.db') and cur:
+            b = num(ln.split()[1])
+            if b == 0xff:
+                cur = []
+                continue
+            pend = b
+        elif ln.startswith('.dw') and cur and pend is not None:
+            for name in cur:
+                out[name][pend & 15] = (pend >> 4) + 1
+            pend = None
+    return out
 
 
 def parse_tables():
@@ -222,18 +337,33 @@ def main():
     noise = parse_noise()
     tracks = []
     used_waves, used_noise = set(), set()
-    for name, rel, prefix in TRACKS:
-        events, starts = parse_track(os.path.join(SRC, rel), prefix)
+    jobs = [(name, rel, prefix, 'ROM_SEASONS') for name, rel, prefix in TRACKS]
+    for stem, rom in SFX:
+        rel = None
+        for d in ('sfx', 'sfx-seasons', 'sfx-ages'):
+            if os.path.exists(os.path.join(SRC, d, stem + '.s')):
+                rel = '%s/%s.s' % (d, stem)
+                break
+        if rel is None:
+            sys.exit('sfx %s: no such file' % stem)
+        start = next(ln[:-1] for ln in lines_of(os.path.join(SRC, rel)) if ln.endswith('Start:'))
+        jobs.append((stem, rel, start[:-len('Start')], rom))
+    prios = {rom: parse_priorities(rom) for rom in ('ROM_SEASONS', 'ROM_AGES')}
+    for name, rel, prefix, rom in jobs:
+        events, starts = parse_track(os.path.join(SRC, rel), prefix, rom)
+        prio = prios[rom].get(prefix) if rel.startswith('sfx') and name != 'getItem' else None
+        if prio is not None and set(prio) != set(starts):
+            sys.exit('%s: the pointer table names channels %s, the file %s' % (name, sorted(prio), sorted(starts)))
         for k, s in starts.items():
             for ev in events[s:]:
                 if ev[0] == 4 and k in (4, 5):
                     used_waves.add(ev[1])
                 if ev[0] == 0 and k in (6, 7):
                     used_noise.add(ev[1])
-        tracks.append((name, rel, events, starts))
+        tracks.append((name, rel, events, starts, prio))
     # Every waveform a wave channel might select, whichever channel starts
     # where: a duty inside a stream reached only by a goto is still used.
-    for name, rel, events, starts in tracks:
+    for name, rel, events, starts, prio in tracks:
         if 4 in starts or 5 in starts:
             for ev in events:
                 if ev[0] == 4:
@@ -271,10 +401,12 @@ def main():
     out.append('')
     out.append('/** name -> { events, ch: { channel: index of its first event } }. */')
     out.append('export const SEASONS_MUSIC = {')
-    for name, rel, events, starts in tracks:
+    for name, rel, events, starts, prio in tracks:
         out.append('  // %s' % rel)
         out.append('  %s: {' % name)
         out.append('    ch: { %s },' % ', '.join('%d: %d' % (k, v) for k, v in sorted(starts.items())))
+        if prio:
+            out.append('    prio: { %s },' % ', '.join('%d: %d' % (k, v) for k, v in sorted(prio.items())))
         out.append('    events: [')
         for i in range(0, len(events), 16):
             out.append('      ' + ','.join(js(e) for e in events[i:i + 16]) + ',')

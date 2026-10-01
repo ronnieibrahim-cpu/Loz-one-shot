@@ -33,9 +33,14 @@ const KIND = { 0: 'sq', 1: 'sq', 2: 'sq', 3: 'sq', 4: 'wave', 5: 'wave', 6: 'noi
 function newChannel(k, start) {
   return {
     k, pc: start, on: start != null, wait: 0,
-    vol: 0, env1: 0, env2: 0, envState: 0, envWait: 0,
+    // playSound starts every channel at volume 8 (code/audio.s).
+    vol: 8, env1: 0, env2: 0, envState: 0, envWait: 0,
     duty: 0, vib: 0, vibActive: false, vibCount: 0,
     sweep: 0, shift: 0, freq: 0, rest: true, nr42: 0, lastOff: 0,
+    // channelCmdf0 (sound effects, S163): `arb` reads notes as raw frequency
+    // registers; `len` is the hardware length timer's NR11 value, 0 for off;
+    // `trig7` is wChannel7TriggerOnNextSound.
+    arb: false, len: 0, trig7: false,
   };
 }
 
@@ -52,7 +57,7 @@ function runEngine(track, frames) {
   for (const k of keys) { out[k] = []; firstVisit[k] = new Map(); }
 
   const trigSquare = (c, f, v, up, pace) =>
-    out[c.k].push([f, 'trig', v, up, pace, c.freq, c.duty]);
+    out[c.k].push([f, 'trig', v, up, pace, c.freq, c.duty, c.len ? 64 - c.len : 0]);
 
   for (let f = 0; f < frames; f++) {
     for (const c of chans) {
@@ -61,6 +66,9 @@ function runEngine(track, frames) {
         // continuePlayingSound
         c.wait--;
         if (KIND[c.k] === 'noise' || KIND[c.k] === 'raw') continue;
+        // A channel on the length timer is left to the hardware: no
+        // envelope, no sweep, no vibrato (continuePlayingSound).
+        if (c.len) continue;
         if (KIND[c.k] === 'sq') {
           // handleEnvelopes, states 1 -> 2/3
           if (c.envState === 1) {
@@ -80,7 +88,14 @@ function runEngine(track, frames) {
         c.pc++;
         const op = e[0];
         if (op === 2) { if (c.k !== 4) c.vol = e[1]; continue; }
-        if (op === 10) { c.nr42 = e[1]; continue; }
+        if (op === 10) { c.nr42 = e[1]; c.trig7 = true; continue; }
+        if (op === 11) {
+          c.arb = true;
+          if (KIND[c.k] === 'sq') c.duty = e[1] >> 6;
+          c.len = e[1] & 63;
+          continue;
+        }
+        if (op === 13) { c.wait = e[1] - 1; break; }
         if (op === 3) { c.env1 = e[1]; c.env2 = e[2]; continue; }
         if (op === 4) { c.duty = e[1]; continue; }
         if (op === 5) { c.vib = e[1]; continue; }
@@ -102,7 +117,7 @@ function runEngine(track, frames) {
           }
           break;
         }
-        // a note
+        // a note ([0, note, frames], or [12, register, frames] in arbitrary mode)
         c.wait = e[2] - 1;
         if (KIND[c.k] === 'noise') {
           const n = GB_NOISE[e[1]];
@@ -110,14 +125,23 @@ function runEngine(track, frames) {
           break;
         }
         if (KIND[c.k] === 'raw') {
+          // standardCmdChannel7: the note IS NR43, and the channel retriggers
+          // only on the first note after a cmdf0 — the rest of a sweep moves
+          // the noise's pitch under an envelope that keeps running.
           const x = c.nr42 || 0;
-          out[c.k].push([f, 'trig', x >> 4, !!(x & 8), x & 7, e[1]]);
+          if (c.trig7) out[c.k].push([f, 'trig', x >> 4, !!(x & 8), x & 7, e[1]]);
+          else out[c.k].push([f, 'nr43', e[1]]);
+          c.trig7 = false;
           break;
         }
         const wave = KIND[c.k] === 'wave';
-        const idx = wave ? e[1] : e[1] - 12;
-        let reg = GB_FREQ[Math.max(0, Math.min(GB_FREQ.length - 1, idx))];
-        reg += (c.shift << 24) >> 24;
+        let reg;
+        if (op === 12) reg = e[1];
+        else {
+          const idx = wave ? e[1] : e[1] - 12;
+          reg = GB_FREQ[Math.max(0, Math.min(GB_FREQ.length - 1, idx))];
+        }
+        reg = (reg + ((c.shift << 24) >> 24)) & 0xffff;
         c.freq = reg;
         c.vibActive = false;
         c.vibCount = (c.vib >> 4) * 2;
@@ -143,7 +167,7 @@ function runEngine(track, frames) {
 /** updateSoundFrequencyAndPlay: sweep, then vibrato, onto the held note. */
 function stepPitch(c, f, out) {
   if (KIND[c.k] === 'wave' && c.rest) return;
-  if (c.sweep & 0x7f) c.freq += (c.sweep << 24) >> 24;
+  if (c.sweep & 0x7f) c.freq = (c.freq + ((c.sweep << 24) >> 24)) & 0xffff;
   let off = 0;
   if (!c.vibActive) {
     if (c.vibCount > 0) { c.vibCount--; }
@@ -200,7 +224,7 @@ function synth(events, ch, frames, rate, mix) {
   const n = Math.ceil(frames * spf);
   let ei = 0;
   let vol = 0, up = false, pace = 0, envT = 0, reg = 0, duty = 0, on = false;
-  let phase = 0, lfsr = 0x7fff, nr43 = 0, noiseT = 0;
+  let phase = 0, lfsr = 0x7fff, nr43 = 0, noiseT = 0, lenLeft = Infinity;
   let wave = GB_WAVEFORMS[0x0e] || new Array(16).fill(0);
   const envStep = rate / 64;
   for (let i = 0; i < n; i++) {
@@ -209,6 +233,7 @@ function synth(events, ch, frames, rate, mix) {
       const e = events[ei++];
       if (e[1] === 'mute') { on = false; continue; }
       if (e[1] === 'freq') { reg = e[2]; continue; }
+      if (e[1] === 'nr43') { nr43 = e[2]; continue; }
       // trig
       vol = e[2]; up = e[3]; pace = e[4]; envT = 0; on = true;
       if (k === 6) { nr43 = e[5]; lfsr = 0x7fff; noiseT = 0; }
@@ -217,8 +242,11 @@ function synth(events, ch, frames, rate, mix) {
         if (k === 4) wave = GB_WAVEFORMS[e[6]] || wave;
         else duty = DUTY[e[6] & 3];
       }
+      // The length timer, in 256ths of a second (NR11's low six bits).
+      lenLeft = e[7] ? e[7] * rate / 256 : Infinity;
     }
     if (!on) continue;
+    if (--lenLeft < 0) { on = false; continue; }
     // The 64 Hz volume envelope.
     if (pace) {
       envT++;
@@ -241,13 +269,13 @@ function synth(events, ch, frames, rate, mix) {
       }
       d = (lfsr & 1) ? 0 : vol;
     } else if (k === 4) {
-      const hz = 65536 / (2048 - reg);
+      const hz = 65536 / (2048 - (reg & 0x7ff));
       phase = (phase + hz / rate) % 1;
       const s = Math.floor(phase * 32);
       const b = wave[s >> 1];
       d = (s & 1) ? (b & 15) : (b >> 4);
     } else {
-      const hz = 131072 / (2048 - reg);
+      const hz = 131072 / (2048 - (reg & 0x7ff));
       phase = (phase + hz / rate) % 1;
       d = phase < duty ? vol : 0;
     }
@@ -259,10 +287,12 @@ const CACHE = new Map();
 
 /**
  * Render a Seasons track at `rate`. Returns { data: Float32Array, loopStart,
- * loopEnd } (seconds; loopEnd null for a jingle that plays once).
+ * loopEnd } (seconds; loopEnd null for a jingle that plays once). `only`
+ * renders one channel of it alone — how a sound effect is played, because on
+ * the cartridge each of its channels is won or lost separately (sfxVoices).
  */
-export function renderSeasons(name, rate) {
-  const key = name + '@' + rate;
+export function renderSeasons(name, rate, only = null) {
+  const key = name + '@' + rate + (only == null ? '' : '#' + only);
   if (CACHE.has(key)) return CACHE.get(key);
   const track = SEASONS_MUSIC[name];
   if (!track) return null;
@@ -271,7 +301,9 @@ export function renderSeasons(name, rate) {
   const { out } = runEngine(track, frames);
   const n = Math.ceil(frames * rate / GB_FRAME_RATE);
   const mix = new Float32Array(n);
-  for (const k of Object.keys(track.ch)) synth(out[k], Number(k), frames, rate, mix);
+  for (const k of Object.keys(track.ch)) {
+    if (only == null || Number(k) === only) synth(out[k], Number(k), frames, rate, mix);
+  }
   // The console's output capacitor: a first-order high-pass that removes the
   // DC every channel's 0..15 output carries (GB_HPF_CHARGE per sample).
   let cap = 0;
@@ -291,20 +323,42 @@ export function renderSeasons(name, rate) {
   return r;
 }
 
+/** A channel's frames to its cmdff (Infinity if it loops for ever). */
+function channelFrames(track, k) {
+  let pc = track.ch[k], t = 0;
+  const seen = new Set();
+  for (let i = 0; i < 10000; i++) {
+    const e = track.events[pc];
+    if (!e || e[0] === 7) return t;
+    if (e[0] === 6) { if (seen.has(e[1])) return Infinity; seen.add(e[1]); pc = e[1]; continue; }
+    if (e[0] === 0 || e[0] === 12) t += e[2];
+    if (e[0] === 1 || e[0] === 13) t += e[1];
+    pc++;
+  }
+  return t;
+}
+
 /** A jingle's length: the longest channel's frames to its cmdff. */
 function jingleFrames(track) {
   let most = 0;
   for (const k of Object.keys(track.ch)) {
-    let pc = track.ch[k], t = 0;
-    for (let i = 0; i < 10000; i++) {
-      const e = track.events[pc++];
-      if (!e || e[0] === 7) break;
-      if (e[0] === 0) t += e[2];
-      if (e[0] === 1) t += e[1];
-    }
-    most = Math.max(most, t);
+    const t = channelFrames(track, Number(k));
+    if (t !== Infinity) most = Math.max(most, t);
   }
   return most + 30;
 }
 
-export { runEngine, loopOf };
+/**
+ * A sound effect's channels as playSound sees them: [{ k, prio, secs }], the
+ * hardware channel, the priority it holds it with, and how long it holds it
+ * (to its cmdff). Null for a name that is not a ripped sound effect.
+ */
+export function sfxVoices(name) {
+  const track = SEASONS_MUSIC[name];
+  if (!track || !track.prio) return null;
+  return Object.keys(track.ch).map(Number).map((k) => ({
+    k, prio: track.prio[k], secs: channelFrames(track, k) / GB_FRAME_RATE,
+  }));
+}
+
+export { runEngine, loopOf, channelFrames };
