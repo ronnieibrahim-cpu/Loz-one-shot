@@ -1,24 +1,25 @@
-# Next session (S163) — after the optional-dungeon tour
+# Next session (S163) — polish, from the action-item list
 
 ## Read first
-- CLAUDE.md, all of it (S162 added `film-steps.mjs`, and new duties for
-  `check-placement` and `check-side`).
-- `docs/NEXT-SESSION.md`, the S162 entry.
-- `docs/HANDOFF.md` hard-won lessons (two new at the top).
+- CLAUDE.md, all of it. NEW at S162: Oracle of Ages is a full reference
+  alongside Seasons, assets and all.
+- `docs/NEXT-SESSION.md`, the S162 entry, and its FUTURE ACTION ITEMS.
+- `docs/HANDOFF.md` hard-won lessons (three new at the top).
 
 ## State
-- S162 (branch `claude/s162`) is MERGED into main: branch from main.
+- S162 is MERGED into main: branch from main.
 - Whole table green; check-playthrough 44/44, THE END, never died.
 - All three optional dungeons are finishable and proved so in one run each
   (check-side). 28 heart pieces, cap 16. 31 charms.
 
 ## The task
-Ask the human what is next, in plain words, offering what the notes suggest:
-- Give every main dungeon its own Oracle staircases (as the Palace now has),
-  shown beside the originals.
-- Make the keese readable over the Eyrie's black chasm.
-- Anything the human noticed watching the S162 clips.
-Do nothing large without the human's go-ahead.
+Ask the human which action item to take, in plain words. The list (detail
+in NEXT-SESSION.md S162): cartridge sound effects (5 of ~89 are real); each
+main dungeon's own stairs; keese over the Eyrie's chasm; human tuning of
+fights; measuring guessed timings; the 50 unaudited overworld screens; a
+Lens puzzle on the overworld; reviewing our item icons; a phone check.
+S162 suggested sound effects first, then stairs. Either cartridge may be the
+source. Do nothing large without the human's go-ahead.
 
 ## Done means
 - Whatever the human chose, with the whole table green and check-playthrough

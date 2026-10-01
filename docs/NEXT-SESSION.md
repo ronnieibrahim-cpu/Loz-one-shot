@@ -66,6 +66,39 @@ original's own decoration (Recommended), and add a few enemies to the Palace.
   dungeon-strands baseline re-recorded (the two vault islands, plus five
   pre-existing one-cell d4 pockets it had been reporting as NEW).
 
+### FUTURE ACTION ITEMS (the human asked for all of these to be kept, S162)
+Oracle of AGES is a full reference alongside Seasons, assets and all (now in
+CLAUDE.md): any item below may take its sound, art or timing from either
+cartridge. Ask the human which to do; none is started.
+1. SOUND EFFECTS FROM THE CARTRIDGES. Only 5 of the ~89 effects in
+   src/data/audio.js are the real ones (`{ seasons: '...' }`, played by
+   src/core/gbsound.js); the rest are synthesized imitations (sword, hurt,
+   lift, throw, splash, fall, chest, door, ...). Port Seasons' or Ages' own
+   sfx scripts (oracles-disasm `audio/*/sfx/`) the way swordSpin was, and
+   play each to the human as a WAV beside the original.
+2. EACH MAIN DUNGEON'S OWN STAIRS. All six main dungeons draw the shared,
+   hand-drawn grey `dStairs`. Every Oracle dungeon tileset has its own
+   TILEINDEX_INDOOR_UPSTAIRCASE $44 / DOWNSTAIRCASE $45 in its own colours;
+   the Palace shows the pattern (`uStairsUp/Down` picks, optionalKit, `/`
+   down and `S` up in the legend). Needs `S` written into each up-stair.
+3. KEESE OVER THE EYRIE'S CHASM are nearly invisible (dark on black).
+4. HUMAN TUNING OF FIGHTS. The robot is clumsy (~25 hearts on Thalassor);
+   whether the optional bosses and the Palace's new enemies are fair needs
+   the human's hands. Still NO to copying Seasons' damage/health (S150).
+5. MEASURE THE GUESSED TIMINGS. feel.js: 411 constants, 23 measured, 190
+   derived, 198 guessed. Frame-step the ones the player feels most (enemy
+   speeds, knockback, hit-flash length, item animations) against footage of
+   either cartridge; never upgrade a word without doing it.
+6. THE 50 OVERWORLD SCREENS NOT YET AUDITED (120 of 170 in
+   docs/AUDITED-ROOMS.md): look at each at all three tides, by eye.
+7. A LENS PUZZLE ON THE OVERWORLD. check-drift: the Brineglass Lens is used
+   on 0 overworld screens (every other item on 3+). Give it a later life.
+8. REVIEW OUR OWN ITEM ICONS beside the real menus of both games (they are
+   hand-drawn by design, docs/ART-BACKLOG.md; a side-by-side may still catch
+   ones that read off-register).
+9. A PHONE CHECK. The build is meant to run on a phone; it has only been
+   looked at desktop-sized. Shoot it at phone sizes, touch buttons included.
+
 ### What the tour found (for the human's record)
 - Vault and Eyrie play cleanly end to end (check-side's runs, filmed). The
   robot loses ~28 quarter-hearts to the Saltwraith and ~8 to the Gustharpy.

@@ -88,6 +88,17 @@ hand-drawing does. Do not redraw by hand something `assets/sheets/` already
 provides. `docs/ART-DIRECTION.md` is the authority; `docs/briefs/AGENTS.md`
 section J is the workflow.
 
+**Oracle of Ages is a full reference too, assets and all (the human, S160
+and again S162).** Everything above that says "Seasons" or "the sheets" means
+BOTH cartridges: Ages' tilesets, sprites, sound effects, music, room layouts
+and footage are as usable a source and as valid a fidelity reference as
+Seasons'. The Sunken Palace (S161) is built from Ages' Mermaid's Cave;
+`rip-objects.py`'s `Tileset(('ages', n))` and `rip-dungeon-themes.py`'s
+`ages:NN` read Ages' data from `assets/objects/oracles-disasm/ages/`, and
+oracles-disasm (github.com/Stewmath/oracles-disasm) holds the rest of Ages
+alongside Seasons. When the two disagree, pick whichever fits the place
+better and say which.
+
 **If no sheet has it, draw it to match.** Everything original to this game —
 the bosses, Nereth, the Essence orb, the tide valve, the Moon Conch, the
 tide-variant terrain — has to be indistinguishable in register from the
