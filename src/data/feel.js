@@ -457,8 +457,18 @@ export const BOSS_KNOCK_FRAMES = 6;
 /** x — bosses travel this fraction of the distance an enemy would. guessed. */
 export const BOSS_KNOCK_SCALE = 0.4;
 
-/** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
-export const HAZARD_DAMAGE = 2;
+/** qh — damage from stepping on spikes: one heart. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/commonCode.s,
+ *  dealSpikeDamageToLink (`ld a,-4`; the Red Luck Ring halves it). Was a
+ *  guessed half heart. */
+export const HAZARD_DAMAGE = 4;
+
+/** f — the safety a spike's sting buys, and how long it shoves Link back the
+ *  way he came. derived from the cartridge: dealSpikeDamageToLink sets
+ *  invincibilityCounter 40 and knockbackCounter 10, at the reverse of his own
+ *  angle (`xor $10`), rather than the 34 and 15 an enemy's hit gives. */
+export const SPIKE_INVULN_FRAMES = 40;
+export const SPIKE_KNOCK_FRAMES = 10;
 
 /** qh — damage from falling into a pit: one heart. derived from the
  *  cartridge: linkState02 @substate2 applies damageToApply $fc (-4 quarter
@@ -705,9 +715,11 @@ export const TITLE_FADE_FRAMES = 21;
  *  frame 6826 to 6847; the logo is on the screen at 6848, with no fade in. */
 export const TITLE_WHITE_FRAMES = 22;
 
-/** f — each half of PRESS START's blink. guessed: the run leaves the logo
- *  seventeen frames after it appears, before one full blink. */
-export const TITLE_PRESS_BLINK = 16;
+/** f — each half of PRESS START's blink. derived from the cartridge:
+ *  oracles-disasm code/bank3Cutscenes.s, intro_titlescreen hides the
+ *  titlescreenPressStartSprites while bit 5 of its frame countdown (wTmpcbb3)
+ *  is set, so it shows 32 frames and hides 32. Was a guessed 16. */
+export const TITLE_PRESS_BLINK = 32;
 
 /** f — how long an area-name banner stays up. guessed. */
 export const BANNER_FRAMES = 120;

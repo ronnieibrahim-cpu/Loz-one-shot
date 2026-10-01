@@ -33,7 +33,7 @@ import {
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES,
-  KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
+  KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE,
   JUMP_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   GAP_HOP_MAX_SPAN,
@@ -352,7 +352,14 @@ export class Player extends Entity {
     if (this.z > 2 || this.jumping) return;
     if ((f & F.WHIRL) && game.enterWhirlpool()) return;
     if (f & F.PIT) { this.beginFall(game); return; }
-    if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
+    if ((f & F.HAZARD) && this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true })) {
+      // Spikes, Seasons' way (dealSpikeDamageToLink): longer safety, and a
+      // short shove straight back the way he was facing.
+      const [dx, dy] = DIR_VEC[this.dir];
+      this.invuln = SPIKE_INVULN_FRAMES;
+      this.knockX = -dx * PLAYER_KNOCK_SPEED; this.knockY = -dy * PLAYER_KNOCK_SPEED;
+      this.knockTime = SPIKE_KNOCK_FRAMES;
+    }
   }
 
   // ----------------------------------------------------------------- input
