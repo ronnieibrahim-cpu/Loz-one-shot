@@ -12,6 +12,8 @@ music itself is Nintendo's and Capcom's.
 | `mus/fileSelect.s` | `audio/common/mus/` | the `fileSelect` track |
 | `mus/overworld.s` | `audio/common/mus/` | the `overworld` track (Holodrum) |
 | `mus/intro1.s`, `mus/intro2.s` | `audio/common/mus/` | ripped, not yet played — the Seasons opening, kept to match recordings against |
+| `mus/*.s` (all of it, S164) | `audio/common/mus/`, `audio/seasons/mus/` | every Seasons place theme, for choosing area music; `RIP_ALL_MUSIC=1 python3 tools/rip-music.py` rips them all for listening (never committed that way) |
+| `mus-ages/*.s` (S164) | `audio/ages/mus/` | every Ages place theme, ripped as `ROM_AGES` |
 | `sfx/getItem.s` | `audio/common/sfx/` | the `itemGet` jingle |
 | `sfx/*.s` (all of it, S163) | `audio/common/sfx/` | every sound effect both games share; `rip-music.py`'s `SFX` list names the ones the game plays |
 | `sfx-seasons/*.s`, `sfx-ages/*.s` | `audio/seasons/sfx/`, `audio/ages/sfx/` | each game's own sound effects |

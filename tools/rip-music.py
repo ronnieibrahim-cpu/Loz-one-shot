@@ -166,6 +166,9 @@ def parse_track(path, prefix, rom='ROM_SEASONS'):
         op, args = parts[0], parts[1:]
         if op == '.db':
             code += [num(t) & 0xff for t in args]
+        elif op == '.dsb':
+            # Padding after a channel's cmdff (templeRemains.s): never read.
+            code += [num(args[1]) & 0xff] * num(args[0])
         elif op == 'note':
             if len(args) != 2:
                 sys.exit('%s: multi-note line not supported: %s' % (path, ln))
@@ -342,7 +345,18 @@ def main():
     noise = parse_noise()
     tracks = []
     used_waves, used_noise = set(), set()
-    jobs = [(name, rel, prefix, 'ROM_SEASONS') for name, rel, prefix in TRACKS]
+    jobs = [(t[0], t[1], t[2], t[3] if len(t) > 3 else 'ROM_SEASONS') for t in TRACKS]
+    if os.environ.get('RIP_ALL_MUSIC'):
+        # Every place theme in both cartridges, for listening (S164). Never
+        # committed this way: TRACKS is what the game plays.
+        have = {t[1] for t in TRACKS}
+        for d, rom, tag in (('mus', 'ROM_SEASONS', ''), ('mus-ages', 'ROM_AGES', 'Ages')):
+            for fn in sorted(os.listdir(os.path.join(SRC, d))):
+                rel = '%s/%s' % (d, fn)
+                if rel in have:
+                    continue
+                start = next(ln[:-1] for ln in lines_of(os.path.join(SRC, rel)) if ln.endswith('Start:'))
+                jobs.append((fn[:-2] + tag, rel, start[:-len('Start')], rom))
     for stem, rom in SFX:
         rel = None
         for d in ('sfx', 'sfx-seasons', 'sfx-ages'):
