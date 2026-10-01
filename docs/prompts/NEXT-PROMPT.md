@@ -1,30 +1,24 @@
-# Next session (S165) — polish, from the action-item list
+# Next session (S166) — the human's answers to S165's four questions
 
 ## Read first
 - CLAUDE.md, all of it. Oracle of Ages is a full reference alongside
   Seasons, assets and all.
-- `docs/NEXT-SESSION.md`, the S164 entry (its FUTURE ACTION ITEMS list), then
-  S162/S163 for the detail of each item.
-- `docs/HANDOFF.md` hard-won lessons.
+- `docs/NEXT-SESSION.md`, the S165 entry (its four questions), then S164.
+- `docs/HANDOFF.md` hard-won lessons (S165's are at the top).
 
 ## State
-- S164 is MERGED into main: branch from main.
+- S165 is on branch claude/oracle-tides-s165, NOT merged unless the human
+  said so: check `git log origin/main` first and branch from wherever S165 is.
 - Whole table green; check-playthrough 44/44, THE END, never died.
-- OUR TUNES ARE KEPT and play on the Game Boy engine (the human's choice,
-  S164): `compileForGb` -> gbsound.js. The tracker synth is gone. Effects
-  take their channel out of the music (stems, Audio._duck).
+- Enemies now die Seasons' way (knockback, then the cartridge's kill puff,
+  then the drop and the room's clear); puffs and the bomb blast are ripped
+  (tools/rip-effects.py); no hit freeze; one Seasons shake.
 
 ## The task
-The human said "proceed in order" through the list (S164). Done at S164:
-each dungeon's own stairs; our tunes on the Game Boy engine ("Music sounds
-great"); music making room for sound effects; Eyrie bats kept as they are.
-Item 5 (fight tuning) is the human's. NEXT: item 6, the guessed timings,
-from NEXT-SESSION.md S164's notes. The human said "match the original in
-all aspects": the beep, carrying, grass, wading AND Link's walk (1 px/f,
-the code's) are done; carry on through the remaining guessed timings,
-reading each from oracles-disasm. Then 7 the 50 unaudited overworld screens, 8 a Lens puzzle
-on the overworld, 9 our item icons, 10 a phone check. Ask before anything
-large.
+Act on the human's answers to S165's questions: (1) boss hit rules 32 f /
+no shove, (2) remove the hand-drawn flinch poses, (3) the Lens puzzle on a
+Salt Pans screen, (4) redraw our item icons 8 px wide. Item 5 (fight tuning)
+is the human's. Ask before anything large.
 
 ## Done means
 - Whatever the human chose, with the whole table green and check-playthrough

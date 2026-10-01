@@ -1,3 +1,90 @@
+## S165 — Seasons' deaths, drops and bombs; every overworld screen audited; the phone layout
+
+Branch claude/oracle-tides-s165, off main at d0c88e2 (S164 merged). NOT
+MERGED: ask the human before moving main.
+
+### What landed
+- ITEM 6 (guessed timings), read from oracles-disasm (sparse-clone
+  github.com/Stewmath/oracles-disasm: code object_code constants data gfx
+  gfx_compressible):
+  - ENEMY DEATH, Seasons' three beats: the killing blow still throws the enemy
+    (enemyStandardUpdate checks knockback before health), harmless and flashing
+    (collisions cleared at 0 hp), then PART_ENEMY_DESTROYED's puff
+    (KILL_PUFF_HOLDS 2 2 2 4 4 4 2, palette flicker KILL_PUFF_FLICKER 2), and
+    ONLY THEN the drop and the room's 'cleared' (Game.checkCleared, which counts
+    a kill puff still in the air; Enemy.vanish). ENEMY_DEATH_FRAMES and every
+    hand-drawn `_death` pose are gone (Seasons has none); six `_death` frames
+    from rip-enemies.py stay unused in the manifest (removing them is a ripper
+    change). Bosses/minibosses keep Boss.beginDeath (`_bossClass`, NOT `isBoss`
+    — a miniboss clears isBoss).
+  - NEW RIPPER tools/rip-effects.py -> src/data/sprites-effects.js (in
+    check-rippers and CLAUDE.md's table; sources in assets/effects/ with a
+    README): fx_puff0-2 (INTERAC_PUFF, PUFF_HOLDS 6 8 4), fx_kill0-4(+b)
+    (PART_ENEMY_DESTROYED), fx_boom0-4 (ITEM_BOMB animation 1, EXPLOSION_HOLDS
+    4 4 3 7 8 8). All 32x32 with the object at (16,16); Effect takes `holds`,
+    `own`, `centre`, `flicker`, `onDone`. The hand-drawn fx_puff/fx_boom and
+    FX_BIG_ART are deleted.
+  - BOMBS: BOMB_FUSE_FRAMES 116 (still 80, flash beat 4); the blast is live
+    for 5 of its 6 frames, growing (EXPLOSION_RADII 6 6 6 10 15 0), each thing
+    hit once. A LIFTED BOMB THROWN used to become a rock and never explode
+    (throwCarried's dead `thrownVx` branch): Bomb.launch/fly now, pot's arc
+    (itemWeights row 0), bounces (BOMB_BOUNCE_STEP, 'bombDown' sound);
+    check-seasons-mechanics asserts it (20 assertions).
+  - DROPS pop in z (PICKUP_POP_SPEED -352, PICKUP_GRAVITY 32, one bounce at
+    PICKUP_BOUNCE_MIN 256), grabbable from the apex; room-placed pickups lie
+    still (`pop` only from spawnPickup). PICKUP_SETTLE_FRAMES/GRAB_DELAY gone.
+  - FAIRY flies straight legs (FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN/SPAN, room rng).
+  - NO HIT FREEZE (HITSTOP_HIT_FRAMES 0, collisionEffects.s has none); the
+    boss-death freeze stays (ours). SHAKES: one Seasons jitter
+    (SHAKE_OFFSETS -2 -1 1 2, updateScreenShake magnitude 0), `game.shake(frames)`
+    takes no amplitude now, cutscene `shake: frames`; bombs, boss deaths and
+    boss-death booms no longer shake; SHAKE_BOSS_SLAM_FRAMES 32 (Aquamentus).
+  - SPIKES: HAZARD_DAMAGE 4, SPIKE_INVULN_FRAMES 40, SPIKE_KNOCK_FRAMES 10
+    (no room places spikes today). TITLE_PRESS_BLINK 32.
+  - Robot re-route: D4 Wyverna — wait 148 (was 120), `diagRetreat` added
+    (wins on 22 qh at 148/150; coarse sweeps found nothing). Replays
+    re-recorded (d1-descent, d6-mooring, tide-steps-split).
+- ITEM 7 DONE: the 50 unaudited screens (the S157 columns 6-8 and 13-14) shot
+  at all three tides beside neighbours (shoot-region), no ledges on any of
+  them (listed in-engine), 50 rows in docs/AUDITED-ROOMS.md: 170/170. The pale
+  blue triangles in shoot-region pictures are the tool's own artifact (it parks
+  Link at -64,-64), not the game.
+- ITEM 10 DONE (phone check): Playwright device emulation (iPhone SE/13,
+  Pixel 7, both orientations, iPad Mini). Fixed: upright phones put the screen
+  at the top under SEL/START and size it to the room above the controls
+  (Screen.fit, body.portrait, PORTRAIT_TOP/GAP); the d-pad and A/B no longer
+  lie over the screen; on <360px phones the pad and buttons are scaled .86 so B
+  is off the pad's right arrow; touch presses are LATCHED like keys (a tap
+  between two updates was lost). Pictures sent to the human.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test.mjs 86/86;
+replay 51/51; check-rippers 33/33; check-build OK. Built; dist committed.
+
+### Questions put to the human (answers decide the next work)
+1. BOSS HIT RULES: Seasons' bosses take 32 frames of safety after a hit and
+   are never shoved (collisionEffects.s ENEMYDMG_30 / ENEMYDMG_0c); ours take
+   20 and a small shove (BOSS_INVULN_FRAMES, BOSS_KNOCK_*). Matching makes
+   every boss fight longer and means re-routing the robot through all bosses;
+   overlaps item 5 (the human's fight tuning).
+2. FLINCH POSES: ordinary enemies have hand-drawn "hurt" faces
+   (sprites-enemies-hurt.js); Seasons' enemies only flash. Remove them?
+3. ITEM 8 (Lens on the overworld): proposal — one Salt Pans screen where two
+   pans look alike from the shore and only one stays crossable when the tide
+   comes in (the Lens shows which); a Piece of Heart or rupees on the far side,
+   never a gate (ITEMS.md: the Lens is never required to pass). Needs a
+   `lensRoom` claim so check-lens proves it. Approve / change?
+4. ITEM 9 (our item icons): Seasons' menu icons are mostly 8 px wide with an
+   L-1/L-2 label and fewer colours; our 15 are 16 px pictures. Redraw them at
+   8 px wide to match? (comparison picture sent).
+
+### FUTURE ACTION ITEMS
+Item 5 is the human's. Items 6, 7, 10 done. Open: the four questions above
+(8 and 9 are the old action items). Remaining guessed timings with an Oracle
+counterpart, if wanted: the game-over screen (Seasons' is a menu that takes
+input at once — a different design), GAMEOVER/ESSENCE/BANNER frames (ours),
+CAM_DEADZONE_W (needs footage).
+
 ## S164 — each dungeon's own stairs; our music on the cartridge's engine
 
 Branch claude/oracle-tides-s164-0h8079, off main at 71a02dd (S163 merged).
