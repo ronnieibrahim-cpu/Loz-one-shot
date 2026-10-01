@@ -131,6 +131,28 @@ const r = await page.evaluate(async () => {
   out.throwR = throwOnce('right', false);
   out.throwL = throwOnce('left', false);
   out.throwFoe = throwOnce('right', true);
+
+  // A LIFTED BOMB, THROWN (S165), flies as itself and still goes off. It used
+  // to be swapped for a stand-in rock that shattered, and never exploded.
+  {
+    g.enterMap('overworld', 0, 4, 7, 24, 80, 'right', { instant: true });
+    g.entities = g.entities.filter(x => !x.isEnemy);
+    const p = g.player; p.dir = 'right';
+    const { Bomb } = await import('/src/game/items.js');
+    const b = new Bomb(p.x, p.y); g.addEntity(b); step(1);
+    p.carrying = b; b.carried = true;
+    const x0 = p.x;
+    p.throwCarried(g);
+    let frames = 0, rocks = 0, landX = null, booms = 0;
+    while (frames < F.BOMB_FUSE_FRAMES + 5) {
+      step(1); frames++;
+      rocks += g.entities.filter(x => x.constructor.name === 'ThrownObject').length;
+      if (landX == null && !b.flight) landX = b.x;
+      booms += g.entities.filter(x => x.constructor.name === 'Explosion').length ? 1 : 0;
+      if (booms) break;
+    }
+    out.bomb = { rocks, travelled: landX == null ? null : landX - x0, frames, booms, removed: b.remove };
+  }
   return out;
 });
 check('a gel that touches Link clings to him', r.gelClings);
@@ -155,6 +177,9 @@ check('an enemy in its path is hurt, and the rock breaks on it early',
   r.throwFoe.hurt === true && r.throwFoe.frames < air, JSON.stringify(r.throwFoe));
 check("and it hits for Seasons' 3, harder than the starting sword's 2",
   r.throwFoe.lost === Math.min(3, r.throwFoe.hp0), JSON.stringify(r.throwFoe));
+check('a lifted bomb thrown flies as itself, not as a stand-in rock',
+  r.bomb.rocks === 0 && r.bomb.travelled > 32, JSON.stringify(r.bomb));
+check('and it still goes off when its fuse ends', r.bomb.booms > 0 && r.bomb.removed, JSON.stringify(r.bomb));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();

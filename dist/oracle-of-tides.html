@@ -1600,14 +1600,19 @@ const ENEMY_FLICKER_FRAMES = ENEMY_INVULN_FRAMES;
  *  was 2. */
 const ENEMY_HIT_FLASH_BEAT = 4;
 
-/** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
- *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
- *  reference point: a boss gets 72 frames of death throes plus periodic
- *  explosions because it is a set piece; an ordinary enemy's death pose is a
- *  single held frame with no animation of its own, so it needs only long
- *  enough to be seen, not a performance. An enemy with no `deathFrame` is
- *  unaffected — it is still removed on the same frame it dies, as before. */
-const ENEMY_DEATH_FRAMES = 16;
+/** f[] — how long each frame of the puff an ordinary enemy dies in is held,
+ *  in the order sprites-effects.js lists `fx_kill*` frames. derived from the
+ *  cartridge: oracles-disasm data/seasons/partAnimations.s, partAnimation573db
+ *  (PART_ENEMY_DESTROYED's animation 0): 2 2 2 4 4 4 2, then it holds its last
+ *  frame until enemyDestroyed.s sees animParameter and deletes itself. 20
+ *  frames in all. Was ENEMY_DEATH_FRAMES, a guessed 16-frame hold of a
+ *  hand-drawn collapse pose no Oracle enemy has. */
+const KILL_PUFF_HOLDS = [2, 2, 2, 4, 4, 4, 2];
+
+/** f — the beat of that puff's palette flicker: enemyDestroyed.s xors its oam
+ *  flags' palette bit on every other frame (`ld a,(wFrameCounter); rrca`), so
+ *  each colour shows for two frames. derived from the cartridge. */
+const KILL_PUFF_FLICKER = 2;
 
 /** f — how long an ordinary enemy with a `spec.attackFrame` holds that pose
  *  once `shoot()`/`shootRing()` fires. guessed, same order of magnitude as
@@ -1939,20 +1944,16 @@ const BANNER_FRAMES = 120;
 
 // IMPACT.
 //
-// A connecting hit in both source games freezes the SIMULATION for a few
-// frames — not the frame, not the music, not the HUD. `Game.hitstop` is that
-// pause: entities stop stepping and everything else keeps running. See the
-// comment above `Game.freeze` for what is deliberately left running and why.
-//
-// All three are `guessed`. They are the first numbers to settle by eye, and
-// the reason the shake constants below them were re-tuned at the same time: a
-// freeze in front of a shake changes what the shake reads as.
+// `Game.freeze` stops the SIMULATION for a few frames — not the frame, not the
+// music, not the HUD. Seasons does not do it for an ordinary hit, either way
+// round (S165, S147 below): only our own boss's killing blow still freezes.
 
-/** f — freeze when the player's own attack connects with an enemy. guessed.
- *  Short: this is the most-repeated interaction in the game and anything long
- *  enough to notice as a pause becomes a stutter over a hundred swings. It
- *  wants to read as weight in the swing, not as a hitch. */
-const HITSTOP_HIT_FRAMES = 3;
+/** f — freeze when the player's own attack connects with an enemy: none.
+ *  derived from the cartridge: oracles-disasm code/collisionEffects.s, every
+ *  collision effect a sword, a seed or a bomb has on an enemy sets damage,
+ *  knockback and invincibility and nothing that stops the world. It was a
+ *  guessed 3, "to read as weight in the swing". */
+const HITSTOP_HIT_FRAMES = 0;
 
 /** f — freeze when something lands a hit on the player. measured: 0 —
  *  Seasons does not stop the world when Link is hit. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
@@ -1969,58 +1970,38 @@ const HITSTOP_BOSS_DEATH_FRAMES = 18;
 
 // SCREEN SHAKE.
 //
-// Re-tuned once hitstop existed. Every one of these was previously chosen with
-// nothing in front of it, so a shake had to carry the whole impact by itself
-// and had grown long to do it. With a freeze in front, the shake's job is only
-// to release the freeze — so amplitudes stay and DURATIONS COME DOWN. A shake
-// that outlasts its own freeze by more than about its own length again stops
-// reading as impact and starts reading as noise.
-//
-// Still `guessed`: nothing here has been frame-stepped against a reference.
+// Seasons shakes the view one way only (code/bank1.s updateScreenShake): for
+// as many frames as setScreenShakeCounter was given, each axis is moved by one
+// of four offsets picked afresh every frame. A strength other than the default
+// is set by two cutscenes and nothing in play, so every shake here is that
+// default and only its LENGTH differs. It shakes for a boss pounding the floor
+// and for scripted moments; a bomb, a sword hit and a boss's death do not
+// shake the screen at all, and since S165 neither do ours.
 
-/** px — screen shake amplitude for a small impact (a hit landing). guessed. */
-const SHAKE_SMALL = 2;
+/** px[] — the offsets one shaking frame picks from, on each axis. derived from
+ *  the cartridge: updateScreenShake's @data row for wScreenShakeMagnitude 0,
+ *  $fe $ff $01 $02. It replaced six guessed amplitudes of 2 to 5 px. */
+const SHAKE_OFFSETS = [-2, -1, 1, 2];
 
-/** px — screen shake amplitude for an explosion or a boss stomp. guessed. */
-const SHAKE_MEDIUM = 3;
-
-/** px — screen shake amplitude for a boss dying. guessed. */
-const SHAKE_LARGE = 4;
-
-/** f — shake duration for a small impact. guessed. Was 8, with no freeze in
- *  front of it. HITSTOP_HIT_FRAMES now carries the first 3 frames of the hit,
- *  so 6 puts the whole event at 9 frames instead of 8 and spends more of it
- *  frozen than wobbling. */
+/** f — shake for a small jolt of our own: a Reefseed stake coming up, a
+ *  charger hitting a wall. guessed (nothing in Seasons does either). */
 const SHAKE_SMALL_FRAMES = 6;
 
-/** f — shake duration for an explosion or a boss stomp. guessed. Was 10. */
+/** f — shake for a boss's lesser blow (a lunge landing, a wall struck).
+ *  guessed. */
 const SHAKE_MEDIUM_FRAMES = 8;
 
-/** f — shake duration for a boss dying. guessed. Was 40, which was two thirds
- *  of a second of continuous camera wobble and read as a rumble rather than a
- *  blow. HITSTOP_BOSS_DEATH_FRAMES now supplies the weight; 24 is what is left
- *  to release it, and the two together are still shorter than the old 40. */
-const SHAKE_LARGE_FRAMES = 24;
+/** f — a boss landing, summoning or slamming the floor. derived from the
+ *  cartridge: object_code/seasons/enemies/aquamentus.s, aquamentus_body_pound,
+ *  `ld a,$20; call setScreenShakeCounter` — Seasons' own boss pound, 32
+ *  frames. It was a guessed 14. */
+const SHAKE_BOSS_SLAM_FRAMES = 32;
 
-/** px, f — a boss landing, summoning or slamming the floor. guessed. Heavier
- *  than MEDIUM and lighter than a death; it exists because `src/data/bosses.js`
- *  spelled this weight out as bare literals at fourteen call sites, which is
- *  exactly what R3 forbids and what made re-tuning the six constants above a
- *  cosmetic change for every boss in the game. */
-const SHAKE_BOSS_SLAM = 4;
-const SHAKE_BOSS_SLAM_FRAMES = 14;
-
-/** px, f — a sustained world rumble rather than a blow: the tide being forced
- *  to a level, ground giving way. guessed. Small amplitude, but the longest
- *  duration of any shake that is not a boss dying — a rumble is defined by
- *  lasting, and it is the one shake that is NOT preceded by a freeze, because
- *  nothing has been hit. */
-const SHAKE_RUMBLE = 2;
+/** f — a sustained world rumble rather than a blow: the tide being forced to a
+ *  level, ground giving way. guessed. */
 const SHAKE_RUMBLE_FRAMES = 12;
 
-/** px, f — a boss's armour or a wall shattering: the sharpest short shake in
- *  the game, and the only one that goes above SHAKE_LARGE's amplitude. guessed. */
-const SHAKE_BOSS_BREAK = 5;
+/** f — a boss's armour or a wall shattering. guessed. */
 const SHAKE_BOSS_BREAK_FRAMES = 16;
 
 // ---------------------------------------------------------------------------
@@ -2169,9 +2150,6 @@ const CONTEXT_REACH = 12;
 /** px — how far in front of Link a lift reaches. guessed. */
 const LIFT_REACH = 12;
 
-/** sp/f — speed of an object thrown by the player. guessed; 2.5 px/f, snapped
- *  to the grid from 2.6. */
-const THROW_SPEED = 640;
 
 /** sp/f — upward velocity a thrown object leaves the hand with. guessed;
  *  0.625 px/f, snapped from the 0.6 that used to sit inline in items.js. */
@@ -2211,12 +2189,14 @@ const LIFTED_THROW_NUDGE = 1;
  *  the frame it is thrown — a 12x12 box. */
 const LIFTED_THROW_RADIUS = 6;
 
-/** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
- *  sit inline in items.js. */
-const THROW_SLIDE_DECAY = 0.9;
-
-/** sp/f — below this a thrown bomb's slide is called finished. guessed. */
-const THROW_SLIDE_STOP = 26;
+/** sp/f — a thrown bomb (S165) flies the lifted pot's arc above: a bomb has
+ *  no weight class of its own, so itemBeginThrow reads itemWeights row 0 for
+ *  it too. Landing, it bounces as Seasons' bombs do (commonBombAndBraceletCode.s
+ *  itemBounce): its fall turned back up at half speed (PICKUP_BOUNCE_MIN is the
+ *  same objectNegateAndHalveSpeedZ cut-off) and its run across the floor cut
+ *  by bounceSpeedReductionMapping, which takes each 0.25 px/f of speed to
+ *  0.125 px/f — this many subpixels per step. derived from the cartridge. */
+const BOMB_BOUNCE_STEP = 64;
 
 /** px — height an object is held at while carried. derived from the
  *  cartridge (S155): oracles-disasm object_code/common/itemParents/
@@ -2275,8 +2255,8 @@ const ANCHOR_RADIUS_TILES = 2;
  */
 const ANCHOR_SHAPE = 'square';
 
-/** sp/f — how fast the anchor flies when thrown. guessed; matches THROW_SPEED
- *  so it reads as the same arm that throws a pot. */
+/** sp/f — how fast the anchor flies when thrown. guessed; 2.5 px/f, the
+ *  speed the game once threw everything at (THROW_SPEED, gone at S165). */
 const ANCHOR_THROW_SPEED = 640;
 
 /** sp/f — how fast the chain reels the anchor back on recall. guessed; faster
@@ -2505,18 +2485,21 @@ const PICKUP_LIFE_FRAMES = 480;
  *  visibility each time it counts once counter1 is under 60 — 120 frames. */
 const PICKUP_BLINK_FRAMES = 120;
 
-/** sp/f — the little upward pop a drop makes when it appears. guessed;
- *  -1.25 px/f, snapped to the grid from -1.2. */
-const PICKUP_POP_SPEED = -320;
+/** sp/f — the upward pop a drop makes when it appears: its height rises at
+ *  1.375 px/f. derived from the cartridge: oracles-disasm object_code/common/
+ *  parts/itemDrop.s @normalItem, speedZ = -$160. It was a guessed -1.25 px/f
+ *  that moved the drop up the screen instead of into the air. */
+const PICKUP_POP_SPEED = -352;
 
-/** sp/f^2 — gravity on that pop. guessed. */
-const PICKUP_GRAVITY = 40;
+/** sp/f^2 — gravity on that pop. derived from the cartridge: itemDrop.s
+ *  @state1, objectUpdateSpeedZAndBounce with c = $20. Was a guessed 40. */
+const PICKUP_GRAVITY = 32;
 
-/** f — how long the pop lasts before the drop settles. guessed. */
-const PICKUP_SETTLE_FRAMES = 12;
-
-/** f — delay before a drop can be collected, so it is not grabbed mid-pop. guessed. */
-const PICKUP_GRAB_DELAY = 8;
+/** sp/f — a drop that lands falling faster than this bounces, at half its
+ *  speed, back up; slower and it stays down. derived from the cartridge:
+ *  code/bank0.s objectNegateAndHalveSpeedZ ("Once it reaches a speed of less
+ *  than 1 pixel per frame downwards, it stops"). A drop bounces once. */
+const PICKUP_BOUNCE_MIN = 256;
 
 /** f — frames per wing frame. The healing fairy's two EXTRACTED frames
  *  (tools/rip-fairies.py) alternate every this many. guessed: nothing was
@@ -2525,22 +2508,64 @@ const PICKUP_GRAB_DELAY = 8;
  *  between, so slower reads as a stutter and faster as a blur. */
 const FAIRY_FLAP_FRAMES = 6;
 
-/** rad/f — how fast a fairy's drift angle turns. guessed. */
-const FAIRY_DRIFT_TURN = 0.06;
+/** sp/f[] — the four speeds a fairy flies a leg at: 0.25, 0.5, 0.75 and 1
+ *  px/f. derived from the cartridge: oracles-disasm object_code/common/parts/
+ *  itemDrop.s, itemDrop_chooseRandomFairyMovement @speedTable (SPEED_40,
+ *  SPEED_80, SPEED_c0, SPEED_100). A fairy flies straight legs, each in one
+ *  of sixteen directions at one of these, picked at random. It used to drift
+ *  on a guessed sine (0.06 rad/f, 0.69 and 0.63 px/f). */
+const FAIRY_LEG_SPEEDS = [64, 128, 192, 256];
 
-/** sp/f — amplitude of a fairy's drift on x. guessed; 0.6875 px/f. */
-const FAIRY_DRIFT_X = 176;
-
-/** sp/f — amplitude of a fairy's drift on y. guessed; 0.625 px/f. */
-const FAIRY_DRIFT_Y = 160;
+/** f — how long a fairy's leg lasts: 8 more than an even number below 64.
+ *  derived from the cartridge: the same routine, counter2 = (random & $3e) + 8,
+ *  so 8 to 70 frames. */
+const FAIRY_LEG_MIN = 8;
+const FAIRY_LEG_SPAN = 32;
 
 // ---------------------------------------------------------------------------
 // Effects
 // ---------------------------------------------------------------------------
 
-/** f — life of a bomb before it detonates is set per-item; this is how long the
- *  explosion entity itself lives. guessed. */
-const EXPLOSION_FRAMES = 24;
+/** f[] — how long each frame of the puff something vanishes or appears in is
+ *  held, in the order sprites-effects.js lists `fx_puff*`. derived from the
+ *  cartridge: oracles-disasm data/seasons/interactionAnimations.s,
+ *  interactionAnimation51bae (INTERAC_PUFF's animation 0): 6 8 4, then the
+ *  $ff frame that ends it. 18 frames; ours was a hand-drawn four-frame puff
+ *  at a guessed 4 frames each. */
+const PUFF_HOLDS = [6, 8, 4];
+
+/** f — a bomb's fuse: still for 80 frames, then flashing on a 4-frame beat for
+ *  36 more, and it goes off on the 117th. derived from the cartridge:
+ *  oracles-disasm data/itemAnimations.s, itemAnimation1e777 (ITEM_BOMB's
+ *  animation 0): $50, then nine 4-frame alternations, then the $7f frame
+ *  whose animParameter tells bombUpdateAnimation to explode. It was a guessed
+ *  100 with a flash that sped up. */
+const BOMB_FUSE_FRAMES = 80 + 9 * 4;
+
+/** f — how long the fuse sits before it starts to flash, and the beat it
+ *  flashes on. derived: the same itemAnimation1e777 ($50, then $04s). */
+const BOMB_STILL_FRAMES = 80;
+const BOMB_FLASH_BEAT = 4;
+
+/** f[] — how long each frame of the blast is held, in the order
+ *  sprites-effects.js lists `fx_boom*` frames. derived from the cartridge:
+ *  oracles-disasm data/itemAnimations.s, itemAnimation1e798 (ITEM_BOMB's
+ *  animation 1): 4 4 3 7 8 8. */
+const EXPLOSION_HOLDS = [4, 4, 3, 7, 8, 8];
+
+/** f — how long the explosion entity lives: the blast's frames end to end, 34.
+ *  derived: the sum of EXPLOSION_HOLDS (itemUpdateExplosion deletes the bomb
+ *  on the $80 frame that follows them). Was a guessed 24. */
+const EXPLOSION_FRAMES = EXPLOSION_HOLDS.reduce((a, b) => a + b, 0);
+
+/** px[] — the blast's reach, frame by frame of EXPLOSION_HOLDS: its collision
+ *  radius on each (0 = it no longer hits). derived from the cartridge: the
+ *  third byte of each itemAnimation1e798 frame is animParameter, whose low five
+ *  bits itemUpdateExplosion copies to collisionRadiusY/X ($06 $06 $06 $0a $0f)
+ *  and whose bit 6 ($40) zeroes collisionType for the last frame. The blast is
+ *  live for 26 frames and grows; it was one hit on its first frame with a
+ *  fixed 14 px reach. */
+const EXPLOSION_RADII = [6, 6, 6, 10, 15, 0];
 
 /** px — radius Link's charge sparkles scatter over. guessed. */
 const CHARGE_SPARKLE_SPREAD = 12;
@@ -3518,7 +3543,8 @@ __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_HIT_TIERS"] = ENEMY_HIT_TIERS;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
 __exports["ENEMY_HIT_FLASH_BEAT"] = ENEMY_HIT_FLASH_BEAT;
-__exports["ENEMY_DEATH_FRAMES"] = ENEMY_DEATH_FRAMES;
+__exports["KILL_PUFF_HOLDS"] = KILL_PUFF_HOLDS;
+__exports["KILL_PUFF_FLICKER"] = KILL_PUFF_FLICKER;
 __exports["ENEMY_ATTACK_FRAMES"] = ENEMY_ATTACK_FRAMES;
 __exports["ENEMY_KNOCK_SPEED"] = ENEMY_KNOCK_SPEED;
 __exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
@@ -3574,17 +3600,11 @@ __exports["BANNER_FRAMES"] = BANNER_FRAMES;
 __exports["HITSTOP_HIT_FRAMES"] = HITSTOP_HIT_FRAMES;
 __exports["HITSTOP_HURT_FRAMES"] = HITSTOP_HURT_FRAMES;
 __exports["HITSTOP_BOSS_DEATH_FRAMES"] = HITSTOP_BOSS_DEATH_FRAMES;
-__exports["SHAKE_SMALL"] = SHAKE_SMALL;
-__exports["SHAKE_MEDIUM"] = SHAKE_MEDIUM;
-__exports["SHAKE_LARGE"] = SHAKE_LARGE;
+__exports["SHAKE_OFFSETS"] = SHAKE_OFFSETS;
 __exports["SHAKE_SMALL_FRAMES"] = SHAKE_SMALL_FRAMES;
 __exports["SHAKE_MEDIUM_FRAMES"] = SHAKE_MEDIUM_FRAMES;
-__exports["SHAKE_LARGE_FRAMES"] = SHAKE_LARGE_FRAMES;
-__exports["SHAKE_BOSS_SLAM"] = SHAKE_BOSS_SLAM;
 __exports["SHAKE_BOSS_SLAM_FRAMES"] = SHAKE_BOSS_SLAM_FRAMES;
-__exports["SHAKE_RUMBLE"] = SHAKE_RUMBLE;
 __exports["SHAKE_RUMBLE_FRAMES"] = SHAKE_RUMBLE_FRAMES;
-__exports["SHAKE_BOSS_BREAK"] = SHAKE_BOSS_BREAK;
 __exports["SHAKE_BOSS_BREAK_FRAMES"] = SHAKE_BOSS_BREAK_FRAMES;
 __exports["FALL_ANIM_FRAMES"] = FALL_ANIM_FRAMES;
 __exports["FALL_FRAMES"] = FALL_FRAMES;
@@ -3609,7 +3629,6 @@ __exports["TEXT_FRAMES_PER_CHAR"] = TEXT_FRAMES_PER_CHAR;
 __exports["TEXT_BEEP_COOLDOWN"] = TEXT_BEEP_COOLDOWN;
 __exports["CONTEXT_REACH"] = CONTEXT_REACH;
 __exports["LIFT_REACH"] = LIFT_REACH;
-__exports["THROW_SPEED"] = THROW_SPEED;
 __exports["THROW_ARC_RISE"] = THROW_ARC_RISE;
 __exports["THROW_ARC_GRAVITY"] = THROW_ARC_GRAVITY;
 __exports["LIFTED_THROW_SPEED"] = LIFTED_THROW_SPEED;
@@ -3617,8 +3636,7 @@ __exports["LIFTED_THROW_RISE"] = LIFTED_THROW_RISE;
 __exports["LIFTED_THROW_GRAVITY"] = LIFTED_THROW_GRAVITY;
 __exports["LIFTED_THROW_NUDGE"] = LIFTED_THROW_NUDGE;
 __exports["LIFTED_THROW_RADIUS"] = LIFTED_THROW_RADIUS;
-__exports["THROW_SLIDE_DECAY"] = THROW_SLIDE_DECAY;
-__exports["THROW_SLIDE_STOP"] = THROW_SLIDE_STOP;
+__exports["BOMB_BOUNCE_STEP"] = BOMB_BOUNCE_STEP;
 __exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
 __exports["LIFT_STEP_FRAMES"] = LIFT_STEP_FRAMES;
 __exports["LIFT_STEP_POS"] = LIFT_STEP_POS;
@@ -3673,13 +3691,18 @@ __exports["PICKUP_LIFE_FRAMES"] = PICKUP_LIFE_FRAMES;
 __exports["PICKUP_BLINK_FRAMES"] = PICKUP_BLINK_FRAMES;
 __exports["PICKUP_POP_SPEED"] = PICKUP_POP_SPEED;
 __exports["PICKUP_GRAVITY"] = PICKUP_GRAVITY;
-__exports["PICKUP_SETTLE_FRAMES"] = PICKUP_SETTLE_FRAMES;
-__exports["PICKUP_GRAB_DELAY"] = PICKUP_GRAB_DELAY;
+__exports["PICKUP_BOUNCE_MIN"] = PICKUP_BOUNCE_MIN;
 __exports["FAIRY_FLAP_FRAMES"] = FAIRY_FLAP_FRAMES;
-__exports["FAIRY_DRIFT_TURN"] = FAIRY_DRIFT_TURN;
-__exports["FAIRY_DRIFT_X"] = FAIRY_DRIFT_X;
-__exports["FAIRY_DRIFT_Y"] = FAIRY_DRIFT_Y;
+__exports["FAIRY_LEG_SPEEDS"] = FAIRY_LEG_SPEEDS;
+__exports["FAIRY_LEG_MIN"] = FAIRY_LEG_MIN;
+__exports["FAIRY_LEG_SPAN"] = FAIRY_LEG_SPAN;
+__exports["PUFF_HOLDS"] = PUFF_HOLDS;
+__exports["BOMB_FUSE_FRAMES"] = BOMB_FUSE_FRAMES;
+__exports["BOMB_STILL_FRAMES"] = BOMB_STILL_FRAMES;
+__exports["BOMB_FLASH_BEAT"] = BOMB_FLASH_BEAT;
+__exports["EXPLOSION_HOLDS"] = EXPLOSION_HOLDS;
 __exports["EXPLOSION_FRAMES"] = EXPLOSION_FRAMES;
+__exports["EXPLOSION_RADII"] = EXPLOSION_RADII;
 __exports["CHARGE_SPARKLE_SPREAD"] = CHARGE_SPARKLE_SPREAD;
 __exports["ESSENCE_SPARKLE_SPREAD"] = ESSENCE_SPARKLE_SPREAD;
 __exports["ESSENCE_SPARKLE_EVERY"] = ESSENCE_SPARKLE_EVERY;
@@ -13390,7 +13413,14 @@ __define("game/effects.js", function (__exports, __require) {
 const { Entity, defineEntity } = __require("game/entity.js");
 const { sp } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
-const { EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES } = __require("data/feel.js");
+const { EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER } = __require("data/feel.js");
+
+/** Which step of a held sequence frame `f` falls in (the last once past the end). */
+function heldStep(holds, f) {
+  let t = 0;
+  for (let i = 0; i < holds.length; i++) { t += holds[i]; if (f < t) return i; }
+  return holds.length - 1;
+}
 
 class Effect extends Entity {
   constructor(x, y, spec, opts = {}) {
@@ -13400,10 +13430,15 @@ class Effect extends Entity {
     this.harmless = true;
     this.shadow = false;
     this.grounded = false;
-    this.pal = opts.pal || spec.pal || 'spark';
+    // A ripped effect (spec.own) carries its own colours per frame.
+    this.pal = spec.own ? null : (opts.pal || spec.pal || 'spark');
     this.rate = opts.rate || spec.rate || 4;
     this.frames = spec.frames;
-    this.life = opts.life != null ? opts.life : (spec.life || this.frames.length * this.rate);
+    this.holds = spec.holds || null;
+    this.life = opts.life != null ? opts.life
+      : (spec.life || (this.holds ? this.holds.reduce((a, b) => a + b, 0) : this.frames.length * this.rate));
+    // Called once, on the frame the effect ends (the kill puff pays out here).
+    this.onDone = opts.onDone || null;
     this.depth = spec.depth != null ? spec.depth : 40;
     // Drift is named in px/f by whoever spawns the effect; stored in sp/f.
     this.vx = sp(opts.vx || 0); this.vy = sp(opts.vy || 0);
@@ -13416,24 +13451,40 @@ class Effect extends Entity {
     this.fx += this.vx; this.fy += this.vy;
     if (this.spec.gravity) { this.vy += sp(this.spec.gravity); }
     if (this.spec.update) this.spec.update(this, game);
-    if (--this.life <= 0) this.remove = true;
+    if (--this.life <= 0) {
+      this.remove = true;
+      if (this.onDone) { const f = this.onDone; this.onDone = null; f(game); }
+    }
   }
 
   spriteName() {
+    if (this.holds) {
+      // `frame` was already advanced once in the update that made this frame.
+      const n = this.frames[heldStep(this.holds, Math.max(0, this.frame - 1))];
+      return this.spec.flicker && Math.floor((this.frame - 1) / this.spec.flicker) % 2 ? n + 'b' : n;
+    }
     const i = Math.floor(this.frame / this.rate);
     return this.frames[this.loop ? (i % this.frames.length) : Math.min(i, this.frames.length - 1)];
   }
 }
 
 const EFFECTS = {
-  puff: { frames: ['fx_puff0', 'fx_puff1', 'fx_puff2', 'fx_puff3'], pal: 'ui', rate: 4 },
+  // Seasons' own puffs (tools/rip-effects.py): 32x32 cells centred on the
+  // 16x16 spot they are spawned at. `puff` is INTERAC_PUFF, what a thing
+  // vanishes or appears in; `kill` is PART_ENEMY_DESTROYED, what an ordinary
+  // enemy dies in, flickering between two palettes.
+  puff: { frames: ['fx_puff0', 'fx_puff1', 'fx_puff2'], holds: PUFF_HOLDS, own: true, w: 32, h: 32, centre: true },
+  kill: {
+    frames: ['fx_kill0', 'fx_kill1', 'fx_kill0', 'fx_kill2', 'fx_kill2', 'fx_kill3', 'fx_kill4'],
+    holds: KILL_PUFF_HOLDS, flicker: KILL_PUFF_FLICKER, own: true, w: 32, h: 32, centre: true,
+  },
   spark: { frames: ['fx_spark0', 'fx_spark1', 'fx_spark2'], pal: 'spark', rate: 3 },
   splash: { frames: ['fx_splash0', 'fx_splash1', 'fx_splash2'], pal: 'water', rate: 5 },
   ripple: { frames: ['fx_ripple0', 'fx_ripple1'], pal: 'water', rate: 8, loop: true, life: 9999, depth: -5 },
   dust: { frames: ['fx_dust0', 'fx_dust1', 'fx_dust2'], pal: 'sand', rate: 5 },
   cut: { frames: ['fx_cut0', 'fx_cut1', 'fx_cut2'], pal: 'tree', rate: 4 },
   sparkle: { frames: ['fx_sparkle0', 'fx_sparkle1', 'fx_sparkle2', 'fx_sparkle1'], pal: 'gold', rate: 5 },
-  boom: { frames: ['fx_boom0', 'fx_boom1', 'fx_boom2', 'fx_boom3', 'fx_boom4'], pal: 'fire', rate: 4, w: 32, h: 32 },
+  boom: { frames: ['fx_boom0', 'fx_boom1', 'fx_boom0', 'fx_boom2', 'fx_boom3', 'fx_boom4'], holds: EXPLOSION_HOLDS, own: true, w: 32, h: 32 },
   flame: { frames: ['fx_flame0', 'fx_flame1', 'fx_flame2'], pal: 'fire', rate: 6, loop: true, life: 9999 },
   bubble: { frames: ['fx_bubble0', 'fx_bubble1'], pal: 'water', rate: 8, loop: true },
   foam: { frames: ['fx_foam0', 'fx_foam1', 'fx_foam2'], pal: 'water', rate: 6 },
@@ -13443,72 +13494,91 @@ const EFFECTS = {
 function spawnEffectAt(game, name, x, y, opts) {
   const spec = EFFECTS[name];
   if (!spec) { console.warn('[fx] unknown effect', name); return null; }
-  const e = new Effect(x, y, spec, opts || {});
+  // A 32x32 ripped cell is spawned at the 16x16 spot callers name.
+  const c = spec.centre ? 8 : 0;
+  const e = new Effect(x - c, y - c, spec, opts || {});
   game.addEntity(e);
   return e;
 }
 
 // Explosions damage in a radius and break bombable walls; the visual is a boom
 // effect, but the logic lives here so bombs stay simple.
+//
+// Seasons' blast (itemUpdateExplosion) is not one instant hit: it is live for
+// the first five of its six frames, its reach growing from 6 px to 15 px
+// (EXPLOSION_RADII), and anything that wanders into it while it is live is
+// caught — each thing once, the way the cartridge's invincibility after a hit
+// and Link's own `var37` latch make it once.
 class Explosion extends Entity {
   constructor(x, y, opts = {}) {
     super(x, y, opts);
     this.w = 32; this.h = 32;
-    this.hb = { x: 2, y: 2, w: 28, h: 28 };
+    this.hb = { x: 16, y: 16, w: 0, h: 0 };
     this.isEffect = true;
     this.harmless = true;
     this.shadow = false;
     this.life = EXPLOSION_FRAMES;
     this.damage = 0;
-    this.hitDone = false;
+    this.started = false;
+    this.struck = new Set();
     this.depth = 50;
     this.power = opts.power || 4;
-    // Dry Kindling: a wider blast, applied to the hitbox rather than to the
-    // sprite, so a charm never changes what an explosion LOOKS like — the
-    // 32x32 boom art is the source game's and stays that size.
-    this.wide = false;
+    // Dry Kindling: a wider blast, applied to the reach rather than to the
+    // sprite, so a charm never changes what an explosion LOOKS like.
+    this.scale = 1;
   }
 
-  /** Grown once, on the first frame, because `game` is not in the ctor. */
-  applyCharms(game) {
-    if (this.wide || !game.charm('dryKindling')) return;
-    this.wide = true;
-    const grow = Math.round(this.w * (DRY_KINDLING_FACTOR - 1) / 2) * 2;
-    this.hb = { x: this.hb.x - grow / 2, y: this.hb.y - grow / 2,
-      w: this.hb.w + grow, h: this.hb.h + grow };
+  /** Dry Kindling: read once, on the first frame, because `game` is not in the ctor. */
+  applyCharms(game) { if (game.charm('dryKindling')) this.scale = DRY_KINDLING_FACTOR; }
+
+  /** The live box for this frame, or null once the blast has stopped hitting. */
+  reach() {
+    const r = Math.round(EXPLOSION_RADII[heldStep(EXPLOSION_HOLDS, this.frame - 1)] * this.scale);
+    if (!r) return null;
+    return { x: 16 - r, y: 16 - r, w: 2 * r, h: 2 * r };
   }
 
   update(game) {
     this.frame++;
-    if (!this.hitDone) {
-      this.hitDone = true;
+    if (!this.started) {
+      this.started = true;
       this.applyCharms(game);
       game.audio.sfx('explode');
-      game.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
-      for (const e of game.entities) {
-        if (e === this || e.dead) continue;
-        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, KNOCK_EXPLOSION, this);
-        if (e.bombable && this.overlaps(e) && e.onBombed) e.onBombed(game);
-      }
-      if (game.player && this.overlaps(game.player)) {
-        game.player.takeDamage(game, EXPLOSION_SELF_DAMAGE, this, { noKnockDir: true });
-      }
+      // Walls and bombable things are opened by the blast going off, over the
+      // ground it has always covered, not by its growth.
+      this.hb = { x: 2, y: 2, w: 28, h: 28 };
       game.breakTilesInRect(this.rect(), 'bomb');
+      for (const e of game.entities) {
+        if (e !== this && !e.dead && e.bombable && this.overlaps(e) && e.onBombed) e.onBombed(game);
+      }
+    }
+    const box = this.reach();
+    if (box) {
+      this.hb = box;
+      for (const e of game.entities) {
+        if (e === this || e.dead || this.struck.has(e)) continue;
+        if (e.isEnemy && this.overlaps(e)) { this.struck.add(e); e.hurt(game, this.power, null, KNOCK_EXPLOSION, this); }
+      }
+      const p = game.player;
+      if (p && !this.struck.has(p) && this.overlaps(p)) {
+        this.struck.add(p);
+        p.takeDamage(game, EXPLOSION_SELF_DAMAGE, this, { noKnockDir: true });
+      }
     }
     if (--this.life <= 0) this.remove = true;
   }
 
   spriteName() {
-    const i = Math.min(4, Math.floor(this.frame / 4));
-    return 'fx_boom' + i;
+    return EFFECTS.boom.frames[heldStep(EXPLOSION_HOLDS, Math.max(0, this.frame - 1))];
   }
 
   draw(ctx, game, ox, oy) {
-    sprites.draw(ctx, this.spriteName(), ox + this.x, oy + this.y, { pal: 'fire' });
+    sprites.draw(ctx, this.spriteName(), ox + this.x, oy + this.y);
   }
 }
 
 defineEntity('explosion', (x, y, o) => new Explosion(x, y, o));
+__exports["heldStep"] = heldStep;
 __exports["Effect"] = Effect;
 __exports["EFFECTS"] = EFFECTS;
 __exports["spawnEffectAt"] = spawnEffectAt;
@@ -13538,7 +13608,7 @@ const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES, POT_HAULER_FACTOR } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES, POT_HAULER_FACTOR, BOMB_FUSE_FRAMES, BOMB_STILL_FRAMES, BOMB_FLASH_BEAT } = __require("data/feel.js");
 const { sprites, tiles } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -13550,7 +13620,8 @@ class Bomb extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 4, y: 6, w: 8, h: 8 };
-    this.fuse = o.fuse || 100;
+    this.fuse = o.fuse || BOMB_FUSE_FRAMES;
+    this.lit = 0;
     this.pal = 'bomb';
     this.harmless = true;
     this.liftable = true;
@@ -13560,24 +13631,52 @@ class Bomb extends Entity {
 
   update(game) {
     this.frame++;
-    if (this.thrownVx || this.thrownVy) {
-      // Subpixels per frame, so the decay rounds back onto the grid.
-      moveEntity(game, this, this.thrownVx, this.thrownVy);
-      this.thrownVx = Math.round(this.thrownVx * THROW_SLIDE_DECAY);
-      this.thrownVy = Math.round(this.thrownVy * THROW_SLIDE_DECAY);
-      if (Math.abs(this.thrownVx) < THROW_SLIDE_STOP) this.thrownVx = 0;
-      if (Math.abs(this.thrownVy) < THROW_SLIDE_STOP) this.thrownVy = 0;
-    }
+    if (this.flight) this.fly(game);
+    this.lit++;
     if (--this.fuse <= 0) {
       this.remove = true;
       game.addEntity(new Explosion(this.cx - 16, this.cy - 16, { power: this.power }));
     }
   }
 
+  /**
+   * THROWN, IT FLIES AS ITSELF AND KEEPS BURNING (S165). It used to fall to
+   * the player's catch-all branch, which removed it and threw a stand-in rock
+   * that shattered: a lifted bomb never went off. Seasons throws it like a pot
+   * (itemWeights row 0) and it bounces where it lands (BOMB_BOUNCE_STEP).
+   */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.flight = { vx, vy };
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
+  }
+
+  fly(game) {
+    this.fz += this.vz;
+    this.vz -= LIFTED_THROW_GRAVITY;
+    const r = moveEntity(game, this, this.flight.vx, this.flight.vy, { jumping: true, swim: true });
+    if (r.hitX) this.flight.vx = 0;
+    if (r.hitY) this.flight.vy = 0;
+    if (this.fz > 0) return;
+    this.fz = 0;
+    // itemBounce: back up at half the fall, and half the run, until the fall
+    // is under a pixel a frame.
+    if (-this.vz >= PICKUP_BOUNCE_MIN) {
+      this.vz = Math.trunc(-this.vz / 2);
+      const cut = v => Math.sign(v) * Math.floor(Math.abs(v) / BOMB_BOUNCE_STEP) * (BOMB_BOUNCE_STEP / 2);
+      this.flight.vx = cut(this.flight.vx); this.flight.vy = cut(this.flight.vy);
+      game.audio.sfx('bombDown');
+    } else {
+      this.vz = 0; this.flight = null;
+    }
+  }
+
   spriteName() {
-    // Flash faster as the fuse burns down.
-    const rate = this.fuse < 24 ? 3 : (this.fuse < 50 ? 6 : 10);
-    return (Math.floor(this.frame / rate) % 2) ? 'i_bomb_lit' : 'i_bomb';
+    // Seasons' fuse: still, then a steady flash to the end (BOMB_FUSE_FRAMES).
+    const t = this.lit - BOMB_STILL_FRAMES;
+    return t >= 0 && Math.floor(t / BOMB_FLASH_BEAT) % 2 === 0 ? 'i_bomb_lit' : 'i_bomb';
   }
 }
 defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
@@ -14282,7 +14381,7 @@ class Reefseed extends Entity {
     game.room.setTile(tx, ty, 'coralPillar');
     game.audio.sfx('rumble');
     game.spawnEffect('puff', tx * TILE, ty * TILE);
-    game.shake(SHAKE_SMALL, SHAKE_SMALL_FRAMES);
+    game.shake(SHAKE_SMALL_FRAMES);
     // Anything standing where the pillar came up is moved off it rather than
     // buried in it. A player sealed inside terrain by their own item is the
     // one outcome this must never produce.
@@ -14834,7 +14933,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
 
 // Which way the blade points on the swing's first phase: out to one side.
 // Facing down it starts on Link's left, facing up on his right, and facing
@@ -15786,10 +15885,6 @@ class Player extends Entity {
     // lifted pot, and the Kilnshell (S160), which lands still burning.
     if (c instanceof ThrownObject || typeof c.launch === 'function') {
       c.launch(this.x + dx * n, this.y + dy * n, dx * v, dy * v, CARRY_HEIGHT);
-    } else if (c.thrownVx !== undefined) {
-      c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;
-      c.x = this.x + dx * 4; c.y = this.y + dy * 4;
-      c.remove = false;
     } else {
       c.remove = true;
       game.addEntity(new ThrownObject(this.x + dx * n, this.y + dy * n, {
@@ -16034,12 +16129,11 @@ class Player extends Entity {
   updateContactDamage(game) {
     if (this.invuln > 0 || this.invincible) return;
     for (const e of game.entities) {
-      // A CORPSE MID-COLLAPSE IS NOT A THREAT. `dying` is the death-animation
-      // stall an enemy with a `deathFrame` and every boss sit in before
-      // `Entity.die` runs — `dead` is still false for all of it, so without
-      // this an enemy went on dealing full contact damage for the whole of its
-      // own defeat pose (ENEMY_DEATH_FRAMES, and BOSS_DEATH_FRAMES for a
-      // boss's explosion). That is not what the source games do and it is not
+      // A CORPSE MID-COLLAPSE IS NOT A THREAT. `dying` is the stretch a killed
+      // enemy is thrown by its killing blow (S165) and a boss explodes in
+      // before it is gone — `dead` is still false for all of it, so without
+      // this an enemy went on dealing full contact damage after it was beaten
+      // (Seasons clears its collisions at zero health). That is not what the source games do and it is not
       // what the animation reads as: the thing is visibly finished. It cost a
       // playthrough — the actor walked through the wreckage of what it had
       // just killed in D1's Tide Gallery and died to it.
@@ -17284,7 +17378,7 @@ const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, a
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
@@ -17480,11 +17574,17 @@ class Pickup extends Entity {
     this.life = spec.persistent ? Infinity : (o.life || PICKUP_LIFE_FRAMES);
     // Set by rollDrop when the Beachcomber is on. Null means face value.
     this.worth = o.worth != null ? o.worth : null;
-    // `vy` is px/f when a caller names one; the fallback is already sp/f.
-    this.vy = o.vy != null ? sp(o.vy) : PICKUP_POP_SPEED;
+    // A DROP POPS UP INTO THE AIR AND BOUNCES ONCE, as Seasons' PART_ITEM_DROP
+    // does (itemDrop.s): its height `zs` (sp, negative is up) rises at
+    // PICKUP_POP_SPEED under PICKUP_GRAVITY, comes down where it started, and
+    // can be taken from the top of the pop on. Placed in a room by its data
+    // it simply lies there (`pop` unset). `vy` is px/f when a caller names one.
+    this.pop = !!o.pop || o.vy != null;
+    this.zs = 0;
+    this.vz = this.pop ? (o.vy != null ? sp(o.vy) : PICKUP_POP_SPEED) : 0;
     this.z = 0;
-    this.settle = PICKUP_SETTLE_FRAMES;
-    this.grabDelay = o.grabDelay != null ? o.grabDelay : PICKUP_GRAB_DELAY;
+    this.settle = this.pop ? 1 : 0;
+    this.grabDelay = o.grabDelay || 0;
     this.saveKey = o.saveKey || null;
     this.depth = -2;
   }
@@ -17493,22 +17593,37 @@ class Pickup extends Entity {
     this.frame++;
     if (this.attached) return;
     if (this.settle > 0) {
-      this.settle--;
-      this.fy += this.vy;
-      this.vy += PICKUP_GRAVITY;
+      this.zs += this.vz;
+      this.vz += PICKUP_GRAVITY;
+      if (this.zs >= 0) {
+        this.zs = 0;
+        // objectNegateAndHalveSpeedZ: back up at half the speed, or stop.
+        if (this.vz >= PICKUP_BOUNCE_MIN) this.vz = -Math.trunc(this.vz / 2);
+        else { this.vz = 0; this.settle = 0; }
+      }
+      this.z = -(this.zs >> 8);
     }
     if (this.spec.float) {
-      // Fairies drift about.
-      if (this._fa == null) this._fa = game.rng.angle();
-      this._fa += FAIRY_DRIFT_TURN;
-      moveEntity(game, this,
-        Math.round(Math.cos(this._fa) * FAIRY_DRIFT_X),
-        Math.round(Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y));
+      // A fairy flies straight legs, Seasons' way (itemDrop.s): a random one
+      // of sixteen directions, one of four speeds, for 8 to 70 frames, then
+      // picks again.
+      if (!(this._leg > 0)) {
+        this._leg = FAIRY_LEG_MIN + 2 * game.rng.int(FAIRY_LEG_SPAN);
+        const v = FAIRY_LEG_SPEEDS[game.rng.int(FAIRY_LEG_SPEEDS.length)];
+        const a = game.rng.int(16) * Math.PI / 8;     // 0 is up, clockwise
+        this._fvx = Math.round(Math.sin(a) * v);
+        this._fvy = Math.round(-Math.cos(a) * v);
+      }
+      this._leg--;
+      moveEntity(game, this, this._fvx, this._fvy);
     }
     if (this.grabDelay > 0) this.grabDelay--;
     // The clock starts when it has landed, as the cartridge's does.
     if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
     if (this.spec.floor && !(game.player && game.player.underwater)) return;
+    // Not to be had on the way up (itemDrop_checkHitGround arms its collision
+    // once speedZ stops being negative).
+    if (this.settle > 0 && this.vz < 0) return;
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
@@ -17531,7 +17646,7 @@ class Pickup extends Entity {
     // clock — which is what keeps it out of the recorded replays.
     const f = this.spec.frames;
     const art = f ? f[Math.floor(this.frame / FAIRY_FLAP_FRAMES) % f.length] : this.sprite;
-    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob, { pal: this.pal });
+    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob - this.z, { pal: this.pal });
   }
 }
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));
@@ -27427,7 +27542,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -27523,10 +27638,6 @@ class Enemy extends Entity {
   }
 
   spriteName() {
-    // Checked before the hurtFrame flinch pose: a dying enemy's invuln
-    // flicker is still running (hurt() set both on the killing blow), and the
-    // death pose is the one that should win once dying is true.
-    if (this.dying && this.spec.deathFrame) return this.spec.deathFrame;
     // Same mechanism Boss.spriteName already uses: while the invuln flicker is
     // running, show the flinch pose instead of the walk cycle. Ordinary
     // enemies had no path to this at all until now — only bosses declared
@@ -27605,13 +27716,18 @@ class Enemy extends Entity {
     if (this.flicker > 0) this.flicker--;
     if (this.attackTime > 0) this.attackTime--;
 
-    // Death stall: the killing blow already ran (hp<=0, die() below set
-    // `dying` instead of `remove`), so skip everything else — no AI, no tide
-    // check, no knockback — and just hold the death pose until the countdown
-    // ends, then finish the removal die() deferred.
+    // THE KILLING BLOW STILL THROWS IT. Seasons checks an enemy's knockback
+    // before its health (code/bank0.s enemyStandardUpdate), so an enemy struck
+    // to zero is flung the whole of the hit's distance, flashing and harmless
+    // (applyDamageToEnemyOrPart clears its collisions at zero health), and
+    // only then goes up in smoke. Nothing else runs on it meanwhile.
     if (this.dying) {
-      this.deathTime++;
-      if (this.deathTime > ENEMY_DEATH_FRAMES) { this.dying = false; super.die(game); }
+      if (this.knockTime > 0) {
+        this.knockTime--;
+        const hit = moveEntity(game, this, this.knockX, this.knockY);
+        if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
+      }
+      if (this.knockTime <= 0) { this.dying = false; this.vanish(game); }
       return;
     }
 
@@ -27695,23 +27811,38 @@ class Enemy extends Entity {
   }
 
   /**
-   * An enemy with a `spec.deathFrame` lingers un-removed for ENEMY_DEATH_FRAMES
-   * so its death pose can actually draw, the same "stall the removal" shape
-   * `Boss.beginDeath` already uses for a boss's own death animation. `update`
-   * above counts the stall down and calls `super.die(game)` — the real
-   * `Entity.die` (loot, onDie, the puff effect, the defeated bookkeeping) —
-   * once it ends. An enemy with no `deathFrame` is untouched: this falls
-   * straight through to `super.die(game)` on the same frame, exactly as
-   * before this stall existed.
+   * An ordinary enemy dies as Seasons' do (code/bank0.s enemyDie): thrown out
+   * by the blow that killed it if that blow carried any knockback (see
+   * `update`), then gone in PART_ENEMY_DESTROYED's puff. A boss or a miniboss
+   * keeps its own death (`Boss.beginDeath`), which ends here through
+   * `super.die` (`_bossClass`, since a miniboss clears `isBoss`).
    */
   die(game) {
     if (this.dead || this.dying) return;
-    if (this.spec.deathFrame) {
-      this.dying = true;
-      this.deathTime = 0;
-      return;
-    }
-    super.die(game);
+    if (this._bossClass) { super.die(game); return; }
+    this.harmless = true;
+    if (this.knockTime > 0) { this.dying = true; return; }
+    this.vanish(game);
+  }
+
+  /**
+   * The puff. The enemy is gone the frame it starts, and counted as killed
+   * (its save record, `progress.kills`), but what it drops and whether its
+   * room is now clear wait for the puff to finish, as PART_ENEMY_DESTROYED
+   * holds both (decNumEnemies, decideItemDrop) until its animation ends.
+   */
+  vanish(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    if (this.spec.onDie) this.spec.onDie(this, game);
+    const x = this.cx - 8, y = this.cy - 8 - this.z;
+    const drops = this.drops;
+    game.audio.sfx('enemyDie');
+    game.onEnemyDefeated(this, true);
+    game.spawnEffect('kill', x, y, {
+      onDone: (g) => { g.rollDrop(x, y, drops); g.onKillPuffDone(); },
+    });
   }
 
   onDie(game) {
@@ -27811,7 +27942,6 @@ class Boss extends Enemy {
         game.spawnEffect('boom',
           this.x + game.rng.float() * this.w - 8,
           this.y + game.rng.float() * this.h - 8);
-        game.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
       }
       if (this.deathTime > BOSS_DEATH_FRAMES) { this.dying = false; super.die(game); }
       return;
@@ -28401,7 +28531,7 @@ function charge(e, g, o = {}) {
       e.charging = false;
       e.stun = o.recover || ENEMY_CHARGE_RECOVER_FRAMES;
       realign(e, g);
-      if (o.shake) g.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
+      if (o.shake) g.shake(SHAKE_SMALL_FRAMES);
     }
     return true;
   }
@@ -28718,7 +28848,7 @@ __define("game/cutscene.js", function (__exports, __require) {
 //   { jingle: 'fanfare' }
 //   { sfx: 'conch' }
 //   { tide: 2 }                              set the tide (with its wave sweep)
-//   { shake: [amp, frames] }
+//   { shake: frames }
 //   { warp: { map, floor, rx, ry, px, py } } move Link
 //   { face: 'up' }                           turn Link
 //   { walk: { dir: 'up', frames: 40 } }       Link walks himself
@@ -28802,7 +28932,7 @@ function runCutscene(game, steps, data = {}) {
     if (step.jingle) game.audio.jingle(step.jingle);
     if (step.sfx) game.audio.sfx(step.sfx);
     if (step.flag) setFlag(game.progress, step.flag);
-    if (step.shake) game.shake(step.shake[0], step.shake[1]);
+    if (step.shake) game.shake(step.shake);
     if (step.face && game.player) game.player.dir = step.face;
     if (step.give) {
       giveItem(game.progress, step.give.item, step.give.level || 1);
@@ -29084,7 +29214,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -29118,7 +29248,7 @@ class Game {
     this.room = null;
     this.mapId = null;
     this.boss = null;
-    this.shakeAmp = 0; this.shakeTime = 0;
+    this.shakeTime = 0;
     this.hitstop = 0;
     this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
     this.fadeAmount = 0; this.fadeDir = 0; this.fadeThen = null; this.fadeWhite = false;
@@ -29837,7 +29967,7 @@ class Game {
     this.startCutscene([
       { sfx: 'chest' },
       { lift: { art: key.icon, x: cx - TILE / 2, y: ty * TILE } },
-      { sfx: 'doorRumble', shake: [2, KEYHOLE_OPEN_FRAMES], wait: KEYHOLE_OPEN_FRAMES },
+      { sfx: 'doorRumble', shake: KEYHOLE_OPEN_FRAMES, wait: KEYHOLE_OPEN_FRAMES },
       { flag: def.openFlag, do: (g) => g.applyStoryGates() },
       { jingle: 'secret' },
     ]);
@@ -30093,7 +30223,7 @@ class Game {
     this.spawnEffect('sparkle', this.player.x, this.player.y - 8, { life: 30 });
   }
 
-  onEnemyDefeated(e) {
+  onEnemyDefeated(e, puffing) {
     this.progress.kills++;
     if (e.isBoss) {
       this.progress.beaten[this.mapId] = true;
@@ -30110,15 +30240,26 @@ class Game {
         ? { until: (this.progress.owVisits || 0) + OVERWORLD_RESPAWN_DISTANCE }
         : { perm: true };
     }
-    if (!this.entities.some(x => x.isEnemy && !x.dead && x !== e)) {
-      this.room.cleared = true;
-      this.roomEvent('cleared', null);
-    }
+    // An ordinary enemy's room is clear when its PUFF ends, not when it is
+    // struck (PART_ENEMY_DESTROYED calls decNumEnemies at the end of its
+    // animation): `onKillPuffDone` asks then.
+    if (puffing) return;
+    this.checkCleared(e);
+  }
+
+  /** The last enemy's last puff has gone: the room is clear. */
+  onKillPuffDone() { this.checkCleared(null); }
+
+  checkCleared(e) {
+    if (this.entities.some(x => x.isEnemy && !x.dead && x !== e)) return;
+    // Another enemy's puff still in the air counts it as still in the room.
+    if (this.entities.some(x => x.isEffect && x.onDone && !x.remove)) return;
+    this.room.cleared = true;
+    this.roomEvent('cleared', null);
   }
 
   onBossDefeated(e) {
     const d = this.map && this.map.dungeon;
-    this.shake(SHAKE_LARGE, SHAKE_LARGE_FRAMES);
     this.audio.stop();
     // THE BOSS TAKES ITS COURT WITH IT. Whatever it summoned — Gohmaraq's
     // crabs, Nereth's knights — used to outlive it, and went on fighting a
@@ -30504,7 +30645,7 @@ class Game {
   }
 
   spawnPickup(x, y, kind, o = {}) {
-    const e = new Pickup(x, y, { kind, ...o });
+    const e = new Pickup(x, y, { kind, pop: true, ...o });
     this.addEntity(e);
     return e;
   }
@@ -30535,7 +30676,8 @@ class Game {
 
   spawnEffect(name, x, y, opts) { return spawnEffectAt(this, name, x, y, opts); }
 
-  shake(amp, frames) { this.shakeAmp = Math.max(this.shakeAmp, amp); this.shakeTime = Math.max(this.shakeTime, frames); }
+  /** Shake the view for `frames` frames, Seasons' way (SHAKE_OFFSETS). */
+  shake(frames) { this.shakeTime = Math.max(this.shakeTime, frames); }
 
   /**
    * Hitstop: freeze the ENTITY SIMULATION for `frames` frames.
@@ -30835,7 +30977,7 @@ class Game {
     this.progress.frames++;
     this.updateTimers();
     this.updateFade();
-    if (this.shakeTime > 0) { this.shakeTime--; if (this.shakeTime === 0) this.shakeAmp = 0; }
+    if (this.shakeTime > 0) this.shakeTime--;
 
     const extra = this.input.takeExtra();
     if (extra === 'KeyP') { this.audio.toggleMute(); }
@@ -31201,8 +31343,9 @@ class Game {
       // not touch a stream — a slow machine would draw a different number of
       // times per update and silently advance the run's randomness. noise1 is
       // a pure hash of the frame counter: same shake, no state consumed.
-      ox += Math.round(noise1(this.frame * 2) * this.shakeAmp);
-      oy += Math.round(noise1(this.frame * 2 + 1) * this.shakeAmp);
+      // Each axis jumps by one of SHAKE_OFFSETS, picked afresh every frame.
+      ox += SHAKE_OFFSETS[Math.floor((noise1(this.frame * 2) + 1) * 2) & 3];
+      oy += SHAKE_OFFSETS[Math.floor((noise1(this.frame * 2 + 1) + 1) * 2) & 3];
     }
 
     ctx.save();
@@ -46408,7 +46551,6 @@ function installEnemies() {
       up: ['octorok_u0', 'octorok_u1'],
       side: ['octorok_s0', 'octorok_s1'],
     },
-    deathFrame: 'octorok_death',
     attackFrame: 'octorok_atk',
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
@@ -46469,7 +46611,6 @@ function installEnemies() {
     // squashed, flattened silhouette reads as "this creature collapsed"
     // regardless of what it collapsed onto, so nothing about octorok_death's
     // shape actually claims dry land specifically.
-    deathFrame: 'octorok_death',
     // Reuses octorok's own attackFrame too, same reasoning as the deathFrame
     // reuse just above: octorokSea shares octorok's exact living frames, so
     // it's already the same creature on screen right up until it fires.
@@ -46495,7 +46636,6 @@ function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyr', rate: 8,
     frames: ['crab_0', 'crab_1'],
     hurtFrame: 'crab_hurt',
-    deathFrame: 'crab_death',
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
     shield: 'front',
@@ -46523,7 +46663,6 @@ function installEnemies() {
     hp: 2, damage: 2, pal: 'slime', rate: 14,
     frames: ['zol_0', 'zol_1'],
     hurtFrame: 'zol_hurt',
-    deathFrame: 'zol_death',
     // Reuses zol's own zol_1 as its attackFrame — a real shape change from
     // zol_0 (short and wide vs. tall and narrow), already described in
     // rip-enemies.py's own FRAMES comment as "round at rest, stretched tall
@@ -46590,7 +46729,6 @@ function installEnemies() {
     // (unlike hurtFrame, which gel was ruled out for in S12) — die() defers
     // removal on the hit that reaches hp 0 regardless of how many hits that
     // took. See src/game/enemy.js's Enemy.die() and docs/prompts/LEDGER.md.
-    deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
     // The cartridge's gel is 2x2 either way of its middle (oracles-disasm
@@ -46672,7 +46810,6 @@ function installEnemies() {
     frames: ['keese_0', 'keese_1'],
     // Never drawn today, for the same hp-1 reason as gel's.
     hurtFrame: 'keese_hurt',
-    deathFrame: 'keese_death',
     // Reuses keese's own keese_0 as its attackFrame — the sheet's "wings
     // spread" pose vs. keese_1's "wings folded" (rip-enemies.py's own
     // FRAMES comment), a real shape change. keese's own rest/dash cycle
@@ -46741,7 +46878,6 @@ function installEnemies() {
     pose: (e) => e.aiState === 'rise' ? (e.aiTimer > (LEEVER_RISE_FRAMES >> 1) ? 'leever_rise0' : 'leever_rise1')
       : e.aiState === 'sink' ? (e.aiTimer > (LEEVER_SINK_FRAMES >> 1) ? 'leever_rise1' : 'leever_rise0') : null,
     hurtFrame: 'leever_hurt',
-    deathFrame: 'leever_death',
     terrain: 'land',
     drops: 'common',
     // Seasons' leever (leever.s, subid 0): waits underground, then rises three
@@ -46804,7 +46940,6 @@ function installEnemies() {
     // Shown only when the Resonance Rod has rung it and a blow gets through;
     // the death pose is ready but unreachable while hp is 999.
     hurtFrame: 'bubble_hurt',
-    deathFrame: 'bubble_death',
     shield: 'all',
     drops: 'none',
     z: 6,
@@ -46834,7 +46969,6 @@ function installEnemies() {
     frames: ['beamos_0', 'beamos_1'],
     // Same as bubble: the flinch needs the Rod, the death pose waits.
     hurtFrame: 'beamos_hurt',
-    deathFrame: 'beamos_death',
     // Its eye shows where it is looking, eight ways round (the cartridge's
     // animation follows its angle, beamos.s): the angle's nearest 45 degrees.
     pose: (e) => e.aiState ? 'beamos_e' + (((e.angle + 2) >> 2) & 7) : null,
@@ -46888,7 +47022,6 @@ function installEnemies() {
     // hp 3 > swordDamage() at sword level 1 (2) — the hurtFrame hp rule S12
     // found (src/game/enemy.js's Enemy.die(), docs/prompts/LEDGER.md).
     hurtFrame: 'beetle_hurt',
-    deathFrame: 'beetle_death',
     // Nothing hurts it right way up (ENEMYCOLLISION_SPIKED_BEETLE); a raised
     // shield turns it over and then it can be struck. `shield` is set per
     // state in ai.
@@ -46963,7 +47096,6 @@ function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyb', rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
     hurtFrame: 'tektite_hurt',
-    deathFrame: 'tektite_death',
     // Reuses tektite's own tektite_1 as its attackFrame — a real shape
     // change from tektite_0 (compact body, short tucked legs) to legs
     // extended long and dangling, already referred to in passing as "the
@@ -47018,7 +47150,6 @@ function installEnemies() {
     // First enemy to carry both fields at once — see the wisp_death header
     // comment in sprites-enemies-hurt.js for why this is the real test of
     // spriteName()'s dying-before-hurtFrame ordering (src/game/enemy.js).
-    deathFrame: 'wisp_death',
     attackFrame: 'wisp_atk',
     z: 8,
     drops: 'good',
@@ -47038,7 +47169,6 @@ function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
     hurtFrame: 'urchin_hurt',
-    deathFrame: 'urchin_death',
     // First idleFrame in the roster (docs/ENEMIES.md's idle scoping
     // section). Hand-drawn — src/data/sprites-enemies-hurt.js's own comment
     // on `urchin_idle` has the sheet-exhaustion account. Gated directly by
@@ -47072,7 +47202,6 @@ function installEnemies() {
       side: ['moblin_s0', 'moblin_s1'],
     },
     hurtFrame: 'moblin_hurt',
-    deathFrame: 'moblin_death',
     // The "spear raised" pose (rip-enemies.py's own FRAMES comment: "idle
     // frame, then the same angle with its spear raised") already alternates
     // into the ordinary walk cycle above as moblin_d1/u1/s1 — left there on
@@ -47126,7 +47255,6 @@ function installEnemies() {
     // hurt()) is what defers removal, and die() only ever runs once, on the
     // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
     // as a 3-hit one. See src/game/enemy.js's Enemy.die().
-    deathFrame: 'stalfos_death',
     hurtFrame: 'stalfos_hurt',
     drops: 'good',
     // Seasons' stalfos (stalfos.s, subid 1): ambles on any of the 32 angles,
@@ -47188,7 +47316,6 @@ function installEnemies() {
       sprites.draw(ctx, 'darknut_sword_s', ox + e.x + (left ? -12 : 12), oy + e.y - e.z, { flipX: left });
     },
     hurtFrame: 'darknut_hurt',
-    deathFrame: 'darknut_death',
     // One non-directional pose (like octorok_atk/beetle_s0), not per-facing:
     // only a front pose was drawn (darknut_atk, sprites-enemies-hurt.js) —
     // darknut_s0/s1 (side) have no equivalent shield-braced variant, so a
@@ -47250,7 +47377,6 @@ function installEnemies() {
     hp: 3, damage: 3, pal: 'enemyp', speed: 0, rate: 12, terrain: 'any',
     frames: ['wizzrobe_0', 'wizzrobe_1'],
     hurtFrame: 'wizzrobe_hurt',
-    deathFrame: 'wizzrobe_death',
     attackFrame: 'wizzrobe_atk',
     drops: 'good',
     // Seasons' red wizzrobe (wizzrobe.s, subid 1): picks an open tile on the
@@ -47303,7 +47429,6 @@ function installEnemies() {
     hp: 3, damage: 3, pal: 'enemyb', speed: 0.35, rate: 12, terrain: 'water',
     frames: ['anglerfry_0', 'anglerfry_1'],
     hurtFrame: 'anglerfry_hurt',
-    deathFrame: 'anglerfry_death',
     attackFrame: 'anglerfry_atk',
     drops: 'good',
     tideOnly: [1, 2],
@@ -47320,7 +47445,6 @@ function installEnemies() {
     frames: ['barnacle_0', 'barnacle_1'],
     // Same as bubble: the flinch needs the Rod, the death pose waits.
     hurtFrame: 'barnacle_hurt',
-    deathFrame: 'barnacle_death',
     attackFrame: 'barnacle_atk',
     shield: 'all',
     drops: 'none',
@@ -47338,7 +47462,6 @@ function installEnemies() {
     hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
     frames: ['jellyfish_0', 'jellyfish_1'],
     hurtFrame: 'jellyfish_hurt',
-    deathFrame: 'jellyfish_death',
     hb: { x: 3, y: 4, w: 10, h: 10 },
     drops: 'common',
     ai(e, g) {
@@ -47354,7 +47477,6 @@ function installEnemies() {
     hp: 4, damage: 3, pal: 'enemyb', speed: 0, rate: 16, terrain: 'water',
     frames: ['siren_0', 'siren_1'],
     hurtFrame: 'siren_hurt',
-    deathFrame: 'siren_death',
     // Reuses siren's own siren_1 as its attackFrame rather than hand-drawing
     // a new pose — the same zero-new-art shape S43 found on moblin_d1, not a
     // hand-draw like octorok_atk/wisp_atk/wizzrobe_atk needed. S89's survey
@@ -47402,7 +47524,6 @@ function installEnemies() {
           oy + toPx(e.homeFy - Math.round(d * 256 * Math.cos(r))));
       }
     },
-    deathFrame: 'pincer_death',
     // Reuses pincer's own pincer_1 as its attackFrame — a real shape
     // change from pincer_0's symmetric front-on stance to a curled, turned
     // silhouette (sprites-enemies.js), reading as coiling to snap out. The
@@ -47518,7 +47639,7 @@ const { flag, setFlag } = __require("game/progress.js");
 // Shake weights are timing/feel constants and belong in feel.js (R3). They were
 // fourteen bare literals in this file, which meant the six named constants next
 // door described the shake of everything in the game EXCEPT the bosses.
-const { ANEMOS_LASH_MIN_RANGE, NERETH_OPENING_DELAY, NERETH_OPEN_FRAMES, NERETH_FINAL_OPEN_FRAMES, SHAKE_SMALL, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES, SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES, SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES, SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES } = __require("data/feel.js");
+const { ANEMOS_LASH_MIN_RANGE, NERETH_OPENING_DELAY, NERETH_OPEN_FRAMES, NERETH_FINAL_OPEN_FRAMES, SHAKE_MEDIUM_FRAMES, SHAKE_RUMBLE_FRAMES, SHAKE_BOSS_SLAM_FRAMES, SHAKE_BOSS_BREAK_FRAMES } = __require("data/feel.js");
 const { fire } = __require("game/projectile.js");
 const { TILE } = __require("core/screen.js");
 const { sp } = __require("core/fixed.js");
@@ -47650,7 +47771,7 @@ function unlockTide(g) { g.tide.locked = false; }
 function forceTide(e, g, level) {
   if (g.tide.level === level || g.tide.busy) return false;
   g.audio.sfx('conch');
-  g.shake(SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES);
+  g.shake(SHAKE_RUMBLE_FRAMES);
   g.tide.setLevel(level);
   return true;
 }
@@ -47715,7 +47836,7 @@ function installBosses() {
     init(e) { e._pdir = 'right'; e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'crab', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
+      if (i === 2) { summon(g, e, 'crab', 2); g.shake(SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Scuttles the width of the arena and slams when you line up with it.
@@ -47750,7 +47871,7 @@ function installBosses() {
   // buried — leaving the eye open. Drained, the shell cracks and it sticks.
   function gohmaraqSlam(e, g, shots, openFor) {
     windUp(e, g, 22, (e2, g2) => {
-      g2.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
+      g2.shake(SHAKE_BOSS_SLAM_FRAMES);
       g2.audio.sfx('explode');
       spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 1 });
       open(e2, g2, g2.tide.level === LOW ? openFor * 2 : openFor);
@@ -47888,7 +48009,7 @@ function installBosses() {
     onPhase(e, g, i) {
       surface(e);                       // phase 3 does not submerge
       if (i === 1) summon(g, e, 'gel', 2);
-      if (i === 2) { summon(g, e, 'zol', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
+      if (i === 2) { summon(g, e, 'zol', 2); g.shake(SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Wallows toward you and spits bog water.
@@ -47959,7 +48080,7 @@ function installBosses() {
     init(e) { e._open = 0; e.shadow = true; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'keese', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
+      if (i === 2) { summon(g, e, 'keese', 2); g.shake(SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Wheels around the ceiling and stoops at you.
@@ -48028,7 +48149,7 @@ function installBosses() {
         const dx = p.cx - e2.cx, dy = p.cy - e2.cy, d = Math.hypot(dx, dy) || 1;
         e2._bvx = (dx / d) * 2.6; e2._bvy = (dy / d) * 2.6;
       }
-      g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES);
+      g2.shake(SHAKE_MEDIUM_FRAMES);
     }, 'sparkle');
   }
 
@@ -48096,7 +48217,7 @@ function installBosses() {
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       if (i === 1) summon(g, e, 'zol', 2);
-      if (i === 2) { g.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
+      if (i === 2) { g.shake(SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
     },
     phases: [
       // Rooted. Lashes along the floor and breathes open on a slow cycle.
@@ -48105,7 +48226,7 @@ function installBosses() {
         if (timer(e, 'lash', 150)) {
           windUp(e, g, 20, (e2, g2) => {
             shootRing(e2, g2, 4, { sprite: 'shot_spear', pal: 'wood', speed: 1.7, damage: 3 });
-            g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES);
+            g2.shake(SHAKE_MEDIUM_FRAMES);
           });
         }
       } },
@@ -48197,7 +48318,7 @@ function installBosses() {
     onDie: miniDie,
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'beetle', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
+      if (i === 2) { summon(g, e, 'beetle', 2); g.shake(SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Walks you down and pounds the floor.
@@ -48248,7 +48369,7 @@ function installBosses() {
   // goes out along it.
   function brinehulkPound(e, g, shards, speed) {
     windUp(e, g, 26, (e2, g2) => {
-      g2.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES);
+      g2.shake(SHAKE_BOSS_BREAK_FRAMES);
       g2.audio.sfx('explode');
       shootRing(e2, g2, shards, { sprite: 'shot_rock', pal: 'marble', speed, damage: 3, life: 90 });
     });
@@ -48271,7 +48392,7 @@ function installBosses() {
     onPhase(e, g, i) {
       surface(e);                       // phase 3 leaves the reef for good
       if (i === 1) summon(g, e, 'pincer', 2);
-      if (i === 2) { g.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
+      if (i === 2) { g.shake(SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
     },
     phases: [
       // In and out of the reef, lunging along whichever line you share with it.
@@ -48363,7 +48484,7 @@ function installBosses() {
     if (!moveDir(e, g, e.dir, e._lungeSpeed || 2.4)) {
       e._lunge = 0;                     // hit the reef wall: recoil
       e.stun = 20;
-      g.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
+      g.shake(SHAKE_MEDIUM_FRAMES);
     }
     return true;
   }
@@ -48431,7 +48552,7 @@ function installBosses() {
       unlockTide(g);
     },
     onPhase(e, g, i) {
-      g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
+      g.shake(SHAKE_BOSS_SLAM_FRAMES);
       // The sea he is pinning goes out and takes his servants with it. See
       // `dismissSummons` — without this his last phase is a nine-body brawl.
       dismissSummons(g, e);
@@ -48478,7 +48599,7 @@ function installBosses() {
         // The sweep runs continuously, so the opening is when he re-seats the
         // planted trident between passes.
         if (timer(e, 'reseat', 190)) {
-          windUp(e, g, 20, (e2, g2) => { g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES); nerethOpening(e2, g2); });
+          windUp(e, g, 20, (e2, g2) => { g2.shake(SHAKE_MEDIUM_FRAMES); nerethOpening(e2, g2); });
         }
         if (timer(e, 'summon', 460) && countType(g, 'stalfos') < 3) summon(g, e, 'stalfos', 1);
       } },
@@ -56002,7 +56123,7 @@ const CUTSCENES = {
     { music: null },
     { show: { art: ['p_essence2_0', 'p_essence2_1'], scale: 3, pal: 'essence2' }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
     { say: 'The reef goes quiet. Every fish in the spire turns to face the same direction at once, and holds it.' },
-    { shake: [2, 30] },
+    { shake: 30 },
     { say: 'Far out past the shelf, something very large notices that it is being taken apart.' },
     { say: 'Nereth: ...a shard. Two shards. The little wading thing has hands.' },
     { say: 'Farore: Two. The marsh is next, and the Sanctum in it is locked. The old man in the square was there when they locked it. Ask him.' },
@@ -56020,7 +56141,7 @@ const CUTSCENES = {
     { music: null },
     { show: { art: ['p_essence4_0', 'p_essence4_1'], scale: 3, pal: 'essence4' }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
     { say: 'Half the Bell now. The conch has gone warm and it does not cool down again.' },
-    { shake: [3, 40] },
+    { shake: 40 },
     { say: 'Nereth: Half. HALF. Come to the Keep, then, and bring my Bell with you. I will take it back at the door.' },
     { say: 'Farore: He is frightened. That is new, and it is not necessarily good news.' },
     { say: 'Farore: The digger in the square has been itching to dig somewhere for a week. Go and let him.' },
@@ -56030,7 +56151,7 @@ const CUTSCENES = {
     { music: null },
     { show: { art: ['p_essence5_0', 'p_essence5_1'], scale: 3, pal: 'essence5' }, text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
     { say: 'The flooded wood lets out a breath it has been holding since before the village had a name.' },
-    { shake: [4, 60] },
+    { shake: 60 },
     { say: 'Every whirlpool between here and the abyss turns over and begins to spin the other way.' },
     { say: 'Farore: Five. One left, and it is in his hands. Go and see the Maku Tree first. Go on. Humour an old plant.' },
     { music: 'overworld' },
@@ -56071,7 +56192,7 @@ const CUTSCENES = {
   // THE MOSS KEY: the village digger, at four Essences.
   mossKey: [
     { say: 'Digger: Four! The sea finally said something useful. It said: here, and stop asking.' },
-    { shake: [1, 30], sfx: 'rumble' },
+    { shake: 30, sfx: 'rumble' },
     { say: 'Digger: A key, grown over with moss. The Shrine in the Drowned Wood had a door like that, before the wood went under. North of the village, up the wood road.' },
     { do: (g) => g.presentKey('d5') },
   ],
@@ -56097,7 +56218,7 @@ const CUTSCENES = {
   makuMaster: [
     { music: null },
     { say: 'Maku Tree: Five, and the sixth is in his crown. You did it wet through, which I respect.' },
-    { shake: [3, 50] },
+    { shake: 50 },
     { say: 'Maku Tree: The roots under this village go all the way down to the Keep. I have been growing them for a century, waiting for a reason.' },
     { say: 'Maku Tree: Take this with you. It was left here a long time ago by someone who also thought they would be back.' },
     { present: { item: 'sword', level: 3 } },
@@ -56121,7 +56242,7 @@ const CUTSCENES = {
     { say: 'Nereth: You came down. Everything comes down eventually. That is the only law I have ever needed.' },
     { say: 'Nereth: I did not break the Bell to be cruel, wader. I broke it because the sea was told what to do for a thousand years and never once asked.' },
     { say: 'Nereth: Now it does as it likes. Now it does as I like. The difference is small and it is mine.' },
-    { shake: [4, 60] },
+    { shake: 60 },
     { say: 'Nereth: Sound your little shell, then. Let us see whose sea it is.' },
     { music: 'finalBoss' },
   ],
@@ -57912,79 +58033,6 @@ const LINK_ART = {
 // src/game/effects.js). Effects are glows rather than creatures, so index 3 is
 // used as a dark rim rather than a hard black outline, and 0 is the hot core.
 const FX_ART = {
-  // ---- puff: the standard "something died / appeared" smoke ---------------
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_puff0: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ......3333......
-    .....311113.....
-    .....310013.....
-    .....311113.....
-    ......3333......
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_puff1: `
-    ................
-    ................
-    ................
-    .....333333.....
-    ....31111113....
-    ...3111001113...
-    ...3110000113...
-    ...3110000113...
-    ...3111001113...
-    ....31111113....
-    .....333333.....
-    ................
-    ................
-    ................
-    ................
-    ................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_puff2: `
-    ................
-    ................
-    ...33333333.....
-    ..3111111113....
-    .311100001113...
-    .311000000113...
-    .310000000013...
-    .310000000013...
-    .311000000113...
-    .311100001113...
-    ..3111111113....
-    ...33333333.....
-    ................
-    ................
-    ................
-    ................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_puff3: `
-    ................
-    ..33......33....
-    .3113....3113...
-    .3003....3003...
-    .3113....3113...
-    ..33......33....
-    ................
-    ....33....33....
-    ...3113..3113...
-    ...3003..3003...
-    ...3113..3113...
-    ....33....33....
-    ................
-    ................
-    ................
-    ................`,
 
   // ---- spark: a hard little impact star ----------------------------------
   // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
@@ -58641,181 +58689,6 @@ const FX_ART = {
     ................`,
 };
 
-// 32x32 explosion frames: a fireball that swells to fill the cell and then
-// breaks apart. Palette `fire` — 0 is the hot core, 3 the cooling edge.
-const FX_BIG_ART = {
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_boom0: `
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ..............2222..............
-    ............22111122............
-    ...........2211111122...........
-    ..........221111111122..........
-    ..........221100001122..........
-    ..........221100001122..........
-    ..........221111111122..........
-    ...........2211111122...........
-    ............22111122............
-    ..............2222..............
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_boom1: `
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ..............3333..............
-    ...........333322223333.........
-    .........3322221111222233.......
-    ........332222111111112233......
-    .......33222211111111112233.....
-    ......3322221111000011112233....
-    .....332222111100000011112233...
-    .....332211110000000000111233...
-    ....33222111100000000001111233..
-    ....33221111000000000000111233..
-    ....33221111000000000000111233..
-    ....33222111100000000001111233..
-    .....332211110000000000111233...
-    .....332222111100000011112233...
-    ......3322221111000011112233....
-    .......33222211111111112233.....
-    ........332222111111112233......
-    .........3322221111222233.......
-    ...........333322223333.........
-    ..............3333..............
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................
-    ................................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_boom2: `
-    ................................
-    ..............3333..............
-    ..........33332222333322........
-    ........332222111111222233......
-    ......33222211111111112222333...
-    .....3322221111111111111122233..
-    ....332222111111000000111122233.
-    ...33222211110000000000111122233
-    ...33222111100000000000011112233
-    ..332221111000000000000001111223
-    ..332211110000000000000000111223
-    .3322111100000000000000000011223
-    .3322111000000000000000000011223
-    .3321111000000000000000000001123
-    .3321110000000000000000000001123
-    .3321110000000000000000000001123
-    .3321110000000000000000000001123
-    .3321111000000000000000000001123
-    .3322111000000000000000000011223
-    .3322111100000000000000000011223
-    ..332211110000000000000000111223
-    ..332221111000000000000001111223
-    ...33222111100000000000011112233
-    ...33222211110000000000111122233
-    ....332222111111000000111122233.
-    .....3322221111111111111122233..
-    ......33222211111111112222333...
-    ........332222111111222233......
-    ..........33332222333322........
-    ..............3333..............
-    ................................
-    ................................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_boom3: `
-    ..............3333..............
-    ..........3333....3333..........
-    ........33222233333322233.......
-    ......33222211111111222233......
-    .....332211111100001111122233...
-    ....3322111100000000001111223...
-    ...332211110000000000001111223..
-    ..3322111000000000000000011223..
-    ..332111000000000000000000112233
-    .3321110000000000000000000111223
-    .3321100000000000000000000011223
-    .3321100000000000000000000011223
-    .3311000000000000000000000001123
-    .3311000000000000000000000001123
-    .3311000000000000000000000001123
-    .3311000000000000000000000001123
-    .3311000000000000000000000001123
-    .3311000000000000000000000001123
-    .3321100000000000000000000011223
-    .3321100000000000000000000011223
-    .3321110000000000000000000111223
-    ..332111000000000000000000112233
-    ..3322111000000000000000011223..
-    ...332211110000000000001111223..
-    ....3322111100000000001111223...
-    .....332211111100001111122233...
-    ......33222211111111222233......
-    ........33222233333322233.......
-    ..........3333....3333..........
-    ..............3333..............
-    ................................
-    ................................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  fx_boom4: `
-    ....33......3333......33........
-    ...3223....332233....3223.......
-    ...3223....332233....3223.......
-    ....33......3333......33........
-    ................................
-    ..33....................33......
-    .3223..................3223.....
-    .3223..................3223.....
-    ..33....................33......
-    ................................
-    ......33333........33333........
-    .....3322233......3322233.......
-    .....3311133......3311133.......
-    .....3322233......3322233.......
-    ......33333........33333........
-    ................................
-    ................................
-    ......33333........33333........
-    .....3322233......3322233.......
-    .....3311133......3311133.......
-    .....3322233......3322233.......
-    ......33333........33333........
-    ................................
-    ..33....................33......
-    .3223..................3223.....
-    .3223..................3223.....
-    ..33....................33......
-    ................................
-    ....33......3333......33........
-    ...3223....332233....3223.......
-    ...3223....332233....3223.......
-    ....33......3333......33........`,
-};
-
 // HUD and item icons. hud_heart0..4, i_seed_*, i_chain, i_hookhead are 8x8.
 const UI_ART = {
   // Quarter-heart fills, filling left to right so a quarter reads correctly.
@@ -59129,12 +59002,10 @@ const UI_ART = {
 function installLinkSprites() {
   sprites.add(LINK_ART, 'link');
   sprites.add(FX_ART, 'spark');
-  sprites.add(FX_BIG_ART, 'fire');
   sprites.add(UI_ART, 'ui');
 }
 __exports["LINK_ART"] = LINK_ART;
 __exports["FX_ART"] = FX_ART;
-__exports["FX_BIG_ART"] = FX_BIG_ART;
 __exports["UI_ART"] = UI_ART;
 __exports["installLinkSprites"] = installLinkSprites;
 });
@@ -63267,35 +63138,6 @@ const ENEMY_HURT_ART = {
     ..300333333003..
     ....03300330....` ,
 
-  // Stalfos death — drawn: assets/sheets/oracle-seasons-enemies.png's Sword
-  // Stalfos has no collapse pose, only the standing walk frames stalfos_d0/
-  // d1/s0/s1 already in sprites-enemies.js. A skeleton's own death is the one
-  // case in this roster where "the same creature caught mid-recoil" doesn't
-  // apply (see header) — a stalfos does not flinch when it dies, it comes
-  // apart. Drawn as its own skull (same rounded cranium and two eye-socket
-  // notches as stalfos_d0's head, rows 5-10 here) fallen onto a heap of its
-  // own bones (rows 11-15), rather than a recolour or a generic cloud, so it
-  // still reads as "this is what was chasing you" and not a shared effect.
-  // Drawn in `enemyk`'s own four bone tones at runtime (stalfos already
-  // passes `pal: 'enemyk'` — see src/data/enemies.js — so the palette here is
-  // only the fallback for a direct lookup with no runtime override).
-  stalfos_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ......3333......
-    .....300003.....
-    ....30300303....
-    ....30000003....
-    .....300003.....
-    ......3333......
-    ....30000003....
-    ..300000000003..
-    .30000000000003.
-    .30111111111103.
-    .33333333333333.` ,
 
   // Beetle hurt — drawn: assets/sheets/oracle-seasons-enemies.png's Spiked
   // Beetle has only its two upright frames (beetle_d0/d1) and two balled-charge
@@ -63325,64 +63167,7 @@ const ENEMY_HURT_ART = {
     .30003333330003.
     ..333333333333..` ,
 
-  // Gel death — drawn: the sheet's "Color-Changing Gel" strip (six frames,
-  // red/yellow/blue x2) is only ever the same small round blob in a
-  // different colour, no squashed pose; `gel_0`/`gel_1` already extract the
-  // red pair. hp 1, deliberately: `gel` was ruled OUT for `hurtFrame` in S12
-  // (a 1-hp enemy is removed the same frame it takes its only hit, before a
-  // flicker window ever renders) — `deathFrame` has no such rule (see
-  // docs/prompts/LEDGER.md), and this is that claim's sharpest test, not the
-  // stalfos-shaped "hp happened to be above the cutoff" case. Shape changed
-  // on purpose, per the `_death` exception in this file's own header:
-  // `gel_0` is a compact round blob in rows 4-9; this is the same blob
-  // flattened into a wide puddle low in the cell (rows 8-13) with two
-  // isolated splash flecks at row 14, reading as "squashed", not a recolour.
-  gel_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ......3113......
-    .....301113.....
-    ....31111113....
-    ...3111111113...
-    ..311111111113..
-    .31111111111113.
-    ..1..........1..
-    ................` ,
 
-  // Wisp death — drawn: Spark's two sheet frames (`wisp_0`/`wisp_1`, per
-  // this game's own substitution note in `sprites-enemies.js`'s header) are
-  // both full-size lit/unlit poses, no snuffed-out frame. `wisp` is the
-  // first enemy in the roster to carry BOTH `hurtFrame` and `deathFrame` at
-  // once (`src/data/enemies.js`) — proving `Enemy.spriteName()` really does
-  // check `dying` before `hurtFrame` on a real enemy, not just in the two
-  // separate single-field proofs S12/S13/S15/S16 gave. Shape changed on
-  // purpose, per the `_death` exception: the full spiky halo (`wisp_hurt`
-  // above, and the walk frames) collapsed down to a small dim ember at the
-  // cell's centre — a flame going out, not a recoil, so it does not try to
-  // keep `wisp_hurt`'s "same silhouette, squinted eyes" shape.
-  wisp_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ......3333......
-    .....300003.....
-    .....311113.....
-    ......3333......
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................` ,
 
   // Wisp attack (`shootRing()`'s telegraph, ENEMY_ATTACK_FRAMES) — drawn:
   // Spark's own plate (`wisp_0`/`wisp_1`'s substitution source) has exactly
@@ -63816,96 +63601,7 @@ const ENEMY_HURT_ART = {
     ...3000333333...
     ...33333........` ,
 
-  // Keese death — drawn: the sheet's own "Keese" plate has exactly two
-  // frames (wings-spread, wings-folded), both already extracted as
-  // `keese_0`/`keese_1` (`tools/rip-enemies.py` — index 125 and a
-  // `RECTS` entry respectively), confirmed against the sheet's own
-  // "Keese" label sitting directly over just those two boxes. Nothing to
-  // extract; hand-drawn instead. The first `deathFrame` target since
-  // `gel_death` (S16) to actually test this file's own exception (see
-  // header): a death pose is allowed to change silhouette, unlike a
-  // `hurtFrame`. First draft tried the `stalfos_death`/`gel_death`
-  // pattern of shifting the shape down to sit low in the cell — WRONG for
-  // this creature specifically: `keese` has `z: 8` (an airborne height
-  // offset, `src/data/enemies.js`), and `Enemy.update()`'s `dying` branch
-  // (`src/game/enemy.js`) returns before touching `z` at all, so the
-  // whole dying stall renders 8px up from the ground exactly where it
-  // died — a "collapsed low in the cell" pose would read as hovering, not
-  // fallen. `wisp` is the existing precedent for this (`z: 8`, `terrain:
-  // 'air'`, already has `deathFrame` since S17): `wisp_death`'s own
-  // shape stays CENTRED in the cell rather than dropping to the bottom,
-  // reading as "fizzling out in place," not "landing" — checked that
-  // shape before drawing this one rather than repeating the mismatch.
-  // Base is `keese_1` (wings-folded, sprites-enemies.js) reused
-  // pixel-for-pixel and centred the same way: its two eye-dots (rows 7-8,
-  // columns 5 and 8) recoloured to the outline shade, closed for good;
-  // its right foot-point (row 11, column 10) removed and its left one
-  // (row 12, column 3) extended one row further down (row 13) — an
-  // asymmetric droop reading as gone limp, rather than the tidy
-  // fully-folded rest pose `keese_1` already is. 6 pixels changed total.
-  // No hp constraint applies to `deathFrame` (`keese` is hp 1, same as
-  // `gel` — `die()` runs exactly once regardless of hit count, per
-  // S13/S16).
-  keese_death: `
-    ................
-    ................
-    ................
-    .....3..3.......
-    .....3..3.......
-    ....33..33......
-    ....333333......
-    ...33333333.....
-    ...33333333.....
-    ...33333333.....
-    ...33333333.....
-    ...33....33.....
-    ...3............
-    ...3............
-    ................
-    ................` ,
 
-  // Octorok (land) death — drawn: the sheet's own "Octorok" plate has
-  // exactly four frames (front x2, side x2), all already extracted as
-  // `octorok_d0`/`d1`/`s0`/`s1`, plus one more nearby box S24 already
-  // identified as an unrelated shell/pickup icon (different orange
-  // palette, confirmed against the sheet's own "Octorok" label spanning
-  // only the first four boxes) — re-checked with a death pose in mind
-  // specifically rather than trusting S24's hurt-pose conclusion blindly,
-  // same result. Nothing to extract; hand-drawn instead. `octorok` (the
-  // land enemy, hp 2 — distinct from `octorokSea`, hp 3, which already
-  // has `hurtFrame`) has no `z` field at all (`src/data/enemies.js`), so
-  // unlike `keese_death` (S26) there's no height-offset trap here: a
-  // pose that sits low in the cell genuinely reads as "on the ground,"
-  // confirmed by reading `Entity`'s own `fz` default (0) before drawing,
-  // not assumed from the ground-pose precedent alone. `octorok_d0`'s own
-  // grid (sprites-enemies.js) is squashed rather than shifted: every
-  // other row from its top hood band down through its body (rows 0, 2,
-  // 4, 6, 8, 10, 12 of the original 16) is kept, compressing the whole
-  // 15-row silhouette into 7 rows sat at the very bottom of the cell —
-  // the same "flatten the existing shape into a puddle" move
-  // `gel_death` used, not a redraw from scratch, so it still reads as
-  // the same creature deflated rather than a generic blob. Eligible
-  // under no hp constraint (`deathFrame` has none, per S13/S16); hp 2
-  // means `octorok` can never show a `hurtFrame` (`swordDamage()` is 2,
-  // so any hit is lethal), making this its only possible death/hit
-  // feedback.
-  octorok_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    .....333333.....
-    3113111001113113
-    ..311110011113..
-    ..310300003013..
-    ..331030030133..
-    3113331111333113
-    3333333333333333` ,
 
   // Octorok attack (`shoot()`'s telegraph, ENEMY_ATTACK_FRAMES) — drawn:
   // re-checked the sheet's own "Octorok" plate with a throwing pose
@@ -63958,275 +63654,12 @@ const ENEMY_HURT_ART = {
     ...3333333333...
     ................` ,
 
-  // Crab death — drawn: the sheet's own "Sand Crab" plate has exactly two
-  // frames, both already extracted as `crab_0`/`crab_1`, confirmed
-  // against the sheet's own label spanning only those two boxes ("Rope"
-  // and "Spiny Beetle" sit either side of it, both other creatures).
-  // Nothing to extract; hand-drawn instead. First drafts tried the
-  // `octorok_death` "keep every other row" squash and a full vertical
-  // flip — both failed on inspection: the every-other-row squash breaks
-  // apart the two claw columns (they're separated by a real gap in the
-  // living sprite, unlike `octorok_d0`'s continuous hood band, so halving
-  // the rows leaves them floating with no connecting body between them),
-  // and a full flip pushes the shape to the TOP of the cell instead of
-  // sitting low, which reads as an odd crop rather than "on its back."
-  // What actually works: `crab_0`'s own LOWER half (rows 7-14 of its
-  // grid, sprites-enemies.js — the legs/underside band, below where the
-  // two raised claws split off) reused pixel-for-pixel and shifted down
-  // to sit at the bottom of the cell. With the claws gone from the frame
-  // entirely rather than redrawn, it reads as "flipped, claws tucked
-  // under, only the legs and belly showing" — a real shape change
-  // (allowed for `_death`, per this file's own header), not a squash of
-  // the same silhouette. `crab` has no `z` field (ground/`terrain:
-  // 'shallow'`, `src/data/enemies.js`), confirmed before drawing a
-  // low-in-the-cell pose, same check `octorok_death`/`urchin_death` made.
-  // No hp constraint applies (`deathFrame` has none); `crab` is hp 2, so
-  // — same as `octorok`/`urchin` — this is its only possible death/hit
-  // feedback, since `swordDamage()` (2) always kills it in one hit.
-  crab_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    3103013..3103013
-    .31013333331013.
-    ..313303303313..
-    ..333303303333..
-    ..331313313133..
-    .30310311301303.
-    3003110000113003
-    3033311111133303` ,
 
-  // Zol death — drawn: the sheet's own "Zol & Gel" plate has exactly two
-  // frames (round at rest, stretched tall mid-hop), both already
-  // extracted as `zol_0`/`zol_1`, confirmed against the sheet's own
-  // label — the box immediately before it (index 341) is a different
-  // creature entirely (green `#10ad42` palette, not `zol`'s red). Nothing
-  // to extract; hand-drawn instead, following `gel_death`'s own template
-  // (same file, S16) rather than inventing a new shape: `zol` splits INTO
-  // two `gel`s on death (`onDie`, `src/data/enemies.js`), so echoing
-  // `gel_death`'s wide flat puddle — just scaled up to `zol_0`'s own
-  // larger blob size, with the same two isolated single-pixel "splash"
-  // flecks at the base — reads as a visual link between the two rather
-  // than an arbitrary new pose. `zol_0`'s round eye-marks (already the
-  // outline's own dark colour, same "nothing lighter to shut" situation
-  // `octorok`/`stalfos` hit) are dropped entirely rather than recoloured,
-  // which the `_death` exception in this file's header explicitly allows
-  // (silhouette may change) and which `gel_death` itself already does
-  // (no eyes at all). Confirmed `zol` has no `z` field before drawing low
-  // in the cell. **This is the first `deathFrame` target whose `onDie`
-  // does something beyond a loot roll** — it spawns two `gel`s to either
-  // side — and `Enemy.die()` (src/game/enemy.js) defers that spawn until
-  // the `ENEMY_DEATH_FRAMES` stall this pose plays through actually ends
-  // (`dying = true` returns early; `super.die(game)` — which calls
-  // `onDie` — only runs once `update()`'s stall counter finishes). This
-  // is the deferred-`onDie` mechanism S29's `docs/NEXT-SESSION.md` entry
-  // theorised about for `check-playthrough.mjs`'s own timing shift,
-  // verified here directly rather than left as theory: an in-engine probe
-  // confirmed zero `gel`s exist during the stall and exactly two appear
-  // the instant it ends, at the same `x` the `zol` died at (frozen by
-  // `dying` skipping `update()`'s own movement), each carrying
-  // `opts.split: true` so neither of them recurses into a third split.
-  zol_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ....3333333.....
-    ...311111113....
-    ..31111111113...
-    .3111111111113..
-    311111111111113.
-    31111111111111.3
-    .11111111111111.
-    .1..........1..1
-    ................` ,
 
-  // Tektite death — drawn: the sheet's own "Tektite" plate has exactly two
-  // frames (legs splayed on the ground, legs tucked mid-hop), both already
-  // extracted as `tektite_0`/`tektite_1` — confirmed against the sheet's own
-  // "Tektite" label spanning only those two boxes, "Stalfos" and "Thwomp"
-  // sitting either side of it as unrelated creatures. Nothing to extract;
-  // hand-drawn instead, following `octorok_death`'s own squash rather than
-  // inventing a new shape: every other row of `tektite_0`'s body (the
-  // splayed-legs pose, rows 5/7/9/11/13/15 of its 16-row grid in
-  // sprites-enemies.js — the resting pose, not `tektite_1`'s hop-apex tuck)
-  // kept pixel-for-pixel and compressed to the bottom of the cell, reusing
-  // only colour indices already present in the two live frames so it renders
-  // correctly under `tektite`'s own palette with nothing invented. Reads as
-  // the eight-legged body pressed flat rather than a generic squash, the
-  // same "flatten the existing shape into a puddle" move `octorok_death`/
-  // `gel_death` used. `tektite` (hp 2, `src/data/enemies.js`) has no `z`
-  // field — confirmed directly rather than assumed — so a low pose is
-  // correct; it does drive `hop()` (`src/game/enemy.js`), whose airborne
-  // `fz` is a per-frame accumulator distinct from a spec `z` field, and
-  // `Enemy.update()`'s `dying` branch skips `ai()` entirely, so a kill
-  // mid-hop freezes `fz` at whatever height it held and the flat pose draws
-  // there rather than snapping to the ground — verified in-engine, not
-  // assumed, and noted rather than treated as a defect (see this session's
-  // NEXT-SESSION.md entry). No hp constraint applies to `deathFrame`; hp 2
-  // means `swordDamage()` always kills `tektite` in one hit, so this is its
-  // only possible death/hit feedback, same as `octorok`/`crab`.
-  tektite_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ..33........33..
-    3010331111330103
-    3031313003131303
-    3031311331131303
-    3033333333333303
-    .333..3333..333.` ,
 
-  // Beetle death — drawn: the sheet's own "Spiked Beetle" plate has exactly
-  // four frames (upright front x2, balled-up side x2), all already
-  // extracted as `beetle_d0`/`d1`/`s0`/`s1` — confirmed against the sheet's
-  // own "Spiked Beetle" label spanning only those four boxes, "Spinning
-  // Blade" sitting to the right as an unrelated creature. Nothing to
-  // extract; hand-drawn instead. Squashed the UPRIGHT pose (`beetle_d0`,
-  // the resting/walking shape) rather than uncurling the balled-up
-  // `charge()` shape (`beetle_s0`/`s1`) — a squash of the standing form
-  // reads as "collapsed," where uncurling the charge ball could as easily
-  // read as "about to charge," the wrong direction for a death pose.
-  // Following `octorok_death`'s own every-other-row squash rather than
-  // inventing a new shape: rows 0/2/4/6/8/10/12/14 of `beetle_d0`'s 16-row
-  // grid (sprites-enemies.js) kept pixel-for-pixel and compressed to the
-  // bottom half of the cell, reusing only colour indices already present
-  // in the live frames. `beetle` (hp 3, `src/data/enemies.js`) has no `z`
-  // field, confirmed directly. `beetle` also has `shield: 'front'` — the
-  // first `deathFrame` target with a shield checked against a LETHAL hit
-  // by this thread (`crab`, S29, has the same field but the interaction
-  // was never explicitly probed): verified in-engine that a hit arriving
-  // at the shielded front is blocked outright regardless of damage
-  // (`hurt()` returns `false`, `hp`/`dying` untouched, even for a
-  // would-be-lethal amount), and that a hit from an unshielded angle goes
-  // through normally — a non-lethal one (hp 3 -> 1) shows `beetle_hurt`
-  // and reverts to the walk cycle, the lethal follow-up shows
-  // `beetle_death` and holds for the full stall.
-  beetle_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ...33......33...
-    ...3003..3003...
-    3333133113313333
-    3003333333333003
-    .31003333330013.
-    .31333333333313.
-    .33111000011133.
-    .30003333330003.` ,
 
-  // Moblin death — drawn: the sheet's own "Moblin & Goriya" plate has two
-  // unused frames near the six already extracted (boxes 171 and 173,
-  // confirmed against the sheet's own palette to be genuine Moblin poses,
-  // not Goriya's separate blue boomerang icons sitting nearby) — but both
-  // are active holding-a-spear-down stances, not a collapse, so neither
-  // reads as a death pose. Nothing usable to extract; hand-drawn instead.
-  // Squashed the FRONT idle pose (`moblin_d0`) rather than a side view,
-  // following `octorok_death`/`beetle_death`'s own every-other-row squash
-  // template: rows 0/2/4/6/8/10/12/14 of `moblin_d0`'s 16-row grid
-  // (sprites-enemies.js) kept pixel-for-pixel and compressed to the bottom
-  // half of the cell, reusing only colour indices already present in the
-  // live frames. `moblin` (hp 4, `src/data/enemies.js`) has no `z` field,
-  // confirmed directly.
-  moblin_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    3333..3333..3333
-    .31313111131313.
-    .31311311311313.
-    3003033333303313
-    3113310330133003
-    .333331001333113
-    .3333300000333..
-    .300100333333...` ,
 
-  // Siren death — drawn: the sheet's own "River Zora" plate (siren's
-  // substitution source, per rip-enemies.py's own comment) has a
-  // spiral-shaped frame right before the two already used, but quantising
-  // it shows NO red at all (#ffd68c/#000000 only, vs. siren_0/1's
-  // #ffd68c/#ff0829/#000000) — a genuinely different creature or icon on
-  // the same sheet, correctly rejected rather than used just because it
-  // sits nearby. Nothing usable to extract; hand-drawn instead. Squashed
-  // `siren_0` (front singing pose) following `octorok_death`'s own
-  // every-other-row squash template: rows 0/2/4/6/8/10/12/14 of its 16-row
-  // grid (sprites-enemies.js) kept pixel-for-pixel and compressed to the
-  // bottom half of the cell, reusing only colour indices already present.
-  // `siren` (hp 4, `terrain: 'water'`, `src/data/enemies.js`) has no `z`
-  // field, confirmed directly.
-  siren_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    .......33.......
-    333...3003...333
-    3000333333330003
-    .30300033000303.
-    3003033333303003
-    3003113333113003
-    0333111331113330
-    ..000000000000..` ,
 
-  // Anglerfry death — drawn: the sheet's own "Cheep-Cheep" plate
-  // (anglerfry's substitution source) has exactly two frames, both
-  // already extracted as anglerfry_0/1, confirmed against the sheet's
-  // own "Cheep-Cheep" label spanning only those two boxes — unrelated
-  // creatures sit on either side with a wide gap, no shared plate.
-  // Nothing to extract; hand-drawn instead. Squashed anglerfry_0
-  // following octorok_death's own every-other-row squash template: rows
-  // 0/2/4/6/8/10/12/14 of its 16-row grid (sprites-enemies.js) kept
-  // pixel-for-pixel and compressed to the bottom half of the cell,
-  // reusing only colour indices already present. anglerfry (hp 3,
-  // terrain: 'water', src/data/enemies.js) has no z field, confirmed
-  // directly. THE LAST deathFrame TARGET in this thread's whole run: every
-  // killable enemy now has one (see docs/prompts/STATE.md).
-  anglerfry_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ......3333......
-    ...333333003....
-    .3000000333333..
-    .3030300330003..
-    .3333003330033..
-    3000003000013003
-    3000013000113003
-    ..333111113..33.` ,
 
   // Urchin idle — drawn: the sheet's own "Spiny Beetle" plate has exactly
   // three poses (docs/ENEMIES.md's idle scoping section): the two spiky
@@ -64424,28 +63857,6 @@ const ENEMY_HURT_ART = {
     .00003333333000.
     ......3333......` ,
 
-  // Bubble death — drawn: no snuffed-out frame on the plate. The skull alone
-  // with its ring of sparks gone and its eyes shut, centred in the cell (it
-  // flies, so it fizzles where it hangs, the way wisp_death does), with
-  // four last sparks flying off the corners. The bubble cannot die in this
-  // game; the pose is ready for the day something is allowed to kill it.
-  bubble_death: `
-    ................
-    ..2..........2..
-    ................
-    ................
-    ......3333......
-    .....300003.....
-    ....30000003....
-    ....30000003....
-    ....30330333....
-    ....30003003....
-    ....30000003....
-    .....303303.....
-    .....333333.....
-    ................
-    ..2..........2..
-    ................` ,
 
   // Beamos hurt — drawn: the Beamos plate is eight eye positions and its
   // beam, no recoil. beamos_1 with the eye lidded over and shut to one dark
@@ -64468,47 +63879,7 @@ const ENEMY_HURT_ART = {
     ..331100001133..
     ...3333333333...` ,
 
-  // Beamos death — drawn: the sheet has no broken statue. beamos_1 with its
-  // eye gone dark and a crack running from the cap down through the socket.
-  // Unkillable here, like the bubble: ready, not reachable.
-  beamos_death: `
-    ................
-    ................
-    ......3333......
-    ....33331333....
-    ...3333311333...
-    ...3333313333...
-    ...3333331333...
-    ..332223313333..
-    .33222223133313.
-    .33222222313313.
-    .33222223133313.
-    .33222222313313.
-    .31322223133113.
-    .33133333331133.
-    ..331100001133..
-    ...3333333333...` ,
 
-  // Barnacle death — drawn: the Like Like plate is five gape frames and no
-  // collapse. barnacle_atk's squat shell sunk lower still, its mouth closed
-  // to one dark line — a husk. Unkillable here too: ready, not reachable.
-  barnacle_death: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ....33333333....
-    ..331111111133..
-    .31113333331113.
-    3111311111131113
-    3033331111333303
-    3000113333110003
-    3100000000000013
-    3311310000131133
-    .33333333333333.` ,
 };
 
 function installEnemyHurtSprites() {
@@ -66181,6 +65552,675 @@ __exports["TREASURE_ART"] = TREASURE_ART;
 __exports["installTreasureSprites"] = installTreasureSprites;
 });
 
+/* ===== src/data/sprites-effects.js ===== */
+__define("data/sprites-effects.js", function (__exports, __require) {
+// The smoke puffs and the bomb blast, cut from Oracle of Seasons' own graphics.
+//
+// Generated by tools/rip-effects.py — edit that, not this file.
+// Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
+// commit 7584d87), assets/effects/oracles-disasm/seasons/: the common sprite
+// graphics every room keeps loaded, the tables that lay out INTERAC_PUFF,
+// PART_ENEMY_DESTROYED and the exploding ITEM_BOMB, and the standard sprite
+// palettes. Credit: the oracles-disasm project and its contributors; the
+// artwork is Nintendo's and Capcom's. This is fan-work art only.
+//
+// Every frame is 32x32 with the object's position at (16, 16), and carries
+// its own colours: draw sites must NOT pass a palette. How long each is held
+// is in src/data/feel.js (PUFF_HOLDS, KILL_PUFF_HOLDS, EXPLOSION_HOLDS); the
+// frame order those holds walk is listed here.
+//
+// Built from:
+//   fx_puff*: frames 0 1 2 (held 6 8 4), tile base $16
+//   fx_kill*: frames 0 1 0 2 2 3 4 (held 2 2 2 4 4 4 2), tile base $0c
+//   fx_boom*: frames 0 1 0 2 3 4 (held 4 4 3 7 8 8), tile base $0c
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const EFFECT_ART = {
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_puff0: { pal: 'fx_puff0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..............3333..............
+    .............311113.............
+    ............31000013............
+    ...........3101111013...........
+    ...........3101111013...........
+    .........33111000011133.........
+    ........3100100000010013........
+    ........3001100000011003........
+    ........3001110000111003........
+    ........3101310000131013........
+    .........31131111113113.........
+    ..........331311113133..........
+    ...........3113333113...........
+    ...........3311111133...........
+    ............33111133............
+    ..............3333..............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_puff1: { pal: 'fx_puff1', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    .........33..........33.........
+    ........3113........3113........
+    ........3003........3003........
+    .........33....33....33.........
+    .............331133.............
+    ............31100113............
+    ............31000013............
+    ............31000013............
+    ............31100113............
+    .............311113.............
+    ..............3333..............
+    .........33..........33.........
+    ........3113........3113........
+    ........3003........3003........
+    .........33..........33.........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_puff2: { pal: 'fx_puff2', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ...............33...............
+    ..............3003..............
+    ..............3003..............
+    ...............33...............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill0: { pal: 'fx_kill0', art: `
+    ................................
+    ................................
+    ..................3333..........
+    .................311113.........
+    ................31000013........
+    ...............3101111013.......
+    ...............3101111013.......
+    .............33111000011133.....
+    ............3100100000010013....
+    ............3001100000011003....
+    ............3001110000111003....
+    ............3101310000131013....
+    .............31131111113113.....
+    ..............331311113133......
+    ..........3333.3113333113.......
+    .........3111133311111133.......
+    ........3100001333111133........
+    .......3101111013.3333..........
+    .......3101111013...............
+    .....33111000011133.............
+    ....3100100000010013............
+    ....3001100000011003............
+    ....3001110000111003............
+    ....3101310000131013............
+    .....31131111113113.............
+    ......331311113133..............
+    .......3113333113...............
+    .......3311111133...............
+    ........33111133................
+    ..........3333..................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill0b: { pal: 'fx_kill0b', art: `
+    ................................
+    ................................
+    ..................3333..........
+    .................311113.........
+    ................31000013........
+    ...............3101111013.......
+    ...............3101111013.......
+    .............33111000011133.....
+    ............3100100000010013....
+    ............3001100000011003....
+    ............3001110000111003....
+    ............3101310000131013....
+    .............31131111113113.....
+    ..............331311113133......
+    ..........3333.3113333113.......
+    .........3111133311111133.......
+    ........3100001333111133........
+    .......3101111013.3333..........
+    .......3101111013...............
+    .....33111000011133.............
+    ....3100100000010013............
+    ....3001100000011003............
+    ....3001110000111003............
+    ....3101310000131013............
+    .....31131111113113.............
+    ......331311113133..............
+    .......3113333113...............
+    .......3311111133...............
+    ........33111133................
+    ..........3333..................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill1: { pal: 'fx_kill1', art: `
+    ................................
+    ................................
+    ..................3333..........
+    .................311113.........
+    ................31000013........
+    ...............3101111013.......
+    ...............3101111013.......
+    .............33111000011133.....
+    ............3100100000010013....
+    ............3001100000011003....
+    ............3001110000111003....
+    ............3101310000131013....
+    .............31131111113113.....
+    ..............331311113133......
+    ..........3333.3113333113.......
+    .........3111133311111133.......
+    ........3100001333111133........
+    .......3101111013.3333..........
+    .......3101111013...............
+    .....33111000011133.............
+    ....3100100000010013............
+    ....3001100000011003............
+    ....3001110000111003............
+    ....3101310000131013............
+    .....31131111113113.............
+    ......331311113133..............
+    .......3113333113...............
+    .......3311111133...............
+    ........33111133................
+    ..........3333..................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill1b: { pal: 'fx_kill1b', art: `
+    ................................
+    ................................
+    ..................3333..........
+    .................311113.........
+    ................31000013........
+    ...............3101111013.......
+    ...............3101111013.......
+    .............33111000011133.....
+    ............3100100000010013....
+    ............3001100000011003....
+    ............3001110000111003....
+    ............3101310000131013....
+    .............31131111113113.....
+    ..............331311113133......
+    ..........3333.3113333113.......
+    .........3111133311111133.......
+    ........3100001333111133........
+    .......3101111013.3333..........
+    .......3101111013...............
+    .....33111000011133.............
+    ....3100100000010013............
+    ....3001100000011003............
+    ....3001110000111003............
+    ....3101310000131013............
+    .....31131111113113.............
+    ......331311113133..............
+    .......3113333113...............
+    .......3311111133...............
+    ........33111133................
+    ..........3333..................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill2: { pal: 'fx_kill2', art: `
+    ................................
+    .....111111.....................
+    ..331111111133..................
+    ..3031....1303..................
+    ..13033..33031..................
+    .11130133103111.................
+    .11.31000013.11.................
+    .11..300003..11.................
+    .11..300003..11.................
+    .11.31000013.11.................
+    .11130133103111.................
+    ..13033..33031..................
+    ..3031....1303..................
+    ..331111111133..................
+    .....111111.....................
+    ................................
+    ................................
+    .....................111111.....
+    ..................331111111133..
+    ..................3031....1303..
+    ..................13033..33031..
+    .................11130133103111.
+    .................11.31000013.11.
+    .................11..300003..11.
+    .................11..300003..11.
+    .................11.31000013.11.
+    .................11130133103111.
+    ..................13033..33031..
+    ..................3031....1303..
+    ..................331111111133..
+    .....................111111.....
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill2b: { pal: 'fx_kill2b', art: `
+    ................................
+    .....111111.....................
+    ..331111111133..................
+    ..3031....1303..................
+    ..13033..33031..................
+    .11130133103111.................
+    .11.31000013.11.................
+    .11..300003..11.................
+    .11..300003..11.................
+    .11.31000013.11.................
+    .11130133103111.................
+    ..13033..33031..................
+    ..3031....1303..................
+    ..331111111133..................
+    .....111111.....................
+    ................................
+    ................................
+    .....................111111.....
+    ..................331111111133..
+    ..................3031....1303..
+    ..................13033..33031..
+    .................11130133103111.
+    .................11.31000013.11.
+    .................11..300003..11.
+    .................11..300003..11.
+    .................11.31000013.11.
+    .................11130133103111.
+    ..................13033..33031..
+    ..................3031....1303..
+    ..................331111111133..
+    .....................111111.....
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill3: { pal: 'fx_kill3', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    .............111111.............
+    ..........331111111133..........
+    ..........3031....1303..........
+    ..........13033..33031..........
+    .........11130133103111.........
+    .........11.31000013.11.........
+    .........11..300003..11.........
+    .........11..300003..11.........
+    .........11.31000013.11.........
+    .........11130133103111.........
+    ..........13033..33031..........
+    ..........3031....1303..........
+    ..........331111111133..........
+    .............111111.............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill3b: { pal: 'fx_kill3b', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    .............111111.............
+    ..........331111111133..........
+    ..........3031....1303..........
+    ..........13033..33031..........
+    .........11130133103111.........
+    .........11.31000013.11.........
+    .........11..300003..11.........
+    .........11..300003..11.........
+    .........11.31000013.11.........
+    .........11130133103111.........
+    ..........13033..33031..........
+    ..........3031....1303..........
+    ..........331111111133..........
+    .............111111.............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill4: { pal: 'fx_kill4', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ........33...111111...33........
+    ........303111....111303........
+    .........303........303.........
+    .........1313......3131.........
+    .........1.33......33.1.........
+    ........11............11........
+    ........1..............1........
+    ........1..............1........
+    ........1..............1........
+    ........1..............1........
+    ........11............11........
+    .........1.33......33.1.........
+    .........1313......3131.........
+    .........303........303.........
+    ........303111....111303........
+    ........33...111111...33........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_kill4b: { pal: 'fx_kill4b', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ........33...111111...33........
+    ........303111....111303........
+    .........303........303.........
+    .........1313......3131.........
+    .........1.33......33.1.........
+    ........11............11........
+    ........1..............1........
+    ........1..............1........
+    ........1..............1........
+    ........1..............1........
+    ........11............11........
+    .........1.33......33.1.........
+    .........1313......3131.........
+    .........303........303.........
+    ........303111....111303........
+    ........33...111111...33........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_boom0: { pal: 'fx_boom0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..............3333..............
+    .............311113.............
+    ............31000013............
+    ...........3101111013...........
+    ...........3101111013...........
+    .........33111000011133.........
+    ........3100100000010013........
+    ........3001100000011003........
+    ........3001110000111003........
+    ........3101310000131013........
+    .........31131111113113.........
+    ..........331311113133..........
+    ...........3113333113...........
+    ...........3311111133...........
+    ............33111133............
+    ..............3333..............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_boom1: { pal: 'fx_boom1', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..............0000..............
+    .............011110.............
+    ............01333310............
+    ...........0131111310...........
+    ...........0131111310...........
+    .........00111333311100.........
+    ........0133133333313310........
+    ........0331133333311330........
+    ........0331113333111330........
+    ........0131013333101310........
+    .........01101111110110.........
+    ..........001011110100..........
+    ...........0110000110...........
+    ...........0011111100...........
+    ............00111100............
+    ..............0000..............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_boom2: { pal: 'fx_boom2', art: `
+    ................................
+    ................................
+    ........3333........3333........
+    .......311113......311113.......
+    ......31000013....31000013......
+    .....3101111013..3101111013.....
+    .....3101111013..3101111013.....
+    ...33111000011133111000011133...
+    ..3100100000010013100000010013..
+    ..3001100000011003100000011003..
+    ..3001110000111003110000111003..
+    ..3101310000131013310000131013..
+    ...31131111113113131111113113...
+    ....331311113133331311113133....
+    .....3113333113..3113333113.....
+    ...33331111113333331111113333...
+    ..3100331111330013331111330013..
+    ..3001103333011003103333011003..
+    ..3001110000111003110000111003..
+    ..3101310000131013310000131013..
+    ...31131111113113131111113113...
+    ....331311113133331311113133....
+    .....3113333113..3113333113.....
+    .....3311111133..3311111133.....
+    ......33111133....33111133......
+    ........3333........3333........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_boom3: { pal: 'fx_boom3', art: `
+    333.....333..........333.....333
+    31133...3113........3113...33113
+    3101133.31013......31013.3311013
+    .3100113310013....3100133110013.
+    .310100111010133331010111001013.
+    ..3101100001101111011000011013..
+    ..3101311113310000133111131013..
+    ...31013311333100133311331013...
+    33331013331313311331313331013333
+    31111011333311333311333311011113
+    31000011133310133101333111000013
+    .310113333331001100133333311013.
+    ..3101333111000000001113331013..
+    ...31013331000000000013331013...
+    ....310133310000000013331013....
+    .....3001333100000013331003.....
+    .....3001333100000013331003.....
+    ....310133310000000013331013....
+    ...31013331000000000013331013...
+    ..3101333111000000001113331013..
+    .310113333331001100133333311013.
+    31000011133310133101333111000013
+    31111011333311333311333311011113
+    33331013331313311331313331013333
+    ...31013311333100133311331013...
+    ..3101311113310000133111131013..
+    ..3101100001101111011000011013..
+    .310100111010133331010111001013.
+    .3100113310013....3100133110013.
+    3101133.31013......31013.3311013
+    31133...3113........3113...33113
+    333.....333..........333.....333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_boom4: { pal: 'fx_boom4', art: `
+    ................................
+    .33..........33..33..........33.
+    3113........31133113........3113
+    3003........30033003........3003
+    .33....33....33..33....33....33.
+    .....331133..........331133.....
+    ....31100113........31100113....
+    ....31000013........31000013....
+    ....31000013........31000013....
+    ....31100113........31100113....
+    .....311113..........311113.....
+    ......3333............3333......
+    .33..........33..33..........33.
+    3113........31133113........3113
+    3003........30033003........3003
+    .33..........33..33..........33.
+    ................................
+    .33..........33..33..........33.
+    3113........31133113........3113
+    3003........30033003........3003
+    .33....33....33..33....33....33.
+    .....331133..........331133.....
+    ....31100113........31100113....
+    ....31000013........31000013....
+    ....31000013........31000013....
+    ....31100113........31100113....
+    .....311113..........311113.....
+    ......3333............3333......
+    .33..........33..33..........33.
+    3113........31133113........3113
+    3003........30033003........3003
+    .33..........33..33..........33.` },
+};
+
+const EFFECT_PALETTES = {
+  fx_puff0: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_puff1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_puff2: ['#ff7b08', '#ff7b08', '#ff7b08', '#000000'],
+  fx_kill0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_kill0b: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_kill1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_kill1b: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_kill2: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  fx_kill2b: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  fx_kill3: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_kill3b: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_kill4: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_kill4b: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_boom0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_boom1: ['#ffb531', '#de0000', '#de0000', '#000000'],
+  fx_boom2: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_boom3: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_boom4: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+};
+
+function installEffectSprites() {
+  registerPalettes(EFFECT_PALETTES);
+  sprites.add(EFFECT_ART, 'ui');
+}
+__exports["EFFECT_ART"] = EFFECT_ART;
+__exports["installEffectSprites"] = installEffectSprites;
+});
+
 /* ===== src/data/index.js ===== */
 __define("data/index.js", function (__exports, __require) {
 // Single entry point that installs every data pack into the engine registries.
@@ -66198,7 +66238,7 @@ const { installDungeonsB } = __require("data/dungeons-b.js");
 const { installOptionalDungeons } = __require("data/dungeons-optional.js");
 const { installStory } = __require("data/story.js");
 const { installAudio } = __require("data/audio.js");
-const { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } = __require("data/sprites-link.js");
+const { installLinkSprites, LINK_ART, FX_ART, UI_ART } = __require("data/sprites-link.js");
 const { installPlayerSprites, PLAYER_ART } = __require("data/sprites-player.js");
 const { installNpcSprites, NPC_ART: NPC_RIPPED_ART } = __require("data/sprites-npcs.js");
 const { installRaceSprites, RACE_ART } = __require("data/sprites-races.js");
@@ -66215,6 +66255,7 @@ const { installTradeSprites, TRADE_ART } = __require("data/sprites-trade.js");
 const { installErrandSprites, ERRAND_ART } = __require("data/sprites-errands.js");
 const { installKeySprites, KEY_ART } = __require("data/sprites-keys.js");
 const { installTreasureSprites, TREASURE_ART } = __require("data/sprites-treasures.js");
+const { installEffectSprites, EFFECT_ART } = __require("data/sprites-effects.js");
 const { installObjectSprites, OBJECT_ART: OBJECT_RIPPED_ART } = __require("data/sprites-objects.js");
 const { installMakuSprites, MAKU_SPRITE_ART } = __require("data/tiles-maku.js");
 
@@ -66231,7 +66272,7 @@ const SPRITE_PACKS = {
   fairies: FAIRY_ART,
   races: RACE_ART,
   fx: FX_ART,
-  fxBig: FX_BIG_ART,
+  fxBig: EFFECT_ART,
   ui: UI_ART,
   pickups: PICKUP_ART,
   objects: OBJECT_ART,
@@ -66295,6 +66336,7 @@ function installData() {
   // world are the cartridge's own (tools/rip-treasures.py) and these names
   // are defined nowhere else.
   installTreasureSprites();
+  installEffectSprites();
   // The same for chests, the sign, torches, push blocks and floor buttons
   // (tools/rip-objects.py): room tiles on the cartridge, entities here.
   installObjectSprites();

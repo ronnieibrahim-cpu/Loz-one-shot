@@ -13,7 +13,7 @@ import { installDungeonsB } from './dungeons-b.js';
 import { installOptionalDungeons } from './dungeons-optional.js';
 import { installStory } from './story.js';
 import { installAudio } from './audio.js';
-import { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } from './sprites-link.js';
+import { installLinkSprites, LINK_ART, FX_ART, UI_ART } from './sprites-link.js';
 import { installPlayerSprites, PLAYER_ART } from './sprites-player.js';
 import { installNpcSprites, NPC_ART as NPC_RIPPED_ART } from './sprites-npcs.js';
 import { installRaceSprites, RACE_ART } from './sprites-races.js';
@@ -30,6 +30,7 @@ import { installTradeSprites, TRADE_ART } from './sprites-trade.js';
 import { installErrandSprites, ERRAND_ART } from './sprites-errands.js';
 import { installKeySprites, KEY_ART } from './sprites-keys.js';
 import { installTreasureSprites, TREASURE_ART } from './sprites-treasures.js';
+import { installEffectSprites, EFFECT_ART } from './sprites-effects.js';
 import { installObjectSprites, OBJECT_ART as OBJECT_RIPPED_ART } from './sprites-objects.js';
 import { installMakuSprites, MAKU_SPRITE_ART } from './tiles-maku.js';
 
@@ -46,7 +47,7 @@ export const SPRITE_PACKS = {
   fairies: FAIRY_ART,
   races: RACE_ART,
   fx: FX_ART,
-  fxBig: FX_BIG_ART,
+  fxBig: EFFECT_ART,
   ui: UI_ART,
   pickups: PICKUP_ART,
   objects: OBJECT_ART,
@@ -110,6 +111,7 @@ export function installData() {
   // world are the cartridge's own (tools/rip-treasures.py) and these names
   // are defined nowhere else.
   installTreasureSprites();
+  installEffectSprites();
   // The same for chests, the sign, torches, push blocks and floor buttons
   // (tools/rip-objects.py): room tiles on the cartridge, entities here.
   installObjectSprites();

@@ -1358,9 +1358,9 @@ export async function installRuntime() {
       if (g.mapId + '/' + (g.room ? g.room.key : '') !== home) { yield* dWait(6); return; }
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
-      // A CORPSE IS NOT A FOE. An enemy with a `deathFrame` sits `dying` for
-      // ENEMY_DEATH_FRAMES with `dead` still false, invulnerable the whole
-      // time (ENEMY_INVULN_FRAMES outlasts the stall), so an actor that counts
+      // A CORPSE IS NOT A FOE. A killed enemy sits `dying` while the killing
+      // blow throws it (S165, Seasons' order; it was a `deathFrame` pose
+      // before), with `dead` still false and harmless, so an actor that counts
       // it keeps closing on and swinging at something it cannot kill — and
       // `stale` cannot see the difference, because the foe count does not move
       // either. That is what the zol's defeat pose broke: every zol in D1 now

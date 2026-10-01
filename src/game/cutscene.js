@@ -16,7 +16,7 @@
 //   { jingle: 'fanfare' }
 //   { sfx: 'conch' }
 //   { tide: 2 }                              set the tide (with its wave sweep)
-//   { shake: [amp, frames] }
+//   { shake: frames }
 //   { warp: { map, floor, rx, ry, px, py } } move Link
 //   { face: 'up' }                           turn Link
 //   { walk: { dir: 'up', frames: 40 } }       Link walks himself
@@ -104,7 +104,7 @@ export function runCutscene(game, steps, data = {}) {
     if (step.jingle) game.audio.jingle(step.jingle);
     if (step.sfx) game.audio.sfx(step.sfx);
     if (step.flag) setFlag(game.progress, step.flag);
-    if (step.shake) game.shake(step.shake[0], step.shake[1]);
+    if (step.shake) game.shake(step.shake);
     if (step.face && game.player) game.player.dir = step.face;
     if (step.give) {
       giveItem(game.progress, step.give.item, step.give.level || 1);

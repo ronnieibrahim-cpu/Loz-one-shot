@@ -447,6 +447,33 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A hand-drawn effect hides behind "no sheet has it" (S165).** The puff,
+  the kill puff and the bomb blast were all drawn because no SHEET had them;
+  the cartridge had every one on `spr_common_sprites` (VRAM bank 1, always
+  loaded), laid out by the same part/interaction/item OAM tables the bosses
+  and treasures were ripped from. Before drawing anything, look in
+  `gfx_compressible/common/` and the object's own animation table.
+- **Seasons' death is three beats, and the room waits for the last (S165).**
+  Knockback first (enemyStandardUpdate checks it before health), then
+  PART_ENEMY_DESTROYED's 20 frames, and only THEN the drop and decNumEnemies.
+  So shutters and "room cleared" events land ~20-35 frames later than a
+  vanish-on-hit engine; anything keyed to the clear moved with it.
+  `Game.checkCleared` treats a kill puff still in the air as an enemy.
+- **A miniboss is not `isBoss` (S165).** It clears the flag in its init, so a
+  die() path that asks `isBoss` sends a miniboss down the ordinary-enemy road
+  and its own death sequence never ends (D1's clawcrab sat at hp 0 for 6000
+  frames). Ask `_bossClass`.
+- **Three frames of hit-freeze were the robot's margin (S165).** Seasons has
+  no freeze on a landed hit (collisionEffects.s sets nothing that stops the
+  world); removing ours cost D4's Wyverna fight by a handful of frames — she
+  flooded the room at hp 2. A fine entry-wait sweep (2-frame steps) found it;
+  coarse 30-frame steps found nothing.
+- **A lifted bomb never exploded (S165).** `throwCarried`'s bomb branch
+  tested `thrownVx !== undefined`, which no Bomb ever set, so a thrown bomb
+  fell to the catch-all and became a rock. Anything that flies as itself must
+  have `launch` (S160's rule) — grep for every `liftable` entity when that
+  rule changes.
+
 - **A whole track rendered in one go is a visible hitch (S164).** ~200 ms of
   synth on the main thread dropped test.mjs's frame rate to 23. Render as a
   job a few ms a frame, and at most one slice per drawn frame — a game that

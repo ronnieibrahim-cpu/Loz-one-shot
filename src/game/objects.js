@@ -15,8 +15,8 @@ import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import { ERRANDS } from '../data/errands.js';
 import {
-  PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
-  PICKUP_GRAB_DELAY, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES,
+  PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN,
+  PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
@@ -218,11 +218,17 @@ export class Pickup extends Entity {
     this.life = spec.persistent ? Infinity : (o.life || PICKUP_LIFE_FRAMES);
     // Set by rollDrop when the Beachcomber is on. Null means face value.
     this.worth = o.worth != null ? o.worth : null;
-    // `vy` is px/f when a caller names one; the fallback is already sp/f.
-    this.vy = o.vy != null ? sp(o.vy) : PICKUP_POP_SPEED;
+    // A DROP POPS UP INTO THE AIR AND BOUNCES ONCE, as Seasons' PART_ITEM_DROP
+    // does (itemDrop.s): its height `zs` (sp, negative is up) rises at
+    // PICKUP_POP_SPEED under PICKUP_GRAVITY, comes down where it started, and
+    // can be taken from the top of the pop on. Placed in a room by its data
+    // it simply lies there (`pop` unset). `vy` is px/f when a caller names one.
+    this.pop = !!o.pop || o.vy != null;
+    this.zs = 0;
+    this.vz = this.pop ? (o.vy != null ? sp(o.vy) : PICKUP_POP_SPEED) : 0;
     this.z = 0;
-    this.settle = PICKUP_SETTLE_FRAMES;
-    this.grabDelay = o.grabDelay != null ? o.grabDelay : PICKUP_GRAB_DELAY;
+    this.settle = this.pop ? 1 : 0;
+    this.grabDelay = o.grabDelay || 0;
     this.saveKey = o.saveKey || null;
     this.depth = -2;
   }
@@ -231,22 +237,37 @@ export class Pickup extends Entity {
     this.frame++;
     if (this.attached) return;
     if (this.settle > 0) {
-      this.settle--;
-      this.fy += this.vy;
-      this.vy += PICKUP_GRAVITY;
+      this.zs += this.vz;
+      this.vz += PICKUP_GRAVITY;
+      if (this.zs >= 0) {
+        this.zs = 0;
+        // objectNegateAndHalveSpeedZ: back up at half the speed, or stop.
+        if (this.vz >= PICKUP_BOUNCE_MIN) this.vz = -Math.trunc(this.vz / 2);
+        else { this.vz = 0; this.settle = 0; }
+      }
+      this.z = -(this.zs >> 8);
     }
     if (this.spec.float) {
-      // Fairies drift about.
-      if (this._fa == null) this._fa = game.rng.angle();
-      this._fa += FAIRY_DRIFT_TURN;
-      moveEntity(game, this,
-        Math.round(Math.cos(this._fa) * FAIRY_DRIFT_X),
-        Math.round(Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y));
+      // A fairy flies straight legs, Seasons' way (itemDrop.s): a random one
+      // of sixteen directions, one of four speeds, for 8 to 70 frames, then
+      // picks again.
+      if (!(this._leg > 0)) {
+        this._leg = FAIRY_LEG_MIN + 2 * game.rng.int(FAIRY_LEG_SPAN);
+        const v = FAIRY_LEG_SPEEDS[game.rng.int(FAIRY_LEG_SPEEDS.length)];
+        const a = game.rng.int(16) * Math.PI / 8;     // 0 is up, clockwise
+        this._fvx = Math.round(Math.sin(a) * v);
+        this._fvy = Math.round(-Math.cos(a) * v);
+      }
+      this._leg--;
+      moveEntity(game, this, this._fvx, this._fvy);
     }
     if (this.grabDelay > 0) this.grabDelay--;
     // The clock starts when it has landed, as the cartridge's does.
     if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
     if (this.spec.floor && !(game.player && game.player.underwater)) return;
+    // Not to be had on the way up (itemDrop_checkHitGround arms its collision
+    // once speedZ stops being negative).
+    if (this.settle > 0 && this.vz < 0) return;
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
@@ -269,7 +290,7 @@ export class Pickup extends Entity {
     // clock — which is what keeps it out of the recorded replays.
     const f = this.spec.frames;
     const art = f ? f[Math.floor(this.frame / FAIRY_FLAP_FRAMES) % f.length] : this.sprite;
-    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob, { pal: this.pal });
+    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob - this.z, { pal: this.pal });
   }
 }
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));

@@ -370,14 +370,19 @@ export const ENEMY_FLICKER_FRAMES = ENEMY_INVULN_FRAMES;
  *  was 2. */
 export const ENEMY_HIT_FLASH_BEAT = 4;
 
-/** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
- *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
- *  reference point: a boss gets 72 frames of death throes plus periodic
- *  explosions because it is a set piece; an ordinary enemy's death pose is a
- *  single held frame with no animation of its own, so it needs only long
- *  enough to be seen, not a performance. An enemy with no `deathFrame` is
- *  unaffected — it is still removed on the same frame it dies, as before. */
-export const ENEMY_DEATH_FRAMES = 16;
+/** f[] — how long each frame of the puff an ordinary enemy dies in is held,
+ *  in the order sprites-effects.js lists `fx_kill*` frames. derived from the
+ *  cartridge: oracles-disasm data/seasons/partAnimations.s, partAnimation573db
+ *  (PART_ENEMY_DESTROYED's animation 0): 2 2 2 4 4 4 2, then it holds its last
+ *  frame until enemyDestroyed.s sees animParameter and deletes itself. 20
+ *  frames in all. Was ENEMY_DEATH_FRAMES, a guessed 16-frame hold of a
+ *  hand-drawn collapse pose no Oracle enemy has. */
+export const KILL_PUFF_HOLDS = [2, 2, 2, 4, 4, 4, 2];
+
+/** f — the beat of that puff's palette flicker: enemyDestroyed.s xors its oam
+ *  flags' palette bit on every other frame (`ld a,(wFrameCounter); rrca`), so
+ *  each colour shows for two frames. derived from the cartridge. */
+export const KILL_PUFF_FLICKER = 2;
 
 /** f — how long an ordinary enemy with a `spec.attackFrame` holds that pose
  *  once `shoot()`/`shootRing()` fires. guessed, same order of magnitude as
@@ -709,20 +714,16 @@ export const BANNER_FRAMES = 120;
 
 // IMPACT.
 //
-// A connecting hit in both source games freezes the SIMULATION for a few
-// frames — not the frame, not the music, not the HUD. `Game.hitstop` is that
-// pause: entities stop stepping and everything else keeps running. See the
-// comment above `Game.freeze` for what is deliberately left running and why.
-//
-// All three are `guessed`. They are the first numbers to settle by eye, and
-// the reason the shake constants below them were re-tuned at the same time: a
-// freeze in front of a shake changes what the shake reads as.
+// `Game.freeze` stops the SIMULATION for a few frames — not the frame, not the
+// music, not the HUD. Seasons does not do it for an ordinary hit, either way
+// round (S165, S147 below): only our own boss's killing blow still freezes.
 
-/** f — freeze when the player's own attack connects with an enemy. guessed.
- *  Short: this is the most-repeated interaction in the game and anything long
- *  enough to notice as a pause becomes a stutter over a hundred swings. It
- *  wants to read as weight in the swing, not as a hitch. */
-export const HITSTOP_HIT_FRAMES = 3;
+/** f — freeze when the player's own attack connects with an enemy: none.
+ *  derived from the cartridge: oracles-disasm code/collisionEffects.s, every
+ *  collision effect a sword, a seed or a bomb has on an enemy sets damage,
+ *  knockback and invincibility and nothing that stops the world. It was a
+ *  guessed 3, "to read as weight in the swing". */
+export const HITSTOP_HIT_FRAMES = 0;
 
 /** f — freeze when something lands a hit on the player. measured: 0 —
  *  Seasons does not stop the world when Link is hit. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
@@ -739,58 +740,38 @@ export const HITSTOP_BOSS_DEATH_FRAMES = 18;
 
 // SCREEN SHAKE.
 //
-// Re-tuned once hitstop existed. Every one of these was previously chosen with
-// nothing in front of it, so a shake had to carry the whole impact by itself
-// and had grown long to do it. With a freeze in front, the shake's job is only
-// to release the freeze — so amplitudes stay and DURATIONS COME DOWN. A shake
-// that outlasts its own freeze by more than about its own length again stops
-// reading as impact and starts reading as noise.
-//
-// Still `guessed`: nothing here has been frame-stepped against a reference.
+// Seasons shakes the view one way only (code/bank1.s updateScreenShake): for
+// as many frames as setScreenShakeCounter was given, each axis is moved by one
+// of four offsets picked afresh every frame. A strength other than the default
+// is set by two cutscenes and nothing in play, so every shake here is that
+// default and only its LENGTH differs. It shakes for a boss pounding the floor
+// and for scripted moments; a bomb, a sword hit and a boss's death do not
+// shake the screen at all, and since S165 neither do ours.
 
-/** px — screen shake amplitude for a small impact (a hit landing). guessed. */
-export const SHAKE_SMALL = 2;
+/** px[] — the offsets one shaking frame picks from, on each axis. derived from
+ *  the cartridge: updateScreenShake's @data row for wScreenShakeMagnitude 0,
+ *  $fe $ff $01 $02. It replaced six guessed amplitudes of 2 to 5 px. */
+export const SHAKE_OFFSETS = [-2, -1, 1, 2];
 
-/** px — screen shake amplitude for an explosion or a boss stomp. guessed. */
-export const SHAKE_MEDIUM = 3;
-
-/** px — screen shake amplitude for a boss dying. guessed. */
-export const SHAKE_LARGE = 4;
-
-/** f — shake duration for a small impact. guessed. Was 8, with no freeze in
- *  front of it. HITSTOP_HIT_FRAMES now carries the first 3 frames of the hit,
- *  so 6 puts the whole event at 9 frames instead of 8 and spends more of it
- *  frozen than wobbling. */
+/** f — shake for a small jolt of our own: a Reefseed stake coming up, a
+ *  charger hitting a wall. guessed (nothing in Seasons does either). */
 export const SHAKE_SMALL_FRAMES = 6;
 
-/** f — shake duration for an explosion or a boss stomp. guessed. Was 10. */
+/** f — shake for a boss's lesser blow (a lunge landing, a wall struck).
+ *  guessed. */
 export const SHAKE_MEDIUM_FRAMES = 8;
 
-/** f — shake duration for a boss dying. guessed. Was 40, which was two thirds
- *  of a second of continuous camera wobble and read as a rumble rather than a
- *  blow. HITSTOP_BOSS_DEATH_FRAMES now supplies the weight; 24 is what is left
- *  to release it, and the two together are still shorter than the old 40. */
-export const SHAKE_LARGE_FRAMES = 24;
+/** f — a boss landing, summoning or slamming the floor. derived from the
+ *  cartridge: object_code/seasons/enemies/aquamentus.s, aquamentus_body_pound,
+ *  `ld a,$20; call setScreenShakeCounter` — Seasons' own boss pound, 32
+ *  frames. It was a guessed 14. */
+export const SHAKE_BOSS_SLAM_FRAMES = 32;
 
-/** px, f — a boss landing, summoning or slamming the floor. guessed. Heavier
- *  than MEDIUM and lighter than a death; it exists because `src/data/bosses.js`
- *  spelled this weight out as bare literals at fourteen call sites, which is
- *  exactly what R3 forbids and what made re-tuning the six constants above a
- *  cosmetic change for every boss in the game. */
-export const SHAKE_BOSS_SLAM = 4;
-export const SHAKE_BOSS_SLAM_FRAMES = 14;
-
-/** px, f — a sustained world rumble rather than a blow: the tide being forced
- *  to a level, ground giving way. guessed. Small amplitude, but the longest
- *  duration of any shake that is not a boss dying — a rumble is defined by
- *  lasting, and it is the one shake that is NOT preceded by a freeze, because
- *  nothing has been hit. */
-export const SHAKE_RUMBLE = 2;
+/** f — a sustained world rumble rather than a blow: the tide being forced to a
+ *  level, ground giving way. guessed. */
 export const SHAKE_RUMBLE_FRAMES = 12;
 
-/** px, f — a boss's armour or a wall shattering: the sharpest short shake in
- *  the game, and the only one that goes above SHAKE_LARGE's amplitude. guessed. */
-export const SHAKE_BOSS_BREAK = 5;
+/** f — a boss's armour or a wall shattering. guessed. */
 export const SHAKE_BOSS_BREAK_FRAMES = 16;
 
 // ---------------------------------------------------------------------------
@@ -939,9 +920,6 @@ export const CONTEXT_REACH = 12;
 /** px — how far in front of Link a lift reaches. guessed. */
 export const LIFT_REACH = 12;
 
-/** sp/f — speed of an object thrown by the player. guessed; 2.5 px/f, snapped
- *  to the grid from 2.6. */
-export const THROW_SPEED = 640;
 
 /** sp/f — upward velocity a thrown object leaves the hand with. guessed;
  *  0.625 px/f, snapped from the 0.6 that used to sit inline in items.js. */
@@ -981,12 +959,14 @@ export const LIFTED_THROW_NUDGE = 1;
  *  the frame it is thrown — a 12x12 box. */
 export const LIFTED_THROW_RADIUS = 6;
 
-/** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
- *  sit inline in items.js. */
-export const THROW_SLIDE_DECAY = 0.9;
-
-/** sp/f — below this a thrown bomb's slide is called finished. guessed. */
-export const THROW_SLIDE_STOP = 26;
+/** sp/f — a thrown bomb (S165) flies the lifted pot's arc above: a bomb has
+ *  no weight class of its own, so itemBeginThrow reads itemWeights row 0 for
+ *  it too. Landing, it bounces as Seasons' bombs do (commonBombAndBraceletCode.s
+ *  itemBounce): its fall turned back up at half speed (PICKUP_BOUNCE_MIN is the
+ *  same objectNegateAndHalveSpeedZ cut-off) and its run across the floor cut
+ *  by bounceSpeedReductionMapping, which takes each 0.25 px/f of speed to
+ *  0.125 px/f — this many subpixels per step. derived from the cartridge. */
+export const BOMB_BOUNCE_STEP = 64;
 
 /** px — height an object is held at while carried. derived from the
  *  cartridge (S155): oracles-disasm object_code/common/itemParents/
@@ -1045,8 +1025,8 @@ export const ANCHOR_RADIUS_TILES = 2;
  */
 export const ANCHOR_SHAPE = 'square';
 
-/** sp/f — how fast the anchor flies when thrown. guessed; matches THROW_SPEED
- *  so it reads as the same arm that throws a pot. */
+/** sp/f — how fast the anchor flies when thrown. guessed; 2.5 px/f, the
+ *  speed the game once threw everything at (THROW_SPEED, gone at S165). */
 export const ANCHOR_THROW_SPEED = 640;
 
 /** sp/f — how fast the chain reels the anchor back on recall. guessed; faster
@@ -1275,18 +1255,21 @@ export const PICKUP_LIFE_FRAMES = 480;
  *  visibility each time it counts once counter1 is under 60 — 120 frames. */
 export const PICKUP_BLINK_FRAMES = 120;
 
-/** sp/f — the little upward pop a drop makes when it appears. guessed;
- *  -1.25 px/f, snapped to the grid from -1.2. */
-export const PICKUP_POP_SPEED = -320;
+/** sp/f — the upward pop a drop makes when it appears: its height rises at
+ *  1.375 px/f. derived from the cartridge: oracles-disasm object_code/common/
+ *  parts/itemDrop.s @normalItem, speedZ = -$160. It was a guessed -1.25 px/f
+ *  that moved the drop up the screen instead of into the air. */
+export const PICKUP_POP_SPEED = -352;
 
-/** sp/f^2 — gravity on that pop. guessed. */
-export const PICKUP_GRAVITY = 40;
+/** sp/f^2 — gravity on that pop. derived from the cartridge: itemDrop.s
+ *  @state1, objectUpdateSpeedZAndBounce with c = $20. Was a guessed 40. */
+export const PICKUP_GRAVITY = 32;
 
-/** f — how long the pop lasts before the drop settles. guessed. */
-export const PICKUP_SETTLE_FRAMES = 12;
-
-/** f — delay before a drop can be collected, so it is not grabbed mid-pop. guessed. */
-export const PICKUP_GRAB_DELAY = 8;
+/** sp/f — a drop that lands falling faster than this bounces, at half its
+ *  speed, back up; slower and it stays down. derived from the cartridge:
+ *  code/bank0.s objectNegateAndHalveSpeedZ ("Once it reaches a speed of less
+ *  than 1 pixel per frame downwards, it stops"). A drop bounces once. */
+export const PICKUP_BOUNCE_MIN = 256;
 
 /** f — frames per wing frame. The healing fairy's two EXTRACTED frames
  *  (tools/rip-fairies.py) alternate every this many. guessed: nothing was
@@ -1295,22 +1278,64 @@ export const PICKUP_GRAB_DELAY = 8;
  *  between, so slower reads as a stutter and faster as a blur. */
 export const FAIRY_FLAP_FRAMES = 6;
 
-/** rad/f — how fast a fairy's drift angle turns. guessed. */
-export const FAIRY_DRIFT_TURN = 0.06;
+/** sp/f[] — the four speeds a fairy flies a leg at: 0.25, 0.5, 0.75 and 1
+ *  px/f. derived from the cartridge: oracles-disasm object_code/common/parts/
+ *  itemDrop.s, itemDrop_chooseRandomFairyMovement @speedTable (SPEED_40,
+ *  SPEED_80, SPEED_c0, SPEED_100). A fairy flies straight legs, each in one
+ *  of sixteen directions at one of these, picked at random. It used to drift
+ *  on a guessed sine (0.06 rad/f, 0.69 and 0.63 px/f). */
+export const FAIRY_LEG_SPEEDS = [64, 128, 192, 256];
 
-/** sp/f — amplitude of a fairy's drift on x. guessed; 0.6875 px/f. */
-export const FAIRY_DRIFT_X = 176;
-
-/** sp/f — amplitude of a fairy's drift on y. guessed; 0.625 px/f. */
-export const FAIRY_DRIFT_Y = 160;
+/** f — how long a fairy's leg lasts: 8 more than an even number below 64.
+ *  derived from the cartridge: the same routine, counter2 = (random & $3e) + 8,
+ *  so 8 to 70 frames. */
+export const FAIRY_LEG_MIN = 8;
+export const FAIRY_LEG_SPAN = 32;
 
 // ---------------------------------------------------------------------------
 // Effects
 // ---------------------------------------------------------------------------
 
-/** f — life of a bomb before it detonates is set per-item; this is how long the
- *  explosion entity itself lives. guessed. */
-export const EXPLOSION_FRAMES = 24;
+/** f[] — how long each frame of the puff something vanishes or appears in is
+ *  held, in the order sprites-effects.js lists `fx_puff*`. derived from the
+ *  cartridge: oracles-disasm data/seasons/interactionAnimations.s,
+ *  interactionAnimation51bae (INTERAC_PUFF's animation 0): 6 8 4, then the
+ *  $ff frame that ends it. 18 frames; ours was a hand-drawn four-frame puff
+ *  at a guessed 4 frames each. */
+export const PUFF_HOLDS = [6, 8, 4];
+
+/** f — a bomb's fuse: still for 80 frames, then flashing on a 4-frame beat for
+ *  36 more, and it goes off on the 117th. derived from the cartridge:
+ *  oracles-disasm data/itemAnimations.s, itemAnimation1e777 (ITEM_BOMB's
+ *  animation 0): $50, then nine 4-frame alternations, then the $7f frame
+ *  whose animParameter tells bombUpdateAnimation to explode. It was a guessed
+ *  100 with a flash that sped up. */
+export const BOMB_FUSE_FRAMES = 80 + 9 * 4;
+
+/** f — how long the fuse sits before it starts to flash, and the beat it
+ *  flashes on. derived: the same itemAnimation1e777 ($50, then $04s). */
+export const BOMB_STILL_FRAMES = 80;
+export const BOMB_FLASH_BEAT = 4;
+
+/** f[] — how long each frame of the blast is held, in the order
+ *  sprites-effects.js lists `fx_boom*` frames. derived from the cartridge:
+ *  oracles-disasm data/itemAnimations.s, itemAnimation1e798 (ITEM_BOMB's
+ *  animation 1): 4 4 3 7 8 8. */
+export const EXPLOSION_HOLDS = [4, 4, 3, 7, 8, 8];
+
+/** f — how long the explosion entity lives: the blast's frames end to end, 34.
+ *  derived: the sum of EXPLOSION_HOLDS (itemUpdateExplosion deletes the bomb
+ *  on the $80 frame that follows them). Was a guessed 24. */
+export const EXPLOSION_FRAMES = EXPLOSION_HOLDS.reduce((a, b) => a + b, 0);
+
+/** px[] — the blast's reach, frame by frame of EXPLOSION_HOLDS: its collision
+ *  radius on each (0 = it no longer hits). derived from the cartridge: the
+ *  third byte of each itemAnimation1e798 frame is animParameter, whose low five
+ *  bits itemUpdateExplosion copies to collisionRadiusY/X ($06 $06 $06 $0a $0f)
+ *  and whose bit 6 ($40) zeroes collisionType for the last frame. The blast is
+ *  live for 26 frames and grows; it was one hit on its first frame with a
+ *  fixed 14 px reach. */
+export const EXPLOSION_RADII = [6, 6, 6, 10, 15, 0];
 
 /** px — radius Link's charge sparkles scatter over. guessed. */
 export const CHARGE_SPARKLE_SPREAD = 12;

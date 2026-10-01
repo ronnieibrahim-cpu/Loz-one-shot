@@ -61,7 +61,7 @@ import {
   ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN,
   DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY,
-  SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
+  SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
@@ -108,7 +108,7 @@ export class Game {
     this.room = null;
     this.mapId = null;
     this.boss = null;
-    this.shakeAmp = 0; this.shakeTime = 0;
+    this.shakeTime = 0;
     this.hitstop = 0;
     this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
     this.fadeAmount = 0; this.fadeDir = 0; this.fadeThen = null; this.fadeWhite = false;
@@ -827,7 +827,7 @@ export class Game {
     this.startCutscene([
       { sfx: 'chest' },
       { lift: { art: key.icon, x: cx - TILE / 2, y: ty * TILE } },
-      { sfx: 'doorRumble', shake: [2, KEYHOLE_OPEN_FRAMES], wait: KEYHOLE_OPEN_FRAMES },
+      { sfx: 'doorRumble', shake: KEYHOLE_OPEN_FRAMES, wait: KEYHOLE_OPEN_FRAMES },
       { flag: def.openFlag, do: (g) => g.applyStoryGates() },
       { jingle: 'secret' },
     ]);
@@ -1083,7 +1083,7 @@ export class Game {
     this.spawnEffect('sparkle', this.player.x, this.player.y - 8, { life: 30 });
   }
 
-  onEnemyDefeated(e) {
+  onEnemyDefeated(e, puffing) {
     this.progress.kills++;
     if (e.isBoss) {
       this.progress.beaten[this.mapId] = true;
@@ -1100,15 +1100,26 @@ export class Game {
         ? { until: (this.progress.owVisits || 0) + OVERWORLD_RESPAWN_DISTANCE }
         : { perm: true };
     }
-    if (!this.entities.some(x => x.isEnemy && !x.dead && x !== e)) {
-      this.room.cleared = true;
-      this.roomEvent('cleared', null);
-    }
+    // An ordinary enemy's room is clear when its PUFF ends, not when it is
+    // struck (PART_ENEMY_DESTROYED calls decNumEnemies at the end of its
+    // animation): `onKillPuffDone` asks then.
+    if (puffing) return;
+    this.checkCleared(e);
+  }
+
+  /** The last enemy's last puff has gone: the room is clear. */
+  onKillPuffDone() { this.checkCleared(null); }
+
+  checkCleared(e) {
+    if (this.entities.some(x => x.isEnemy && !x.dead && x !== e)) return;
+    // Another enemy's puff still in the air counts it as still in the room.
+    if (this.entities.some(x => x.isEffect && x.onDone && !x.remove)) return;
+    this.room.cleared = true;
+    this.roomEvent('cleared', null);
   }
 
   onBossDefeated(e) {
     const d = this.map && this.map.dungeon;
-    this.shake(SHAKE_LARGE, SHAKE_LARGE_FRAMES);
     this.audio.stop();
     // THE BOSS TAKES ITS COURT WITH IT. Whatever it summoned — Gohmaraq's
     // crabs, Nereth's knights — used to outlive it, and went on fighting a
@@ -1494,7 +1505,7 @@ export class Game {
   }
 
   spawnPickup(x, y, kind, o = {}) {
-    const e = new Pickup(x, y, { kind, ...o });
+    const e = new Pickup(x, y, { kind, pop: true, ...o });
     this.addEntity(e);
     return e;
   }
@@ -1525,7 +1536,8 @@ export class Game {
 
   spawnEffect(name, x, y, opts) { return spawnEffectAt(this, name, x, y, opts); }
 
-  shake(amp, frames) { this.shakeAmp = Math.max(this.shakeAmp, amp); this.shakeTime = Math.max(this.shakeTime, frames); }
+  /** Shake the view for `frames` frames, Seasons' way (SHAKE_OFFSETS). */
+  shake(frames) { this.shakeTime = Math.max(this.shakeTime, frames); }
 
   /**
    * Hitstop: freeze the ENTITY SIMULATION for `frames` frames.
@@ -1825,7 +1837,7 @@ export class Game {
     this.progress.frames++;
     this.updateTimers();
     this.updateFade();
-    if (this.shakeTime > 0) { this.shakeTime--; if (this.shakeTime === 0) this.shakeAmp = 0; }
+    if (this.shakeTime > 0) this.shakeTime--;
 
     const extra = this.input.takeExtra();
     if (extra === 'KeyP') { this.audio.toggleMute(); }
@@ -2191,8 +2203,9 @@ export class Game {
       // not touch a stream — a slow machine would draw a different number of
       // times per update and silently advance the run's randomness. noise1 is
       // a pure hash of the frame counter: same shake, no state consumed.
-      ox += Math.round(noise1(this.frame * 2) * this.shakeAmp);
-      oy += Math.round(noise1(this.frame * 2 + 1) * this.shakeAmp);
+      // Each axis jumps by one of SHAKE_OFFSETS, picked afresh every frame.
+      ox += SHAKE_OFFSETS[Math.floor((noise1(this.frame * 2) + 1) * 2) & 3];
+      oy += SHAKE_OFFSETS[Math.floor((noise1(this.frame * 2 + 1) + 1) * 2) & 3];
     }
 
     ctx.save();

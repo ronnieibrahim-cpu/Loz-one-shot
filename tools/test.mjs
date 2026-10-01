@@ -747,11 +747,10 @@ const main = async () => {
     const g = window.__game;
     for (const e of g.entities.filter(x => x.isEnemy)) e.hurt(g, 99, 'down', 0);
   });
-  // This room's enemy is a zol, which carries a deathFrame (S30): a lethal
-  // hit sets `dying` rather than removing it outright, and `progress.kills`
-  // only increments once `Enemy.update`'s ENEMY_DEATH_FRAMES (16) stall
-  // finishes and defers into `super.die`. 6 frames was enough for an instant
-  // kill; it is not enough to outlast that stall.
+  // A lethal hit with knockback flings the enemy first and only then counts
+  // it (S165: Seasons' order, code/bank0.s enemyStandardUpdate); these hits
+  // carry none, so the count moves at once — 20 frames is the puff, room to
+  // spare.
   await frames(20);
   check('enemies can be killed', await G(() => window.__game.progress.kills) > kills0);
   await shot('10-combat');
@@ -838,7 +837,11 @@ const main = async () => {
     const ex0 = e.x, ey0 = e.y, px0 = g.player.x;
 
     // Land a hit. `Entity.hurt` is the one funnel every damage source uses.
+    // Seasons freezes nothing for it (HITSTOP_HIT_FRAMES 0, S165); the
+    // mechanism is still the boss's killing blow's, so it is armed by hand.
     e.hurt(g, 1, 'down', 0);
+    const onHit = g.hitstop;
+    g.freeze(feel.HITSTOP_BOSS_DEATH_FRAMES);
     const armed = g.hitstop;
 
     // Step strictly fewer frames than the freeze lasts, holding right the
@@ -855,15 +858,17 @@ const main = async () => {
     g.player.invuln = 0;
     g.hitstop = 0;
     return {
-      armedIs: armed, want: feel.HITSTOP_HIT_FRAMES, held,
+      armedIs: armed, onHit, want: feel.HITSTOP_BOSS_DEATH_FRAMES, hitHz: feel.HITSTOP_HIT_FRAMES, held,
       frameAdvanced: during.frame - before.frame,
       playAdvanced: during.playFrames - before.playFrames,
       simMoved: during.moved, left: during.left,
       hurtHz: feel.HITSTOP_HURT_FRAMES, bossHz: feel.HITSTOP_BOSS_DEATH_FRAMES,
     };
   });
-  check('a landed hit arms a freeze', !stop.noEnemy && stop.armedIs === stop.want,
-    `armed ${stop.armedIs}, HITSTOP_HIT_FRAMES ${stop.want}`);
+  check('a landed hit freezes nothing, as in Seasons', !stop.noEnemy && stop.onHit === 0 && stop.hitHz === 0,
+    `a hit armed ${stop.onHit}, HITSTOP_HIT_FRAMES ${stop.hitHz}`);
+  check('a freeze arms for as long as asked', stop.armedIs === stop.want,
+    `armed ${stop.armedIs}, HITSTOP_BOSS_DEATH_FRAMES ${stop.want}`);
   check('the freeze stops the entity simulation', stop.simMoved === false,
     'the player or the enemy moved while frozen');
   check('the freeze does NOT stop the frame counter', stop.frameAdvanced === stop.held,
@@ -876,8 +881,8 @@ const main = async () => {
   // nothing at all: Seasons keeps the world running when he is struck
   // (HITSTOP_HURT_FRAMES, measured at S147), and the red flash is the tell.
   check('a boss dying freezes longest; a hit on Link freezes nothing',
-    stop.want < stop.bossHz && stop.hurtHz === 0,
-    `hit ${stop.want}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
+    stop.hitHz < stop.bossHz && stop.hurtHz === 0,
+    `hit ${stop.hitHz}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
 
   // --- music: vibrato, echo, arpeggio on the cartridge's engine (S164) ----
   //

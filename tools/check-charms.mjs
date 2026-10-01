@@ -391,15 +391,16 @@ r = await read(async () => {
   const g = window.__game;
   const fx = await import('/src/game/effects.js');
   const plain = new fx.Explosion(64, 64);
-  plain.applyCharms(g);
-  const plainW = plain.hb.w;
+  // Measured at the blast's widest frame (EXPLOSION_RADII's 15 px step).
+  plain.applyCharms(g); plain.frame = 20;
+  const plainW = plain.reach().w;
   window.__S.giveCharm(g.progress, 'dryKindling');
   g.progress.charmOpen.low = true;
   window.__S.slotCharm(g.progress, 'low', 0, 'dryKindling');
   g.scrim.update();
   const wide = new fx.Explosion(64, 64);
-  wide.applyCharms(g);
-  return { plainW, wideW: wide.hb.w };
+  wide.applyCharms(g); wide.frame = 20;
+  return { plainW, wideW: wide.reach().w };
 });
 check('Dry Kindling widens the blast', r.wideW > r.plainW, `${r.plainW} -> ${r.wideW}`);
 

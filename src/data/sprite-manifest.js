@@ -29,7 +29,7 @@ export const REQUIRED_SPRITES = {
   ],
 
   fx: [
-    ...seq('fx_puff', 4), ...seq('fx_spark', 3), ...seq('fx_splash', 3),
+    ...seq('fx_spark', 3), ...seq('fx_splash', 3),
     ...seq('fx_ripple', 2), ...seq('fx_dust', 3), ...seq('fx_cut', 3),
     ...seq('fx_sparkle', 3), ...seq('fx_flame', 3), ...seq('fx_bubble', 2),
     ...seq('fx_foam', 3), ...seq('fx_shine', 3),
@@ -37,8 +37,10 @@ export const REQUIRED_SPRITES = {
     'shadow',
   ],
 
-  // 32x32 explosion frames
-  fxBig: [...seq('fx_boom', 5)],
+  // 32x32 cells cut from Seasons' common sprites (tools/rip-effects.py): the
+  // puff, the kill puff in both its palettes, and the bomb's blast.
+  fxBig: [...seq('fx_puff', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
+    ...seq('fx_boom', 5)],
 
   ui: [
     ...seq('hud_heart', 5), 'hud_rupee',
@@ -137,20 +139,23 @@ export const REQUIRED_SPRITES = {
 
   // ---- pack: sprites-enemies.js ----------------------------------------
   enemies: [
-    ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2), 'octorokSea_hurt', 'octorok_death', 'octorok_atk',
-    ...seq('crab_', 2), 'crab_death', ...seq('zol_', 2), 'zol_death', ...seq('gel_', 2), 'gel_death', ...seq('keese_', 2), 'keese_death',
-    ...seq('leever_', 2), 'leever_death', ...seq('bubble_', 2), ...seq('beamos_', 2), 'beamos_atk',
-    ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', 'beetle_death', ...seq('tektite_', 2), 'tektite_death',
-    ...seq('wisp_', 2), 'wisp_hurt', 'wisp_death', 'wisp_atk', ...seq('urchin_', 2), 'urchin_death', 'urchin_idle',
-    ...seq('moblin_d', 2), ...seq('moblin_u', 2), ...seq('moblin_s', 2), 'moblin_hurt', 'moblin_death',
-    ...seq('stalfos_d', 2), ...seq('stalfos_s', 2), 'stalfos_death', 'stalfos_hurt',
-    ...seq('darknut_d', 2), ...seq('darknut_s', 2), 'darknut_hurt', 'darknut_death', 'darknut_atk',
-    ...seq('wizzrobe_', 2), 'wizzrobe_hurt', 'wizzrobe_death', 'wizzrobe_atk', ...seq('anglerfry_', 2), 'anglerfry_hurt', 'anglerfry_death', 'anglerfry_atk', ...seq('barnacle_', 2), 'barnacle_atk',
-    ...seq('jellyfish_', 2), 'jellyfish_death', ...seq('siren_', 2), 'siren_hurt', 'siren_death', ...seq('pincer_', 2), 'pincer_hurt', 'pincer_death',
+    // Cut by rip-enemies.py and unused since S165 (Seasons has no defeat pose:
+    // an enemy dies in PART_ENEMY_DESTROYED's puff). Removing them is a ripper change.
+    'darknut_death', 'jellyfish_death', 'leever_death', 'pincer_death', 'urchin_death', 'wizzrobe_death',
+    ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2), 'octorokSea_hurt', 'octorok_atk',
+    ...seq('crab_', 2), ...seq('zol_', 2), ...seq('gel_', 2), ...seq('keese_', 2),
+    ...seq('leever_', 2), ...seq('bubble_', 2), ...seq('beamos_', 2), 'beamos_atk',
+    ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', ...seq('tektite_', 2),
+    ...seq('wisp_', 2), 'wisp_hurt', 'wisp_atk', ...seq('urchin_', 2), 'urchin_idle',
+    ...seq('moblin_d', 2), ...seq('moblin_u', 2), ...seq('moblin_s', 2), 'moblin_hurt',
+    ...seq('stalfos_d', 2), ...seq('stalfos_s', 2), 'stalfos_hurt',
+    ...seq('darknut_d', 2), ...seq('darknut_s', 2), 'darknut_hurt', 'darknut_atk',
+    ...seq('wizzrobe_', 2), 'wizzrobe_hurt', 'wizzrobe_atk', ...seq('anglerfry_', 2), 'anglerfry_hurt', 'anglerfry_atk', ...seq('barnacle_', 2), 'barnacle_atk',
+    ...seq('jellyfish_', 2), ...seq('siren_', 2), 'siren_hurt', ...seq('pincer_', 2), 'pincer_hurt',
     // S146: the flinch and death frames every enemy gained.
     'crab_hurt', 'zol_hurt', 'gel_hurt', 'keese_hurt', 'leever_hurt', 'tektite_hurt',
-    'urchin_hurt', 'jellyfish_hurt', 'barnacle_hurt', 'barnacle_death',
-    'bubble_hurt', 'bubble_death', 'beamos_hurt', 'beamos_death',
+    'urchin_hurt', 'jellyfish_hurt', 'barnacle_hurt',
+    'bubble_hurt', 'beamos_hurt',
   ],
 
   // ---- pack: sprites-bosses.js -----------------------------------------

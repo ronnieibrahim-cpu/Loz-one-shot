@@ -43,7 +43,7 @@ import {
   BELLOWS_RAFT_SCALE,
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
-  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS,
+  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS,
   ROD_RING_FRAMES,
   CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
@@ -1003,10 +1003,6 @@ export class Player extends Entity {
     // lifted pot, and the Kilnshell (S160), which lands still burning.
     if (c instanceof ThrownObject || typeof c.launch === 'function') {
       c.launch(this.x + dx * n, this.y + dy * n, dx * v, dy * v, CARRY_HEIGHT);
-    } else if (c.thrownVx !== undefined) {
-      c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;
-      c.x = this.x + dx * 4; c.y = this.y + dy * 4;
-      c.remove = false;
     } else {
       c.remove = true;
       game.addEntity(new ThrownObject(this.x + dx * n, this.y + dy * n, {
@@ -1251,12 +1247,11 @@ export class Player extends Entity {
   updateContactDamage(game) {
     if (this.invuln > 0 || this.invincible) return;
     for (const e of game.entities) {
-      // A CORPSE MID-COLLAPSE IS NOT A THREAT. `dying` is the death-animation
-      // stall an enemy with a `deathFrame` and every boss sit in before
-      // `Entity.die` runs — `dead` is still false for all of it, so without
-      // this an enemy went on dealing full contact damage for the whole of its
-      // own defeat pose (ENEMY_DEATH_FRAMES, and BOSS_DEATH_FRAMES for a
-      // boss's explosion). That is not what the source games do and it is not
+      // A CORPSE MID-COLLAPSE IS NOT A THREAT. `dying` is the stretch a killed
+      // enemy is thrown by its killing blow (S165) and a boss explodes in
+      // before it is gone — `dead` is still false for all of it, so without
+      // this an enemy went on dealing full contact damage after it was beaten
+      // (Seasons clears its collisions at zero health). That is not what the source games do and it is not
       // what the animation reads as: the thing is visibly finished. It cost a
       // playthrough — the actor walked through the wreckage of what it had
       // just killed in D1's Tide Gallery and died to it.

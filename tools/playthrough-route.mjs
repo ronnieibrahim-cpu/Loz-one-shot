@@ -1624,7 +1624,9 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['hold', ['up'], 60],
-  ['wait', 120],
+  // S165: 148, not 120 — with no freeze on a hit (Seasons has none) the fight
+  // ran a few frames past her last flood at 120; 148 and 150 win on 22 qh.
+  ['wait', 148],
 
   // ---------------------------------------------------------------- d4 0,3,1
   // WYVERNA, THE SEA WYVERN, and the fourth Essence. `clearAdds` is left off:
@@ -1633,7 +1635,8 @@ export const ROUTE = [
   // the pose, or the loot that follows stands still and the Heart Container
   // is left in the room.
   // S151: re-swept; the reach swing wins (15 -> 11); the plain fight loses.
-  ['boss', 24000, null, { reachSwing: true }],
+  // S165: and the diagonal retreat with it, after the hit freeze went.
+  ['boss', 24000, null, { reachSwing: true, diagRetreat: true }],
   ['wait', 240],
   ['goto', 7, 4, 600],
   ['dialogue', 900],

@@ -60,13 +60,13 @@ import {
   ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
-  ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
+  ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE,
   ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
   BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
-  SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
+  SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
   HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
 } from '../data/feel.js';
@@ -165,10 +165,6 @@ export class Enemy extends Entity {
   }
 
   spriteName() {
-    // Checked before the hurtFrame flinch pose: a dying enemy's invuln
-    // flicker is still running (hurt() set both on the killing blow), and the
-    // death pose is the one that should win once dying is true.
-    if (this.dying && this.spec.deathFrame) return this.spec.deathFrame;
     // Same mechanism Boss.spriteName already uses: while the invuln flicker is
     // running, show the flinch pose instead of the walk cycle. Ordinary
     // enemies had no path to this at all until now — only bosses declared
@@ -247,13 +243,18 @@ export class Enemy extends Entity {
     if (this.flicker > 0) this.flicker--;
     if (this.attackTime > 0) this.attackTime--;
 
-    // Death stall: the killing blow already ran (hp<=0, die() below set
-    // `dying` instead of `remove`), so skip everything else — no AI, no tide
-    // check, no knockback — and just hold the death pose until the countdown
-    // ends, then finish the removal die() deferred.
+    // THE KILLING BLOW STILL THROWS IT. Seasons checks an enemy's knockback
+    // before its health (code/bank0.s enemyStandardUpdate), so an enemy struck
+    // to zero is flung the whole of the hit's distance, flashing and harmless
+    // (applyDamageToEnemyOrPart clears its collisions at zero health), and
+    // only then goes up in smoke. Nothing else runs on it meanwhile.
     if (this.dying) {
-      this.deathTime++;
-      if (this.deathTime > ENEMY_DEATH_FRAMES) { this.dying = false; super.die(game); }
+      if (this.knockTime > 0) {
+        this.knockTime--;
+        const hit = moveEntity(game, this, this.knockX, this.knockY);
+        if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
+      }
+      if (this.knockTime <= 0) { this.dying = false; this.vanish(game); }
       return;
     }
 
@@ -337,23 +338,38 @@ export class Enemy extends Entity {
   }
 
   /**
-   * An enemy with a `spec.deathFrame` lingers un-removed for ENEMY_DEATH_FRAMES
-   * so its death pose can actually draw, the same "stall the removal" shape
-   * `Boss.beginDeath` already uses for a boss's own death animation. `update`
-   * above counts the stall down and calls `super.die(game)` — the real
-   * `Entity.die` (loot, onDie, the puff effect, the defeated bookkeeping) —
-   * once it ends. An enemy with no `deathFrame` is untouched: this falls
-   * straight through to `super.die(game)` on the same frame, exactly as
-   * before this stall existed.
+   * An ordinary enemy dies as Seasons' do (code/bank0.s enemyDie): thrown out
+   * by the blow that killed it if that blow carried any knockback (see
+   * `update`), then gone in PART_ENEMY_DESTROYED's puff. A boss or a miniboss
+   * keeps its own death (`Boss.beginDeath`), which ends here through
+   * `super.die` (`_bossClass`, since a miniboss clears `isBoss`).
    */
   die(game) {
     if (this.dead || this.dying) return;
-    if (this.spec.deathFrame) {
-      this.dying = true;
-      this.deathTime = 0;
-      return;
-    }
-    super.die(game);
+    if (this._bossClass) { super.die(game); return; }
+    this.harmless = true;
+    if (this.knockTime > 0) { this.dying = true; return; }
+    this.vanish(game);
+  }
+
+  /**
+   * The puff. The enemy is gone the frame it starts, and counted as killed
+   * (its save record, `progress.kills`), but what it drops and whether its
+   * room is now clear wait for the puff to finish, as PART_ENEMY_DESTROYED
+   * holds both (decNumEnemies, decideItemDrop) until its animation ends.
+   */
+  vanish(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    if (this.spec.onDie) this.spec.onDie(this, game);
+    const x = this.cx - 8, y = this.cy - 8 - this.z;
+    const drops = this.drops;
+    game.audio.sfx('enemyDie');
+    game.onEnemyDefeated(this, true);
+    game.spawnEffect('kill', x, y, {
+      onDone: (g) => { g.rollDrop(x, y, drops); g.onKillPuffDone(); },
+    });
   }
 
   onDie(game) {
@@ -453,7 +469,6 @@ export class Boss extends Enemy {
         game.spawnEffect('boom',
           this.x + game.rng.float() * this.w - 8,
           this.y + game.rng.float() * this.h - 8);
-        game.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
       }
       if (this.deathTime > BOSS_DEATH_FRAMES) { this.dying = false; super.die(game); }
       return;
@@ -1043,7 +1058,7 @@ export function charge(e, g, o = {}) {
       e.charging = false;
       e.stun = o.recover || ENEMY_CHARGE_RECOVER_FRAMES;
       realign(e, g);
-      if (o.shake) g.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
+      if (o.shake) g.shake(SHAKE_SMALL_FRAMES);
     }
     return true;
   }

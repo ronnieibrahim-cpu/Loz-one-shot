@@ -23,7 +23,7 @@ import { TIDE_COUNT } from './tide.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   KNOCK_TOOL, KNOCK_THROWN,
-  THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
+  THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN,
   LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
@@ -33,10 +33,11 @@ import {
   COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES,
   ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED,
   ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE,
-  SHAKE_SMALL, SHAKE_SMALL_FRAMES,
+  SHAKE_SMALL_FRAMES,
   KILNSHELL_BURN_DAMAGE,
   KILNSHELL_STRIKE_FLASH_FRAMES,
   POT_HAULER_FACTOR,
+  BOMB_FUSE_FRAMES, BOMB_STILL_FRAMES, BOMB_FLASH_BEAT,
 } from '../data/feel.js';
 import { sprites, tiles } from '../gfx/art.js';
 
@@ -49,7 +50,8 @@ export class Bomb extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 4, y: 6, w: 8, h: 8 };
-    this.fuse = o.fuse || 100;
+    this.fuse = o.fuse || BOMB_FUSE_FRAMES;
+    this.lit = 0;
     this.pal = 'bomb';
     this.harmless = true;
     this.liftable = true;
@@ -59,24 +61,52 @@ export class Bomb extends Entity {
 
   update(game) {
     this.frame++;
-    if (this.thrownVx || this.thrownVy) {
-      // Subpixels per frame, so the decay rounds back onto the grid.
-      moveEntity(game, this, this.thrownVx, this.thrownVy);
-      this.thrownVx = Math.round(this.thrownVx * THROW_SLIDE_DECAY);
-      this.thrownVy = Math.round(this.thrownVy * THROW_SLIDE_DECAY);
-      if (Math.abs(this.thrownVx) < THROW_SLIDE_STOP) this.thrownVx = 0;
-      if (Math.abs(this.thrownVy) < THROW_SLIDE_STOP) this.thrownVy = 0;
-    }
+    if (this.flight) this.fly(game);
+    this.lit++;
     if (--this.fuse <= 0) {
       this.remove = true;
       game.addEntity(new Explosion(this.cx - 16, this.cy - 16, { power: this.power }));
     }
   }
 
+  /**
+   * THROWN, IT FLIES AS ITSELF AND KEEPS BURNING (S165). It used to fall to
+   * the player's catch-all branch, which removed it and threw a stand-in rock
+   * that shattered: a lifted bomb never went off. Seasons throws it like a pot
+   * (itemWeights row 0) and it bounces where it lands (BOMB_BOUNCE_STEP).
+   */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.flight = { vx, vy };
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
+  }
+
+  fly(game) {
+    this.fz += this.vz;
+    this.vz -= LIFTED_THROW_GRAVITY;
+    const r = moveEntity(game, this, this.flight.vx, this.flight.vy, { jumping: true, swim: true });
+    if (r.hitX) this.flight.vx = 0;
+    if (r.hitY) this.flight.vy = 0;
+    if (this.fz > 0) return;
+    this.fz = 0;
+    // itemBounce: back up at half the fall, and half the run, until the fall
+    // is under a pixel a frame.
+    if (-this.vz >= PICKUP_BOUNCE_MIN) {
+      this.vz = Math.trunc(-this.vz / 2);
+      const cut = v => Math.sign(v) * Math.floor(Math.abs(v) / BOMB_BOUNCE_STEP) * (BOMB_BOUNCE_STEP / 2);
+      this.flight.vx = cut(this.flight.vx); this.flight.vy = cut(this.flight.vy);
+      game.audio.sfx('bombDown');
+    } else {
+      this.vz = 0; this.flight = null;
+    }
+  }
+
   spriteName() {
-    // Flash faster as the fuse burns down.
-    const rate = this.fuse < 24 ? 3 : (this.fuse < 50 ? 6 : 10);
-    return (Math.floor(this.frame / rate) % 2) ? 'i_bomb_lit' : 'i_bomb';
+    // Seasons' fuse: still, then a steady flash to the end (BOMB_FUSE_FRAMES).
+    const t = this.lit - BOMB_STILL_FRAMES;
+    return t >= 0 && Math.floor(t / BOMB_FLASH_BEAT) % 2 === 0 ? 'i_bomb_lit' : 'i_bomb';
   }
 }
 defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
@@ -781,7 +811,7 @@ export class Reefseed extends Entity {
     game.room.setTile(tx, ty, 'coralPillar');
     game.audio.sfx('rumble');
     game.spawnEffect('puff', tx * TILE, ty * TILE);
-    game.shake(SHAKE_SMALL, SHAKE_SMALL_FRAMES);
+    game.shake(SHAKE_SMALL_FRAMES);
     // Anything standing where the pillar came up is moved off it rather than
     // buried in it. A player sealed inside terrain by their own item is the
     // one outcome this must never produce.
