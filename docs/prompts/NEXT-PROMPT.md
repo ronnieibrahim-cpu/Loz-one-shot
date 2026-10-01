@@ -8,8 +8,8 @@
 - `docs/HANDOFF.md` hard-won lessons (three new at the top).
 
 ## State
-- S163 (cartridge sound effects and jingles) — check whether it was merged;
-  if not, ask the human before branching from main.
+- S163 (cartridge sound effects and jingles) is MERGED into main: branch
+  from main.
 - Whole table green; check-playthrough 44/44, THE END, never died.
 - All three optional dungeons are finishable and proved so in one run each
   (check-side). 28 heart pieces, cap 16. 31 charms.

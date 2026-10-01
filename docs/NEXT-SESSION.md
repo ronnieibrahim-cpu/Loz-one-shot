@@ -2,7 +2,7 @@
 
 Branch claude/oracle-tides-s163-6cqrq2, off main at d0a5a22. The human chose
 FUTURE ACTION ITEM 1 (sound effects), then: "Change everything to cartridge,
-except keep our own items original." NOT YET MERGED: ask the human.
+except keep our own items original." MERGED into main at the human's word.
 
 ### What landed
 - 47 of the 62 sfx in src/data/audio.js are `{ seasons: name }`, played by
