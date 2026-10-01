@@ -7,11 +7,8 @@
   are DONE.
 
 ## State
-- Branch `claude/oracle-tides-optional-dungeons-c5eytd` holds S160 + S161
-  (the Lower Vault, the Gullwind Eyrie, the Sunken Palace). S161 asked the
-  human whether to merge it into main: check `git log origin/main` first. If
-  it is merged, branch from main; if not, ask again before doing anything that
-  depends on it.
+- S160 + S161 (the Lower Vault, the Gullwind Eyrie, the Sunken Palace) are
+  ON MAIN (merged at the human's word, end of S161). Branch from main.
 - Whole table green; check-playthrough 44/44, THE END, never died.
 - 28 heart pieces, cap 16. 31 charms. Art from both cartridges (Ages files in
   assets/objects/oracles-disasm/ages/).

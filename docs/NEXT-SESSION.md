@@ -1,9 +1,9 @@
 ## S161 — the Sunken Palace: all three optional dungeons are built
 
 Branch claude/oracle-tides-optional-dungeons-c5eytd (S160's, continued as the
-human asked), mirrored to claude/sunken-palace-dungeon-eqam6i. NOT MERGED:
-the human decides at the end of S161 (they said: merge S160+S161 together
-once the Palace is done — ask, do not move main unasked).
+human asked), mirrored to claude/sunken-palace-dungeon-eqam6i. MERGED: the
+human said "merge all to main" at the end of S161, and main was
+fast-forwarded to 44fa332 (S160 + S161, all three optional dungeons).
 
 ### What landed
 - THE SUNKEN PALACE (`palace`, 16 rooms, floors 1 = the Palace and 0 = the
