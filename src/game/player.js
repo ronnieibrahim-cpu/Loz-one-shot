@@ -506,7 +506,7 @@ export class Player extends Entity {
     // product still lands on a whole subpixel exactly once at the end.
     if ((f & F.SLOW) && this.z <= 2 && !game.charm('dunerunner')) mult *= SLOW_FACTOR;
     if (this.inShallow && this.z <= 2) mult *= SHALLOW_FACTOR;
-    if (this.carrying && !game.charm('potHauler')) mult *= CARRY_FACTOR;
+    if (this.carrying) mult *= CARRY_FACTOR;
     if (this.inDeep && !this.underwater && game.charm('riptideFin')) mult *= RIPTIDE_FIN_FACTOR;
     if (game.charm('deadweight')) mult *= DEADWEIGHT_FACTOR;
     if (mult !== 1) speed = Math.max(1, Math.round(speed * mult));

@@ -36,6 +36,7 @@ import {
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
   KILNSHELL_BURN_DAMAGE,
   KILNSHELL_STRIKE_FLASH_FRAMES,
+  POT_HAULER_FACTOR,
 } from '../data/feel.js';
 import { sprites, tiles } from '../gfx/art.js';
 
@@ -444,6 +445,11 @@ export class ThrownObject extends Entity {
     this.depth = 20;
   }
 
+  /** What it hits for: Seasons' 3, doubled by the Pot-Hauler (S164). */
+  hitPower(game) {
+    return this.power * (game.charm('potHauler') ? POT_HAULER_FACTOR : 1);
+  }
+
   update(game) {
     this.frame++;
     this.fz += this.vz;
@@ -455,7 +461,7 @@ export class ThrownObject extends Entity {
       if (!e.isEnemy || e.dead) continue;
       const b = e.contactRect();
       if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
-        e.hurt(game, this.power, null, KNOCK_THROWN, this);
+        e.hurt(game, this.hitPower(game), null, KNOCK_THROWN, this);
         this.shatter(game);
         return;
       }

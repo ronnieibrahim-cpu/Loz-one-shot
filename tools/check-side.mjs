@@ -209,7 +209,10 @@ const SCENARIOS = [
       ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 30],
       // the Brine Gallery: one throw at the tangle burns it and, resting a
       // tile from the near brazier, lights that too (S162); lift it, then the island
-      ['goto', 3, 6, 600], ['hold', ['up'], 2], ['tap', 'a', 90], ['tap', 'a', 30],
+      // S164: carrying no longer slows Link, so the shell lands a step out of
+      // reach of where he threw it from — walk up to it before lifting.
+      ['goto', 3, 6, 600], ['hold', ['up'], 2], ['tap', 'a', 90],
+      ['goto', 3, 5, 300], ['hold', ['up'], 2], ['tap', 'a', 30],
       ['goto', 9, 5, 600], ['hold', ['down'], 1], ['tap', 'a', 90],
       ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
       // the Kiln Walk: dry, so struck where it is needed
@@ -217,7 +220,9 @@ const SCENARIOS = [
       ['goto', 13, 5, 300], ['hold', ['right'], 40], ['wait', 40],
       // the Saltwraith's Pan, at HIGH
       ['equip', 'conch', 'B', 120], ['tide', 2, 20, 600], ['wait', 60], ['goto', 3, 5, 300],
-      ['boss', 14000, 'saltwraith'], ['wait', 120], ['loot', 900], ['wait', 60],
+      // S164: `reachSwing` (swept eight option sets; it wins at every entry
+      // wait from 30 to 120 frames, the plain fight no longer does).
+      ['boss', 14000, 'saltwraith', { reachSwing: true }], ['wait', 120], ['loot', 900], ['wait', 60],
     ],
     expect: `g.progress.flags.vault_wraith && g.progress.heartPieces === 1 || ('wraith ' + !!g.progress.flags.vault_wraith + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
   },

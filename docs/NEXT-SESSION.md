@@ -77,19 +77,20 @@ The human: "proceed in order" through the FUTURE ACTION ITEMS.
   them; only audio/ is copied into assets/):
   - LOW_HEART_EVERY 40 -> 64, derived (playHeartBeepAtInterval, code/bank2.s:
     `wFrameCounter & $3f`). LANDED.
-  - The same routine beeps only while (health-1)*4 < max health, i.e. at or
-    below a QUARTER of the container total; ours is a fixed 8 qh, chosen on
-    purpose against our damage ladder. ASK THE HUMAN before changing.
-  - Link's speed table (object_code/common/specialObjects/link.s,
-    updateLinkSpeed_withParam @speedTable): grass SPEED_0c0 vs normal
-    SPEED_100 (0.75; ours SLOW_FACTOR 0.6), no slowdown in puddles (ours
-    SHALLOW_FACTOR 0.86), none while carrying (ours CARRY_FACTOR 0.9 — but
-    the Pot Hauler charm exists to cancel it, so ASK the human). S164 tried
-    SLOW 0.75 + SHALLOW 1: replay.mjs needed re-recording (expected) and the
-    ROBOT LOST the d2 boss (1,4,2) and check-side's Lower Vault Saltwraith
-    fight — both REVERTED, comments in feel.js say why. A session that takes
-    them on must re-route those fights (route-prefix.mjs, try-room.mjs) and
-    `node tools/replay.mjs --record-all`.
+  - THE HUMAN: "Match the original in all aspects regarding these
+    questions." So, all LANDED:
+    - LOW_HEART_THRESHOLD (8 qh) -> LOW_HEART_DIVISOR 4: beeps while
+      (hearts-1)*4 < maxHearts, as playHeartBeepAtInterval does.
+    - CARRY_FACTOR 0.9 -> 1, SLOW_FACTOR 0.6 -> 0.75, SHALLOW_FACTOR 0.86 ->
+      1 (link.s @speedTable). The POT-HAULER charm lost its job, so it got a
+      new one: thrown pots and rocks hit twice as hard (POT_HAULER_FACTOR,
+      ThrownObject.hitPower; check-charms proves it).
+    - Re-routed: the d2 Reefguard (hold 170, `reachSwing`; wins on a full
+      bar at holds 155-185) and the Brinehulk (`openRetreat` added; wins at
+      5 of 6 entry waits). check-side's Lower Vault: walk up to the shell
+      before lifting it (it lands a step further off now), and `reachSwing`
+      on the Saltwraith (wins at every entry wait 30-120, thinly).
+      replay.mjs --record-all (4 tapes moved).
   - UNRESOLVED: the same table walks Link at SPEED_100 = 1 px/f (constants/
     common/objectSpeeds.s: "SPEED_100 is a speed of 1 pixel per frame"),
     1.5 only with Pegasus Seeds (SPEED_180) — but the frame-exact TAS
@@ -117,8 +118,8 @@ Built; dist committed.
 ### FUTURE ACTION ITEMS (in order; the human said "proceed in order")
 The human heard the GB versions of our tunes: "Music sounds great."
 Items 2, 3, 4 (kept as is) and 10 are done; 5 is the human's.
-6. Measure the guessed timings — continue from the S164 notes above (two
-questions for the human first). 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
+6. Measure the guessed timings — continue from the S164 notes above (the
+walk-speed puzzle first; the human wants the original matched). 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
 the overworld. 9. Review our item icons. 10. A phone check.
 
 ## S163 — the cartridges' own sound effects

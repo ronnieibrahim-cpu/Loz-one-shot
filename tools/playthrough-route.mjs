@@ -721,14 +721,17 @@ export const ROUTE = [
   ['hold', ['down'], 10],
   ['tap', 'a', 40],
   ['goto', 3, 4, 400],
-  ['hold', ['up'], 120],
+  ['hold', ['up'], 170],
 
   // ---------------------------------------------------------------- d2 1,4,2
   // Reefguard Hall, two rooms long: the miniboss for the second Small Key,
   // then the urchin that stands between the room and its puzzle flag.
   // S150: `diagRetreat` (swept six option sets at two entry holds; this won
   // on 16 of 20, the plain fight died under the Reefguard's column of fire).
-  ['boss', 6000, 'reefguard', { diagRetreat: true }],
+  // S164: wading stopped slowing Link (Seasons' own speed table) and that
+  // fight died; re-swept five option sets at six holds — `reachSwing` after a
+  // hold of 155-185 wins on a full bar every time.
+  ['boss', 6000, 'reefguard', { reachSwing: true }],
   ['dialogue', 300],
   ['use', 'conch', 2, 140],
   ['goto', 20, 5, 700],
@@ -2925,7 +2928,10 @@ export const ROUTE = [
   // retreat or not (swept over six option sets).
   // S150: swept six option sets; `reachSwing` added wins on 37 of 48, the
   // diagonal retreat alone now dies.
-  ['boss', 12000, 'brinehulk', { diagRetreat: true, reachSwing: true }],
+  // S164: wading stopped slowing Link and that set died; swept ten option
+  // sets, then the two winners over six entry waits — the open-floor retreat
+  // added wins on 5 of 6 (waits 40-80 before the last conch).
+  ['boss', 12000, 'brinehulk', { openRetreat: true, diagRetreat: true, reachSwing: true }],
   ['wait', 240],
 
   // THE BOSS KEY. The chest on the far island, and the last locked thing in

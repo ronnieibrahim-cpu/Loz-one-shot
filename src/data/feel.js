@@ -117,21 +117,25 @@ export const SHIELD_SPEED = 288;
  *  move at full pace". guessed insofar as its ancestor is. */
 export const SWORD_HOLD_SPEED = 288;
 
-/** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. Seasons'
+/** x — multiplier on F.SLOW terrain (sand, deep grass). derived: Seasons'
  *  own speed table (object_code/common/specialObjects/link.s,
- *  updateLinkSpeed_withParam @speedTable) says 0.75 on TILETYPE_GRASS
- *  (SPEED_0c0 against SPEED_100); S164 tried it and the robot's boss routes
- *  in d2 and the Lower Vault stopped winning, so it waits for a session that
- *  can re-route them. */
-export const SLOW_FACTOR = 0.6;
+ *  updateLinkSpeed_withParam @speedTable) walks Link at SPEED_0c0 on
+ *  TILETYPE_GRASS against SPEED_100 on plain ground — three quarters (S164,
+ *  at the human's word "match the original"; it was a guessed 0.6). Seasons
+ *  has no slow sand; ours takes grass's rule. */
+export const SLOW_FACTOR = 0.75;
 
-/** x — multiplier while wading in shallow water. guessed. The same table
- *  never slows Link in a puddle (so 1 on the cartridge); held back with
- *  SLOW_FACTOR, above, for the same reason. */
-export const SHALLOW_FACTOR = 0.86;
+/** x — multiplier while wading in shallow water. derived: 1 — the same
+ *  table slows Link only on grass, stairs and vines, never in a puddle
+ *  (TILETYPE_PUDDLE), so wading costs no speed on the cartridge (S164; it
+ *  was a guessed 0.86). Kept as a named 1 so the wade path still reads. */
+export const SHALLOW_FACTOR = 1;
 
-/** x — multiplier while carrying something. guessed. */
-export const CARRY_FACTOR = 0.9;
+/** x — multiplier while carrying something. derived: 1 — Seasons' speed
+ *  table (object_code/common/specialObjects/link.s, @speedTable) has no
+ *  carrying row; Link walks at full speed with a pot over his head (S164, at
+ *  the human's word "match the original"; it was a guessed 0.9). */
+export const CARRY_FACTOR = 1;
 
 /** sp/f — drift in the facing direction during a spin attack. guessed. */
 export const SPIN_DRIFT_SPEED = 96;
@@ -890,10 +894,11 @@ export const THE_END_HOLD_FRAMES = 90;
 // every Zelda that tells a player to stop and heal, and this game's hearts sat
 // silent all the way to zero.
 
-/** qh — quarter-hearts at or below which the pulse starts. guessed. Two full
- *  hearts. Chosen against this game's damage ladder rather than the source's:
- *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
-export const LOW_HEART_THRESHOLD = 8;
+/** x — the pulse sounds while health is at or below 1/LOW_HEART_DIVISOR of
+ *  the heart container total. derived: Seasons' playHeartBeepAtInterval
+ *  (code/bank2.s) beeps while (health - 1) * 4 < maximum health, in quarter
+ *  hearts (S164, at the human's word; it was a fixed 8 quarter-hearts). */
+export const LOW_HEART_DIVISOR = 4;
 
 /** f — frames between pulses. derived: 64 — Seasons' playHeartBeepAtInterval
  *  (code/bank2.s) beeps when `wFrameCounter & $3f` is zero (S164; it was a
@@ -1623,6 +1628,11 @@ export const STRANDWALKER_EVERY = 300;
 
 /** dimensionless — bomb blast radius multiplier with Dry Kindling. guessed. */
 export const DRY_KINDLING_FACTOR = 1.5;
+
+/** dimensionless — how much harder a thrown pot or rock hits with the
+ *  Pot-Hauler. guessed. (S164: its old job, cancelling the carry slowdown,
+ *  went when carrying stopped slowing Link, as on the cartridge.) */
+export const POT_HAULER_FACTOR = 2;
 
 /** dimensionless — pickup lifetime multiplier with the Gull's Tally. guessed;
  *  the plan says twice as long and this is that. */

@@ -456,6 +456,9 @@ BEFORE checking a file out for isolation, not after.**
 - **A movement factor is a boss-route change (S164).** SLOW 0.6 -> 0.75 and
   SHALLOW 0.86 -> 1 (both what Seasons' code says) cost the robot the d2 boss
   and the Lower Vault's Saltwraith. Budget a re-route before touching one.
+  (Paid in S164 itself: route-prefix.mjs with PATCH sweeps a fight's entry
+  wait against its option sets in ~3 s a try; try-room.mjs with a
+  check-side `--dump` bisects a scenario by truncating its steps.)
 - **The code and the footage disagree on Link's walk (S164).** Seasons'
   speed table says 1 px/f (1.5 only with Pegasus Seeds); the frame-exact TAS
   shows 1.5 px/f with no seeds. Unresolved — read before "fixing" WALK_SPEED.

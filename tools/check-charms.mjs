@@ -523,15 +523,19 @@ const charmedConch = await conchLock();
 check("the Bosun's Whistle shortens the conch", charmedConch < plainConch,
   `${plainConch} -> ${charmedConch}`);
 
-// Pot-Hauler — carrying costs no speed.
+// Pot-Hauler — a thrown pot or rock hits twice as hard (S164: carrying no
+// longer slows Link at all, as on the cartridge, so that is not its job).
 await nocharms();
-r = await read(() => {
+const thrownPower = () => read(async () => {
   const g = window.__game;
-  return { carry: !!g.player.carrying };
+  const it = await import('/src/game/items.js');
+  return new it.ThrownObject(0, 0, {}).hitPower(g);
 });
+const plainThrow = await thrownPower();
 await charm('potHauler');
-r = await read(() => window.__game.charm('potHauler'));
-check('the Pot-Hauler is live', r === true);
+const hauledThrow = await thrownPower();
+check('the Pot-Hauler makes a thrown pot hit twice as hard', hauledThrow === plainThrow * 2,
+  `${plainThrow} -> ${hauledThrow}`);
 
 // Coilrope — a longer Dredge Line.
 await nocharms();

@@ -2045,7 +2045,7 @@ last twice as long), `chandlersEye` (shops charge a quarter less).
 
 *MID case — general:* `splitFang`, `ballastHeart`, `barnacleSkin`,
 `quartermaster` (+2 Reefseed capacity), `lamplighter` (dark rooms less dark),
-`bosunsWhistle`, `potHauler` (carrying no longer slows you), `coilrope`.
+`bosunsWhistle`, `potHauler` (thrown pots and rocks hit twice as hard), `coilrope`.
 
 *HIGH case — submerged:* `gillcarve`, `riptideFin` (swim half again as fast),
 `anemonesGift` (contact damage from sea creatures halved), `drownedLantern`

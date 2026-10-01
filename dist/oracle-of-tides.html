@@ -1347,21 +1347,25 @@ const SHIELD_SPEED = 288;
  *  move at full pace". guessed insofar as its ancestor is. */
 const SWORD_HOLD_SPEED = 288;
 
-/** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. Seasons'
+/** x — multiplier on F.SLOW terrain (sand, deep grass). derived: Seasons'
  *  own speed table (object_code/common/specialObjects/link.s,
- *  updateLinkSpeed_withParam @speedTable) says 0.75 on TILETYPE_GRASS
- *  (SPEED_0c0 against SPEED_100); S164 tried it and the robot's boss routes
- *  in d2 and the Lower Vault stopped winning, so it waits for a session that
- *  can re-route them. */
-const SLOW_FACTOR = 0.6;
+ *  updateLinkSpeed_withParam @speedTable) walks Link at SPEED_0c0 on
+ *  TILETYPE_GRASS against SPEED_100 on plain ground — three quarters (S164,
+ *  at the human's word "match the original"; it was a guessed 0.6). Seasons
+ *  has no slow sand; ours takes grass's rule. */
+const SLOW_FACTOR = 0.75;
 
-/** x — multiplier while wading in shallow water. guessed. The same table
- *  never slows Link in a puddle (so 1 on the cartridge); held back with
- *  SLOW_FACTOR, above, for the same reason. */
-const SHALLOW_FACTOR = 0.86;
+/** x — multiplier while wading in shallow water. derived: 1 — the same
+ *  table slows Link only on grass, stairs and vines, never in a puddle
+ *  (TILETYPE_PUDDLE), so wading costs no speed on the cartridge (S164; it
+ *  was a guessed 0.86). Kept as a named 1 so the wade path still reads. */
+const SHALLOW_FACTOR = 1;
 
-/** x — multiplier while carrying something. guessed. */
-const CARRY_FACTOR = 0.9;
+/** x — multiplier while carrying something. derived: 1 — Seasons' speed
+ *  table (object_code/common/specialObjects/link.s, @speedTable) has no
+ *  carrying row; Link walks at full speed with a pot over his head (S164, at
+ *  the human's word "match the original"; it was a guessed 0.9). */
+const CARRY_FACTOR = 1;
 
 /** sp/f — drift in the facing direction during a spin attack. guessed. */
 const SPIN_DRIFT_SPEED = 96;
@@ -2120,10 +2124,11 @@ const THE_END_HOLD_FRAMES = 90;
 // every Zelda that tells a player to stop and heal, and this game's hearts sat
 // silent all the way to zero.
 
-/** qh — quarter-hearts at or below which the pulse starts. guessed. Two full
- *  hearts. Chosen against this game's damage ladder rather than the source's:
- *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
-const LOW_HEART_THRESHOLD = 8;
+/** x — the pulse sounds while health is at or below 1/LOW_HEART_DIVISOR of
+ *  the heart container total. derived: Seasons' playHeartBeepAtInterval
+ *  (code/bank2.s) beeps while (health - 1) * 4 < maximum health, in quarter
+ *  hearts (S164, at the human's word; it was a fixed 8 quarter-hearts). */
+const LOW_HEART_DIVISOR = 4;
 
 /** f — frames between pulses. derived: 64 — Seasons' playHeartBeepAtInterval
  *  (code/bank2.s) beeps when `wFrameCounter & $3f` is zero (S164; it was a
@@ -2853,6 +2858,11 @@ const STRANDWALKER_EVERY = 300;
 
 /** dimensionless — bomb blast radius multiplier with Dry Kindling. guessed. */
 const DRY_KINDLING_FACTOR = 1.5;
+
+/** dimensionless — how much harder a thrown pot or rock hits with the
+ *  Pot-Hauler. guessed. (S164: its old job, cancelling the carry slowdown,
+ *  went when carrying stopped slowing Link, as on the cartridge.) */
+const POT_HAULER_FACTOR = 2;
 
 /** dimensionless — pickup lifetime multiplier with the Gull's Tally. guessed;
  *  the plan says twice as long and this is that. */
@@ -3590,7 +3600,7 @@ __exports["ITEM_HOLD_ONE_HAND_X"] = ITEM_HOLD_ONE_HAND_X;
 __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
 __exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
 __exports["THE_END_HOLD_FRAMES"] = THE_END_HOLD_FRAMES;
-__exports["LOW_HEART_THRESHOLD"] = LOW_HEART_THRESHOLD;
+__exports["LOW_HEART_DIVISOR"] = LOW_HEART_DIVISOR;
 __exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
 __exports["TEXT_FRAMES_PER_CHAR"] = TEXT_FRAMES_PER_CHAR;
 __exports["TEXT_BEEP_COOLDOWN"] = TEXT_BEEP_COOLDOWN;
@@ -3731,6 +3741,7 @@ __exports["SEAWOLF_KNOCK_FACTOR"] = SEAWOLF_KNOCK_FACTOR;
 __exports["HAGSTONE_CHANCE"] = HAGSTONE_CHANCE;
 __exports["STRANDWALKER_EVERY"] = STRANDWALKER_EVERY;
 __exports["DRY_KINDLING_FACTOR"] = DRY_KINDLING_FACTOR;
+__exports["POT_HAULER_FACTOR"] = POT_HAULER_FACTOR;
 __exports["GULLS_TALLY_FACTOR"] = GULLS_TALLY_FACTOR;
 __exports["CHANDLER_FACTOR"] = CHANDLER_FACTOR;
 __exports["QUARTERMASTER_BONUS"] = QUARTERMASTER_BONUS;
@@ -8789,7 +8800,7 @@ const CHARMS = {
   bosunsWhistle: { slot: 'mid', name: "Bosun's Whistle", color: 'essence',
     desc: 'The conch sounds faster.' },
   potHauler: { slot: 'mid', name: 'Pot-Hauler', color: 'brick',
-    desc: 'Carrying something no longer slows you.' },
+    desc: 'Pots and rocks you throw hit twice as hard.' },
   coilrope: { slot: 'mid', name: 'Coilrope', color: 'wood',
     desc: 'The Dredge Line reaches one tile further.' },
 
@@ -13524,7 +13535,7 @@ const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES, POT_HAULER_FACTOR } = __require("data/feel.js");
 const { sprites, tiles } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -13932,6 +13943,11 @@ class ThrownObject extends Entity {
     this.depth = 20;
   }
 
+  /** What it hits for: Seasons' 3, doubled by the Pot-Hauler (S164). */
+  hitPower(game) {
+    return this.power * (game.charm('potHauler') ? POT_HAULER_FACTOR : 1);
+  }
+
   update(game) {
     this.frame++;
     this.fz += this.vz;
@@ -13943,7 +13959,7 @@ class ThrownObject extends Entity {
       if (!e.isEnemy || e.dead) continue;
       const b = e.contactRect();
       if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
-        e.hurt(game, this.power, null, KNOCK_THROWN, this);
+        e.hurt(game, this.hitPower(game), null, KNOCK_THROWN, this);
         this.shatter(game);
         return;
       }
@@ -15270,7 +15286,7 @@ class Player extends Entity {
     // product still lands on a whole subpixel exactly once at the end.
     if ((f & F.SLOW) && this.z <= 2 && !game.charm('dunerunner')) mult *= SLOW_FACTOR;
     if (this.inShallow && this.z <= 2) mult *= SHALLOW_FACTOR;
-    if (this.carrying && !game.charm('potHauler')) mult *= CARRY_FACTOR;
+    if (this.carrying) mult *= CARRY_FACTOR;
     if (this.inDeep && !this.underwater && game.charm('riptideFin')) mult *= RIPTIDE_FIN_FACTOR;
     if (game.charm('deadweight')) mult *= DEADWEIGHT_FACTOR;
     if (mult !== 1) speed = Math.max(1, Math.round(speed * mult));
@@ -29065,7 +29081,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -30873,7 +30889,8 @@ class Game {
     // text box is open, and a freeze is exactly when they most want telling.
     // Off `this.frame` rather than a countdown so it cannot drift, and gated on
     // being alive so the game-over screen is not scored by it.
-    if (this.player && this.progress.hearts > 0 && this.progress.hearts <= LOW_HEART_THRESHOLD
+    if (this.player && this.progress.hearts > 0
+        && (this.progress.hearts - 1) * LOW_HEART_DIVISOR < this.progress.maxHearts
         && this.frame % LOW_HEART_EVERY === 0) {
       this.audio.sfx('lowHeart');
     }

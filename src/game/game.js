@@ -63,7 +63,7 @@ import {
   DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY,
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
-  LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
+  LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
@@ -1882,7 +1882,8 @@ export class Game {
     // text box is open, and a freeze is exactly when they most want telling.
     // Off `this.frame` rather than a countdown so it cannot drift, and gated on
     // being alive so the game-over screen is not scored by it.
-    if (this.player && this.progress.hearts > 0 && this.progress.hearts <= LOW_HEART_THRESHOLD
+    if (this.player && this.progress.hearts > 0
+        && (this.progress.hearts - 1) * LOW_HEART_DIVISOR < this.progress.maxHearts
         && this.frame % LOW_HEART_EVERY === 0) {
       this.audio.sfx('lowHeart');
     }

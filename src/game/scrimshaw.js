@@ -73,7 +73,7 @@ export const CHARMS = {
   bosunsWhistle: { slot: 'mid', name: "Bosun's Whistle", color: 'essence',
     desc: 'The conch sounds faster.' },
   potHauler: { slot: 'mid', name: 'Pot-Hauler', color: 'brick',
-    desc: 'Carrying something no longer slows you.' },
+    desc: 'Pots and rocks you throw hit twice as hard.' },
   coilrope: { slot: 'mid', name: 'Coilrope', color: 'wood',
     desc: 'The Dredge Line reaches one tile further.' },
 
