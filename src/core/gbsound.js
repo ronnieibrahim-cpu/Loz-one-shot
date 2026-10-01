@@ -327,13 +327,14 @@ const clock = () => (typeof performance !== 'undefined' ? performance.now() : Da
  * render is finished and `result` is set (and cached). A whole track is about
  * a fifth of a second of work, which in one go is a visible hitch.
  */
-export function renderGbJob(track, name, rate, only = null) {
+export function renderGbJob(track, name, rate, only = null, keep = true) {
   const key = name + '@' + rate + (only == null ? '' : '#' + only);
-  if (CACHE.has(key)) return { done: true, result: CACHE.get(key), step: () => true };
+  if (keep && CACHE.has(key)) return { done: true, result: CACHE.get(key), step: () => true };
   // One render per track at a time: the background pass and a play() that
   // wants the same track share the work already done.
-  if (JOBS.has(key)) return JOBS.get(key);
+  if (keep && JOBS.has(key)) return JOBS.get(key);
   if (!track) return null;
+  let trigs = null;
   let phase = 0, loop, frames, n, mix, synths, ci = 0, pos = 0, cap = 0, charge;
   const job = {
     done: false, result: null,
@@ -344,6 +345,12 @@ export function renderGbJob(track, name, rate, only = null) {
           loop = loopOf(track);
           frames = loop ? loop.intro + loop.length : jingleFrames(track);
           const { out } = runEngine(track, frames);
+          // When each rendered channel strikes a note, in seconds: where a
+          // channel an effect borrowed comes back (Audio._duck).
+          trigs = {};
+          for (const k of Object.keys(out)) {
+            if (only == null || Number(k) === only) trigs[k] = out[k].filter((e) => e[1] === 'trig').map((e) => e[0] / GB_FRAME_RATE);
+          }
           n = Math.ceil(frames * rate / GB_FRAME_RATE);
           mix = new Float32Array(n);
           synths = Object.keys(track.ch).filter((k) => only == null || Number(k) === only)
@@ -370,9 +377,9 @@ export function renderGbJob(track, name, rate, only = null) {
               data: mix,
               loopStart: loop ? loop.intro / GB_FRAME_RATE : 0,
               loopEnd: loop ? frames / GB_FRAME_RATE : null,
+              trigs,
             };
-            CACHE.set(key, job.result);
-            JOBS.delete(key);
+            if (keep) { CACHE.set(key, job.result); JOBS.delete(key); }
             job.done = true;
             break;
           }
@@ -382,8 +389,13 @@ export function renderGbJob(track, name, rate, only = null) {
       return job.done;
     },
   };
-  JOBS.set(key, job);
+  if (keep) JOBS.set(key, job);
   return job;
+}
+
+/** One of Seasons' own tracks' channel script, by name. */
+export function seasonsTrack(name) {
+  return SEASONS_MUSIC[name] || null;
 }
 
 /** `renderGbJob` for one of Seasons' own tracks, by name. */

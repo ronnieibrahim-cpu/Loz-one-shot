@@ -205,6 +205,61 @@ for (const n of defined) {
   if (!used.has(n)) warnings.push(`'${n}' is defined and never played`);
 }
 
+// ------------------------------------------------- 4. the music makes room
+//
+// S164: on the cartridge an effect on channel 2/3/5/7 borrows the hardware
+// of music channel 0/1/4/6, which stays silent until the first note it
+// strikes after the effect lets go (code/audio.s). Driven through the real
+// Audio class against a recording context: every cartridge effect, played
+// over a looping track, must take out exactly the music channels it shares
+// hardware with, and give each back at one of that channel's own strikes.
+{
+  const { Audio } = await import('../src/core/audio.js');
+  const { sfxVoices } = await import('../src/core/gbsound.js');
+  const sets = [];
+  let id = 0;
+  const param = (tag) => ({ tag, value: 0, setValueAtTime(v, t) { sets.push([tag, v, t]); }, cancelScheduledValues() {} });
+  const node = () => ({ connect() {}, gain: param('g' + id++), frequency: param('f'), Q: param('q') });
+  const ctx = { currentTime: 0, sampleRate: 44100, destination: {}, createGain: node, createBiquadFilter: node,
+    createBuffer: (c, n) => ({ getChannelData: () => new Float32Array(n) }),
+    createBufferSource: () => ({ connect() {}, start() {}, stop() {} }),
+    createPeriodicWave: () => ({}), createOscillator: node };
+  const a = new Audio(); a.addTracks(TRACKS); a.addSfx(SFX); a.init(ctx);
+  a.play('village');
+  // Render the track and its stems outright rather than a sliver a frame.
+  const p = a._pendingGb;
+  if (p) { p.job.step(Infinity); a._pendingGb = null; a._playBuffer(p.job.result, p.onEnd, p.gb); }
+  const stems = a._music ? a._music.stems : {};
+  for (const st of Object.values(stems)) { st.job.step(Infinity); a._startStem(st); }
+  if (Object.keys(stems).length !== 4) problems.push(`the village theme has stems for [${Object.keys(stems)}], not all four music channels`);
+  const SHARE = { 2: 0, 3: 1, 5: 4, 7: 6 };
+  let tested = 0;
+  for (const [name, d] of Object.entries(SFX)) {
+    if (!d.seasons) continue;
+    tested++;
+    const voices = sfxVoices(d.seasons) || [];
+    for (const st of Object.values(stems)) st.until = 0;
+    a._gbVoice = {};
+    ctx.currentTime += 10;
+    sets.length = 0;
+    a.sfx(name);
+    const want = voices.map((v) => SHARE[v.k]).filter((k) => k != null).sort().join(',');
+    const took = Object.keys(stems).filter((k) => sets.some((e) => e[0] === stems[k].gain.gain.tag)).sort().join(',');
+    if (want !== took) problems.push(`'${name}' (${d.seasons}) should take out music channel(s) [${want}] and took out [${took}]`);
+    for (const v of voices) {
+      const s = stems[SHARE[v.k]];
+      if (!s) continue;
+      const mine = sets.filter((e) => e[0] === s.gain.gain.tag);
+      const out = mine.find((e) => e[1] === -1), back = mine.find((e) => e[1] === 0);
+      if (!out || !back) { problems.push(`'${name}': music channel ${SHARE[v.k]} is not taken out and given back`); continue; }
+      if (back[2] < out[2] + v.secs - 1e-6) problems.push(`'${name}': music channel ${SHARE[v.k]} comes back before the effect lets go`);
+      const pos = a._musicPos(back[2]);
+      if (!s.trigs.some((t) => Math.abs(t - pos) < 1e-3)) problems.push(`'${name}': music channel ${SHARE[v.k]} comes back at ${pos.toFixed(3)} s, not on a note it strikes`);
+    }
+  }
+  console.log(`check-sfx: ${tested} cartridge effects make room in the music on exactly the channels they borrow`);
+}
+
 // ------------------------------------------------------------------- report
 
 console.log(`check-sfx: ${defined.size} sfx defined, ${used.size} referenced `

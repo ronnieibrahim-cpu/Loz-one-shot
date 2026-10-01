@@ -52,7 +52,7 @@
 import { TRACKS, SFX } from '../src/data/audio.js';
 import { noteFreq, DEFAULT_CFG, vibratoRange, compileForGb } from '../src/core/audio.js';
 import { SEASONS_MUSIC, GB_FREQ, GB_WAVEFORMS, GB_NOISE } from '../src/data/music-seasons.js';
-import { renderGb, runEngine, loopOf, channelFrames } from '../src/core/gbsound.js';
+import { renderGb, renderGbJob, runEngine, loopOf, channelFrames } from '../src/core/gbsound.js';
 import { GB_FRAME_RATE } from '../src/data/feel.js';
 
 const PULSE_MIN = 64, PULSE_MAX = 131072;
@@ -135,6 +135,21 @@ function checkScript(name, tr, key) {
   let peak = 0;
   for (const x of r.data) peak = Math.max(peak, Math.abs(x));
   if (!(peak > 0.01)) problems.push(`${name}: renders as silence`);
+  // S164: while an effect holds a channel, the music plays that channel's
+  // stem phase-inverted on top of the mix to take it out (Audio._duck). That
+  // only works if the stems add up to the mix exactly, sample for sample.
+  if (loop) {
+    const sum = new Float64Array(r.data.length);
+    for (const k of Object.keys(tr.ch)) {
+      const j = renderGbJob(tr, key, 8192, Number(k), false);
+      j.step(Infinity);
+      if (j.result.data.length !== sum.length) { problems.push(`${name}: ch${k} renders a different length alone`); continue; }
+      j.result.data.forEach((x, i) => { sum[i] += x; });
+    }
+    let err = 0;
+    for (let i = 0; i < sum.length; i++) err = Math.max(err, Math.abs(sum[i] - r.data[i]));
+    if (err > 1e-5) problems.push(`${name}: its channels rendered alone do not add up to the mix (off by ${err}), so an effect cannot take one out cleanly`);
+  }
   return loop;
 }
 

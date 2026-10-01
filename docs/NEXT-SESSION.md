@@ -52,6 +52,22 @@ The human: "proceed in order" through the FUTURE ACTION ITEMS.
     https://claude.ai/artifact/MJJzFbTYknMH4C4nggCrUS ; ours before/after
     on the GB chip https://claude.ai/artifact/DryjBwZNCRo5Bs4BDsXo9L
 
+- ITEM 3 (music ducking) DONE. code/audio.s writes no music registers on a
+  hardware channel while an effect holds it (square n = channels n and n+2,
+  wave 4/5, noise 6/7), so the music channel is silent from the effect's
+  start until the first note it strikes after the effect ends. Done without
+  per-channel playback of the whole mix: when a looping track starts, each
+  of its music channels is rendered alone as a STEM (`renderGbJob(..., k,
+  false)`, uncached, a sliver a frame in `update`), played in sync,
+  phase-inverted at gain 0; `Audio._duck(k, t0, secs)` sets that stem's gain
+  to -1 from the effect's start to the channel's next strike (`trigs`, from
+  the engine's own trigger events, wrapping at the loop). The stems add up to
+  the mix to ~3e-8 (check-music asserts < 1e-5 for every looping track).
+  check-sfx drives the real Audio class over the village theme and proves
+  all 47 cartridge effects take out exactly the channels they borrow and give
+  each back on one of its own strikes (goes red on a wrong channel map or a
+  give-back at the effect's end). Before/after clips sent to the human.
+
 ### Verified
 Whole table green, test.mjs 85/85 when run on its own (its fps assertion is
 load-dependent; this container is slower than earlier ones — main itself
@@ -64,9 +80,7 @@ Built; dist committed.
   tracks' own settings; tune by ear when they answer.
 
 ### FUTURE ACTION ITEMS (in order; the human said "proceed in order")
-3. Music ducking under sfx (the cartridge's sfx steal channels 2/3/5/7 from
-   the music; now that ALL music is one rendered buffer, ducking means
-   rendering per channel or muting the stolen channel's share — design it).
+The human heard the GB versions of our tunes: "Music sounds great."
 4. Keese over the Eyrie's chasm. 5. Human tuning of fights. 6. Measure the
 guessed timings. 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
 the overworld. 9. Review our item icons. 10. A phone check.

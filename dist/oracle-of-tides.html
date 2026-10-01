@@ -4201,13 +4201,14 @@ const clock = () => (typeof performance !== 'undefined' ? performance.now() : Da
  * render is finished and `result` is set (and cached). A whole track is about
  * a fifth of a second of work, which in one go is a visible hitch.
  */
-function renderGbJob(track, name, rate, only = null) {
+function renderGbJob(track, name, rate, only = null, keep = true) {
   const key = name + '@' + rate + (only == null ? '' : '#' + only);
-  if (CACHE.has(key)) return { done: true, result: CACHE.get(key), step: () => true };
+  if (keep && CACHE.has(key)) return { done: true, result: CACHE.get(key), step: () => true };
   // One render per track at a time: the background pass and a play() that
   // wants the same track share the work already done.
-  if (JOBS.has(key)) return JOBS.get(key);
+  if (keep && JOBS.has(key)) return JOBS.get(key);
   if (!track) return null;
+  let trigs = null;
   let phase = 0, loop, frames, n, mix, synths, ci = 0, pos = 0, cap = 0, charge;
   const job = {
     done: false, result: null,
@@ -4218,6 +4219,12 @@ function renderGbJob(track, name, rate, only = null) {
           loop = loopOf(track);
           frames = loop ? loop.intro + loop.length : jingleFrames(track);
           const { out } = runEngine(track, frames);
+          // When each rendered channel strikes a note, in seconds: where a
+          // channel an effect borrowed comes back (Audio._duck).
+          trigs = {};
+          for (const k of Object.keys(out)) {
+            if (only == null || Number(k) === only) trigs[k] = out[k].filter((e) => e[1] === 'trig').map((e) => e[0] / GB_FRAME_RATE);
+          }
           n = Math.ceil(frames * rate / GB_FRAME_RATE);
           mix = new Float32Array(n);
           synths = Object.keys(track.ch).filter((k) => only == null || Number(k) === only)
@@ -4244,9 +4251,9 @@ function renderGbJob(track, name, rate, only = null) {
               data: mix,
               loopStart: loop ? loop.intro / GB_FRAME_RATE : 0,
               loopEnd: loop ? frames / GB_FRAME_RATE : null,
+              trigs,
             };
-            CACHE.set(key, job.result);
-            JOBS.delete(key);
+            if (keep) { CACHE.set(key, job.result); JOBS.delete(key); }
             job.done = true;
             break;
           }
@@ -4256,8 +4263,13 @@ function renderGbJob(track, name, rate, only = null) {
       return job.done;
     },
   };
-  JOBS.set(key, job);
+  if (keep) JOBS.set(key, job);
   return job;
+}
+
+/** One of Seasons' own tracks' channel script, by name. */
+function seasonsTrack(name) {
+  return SEASONS_MUSIC[name] || null;
 }
 
 /** `renderGbJob` for one of Seasons' own tracks, by name. */
@@ -4305,6 +4317,7 @@ function sfxVoices(name) {
 __exports["renderSeasons"] = renderSeasons;
 __exports["renderGb"] = renderGb;
 __exports["renderGbJob"] = renderGbJob;
+__exports["seasonsTrack"] = seasonsTrack;
 __exports["renderSeasonsJob"] = renderSeasonsJob;
 __exports["sfxVoices"] = sfxVoices;
 __exports["runEngine"] = runEngine;
@@ -4548,7 +4561,7 @@ __define("core/audio.js", function (__exports, __require) {
 //
 // The noise channel is percussion only and takes none of the above.
 
-const { renderSeasons, renderGbJob, renderSeasonsJob, sfxVoices } = __require("core/gbsound.js");
+const { renderSeasons, renderGbJob, renderSeasonsJob, seasonsTrack, sfxVoices } = __require("core/gbsound.js");
 const { GB_RENDER_RATE, GB_FRAME_RATE, GB_OURS_VIBRATO_DELAY_FRAMES, GB_RENDER_BUDGET_MS, GB_PRERENDER_BUDGET_MS, GB_RENDER_SLICE_GAP_MS } = __require("data/feel.js");
 const { Stream } = __require("core/rng.js");
 const { VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } = __require("data/feel.js");
@@ -4814,6 +4827,11 @@ function compileForGb(t) {
   return { ch, events };
 }
 
+// The music channel each effect channel shares its hardware with (code/
+// audio.s: square n is channels n and n+2, the wave 4 and 5, the noise 6
+// and 7). Keyed by the MUSIC channel: the ones an effect can take away.
+const DUCKED_BY = { 0: 2, 1: 3, 4: 5, 6: 7 };
+
 /** The render job for what `gbSource` names. */
 const gbJob = (g) => (typeof g === 'string' ? renderSeasonsJob(g, GB_RENDER_RATE) : renderGbJob(g.track, g.key, GB_RENDER_RATE));
 
@@ -4947,11 +4965,11 @@ class Audio {
   _startGb(gb, onEnd) {
     const job = gbJob(gb);
     if (!job) return;
-    if (job.done) this._playBuffer(job.result, onEnd);
-    else this._pendingGb = { job, onEnd };
+    if (job.done) this._playBuffer(job.result, onEnd, gb);
+    else this._pendingGb = { job, onEnd, gb };
   }
 
-  _playBuffer(r, onEnd) {
+  _playBuffer(r, onEnd, gb) {
     const buf = this.ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
     buf.getChannelData(0).set(r.data);
     const src = this.ctx.createBufferSource();
@@ -4959,12 +4977,86 @@ class Audio {
     if (r.loopEnd) { src.loop = true; src.loopStart = r.loopStart; src.loopEnd = r.loopEnd; }
     src.connect(this.musicBus);
     if (onEnd) src.onended = () => { if (this._gbSrc === src) { this._gbSrc = null; onEnd(); } };
-    src.start(this.ctx.currentTime + 0.02);
+    const t0 = this.ctx.currentTime + 0.02;
+    src.start(t0);
     this._gbSrc = src;
+    // A looping track also gets each borrowable channel rendered on its own
+    // (`stems`, not cached: only the track playing needs them), so an effect
+    // can take that channel out of the music while it plays (`_duck`).
+    if (r.loopEnd && gb) {
+      const track = typeof gb === 'string' ? seasonsTrack(gb) : gb.track;
+      const key = typeof gb === 'string' ? gb : gb.key;
+      const stems = {};
+      for (const k of Object.keys(track.ch).map(Number)) {
+        if (DUCKED_BY[k] != null) stems[k] = { job: renderGbJob(track, key, GB_RENDER_RATE, k, false), gain: null, until: 0 };
+      }
+      this._music = { src, t0, r, stems };
+    } else this._music = null;
+  }
+
+  /** Where in its buffer the playing track is at context time `t`. */
+  _musicPos(t) {
+    const m = this._music, r = m.r;
+    let p = t - m.t0;
+    if (r.loopEnd && p >= r.loopEnd) p = r.loopStart + (p - r.loopStart) % (r.loopEnd - r.loopStart);
+    return Math.max(0, p);
+  }
+
+  /** A stem finished rendering: start it in step with the music, silent,
+   *  phase-inverted, so turning its gain up to 1 takes its channel out. */
+  _startStem(st) {
+    const m = this._music, r = st.job.result;
+    const buf = this.ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
+    buf.getChannelData(0).set(r.data);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true; src.loopStart = r.loopStart; src.loopEnd = r.loopEnd;
+    const g = this.ctx.createGain();
+    g.gain.value = 0;
+    src.connect(g); g.connect(this.musicBus);
+    const when = this.ctx.currentTime + 0.02;
+    src.start(when, this._musicPos(when));
+    st.src = src; st.gain = g; st.trigs = r.trigs[Object.keys(r.trigs)[0]] || [];
+  }
+
+  /**
+   * An effect on cartridge channel `k` (2/3 the squares, 5 the wave, 7 the
+   * noise) holds it for `secs`: the music channel that shares its hardware
+   * (0/1/4/6) is silent from now until the first note it strikes after the
+   * effect lets go — code/audio.s writes no music registers while the
+   * effect's channel is enabled, so the music comes back on its next note.
+   */
+  _duck(k, t0, secs) {
+    const m = this._music;
+    const mk = Object.keys(DUCKED_BY).find((c) => DUCKED_BY[c] === k);
+    const st = m && mk != null && m.stems[mk] ? m.stems[mk] : null;
+    if (!st || !st.gain) return;
+    const r = m.r, end = t0 + secs;
+    const pe = this._musicPos(end);
+    let next = st.trigs.find((t) => t >= pe);
+    let back = next != null ? end + (next - pe) : null;
+    if (back == null && st.trigs.length) {
+      // Past the last strike before the wrap: the first one after loopStart.
+      const first = st.trigs.find((t) => t >= r.loopStart);
+      if (first != null) back = end + (r.loopEnd - pe) + (first - r.loopStart);
+    }
+    if (back == null) back = end;
+    if (back < st.until) return;   // already out for longer
+    st.until = back;
+    const g = st.gain.gain;
+    g.cancelScheduledValues(t0);
+    g.setValueAtTime(-1, t0);
+    g.setValueAtTime(0, back);
   }
 
   _releaseAll() {
     this._pendingGb = null;
+    if (this._music) {
+      for (const st of Object.values(this._music.stems)) {
+        if (st.src) { try { st.src.stop(); } catch (e) { /* already stopped */ } }
+      }
+      this._music = null;
+    }
     if (this._gbSrc) {
       const src = this._gbSrc;
       this._gbSrc = null;
@@ -4984,8 +5076,17 @@ class Audio {
     this._lastSlice = now;
     const p = this._pendingGb;
     if (p) {
-      if (p.job.step(GB_RENDER_BUDGET_MS)) { this._pendingGb = null; this._playBuffer(p.job.result, p.onEnd); }
+      if (p.job.step(GB_RENDER_BUDGET_MS)) { this._pendingGb = null; this._playBuffer(p.job.result, p.onEnd, p.gb); }
       return;
+    }
+    // The playing track's stems before anything ahead of need.
+    const m = this._music;
+    if (m) {
+      for (const st of Object.values(m.stems)) {
+        if (st.src || !st.job) continue;
+        if (st.job.step(GB_PRERENDER_BUDGET_MS)) this._startStem(st);
+        return;
+      }
     }
     const q = this._prerender;
     if (q && q.length && q[0].step(GB_PRERENDER_BUDGET_MS)) q.shift();
@@ -5038,6 +5139,7 @@ class Audio {
         src.connect(g); g.connect(this.sfxBus);
         src.start(t0);
         this._gbVoice[k] = { src, prio, end: t0 + secs };
+        this._duck(k, t0, secs);
       }
       return;
     }
