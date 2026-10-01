@@ -7,9 +7,7 @@
 - `docs/HANDOFF.md` hard-won lessons (two new at the top).
 
 ## State
-- Branch `claude/s162` holds S162. S162 asked the human whether to merge it
-  into main: check `git log origin/main` first. If merged, branch from main;
-  if not, ask before doing anything that depends on it.
+- S162 (branch `claude/s162`) is MERGED into main: branch from main.
 - Whole table green; check-playthrough 44/44, THE END, never died.
 - All three optional dungeons are finishable and proved so in one run each
   (check-side). 28 heart pieces, cap 16. 31 charms.
