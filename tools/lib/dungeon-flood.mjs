@@ -119,8 +119,11 @@ export function floodDungeon(mapId, opts = {}) {
   };
   const passable = (room, x, y) => [0, 1, 2].some(t => walkableAt(room, x, y, t));
 
-  // Roc's Feather-style crossing: a DEEP/JUMPABLE tile hoppable at any tide.
-  const jumpable = (room, x, y) => [0, 1, 2].some(t => room.flagsAt(x, y, t) & (F.DEEP | F.JUMPABLE));
+  // NO HOP (S162). This flood hopped a one-tile DEEP/JUMPABLE gap, a
+  // Roc's-Feather move the game no longer has (nothing calls
+  // `Player.startJump`): a one-wide sump in the Lower Vault, which the engine
+  // refuses at every sea, read as walkable here. check-anchor dropped the
+  // same phantom hop in the same session.
 
   // A one-way ledge is traversal: walking into its FACE clears the lip (plus
   // any further ledge tiles behind it) and lands on the first standable tile
@@ -291,10 +294,6 @@ export function floodDungeon(mapId, opts = {}) {
         const nx = x + dx, ny = y + dy;
         if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
           if (passable(room, nx, ny) || puzzleDoors.has(`${rk}:${nx},${ny}`) || burnable(room, nx, ny)) push(rk, nx, ny);
-          else if (jumpable(room, nx, ny)) {
-            const jx = x + dx * 2, jy = y + dy * 2;
-            if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(room, jx, jy)) push(rk, jx, jy);
-          }
           else if (ledgeDir(room, nx, ny) === DIR_OF[dx + ',' + dy]) {
             let n = 1;
             while (n < 3) {

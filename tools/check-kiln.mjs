@@ -160,6 +160,36 @@ for (const c of CLAIMS) {
     JSON.stringify(got) === JSON.stringify(want), `lit at ${got.join('/') || 'none'}`);
 }
 
+// --- 4. it burns where it lies (S162) ----------------------------------------
+// A shell in the air or held overhead lights nothing; the same shell resting on
+// the same tile does. A throw that came down in a hole used to light the brazier
+// it flew past, which no player expects.
+{
+  const c = CLAIMS.find(x => x.key === '0,1,1') || CLAIMS[0];
+  const [tx, ty] = c.k.target;
+  const run = async (mode) => {
+    await enter(c.mapId, c.key, 0, c.k.from[0] * 16, c.k.from[1] * 16 + 1, c.k.dir);
+    return page.evaluate(async ([tx, ty, mode]) => {
+      const g = window.__game, p = g.player;
+      const items = await import('/src/game/items.js');
+      const torch = g.entities.find(e => e.flammable && Math.floor((e.x + 8) / 16) === tx && Math.floor((e.y + 8) / 16) === ty);
+      const shell = new items.Kilnshell((tx - 1) * 16, ty * 16, { lit: true });
+      g.addEntity(shell); g.flushPending();
+      if (mode === 'held') { p.carrying = shell; shell.carried = true; p.liftT = 0; }
+      for (let i = 0; i < 24; i++) {
+        if (mode === 'air') { shell.flight = { vx: 0, vy: 0 }; shell.fz = 20; shell.vz = 0; }
+        if (mode === 'held') { shell.x = (tx - 1) * 16; shell.y = ty * 16; }
+        shell.update(g);
+      }
+      if (mode === 'held') { p.carrying = null; shell.carried = false; }
+      return !!(torch && torch.lit);
+    }, [tx, ty, mode]);
+  };
+  check(`${c.mapId} ${c.key}: a lit shell in the AIR beside the brazier does not light it`, !(await run('air')));
+  check(`${c.mapId} ${c.key}: a lit shell HELD beside the brazier does not light it`, !(await run('held')));
+  check(`${c.mapId} ${c.key}: the same shell RESTING beside the brazier lights it`, await run('rest'));
+}
+
 await browser.close(); server.close();
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 process.exit(fail.length ? 1 : 0);

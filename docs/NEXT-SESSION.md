@@ -49,6 +49,23 @@ original's own decoration (Recommended), and add a few enemies to the Palace.
   with rip-objects' `Tileset` (`('ages', n)` for Ages); `constants/common/
   tileIndices.s` names the metatiles.
 
+- THE KILNSHELL BURNS WHERE IT LIES (the human, after the clips: "a user
+  would not expect an object to light a torch surrounded by tiles where the
+  igniting item would just fall through"). Kilnshell.update burns only when
+  the shell is resting (not in flight, not carried); its reach is a whole tile
+  each way (was half). The Sump's brazier stood ON the sump ring: it is now at
+  7,5 in the middle of a 3x3 island (sump rows 2-3 and 7-8, cols 4-5 and
+  9-10). The Brine Gallery's island is 2x2 (8-9, 7-8), torch 9,8. The tangle
+  throw now also lights the near brazier (3,3), so check-side's route lost a
+  throw; its island throw holds down 1 frame (2 walked Link into the sump).
+  check-kiln: a shell in the AIR or HELD beside the brazier lights nothing,
+  the same shell RESTING does (both red on the old code).
+- THE DUNGEON FLOOD'S PHANTOM HOP is gone too (tools/lib/dungeon-flood.mjs
+  hopped a one-tile DEEP/JUMPABLE gap): it read a one-wide sump the engine
+  refuses at every sea as walkable. No main dungeon relied on it;
+  dungeon-strands baseline re-recorded (the two vault islands, plus five
+  pre-existing one-cell d4 pockets it had been reporting as NEW).
+
 ### What the tour found (for the human's record)
 - Vault and Eyrie play cleanly end to end (check-side's runs, filmed). The
   robot loses ~28 quarter-hearts to the Saltwraith and ~8 to the Gustharpy.

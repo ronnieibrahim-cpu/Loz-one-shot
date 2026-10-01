@@ -207,10 +207,10 @@ const SCENARIOS = [
       ['goto', 7, 4, 400], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
       ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
       ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 30],
-      // the Brine Gallery: tangle, near brazier, then the island
+      // the Brine Gallery: one throw at the tangle burns it and, resting a
+      // tile from the near brazier, lights that too (S162); lift it, then the island
       ['goto', 3, 6, 600], ['hold', ['up'], 2], ['tap', 'a', 90], ['tap', 'a', 30],
-      ['goto', 3, 5, 300], ['hold', ['up'], 2], ['tap', 'a', 90], ['hold', ['up'], 8], ['tap', 'a', 30],
-      ['goto', 9, 5, 600], ['hold', ['down'], 2], ['tap', 'a', 90],
+      ['goto', 9, 5, 600], ['hold', ['down'], 1], ['tap', 'a', 90],
       ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
       // the Kiln Walk: dry, so struck where it is needed
       ['fight', 3000, 3000], ['goto', 11, 5, 600], ['hold', ['right'], 2], ['use', 'kilnshell', 1, 40], ['wait', 30],

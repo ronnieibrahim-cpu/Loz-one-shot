@@ -447,6 +447,11 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The Roc's Feather left twice (S162).** The game lost its jump sessions
+  ago, and two models kept it: check-anchor hopped two tiles and the dungeon
+  flood hopped one. Both read gaps the engine refuses as walkable. When a verb
+  leaves the game, grep the tools for it in the same commit.
+
 - **A dungeon proved room by room was never proved (S162).** The Sunken
   Palace had a checker for every whirlpool, a flood for every room and six
   in-engine scenarios — and could not be finished: its Boss Key chest stood

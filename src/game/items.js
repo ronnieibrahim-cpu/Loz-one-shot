@@ -180,6 +180,12 @@ export class Kilnshell extends Entity {
     }
 
     if (!this.lit) return;
+    // IT BURNS WHERE IT LIES (S162), not on the way past. A shell in the air
+    // or held overhead used to light whatever its flame brushed, so a throw
+    // that came down in a hole still lit the brazier beside it — which no
+    // player expects. Only a shell resting on the ground sets things alight.
+    const p = game.player;
+    if (this.flight || (p && p.carrying === this)) return;
     this.burn++;
     // What a flame touches. Grown by half a tile so a shell set down BESIDE a
     // torch lights it, rather than having to be standing in the same tile as
@@ -190,8 +196,14 @@ export class Kilnshell extends Entity {
     // south than north and a shell thrown to the tile below a brazier (a
     // player's feet stand a pixel off the grid) could land beside it and not
     // light it. Beside is beside, from any side.
+    //
+    // A WHOLE TILE EACH WAY (S162). Once only a RESTING shell burns, a thrown
+    // one has to come down on solid ground near the brazier — and a throw is
+    // Seasons' fixed arc from wherever Link stands, so it lands off the grid.
+    // Half a tile reached a brazier only when the shell came down hard
+    // against it; a whole tile lights the one beside it wherever it settles.
     if (this.burn % 4 === 0) {
-      game.checkTileAction({ x: this.x - 8, y: this.y - 8, w: 32, h: 32 }, 'fire');
+      game.checkTileAction({ x: this.x - 16, y: this.y - 16, w: 48, h: 48 }, 'fire');
       for (const e of game.entities) {
         if (e === this || e.dead || !e.isEnemy) continue;
         if (this.overlaps(e)) e.hurt(game, KILNSHELL_BURN_DAMAGE, null, 0);

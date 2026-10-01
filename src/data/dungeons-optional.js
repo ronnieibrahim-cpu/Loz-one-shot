@@ -109,25 +109,28 @@ export function installOptionalDungeons() {
         map: [
           '###############',
           '#...,......,..#',
-          '#.........,.,.#',
           '#...0000000...#',
           '#,.,0000000...#',
+          '#,..00...00...#',
           'L...00...00...D',
           '#,,.00..,00.,,#',
           '#,,.0000000...#',
-          '#,,,.......,.,#',
+          '#,,,0000000.,,#',
           '#.,,.......,,.#',
           '#######.#######',
         ],
         entities: [
-          ['torch', 6, 4],
+          // In the middle of its island (S162): it stood ON the sump ring, so
+          // a shell had to come down beside it in a hole, and the island is
+          // now three tiles each way, room for a throw to land on.
+          ['torch', 7, 5],
         ],
         puzzle: {
           torches: 'all',
           flag: 'vault_sump',
           reward: { openDoors: [[14, 5]], say: 'The brazier takes. Something grinds open to the east.' },
         },
-        kilnRoom: { target: [6, 4], from: [3, 5], dir: 'right', levels: [0] },
+        kilnRoom: { target: [7, 5], from: [3, 5], dir: 'right', levels: [0] },
         readable: [
           [1, 9, 'A plate by the stair: "Down here the fire\ngoes where it is thrown, and the sea\ndecides whether it arrives."'],
         ],
@@ -174,8 +177,8 @@ export function installOptionalDungeons() {
           '#.#&#.......,.#',
           '#.............L',
           '#......0000...#',
-          '#......0000...#',
-          '#......00.0,..#',
+          '#......0..0...#',
+          '#......0..0,..#',
           '#......0000...#',
           '###############',
         ],
