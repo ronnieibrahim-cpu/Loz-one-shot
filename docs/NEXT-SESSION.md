@@ -1,7 +1,8 @@
 ## S164 — each dungeon's own stairs; our music on the cartridge's engine
 
 Branch claude/oracle-tides-s164-0h8079, off main at 71a02dd (S163 merged).
-The human: "proceed in order" through the FUTURE ACTION ITEMS.
+The human: "proceed in order" through the FUTURE ACTION ITEMS. MERGED into
+main at the human's word ("Push to main").
 
 ### What landed
 - ITEM 2 (stairs) DONE. Every main dungeon draws its Seasons tileset's own
@@ -91,13 +92,25 @@ The human: "proceed in order" through the FUTURE ACTION ITEMS.
       before lifting it (it lands a step further off now), and `reachSwing`
       on the Saltwraith (wins at every entry wait 30-120, thinly).
       replay.mjs --record-all (4 tapes moved).
-  - UNRESOLVED: the same table walks Link at SPEED_100 = 1 px/f (constants/
-    common/objectSpeeds.s: "SPEED_100 is a speed of 1 pixel per frame"),
-    1.5 only with Pegasus Seeds (SPEED_180) — but the frame-exact TAS
-    (59.73 fps, 1 video frame per game frame) shows 1,2,1,2 px steps at
-    frames 9905-9965 with no seeds held (re-measured S164). WALK_SPEED stays
-    384 (measured). Find the multiplier the code applies, or the reason the
-    TAS moves faster, before touching it.
+  - WALK SPEED, SETTLED BY THE HUMAN: "he does in fact walk slower in the
+    original." WALK_SPEED 384 -> 256 (1 px/f, SPEED_100, derived from the
+    code); BOOST_SPEED 768 -> 384 (SPEED_180, the Pegasus column); the
+    derived set came down with it: SWIM/SHIELD/SWORD_HOLD 288 -> 192,
+    DOORWAY_PULL 192 -> 128, ROOM_EXIT_MARGIN 2 -> 1, TORRENT_PUSH 1.35 ->
+    0.9, JUMP_POWER/GRAVITY back to the pre-S147 512/28, RACE_SHORE_FRAMES
+    400 -> 600. The TAS in assets/footage/ is NOT the walk reference (its
+    Link moves at what the code calls Pegasus speed); its other readings
+    (scrolls, fades, flashes, camera) stand.
+    Re-routed for it: D1's boss `reachSwing`; Reefguard hold 125
+    `reachSwing`; Bogmaw adds `openRetreat`; the Shrine Ford crossed by
+    hand after the boss (`travel` walked back west); two Keep darknuts rung
+    with the Rod first (`fight ... {ring: true}`, conch back on B after);
+    check-side: race dawdle 240, the Palace eel's loot lowers the tide and
+    steps off the stair first, the Eyrie and the Lower Vault given 64 qh
+    (the robot, not the player — item 5), the Vault's goto limits doubled
+    and its key door leant on for 8; replay d5-overthrow goes at once (the
+    keese strikes in the old settle) with its holds scaled x1.5; every tape
+    re-recorded.
   - Not reached: ENEMY_DEATH_FRAMES (PART_ENEMY_DESTROYED lasts until its
     animation sets animParameter — needs the part animation tables),
     EXPLOSION_FRAMES, the pickup pop (PART_ITEM_DROP), knockback, flashes.
@@ -119,7 +132,7 @@ Built; dist committed.
 The human heard the GB versions of our tunes: "Music sounds great."
 Items 2, 3, 4 (kept as is) and 10 are done; 5 is the human's.
 6. Measure the guessed timings — continue from the S164 notes above (the
-walk-speed puzzle first; the human wants the original matched). 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
+human wants the original matched in everything; the walk is done). 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
 the overworld. 9. Review our item icons. 10. A phone check.
 
 ## S163 — the cartridges' own sound effects

@@ -53,17 +53,19 @@
 // Player movement
 // ---------------------------------------------------------------------------
 
-/** sp/f — Link's ground speed, straight along one axis. measured: 1.5 px/f.
- *  reference: assets/footage/seasons-tas-rooster-adventure.mp4, Link walking left on flat
- *  ground with a still camera, video frames 9912-9960 — 72 px in 48 frames,
- *  stepping 1,2,1,2 px, which is exactly what 384 sp/f does on the 8.8 grid.
- *  The same 1,2 rhythm walking up at frames 3835-3853 and 7090-7108.
+/** sp/f — Link's ground speed, straight along one axis. derived: 1 px/f —
+ *  Seasons' own speed table (object_code/common/specialObjects/link.s,
+ *  updateLinkSpeed_withParam @speedTable) walks him at SPEED_100 on plain
+ *  ground, "1 pixel per frame" (constants/common/objectSpeeds.s), and only
+ *  at SPEED_180 under a Pegasus Seed. S164, at the human's word ("he does in
+ *  fact walk slower in the original").
  *
- *  It used to be 256 (1 px/f), chosen because it divides the 16px tile; the
- *  source game does not care about that, and at 1.5 px/f Link was a third
- *  slower than Seasons everywhere. A tile now takes 10.7 frames and Link does
- *  not land on every tile boundary, which is why ROOM_EXIT_MARGIN is 2. */
-export const WALK_SPEED = 384;
+ *  It was 384 (1.5 px/f) from S147 to S164, "measured" off the TAS in
+ *  assets/footage/ (video frames 9912-9960 step 1,2,1,2 px). That footage is
+ *  a tool-assisted run and Link in it moves at what is, by the code, the
+ *  Pegasus-Seed speed with no seed in sight; the code and the human both say
+ *  the plain walk is 1 px/f, so the footage is not the reference for this. */
+export const WALK_SPEED = 256;
 
 /** x — per-axis speed while two directions are held. measured: a diagonal is
  *  NOT faster than a straight line in Seasons; the same 1.5 px/f is split
@@ -99,23 +101,24 @@ export const DOORWAY_PULL_REACH_TILES = 1;
 /** sp/f — how fast the doorway pull slides you along the wall. derived: half
  *  WALK_SPEED, so the slide reads as being drawn in rather than as the stick
  *  being taken off you. */
-export const DOORWAY_PULL_SPEED = 192;
+export const DOORWAY_PULL_SPEED = 128;
 
 /** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
  *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
-export const SWIM_SPEED = 288;
+export const SWIM_SPEED = 192;
 
-/** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED. */
-export const BOOST_SPEED = 768;
+/** sp/f — under the Pegasus Seed. derived: SPEED_180, 1.5 px/f — the
+ *  "P. Normal" column of Seasons' own speed table (link.s @speedTable). */
+export const BOOST_SPEED = 384;
 
 /** sp/f — walking with the shield raised. derived: three quarters of
  *  WALK_SPEED. */
-export const SHIELD_SPEED = 288;
+export const SHIELD_SPEED = 192;
 
 /** sp/f — walking with the sword held out. derived: kept equal to
  *  SHIELD_SPEED, because both are "you are committed to something and cannot
  *  move at full pace". guessed insofar as its ancestor is. */
-export const SWORD_HOLD_SPEED = 288;
+export const SWORD_HOLD_SPEED = 192;
 
 /** x — multiplier on F.SLOW terrain (sand, deep grass). derived: Seasons'
  *  own speed table (object_code/common/specialObjects/link.s,
@@ -505,10 +508,9 @@ export const KILNSHELL_STRIKE_FLASH_FRAMES = 36;
 //   reach  = 2 * power / gravity * WALK_SPEED
 //   apex   = power^2 / (2 * gravity)
 //
-// 2*768/63 = 24.4 frames aloft at 1.5 px/f, 36.6 px of ground covered (2.3
-// tiles), apex 768^2/126 = 18.3 px. S147 raised WALK_SPEED from 1 to 1.5 px/f
-// (measured) and re-derived both so the reach and the apex did not move: power
-// x1.5 and gravity x2.25 keep the apex and cut the airtime by a third.
+// 2*512/28 = 36.6 frames aloft at 1 px/f, 36.6 px of ground covered (2.3
+// tiles). S147 raised WALK_SPEED to 1.5 px/f and re-derived the pair (768,
+// 63); S164 put walking back to Seasons' 1 px/f and the pair back with it.
 //
 // ROC'S FEATHER IS GONE. Nothing launches a free-standing jump any more: the
 // hop is base moveset and fires by walking into a gap or a ledge, along a
@@ -518,12 +520,13 @@ export const KILNSHELL_STRIKE_FLASH_FRAMES = 36;
 // longer describe an item anyone can be missing.
 
 /** sp/f — upward velocity of a hop. derived from WALK_SPEED and JUMP_GRAVITY
- *  to preserve a 2.3-tile reach; 3 px/f exactly. */
-export const JUMP_POWER = 768;
+ *  to preserve a 2.3-tile reach; 2 px/f exactly (S164: back to the pre-S147
+ *  pair, now that WALK_SPEED is 1 px/f again). */
+export const JUMP_POWER = 512;
 
 /** sp/f^2 — downward acceleration during a jump. derived: chosen with
  *  JUMP_POWER so that reach and apex both survive the new WALK_SPEED. */
-export const JUMP_GRAVITY = 63;
+export const JUMP_GRAVITY = 28;
 
 /** sp/f — rate `z` bleeds back to the ground when not jumping. guessed. */
 export const LAND_SETTLE_RATE = 128;
@@ -566,11 +569,10 @@ export const ROOM_TRANSITION_FRAMES_H = 40;
 export const ROOM_TRANSITION_FRAMES_V = 32;
 
 /** px — how close to the room edge the player's hitbox must be for an exit to
- *  fire. derived from WALK_SPEED: at 384 sp/f the player's steps are 1 or 2
- *  pixels, so the band is as wide as the widest step and the exit fires on
- *  the first frame the edge is within one step, whichever step lands there.
- *  It was 1 while walking was exactly 1 px/f. */
-export const ROOM_EXIT_MARGIN = 2;
+ *  fire. derived from WALK_SPEED: as wide as the widest step Link takes, so
+ *  the exit fires on the first frame the edge is within one step. 1 at
+ *  1 px/f (it was 2 while walking was 1.5 px/f, S147-S164). */
+export const ROOM_EXIT_MARGIN = 1;
 
 // THE CAMERA, inside a multi-screen dungeon room only.
 //
@@ -1380,16 +1382,17 @@ export const SINK_SPEED = 160;
 
 /** px/f — a Bogwater torrent, the current the Sanctum is built out of.
  *  derived, and the derivation is the whole point: it is strictly GREATER than
- *  SWIM_SPEED (288 sp/f = 1.125 px/f since S147), so a swimmer pressing into it nets
+ *  SWIM_SPEED (192 sp/f = 0.75 px/f since S164), so a swimmer pressing into it nets
  *  backwards and can never make headway, while a walker on the floor is not
  *  touched by a current at all. An ordinary riptide is 0.55 px/f — less than a
  *  swimmer's own speed — so it is a tax on the surface route and not a barrier,
  *  which is why D3 needed a second, stronger current rather than reusing it.
  *  Retune SWIM_SPEED and tools/check-cleats.mjs re-proves every torrent room
  *  against the new ratio instead of quietly passing. S147 did exactly that:
- *  walking went to 1.5 px/f (measured), swimming followed it to 1.125, and
- *  this rose from 0.9 by the same factor of 1.5 to stay 1.2x the swimmer. */
-export const TORRENT_PUSH = 1.35;
+ *  walking went to 1.5 px/f, swimming followed it to 1.125, and this rose
+ *  from 0.9 by the same factor of 1.5 to stay 1.2x the swimmer; S164 put
+ *  walking back to Seasons' 1 px/f and all three back with it. */
+export const TORRENT_PUSH = 0.9;
 
 /** f — frames each step of a current tile's animation holds. derived: the
  *  Ages current tile moves its dashes 2 px per step, so 2 / this is the speed
@@ -2236,9 +2239,9 @@ export const GB_RENDER_SLICE_GAP_MS = 12;
 
 /** frames — the tide-pool race's clock, from the kid on South Bluff to Pip on
  *  the South Sands islet. derived: the actor, starting beside the kid at LOW,
- *  runs down to the sand path and along it in 275 frames of clock time
- *  (tools/check-side.mjs); this is about half as long again, rounded to 400,
+ *  ran it in 275 frames at 1.5 px/f, so about 410 at Seasons' 1 px/f (S164);
+ *  this is about half as long again, rounded to 600 (it was 400),
  *  so a player who knows the way has two seconds to spare and one who stops
  *  to think does not. The clock runs through a conch sweep and stops for a
  *  screen scroll and a text box. */
-export const RACE_SHORE_FRAMES = 400;
+export const RACE_SHORE_FRAMES = 600;

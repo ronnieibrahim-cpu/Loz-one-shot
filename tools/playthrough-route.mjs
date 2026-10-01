@@ -465,7 +465,9 @@ export const ROUTE = [
   // made to step AWAY from a wall and then follow the charge to where it
   // ends): swept waits 60/90/120 x four option sets, and one won — this one,
   // on 11 of 16. It is a knife edge again; the next change here should sweep.
-  ['boss', 20000, null, { openRetreat: true, diagRetreat: true }],
+  // S164 (walking back to Seasons' 1 px/f): `reachSwing`, which wins at
+  // every entry wait swept from 60 to 240 frames.
+  ['boss', 20000, null, { reachSwing: true }],
   ['wait', 300],
   // WALK ONTO THE ESSENCE BY HAND — `dLoot` cannot collect it: `Essence` has
   // no `isDrop`. It appears in the middle of the arena, tile 7,4.
@@ -721,7 +723,7 @@ export const ROUTE = [
   ['hold', ['down'], 10],
   ['tap', 'a', 40],
   ['goto', 3, 4, 400],
-  ['hold', ['up'], 170],
+  ['hold', ['up'], 125],
 
   // ---------------------------------------------------------------- d2 1,4,2
   // Reefguard Hall, two rooms long: the miniboss for the second Small Key,
@@ -730,7 +732,8 @@ export const ROUTE = [
   // on 16 of 20, the plain fight died under the Reefguard's column of fire).
   // S164: wading stopped slowing Link (Seasons' own speed table) and that
   // fight died; re-swept five option sets at six holds — `reachSwing` after a
-  // hold of 155-185 wins on a full bar every time.
+  // hold of 155-185 wins on a full bar every time. Then walking went back to
+  // Seasons' 1 px/f: `reachSwing` again, now at holds 120-135 (and 105-110).
   ['boss', 6000, 'reefguard', { reachSwing: true }],
   ['dialogue', 300],
   ['use', 'conch', 2, 140],
@@ -1043,7 +1046,9 @@ export const ROUTE = [
   ['travel', 2, 2, 4000],
   ['hold', ['right'], 24],
   ['hold', ['down'], 12],
-  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true }],
+  // S164 (walking at Seasons' 1 px/f): the open-floor retreat added wins at
+  // every entry hold swept, 4 to 32 frames.
+  ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -2136,6 +2141,12 @@ export const ROUTE = [
   ['wait', 90],
   ['tide', 0, 140, 600],
   ['travel', 4, 2, 6000],
+  // S164: at Seasons' 1 px/f `travel` lost its way across the Ford (it
+  // walked back out west every time), so the Ford is crossed by hand: over
+  // the cut snarl and the two stakes, and out by Thornvine's arch.
+  ['goto', 23, 5, 1500],
+  ['goto', 22, 9, 900],
+  ['hold', ['down'], 60],
   ['travel', 5, 3, 6000],
   ['travel', 4, 3, 6000],
   ['travel', 3, 3, 6000],
@@ -2590,9 +2601,13 @@ export const ROUTE = [
   ['travel', 3, 3, 4000],
   // S151: Keep Lock's darknut is Seasons' now and hounds anyone within 40 px
   // of it; unlocking the west door with it at his back killed the run from a
-  // full bar. It is cut down first.
+  // full bar. It is cut down first. S164: at Seasons' 1 px/f the swordsman
+  // can no longer get round its shield and died to it every way it was
+  // swept, so it is rung with the Resonance Rod first, the game's own answer.
   ['equip', 'sword', 'A', 400],
-  ['fight', 4000, 1500],
+  ['equip', 'rod', 'B', 400],
+  ['fight', 4000, 1500, { ring: true }],
+  ['equip', 'conch', 'B', 400],
   ['goto', 1, 5, 1500],
   ['hold', ['left'], 24],
   ['tap', 'a', 30],
@@ -2796,8 +2811,11 @@ export const ROUTE = [
 
   // S151: the darknut here hounds the door, as Keep Lock's does; cut down
   // first, then the line goes back on A.
+  // S164: rung with the Rod first, as Keep Lock's is (see there).
   ['equip', 'sword', 'A', 400],
-  ['fight', 4000, 1500],
+  ['equip', 'rod', 'B', 400],
+  ['fight', 4000, 1500, { ring: true }],
+  ['equip', 'conch', 'B', 400],
   ['equip', 'dredge', 'A', 400],
   ['goto', 13, 5, 1500],
   ['hold', ['right'], 24],

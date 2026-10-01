@@ -459,9 +459,10 @@ BEFORE checking a file out for isolation, not after.**
   (Paid in S164 itself: route-prefix.mjs with PATCH sweeps a fight's entry
   wait against its option sets in ~3 s a try; try-room.mjs with a
   check-side `--dump` bisects a scenario by truncating its steps.)
-- **The code and the footage disagree on Link's walk (S164).** Seasons'
-  speed table says 1 px/f (1.5 only with Pegasus Seeds); the frame-exact TAS
-  shows 1.5 px/f with no seeds. Unresolved — read before "fixing" WALK_SPEED.
+- **The TAS is not the walk reference (S164).** Seasons' speed table says
+  1 px/f (1.5 only with Pegasus Seeds); the frame-exact TAS shows 1.5 px/f
+  with no seeds. The human settled it for the code: Link walks 1 px/f.
+  Everything else measured off the TAS (scrolls, fades, camera) stands.
 
 - **The disassembly's spelling is not the cartridge's bytes (S163).** After
   `cmdf0` a square channel reads every note as a raw frequency, which the

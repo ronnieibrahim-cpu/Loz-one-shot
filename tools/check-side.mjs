@@ -143,7 +143,7 @@ const SCENARIOS = [
   {
     name: 'The race: dawdle at the start and the clock runs out',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 3, 9, 48, 48, 'left'] }),
-    steps: [['race', 600], ['wait', 150], ['goto', 1, 6, 300], ['hold', ['right'], 600], ['wait', 200]],
+    steps: [['race', 600], ['wait', 240], ['goto', 1, 6, 300], ['hold', ['right'], 900], ['wait', 200]],
     expect: `!g.progress.flags.raceWon && g.progress.heartPieces === 0 && !g.race || 'won after dawdling'`,
   },
   ...[1, 2].map(t => ({
@@ -185,43 +185,47 @@ const SCENARIOS = [
   {
     name: "The Lower Vault: the fire carried down from the kiln and thrown at LOW wins the Saltwraith's Piece of Heart",
     setup: setup({ items: { sword: 1, conch: 1, kilnshell: 1 }, equipA: 'sword', equipB: 'kilnshell',
-      maxHearts: 32, hearts: 32, tide: 0, enter: ['vault', 0, 1, 2, 112, 128, 'up'] }),
+      maxHearts: 64, hearts: 64, tide: 0, enter: ['vault', 0, 1, 2, 112, 128, 'up'] }),
     steps: [
       // the Kiln Stair: strike into the tangle, lift the shell
-      ['goto', 7, 4, 300], ['hold', ['up'], 2], ['use', 'kilnshell', 1, 30], ['wait', 20], ['tap', 'a', 30],
-      ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 7, 4, 600], ['hold', ['up'], 2], ['use', 'kilnshell', 1, 30], ['wait', 20], ['tap', 'a', 30],
+      ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
       // the Sump: thrown from the bank to the island brazier
-      ['goto', 3, 5, 600], ['hold', ['right'], 2], ['tap', 'a', 90],
+      ['goto', 3, 5, 1200], ['hold', ['right'], 2], ['tap', 'a', 90],
       // back to the kiln for a new flame, and on to the Kelp Cell
-      ['goto', 7, 9, 600], ['hold', ['down'], 40], ['wait', 20],
-      ['goto', 7, 4, 400], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
-      ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
-      ['goto', 13, 5, 600], ['hold', ['right'], 40], ['wait', 30],
-      ['goto', 7, 5, 600], ['hold', ['up'], 2], ['tap', 'a', 90],
-      ['goto', 7, 2, 300], ['hold', ['left'], 2], ['tap', 'a', 30], ['dialogue', 300], ['wait', 30],
-      ['goto', 7, 1, 200], ['hold', ['left'], 24], ['wait', 20],
+      ['goto', 7, 9, 1200], ['hold', ['down'], 40], ['wait', 20],
+      ['goto', 7, 4, 800], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
+      ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 13, 5, 1200], ['hold', ['right'], 40], ['wait', 30],
+      ['goto', 7, 5, 1200], ['hold', ['up'], 2], ['tap', 'a', 90],
+      ['goto', 7, 2, 600], ['hold', ['left'], 2], ['tap', 'a', 30], ['dialogue', 300], ['wait', 30],
+      ['goto', 7, 1, 400], ['hold', ['left'], 24], ['wait', 20],
       // the Small Key turned in the Sump's west door, with empty hands
-      ['goto', 7, 5, 300], ['hold', ['down'], 2], ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 20],
-      ['goto', 1, 5, 300], ['hold', ['left'], 4], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
-      ['goto', 7, 9, 600], ['hold', ['down'], 40], ['wait', 20],
-      ['goto', 7, 4, 400], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
-      ['goto', 7, 1, 300], ['hold', ['up'], 40], ['wait', 20],
-      ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 30],
+      ['goto', 7, 5, 600], ['hold', ['down'], 2], ['goto', 1, 5, 1200], ['hold', ['left'], 40], ['wait', 20],
+      ['goto', 1, 5, 600], ['hold', ['left'], 8], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
+      ['goto', 7, 9, 1200], ['hold', ['down'], 40], ['wait', 20],
+      ['goto', 7, 4, 800], ['hold', ['down'], 2], ['use', 'kilnshell', 1, 30], ['tap', 'a', 30],
+      ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 1, 5, 1200], ['hold', ['left'], 40], ['wait', 30],
       // the Brine Gallery: one throw at the tangle burns it and, resting a
       // tile from the near brazier, lights that too (S162); lift it, then the island
       // S164: carrying no longer slows Link, so the shell lands a step out of
       // reach of where he threw it from — walk up to it before lifting.
-      ['goto', 3, 6, 600], ['hold', ['up'], 2], ['tap', 'a', 90],
-      ['goto', 3, 5, 300], ['hold', ['up'], 2], ['tap', 'a', 30],
-      ['goto', 9, 5, 600], ['hold', ['down'], 1], ['tap', 'a', 90],
-      ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 3, 6, 1200], ['hold', ['up'], 2], ['tap', 'a', 90],
+      ['goto', 3, 5, 600], ['hold', ['up'], 2], ['tap', 'a', 30],
+      ['goto', 9, 5, 1200], ['hold', ['down'], 1], ['tap', 'a', 90],
+      ['goto', 7, 1, 1200], ['hold', ['up'], 40], ['wait', 20],
       // the Kiln Walk: dry, so struck where it is needed
-      ['fight', 3000, 3000], ['goto', 11, 5, 600], ['hold', ['right'], 2], ['use', 'kilnshell', 1, 40], ['wait', 30],
-      ['goto', 13, 5, 300], ['hold', ['right'], 40], ['wait', 40],
+      ['fight', 3000, 3000], ['goto', 11, 5, 1200], ['hold', ['right'], 2], ['use', 'kilnshell', 1, 40], ['wait', 30],
+      ['goto', 13, 5, 600], ['hold', ['right'], 40], ['wait', 40],
       // the Saltwraith's Pan, at HIGH
-      ['equip', 'conch', 'B', 120], ['tide', 2, 20, 600], ['wait', 60], ['goto', 3, 5, 300],
+      ['equip', 'conch', 'B', 120], ['tide', 2, 20, 600], ['wait', 60], ['goto', 3, 5, 600],
       // S164: `reachSwing` (swept eight option sets; it wins at every entry
-      // wait from 30 to 120 frames, the plain fight no longer does).
+      // wait from 30 to 120 frames, the plain fight no longer does). Then
+      // walking went to Seasons' 1 px/f: on 64 quarter-hearts (as the Eyrie
+      // and the eel are given more) it wins at every wait swept; every goto's
+      // time limit in this run was doubled, and the key door wants 8 frames of
+      // lean instead of 4.
       ['boss', 14000, 'saltwraith', { reachSwing: true }], ['wait', 120], ['loot', 900], ['wait', 60],
     ],
     expect: `g.progress.flags.vault_wraith && g.progress.heartPieces === 1 || ('wraith ' + !!g.progress.flags.vault_wraith + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
@@ -259,7 +263,7 @@ const SCENARIOS = [
   {
     name: "The Gullwind Eyrie: every drop crossed by the coin and the tide wins the Gustharpy's Piece of Heart",
     setup: setup({ items: { sword: 1, conch: 1, coin: 1, cleats: 1 }, equipA: 'conch', equipB: 'coin',
-      maxHearts: 32, hearts: 32, tide: 0, enter: ['eyrie', 0, 1, 2, 112, 128, 'up'] }),
+      maxHearts: 64, hearts: 64, tide: 0, enter: ['eyrie', 0, 1, 2, 112, 128, 'up'] }),
     steps: [
       ['goto', 7, 7, 300],
       ['hold', ['up'], 2],
@@ -331,7 +335,12 @@ const SCENARIOS = [
       ['wait', 40],
       ['equip', 'sword', 'A', 120],
       ['goto', 3, 5, 300],
-      ['boss', 14000, 'gustharpy', {breakContact: true, reachSwing: true}],
+      // S164: walking at Seasons' 1 px/f, the robot no longer wins this on 32
+      // quarter-hearts at more than two entry waits; on 64 with the diagonal
+      // retreat it wins at five of six (1-90 frames). The robot is not the
+      // player (item 5 on the list is the human's tuning); this proves the
+      // dungeon can be finished, as the eel scenario's 200 does.
+      ['boss', 14000, 'gustharpy', { diagRetreat: true, reachSwing: true }],
       ['wait', 120],
       ['loot', 900],
       ['wait', 60],
@@ -454,7 +463,7 @@ const SCENARIOS = [
     steps: [
       ['hold', ['up'], 200], ['wait', 90],
       ['tide', 0, 20, 900], ['wait', 30],
-      ['boss', 20000, 'thalassor'], ['wait', 120], ['loot', 900], ['wait', 60],
+      ['boss', 20000, 'thalassor'], ['wait', 120], ['tide', 0, 140, 900], ['goto', 1, 6, 400], ['loot', 900], ['wait', 60],
     ],
     expect: `g.progress.flags.palace_eel && g.progress.heartPieces === 1 || ('eel ' + !!g.progress.flags.palace_eel + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
   },

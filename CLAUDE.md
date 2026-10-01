@@ -59,10 +59,13 @@ float positions; do not use `| 0` to floor a coordinate (it truncates toward
 zero and misrounds across x=0, which happens on every room transition).
 
 **A diagonal is the same speed as a straight line.** Seasons splits Link's
-1.5 px/f across both axes when two directions are held (`DIAGONAL_FACTOR`,
+speed across both axes when two directions are held (`DIAGONAL_FACTOR`,
 measured from the frame-exact footage at S147). This rule used to say the
 opposite — "diagonal is faster, a signature of the source games" — and nobody
 had looked; the footage settled it, and the human chose the footage.
+**Link walks at 1 px/f** (SPEED_100, Seasons' own speed table, S164 at the
+human's word): the TAS in assets/footage/ moves him at the Pegasus-Seed
+1.5, so it is not the reference for his walk.
 
 **A checker may never define its own collision, passability or push logic; it
 calls the engine's.** `Room.solidAt`/`tileDefSolid` (src/world/room.js,

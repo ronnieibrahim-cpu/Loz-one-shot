@@ -466,9 +466,10 @@ export const PLANS = {
     },
     steps: [
       // S151: the room's keese is Seasons' keese now and flies over the snarl
-      // that used to seal it in; this settle lets its first flight pass before
-      // Link walks to the bank, so it is not knocked off his mark.
-      ['wait', 240],
+      // that used to seal it in; a 240-frame settle let its first flight pass
+      // before Link walked to the bank. S164: at Seasons' 1 px/f that settle
+      // is exactly when it strikes, and going at once is the clean way.
+      ['wait', 1],
       // Straight to the bank and hard up against the bole, which at MID is a
       // tree and will not let him past. Walking into it is how the facing is
       // set: there is no aim button, and `tap` throws wherever Link is looking.
@@ -477,7 +478,7 @@ export const PLANS = {
       // sword is not on B: the Reefseed is, because a replay's equipment is
       // fixed in its setup.
       ['goto', 9, 5, 400],
-      ['hold', ['right'], 60],
+      ['hold', ['right'], 90],
       ['wait', 20],
       // MID -> HIGH. The conch runs 2 -> 0 -> 1 -> 2, so this is one press.
       ['tap', 'a', 90],
@@ -495,12 +496,12 @@ export const PLANS = {
       ['wait', 20],
       // East into the pool — deep at every sea, which is why it is a pool and
       // not a puddle — and then south, out of the water onto what he threw.
-      ['hold', ['right'], 50],
+      ['hold', ['right'], 75],
       ['wait', 20],
-      // Twenty-two frames and not one more: south of the stake is a sump, which
-      // at LOW is an open hole, and a hold long enough to cross the pillar walks
-      // straight off the far edge of it.
-      ['hold', ['down'], 22],
+      // Thirty-three frames and not one more (twenty-two at 1.5 px/f, before
+      // S164): south of the stake is a sump, which at LOW is an open hole, and
+      // a hold long enough to cross the pillar walks straight off the far edge.
+      ['hold', ['down'], 33],
       ['wait', 60],
     ],
     // The claim, and it is the whole reason this run exists: the tile the model

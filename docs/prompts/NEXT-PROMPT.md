@@ -8,8 +8,7 @@
 - `docs/HANDOFF.md` hard-won lessons.
 
 ## State
-- Check whether S164 (each dungeon's own stairs; our music played through
-  the cartridge's own sound engine) is merged into main; if not, ask.
+- S164 is MERGED into main: branch from main.
 - Whole table green; check-playthrough 44/44, THE END, never died.
 - OUR TUNES ARE KEPT and play on the Game Boy engine (the human's choice,
   S164): `compileForGb` -> gbsound.js. The tracker synth is gone. Effects
@@ -21,8 +20,9 @@ each dungeon's own stairs; our tunes on the Game Boy engine ("Music sounds
 great"); music making room for sound effects; Eyrie bats kept as they are.
 Item 5 (fight tuning) is the human's. NEXT: item 6, the guessed timings,
 from NEXT-SESSION.md S164's notes. The human said "match the original in
-all aspects": the beep, carrying, grass and wading are done; settle the
-walk-speed puzzle (code says 1 px/f, the TAS shows 1.5) before touching it. Then 7 the 50 unaudited overworld screens, 8 a Lens puzzle
+all aspects": the beep, carrying, grass, wading AND Link's walk (1 px/f,
+the code's) are done; carry on through the remaining guessed timings,
+reading each from oracles-disasm. Then 7 the 50 unaudited overworld screens, 8 a Lens puzzle
 on the overworld, 9 our item icons, 10 a phone check. Ask before anything
 large.
 
