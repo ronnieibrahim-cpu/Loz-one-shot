@@ -1492,6 +1492,12 @@ function optionalKit(T, P) {
     ['dExit' + T]: own('ArchC2', F.WARP),
     ['dPillar' + T + 'W']: own('ArchC1', F.SOLID, { ringWall: true }),
     ['dPillar' + T + 'E']: own('ArchC3', F.SOLID, { ringWall: true }),
+    // A kit that extracted its own stairs (the Sunken Palace's, S162) draws
+    // them; the flags are exactly `dStairs`'.
+    ...(ART[P + 'StairsUp'] ? {
+      ['dStairsUp' + T]: own('StairsUp', F.WARP | F.STAIRS),
+      ['dStairsDown' + T]: own('StairsDown', F.WARP | F.STAIRS),
+    } : {}),
   };
   for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE',
     'JambNW', 'JambNE', 'JambSW', 'JambSE', 'JambWN', 'JambWS', 'JambEN', 'JambES']) {

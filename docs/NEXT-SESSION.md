@@ -1,3 +1,77 @@
+## S162 — the optional dungeons toured, filmed, and the Palace made finishable
+
+Branch claude/s162, off main at 44fa332 (S160 + S161 were already merged).
+NOT MERGED: ask the human before moving main.
+
+### What the human chose
+"Both, tour first": play the three optional dungeons and report with pictures
+and clips, then fix what the tour found plus the S160/S161 leftovers. After
+the tour the human picked: swap the Eyrie's and the Palace's pillars for each
+original's own decoration (Recommended), and add a few enemies to the Palace.
+
+### What landed
+- THE SUNKEN PALACE COULD NOT BE FINISHED. Its Boss Key chest (0,2,0) stood at
+  8,3 against the cellar's north wall; `Game.openChest` pops a pickup a tile
+  above the chest, and the key settled inside the wall. Moved to 8,4.
+  `check-placement` now opens every pickup chest in the engine and asks
+  `canOccupy` of where the pickup settles (20 chests; red on the old Palace).
+  `check-side` now plays the WHOLE Palace in one run, door to eel (red on the
+  old Palace); `--dump <name>` prints a scenario for film-steps/shoot-steps.
+- KILNSHELL: drawn in its own palettes (the entity's `pal: 'stone'` greyed
+  both lit and unlit frames, so a burning shell looked cold); the strike's
+  flame lasts KILNSHELL_STRIKE_FLASH_FRAMES (36, guessed) instead of 9999
+  frames (it stood on bare floor for ~3 min); `desc` fixed.
+- THE DUNGEON NAME shows once, on the way in: a warp within the same map and a
+  whirlpool no longer re-title the screen (Game.checkWarpTile / enterWhirlpool).
+- PILLARS (`U`, dUrn): the Eyrie's is Snake's Remains' corner bush ($04, room
+  $525), the Palace's is Mermaid's Cave's magenta block ($1d, rooms $52e/$530);
+  `uStatue` is out of KEY_BACKGROUND (a full-cell block lost its faces).
+- THE PALACE'S OWN STAIRS: Ages' TILEINDEX_INDOOR_UP/DOWNSTAIRCASE ($44/$45),
+  `uStairsUp/Down` picks -> `dStairsUpPalace`/`dStairsDownPalace` (optionalKit
+  builds them when a kit has the picks). Legend: `/` down, `S` up; every
+  Undercroft stair is `S`. The other dungeons still share the grey `dStairs`.
+- PALACE ENEMIES 6 -> 17: two darknuts Beneath the Stair, three gels Under the
+  Gallery, two keese Under the Weir, a wizzrobe in the Sluice Court, a darknut
+  on the Weir, two stalfos in the Chapel Crypt. check-whirlpool caught three
+  first placements standing where a whirlpool lands you; moved.
+- Thalassor's pull reads `tideAt(g, e)`, not the base level.
+- A solved torch room comes back LIT (Game.checkPuzzle's flag branch); two
+  check-side scenarios (solved Sump lit, unsolved dark).
+- check-anchor: the model no longer hops (HOP_TILES 0; the game has no jump).
+  All 26 still pass; the Chapel's printed answer is now a real one.
+- walk-dungeons' ledge probe steps on the harness clock (takeOver/step): it
+  failed a working d6 ledge under load (the live loop catches up 4 updates per
+  animation frame). Stable 6x in parallel now.
+- NEW TOOL tools/film-steps.mjs (in CLAUDE.md's table): PNG every N frames +
+  frames.json, cut with ffmpeg. Original-cartridge rooms for comparison were
+  rendered with a scratch script: sparse-clone oracles-disasm `rooms/` (Seasons
+  group 4 -> large/room05xx, Ages group 5 -> large/room05xx), draw metatiles
+  with rip-objects' `Tileset` (`('ages', n)` for Ages); `constants/common/
+  tileIndices.s` names the metatiles.
+
+### What the tour found (for the human's record)
+- Vault and Eyrie play cleanly end to end (check-side's runs, filmed). The
+  robot loses ~28 quarter-hearts to the Saltwraith and ~8 to the Gustharpy.
+- The Palace was quiet (6 enemies in 16 rooms) — now 17.
+- White full-screen frames in the films are intended: the coin swap's fade and
+  the item menu opening.
+
+### Verified
+See the commit: whole table green (test.mjs run on its own — its fps
+assertion is load-dependent by design), check-playthrough 44/44, THE END,
+never died. Built; dist committed.
+
+### Noticed, not chased
+- Every main dungeon still draws the shared hand-drawn grey `dStairs`; each
+  Seasons tileset has its own $44/$45. A fidelity pass could give each kit its
+  stairs the way the Palace now has (needs `S` for up-stairs in those rooms).
+- The robot's `goto` once walked into a whirlpool corner in the Palace Stair at
+  HIGH and its `loot` walked over the lair's exit stair; both worked around in
+  the route, not investigated as game faults.
+- Keese over Snake's Remains' black chasm are nearly invisible.
+- The Palace's new enemies are not tuned (S150 rule); the robot ran the one-run
+  scenario on 200 quarter-hearts as the eel scenario does.
+
 ## S161 — the Sunken Palace: all three optional dungeons are built
 
 Branch claude/oracle-tides-optional-dungeons-c5eytd (S160's, continued as the

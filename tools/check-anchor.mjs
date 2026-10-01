@@ -100,8 +100,15 @@ function defTide(name, l) {
 //
 // A hop: airtime is 2 * JUMP_POWER / JUMP_GRAVITY frames, covering WALK_SPEED
 // subpixels of ground per frame. FEEL-SPEC.md carries the same arithmetic.
+//
+// NO HOP (S162). The game has had no jump since the Roc's-Feather verb went —
+// nothing calls `Player.startJump` — and this model went on hopping two tiles
+// over water and pits, so the Sunken Chapel's printed answer leaned on a move
+// no player can make. A model with a verb the player lacks proves "solvable"
+// too cheaply. The arithmetic stays for the day a jump comes back; the reach
+// the flood uses is zero.
 const HOP_PX = (2 * JUMP_POWER / JUMP_GRAVITY) * (WALK_SPEED / 256);
-const HOP_TILES = Math.floor(HOP_PX / 16);
+const HOP_TILES = 0;
 // A throw: the anchor leaves the hand at z = 12px with vz = THROW_ARC_RISE and
 // falls at THROW_ARC_GRAVITY, travelling ANCHOR_THROW_SPEED along the ground.
 const Z0 = 12 * 256;
@@ -109,7 +116,7 @@ const AIRTIME = (THROW_ARC_RISE + Math.sqrt(THROW_ARC_RISE * THROW_ARC_RISE + 2 
   / THROW_ARC_GRAVITY;
 const THROW_TILES = Math.max(1, Math.floor(AIRTIME * (ANCHOR_THROW_SPEED / 256) / 16));
 
-console.log(`  hop reach ${HOP_PX.toFixed(1)}px (${HOP_TILES} whole tiles), `
+console.log(`  hop reach 0 (the game has no jump; a feather would give ${HOP_PX.toFixed(1)}px), `
   + `throw reach ${(AIRTIME * ANCHOR_THROW_SPEED / 256).toFixed(1)}px (${THROW_TILES} whole tiles), `
   + `patch r=${ANCHOR_RADIUS_TILES} ${ANCHOR_SHAPE}`);
 

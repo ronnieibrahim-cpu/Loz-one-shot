@@ -35,6 +35,7 @@ import {
   ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
   KILNSHELL_BURN_DAMAGE,
+  KILNSHELL_STRIKE_FLASH_FRAMES,
 } from '../data/feel.js';
 import { sprites, tiles } from '../gfx/art.js';
 
@@ -99,7 +100,10 @@ export class Kilnshell extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 3, y: 6, w: 10, h: 8 };
-    this.pal = 'stone';
+    // No `pal` (S162): each frame carries its own — bone unlit, fire alight.
+    // It used to set `stone`, which overrode both, so a burning shell and a
+    // cold one were the same grey shield on screen and the player could not
+    // tell whether the flame had survived the walk down.
     this.harmless = true;
     this.liftable = true;               // the carry is the point; see above
     this.lit = !!o.lit;
@@ -1144,7 +1148,7 @@ export const ITEMS = {
     names: ['Kilnshell'],
     icon: ['i_kilnshell'],
     equippable: true,
-    desc: 'Set it down. The sea lights it, and the sea puts it out.',
+    desc: 'Strike it on dry ground, carry it lit, throw it. The sea puts it out.',
     use(game, p, level) {
       // Being carried: the throw button already owns it, and a second verb on
       // a held object is how you get a player who cannot put a thing down.
@@ -1179,7 +1183,7 @@ export const ITEMS = {
       // ALIGHT ON ARRIVAL. Pressing the button is striking it.
       game.addEntity(new Kilnshell(x, y, { lit: true }));
       game.audio.sfx('fire');
-      game.spawnEffect('flame', x, y - 4);
+      game.spawnEffect('flame', x, y - 4, { life: KILNSHELL_STRIKE_FLASH_FRAMES });
       return true;
     },
   },

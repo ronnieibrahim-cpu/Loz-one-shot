@@ -892,9 +892,13 @@ export class Game {
     if (w.needFlag && !flag(this.progress, w.needFlag)) return;
     this._warpLock = true;
     this.audio.sfx(w.sfx || 'stairs');
+    // The name comes up on the way IN, not on every stair inside (S162): the
+    // Oracles show a dungeon's name once, at its door, and a stair between two
+    // of its floors says nothing. It used to re-title the screen on every
+    // flight of steps, which in the Sunken Palace was most rooms.
     this.warpTo(w.to.map, w.to.floor || 0, w.to.rx, w.to.ry,
       { x: w.to.px != null ? w.to.px : p.x, y: w.to.py != null ? w.to.py : p.y },
-      w.to.dir || p.dir, { banner: true, fade: (f & F.STAIRS) ? STAIRS_FADE : DOOR_FADE });
+      w.to.dir || p.dir, { banner: w.to.map !== this.mapId, fade: (f & F.STAIRS) ? STAIRS_FADE : DOOR_FADE });
   }
 
   /**
@@ -915,7 +919,7 @@ export class Game {
     this.audio.sfx('whirl');
     this.spawnEffect('splash', p.x, p.y);
     this.warpTo(this.mapId, below, room.rx, room.ry, { x: p.x, y: p.y }, p.dir,
-      { banner: true, fade: STAIRS_FADE });
+      { fade: STAIRS_FADE });
     return true;
   }
 
@@ -1139,7 +1143,16 @@ export class Game {
     const room = this.room;
     if (!room || !room.def.puzzle || room._puzzleDone) return;
     const pz = room.def.puzzle;
-    if (pz.flag && flag(this.progress, pz.flag)) { room._puzzleDone = true; this.applyReward(pz.reward, true); return; }
+    if (pz.flag && flag(this.progress, pz.flag)) {
+      room._puzzleDone = true;
+      // A SOLVED TORCH ROOM COMES BACK LIT (S162), as it does in the Oracles.
+      // The flag and the door were remembered and the flames were not, so a
+      // player walked back into a dark room whose door their fire had opened.
+      // Lit in place, without `ignite`: no crackle, and no second solve.
+      if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) t.lit = true;
+      this.applyReward(pz.reward, true);
+      return;
+    }
 
     if (pz.switches != null) {
       const sws = this.entities.filter(e => e instanceof FloorSwitch);

@@ -1285,6 +1285,18 @@ const EXPLOSION_SELF_DAMAGE = 2;
  */
 const KILNSHELL_BURN_DAMAGE = 1;
 
+/**
+ * frames — how long the burst of flame shown as the Kilnshell is struck
+ * stays on screen. guessed: two turns of the three-frame flame (6 frames
+ * each), a flash and no more.
+ *
+ * S162: it used the flame effect's default life of 9999 frames, so the burst
+ * stood on the strike tile for nearly three minutes after the shell had been
+ * lifted and carried away — a fire burning on bare floor, which read as the
+ * shell's flame left behind.
+ */
+const KILNSHELL_STRIKE_FLASH_FRAMES = 36;
+
 // ---------------------------------------------------------------------------
 // Jumping and the one-way ledge hop
 // ---------------------------------------------------------------------------
@@ -3079,6 +3091,7 @@ __exports["PIT_DAMAGE"] = PIT_DAMAGE;
 __exports["WASH_DAMAGE"] = WASH_DAMAGE;
 __exports["EXPLOSION_SELF_DAMAGE"] = EXPLOSION_SELF_DAMAGE;
 __exports["KILNSHELL_BURN_DAMAGE"] = KILNSHELL_BURN_DAMAGE;
+__exports["KILNSHELL_STRIKE_FLASH_FRAMES"] = KILNSHELL_STRIKE_FLASH_FRAMES;
 __exports["JUMP_POWER"] = JUMP_POWER;
 __exports["JUMP_GRAVITY"] = JUMP_GRAVITY;
 __exports["LAND_SETTLE_RATE"] = LAND_SETTLE_RATE;
@@ -12949,7 +12962,7 @@ const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES } = __require("data/feel.js");
 const { sprites, tiles } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -13013,7 +13026,10 @@ class Kilnshell extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 3, y: 6, w: 10, h: 8 };
-    this.pal = 'stone';
+    // No `pal` (S162): each frame carries its own — bone unlit, fire alight.
+    // It used to set `stone`, which overrode both, so a burning shell and a
+    // cold one were the same grey shield on screen and the player could not
+    // tell whether the flame had survived the walk down.
     this.harmless = true;
     this.liftable = true;               // the carry is the point; see above
     this.lit = !!o.lit;
@@ -14058,7 +14074,7 @@ const ITEMS = {
     names: ['Kilnshell'],
     icon: ['i_kilnshell'],
     equippable: true,
-    desc: 'Set it down. The sea lights it, and the sea puts it out.',
+    desc: 'Strike it on dry ground, carry it lit, throw it. The sea puts it out.',
     use(game, p, level) {
       // Being carried: the throw button already owns it, and a second verb on
       // a held object is how you get a player who cannot put a thing down.
@@ -14093,7 +14109,7 @@ const ITEMS = {
       // ALIGHT ON ARRIVAL. Pressing the button is striking it.
       game.addEntity(new Kilnshell(x, y, { lit: true }));
       game.audio.sfx('fire');
-      game.spawnEffect('flame', x, y - 4);
+      game.spawnEffect('flame', x, y - 4, { life: KILNSHELL_STRIKE_FLASH_FRAMES });
       return true;
     },
   },
@@ -29283,9 +29299,13 @@ class Game {
     if (w.needFlag && !flag(this.progress, w.needFlag)) return;
     this._warpLock = true;
     this.audio.sfx(w.sfx || 'stairs');
+    // The name comes up on the way IN, not on every stair inside (S162): the
+    // Oracles show a dungeon's name once, at its door, and a stair between two
+    // of its floors says nothing. It used to re-title the screen on every
+    // flight of steps, which in the Sunken Palace was most rooms.
     this.warpTo(w.to.map, w.to.floor || 0, w.to.rx, w.to.ry,
       { x: w.to.px != null ? w.to.px : p.x, y: w.to.py != null ? w.to.py : p.y },
-      w.to.dir || p.dir, { banner: true, fade: (f & F.STAIRS) ? STAIRS_FADE : DOOR_FADE });
+      w.to.dir || p.dir, { banner: w.to.map !== this.mapId, fade: (f & F.STAIRS) ? STAIRS_FADE : DOOR_FADE });
   }
 
   /**
@@ -29306,7 +29326,7 @@ class Game {
     this.audio.sfx('whirl');
     this.spawnEffect('splash', p.x, p.y);
     this.warpTo(this.mapId, below, room.rx, room.ry, { x: p.x, y: p.y }, p.dir,
-      { banner: true, fade: STAIRS_FADE });
+      { fade: STAIRS_FADE });
     return true;
   }
 
@@ -29530,7 +29550,16 @@ class Game {
     const room = this.room;
     if (!room || !room.def.puzzle || room._puzzleDone) return;
     const pz = room.def.puzzle;
-    if (pz.flag && flag(this.progress, pz.flag)) { room._puzzleDone = true; this.applyReward(pz.reward, true); return; }
+    if (pz.flag && flag(this.progress, pz.flag)) {
+      room._puzzleDone = true;
+      // A SOLVED TORCH ROOM COMES BACK LIT (S162), as it does in the Oracles.
+      // The flag and the door were remembered and the flames were not, so a
+      // player walked back into a dark room whose door their fire had opened.
+      // Lit in place, without `ignite`: no crackle, and no second solve.
+      if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) t.lit = true;
+      this.applyReward(pz.reward, true);
+      return;
+    }
 
     if (pz.switches != null) {
       const sws = this.entities.filter(e => e instanceof FloorSwitch);
@@ -38321,24 +38350,24 @@ const DUNGEON_THEME_ART = {
     ...33211111233..
     .....3333333....`,
 
-  // the green crystal, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $15
+  // the corner bush, Snake's Remains (room $525) — Seasons tileset $38 (Snake's Remains), metatile $04
   nStatue: `
     ................
-    ......33333.....
-    .....3111223....
-    ....311112223...
-    ...31111122223..
-    ..3111111222223.
-    .311111112222213
-    .321111121222133
-    .322111222121333
-    .322212222213333
-    .322212222213333
-    .322212222213333
-    .322212222213333
-    ..3221222221333.
-    ...33222222233..
-    .....3333333....`,
+    ......3333......
+    .....322223.....
+    ...3332002333...
+    ..322032230223..
+    .32233233233223.
+    .32202333320223.
+    .33333322333333.
+    ..320333333023..
+    .32230322303223.
+    .32323200232323.
+    .32223222232223.
+    .33333222233333.
+    ....33322333....
+    ......3333......
+    ................`,
 
   // entrance pillar, west, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $e6
   nArchC1: `
@@ -39024,24 +39053,62 @@ const DUNGEON_THEME_ART = {
     ...33200000233..
     .....3333333....`,
 
-  // the green crystal, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $15
+  // the magenta block, Mermaid's Cave (rooms $52e, $530) — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $1d
   uStatue: `
-    ................
-    ......33333.....
-    .....3000223....
-    ....300002223...
-    ...30000022223..
-    ..3000000222223.
-    .300000002222203
-    .320000020222033
-    .322000222020333
-    .322202222203333
-    .322202222203333
-    .322202222203333
-    .322202222203333
-    ..3220222220333.
-    ...33222222233..
-    .....3333333....`,
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
+  // the stair up, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $44
+  uStairsUp: `
+    2222222222333333
+    2000000000311113
+    2011113333311113
+    2011113111311113
+    2033333111311113
+    2031113111311113
+    2031113111300003
+    2031113111333333
+    2031113000333333
+    2031113333333333
+    2030003333333333
+    2033333333333333
+    2033333333333333
+    2011111111111112
+    2000000000000002
+    2222222222222222`,
+
+  // the stair down, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $45
+  uStairsDown: `
+    2222222222222222
+    2000000000000002
+    2032222223333302
+    2032222223000302
+    2033333333000302
+    2033333333000302
+    2033331113000302
+    2033331113000302
+    2033331113000302
+    2032231113000302
+    2032231113000302
+    2032231113000302
+    2032231113000302
+    2033333333333302
+    2000000000000002
+    2222222222222222`,
 
   // entrance pillar, west, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $e6
   uArchC1: `
@@ -39498,7 +39565,7 @@ const DUNGEON_THEME_PALETTES = {
   nFloorAlt: ['#9c8cc6', '#7342bd', '#7342bd', '#7342bd'],
   nBlock: ['#d65a52', '#8c1818', '#000000', '#000000'],
   nPot: ['#c67bb5', '#73b55a', '#296300', '#000000'],
-  nStatue: ['#c67bb5', '#73b55a', '#296300', '#000000'],
+  nStatue: ['#ffd68c', '#c67bb5', '#10ad42', '#000000'],
   nArchC1: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
   nArchC2: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
   nArchC3: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
@@ -39535,7 +39602,9 @@ const DUNGEON_THEME_PALETTES = {
   uFloorAlt: ['#94b5ad', '#5a7384', '#5a7384', '#5a7384'],
   uBlock: ['#b54a9c', '#6b0052', '#000000', '#000000'],
   uPot: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
-  uStatue: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
+  uStatue: ['#b54a9c', '#6b0052', '#000000', '#000000'],
+  uStairsUp: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
+  uStairsDown: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   uArchC1: ['#739cd6', '#427394', '#104a5a', '#000000'],
   uArchC2: ['#d6e7b5', '#d6e7b5', '#d6e7b5', '#d6e7b5'],
   uArchC3: ['#739cd6', '#427394', '#104a5a', '#000000'],
@@ -42956,6 +43025,12 @@ function optionalKit(T, P) {
     ['dExit' + T]: own('ArchC2', F.WARP),
     ['dPillar' + T + 'W']: own('ArchC1', F.SOLID, { ringWall: true }),
     ['dPillar' + T + 'E']: own('ArchC3', F.SOLID, { ringWall: true }),
+    // A kit that extracted its own stairs (the Sunken Palace's, S162) draws
+    // them; the flags are exactly `dStairs`'.
+    ...(ART[P + 'StairsUp'] ? {
+      ['dStairsUp' + T]: own('StairsUp', F.WARP | F.STAIRS),
+      ['dStairsDown' + T]: own('StairsDown', F.WARP | F.STAIRS),
+    } : {}),
   };
   for (const n of ['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE',
     'JambNW', 'JambNE', 'JambSW', 'JambSE', 'JambWN', 'JambWS', 'JambEN', 'JambES']) {
@@ -45063,6 +45138,8 @@ function installLegends() {
   registerLegend('dungeonPalace', {
     '6': 'dWhirlpool', '0': 'dSumpPalace', '1': 'dSluicePalace', '3': 'dWellPalace',
     '9': 'dDrownPalace', 'O': 'dPitPalace', 'w': 'dWaterPalaceS', 'W': 'dWaterPalaceD',
+    // Its own stairs (S162): `/` goes down, `S` goes up, as Ages draws them.
+    '/': 'dStairsDownPalace', 'S': 'dStairsUpPalace',
   }, 'dungeonPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in
@@ -46577,7 +46654,7 @@ __define("data/bosses.js", function (__exports, __require) {
 
 const { defineBoss } = __require("game/enemy.js");
 const { wander, chase, patrol, bounceDiag, charge, orbit, submerge, shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir, driftWithTide } = __require("game/enemy.js");
-const { spawnEntity, moveEntity } = __require("game/entity.js");
+const { spawnEntity, moveEntity, tideAt } = __require("game/entity.js");
 const { flag, setFlag } = __require("game/progress.js");
 // Shake weights are timing/feel constants and belong in feel.js (R3). They were
 // fourteen bare literals in this file, which meant the six named constants next
@@ -47385,7 +47462,10 @@ function installBosses() {
   // The tide hook: the whirlpool drags the player in, and its strength is the
   // water level. Beached at LOW it cannot pull at all — and thrashes for it.
   function thalassorPull(e, g) {
-    const lvl = g.tide.level;
+    // The sea under the EEL (S162), not the base level: an Anchor holding
+    // its water low beaches it as surely as the conch does. It read
+    // `g.tide.level`, which is the HUD's gauge, not the water here.
+    const lvl = tideAt(g, e);
     const strength = [0, 0.22, 0.5][lvl];
     const p = g.player;
     if (strength > 0 && p && !e.hidden) {
@@ -54513,6 +54593,9 @@ function installOptionalDungeons() {
         ],
         entities: [
           ['chest', 6, 5, { pickup: 'key' }],
+          // S162: a wizzrobe keeps the court, on the dry side, away from the
+          // pool the key is waded for.
+          ['wizzrobe', 11, 2, { drops: 'good' }],
         ],
         warps: [stair(12, 5, P(0, 2, 1, 12, 6, 'down'))],
       },
@@ -54533,6 +54616,10 @@ function installOptionalDungeons() {
           '#.U........./.#',
           '#.............#',
           '###############',
+        ],
+        entities: [
+          // S162: a darknut on the Weir's dry east side, clear of the rim.
+          ['darknut', 10, 4, { drops: 'good' }],
         ],
         warps: [stair(12, 8, P(0, 2, 0, 12, 9, 'down'))],
         whirlRoom: { lands: [[5, 4]] },
@@ -54620,9 +54707,15 @@ function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#.............#',
-          '#.p........./.#',
+          '#.p.........S.#',
           '#.............#',
           '###############',
+        ],
+        entities: [
+          // S162: the Palace's underside is guarded. Two darknuts on the
+          // dry floor, clear of both stairs.
+          ['darknut', 4, 5, { drops: 'good' }],
+          ['darknut', 10, 4, { drops: 'good' }],
         ],
         warps: [stair(12, 8, P(1, 1, 2, 12, 9, 'up'))],
       },
@@ -54657,11 +54750,16 @@ function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#..............',
-          '#...../.......#',
+          '#.....S.......#',
           '#.............#',
           '#0000000000000#',
           '#0000000000000#',
           '#######.#######',
+        ],
+        entities: [
+          // S162: gels on the dry band between the drowned wall and the sumps,
+          // none under the Gallery's whirlpools.
+          ['gel', 7, 3], ['gel', 10, 4], ['gel', 9, 6],
         ],
         warps: [stair(6, 6, P(1, 0, 1, 7, 6, 'up'))],
       },
@@ -54673,7 +54771,7 @@ function installOptionalDungeons() {
           '#.00..........#',
           '#.00..........#',
           '#.00..........#',
-          'L.00......../.#',
+          'L.00........S.#',
           '#.00..........#',
           '#.00..........#',
           '#.00..........#',
@@ -54693,14 +54791,20 @@ function installOptionalDungeons() {
           '#.#......#....#',
           '#.#......#....#',
           '#.#......#....#',
-          '#.#...../#....#',
+          '#.#.....S#....#',
           '#.########....#',
-          '#.........../.#',
+          '#...........S.#',
           '#.............#',
           '###########L###',
         ],
         entities: [
-          ['chest', 8, 3, { pickup: 'bossKey' }],
+          // A row off the cellar's north wall (S162): a chest pops its key
+          // out a tile ABOVE itself, and at 8,3 the Boss Key came to rest
+          // inside the wall, where nothing could touch it.
+          ['chest', 8, 4, { pickup: 'bossKey' }],
+          // S162: keese in the corridor round the sealed cellar.
+          ['keese', 12, 3, { drops: 'good' }],
+          ['keese', 3, 9, { drops: 'good' }],
         ],
         warps: [
           stair(12, 8, P(1, 2, 0, 12, 9, 'up')),
@@ -54718,7 +54822,7 @@ function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#..U.......U..#',
-          '#.........../.#',
+          '#...........S.#',
           '#.............#',
           '#######.#######',
         ],
@@ -54741,8 +54845,14 @@ function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#.............#',
-          '#./...........#',
+          '#.S...........#',
           '###############',
+        ],
+        entities: [
+          // S162: the Chapel Crypt's dead, south of where the Chapel's
+          // whirlpools put a swimmer down (rows 4-6).
+          ['stalfos', 5, 8, { drops: 'good' }],
+          ['stalfos', 10, 8, { drops: 'good' }],
         ],
         warps: [stair(2, 9, P(1, 0, 2, 3, 9, 'up'))],
       },
@@ -54761,7 +54871,7 @@ function installOptionalDungeons() {
           '#.33.......33.#',
           '#.33333333333.#',
           '#.............#',
-          '#./...........#',
+          '#.S...........#',
           '###############',
         ],
         entities: [

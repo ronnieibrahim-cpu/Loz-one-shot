@@ -370,6 +370,8 @@ export function installLegends() {
   registerLegend('dungeonPalace', {
     '6': 'dWhirlpool', '0': 'dSumpPalace', '1': 'dSluicePalace', '3': 'dWellPalace',
     '9': 'dDrownPalace', 'O': 'dPitPalace', 'w': 'dWaterPalaceS', 'W': 'dWaterPalaceD',
+    // Its own stairs (S162): `/` goes down, `S` goes up, as Ages draws them.
+    '/': 'dStairsDownPalace', 'S': 'dStairsUpPalace',
   }, 'dungeonPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
   // The Abyssal Keep needs one tile no other dungeon has, and every digit in

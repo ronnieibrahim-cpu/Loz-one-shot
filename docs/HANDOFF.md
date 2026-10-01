@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A dungeon proved room by room was never proved (S162).** The Sunken
+  Palace had a checker for every whirlpool, a flood for every room and six
+  in-engine scenarios — and could not be finished: its Boss Key chest stood
+  against the cellar's north wall, a chest pops its prize a tile ABOVE itself,
+  and the key settled inside the wall. Every model asks whether the CHEST is
+  reachable. It took walking the whole dungeon in one run (now a check-side
+  scenario) to find it, and `check-placement` now opens every pickup chest in
+  the engine. Any new dungeon gets a one-run scenario before it is called done.
+- **A probe that holds a key against the live loop is load-dependent (S162).**
+  walk-dungeons' ledge probe pressed a key and waited for 22 frames to go by;
+  run beside the rest of the table, the loop caught up four updates per
+  animation frame and Link walked 64px instead of 33, failing a ledge that
+  works. Take the clock (`__harness.takeOver()`, `step(n)`) for any probe
+  whose answer depends on how far something moved. test.mjs's "frame rate is
+  healthy" is load-dependent BY DESIGN: run test.mjs on its own.
+
 - **A locked door that TALKS can take down every probe after it (S161).**
   `check-exits` walks at every warp in every interior. A warp listed on a
   keyhole (the Palace Porch's hatch) is inert until the key turns, and leaning

@@ -585,7 +585,11 @@ PICKS = [
     meta('nFloorAlt', 0xa4, 'the violet four-square slab, Snake\'s Remains', 'snakes'),
     meta('nBlock', 0x1d, 'the push block, Snake\'s Remains', 'snakes'),
     meta('nPot', 0x10, 'the pot, on its own floor, Snake\'s Remains', 'snakes'),
-    meta('nStatue', 0x15, 'the green crystal, Snake\'s Remains', 'snakes'),
+    # The room's standing obstacle is the corner bush Snake's Remains' own
+    # rooms plant in pairs (room $525: $04 in all four corners), not the
+    # tileset's green crystal, which no room of that dungeon places (S162,
+    # the human's pick from the two side by side).
+    meta('nStatue', 0x04, 'the corner bush, Snake\'s Remains (room $525)', 'snakes'),
     meta('nArchC1', 0xe6, 'entrance pillar, west, Snake\'s Remains', 'snakes'),
     meta('nArchC2', 0x00, 'the lit way out, Snake\'s Remains', 'snakes'),
     meta('nArchC3', 0xe6, 'entrance pillar, east, Snake\'s Remains', 'snakes'),
@@ -631,7 +635,15 @@ PICKS = [
     meta('uFloorAlt', 0xa1, 'the grey four-square slab, Mermaid\'s Cave', 'mermaid'),
     meta('uBlock', 0x1d, 'the push block, Mermaid\'s Cave', 'mermaid'),
     meta('uPot', 0x10, 'the pot, on its own floor, Mermaid\'s Cave', 'mermaid'),
-    meta('uStatue', 0x15, 'the green crystal, Mermaid\'s Cave', 'mermaid'),
+    # Mermaid's Cave stands its rooms' obstacles in magenta blocks (rooms
+    # $52e, $530: runs of $1d), not the green crystal, which none of them
+    # places (S162, the human's pick from the two side by side).
+    meta('uStatue', 0x1d, 'the magenta block, Mermaid\'s Cave (rooms $52e, $530)', 'mermaid'),
+    # Its own staircases (S162), in its own stone: Ages' indoor up and down
+    # stairs (TILEINDEX_INDOOR_UPSTAIRCASE $44, _DOWNSTAIRCASE $45). Every
+    # dungeon had shared one hand-drawn grey stair.
+    meta('uStairsUp', 0x44, 'the stair up, Mermaid\'s Cave', 'mermaid'),
+    meta('uStairsDown', 0x45, 'the stair down, Mermaid\'s Cave', 'mermaid'),
     meta('uArchC1', 0xe6, 'entrance pillar, west, Mermaid\'s Cave', 'mermaid'),
     meta('uArchC2', 0x00, 'the lit way out, Mermaid\'s Cave', 'mermaid'),
     meta('uArchC3', 0xe6, 'entrance pillar, east, Mermaid\'s Cave', 'mermaid'),
@@ -666,7 +678,9 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'uStatue', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue'}
+# `uStatue` is not in it (S162): Mermaid's Cave's magenta block fills its
+# whole cell, so its dark faces ARE its border run, and keying ate them.
+KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue'}
 
 
 def lum(c):

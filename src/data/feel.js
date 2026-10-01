@@ -465,6 +465,18 @@ export const EXPLOSION_SELF_DAMAGE = 2;
  */
 export const KILNSHELL_BURN_DAMAGE = 1;
 
+/**
+ * frames — how long the burst of flame shown as the Kilnshell is struck
+ * stays on screen. guessed: two turns of the three-frame flame (6 frames
+ * each), a flash and no more.
+ *
+ * S162: it used the flame effect's default life of 9999 frames, so the burst
+ * stood on the strike tile for nearly three minutes after the shell had been
+ * lifted and carried away — a fire burning on bare floor, which read as the
+ * shell's flame left behind.
+ */
+export const KILNSHELL_STRIKE_FLASH_FRAMES = 36;
+
 // ---------------------------------------------------------------------------
 // Jumping and the one-way ledge hop
 // ---------------------------------------------------------------------------

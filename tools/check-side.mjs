@@ -17,7 +17,7 @@
 // playthrough's route, which is why the pieces moved were ones it never
 // collected (NEXT-PROMPT S154). So nothing here may lean on the playthrough.
 //
-// Usage: node tools/check-side.mjs [--only <name>]
+// Usage: node tools/check-side.mjs [--only <name>] [--dump <name>]
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, dirname } from 'node:path';
@@ -221,6 +221,22 @@ const SCENARIOS = [
     ],
     expect: `g.progress.flags.vault_wraith && g.progress.heartPieces === 1 || ('wraith ' + !!g.progress.flags.vault_wraith + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
   },
+  // A SOLVED TORCH ROOM COMES BACK LIT (S162). The puzzle's flag and door
+  // were remembered on re-entry and the flames were not.
+  {
+    name: 'The Lower Vault: walk back into the solved Sump and its brazier is still burning',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, flags: ['vault_sump'],
+      enter: ['vault', 0, 1, 1, 112, 144, 'up'] }),
+    steps: [['wait', 10]],
+    expect: `g.entities.some(e => e.constructor.name === 'Torch') && g.entities.filter(e => e.constructor.name === 'Torch').every(t => t.lit) || 'a torch is dark'`,
+  },
+  {
+    name: 'The Lower Vault: an unsolved Sump\'s brazier is dark',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0,
+      enter: ['vault', 0, 1, 1, 112, 144, 'up'] }),
+    steps: [['wait', 10]],
+    expect: `g.entities.filter(e => e.constructor.name === 'Torch').every(t => !t.lit) || 'a torch is lit'`,
+  },
   {
     name: 'The Lower Vault: without the Kilnshell the tangle on the Kiln Stair is a wall',
     setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
@@ -330,6 +346,69 @@ const SCENARIOS = [
   // whirlpool, and walk-dungeons that the rooms join up), and each is refused
   // at the sea that should refuse it.
   {
+    // THE WHOLE PALACE IN ONE RUN (S162), from the Porch's door to the eel:
+    // both Small Keys, the Boss Key from the cellar only the Weir's whirlpool
+    // reaches, the boss door, the Throne Pool's drop at HIGH and Thalassor at
+    // LOW. Until S162 the Palace was proved room by room and never walked
+    // through, which is how its Boss Key could come to rest inside a wall
+    // with every tool green. Handed the same bar as the eel scenario below.
+    name: "The Sunken Palace: one run from the door, down and up both floors, wins Thalassor's Piece of Heart",
+    setup: setup({ items: { sword: 2, conch: 1, anchor: 1, cleats: 1, bombs: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 200, hearts: 200, tide: 0, enter: ['palace', 1, 1, 2, 112, 144, 'up'] }),
+    steps: [
+      // the Palace Stair: down the stair (the pools are the way down too, at HIGH)
+      ['goto', 12, 8, 400], ['wait', 40],
+      // Beneath the Stair -> the Undercroft -> Under the Gallery
+      ['goto', 7, 1, 400], ['hold', ['up'], 40], ['wait', 20],
+      ['goto', 1, 5, 400], ['hold', ['left'], 40], ['wait', 20],
+      // up the stair to the Whirl Gallery's island: the first Small Key
+      ['goto', 6, 6, 400], ['wait', 40],
+      ['goto', 8, 5, 200], ['hold', ['up'], 4], ['tap', 'a', 60], ['dialogue', 300], ['loot', 400], ['wait', 20],
+      ['goto', 6, 6, 300], ['wait', 40],
+      // back east, and the first key turned in the Undercroft's east door
+      ['goto', 13, 5, 500], ['hold', ['right'], 40], ['wait', 20],
+      ['goto', 13, 5, 300], ['hold', ['right'], 4], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
+      ['hold', ['right'], 40], ['wait', 20],
+      // Under the Court: the sumps are a hole at LOW, a swim above it
+      ['tide', 1, 20, 600], ['wait', 60],
+      ['goto', 12, 5, 600], ['wait', 40],
+      // the Sluice Court: wade the pool at LOW for the second key
+      ['tide', 0, 20, 600], ['wait', 60],
+      ['goto', 6, 6, 400], ['hold', ['up'], 4], ['tap', 'a', 60], ['dialogue', 300], ['loot', 400], ['wait', 20],
+      ['goto', 12, 5, 400], ['wait', 40],
+      // the second key in Under the Court's north door
+      ['goto', 11, 1, 400], ['hold', ['up'], 4], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
+      ['hold', ['up'], 40], ['wait', 20],
+      // Under the Weir, up its stair to the Weir: at HIGH swim the rim into the
+      // whirlpool, down into the sealed cellar — the Boss Key
+      ['goto', 12, 8, 400], ['wait', 40],
+      ['tide', 2, 20, 900], ['wait', 60],
+      ['goto', 8, 4, 400], ['hold', ['left'], 90], ['wait', 90],
+      ['goto', 8, 5, 300], ['hold', ['up'], 4], ['tap', 'a', 60], ['dialogue', 300], ['loot', 400], ['wait', 20],
+      ['goto', 8, 6, 300], ['wait', 40],
+      // and home: down, south, west over the sumps (a swim at HIGH), back up the
+      // first stair and north to the Hall of Tides
+      ['goto', 12, 8, 300], ['wait', 40],
+      ['goto', 11, 9, 400], ['hold', ['down'], 40], ['wait', 20],
+      ['goto', 1, 5, 600], ['hold', ['left'], 40], ['wait', 20],
+      ['tide', 0, 20, 900], ['wait', 30],
+      ['goto', 7, 9, 600], ['hold', ['down'], 40], ['wait', 20],
+      ['goto', 12, 8, 400], ['wait', 40],
+      ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
+      ['fight', 3000, 3000],
+      ['goto', 7, 1, 600], ['hold', ['up'], 4], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
+      ['hold', ['up'], 40], ['wait', 20],
+      ['tide', 2, 20, 900], ['wait', 30],
+      // the Throne Pool at HIGH: down to Thalassor, who is fought at LOW
+      ['hold', ['up'], 200], ['wait', 90],
+      ['tide', 0, 20, 900], ['wait', 30],
+      ['boss', 20000, 'thalassor'], ['wait', 120], ['hold', ['up'], 24], ['goto', 7, 8, 400], ['loot', 900], ['wait', 60],
+      // and the stair out, once the eel is beaten
+      ['goto', 2, 9, 400], ['wait', 60],
+    ],
+    expect: `g.progress.flags.palace_eel && g.progress.heartPieces === 1 && g.progress.bossKeys.palace || ('eel ' + !!g.progress.flags.palace_eel + ', boss key ' + !!g.progress.bossKeys.palace + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
+  },
+  {
     name: "The Sunken Palace: the Anchor holds the Chapel's whirlpools at LOW while HIGH covers the wall — a Piece of Heart",
     setup: setup({ items: { sword: 2, conch: 1, anchor: 1, cleats: 1 }, equipA: 'anchor', equipB: 'conch',
       maxHearts: 24, hearts: 24, tide: 0, enter: ['palace', 1, 0, 2, 48, 144, 'up'] }),
@@ -382,6 +461,15 @@ const SCENARIOS = [
     expect: `g.room.key === '1,1,0' || ('got to ' + g.room.key)`,
   },
 ];
+
+// --dump <name>: print the first matching scenario's {setup, steps} as JSON
+// and stop — the shape tools/film-steps.mjs and shoot-steps.mjs take.
+if (process.argv.includes('--dump')) {
+  const k = process.argv[process.argv.indexOf('--dump') + 1].toLowerCase();
+  const sc = SCENARIOS.find(s => s.name.toLowerCase().includes(k));
+  console.log(JSON.stringify({ setup: sc.setup, steps: sc.steps }));
+  process.exit(0);
+}
 
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname); if (p.endsWith('/')) p += 'index.html';

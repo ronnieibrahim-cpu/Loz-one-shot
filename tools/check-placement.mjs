@@ -182,6 +182,48 @@ for (const b of report.out) {
 }
 check('every placed entity can stand where it was placed, at some tide',
   report.out.length === 0, report.out.length ? `${report.out.length} cannot, at any level` : '');
+
+// WHAT A CHEST HANDS OUT LANDS WHERE IT CAN BE PICKED UP (S162). A chest
+// holding a key, a Boss Key or a chartstone does not give it: it pops a pickup
+// out above itself (`Game.openChest`), which settles a tile up and has to be
+// walked into. The Sunken Palace's Boss Key chest stood against the cellar's
+// north wall, so the key came to rest INSIDE the wall — the chest opened, the
+// jingle played, the save recorded it, and nothing could ever touch the key,
+// so the dungeon could not be finished. Every tool here was green: the flood
+// asks whether the CHEST is reachable, and it is. This opens every such chest
+// in the real engine, lets the pickup settle as it does in play, and asks
+// `canOccupy` whether the pickup can be where it came to rest.
+const chests = await page.evaluate(async () => {
+  const g = window.__game;
+  const ent = await import('/src/game/entity.js');
+  const maps = await import('/src/world/maps.js');
+  const out = []; let opened = 0;
+  for (const map of maps.MAPS.values()) {
+    for (const key of Object.keys(map.roomDefs || {})) {
+      const def = map.roomDefs[key];
+      if (!(def.entities || []).some(s => s[0] === 'chest' && s[3] && s[3].pickup)) continue;
+      const [f, rx, ry] = key.split(',').map(Number);
+      g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
+      for (const chest of g.entities.filter(e => e.constructor.name === 'Chest' && e.pickup)) {
+        const before = new Set(g.entities.concat(g.pendingAdd));
+        g.openChest(chest);
+        g.flushPending();
+        const pk = g.entities.find(e => !before.has(e) && e.constructor.name === 'Pickup');
+        if (!pk) { out.push(`${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}: no pickup came out`); continue; }
+        for (let i = 0; i < 120; i++) pk.update(g);
+        opened++;
+        const ok = [0, 1, 2].some(lv => { g.tide.setLevel(lv, { instant: true }); return ent.canOccupy(g, pk, pk.x, pk.y); });
+        if (!ok) out.push(`${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}: its ${pk.kind} came to rest in '${g.room.baseName(Math.floor(pk.cx / 16), Math.floor(pk.cy / 16))}'`);
+        pk.remove = true;
+      }
+    }
+  }
+  return { out, opened };
+});
+console.log(`check-placement: ${chests.opened} chests that hand out a pickup, opened in the real engine`);
+for (const l of chests.out) console.log('  buried ' + l);
+check('every chest\'s pickup comes to rest where it can be picked up',
+  chests.opened > 0 && chests.out.length === 0, chests.out.length ? `${chests.out.length} cannot` : '');
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

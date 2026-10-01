@@ -1,28 +1,25 @@
-# Next session (S162) — after the optional dungeons
+# Next session (S163) — after the optional-dungeon tour
 
 ## Read first
-- CLAUDE.md, all of it (S161 added `check-whirlpool.mjs` to the table).
-- `docs/NEXT-SESSION.md`, the S161 entry.
-- `docs/DUNGEON-STATUS.md`, "The optional dungeons (S159 plan)" — all three
-  are DONE.
+- CLAUDE.md, all of it (S162 added `film-steps.mjs`, and new duties for
+  `check-placement` and `check-side`).
+- `docs/NEXT-SESSION.md`, the S162 entry.
+- `docs/HANDOFF.md` hard-won lessons (two new at the top).
 
 ## State
-- Branch `claude/oracle-tides-optional-dungeons-c5eytd` holds S160 + S161
-  (the Lower Vault, the Gullwind Eyrie, the Sunken Palace). S161 asked the
-  human whether to merge it into main: check `git log origin/main` first. If
-  it is merged, branch from main; if not, ask again before doing anything that
-  depends on it.
+- Branch `claude/s162` holds S162. S162 asked the human whether to merge it
+  into main: check `git log origin/main` first. If merged, branch from main;
+  if not, ask before doing anything that depends on it.
 - Whole table green; check-playthrough 44/44, THE END, never died.
-- 28 heart pieces, cap 16. 31 charms. Art from both cartridges (Ages files in
-  assets/objects/oracles-disasm/ages/).
+- All three optional dungeons are finishable and proved so in one run each
+  (check-side). 28 heart pieces, cap 16. 31 charms.
 
 ## The task
 Ask the human what is next, in plain words, offering what the notes suggest:
-- Play the three optional dungeons from a save and report how they feel
-  (pictures, and a clip of each theme working).
-- The "noticed, not chased" list in S161 and S160 (robot combat on the
-  optional bosses, check-anchor's phantom hop, the Palace's stairs art,
-  Thalassor's pull reading the base tide, lit torches not remembered).
+- Give every main dungeon its own Oracle staircases (as the Palace now has),
+  shown beside the originals.
+- Make the keese readable over the Eyrie's black chasm.
+- Anything the human noticed watching the S162 clips.
 Do nothing large without the human's go-ahead.
 
 ## Done means

@@ -94,6 +94,8 @@ const SEED = 20260806;
 await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil: 'load' });
 await page.waitForFunction(() => !!window.__game, { timeout: 15000 });
 
+// Exactly n fixed updates, on the harness's clock (only while taken over).
+const stepN = (n) => page.evaluate((k) => window.__harness.step(k), n);
 const frames = (n) => page.evaluate((k) => new Promise(res => {
   const start = window.__game.frame;
   const tick = () => (window.__game.frame - start >= k) ? res(window.__game.frame) : requestAnimationFrame(tick);
@@ -467,15 +469,22 @@ for (const p of placements) {
   // 22 frames is far enough to clear a 1-3 tile lip and short enough that the
   // player never reaches the room edge — walking out of the room and arriving in
   // the next one reads exactly like a failed hop.
+  //
+  // ON THE HARNESS'S CLOCK, NOT THE WALL'S (S162). The key used to be held
+  // while `frames(22)` watched the live loop go by, and a busy machine makes
+  // that loop catch up four updates per animation frame: run beside the rest
+  // of the table, the probe once walked Link 64px instead of 33 and reported
+  // a d6 ledge that hops fine as broken. Taking the clock over and stepping
+  // exactly 22 updates makes the probe the same run every time.
+  await page.evaluate(() => window.__harness.takeOver());
   await page.keyboard.down(KEY[p.dir]);
-  await frames(22);
+  await stepN(22);
   await page.keyboard.up(KEY[p.dir]);
   // The hop drives z along a scripted arc; measuring mid-arc reads as a fail.
-  await page.evaluate(() => new Promise(res => {
-    let n = 0;
-    const t = () => (++n > 60 || (!window.__game.player.ledgeHop && window.__game.player.z === 0)) ? res() : requestAnimationFrame(t);
-    t();
-  }));
+  await page.evaluate(() => {
+    for (let n = 0; n < 60 && (window.__game.player.ledgeHop || window.__game.player.z !== 0); n++) window.__harness.step(1);
+  });
+  await page.evaluate(() => window.__harness.release());
   const after = await page.evaluate(() => ({
     x: window.__game.player.x, y: window.__game.player.y, z: window.__game.player.z,
     tx: Math.floor((window.__game.player.x + 8) / 16),
@@ -489,10 +498,12 @@ for (const p of placements) {
 
   // --- uphill: walk into the same lip from the low side, expect to be refused
   const up0 = await place(at, mx + p.ux, my + p.uy, OPP[p.dir]);
+  await page.evaluate(() => window.__harness.takeOver());
   await page.keyboard.down(KEY[OPP[p.dir]]);
-  await frames(22);
+  await stepN(22);
   await page.keyboard.up(KEY[OPP[p.dir]]);
-  await frames(4);
+  await stepN(4);
+  await page.evaluate(() => window.__harness.release());
   const up = await page.evaluate(() => ({
     tx: Math.floor((window.__game.player.x + 8) / 16),
     ty: Math.floor((window.__game.player.y + 8) / 16),

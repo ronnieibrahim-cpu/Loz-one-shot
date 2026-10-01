@@ -591,6 +591,9 @@ export function installOptionalDungeons() {
         ],
         entities: [
           ['chest', 6, 5, { pickup: 'key' }],
+          // S162: a wizzrobe keeps the court, on the dry side, away from the
+          // pool the key is waded for.
+          ['wizzrobe', 11, 2, { drops: 'good' }],
         ],
         warps: [stair(12, 5, P(0, 2, 1, 12, 6, 'down'))],
       },
@@ -611,6 +614,10 @@ export function installOptionalDungeons() {
           '#.U........./.#',
           '#.............#',
           '###############',
+        ],
+        entities: [
+          // S162: a darknut on the Weir's dry east side, clear of the rim.
+          ['darknut', 10, 4, { drops: 'good' }],
         ],
         warps: [stair(12, 8, P(0, 2, 0, 12, 9, 'down'))],
         whirlRoom: { lands: [[5, 4]] },
@@ -698,9 +705,15 @@ export function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#.............#',
-          '#.p........./.#',
+          '#.p.........S.#',
           '#.............#',
           '###############',
+        ],
+        entities: [
+          // S162: the Palace's underside is guarded. Two darknuts on the
+          // dry floor, clear of both stairs.
+          ['darknut', 4, 5, { drops: 'good' }],
+          ['darknut', 10, 4, { drops: 'good' }],
         ],
         warps: [stair(12, 8, P(1, 1, 2, 12, 9, 'up'))],
       },
@@ -735,11 +748,16 @@ export function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#..............',
-          '#...../.......#',
+          '#.....S.......#',
           '#.............#',
           '#0000000000000#',
           '#0000000000000#',
           '#######.#######',
+        ],
+        entities: [
+          // S162: gels on the dry band between the drowned wall and the sumps,
+          // none under the Gallery's whirlpools.
+          ['gel', 7, 3], ['gel', 10, 4], ['gel', 9, 6],
         ],
         warps: [stair(6, 6, P(1, 0, 1, 7, 6, 'up'))],
       },
@@ -751,7 +769,7 @@ export function installOptionalDungeons() {
           '#.00..........#',
           '#.00..........#',
           '#.00..........#',
-          'L.00......../.#',
+          'L.00........S.#',
           '#.00..........#',
           '#.00..........#',
           '#.00..........#',
@@ -771,14 +789,20 @@ export function installOptionalDungeons() {
           '#.#......#....#',
           '#.#......#....#',
           '#.#......#....#',
-          '#.#...../#....#',
+          '#.#.....S#....#',
           '#.########....#',
-          '#.........../.#',
+          '#...........S.#',
           '#.............#',
           '###########L###',
         ],
         entities: [
-          ['chest', 8, 3, { pickup: 'bossKey' }],
+          // A row off the cellar's north wall (S162): a chest pops its key
+          // out a tile ABOVE itself, and at 8,3 the Boss Key came to rest
+          // inside the wall, where nothing could touch it.
+          ['chest', 8, 4, { pickup: 'bossKey' }],
+          // S162: keese in the corridor round the sealed cellar.
+          ['keese', 12, 3, { drops: 'good' }],
+          ['keese', 3, 9, { drops: 'good' }],
         ],
         warps: [
           stair(12, 8, P(1, 2, 0, 12, 9, 'up')),
@@ -796,7 +820,7 @@ export function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#..U.......U..#',
-          '#.........../.#',
+          '#...........S.#',
           '#.............#',
           '#######.#######',
         ],
@@ -819,8 +843,14 @@ export function installOptionalDungeons() {
           '#.............#',
           '#.............#',
           '#.............#',
-          '#./...........#',
+          '#.S...........#',
           '###############',
+        ],
+        entities: [
+          // S162: the Chapel Crypt's dead, south of where the Chapel's
+          // whirlpools put a swimmer down (rows 4-6).
+          ['stalfos', 5, 8, { drops: 'good' }],
+          ['stalfos', 10, 8, { drops: 'good' }],
         ],
         warps: [stair(2, 9, P(1, 0, 2, 3, 9, 'up'))],
       },
@@ -839,7 +869,7 @@ export function installOptionalDungeons() {
           '#.33.......33.#',
           '#.33333333333.#',
           '#.............#',
-          '#./...........#',
+          '#.S...........#',
           '###############',
         ],
         entities: [

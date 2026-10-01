@@ -47,7 +47,7 @@ import {
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
   driftWithTide,
 } from '../game/enemy.js';
-import { spawnEntity, moveEntity } from '../game/entity.js';
+import { spawnEntity, moveEntity, tideAt } from '../game/entity.js';
 import { flag, setFlag } from '../game/progress.js';
 // Shake weights are timing/feel constants and belong in feel.js (R3). They were
 // fourteen bare literals in this file, which meant the six named constants next
@@ -862,7 +862,10 @@ export function installBosses() {
   // The tide hook: the whirlpool drags the player in, and its strength is the
   // water level. Beached at LOW it cannot pull at all — and thrashes for it.
   function thalassorPull(e, g) {
-    const lvl = g.tide.level;
+    // The sea under the EEL (S162), not the base level: an Anchor holding
+    // its water low beaches it as surely as the conch does. It read
+    // `g.tide.level`, which is the HUD's gauge, not the water here.
+    const lvl = tideAt(g, e);
     const strength = [0, 0.22, 0.5][lvl];
     const p = g.player;
     if (strength > 0 && p && !e.hidden) {
