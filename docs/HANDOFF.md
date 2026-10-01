@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A whole track rendered in one go is a visible hitch (S164).** ~200 ms of
+  synth on the main thread dropped test.mjs's frame rate to 23. Render as a
+  job a few ms a frame, and at most one slice per drawn frame — a game that
+  is catching up runs several updates per frame and a slice in each makes it
+  fall further behind. The test's fps reads 36 on THIS container even on
+  untouched main, so compare against main before believing either number.
+- **A movement factor is a boss-route change (S164).** SLOW 0.6 -> 0.75 and
+  SHALLOW 0.86 -> 1 (both what Seasons' code says) cost the robot the d2 boss
+  and the Lower Vault's Saltwraith. Budget a re-route before touching one.
+- **The code and the footage disagree on Link's walk (S164).** Seasons'
+  speed table says 1 px/f (1.5 only with Pegasus Seeds); the frame-exact TAS
+  shows 1.5 px/f with no seeds. Unresolved — read before "fixing" WALK_SPEED.
+
 - **The disassembly's spelling is not the cartridge's bytes (S163).** After
   `cmdf0` a square channel reads every note as a raw frequency, which the
   disassembly writes as `.db`; `env $0 $08` is masked to 0 by the engine. A

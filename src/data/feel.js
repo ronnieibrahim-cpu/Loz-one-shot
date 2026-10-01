@@ -117,10 +117,17 @@ export const SHIELD_SPEED = 288;
  *  move at full pace". guessed insofar as its ancestor is. */
 export const SWORD_HOLD_SPEED = 288;
 
-/** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. */
+/** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. Seasons'
+ *  own speed table (object_code/common/specialObjects/link.s,
+ *  updateLinkSpeed_withParam @speedTable) says 0.75 on TILETYPE_GRASS
+ *  (SPEED_0c0 against SPEED_100); S164 tried it and the robot's boss routes
+ *  in d2 and the Lower Vault stopped winning, so it waits for a session that
+ *  can re-route them. */
 export const SLOW_FACTOR = 0.6;
 
-/** x — multiplier while wading in shallow water. guessed. */
+/** x — multiplier while wading in shallow water. guessed. The same table
+ *  never slows Link in a puddle (so 1 on the cartridge); held back with
+ *  SLOW_FACTOR, above, for the same reason. */
 export const SHALLOW_FACTOR = 0.86;
 
 /** x — multiplier while carrying something. guessed. */
@@ -888,10 +895,10 @@ export const THE_END_HOLD_FRAMES = 90;
  *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
 export const LOW_HEART_THRESHOLD = 8;
 
-/** f — frames between pulses. guessed. Slow enough not to be a rattle and fast
- *  enough to feel like a heartbeat; it is the tempo that makes this a warning
- *  rather than an alarm, and it is the number to move first if it nags. */
-export const LOW_HEART_EVERY = 40;
+/** f — frames between pulses. derived: 64 — Seasons' playHeartBeepAtInterval
+ *  (code/bank2.s) beeps when `wFrameCounter & $3f` is zero (S164; it was a
+ *  guessed 40). */
+export const LOW_HEART_EVERY = 64;
 
 // TEXT.
 //

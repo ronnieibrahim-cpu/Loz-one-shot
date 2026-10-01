@@ -68,6 +68,41 @@ The human: "proceed in order" through the FUTURE ACTION ITEMS.
   each back on one of its own strikes (goes red on a wrong channel map or a
   give-back at the effect's end). Before/after clips sent to the human.
 
+- ITEM 4 (keese over the Eyrie's chasm): the human chose KEEP THE BATS
+  (they are black with yellow eyes, exactly as the cartridges draw them;
+  wisps were offered and declined). Nothing changed.
+- ITEM 5 (human tuning of fights): the human's own job; left on the list.
+- ITEM 6 (measure guessed timings), started from the DISASSEMBLY rather than
+  footage (oracles-disasm `code/`, `object_code/`, `constants/` — sparse-clone
+  them; only audio/ is copied into assets/):
+  - LOW_HEART_EVERY 40 -> 64, derived (playHeartBeepAtInterval, code/bank2.s:
+    `wFrameCounter & $3f`). LANDED.
+  - The same routine beeps only while (health-1)*4 < max health, i.e. at or
+    below a QUARTER of the container total; ours is a fixed 8 qh, chosen on
+    purpose against our damage ladder. ASK THE HUMAN before changing.
+  - Link's speed table (object_code/common/specialObjects/link.s,
+    updateLinkSpeed_withParam @speedTable): grass SPEED_0c0 vs normal
+    SPEED_100 (0.75; ours SLOW_FACTOR 0.6), no slowdown in puddles (ours
+    SHALLOW_FACTOR 0.86), none while carrying (ours CARRY_FACTOR 0.9 — but
+    the Pot Hauler charm exists to cancel it, so ASK the human). S164 tried
+    SLOW 0.75 + SHALLOW 1: replay.mjs needed re-recording (expected) and the
+    ROBOT LOST the d2 boss (1,4,2) and check-side's Lower Vault Saltwraith
+    fight — both REVERTED, comments in feel.js say why. A session that takes
+    them on must re-route those fights (route-prefix.mjs, try-room.mjs) and
+    `node tools/replay.mjs --record-all`.
+  - UNRESOLVED: the same table walks Link at SPEED_100 = 1 px/f (constants/
+    common/objectSpeeds.s: "SPEED_100 is a speed of 1 pixel per frame"),
+    1.5 only with Pegasus Seeds (SPEED_180) — but the frame-exact TAS
+    (59.73 fps, 1 video frame per game frame) shows 1,2,1,2 px steps at
+    frames 9905-9965 with no seeds held (re-measured S164). WALK_SPEED stays
+    384 (measured). Find the multiplier the code applies, or the reason the
+    TAS moves faster, before touching it.
+  - Not reached: ENEMY_DEATH_FRAMES (PART_ENEMY_DESTROYED lasts until its
+    animation sets animParameter — needs the part animation tables),
+    EXPLOSION_FRAMES, the pickup pop (PART_ITEM_DROP), knockback, flashes.
+    Octorok's shot is already ported (OCTOROK_SHOT_SPEED; PART_OCTOROK_
+    PROJECTILE speed $50 = 2 px/f, worth a check).
+
 ### Verified
 Whole table green, test.mjs 85/85 when run on its own (its fps assertion is
 load-dependent; this container is slower than earlier ones — main itself
@@ -81,8 +116,9 @@ Built; dist committed.
 
 ### FUTURE ACTION ITEMS (in order; the human said "proceed in order")
 The human heard the GB versions of our tunes: "Music sounds great."
-4. Keese over the Eyrie's chasm. 5. Human tuning of fights. 6. Measure the
-guessed timings. 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
+Items 2, 3, 4 (kept as is) and 10 are done; 5 is the human's.
+6. Measure the guessed timings — continue from the S164 notes above (two
+questions for the human first). 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
 the overworld. 9. Review our item icons. 10. A phone check.
 
 ## S163 — the cartridges' own sound effects
