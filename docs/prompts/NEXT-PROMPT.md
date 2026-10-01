@@ -1,29 +1,26 @@
-# Next session (S164) — polish, from the action-item list
+# Next session (S165) — polish, from the action-item list
 
 ## Read first
-- CLAUDE.md, all of it. NEW at S162: Oracle of Ages is a full reference
-  alongside Seasons, assets and all.
-- `docs/NEXT-SESSION.md`, the S163 entry (its FUTURE ACTION ITEMS list), then
-  S162's for the detail of each item.
-- `docs/HANDOFF.md` hard-won lessons (three new at the top).
+- CLAUDE.md, all of it. Oracle of Ages is a full reference alongside
+  Seasons, assets and all.
+- `docs/NEXT-SESSION.md`, the S164 entry (its FUTURE ACTION ITEMS list), then
+  S162/S163 for the detail of each item.
+- `docs/HANDOFF.md` hard-won lessons.
 
 ## State
-- S163 (cartridge sound effects and jingles) is MERGED into main: branch
-  from main.
+- Check whether S164 (each dungeon's own stairs; our music played through
+  the cartridge's own sound engine) is merged into main; if not, ask.
 - Whole table green; check-playthrough 44/44, THE END, never died.
-- All three optional dungeons are finishable and proved so in one run each
-  (check-side). 28 heart pieces, cap 16. 31 charms.
+- OUR TUNES ARE KEPT and play on the Game Boy engine (the human's choice,
+  S164): `compileForGb` -> gbsound.js. The tracker synth is gone.
 
 ## The task
-Ask the human which action item to take, in plain words. The list (detail
-in NEXT-SESSION.md S162/S163): each main dungeon's own stairs; area music
-from the cartridges (a bigger design question); music ducking under sound
-effects; keese over the Eyrie's chasm; human tuning of
-fights; measuring guessed timings; the 50 unaudited overworld screens; a
-Lens puzzle on the overworld; reviewing our item icons; a phone check.
-S163 suggests the stairs next. Our own items keep their own sounds (the
-human, S163). Either cartridge may be the
-source. Do nothing large without the human's go-ahead.
+The human said "proceed in order" through the list (S164): first ask how the
+Game Boy versions of our tunes sound and tune by ear if needed, then item 3,
+music ducking under sound effects, then 4 keese over the Eyrie's chasm, 5
+human tuning of fights, 6 measuring guessed timings, 7 the 50 unaudited
+overworld screens, 8 a Lens puzzle on the overworld, 9 our item icons, 10 a
+phone check. Our own items keep their own sounds. Ask before anything large.
 
 ## Done means
 - Whatever the human chose, with the whole table green and check-playthrough

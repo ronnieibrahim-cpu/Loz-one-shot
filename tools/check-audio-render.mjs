@@ -1,37 +1,15 @@
-// Proves the music ENGINE (src/core/audio.js) schedules the exact same Web
-// Audio instructions it always did for every track that does not opt into a
-// S6 technique (vibrato/echo/arpeggio) — the "a track that does not ask for
-// the new options must sound byte-identical" rule from the S6 session prompt.
+// Proves OUR music still compiles to exactly the channel scripts it compiled
+// to when the baseline was recorded — so a change to the compiler, to the
+// pattern format's reading, or to a track's data is never a SILENT change to
+// what the player hears.
 //
-// WHY THIS DOES NOT RENDER ACTUAL AUDIO SAMPLES
-//
-// The first approach tried here was rendering real PCM through an
-// OfflineAudioContext in a real browser and hashing the samples. That FAILED
-// even for two runs of the IDENTICAL code: Web Audio's own internals are not
-// specified to be bit-reproducible across separate page/script contexts (the
-// exact float rounding order inside the browser's own DSP is allowed to
-// differ), so a naive sample hash flags a false regression on a change to
-// completely unrelated code, purely because it shifted what the JS engine
-// happened to optimise. That is exactly the "test that fails intermittently
-// is a real bug" trap in spirit, just triggered by content instead of load —
-// a checker that cries wolf on unrelated commits gets ignored, which is worse
-// than not having it.
-//
-// What IS fully deterministic, in pure JS with no browser and no DSP at all,
-// is the SEQUENCE OF INSTRUCTIONS the engine hands to the Web Audio graph —
-// every `osc.frequency.setValueAtTime(freq, time)`, every gain ramp, every
-// `start`/`stop` — because those are plain arithmetic on the track data, not
-// audio synthesis. Two runs that issue the identical instructions in the
-// identical order WILL sound identical; the browser's own contribution from
-// there on is out of this project's hands and not what changed. So this tool
-// swaps in a tiny mock AudioContext (createGain/createOscillator/etc. all
-// return objects that just RECORD what was called on them) and traces
-// `Audio._scheduleRow` for a fixed number of rows, entirely in Node.
-//
-// This was cross-checked once by hand against commit 64a6561 (pre-S6): with
-// this exact harness, all 22 pre-S6 tracks produced byte-identical traces
-// before and after the S6 engine change. That is the proof this file exists
-// to keep proving on every future change to src/core/audio.js.
+// Since S164 every one of our tracks plays through the cartridge's own sound
+// engine: `compileForGb` (src/core/audio.js) writes it out as a channel script
+// in the ripper's event encoding, and src/core/gbsound.js renders that. The
+// render is pure arithmetic on the script, so the SCRIPT is the whole of what
+// a track sounds like, and comparing scripts is comparing the music. (Before
+// S164 this file traced the Web Audio calls of the tracker synthesiser our
+// tracks used to play on, which no longer exists.)
 //
 // Usage:
 //   node tools/check-audio-render.mjs             compare against the baseline
@@ -40,41 +18,20 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Audio } from '../src/core/audio.js';
+import { compileForGb } from '../src/core/audio.js';
 import { TRACKS } from '../src/data/audio.js';
-import { mockCtx } from './lib/mock-audio-ctx.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASELINE = resolve(HERE, 'audio-render-baseline.json');
-const ROWS = 48; // covers a full pattern plus wraparound into the next for every track
 const RECORD = process.argv.includes('--record');
 
-function renderTrace(trackName) {
-  const { ctx, trace } = mockCtx();
-  const t = TRACKS[trackName];
-  const rowDur = 60 / (t.bpm || 120) / (t.rowsPerBeat || 4);
-  const a = new Audio();
-  a.init(ctx);
-  a.addTracks(TRACKS);
-  a.play(trackName);
-  let time = a._nextRowTime;
-  for (let i = 0; i < ROWS && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
-  return trace;
-}
-
-// Seasons' own tracks (S151) are not scheduled row by row: they are rendered
-// whole by src/core/gbsound.js and played from a buffer, and check-music.mjs
-// checks them. Only the tracker's tracks are traced here.
-const names = Object.keys(TRACKS).filter((n) => !TRACKS[n].seasons).sort();
+const names = Object.keys(TRACKS).filter((n) => !TRACKS[n].seasons && TRACKS[n].patterns).sort();
 const current = {};
-for (const name of names) current[name] = renderTrace(name);
+for (const name of names) current[name] = compileForGb(TRACKS[name]);
 
 if (RECORD) {
   await mkdir(dirname(BASELINE), { recursive: true });
-  // Compact, not pretty-printed: this is machine-compared, never hand-read,
-  // and a trace over even a modest number of rows is thousands of small
-  // arrays — pretty-printing one per line bloated an earlier version of this
-  // file to nearly 2MB for no reader's benefit.
+  // Compact: machine-compared, never hand-read.
   await writeFile(BASELINE, JSON.stringify(current) + '\n');
   console.log(`check-audio-render: recorded baseline for ${names.length} tracks`);
   process.exit(0);
@@ -93,25 +50,29 @@ for (const name of names) {
   const want = baseline[name];
   const got = current[name];
   if (!want) { problems.push(`${name}: no baseline recorded (run --record)`); continue; }
-  const wantStr = JSON.stringify(want);
-  const gotStr = JSON.stringify(got);
-  if (wantStr === gotStr) continue;
-  // Find the first differing call so a failure is diagnosable, not just red.
+  if (JSON.stringify(want.ch) !== JSON.stringify(got.ch)) {
+    problems.push(`${name}: channels start at ${JSON.stringify(got.ch)}, baseline ${JSON.stringify(want.ch)}`);
+    continue;
+  }
+  // Find the first differing event so a failure is diagnosable, not just red.
   let i = 0;
-  while (i < want.length && i < got.length && JSON.stringify(want[i]) === JSON.stringify(got[i])) i++;
-  problems.push(`${name}: diverges at call ${i} of ${want.length} — ` +
-    `want ${JSON.stringify(want[i])}, got ${JSON.stringify(got[i])}`);
+  while (i < want.events.length && i < got.events.length
+    && JSON.stringify(want.events[i]) === JSON.stringify(got.events[i])) i++;
+  if (i < want.events.length || i < got.events.length) {
+    problems.push(`${name}: diverges at event ${i} of ${want.events.length} — ` +
+      `want ${JSON.stringify(want.events[i])}, got ${JSON.stringify(got.events[i])}`);
+  }
 }
 for (const name of Object.keys(baseline)) {
-  if (!TRACKS[name] || TRACKS[name].seasons) problems.push(`${name}: in baseline but no longer a tracker track (stale baseline entry)`);
+  if (!names.includes(name)) problems.push(`${name}: in baseline but no longer one of our tracks (stale baseline entry)`);
 }
 
-console.log(`check-audio-render: ${names.length} tracks traced against baseline`);
+console.log(`check-audio-render: ${names.length} of our tracks compiled against baseline`);
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):`);
   for (const p of problems) console.error('  ' + p);
-  console.error('\nIf this divergence is an intended change to the music engine, re-record with:');
+  console.error('\nIf this is an intended change to the music, listen to it, then re-record with:');
   console.error('  node tools/check-audio-render.mjs --record');
   process.exit(1);
 }
-console.log('check-audio-render: OK — every track schedules the same Web Audio calls as its baseline');
+console.log('check-audio-render: OK — every track compiles to the same channel script as its baseline');

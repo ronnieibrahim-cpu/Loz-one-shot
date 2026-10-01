@@ -1,5 +1,9 @@
-// Game Boy style 4-channel synthesiser: two pulse channels with selectable duty,
-// one wave (triangle) channel for bass, one noise channel for percussion.
+// The game's sound: its music (every track played through the Game Boy's own
+// sound engine, src/core/gbsound.js — Seasons' ripped tracks as they are, and
+// ours compiled to the same channel scripts by `compileForGb`, S164) and its
+// sound effects (the cartridges' own, and a small synthesiser for the few
+// that are ours). Our music is written in the pattern format below: two
+// pulse channels, the wave channel for bass, the noise channel for drums.
 //
 // MUSIC FORMAT (contract for track data files):
 //
@@ -55,17 +59,11 @@
 // cfg per channel also takes two more (optional, S6) techniques, both
 // PER-CHANNEL rather than per-note:
 //
-//   vibrato: { delayFrames, stepFrames, depth }
-//     A pitch wobble on notes the channel holds long enough to reach
-//     `delayFrames` (the source almost never wobbles from the attack). It
-//     STEPS on a `stepFrames` grid via repeated `setValueAtTime` calls, never
-//     a continuous ramp — real hardware retriggers pitch on a frame grid, and
-//     a smooth LFO reads as a synth pad, not a Game Boy. `depth` is in
-//     semitones above/below the written pitch. Defaults come from feel.js
-//     (VIBRATO_DELAY_FRAMES/STEP_FRAMES/DEPTH_SEMITONES) — it is a timing
-//     constant (R3). It is "per-note" in effect anyway: the delay is measured
-//     from each note's own onset, so a channel with vibrato configured only
-//     ever wobbles the notes actually held long enough, never a passing stab.
+//   vibrato: { depth }
+//     A pitch wobble on the notes the channel holds. Played as the Oracle
+//     leads' own `vibrato $e1` (S164): it starts GB_OURS_VIBRATO_DELAY_FRAMES
+//     into a held note and steps on the engine's frame grid; a `depth` over
+//     0.3 asks for the deeper $e2.
 //
 //   echo: { of: 'p1', rows: 2, volMul: 0.45 }
 //     The classic quieter, delayed repeat of another channel's line — usually
@@ -78,14 +76,14 @@
 //     88bpm than at 132bpm, and rows are already the track's native clock.
 //     Only usable on a channel whose PATTERN OMITS that channel entirely for
 //     the pattern in question (an authored token always wins) — see
-//     `_echoEvent` in this file.
+//     `compileForGb` in this file, which writes the echo out as notes.
 //
 // The noise channel is percussion only and takes none of the above.
 
-import { renderSeasons, sfxVoices } from './gbsound.js';
-import { GB_RENDER_RATE } from '../data/feel.js';
+import { renderSeasons, renderGbJob, renderSeasonsJob, sfxVoices } from './gbsound.js';
+import { GB_RENDER_RATE, GB_FRAME_RATE, GB_OURS_VIBRATO_DELAY_FRAMES, GB_RENDER_BUDGET_MS, GB_PRERENDER_BUDGET_MS, GB_RENDER_SLICE_GAP_MS } from '../data/feel.js';
 import { Stream } from './rng.js';
-import { VIBRATO_DELAY_FRAMES, VIBRATO_STEP_FRAMES, VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } from '../data/feel.js';
+import { VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } from '../data/feel.js';
 
 const NOTE_BASE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
@@ -128,14 +126,6 @@ function noiseBuffer(ctx, seconds = 1) {
   }
   return buf;
 }
-
-const DRUMS = {
-  x: { freq: 120, sweep: 46, dur: 0.11, q: 1.1, gain: 1.0, lp: true },   // kick
-  s: { freq: 1500, sweep: 900, dur: 0.10, q: 0.9, gain: 0.72 },          // snare
-  h: { freq: 6200, sweep: 6000, dur: 0.035, q: 2.0, gain: 0.42 },        // closed hat
-  H: { freq: 5200, sweep: 4600, dur: 0.13, q: 1.6, gain: 0.46 },         // open hat
-  c: { freq: 3400, sweep: 2600, dur: 0.34, q: 0.7, gain: 0.5 },          // crash
-};
 
 // Exported so tools/check-music.mjs merges channel cfg the same way the
 // engine does, instead of keeping a second copy of the defaults that could
@@ -194,6 +184,183 @@ function resolveEvent(raw, row) {
   return raw.kind === 'undef' ? { kind: row === 0 ? 'off' : 'hold' } : raw;
 }
 
+// ---------------------------------------------------------------------------
+// OUR MUSIC ON THE CARTRIDGE'S ENGINE (S164). The human: keep our own tunes,
+// "with the fidelity of the oracles music". So a track written in the
+// pattern format above is compiled, note for note, into the same channel
+// script the ripper makes of a Seasons track (tools/rip-music.py's event
+// encoding), and src/core/gbsound.js plays it through the Game Boy's own
+// sound engine and hardware: real pulse duties, the wave channel's own
+// waveforms, the noise channel's own drum table. What the pattern format
+// asks for that the cartridge has no word for is translated to what the
+// Oracle tracks themselves do:
+//   - vol (0..1) -> the engine's `vol` (0..15) at VOL_SCALE; the Oracle
+//     leads sit at 6 and their echoes at 3, which our 0.15 / 0.07 land on.
+//   - decay -> `env $0 $00`: a held note sustains and a rest cuts it with
+//     the engine's own quick fade, as nearly every Oracle melody line does.
+//     (Our synth's decay only ever settled a note at 55% of its peak.)
+//   - the wave channel's vol picks the waveform: the Oracles' wave channel
+//     is loudness by waveform, not by a volume command.
+//   - vibrato -> `vibrato $e1`, the Oracle leads' own (a deeper one $e2).
+//   - a chord token -> the same notes struck in turn, ARPEGGIO_STEP_FRAMES
+//     apart, which is how the cartridge fakes a chord on one channel.
+//   - echo -> the source line written out again on the echo channel, rows
+//     later, at its own lower volume.
+//   - drums -> notes of the noise channel's own table (audio/common/noise.s).
+// The loop is a `goto` back to where `order` starts; the intro is before it.
+const GB_CH = { p1: 0, p2: 1, wav: 4 };
+const VOL_SCALE = 40;
+const GB_DUTY = { 0.125: 0, 0.25: 1, 0.5: 2, 0.75: 3 };
+// Waveforms (audio/common/waveforms.s) by amplitude: each is a square of the
+// stated height, which is all the loudness the Oracles' wave channel has.
+const GB_WAVE_BY_LEVEL = [[8, 0x0e], [5, 0x17], [3, 0x0f], [1, 0x0c]];
+// Noise table notes: a short low thump, a snare, a tight hat, an open hat, a
+// long crash — each with its own decaying envelope in the table.
+const GB_DRUM = { x: 0x23, s: 0x32, h: 0x2a, H: 0x27, c: 0x2e };
+
+const cartNote = (freq) => Math.round(69 + 12 * Math.log2(freq / 440)) - 24;
+
+/** Compile a pattern-format track to `{ ch, events }` for gbsound.renderGb. */
+export function compileForGb(t) {
+  const intro = t.intro || [];
+  const order = t.order || Object.keys(t.patterns || {});
+  const seq = intro.concat(order);
+  const pats = seq.map((n) => t.patterns[n]);
+  const lens = pats.map((p) => {
+    let n = 0;
+    for (const ch of ['p1', 'p2', 'wav', 'noi']) if (p && p[ch]) n = Math.max(n, tokens(p[ch]).length);
+    return n;
+  });
+  const total = lens.reduce((a, b) => a + b, 0);
+  const loop = t.loop !== false;
+  const loopRow = lens.slice(0, intro.length).reduce((a, b) => a + b, 0);
+  const fpr = 60 / (t.bpm || 120) / (t.rowsPerBeat || 4) * GB_FRAME_RATE;
+  const fr = (row) => Math.round(row * fpr);
+  const cfg = t.cfg || {};
+  const cfgOf = (ch) => ({ ...DEFAULT_CFG[ch], ...(cfg[ch] || {}) });
+
+  // Each melodic channel as one row event per row of the whole sequence.
+  const rowsOf = {};
+  const raw = (ch) => {
+    const out = [];
+    pats.forEach((p, i) => {
+      const toks = p && p[ch] !== undefined ? tokens(p[ch]) : null;
+      for (let r = 0; r < lens[i]; r++) {
+        out.push(toks ? resolveEvent(parseToken(toks[r]), r) : (cfgOf(ch).echo ? null : (r === 0 ? { kind: 'off' } : { kind: 'hold' })));
+      }
+    });
+    return out;
+  };
+  for (const ch of ['p1', 'p2', 'wav']) rowsOf[ch] = raw(ch);
+  for (const ch of ['p1', 'p2', 'wav']) {
+    const echo = cfgOf(ch).echo;
+    if (!echo) continue;
+    const e = { ...ECHO_DEFAULT, ...echo };
+    const src = rowsOf[e.of];
+    rowsOf[ch] = rowsOf[ch].map((ev, i) => {
+      if (ev) return ev;
+      let j = i - e.rows;
+      if (j < loopRow && i >= loopRow && loop) j += total - loopRow;
+      const s = j >= 0 ? src[j] : null;
+      if (!s) return { kind: 'hold' };
+      return s.kind === 'on' ? { kind: 'on', freq: s.freq, echoVolMul: e.volMul } : { kind: s.kind };
+    });
+  }
+
+  const events = [], ch = {};
+  const emitLine = (name, rows) => {
+    const c = cfgOf(name);
+    const k = GB_CH[name];
+    const wave = k === 4;
+    ch[k] = events.length;
+    const baseVol = Math.max(1, Math.min(15, Math.round((c.vol ?? 0.18) * VOL_SCALE)));
+    if (wave) {
+      const lvl = (c.vol ?? 0.24) * VOL_SCALE;
+      let best = GB_WAVE_BY_LEVEL[0];
+      for (const w of GB_WAVE_BY_LEVEL) if (Math.abs(w[0] - lvl) < Math.abs(best[0] - lvl)) best = w;
+      events.push([4, best[1]]);
+    } else {
+      events.push([4, GB_DUTY[c.duty ?? 0.5] ?? 2], [3, 0, 0]);
+      if (c.vibrato) {
+        const x = Math.min(15, Math.round(GB_OURS_VIBRATO_DELAY_FRAMES / 2));
+        events.push([5, (x << 4) | ((c.vibrato.depth ?? 0) > 0.3 ? 2 : 1)]);
+      }
+    }
+    let vol = -1;
+    const setVol = (v) => { if (!wave && v !== vol) { events.push([2, v]); vol = v; } };
+    // The state sounding after the loop's last row, for a hold that opens it.
+    let wrap = { kind: 'off' };
+    for (const ev of rows.slice(loopRow)) if (ev.kind !== 'hold') wrap = ev;
+    let loopAt = null;
+    let i = 0;
+    while (i < total) {
+      if (i === loopRow) loopAt = events.length;
+      let ev = rows[i];
+      // A hold that opens the loop continues whatever the loop ended on, as
+      // the tracker's wrap did; anywhere else (the very start) it is silence.
+      if (ev.kind === 'hold') ev = (i === loopRow && loop) ? wrap : { kind: 'off' };
+      let j = i + 1;
+      while (j < total && rows[j].kind === 'hold' && j !== loopRow) j++;
+      const frames = fr(j) - fr(i);
+      if (ev.kind === 'on') {
+        setVol(ev.echoVolMul ? Math.max(1, Math.round(baseVol * ev.echoVolMul)) : baseVol);
+        const notes = (ev.chord || [ev.freq]).map(cartNote);
+        if (notes.length > 1) {
+          let left = frames, n = 0;
+          while (left > 0) {
+            const d = Math.min(ARPEGGIO_STEP_FRAMES, left);
+            events.push([0, notes[n++ % notes.length], d]);
+            left -= d;
+          }
+        } else events.push([0, notes[0], frames]);
+      } else events.push([1, frames]);
+      i = j;
+    }
+    if (loopAt == null) loopAt = events.length;
+    events.push(loop ? [6, loopAt] : [7]);
+  };
+  for (const name of ['p1', 'p2', 'wav']) emitLine(name, rowsOf[name]);
+
+  // The noise channel: each hit rings until the next row that says anything.
+  const nc = cfgOf('noi');
+  ch[6] = events.length;
+  events.push([2, Math.max(1, Math.min(15, Math.round((nc.vol ?? 0.15) * VOL_SCALE)))]);
+  const hits = [];
+  pats.forEach((p, i) => {
+    const toks = tokens(p && p.noi);
+    for (let r = 0; r < lens[i]; r++) hits.push(toks[r] && toks[r] !== '-' ? toks[r] : (r === 0 && !toks[r] ? '.' : '-'));
+  });
+  let loopAt = null, i = 0;
+  while (i < total) {
+    if (i === loopRow) loopAt = events.length;
+    let j = i + 1;
+    while (j < total && hits[j] === '-' && j !== loopRow) j++;
+    const frames = fr(j) - fr(i);
+    const h = hits[i];
+    if (h === '.' || h === '-') events.push([1, frames]);
+    else events.push([0, GB_DRUM[h] ?? GB_DRUM.h, frames]);
+    i = j;
+  }
+  if (loopAt == null) loopAt = events.length;
+  events.push(loop ? [6, loopAt] : [7]);
+  return { ch, events };
+}
+
+/** The render job for what `gbSource` names. */
+const gbJob = (g) => (typeof g === 'string' ? renderSeasonsJob(g, GB_RENDER_RATE) : renderGbJob(g.track, g.key, GB_RENDER_RATE));
+
+const COMPILED = new Map();
+/** What `_startGb` plays for track `name`: a Seasons track's name, or one of
+ *  ours compiled (once) to a channel script. Null for nothing playable. */
+function gbSource(name, t) {
+  if (!t) return null;
+  if (t.seasons) return t.seasons;
+  if (!t.patterns) return null;
+  let c = COMPILED.get(t);
+  if (!c) { c = compileForGb(t); COMPILED.set(t, c); }
+  return { track: c, key: '$ours:' + name };
+}
+
 export class Audio {
   constructor() {
     this.ctx = null;
@@ -201,24 +368,10 @@ export class Audio {
     this.muted = false;
     this.musicVol = 0.75;
     this.sfxVol = 0.9;
-    this.track = null;
     this.tracks = new Map();
     this.sfxDefs = new Map();
     this._waves = new Map();
     this._noise = null;
-    this._nextRowTime = 0;
-    this._row = 0;
-    this._orderIdx = 0;
-    // Whether this playback has already spent the track's `intro`. The
-    // sequence being stepped is intro+order until it wraps once, order after.
-    this._introDone = false;
-    this._seq = null;
-    this._held = { p1: null, p2: null, wav: null };
-    this._voices = { p1: null, p2: null, wav: null };
-    // Recent per-channel row events (kind + freq), pruned to a small window.
-    // This is the only thing an echo channel reads — see `_echoEvent`.
-    this._rowLog = { p1: [], p2: [], wav: [] };
-    this._globalRow = 0;
     this._jingle = null;
     this._pendingTrack = undefined;
     this._fade = 1;
@@ -254,12 +407,10 @@ export class Audio {
       this.tone.connect(this.master);
       this._noise = noiseBuffer(this.ctx);
       this.ok = true;
-      // Render Seasons' own tracks ahead of need, one per idle beat, so the
-      // first overworld step does not wait a tenth of a second for its song.
-      if (!ctxOverride && typeof setTimeout === 'function') {
-        const names = [...this.tracks.values()].filter((t) => t.seasons).map((t) => t.seasons);
-        const next = () => { const n = names.shift(); if (!n) return; renderSeasons(n, GB_RENDER_RATE); setTimeout(next, 50); };
-        setTimeout(next, 50);
+      // Render every track ahead of need, a sliver of a frame at a time
+      // (`update`), so the first step into a place finds its song ready.
+      if (!ctxOverride) {
+        this._prerender = [...this.tracks.entries()].map(([n, t]) => gbSource(n, t)).filter(Boolean).map(gbJob).filter(Boolean);
       }
     } catch (e) {
       console.warn('[audio] unavailable', e);
@@ -289,23 +440,15 @@ export class Audio {
     if (this.trackName === name && !restart) return;
     const t = this.tracks.get(name);
     this.trackName = name;
-    if (t && t.seasons) {
-      // Oracle of Seasons' own track, rendered by its own engine (gbsound.js)
-      // and looped where the cartridge loops it.
-      this.track = null;
-      this._releaseAll();
-      this._startGb(t.seasons);
-      return;
-    }
-    this.track = t || null;
-    this._row = 0;
-    this._orderIdx = 0;
-    this._nextRowTime = this.ctx.currentTime + 0.06;
     this._releaseAll();
+    // Oracle of Seasons' own track, or one of ours compiled to a channel
+    // script (S164): either way the cartridge's engine renders it
+    // (gbsound.js) and it loops where that engine loops it.
+    const gb = gbSource(name, t);
+    if (gb) this._startGb(gb);
   }
 
   stop() {
-    this.track = null;
     this.trackName = null;
     this._releaseAll();
   }
@@ -313,38 +456,34 @@ export class Audio {
   /** Play a short jingle, suspending the music until it finishes. */
   jingle(name) {
     if (!this.ok) return;
-    const t = this.tracks.get(name);
-    if (!t) return;
-    if (t.seasons) {
-      const resume = this._jingle ? this._jingle.resume : this.trackName;
-      this.track = null;
-      this._releaseAll();
-      this._jingle = { resume, track: t };
-      this.trackName = '$jingle:' + name;
-      this._startGb(t.seasons, () => {
-        if (this.trackName !== '$jingle:' + name) return;
-        this._jingle = null;
-        this.trackName = null;
-        if (resume) this.play(resume, { restart: true });
-      });
-      return;
-    }
-    this._jingle = { resume: this.trackName, track: t };
-    this.trackName = '$jingle:' + name;
-    this.track = t;
-    this._row = 0;
-    this._orderIdx = 0;
-    this._nextRowTime = this.ctx.currentTime + 0.02;
+    const gb = gbSource(name, this.tracks.get(name));
+    if (!gb) return;
+    const resume = this._jingle ? this._jingle.resume : this.trackName;
     this._releaseAll();
+    this._jingle = { resume };
+    this.trackName = '$jingle:' + name;
+    this._startGb(gb, () => {
+      if (this.trackName !== '$jingle:' + name) return;
+      this._jingle = null;
+      this.trackName = null;
+      if (resume) this.play(resume, { restart: true });
+    });
   }
 
   /**
-   * Play a Seasons track through a buffer source on the music bus: looped at
-   * the cartridge's own loop points, or once (a jingle) with `onEnd` after.
+   * Play a track through a buffer source on the music bus: looped at the
+   * engine's own loop points, or once (a jingle) with `onEnd` after. A track
+   * not yet rendered is rendered over the next few frames (`update`) and
+   * starts when it is ready.
    */
-  _startGb(name, onEnd) {
-    const r = renderSeasons(name, GB_RENDER_RATE);
-    if (!r) return;
+  _startGb(gb, onEnd) {
+    const job = gbJob(gb);
+    if (!job) return;
+    if (job.done) this._playBuffer(job.result, onEnd);
+    else this._pendingGb = { job, onEnd };
+  }
+
+  _playBuffer(r, onEnd) {
     const buf = this.ctx.createBuffer(1, r.data.length, GB_RENDER_RATE);
     buf.getChannelData(0).set(r.data);
     const src = this.ctx.createBufferSource();
@@ -357,287 +496,31 @@ export class Audio {
   }
 
   _releaseAll() {
+    this._pendingGb = null;
     if (this._gbSrc) {
       const src = this._gbSrc;
       this._gbSrc = null;
       try { src.onended = null; src.stop(); } catch (e) { /* already stopped */ }
     }
-    for (const ch of ['p1', 'p2', 'wav']) {
-      const v = this._voices[ch];
-      if (v) { this._endVoice(v); this._voices[ch] = null; }
-      this._held[ch] = null;
-    }
-    // A fresh track start is a fresh echo phase — an echo channel reading
-    // stale rows from whatever last played would repeat the wrong lead.
-    this._rowLog = { p1: [], p2: [], wav: [] };
-    this._globalRow = 0;
-    // Every call site of this is a track boundary (start, stop, or a
-    // one-shot finishing), and every track boundary owes the next playback
-    // its intro back — the same reasoning as the echo phase above.
-    this._introDone = false;
-    this._seq = null;
   }
 
-  _endVoice(v) {
-    try {
-      const t = this.ctx.currentTime;
-      v.gain.gain.cancelScheduledValues(t);
-      v.gain.gain.setTargetAtTime(0, t, 0.012);
-      v.osc.stop(t + 0.08);
-    } catch (e) { /* already stopped */ }
-  }
-
-  /** Called every frame; schedules rows slightly ahead of the audio clock. */
+  /** Called every frame: renders the track waiting to start, a few
+   *  milliseconds' worth, and when none is waiting, the next track ahead of
+   *  need, a sliver's worth (GB_RENDER_BUDGET_MS, GB_PRERENDER_BUDGET_MS). */
   update() {
-    if (!this.ok || !this.track) return;
-    const t = this.track;
-    const rowsPerBeat = t.rowsPerBeat || 4;
-    const rowDur = 60 / (t.bpm || 120) / rowsPerBeat;
-    const now = this.ctx.currentTime;
-    const horizon = now + 0.12;
-    let guard = 0;
-    while (this._nextRowTime < horizon && guard++ < 64) {
-      this._scheduleRow(this._nextRowTime, rowDur);
-      this._nextRowTime += rowDur;
+    if (!this.ok) return;
+    // At most one slice per drawn frame: a game catching up runs several
+    // updates in one, and a slice in each would make it fall further behind.
+    const now = typeof performance !== 'undefined' ? performance.now() : 0;
+    if (now - (this._lastSlice || -1e9) < GB_RENDER_SLICE_GAP_MS) return;
+    this._lastSlice = now;
+    const p = this._pendingGb;
+    if (p) {
+      if (p.job.step(GB_RENDER_BUDGET_MS)) { this._pendingGb = null; this._playBuffer(p.job.result, p.onEnd); }
+      return;
     }
-  }
-
-  /** The pattern sequence for the pass currently playing: `intro` prepended
-   *  to `order` until the first wrap, `order` alone from then on. Cached
-   *  because this is consulted on every scheduled row, and a track with no
-   *  intro returns the track's own `order` array untouched — the no-intro
-   *  path allocates nothing and behaves exactly as it did before intros
-   *  existed, which is what check-audio-render.mjs is holding it to. */
-  _sequence() {
-    const t = this.track;
-    const order = t.order || Object.keys(t.patterns || {});
-    if (this._introDone || !t.intro || !t.intro.length) return order;
-    if (!this._seq) this._seq = t.intro.concat(order);
-    return this._seq;
-  }
-
-  _currentPattern() {
-    const seq = this._sequence();
-    if (!seq.length) return null;
-    const name = seq[this._orderIdx % seq.length];
-    return this.track.patterns[name] || null;
-  }
-
-  _patternLength(p) {
-    if (!p) return 0;
-    let n = 0;
-    for (const ch of ['p1', 'p2', 'wav', 'noi']) {
-      if (p[ch]) n = Math.max(n, tokens(p[ch]).length);
-    }
-    return n;
-  }
-
-  _scheduleRow(time, rowDur) {
-    const t = this.track;
-    let pat = this._currentPattern();
-    if (!pat) { this.track = null; return; }
-    let len = this._patternLength(pat);
-    if (this._row >= len) {
-      this._row = 0;
-      this._orderIdx++;
-      if (this._orderIdx >= this._sequence().length) {
-        if (t.loop === false) {
-          // jingle or one-shot finished
-          const j = this._jingle;
-          this.track = null; this.trackName = null;
-          this._releaseAll();
-          if (j && j.resume) { this._jingle = null; this.play(j.resume, { restart: true }); }
-          return;
-        }
-        // The lead-in has now had its one pass; from here the loop is
-        // `order` alone. Setting this AFTER the length test above is what
-        // makes the intro count toward the first wrap and no other.
-        this._introDone = true;
-        this._orderIdx = 0;
-      }
-      pat = this._currentPattern();
-      len = this._patternLength(pat);
-      if (!pat || !len) { this.track = null; return; }
-    }
-
-    const cfg = t.cfg || {};
-    for (const ch of ['p1', 'p2', 'wav']) {
-      const chCfg = { ...DEFAULT_CFG[ch], ...(cfg[ch] || {}) };
-      // An echo channel has NO pattern text of its own for this pattern — an
-      // authored token always wins, even a lone rest, which is why this only
-      // triggers when the whole channel key is absent (see the `echo`
-      // comment in this file's header).
-      const ev = (pat[ch] === undefined && chCfg.echo)
-        ? this._echoEvent({ ...ECHO_DEFAULT, ...chCfg.echo })
-        : resolveEvent(parseToken(tokens(pat[ch])[this._row]), this._row);
-      this._logRow(ch, ev);
-      if (ev.kind === 'off') this._noteOff(ch, time);
-      else if (ev.kind === 'on') {
-        // A quieter repeat, per the `echo` comment: the echo channel's own
-        // vol is its pre-attenuation level, and volMul is the "quieter" in
-        // "quieter, delayed repeat".
-        const onCfg = ev.echoVolMul ? { ...chCfg, vol: (chCfg.vol ?? 0.18) * ev.echoVolMul } : chCfg;
-        this._noteOn(ch, ev.freq, time, rowDur, onCfg, ev.chord);
-      }
-      else this._sustainRow(ch, time, rowDur);  // hold: keep vibrato/arpeggio ticking, otherwise no-op
-    }
-    const ntoks = tokens(pat.noi);
-    const nt = ntoks[this._row];
-    if (nt && nt !== '.' && nt !== '-') {
-      this._drum(nt, time, { ...DEFAULT_CFG.noi, ...(cfg.noi || {}) });
-    }
-    this._row++;
-    this._globalRow++;
-  }
-
-  /** What an echo channel plays this row: whatever its source channel did
-   *  `rows` rows ago. Reads `_rowLog` only — it never re-derives note
-   *  scheduling, it replays what actually happened. */
-  _echoEvent(echoCfg) {
-    const log = this._rowLog[echoCfg.of];
-    if (!log) return { kind: 'hold' };
-    const targetRow = this._globalRow - echoCfg.rows;
-    const hit = log.find(e => e.row === targetRow);
-    if (!hit) return { kind: 'hold' };
-    return hit.kind === 'on'
-      ? { kind: 'on', freq: hit.freq, echoVolMul: echoCfg.volMul }
-      : { kind: hit.kind };
-  }
-
-  _logRow(ch, ev) {
-    const log = this._rowLog[ch];
-    log.push({ row: this._globalRow, kind: ev.kind, freq: ev.freq || 0 });
-    if (log.length > 64) log.shift();
-  }
-
-  /** A row where a channel neither starts nor stops a note (a '-' hold, or a
-   *  pattern that has simply run out of tokens for it). The original engine
-   *  did nothing at all here; this is the hook that lets a still-ringing
-   *  voice keep stepping its vibrato or arpeggio — it is a no-op for any
-   *  voice that has neither. */
-  _sustainRow(ch, time, rowDur) {
-    const v = this._voices[ch];
-    if (!v) return;
-    if (v.vibrato) this._scheduleVibrato(ch, time, rowDur);
-    if (v.arp) this._scheduleArp(ch, time, rowDur);
-  }
-
-  _noteOff(ch, time) {
-    const v = this._voices[ch];
-    if (!v) return;
-    try {
-      v.gain.gain.cancelScheduledValues(time);
-      v.gain.gain.setTargetAtTime(0, time, 0.012);
-      v.osc.stop(time + 0.09);
-    } catch (e) { /* noop */ }
-    this._voices[ch] = null;
-  }
-
-  _noteOn(ch, freq, time, rowDur, c, chord) {
-    this._noteOff(ch, time);
-    const ctx = this.ctx;
-    const osc = ctx.createOscillator();
-    if (ch === 'wav') {
-      osc.type = 'triangle';
-    } else {
-      osc.setPeriodicWave(this.wave(c.duty ?? 0.5));
-    }
-    osc.frequency.setValueAtTime(freq, time);
-    const gain = ctx.createGain();
-    const peak = (c.vol ?? 0.18);
-    gain.gain.setValueAtTime(0.0001, time);
-    gain.gain.linearRampToValueAtTime(peak, time + 0.006);
-    // Sustained decay toward a floor; the note is cut when the next row says so.
-    gain.gain.setTargetAtTime(peak * 0.55, time + 0.008, Math.max(0.02, c.decay ?? 0.1));
-    osc.connect(gain);
-    gain.connect(this.musicBus);
-    osc.start(time);
-    osc.stop(time + rowDur * 64);           // safety stop; normally cut by _noteOff
-    const voice = {
-      osc, gain, baseFreq: freq, onsetTime: time,
-      vibrato: c.vibrato || null,
-      arp: (chord && chord.length > 1) ? { notes: chord } : null,
-    };
-    this._voices[ch] = voice;
-    // Neither of these does anything unless the channel's cfg actually asked
-    // for it, so a track that never sets `vibrato`/a chord token never pays
-    // for this — see the byte-identical-render proof in tools/test.mjs.
-    if (voice.vibrato) this._scheduleVibrato(ch, time, rowDur);
-    if (voice.arp) this._scheduleArp(ch, time, rowDur);
-  }
-
-  /** Steps a held note's pitch up/down on a frame grid — never a smooth ramp,
-   *  which is this session's whole failure condition (see the header
-   *  comment). Stateless: it recomputes the step phase from `onsetTime` on
-   *  every call, so calling it once per row from both `_noteOn` and
-   *  `_sustainRow` cannot drift or double-schedule a step. */
-  _scheduleVibrato(ch, time, rowDur) {
-    const v = this._voices[ch];
-    const cfg = v.vibrato;
-    const stepSec = (cfg.stepFrames ?? VIBRATO_STEP_FRAMES) / 60;
-    const delaySec = (cfg.delayFrames ?? VIBRATO_DELAY_FRAMES) / 60;
-    const depth = cfg.depth ?? VIBRATO_DEPTH_SEMITONES;
-    const start = v.onsetTime + delaySec;
-    const rowEnd = time + rowDur;
-    if (start >= rowEnd) return;    // hasn't earned the wobble yet this row
-    const from = Math.max(time, start);
-    let n = Math.max(0, Math.ceil((from - start) / stepSec - 1e-9));
-    let stepTime = start + n * stepSec;
-    let guard = 0;
-    while (stepTime < rowEnd && guard++ < 32) {
-      const dir = (n % 2 === 0) ? 1 : -1;
-      v.osc.frequency.setValueAtTime(v.baseFreq * Math.pow(2, (dir * depth) / 12), Math.max(stepTime, time));
-      n++; stepTime = start + n * stepSec;
-    }
-  }
-
-  /** Cycles a chord token's notes on one channel — the per-NOTE technique,
-   *  since only a token written with '+' ever reaches this. Stateless in the
-   *  same way as vibrato, phased from the note's own onset. */
-  _scheduleArp(ch, time, rowDur) {
-    const v = this._voices[ch];
-    const notes = v.arp.notes;
-    const stepSec = ARPEGGIO_STEP_FRAMES / 60;
-    const rowEnd = time + rowDur;
-    let n = Math.max(0, Math.ceil((time - v.onsetTime) / stepSec - 1e-9));
-    let stepTime = v.onsetTime + n * stepSec;
-    let guard = 0;
-    while (stepTime < rowEnd && guard++ < 32) {
-      v.osc.frequency.setValueAtTime(notes[n % notes.length], Math.max(stepTime, time));
-      n++; stepTime = v.onsetTime + n * stepSec;
-    }
-  }
-
-  _drum(kind, time, c) {
-    const d = DRUMS[kind] || DRUMS.h;
-    const ctx = this.ctx;
-    const src = ctx.createBufferSource();
-    src.buffer = this._noise;
-    src.loop = true;
-    const f = ctx.createBiquadFilter();
-    f.type = d.lp ? 'lowpass' : 'bandpass';
-    f.frequency.setValueAtTime(d.freq, time);
-    f.frequency.exponentialRampToValueAtTime(Math.max(60, d.freq - d.sweep), time + d.dur);
-    f.Q.value = d.q;
-    const g = ctx.createGain();
-    const peak = (c.vol ?? 0.15) * d.gain;
-    g.gain.setValueAtTime(peak, time);
-    g.gain.exponentialRampToValueAtTime(0.0005, time + d.dur);
-    src.connect(f); f.connect(g); g.connect(this.musicBus);
-    src.start(time);
-    src.stop(time + d.dur + 0.02);
-    if (kind === 'x') {
-      // add a pitched thump so kicks read on tiny speakers
-      const o = ctx.createOscillator();
-      o.type = 'triangle';
-      o.frequency.setValueAtTime(150, time);
-      o.frequency.exponentialRampToValueAtTime(52, time + d.dur);
-      const og = ctx.createGain();
-      og.gain.setValueAtTime(peak * 1.5, time);
-      og.gain.exponentialRampToValueAtTime(0.0005, time + d.dur);
-      o.connect(og); og.connect(this.musicBus);
-      o.start(time); o.stop(time + d.dur + 0.02);
-    }
+    const q = this._prerender;
+    if (q && q.length && q[0].step(GB_PRERENDER_BUDGET_MS)) q.shift();
   }
 
   // --- sound effects -------------------------------------------------------

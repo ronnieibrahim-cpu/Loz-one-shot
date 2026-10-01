@@ -27,12 +27,12 @@
 //   * every pattern a track defines is reached by `intro` or `order` — an
 //     authored pattern nothing plays is silent work, and an intro makes that
 //     easy to write by accident
-//   * IN THE ENGINE, not just in the data: each intro'd track is actually
-//     driven through enough rows for two full loops, and the patterns it
-//     schedules must be exactly `intro` once followed by `order` repeating.
-//     A structural check cannot see an off-by-one in the wrap that replays
-//     the lead-in every loop or drops the first bar of the body — and that
-//     failure is inaudible in any check that only reads the data
+//   * IN THE ENGINE, not just in the data (S164): each of our tracks is
+//     compiled to a channel script for the cartridge's engine (how the game
+//     plays it), gets every check a ripped Seasons script gets below, and
+//     the loop the engine finds starts exactly at the end of the intro and
+//     lasts exactly as long as `order` — a lead-in replayed every loop, or a
+//     first bar dropped, moves one of those
 //   * an `echo` channel config names a real, different melodic channel to
 //     echo, and refuses to co-exist with authored pattern text on the same
 //     channel in the same pattern — an authored token always wins in the
@@ -50,10 +50,10 @@
 // Usage: node tools/check-music.mjs
 
 import { TRACKS, SFX } from '../src/data/audio.js';
-import { Audio, noteFreq, DEFAULT_CFG, vibratoRange } from '../src/core/audio.js';
-import { mockCtx } from './lib/mock-audio-ctx.mjs';
+import { noteFreq, DEFAULT_CFG, vibratoRange, compileForGb } from '../src/core/audio.js';
 import { SEASONS_MUSIC, GB_FREQ, GB_WAVEFORMS, GB_NOISE } from '../src/data/music-seasons.js';
-import { renderSeasons, runEngine, loopOf, channelFrames } from '../src/core/gbsound.js';
+import { renderGb, runEngine, loopOf, channelFrames } from '../src/core/gbsound.js';
+import { GB_FRAME_RATE } from '../src/data/feel.js';
 
 const PULSE_MIN = 64, PULSE_MAX = 131072;
 const WAVE_MIN = 32, WAVE_MAX = 65536;
@@ -71,6 +71,13 @@ function checkSeasons(name, t) {
   seasonsCount++;
   const tr = SEASONS_MUSIC[t.seasons];
   if (!tr) { problems.push(`${name}: seasons track '${t.seasons}' was not ripped`); return; }
+  return checkScript(name, tr, t.seasons);
+}
+
+/** A channel script, ripped or compiled from one of ours: every goto lands,
+ *  every note is on the tables, the channels loop together, it is not silent.
+ *  Returns the loop (or null). */
+function checkScript(name, tr, key) {
   const ev = tr.events;
   const kind = (k) => (k <= 3 ? 'sq' : k <= 5 ? 'wave' : k === 6 ? 'noise' : 'raw');
   for (const [k, start] of Object.entries(tr.ch)) {
@@ -124,10 +131,11 @@ function checkSeasons(name, t) {
     }
     if (new Set(lens).size > 1) problems.push(`${name}: channels loop in different lengths ${lens.join('/')}`);
   }
-  const r = renderSeasons(t.seasons, 8192);
+  const r = renderGb(tr, key, 8192);
   let peak = 0;
   for (const x of r.data) peak = Math.max(peak, Math.abs(x));
   if (!(peak > 0.01)) problems.push(`${name}: renders as silence`);
+  return loop;
 }
 
 for (const [name, t] of Object.entries(TRACKS)) {
@@ -243,65 +251,36 @@ for (const [name, t] of Object.entries(TRACKS)) {
 }
 
 // --------------------------------------------------------------------------
-// The intro, in the engine
+// Our tracks, as the cartridge's engine plays them (S164)
 // --------------------------------------------------------------------------
 //
-// Everything above reads the data. This DRIVES `Audio._scheduleRow` — the
-// same code path a real browser runs, against the mock context from
-// tools/lib/mock-audio-ctx.mjs — and asks the engine itself which pattern it
-// played on each row, rather than re-deriving where the wrap ought to fall.
-// (Same rule as a collision checker calling `solidAt` instead of modelling
-// it: a private model of the wrap would not fail when the real wrap changed.)
-
-/** The exact sequence of patterns `name` schedules over `passes` loops of its
- *  body, read out of the engine as it plays. */
-function playedPatterns(name, passes) {
-  const t = TRACKS[name];
-  const { ctx } = mockCtx();
-  const a = new Audio();
-  a.init(ctx);
-  a.addTracks(TRACKS);
-  a.play(name);
-
-  // Ask the engine which pattern is current; never guess. Keeping only the
-  // LAST value per row matters because `_scheduleRow` may consult this twice
-  // on a row that wraps into the next pattern.
-  const byPattern = new Map(Object.entries(t.patterns).map(([k, v]) => [v, k]));
-  const orig = a._currentPattern.bind(a);
-  let lastName = null;
-  a._currentPattern = () => { const p = orig(); if (p) lastName = byPattern.get(p) ?? '?'; return p; };
-
+// Everything above reads the pattern data. Since S164 the game never plays
+// that data directly: `compileForGb` turns each track into a channel script
+// and src/core/gbsound.js plays it. So the compiled script gets every check a
+// ripped one gets — and the intro is proved IN THE ENGINE: the loop the
+// engine finds (`loopOf`, the same function that sets the buffer's loop
+// points) must start exactly where the intro's rows end and last exactly as
+// long as `order`'s rows. An off-by-one that replayed the lead-in every loop,
+// or dropped the first bar of the body, moves one of those two numbers.
+let compiledCount = 0;
+for (const [name, t] of Object.entries(TRACKS)) {
+  if (t.seasons || !t.patterns) continue;
+  compiledCount++;
+  let tr;
+  try { tr = compileForGb(t); } catch (e) { problems.push(`${name}: does not compile for the cartridge engine: ${e.message}`); continue; }
+  const loop = checkScript(name, tr, '$check:' + name);
+  if (t.loop === false) continue;
+  if (!loop) continue;   // reported by checkScript
   const order = t.order || Object.keys(t.patterns);
   const intro = Array.isArray(t.intro) ? t.intro : [];
-  const rowsOf = pname => a._patternLength(t.patterns[pname]);
-  const total = [...intro, ...order].reduce((n, p) => n + rowsOf(p), 0)
-    + (passes - 1) * order.reduce((n, p) => n + rowsOf(p), 0);
-
-  const rowDur = 60 / (t.bpm || 120) / (t.rowsPerBeat || 4);
-  const played = [];
-  let prevIdx = null;
-  let time = a._nextRowTime;
-  for (let i = 0; i < total && a.track; i++) {
-    a._scheduleRow(time, rowDur);
-    time += rowDur;
-    // After the call, `_orderIdx` is the index of the pattern that row
-    // belonged to — the wrap happens at the top of `_scheduleRow`.
-    if (prevIdx === null || a._orderIdx !== prevIdx) played.push(lastName);
-    prevIdx = a._orderIdx;
-  }
-  return played;
-}
-
-const PASSES = 2;
-for (const [name, t] of Object.entries(TRACKS)) {
-  if (!Array.isArray(t.intro) || !t.intro.length) continue;
-  if (t.intro.some(p => !t.patterns[p])) continue;   // already reported above
-  const order = t.order || Object.keys(t.patterns);
-  const want = [...t.intro, ...order, ...order];
-  const got = playedPatterns(name, PASSES);
-  if (JSON.stringify(got) !== JSON.stringify(want)) {
-    problems.push(`${name}: over ${PASSES} loops the engine played [${got.join(' ')}] but the ` +
-      `track says intro+order+order = [${want.join(' ')}] — the lead-in is not being spent exactly once`);
+  const rows = (list) => list.reduce((n, p) => n + Math.max(0, ...MELODIC_CHANNELS.concat('noi')
+    .map((c) => tokens(t.patterns[p] && t.patterns[p][c]).length)), 0);
+  const fpr = 60 / (t.bpm || 120) / (t.rowsPerBeat || 4) * GB_FRAME_RATE;
+  const introF = Math.round(rows(intro) * fpr);
+  const lenF = Math.round((rows(intro) + rows(order)) * fpr) - introF;
+  if (loop.intro !== introF || loop.length !== lenF) {
+    problems.push(`${name}: the engine loops from frame ${loop.intro} for ${loop.length} frames, but the ` +
+      `intro is ${introF} frames and order ${lenF} — the lead-in is not being spent exactly once`);
   }
 }
 
@@ -320,7 +299,7 @@ function checkSfxFreqs(name, d) {
 for (const [name, d] of Object.entries(SFX)) checkSfxFreqs(name, d);
 
 const introCount = Object.values(TRACKS).filter(t => Array.isArray(t.intro) && t.intro.length).length;
-console.log(`check-music: ${Object.keys(TRACKS).length} tracks (${seasonsCount} of them Seasons' own, ${introCount} with an intro), ` +
+console.log(`check-music: ${Object.keys(TRACKS).length} tracks (${seasonsCount} of them Seasons' own, ${compiledCount} ours compiled for its engine, ${introCount} with an intro), ` +
   `${Object.keys(SFX).length} sfx`);
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):`);

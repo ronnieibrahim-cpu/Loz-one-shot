@@ -222,12 +222,11 @@ const main = async () => {
       r.status === 0, 'see tools/check-sfx.mjs');
   }
 
-  // S6: the music engine grew vibrato/echo/arpeggio, and the failure mode is
-  // silent — a track that never asks for any of them has to schedule the
-  // exact same Web Audio calls it always did. check-audio-render.mjs owns
-  // that proof (and owns why it traces instructions rather than hashing
-  // rendered samples); this runs it as a subprocess for the same reason the
-  // sfx check above does.
+  // A change to the music must never be silent: every one of our tracks has
+  // to compile to the same channel script for the cartridge's engine it did
+  // when it was last listened to (S164). check-audio-render.mjs owns that
+  // proof; this runs it as a subprocess for the same reason the sfx check
+  // above does.
   console.log('\n--- music engine render ---');
   {
     const { spawnSync } = await import('node:child_process');
@@ -235,7 +234,7 @@ const main = async () => {
       { encoding: 'utf8' });
     const out = (r.stdout || '') + (r.stderr || '');
     for (const line of out.trim().split('\n')) console.log('  ' + line);
-    check('every track schedules the same Web Audio calls as its recorded baseline',
+    check('every track compiles to the same cartridge channel script as its recorded baseline',
       r.status === 0, 'see tools/check-audio-render.mjs');
   }
 
@@ -880,165 +879,65 @@ const main = async () => {
     stop.want < stop.bossHz && stop.hurtHz === 0,
     `hit ${stop.want}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
 
-  // --- music engine: vibrato, echo, arpeggio (S6) --------------------------
+  // --- music: vibrato, echo, arpeggio on the cartridge's engine (S164) ----
   //
-  // check-audio-render.mjs proves the SHARED scheduling path is unchanged for
-  // a track that asks for none of this. This proves the three new techniques
-  // actually do what their names say, against synthetic tracks built just for
-  // this, so the assertions don't ride on the tuning of any real track.
-  console.log('\n--- music engine: vibrato, echo, arpeggio ---');
+  // Our tracks play as channel scripts compiled by `compileForGb`, and
+  // check-audio-render.mjs holds every real track to its recorded script.
+  // This proves the three techniques compile to what their names say,
+  // against synthetic tracks, so the assertions don't ride on any real track.
+  console.log('\n--- music: vibrato, echo, arpeggio ---');
   const music = await G(async () => {
-    const { Audio } = await import('/src/core/audio.js');
+    const { compileForGb } = await import('/src/core/audio.js');
     const feel = await import('/src/data/feel.js');
-
-    function mockCtx() {
-      let id = 0;
-      const trace = [];
-      function param(tag) {
-        return {
-          value: 0,
-          setValueAtTime(v, t) { trace.push([tag, 'set', v, t]); return this; },
-          linearRampToValueAtTime(v, t) { trace.push([tag, 'lin', v, t]); return this; },
-          exponentialRampToValueAtTime() { return this; },
-          setTargetAtTime() { return this; },
-          cancelScheduledValues() { return this; },
-        };
+    // One channel's notes as [frame, note, frames], plus its other commands.
+    const line = (tr, k) => {
+      const notes = [], cmds = [];
+      let f = 0;
+      for (let pc = tr.ch[k]; pc < tr.events.length; pc++) {
+        const e = tr.events[pc];
+        if (e[0] === 6 || e[0] === 7) break;
+        if (e[0] === 0) { notes.push([f, e[1], e[2]]); f += e[2]; } else if (e[0] === 1) f += e[1];
+        else cmds.push(e);
       }
-      const ctx = {
-        sampleRate: 44100, currentTime: 0, destination: {},
-        createGain() { return { gain: param('gain' + id++), connect() {} }; },
-        createBiquadFilter() { return { type: '', frequency: param('bqf' + id++), Q: param('bqq' + id++), connect() {} }; },
-        createOscillator() {
-          const tag = 'osc' + id++;
-          return {
-            type: '', frequency: param(tag), setPeriodicWave() {}, connect() {},
-            start() {}, stop() {},
-          };
-        },
-        createBufferSource() { return { buffer: null, loop: false, connect() {}, start() {}, stop() {} }; },
-        createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; },
-        createPeriodicWave() { return {}; },
-      };
-      return { ctx, trace };
-    }
-
-    function freqSets(trace, tagPrefix) {
-      return trace.filter(e => e[0].startsWith(tagPrefix) && e[1] === 'set').map(e => ({ v: e[2], t: e[3] }));
-    }
-
+      return { notes, cmds, frames: f };
+    };
+    const fpr = 60 / 60 / 4 * feel.GB_FRAME_RATE;   // bpm 60, 4 rows a beat
     const out = {};
-
-    // --- vibrato: a long-held note, checked before and after the delay -----
+    const vib = (cfg) => line(compileForGb({ bpm: 60, cfg: { p1: cfg },
+      patterns: { A: { p1: 'C4 -  -  -  -  -  -  -' } }, order: ['A'] }), 0).cmds.filter((e) => e[0] === 5).map((e) => e[1]);
+    out.vibrato = { plain: vib({}), on: vib({ vibrato: {} }), deep: vib({ vibrato: { depth: 0.35 } }),
+      want: (Math.round(feel.GB_OURS_VIBRATO_DELAY_FRAMES / 2) << 4) | 1 };
     {
-      const { ctx, trace } = mockCtx();
-      const a = new Audio();
-      a.init(ctx);
-      const depth = 1; // 1 semitone — exact enough to check against Math.pow by hand
-      const stepFrames = 4, delayFrames = 8;
-      a.addTracks({
-        t: {
-          bpm: 60, rowsPerBeat: 4, loop: true,
-          cfg: { p1: { vibrato: { depth, stepFrames, delayFrames } } },
-          patterns: { A: { p1: 'C4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -' } },
-          order: ['A'],
-        },
-      });
-      a.play('t');
-      const rowDur = 60 / 60 / 4; // 0.25s
-      let time = a._nextRowTime;
-      for (let i = 0; i < 16 && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
-      const sets = freqSets(trace, 'osc');
-      const base = sets[0].v;
-      const onsetTime = sets[0].t;
-      const delaySec = delayFrames / 60, stepSec = stepFrames / 60;
-      const beforeDelay = sets.filter(s => s.t > onsetTime && s.t < onsetTime + delaySec);
-      const afterDelay = sets.filter(s => s.t >= onsetTime + delaySec);
-      const wobbleOK = afterDelay.length >= 3 && afterDelay.every((s, i) => {
-        const want = base * Math.pow(2, ((i % 2 === 0 ? 1 : -1) * depth) / 12);
-        return Math.abs(s.v - want) < 1e-6;
-      });
-      const gridOK = afterDelay.length >= 2 &&
-        Math.abs((afterDelay[1].t - afterDelay[0].t) - stepSec) < 1e-9;
-      out.vibrato = { base, stepsBeforeDelay: beforeDelay.length, stepsAfterDelay: afterDelay.length, wobbleOK, gridOK };
-    }
-
-    // --- echo: p2 omits its pattern entirely and mirrors p1 -----------------
-    {
-      const { ctx, trace } = mockCtx();
-      const a = new Audio();
-      a.init(ctx);
-      const rows = 3, volMul = 0.4;
-      a.addTracks({
-        t: {
-          bpm: 60, rowsPerBeat: 4, loop: true,
-          cfg: { p1: { vol: 0.2 }, p2: { vol: 0.1, echo: { of: 'p1', rows, volMul } } },
-          patterns: { A: { p1: 'C4 .  E4 .  .  .  .  .  .  .  .  .' } }, // no p2 key at all
-          order: ['A'],
-        },
-      });
-      a.play('t');
-      const rowDur = 60 / 60 / 4;
-      let time = a._nextRowTime;
-      for (let i = 0; i < 12 && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
-      // p1 note-ons happen at rows 0 and 2; p2 (echo) should repeat them at
-      // rows (0+rows) and (2+rows), at volMul of the ECHO channel's own
-      // configured vol (its pre-attenuation level — see the `echo` comment
-      // in src/core/audio.js), not the lead's.
-      const p1Sets = freqSets(trace, 'osc').filter((_, i) => i < 2); // C4 then E4, both from p1
-      const gainPeaks = trace.filter(e => e[0].startsWith('gain') && e[1] === 'lin').map(e => e[2]);
+      const tr = compileForGb({ bpm: 60, cfg: { p1: { vol: 0.2 }, p2: { vol: 0.1, echo: { of: 'p1', rows: 3, volMul: 0.4 } } },
+        patterns: { A: { p1: 'C4 .  E4 .  .  .  .  .  .  .  .  .' } }, order: ['A'] });   // no p2 key at all
+      const p1 = line(tr, 0), p2 = line(tr, 1);
       out.echo = {
-        p1Freqs: p1Sets.map(s => Math.round(s.v)),
-        rowDur, rows,
-        delaySec: rows * rowDur,
-        // both an original (p1's vol 0.2) and an echoed (p2's 0.1*0.4=0.04) peak should appear
-        hasOriginalPeak: gainPeaks.some(v => Math.abs(v - 0.2) < 1e-6),
-        hasEchoPeak: gainPeaks.some(v => Math.abs(v - 0.1 * volMul) < 1e-6),
+        p1: p1.notes.map((n) => [n[0], n[1]]), p2: p2.notes.map((n) => [n[0], n[1]]),
+        want: [[Math.round(3 * fpr), 36], [Math.round(5 * fpr), 40]],
+        p1Vol: p1.cmds.filter((e) => e[0] === 2).map((e) => e[1]), p2Vol: p2.cmds.filter((e) => e[0] === 2).map((e) => e[1]),
       };
     }
-
-    // --- arpeggio: a chord token cycles on one channel ----------------------
     {
-      const { ctx, trace } = mockCtx();
-      const a = new Audio();
-      a.init(ctx);
-      a.addTracks({
-        t: {
-          bpm: 60, rowsPerBeat: 4, loop: true,
-          patterns: { A: { wav: 'C3+E3+G3 -  -  -  -  -  -  -' } },
-          order: ['A'],
-        },
-      });
-      a.play('t');
-      const rowDur = 60 / 60 / 4;
-      let time = a._nextRowTime;
-      for (let i = 0; i < 8 && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
-      // sets[0] is _noteOn's own attack setValueAtTime (always the chord's
-      // first note, by construction) — drop it and look only at the steps
-      // _scheduleArp itself issued.
-      const steps = freqSets(trace, 'osc').slice(1);
-      const stepSec = feel.ARPEGGIO_STEP_FRAMES / 60;
-      const gridOK = steps.length >= 6 && steps.slice(1).every((s, i) =>
-        Math.abs((s.t - steps[i].t) - stepSec) < 1e-9);
-      const cycleOK = steps.length >= 6 &&
-        Math.round(steps[0].v) === Math.round(steps[3].v) &&
-        Math.round(steps[1].v) === Math.round(steps[4].v) &&
-        Math.round(steps[2].v) === Math.round(steps[5].v) &&
-        Math.round(steps[0].v) !== Math.round(steps[1].v);
-      out.arpeggio = { steps: steps.length, gridOK, cycleOK };
+      const l = line(compileForGb({ bpm: 60, patterns: { A: { wav: 'C3+E3+G3 -  -  -  -  -  -  -' } }, order: ['A'] }), 4);
+      out.arpeggio = {
+        notes: l.notes.slice(0, 6).map((n) => n[1]),
+        gridOK: l.notes.slice(0, -1).every((n) => n[2] === feel.ARPEGGIO_STEP_FRAMES),
+        total: l.frames, want: Math.round(8 * fpr),
+      };
     }
-
     return out;
   });
-  check('vibrato does not wobble before its delay', music.vibrato.stepsBeforeDelay === 0,
-    JSON.stringify(music.vibrato));
-  check('vibrato steps on the frame grid, alternating up/down by the configured depth',
-    music.vibrato.wobbleOK && music.vibrato.gridOK, JSON.stringify(music.vibrato));
-  check('echo channel repeats the lead\'s pitches', JSON.stringify(music.echo.p1Freqs) === JSON.stringify([262, 330]),
+  check('a channel without vibrato asks the engine for none', music.vibrato.plain.length === 0, JSON.stringify(music.vibrato));
+  check('vibrato is the Oracle leads\' own $e1, deeper on request',
+    music.vibrato.on[0] === music.vibrato.want && music.vibrato.deep[0] === music.vibrato.want + 1, JSON.stringify(music.vibrato));
+  check('echo channel repeats the lead\'s notes, its rows later',
+    JSON.stringify(music.echo.p2) === JSON.stringify(music.echo.want) && JSON.stringify(music.echo.p1.map((n) => n[1])) === '[36,40]',
     JSON.stringify(music.echo));
-  check('echo channel plays both the original and a quieter echoed peak',
-    music.echo.hasOriginalPeak && music.echo.hasEchoPeak, JSON.stringify(music.echo));
-  check('arpeggio cycles a chord token on a frame grid', music.arpeggio.gridOK, JSON.stringify(music.arpeggio));
-  check('arpeggio repeats the chord in order', music.arpeggio.cycleOK, JSON.stringify(music.arpeggio));
+  check('echo channel plays quieter than the lead', music.echo.p2Vol.length && music.echo.p2Vol.every((v) => v < music.echo.p1Vol[0]),
+    JSON.stringify(music.echo));
+  check('arpeggio strikes the chord in turn on the frame grid',
+    JSON.stringify(music.arpeggio.notes) === '[24,28,31,24,28,31]' && music.arpeggio.gridOK, JSON.stringify(music.arpeggio));
+  check('arpeggio fills exactly the rows it was written for', music.arpeggio.total === music.arpeggio.want, JSON.stringify(music.arpeggio));
 
   console.log('\n--- HUD, menu, save ---');
   // The menu comes and goes through Seasons' white fade (MENU_FADE_OPEN /

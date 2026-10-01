@@ -1,3 +1,76 @@
+## S164 — each dungeon's own stairs; our music on the cartridge's engine
+
+Branch claude/oracle-tides-s164-0h8079, off main at 71a02dd (S163 merged).
+The human: "proceed in order" through the FUTURE ACTION ITEMS.
+
+### What landed
+- ITEM 2 (stairs) DONE. Every main dungeon draws its Seasons tileset's own
+  $44 up / $45 down stair (rip-dungeon-themes.py: `meta:41/3e/39/3a/3c/42`
+  picks `gStairsUp`..`kStairsDown`, the same tilesets rip-objects.py takes
+  each dungeon's block and button from). tiles-core: `dStairsUp<T>` /
+  `dStairsDown<T>` for the six main themes; legends: `/` down, `S` up (the
+  shared `riptideS`, which no main room places). Two stairs go UP: d2 0,2,4
+  (3,3) and d6 0,2,3 (12,2) — now `S`. d3 and d4 have no stairs. Same-floor
+  "walk back" stairs stay `/` (down). Picture shown to the human beside the
+  originals.
+- ITEM 10 (area music) — THE HUMAN CHOSE: keep OUR tunes, "with the fidelity
+  of the oracles music" (asked to be sure: "Keep our tunes, Game Boy sound").
+  So nothing of the Oracles' place themes is played. Instead:
+  - `compileForGb(track)` (src/core/audio.js) compiles every pattern-format
+    track to a channel script in rip-music.py's event encoding, and
+    gbsound.js plays it through the cartridge's engine and hardware model.
+    Translation (header comment there): vol x40 -> engine vol (leads land on
+    6, echoes on 3, as the Oracle tracks do); `env $0 $00` (sustain, rest =
+    the engine's quick fade); wave vol picks the waveform ($0e/$17/$0f/$0c,
+    squares of height 8/5/3/1 — the Oracles' wave loudness is the waveform);
+    vibrato -> `$e1` (GB_OURS_VIBRATO_DELAY_FRAMES, derived), depth>0.3 $e2;
+    chords -> notes struck ARPEGGIO_STEP_FRAMES apart; echo written out as
+    notes on the echo channel; drums -> noise table notes x $23, s $32,
+    h $2a, H $27, c $2e. A hold opening the loop continues the loop's last
+    note (the tracker's wrap). Rows land on round(row x frames-per-row) so
+    every channel loops in the same length.
+  - THE TRACKER SYNTH IS GONE (scheduler, voices, drums, the Web Audio
+    vibrato/arp). The small synth remains for our own items' sfx.
+    VIBRATO_DELAY_FRAMES / VIBRATO_STEP_FRAMES removed from feel.js.
+  - Rendering is a JOB now (`renderGbJob`, resumable synth `makeSynth`):
+    a track is ~200 ms of work, which in one go dropped test.mjs's frame
+    rate to 23. `Audio.update` steps the waiting track GB_RENDER_BUDGET_MS a
+    frame (music starts ~0.6 s after first arrival in a place) and otherwise
+    pre-renders every track GB_PRERENDER_BUDGET_MS a frame, at most one
+    slice per GB_RENDER_SLICE_GAP_MS (a catching-up game runs several
+    updates a frame). Output is bit-identical to the one-shot render.
+  - check-audio-render now baselines each of our tracks' COMPILED SCRIPT
+    (re-record only after listening). check-music checks the compiled script
+    like a ripped one and proves the intro in the engine via `loopOf`.
+    test.mjs's music section asserts vibrato/echo/arpeggio on the compiled
+    script. render-track.mjs is plain Node now and renders any track.
+    tools/lib/mock-audio-ctx.mjs deleted (nothing used it).
+  - Both cartridges' place themes are in assets/music/oracles-disasm/mus/
+    and mus-ages/ (S164 copy), and `RIP_ALL_MUSIC=1 python3
+    tools/rip-music.py` rips them all for listening (never commit that
+    output). Listening pages: Oracle themes per place
+    https://claude.ai/artifact/MJJzFbTYknMH4C4nggCrUS ; ours before/after
+    on the GB chip https://claude.ai/artifact/DryjBwZNCRo5Bs4BDsXo9L
+
+### Verified
+Whole table green, test.mjs 85/85 when run on its own (its fps assertion is
+load-dependent; this container is slower than earlier ones — main itself
+read 36 fps here once), check-playthrough 44/44, THE END, never died.
+Built; dist committed.
+
+### Noticed, not chased
+- The human has not yet said how the GB versions SOUND. Mix balance (wave
+  waveform per vol, drum choices, VOL_SCALE) is a guess against the Oracle
+  tracks' own settings; tune by ear when they answer.
+
+### FUTURE ACTION ITEMS (in order; the human said "proceed in order")
+3. Music ducking under sfx (the cartridge's sfx steal channels 2/3/5/7 from
+   the music; now that ALL music is one rendered buffer, ducking means
+   rendering per channel or muting the stolen channel's share — design it).
+4. Keese over the Eyrie's chasm. 5. Human tuning of fights. 6. Measure the
+guessed timings. 7. The 50 unaudited overworld screens. 8. A Lens puzzle on
+the overworld. 9. Review our item icons. 10. A phone check.
+
 ## S163 — the cartridges' own sound effects
 
 Branch claude/oracle-tides-s163-6cqrq2, off main at d0a5a22. The human chose

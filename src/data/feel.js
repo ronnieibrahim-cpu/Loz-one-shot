@@ -1762,17 +1762,9 @@ export const CUTSCENE_READ_LEAD_FRAMES = 30;
 // in real time regardless of tempo, so frames are the right unit and R3 says
 // they belong in this file like any other timing constant.
 
-/** f — frames a held note rings before vibrato engages. guessed. The source
- *  games almost never wobble a note from the moment it is struck; the wobble
- *  is something a SUSTAINED note earns, not an attack transient. */
-export const VIBRATO_DELAY_FRAMES = 10;
-
-/** f — frames per vibrato pitch step. guessed. This is a STEP interval, not a
- *  smoothing time: the hardware retriggers pitch on a frame grid rather than
- *  gliding, so the engine re-issues `setValueAtTime` on this grid instead of
- *  ramping — see `_scheduleVibrato`. Do not "fix" this into a ramp; that is
- *  this session's own failure condition. */
-export const VIBRATO_STEP_FRAMES = 4;
+// (VIBRATO_DELAY_FRAMES and VIBRATO_STEP_FRAMES timed the tracker's own
+// vibrato until S164; our music now plays through the cartridge's engine,
+// whose vibrato is GB_OURS_VIBRATO_DELAY_FRAMES below and its own frame grid.)
 
 /** semitones — how far a vibrato step swings above and below the written
  *  pitch. guessed. `check-music.mjs` validates the SWUNG extreme (written
@@ -2197,6 +2189,31 @@ export const GB_HPF_CHARGE = 0.999958;
  *  them to the device. guessed: well above the highest note's fundamental,
  *  and small enough to render the overworld in a blink on a phone. */
 export const GB_RENDER_RATE = 32768;
+
+/** f — how long a held note of OUR music rings before its vibrato starts,
+ *  once our tracks play through the cartridge's engine (S164). derived:
+ *  `vibrato $e1`, the vibrato the Oracle leads hold most often (Crescent
+ *  Island, the Maku Tree, Lynna Village, the house theme), counts down
+ *  2 x $e = 28 frames before the wobble (code/audio.s, vibratoCount). */
+export const GB_OURS_VIBRATO_DELAY_FRAMES = 28;
+
+/** ms — how long a frame may spend rendering the track that has just been
+ *  asked for, before its music starts (S164: a whole track is ~200 ms of
+ *  work, which in one go was a visible hitch on entering a new place).
+ *  guessed: leaves most of a 16.7 ms frame to the game; the music of a place
+ *  not yet rendered starts about half a second after you arrive. */
+export const GB_RENDER_BUDGET_MS = 6;
+
+/** ms — how long a frame may spend rendering tracks ahead of need, while no
+ *  track is waiting. guessed: small enough not to show in the frame rate;
+ *  every track is ready within the first minute of play. */
+export const GB_PRERENDER_BUDGET_MS = 2;
+
+/** ms — the least time between two render slices: at most one per drawn
+ *  frame, because a game catching up runs several updates in one and a slice
+ *  in each made it fall further behind (S164, test.mjs's frame rate went from
+ *  healthy to 23). guessed: under a 60 Hz frame, over half of one. */
+export const GB_RENDER_SLICE_GAP_MS = 12;
 
 // --- side content (S155) ------------------------------------------------------
 

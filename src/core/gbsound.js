@@ -217,8 +217,14 @@ function loopOf(track) {
   return { intro, length };
 }
 
-/** The hardware: turn register events into samples, one channel at a time. */
-function synth(events, ch, frames, rate, mix) {
+/**
+ * The hardware: turn register events into samples, one channel at a time.
+ * Resumable (S164): `makeSynth` returns a function that renders up to `upTo`
+ * samples from where it stopped and says whether the channel is done, so a
+ * whole track can be rendered a few milliseconds at a time across frames
+ * (`renderGbJob`) instead of stalling the game for a fifth of a second.
+ */
+function makeSynth(events, ch, frames, rate, mix) {
   const k = { sq: 0, wave: 4, noise: 6, raw: 6 }[KIND[ch]];
   const spf = rate / GB_FRAME_RATE;
   const n = Math.ceil(frames * spf);
@@ -227,7 +233,9 @@ function synth(events, ch, frames, rate, mix) {
   let phase = 0, lfsr = 0x7fff, nr43 = 0, noiseT = 0, lenLeft = Infinity;
   let wave = GB_WAVEFORMS[0x0e] || new Array(16).fill(0);
   const envStep = rate / 64;
-  for (let i = 0; i < n; i++) {
+  let i = 0;
+  return (upTo) => {
+  for (const end = Math.min(n, upTo); i < end; i++) {
     const f = i / spf;
     while (ei < events.length && events[ei][0] <= f) {
       const e = events[ei++];
@@ -281,9 +289,12 @@ function synth(events, ch, frames, rate, mix) {
     }
     mix[i] += (d / 7.5 - 1) * GB_MIX_LEVEL;
   }
+  return i >= n;
+  };
 }
 
 const CACHE = new Map();
+const JOBS = new Map();
 
 /**
  * Render a Seasons track at `rate`. Returns { data: Float32Array, loopStart,
@@ -292,35 +303,92 @@ const CACHE = new Map();
  * the cartridge each of its channels is won or lost separately (sfxVoices).
  */
 export function renderSeasons(name, rate, only = null) {
+  return renderGb(SEASONS_MUSIC[name], name, rate, only);
+}
+
+/**
+ * Render any channel-script track (`{ ch, events }`, the ripper's encoding)
+ * the same way: a Seasons one, or one of OUR tracks compiled to the same
+ * encoding (S164, `compileForGb` in src/core/audio.js). `name` keys the cache.
+ */
+export function renderGb(track, name, rate, only = null) {
+  const job = renderGbJob(track, name, rate, only);
+  if (!job) return null;
+  job.step(Infinity);
+  return job.result;
+}
+
+const SLICE = 4096;   // samples between clock checks
+const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+/**
+ * The same render as a job that can be done a little at a time (S164):
+ * `step(ms)` works for about `ms` milliseconds and returns true once the
+ * render is finished and `result` is set (and cached). A whole track is about
+ * a fifth of a second of work, which in one go is a visible hitch.
+ */
+export function renderGbJob(track, name, rate, only = null) {
   const key = name + '@' + rate + (only == null ? '' : '#' + only);
-  if (CACHE.has(key)) return CACHE.get(key);
-  const track = SEASONS_MUSIC[name];
+  if (CACHE.has(key)) return { done: true, result: CACHE.get(key), step: () => true };
+  // One render per track at a time: the background pass and a play() that
+  // wants the same track share the work already done.
+  if (JOBS.has(key)) return JOBS.get(key);
   if (!track) return null;
-  const loop = loopOf(track);
-  const frames = loop ? loop.intro + loop.length : jingleFrames(track);
-  const { out } = runEngine(track, frames);
-  const n = Math.ceil(frames * rate / GB_FRAME_RATE);
-  const mix = new Float32Array(n);
-  for (const k of Object.keys(track.ch)) {
-    if (only == null || Number(k) === only) synth(out[k], Number(k), frames, rate, mix);
-  }
-  // The console's output capacitor: a first-order high-pass that removes the
-  // DC every channel's 0..15 output carries (GB_HPF_CHARGE per sample).
-  let cap = 0;
-  const charge = Math.pow(GB_HPF_CHARGE, 4194304 / rate);
-  for (let i = 0; i < n; i++) {
-    const x = mix[i];
-    const y = x - cap;
-    cap = x - y * charge;
-    mix[i] = y;
-  }
-  const r = {
-    data: mix,
-    loopStart: loop ? loop.intro / GB_FRAME_RATE : 0,
-    loopEnd: loop ? frames / GB_FRAME_RATE : null,
+  let phase = 0, loop, frames, n, mix, synths, ci = 0, pos = 0, cap = 0, charge;
+  const job = {
+    done: false, result: null,
+    step(ms) {
+      const t0 = clock();
+      while (!job.done) {
+        if (phase === 0) {
+          loop = loopOf(track);
+          frames = loop ? loop.intro + loop.length : jingleFrames(track);
+          const { out } = runEngine(track, frames);
+          n = Math.ceil(frames * rate / GB_FRAME_RATE);
+          mix = new Float32Array(n);
+          synths = Object.keys(track.ch).filter((k) => only == null || Number(k) === only)
+            .map((k) => makeSynth(out[k], Number(k), frames, rate, mix));
+          // The console's output capacitor: a first-order high-pass that
+          // removes the DC every channel's 0..15 output carries.
+          charge = Math.pow(GB_HPF_CHARGE, 4194304 / rate);
+          phase = 1;
+        } else if (phase === 1) {
+          if (ci >= synths.length) { phase = 2; pos = 0; continue; }
+          pos += SLICE;
+          if (synths[ci](pos)) { ci++; pos = 0; }
+        } else {
+          const end = Math.min(n, pos + SLICE);
+          for (let i = pos; i < end; i++) {
+            const x = mix[i];
+            const y = x - cap;
+            cap = x - y * charge;
+            mix[i] = y;
+          }
+          pos = end;
+          if (pos >= n) {
+            job.result = {
+              data: mix,
+              loopStart: loop ? loop.intro / GB_FRAME_RATE : 0,
+              loopEnd: loop ? frames / GB_FRAME_RATE : null,
+            };
+            CACHE.set(key, job.result);
+            JOBS.delete(key);
+            job.done = true;
+            break;
+          }
+        }
+        if (clock() - t0 >= ms) break;
+      }
+      return job.done;
+    },
   };
-  CACHE.set(key, r);
-  return r;
+  JOBS.set(key, job);
+  return job;
+}
+
+/** `renderGbJob` for one of Seasons' own tracks, by name. */
+export function renderSeasonsJob(name, rate) {
+  return renderGbJob(SEASONS_MUSIC[name], name, rate);
 }
 
 /** A channel's frames to its cmdff (Infinity if it loops for ever). */
