@@ -2819,6 +2819,15 @@ export function installCoreTiles() {
     rShutW: { art: ART.rShutW, pal: 'rShutW', flags: F.SOLID | F.DOOR },
     rBossN: { art: ART.rBossN, pal: 'rBossN', flags: F.SOLID | F.DOOR },
 
+    // THE SIX MAIN DUNGEONS' OWN STAIRS (S164): each Seasons tileset's up
+    // ($44) and down ($45) staircase, in its own colours. Exactly `dStairs`'
+    // flags; the theme legends point `/` at the down one and `S` at the up.
+    ...Object.fromEntries([['Grotto', 'g'], ['Coral', 'c'], ['Bog', 'b'], ['Cistern', 'x'],
+      ['Wood', 'r'], ['Abyss', 'k']].flatMap(([T, P]) => [
+      ['dStairsUp' + T, { art: ART[P + 'StairsUp'], pal: P + 'StairsUp', flags: F.WARP | F.STAIRS }],
+      ['dStairsDown' + T, { art: ART[P + 'StairsDown'], pal: P + 'StairsDown', flags: F.WARP | F.STAIRS }],
+    ])),
+
     // THE THREE OPTIONAL DUNGEONS (S160), each in the kit of a Seasons dungeon
     // no main dungeon had taken, read out of the cartridge's own tilesets
     // (`h*`, `n*` and `u*` picks in rip-dungeon-themes.py; the push block

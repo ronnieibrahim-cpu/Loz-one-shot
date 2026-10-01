@@ -406,6 +406,12 @@ export function installLegends() {
   // The Keep is built at Oracle size (S142): its way out is a gap in the ring,
   // as the Grotto's is — the Sword & Shield Maze has no lit step to cut.
   registerLegend('dungeonAbyss', { 'C': 'dExitAbyss', '9': 'dDrownAbyss' }, 'dungeonAbyss');
+  // Each main dungeon's own stairs (S164), as the Palace's: `/` goes down
+  // (or back along the same floor), `S` goes up. `S` is the shared legend's
+  // `riptideS`, which no main dungeon room places.
+  for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss']) {
+    registerLegend('dungeon' + T, { '/': 'dStairsDown' + T, 'S': 'dStairsUp' + T }, 'dungeon' + T);
+  }
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

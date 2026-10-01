@@ -79,6 +79,14 @@ SHEETS = {
     # metatile number: see `meta()` below.
     'heros': 'meta:36',
     'snakes': 'meta:38',
+    # The six main dungeons' own staircases (S164), out of the same Seasons
+    # tilesets tools/rip-objects.py takes their push blocks and buttons from.
+    'mazeIce': 'meta:41',
+    'cryptMeta': 'meta:3e',
+    'mothMeta': 'meta:39',
+    'dragonMeta': 'meta:3a',
+    'ruinsMeta': 'meta:3c',
+    'mazeFire': 'meta:42',
     # ORACLE OF AGES (S161): `ages:NN` is Ages tileset $NN, read the same way
     # out of assets/objects/oracles-disasm/ages/. The Sunken Palace wears
     # Mermaid's Cave's sunken past half ($3d), the human's pick from three Ages
@@ -93,6 +101,9 @@ SHEETS = {
     'whirl3': 'ages:5f@3',
 }
 META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
+              'meta:41': "the Sword & Shield Maze, ice half", 'meta:3e': "the Explorer's Crypt",
+              'meta:39': "the Poison Moth's Lair", 'meta:3a': 'the Dancing Dragon Dungeon',
+              'meta:3c': 'the Ancient Ruins', 'meta:42': "the Sword & Shield Maze, fire half",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor'}
 
 
@@ -660,6 +671,24 @@ PICKS = [
     meta('uWhirl3', 0xe9, 'the whirlpool, step 4 of 4, the Ages sea floor', 'whirl3'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
+    #
+    # THE SIX MAIN DUNGEONS' OWN STAIRS (S164). Every one of them drew the
+    # shared hand-drawn grey `dStairs` until now; each Seasons dungeon tileset
+    # has its own TILEINDEX_INDOOR_UPSTAIRCASE $44 and _DOWNSTAIRCASE $45 in
+    # its own colours, read from the tileset each dungeon's push block and
+    # button already come from (tools/rip-objects.py THEMES).
+    meta('gStairsUp', 0x44, 'the stair up, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('gStairsDown', 0x45, 'the stair down, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('cStairsUp', 0x44, 'the stair up, the Explorer\'s Crypt', 'cryptMeta'),
+    meta('cStairsDown', 0x45, 'the stair down, the Explorer\'s Crypt', 'cryptMeta'),
+    meta('bStairsUp', 0x44, 'the stair up, the Poison Moth\'s Lair', 'mothMeta'),
+    meta('bStairsDown', 0x45, 'the stair down, the Poison Moth\'s Lair', 'mothMeta'),
+    meta('xStairsUp', 0x44, 'the stair up, the Dancing Dragon Dungeon', 'dragonMeta'),
+    meta('xStairsDown', 0x45, 'the stair down, the Dancing Dragon Dungeon', 'dragonMeta'),
+    meta('rStairsUp', 0x44, 'the stair up, the Ancient Ruins', 'ruinsMeta'),
+    meta('rStairsDown', 0x45, 'the stair down, the Ancient Ruins', 'ruinsMeta'),
+    meta('kStairsUp', 0x44, 'the stair up, the Sword & Shield Maze (fire)', 'mazeFire'),
+    meta('kStairsDown', 0x45, 'the stair down, the Sword & Shield Maze (fire)', 'mazeFire'),
 ]
 
 # Picks that are an OBJECT standing on a floor, not a floor or a wall.
