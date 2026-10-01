@@ -7,6 +7,10 @@ export const HUD_H = 16;          // status bar occupies the top 16 scanlines
 export const VIEW_W = 160;
 export const VIEW_H = 128;        // playfield: 10x8 tiles of 16px
 export const TILE = 16;
+// CSS px: where an upright phone's screen starts (below SEL/START) and the
+// gap left above the touch controls. Layout, not timing.
+const PORTRAIT_TOP = 56;
+const PORTRAIT_GAP = 8;
 export const ROOM_W = 10;
 export const ROOM_H = 8;
 
@@ -44,12 +48,34 @@ export class Screen {
     const dpr = window.devicePixelRatio || 1;
     const margin = window.innerWidth < 700 ? 0 : 16;
     const devW = (window.innerWidth - margin) * dpr;
-    const devH = (window.innerHeight - margin) * dpr;
+    let devH = (window.innerHeight - margin) * dpr;
+    // A PHONE HELD UPRIGHT (S165): the screen goes at the top, under SEL and
+    // START, and only as big as the room left above the d-pad and A/B — it
+    // used to be centred, with empty space above it and the controls lying
+    // over its bottom edge. Landscape keeps the controls either side.
+    const touch = document.body.classList.contains('touch');
+    const portrait = touch && window.innerHeight > window.innerWidth;
+    document.body.classList.toggle('portrait', portrait);
+    if (portrait) {
+      const top = this._controlsTop();
+      if (top) devH = (top - PORTRAIT_TOP - PORTRAIT_GAP) * dpr;
+    }
     let devScale = Math.floor(Math.min(devW / SCREEN_W, devH / SCREEN_H));
     if (devScale < 1) devScale = 1;            // never shrink below native size
     this.scale = devScale / dpr;
     this.canvas.style.width = (SCREEN_W * this.scale) + 'px';
     this.canvas.style.height = (SCREEN_H * this.scale) + 'px';
+  }
+
+  /** CSS-pixel y of the highest on-screen control below the play area. */
+  _controlsTop() {
+    let top = 0;
+    for (const id of ['dpad', 'btns']) {
+      const el = document.getElementById(id);
+      const r = el && el.getBoundingClientRect();
+      if (r && r.height > 0) top = top ? Math.min(top, r.top) : r.top;
+    }
+    return top;
   }
 
   clear(color = '#000') {

@@ -15,6 +15,7 @@ function boot() {
   const canvas = document.getElementById('screen');
   const screen = new Screen(canvas);
   const input = new Input();
+  screen.fit();                      // again, now the touch layer is known
 
   installData();
 

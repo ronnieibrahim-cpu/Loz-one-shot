@@ -30,6 +30,10 @@
   canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
     -webkit-tap-highlight-color:transparent}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  /* An upright phone: the screen sits at the top, under SEL/START, and the
+     controls below it (src/core/screen.js sizes it to the room left). */
+  body.portrait #wrap{align-items:flex-start;padding-top:calc(56px + env(safe-area-inset-top))}
+  body.portrait #sysbtns{top:calc(12px + env(safe-area-inset-top))}
   #screen{
     image-rendering:pixelated;
     image-rendering:-moz-crisp-edges;
@@ -64,6 +68,12 @@
     top:calc(4% + env(safe-area-inset-top))}
   #sysbtns .tbtn{width:46px;height:30px;border-radius:6px;position:relative;
     display:inline-flex;margin-left:6px;font-size:10px}
+  /* A narrow phone (iPhone SE, 320 wide): the pad and A/B at full size meet
+     in the middle and B lands on the pad's right arrow. */
+  @media (max-width:359px){
+    #dpad{transform:scale(.86);transform-origin:left bottom}
+    #btns{transform:scale(.86);transform-origin:right bottom}
+  }
 </style>
 </head>
 <body>
@@ -154,6 +164,10 @@ const HUD_H = 16;          // status bar occupies the top 16 scanlines
 const VIEW_W = 160;
 const VIEW_H = 128;        // playfield: 10x8 tiles of 16px
 const TILE = 16;
+// CSS px: where an upright phone's screen starts (below SEL/START) and the
+// gap left above the touch controls. Layout, not timing.
+const PORTRAIT_TOP = 56;
+const PORTRAIT_GAP = 8;
 const ROOM_W = 10;
 const ROOM_H = 8;
 
@@ -191,12 +205,34 @@ class Screen {
     const dpr = window.devicePixelRatio || 1;
     const margin = window.innerWidth < 700 ? 0 : 16;
     const devW = (window.innerWidth - margin) * dpr;
-    const devH = (window.innerHeight - margin) * dpr;
+    let devH = (window.innerHeight - margin) * dpr;
+    // A PHONE HELD UPRIGHT (S165): the screen goes at the top, under SEL and
+    // START, and only as big as the room left above the d-pad and A/B — it
+    // used to be centred, with empty space above it and the controls lying
+    // over its bottom edge. Landscape keeps the controls either side.
+    const touch = document.body.classList.contains('touch');
+    const portrait = touch && window.innerHeight > window.innerWidth;
+    document.body.classList.toggle('portrait', portrait);
+    if (portrait) {
+      const top = this._controlsTop();
+      if (top) devH = (top - PORTRAIT_TOP - PORTRAIT_GAP) * dpr;
+    }
     let devScale = Math.floor(Math.min(devW / SCREEN_W, devH / SCREEN_H));
     if (devScale < 1) devScale = 1;            // never shrink below native size
     this.scale = devScale / dpr;
     this.canvas.style.width = (SCREEN_W * this.scale) + 'px';
     this.canvas.style.height = (SCREEN_H * this.scale) + 'px';
+  }
+
+  /** CSS-pixel y of the highest on-screen control below the play area. */
+  _controlsTop() {
+    let top = 0;
+    for (const id of ['dpad', 'btns']) {
+      const el = document.getElementById(id);
+      const r = el && el.getBoundingClientRect();
+      if (r && r.height > 0) top = top ? Math.min(top, r.top) : r.top;
+    }
+    return top;
   }
 
   clear(color = '#000') {
@@ -308,7 +344,9 @@ class Input {
       for (const n of nodes) n.classList.remove('act');
       for (const t of touches) {
         const n = hit(t.clientX, t.clientY);
-        if (n) { this._touchKeys[n.dataset.k] = true; n.classList.add('act'); this.anyPressEver = true; }
+        // Latched, as a key press is: a tap that starts and ends between two
+        // updates would otherwise never be seen (S165 phone check).
+        if (n) { this._touchKeys[n.dataset.k] = true; this._latch[n.dataset.k] = true; n.classList.add('act'); this.anyPressEver = true; }
       }
     };
 
@@ -66397,6 +66435,7 @@ function boot() {
   const canvas = document.getElementById('screen');
   const screen = new Screen(canvas);
   const input = new Input();
+  screen.fit();                      // again, now the touch layer is known
 
   installData();
 

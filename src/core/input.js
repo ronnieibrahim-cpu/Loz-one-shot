@@ -68,7 +68,9 @@ export class Input {
       for (const n of nodes) n.classList.remove('act');
       for (const t of touches) {
         const n = hit(t.clientX, t.clientY);
-        if (n) { this._touchKeys[n.dataset.k] = true; n.classList.add('act'); this.anyPressEver = true; }
+        // Latched, as a key press is: a tap that starts and ends between two
+        // updates would otherwise never be seen (S165 phone check).
+        if (n) { this._touchKeys[n.dataset.k] = true; this._latch[n.dataset.k] = true; n.classList.add('act'); this.anyPressEver = true; }
       }
     };
 
