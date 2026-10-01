@@ -53,7 +53,7 @@ import { TRACKS, SFX } from '../src/data/audio.js';
 import { Audio, noteFreq, DEFAULT_CFG, vibratoRange } from '../src/core/audio.js';
 import { mockCtx } from './lib/mock-audio-ctx.mjs';
 import { SEASONS_MUSIC, GB_FREQ, GB_WAVEFORMS, GB_NOISE } from '../src/data/music-seasons.js';
-import { renderSeasons, runEngine, loopOf } from '../src/core/gbsound.js';
+import { renderSeasons, runEngine, loopOf, channelFrames } from '../src/core/gbsound.js';
 
 const PULSE_MIN = 64, PULSE_MAX = 131072;
 const WAVE_MIN = 32, WAVE_MAX = 65536;
@@ -101,7 +101,9 @@ function checkSeasons(name, t) {
       }
     }
   }
-  const jingle = t.seasons === 'getItem';
+  // A one-shot: every channel runs to its cmdff (the item and Essence
+  // fanfares, the secret chime). Anything else must loop.
+  const jingle = Object.keys(tr.ch).every((k) => Number.isFinite(channelFrames(tr, Number(k))));
   const loop = loopOf(tr);
   if (!jingle && !loop) problems.push(`${name}: no loop found on every channel`);
   if (loop) {

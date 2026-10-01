@@ -1145,7 +1145,7 @@ export const ITEMS = {
       const b = new Bomb(bx, by, {});
       if (!canOccupy(game, b, bx, by, { jumping: true, swim: true })) { b.x = p.cx - 8; b.y = p.cy - 8; }
       game.addEntity(b);
-      game.audio.sfx('place');
+      game.audio.sfx('bombDown');
       return true;
     },
   },

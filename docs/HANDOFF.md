@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The disassembly's spelling is not the cartridge's bytes (S163).** After
+  `cmdf0` a square channel reads every note as a raw frequency, which the
+  disassembly writes as `.db`; `env $0 $08` is masked to 0 by the engine. A
+  ripper that reads the macros line by line gets both wrong without failing.
+  rip-music.py now assembles to bytes and reads them back the way
+  code/audio.s does — do the same for any other script format.
+
+- **A cutscene step's `sfx:` was invisible to check-sfx (S163).** It read
+  `sfx:` fields only in a fixed list of data files, so the keyhole's
+  `{ sfx: 'secret' }` (a jingle, silent through sfx()) survived. It reads
+  every src file now. A checker's file list is a model too.
+
 - **The Roc's Feather left twice (S162).** The game lost its jump sessions
   ago, and two models kept it: check-anchor hopped two tiles and the dungeon
   flood hopped one. Both read gaps the engine refuses as walkable. When a verb

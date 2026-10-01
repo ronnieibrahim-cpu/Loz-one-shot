@@ -1,15 +1,25 @@
-## S163 — the cartridges' own sound effects (IN PROGRESS)
+## S163 — the cartridges' own sound effects
 
 Branch claude/oracle-tides-s163-6cqrq2, off main at d0a5a22. The human chose
-FUTURE ACTION ITEM 1 (sound effects).
+FUTURE ACTION ITEM 1 (sound effects), then: "Change everything to cartridge,
+except keep our own items original." NOT YET MERGED: ask the human.
 
-### What landed (first commit)
-- 45 of the 60 sfx in src/data/audio.js are now `{ seasons: name }`, played by
-  gbsound.js from the cartridge's own scripts (oracles-disasm audio/common/sfx,
+### What landed
+- 47 of the 62 sfx in src/data/audio.js are `{ seasons: name }`, played by
+  gbsound.js from the cartridge's own scripts (oracles-disasm audio/common/sfx
   copied whole into assets/music/oracles-disasm/sfx/, plus sfx-seasons/ and
   sfx-ages/). Mapping chosen from where the disassembly plays each SND_ (e.g.
   unlock -> openChest from code/interactableTiles.s's key block, key ->
-  getSeed from dungeonKeySprite.s, fairy -> unknown7 = SND_FAIRY_HEAL).
+  getSeed from dungeonKeySprite.s, fairy -> unknown7 = SND_FAIRY_HEAL,
+  stairs -> enterCave, bombDown -> bombLand, doorRumble (keyhole) -> rumble).
+- EVERY JINGLE is the cartridge's: fanfare, fanfareShort, heartPiece, itemGet
+  -> getItem (treasure.s plays SND_GETITEM for every treasure); secret and
+  bossClear -> solvePuzzle; essence -> mus/getEssence.s; gameOver ->
+  mus/gameover.s, which LOOPS on the Game Over screen as the cartridge does.
+- KEPT OURS (the human's word): conch, tideSweep, chime, valve, gust, reel,
+  dredgeCast, hookHit, catch, place (Anchor), seed, rumble (pillar/boulder),
+  whirl, bossPhase, charge. Cartridge candidates for each are on the
+  listening page if the human ever changes their mind.
 - rip-music.py now ASSEMBLES each file to bytes (include/musicMacros.s) and
   reads them back as code/audio.s does: cmdf0 arbitrary-frequency notes
   (`.db hi lo len`), the square length timer, $61 rest2, channel 7 notes as
@@ -18,20 +28,41 @@ FUTURE ACTION ITEM 1 (sound effects).
   soundChannelPointers-*.s.
 - gbsound.js: ops 11/12/13, ch7 retriggers only after cmdf0, frequency
   registers wrap to 11 bits, channels start at volume 8 (playSound),
-  renderSeasons(name, rate, only) renders one channel; sfxVoices(name).
+  renderSeasons(name, rate, only) renders one channel; sfxVoices(name);
+  channelFrames exported.
 - audio.js: per-channel arbitration as playSound does it (higher priority
   holds the channel; equal/higher cuts the old sound off).
 - The sword picks from Seasons' own 8-entry table (sword.s @swordSounds) with
   a noise1 hash of game.frame, so no RNG draw. New `bossHit` (SND_BOSS_DAMAGE).
+- BUG FOUND AND FIXED: the keyhole cutscene asked `{ sfx: 'secret' }`, a
+  jingle, so the door opened in silence. Now `{ jingle: 'secret' }`.
+  check-sfx now reads `sfx:` fields in EVERY src file (that is how).
 - check-sfx: every cartridge sfx is ripped, has a priority per channel, ends,
-  and is audible; reads `*_SOUNDS` tables. NEW tools/render-sfx.mjs.
-- Listening page for the human: https://claude.ai/artifact/QiMcy311WmNecVuSvF5AeW
+  and is audible; reads `*_SOUNDS` tables. check-music: a Seasons track is a
+  one-shot iff every channel reaches cmdff. check-audio-render baseline
+  re-recorded (seven jingles left the tracker). NEW tools/render-sfx.mjs.
+- Listening page: https://claude.ai/artifact/QiMcy311WmNecVuSvF5AeW
 
-### Waiting on the human
-The 15 sounds of our own items (conch, tideSweep, chime, valve, gust, reel,
-dredgeCast, hookHit, catch, place, seed, rumble, whirl, bossPhase, charge)
-are still synthesized; the page offers cartridge candidates per row. Not
-done: music channels are not ducked while an sfx holds channels 2/3/5/7.
+### Verified
+Whole table green (43 tools incl. check-rippers with Pillow, test.mjs),
+check-playthrough 44/44, THE END, never died. Built; dist committed.
+
+### Noticed, not chased
+- Music channels are not ducked while an sfx holds channels 2/3/5/7 (on the
+  cartridge the sfx steals the music's square/wave voice for its length).
+- `pitch` options on sfx calls (jump at 0.85) do nothing for cartridge sounds.
+- The area music (villages, caves, all dungeons, bosses, shop, ending) is
+  still ours. Seasons/Ages have a theme for each; swapping is a bigger
+  design question — ask the human.
+- The 4th Piece of Heart: the cartridge follows getItem with
+  SND_FILLED_HEART_CONTAINER; we play getItem only.
+
+### FUTURE ACTION ITEMS (carried from S162; item 1 is done)
+2. Each main dungeon's own stairs. 3. Keese over the Eyrie's chasm.
+4. Human tuning of fights. 5. Measure the guessed timings. 6. The 50
+unaudited overworld screens. 7. A Lens puzzle on the overworld. 8. Review
+our item icons. 9. A phone check. NEW: 10. Area music from the cartridges
+(see above). 11. Music ducking under sfx.
 
 ## S162 — the optional dungeons toured, filmed, and the Palace made finishable
 

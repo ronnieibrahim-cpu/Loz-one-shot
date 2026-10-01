@@ -54,6 +54,10 @@ TRACKS = [
     # The spin attack's whoosh (S153): the noise channel alone, swept up and
     # back down over 32 frames. Played as a sound effect, not a jingle.
     ('swordSpin', 'sfx/swordSpin.s', 'sndSwordSpin'),
+    # The Essence fanfare and the Game Over theme (S163, "everything to
+    # cartridge" at the human's word).
+    ('getEssence', 'mus/getEssence.s', 'musGetEssence'),
+    ('gameover', 'mus/gameover.s', 'musGameover'),
 ]
 
 # THE SOUND EFFECTS (S163): every effect the game plays that one of the two
@@ -76,6 +80,7 @@ SFX = [
     ('cutGrass', 'ROM_SEASONS'), ('enterCave', 'ROM_SEASONS'), ('text', 'ROM_SEASONS'),
     ('text2', 'ROM_SEASONS'), ('menuMove', 'ROM_SEASONS'), ('selectItem', 'ROM_SEASONS'),
     ('error', 'ROM_SEASONS'), ('openMenu', 'ROM_SEASONS'), ('heartBeep', 'ROM_SEASONS'),
+    ('bombLand', 'ROM_SEASONS'), ('rumble', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

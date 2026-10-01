@@ -827,9 +827,9 @@ export class Game {
     this.startCutscene([
       { sfx: 'chest' },
       { lift: { art: key.icon, x: cx - TILE / 2, y: ty * TILE } },
-      { sfx: 'rumble', shake: [2, KEYHOLE_OPEN_FRAMES], wait: KEYHOLE_OPEN_FRAMES },
+      { sfx: 'doorRumble', shake: [2, KEYHOLE_OPEN_FRAMES], wait: KEYHOLE_OPEN_FRAMES },
       { flag: def.openFlag, do: (g) => g.applyStoryGates() },
-      { sfx: 'secret' },
+      { jingle: 'secret' },
     ]);
     return true;
   }

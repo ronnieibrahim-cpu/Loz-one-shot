@@ -33,6 +33,9 @@ const SFX = {
   dredgeCast: { type: 'noise', freq: 2600, freq2: 1800, dur: 0.24, q: 3.0, vol: 0.1 },
   hookHit: { type: 'blip', freq: 1600, freq2: 500, dur: 0.09, duty: 0.25, vol: 0.12 },
   place: { type: 'blip', freq: 300, freq2: 200, dur: 0.07, duty: 0.5, vol: 0.1 },
+  // A bomb set down: SND_BOMB_LAND, what the cartridge plays when a bomb
+  // touches the ground (commonBombAndBraceletCode.s). The Anchor keeps `place`.
+  bombDown: { seasons: 'bombLand' },
   explode: { seasons: 'explosion' },
   fire: { seasons: 'lightTorch' },
   // THREE DEFINITIONS WERE REMOVED FROM HERE, and the removal is the point.
@@ -119,6 +122,10 @@ const SFX = {
   ricochet: { seasons: 'clink' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
   hop: { seasons: 'enemyJump' },
+
+  // A keyhole's door grinding open: the cartridge's own SND_RUMBLE. The
+  // coral pillar and the hauled boulder keep our `rumble`.
+  doorRumble: { seasons: 'rumble' },
 
   // --- pickups & UI -------------------------------------------------------
   rupee: { seasons: 'rupee' },
@@ -910,84 +917,25 @@ const TRACKS = {
   },
 
   // --- jingles (loop: false, they hand control back to the previous track) --
-  fanfare: {
-    bpm: 140, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.18, decay: 0.2 }, wav: { vol: 0.22, decay: 0.2 } },
-    patterns: {
-      A: {
-        p1: 'G5 .  G5 .  G5 .  C6 -  -  -  -  .  .  .  .  .',
-        wav: 'C3 .  C3 .  C3 .  E3 -  -  -  -  .  .  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
-  fanfareShort: {
-    bpm: 150, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.2 } },
-    patterns: { A: { p1: 'C5 E5 G5 C6 -  -  .  .' } },
-    order: ['A'],
-  },
-  essence: {
-    bpm: 100, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.3 }, p2: { duty: 0.25, vol: 0.1, decay: 0.3 }, wav: { vol: 0.2, decay: 0.3 } },
-    patterns: {
-      A: {
-        p1: 'C5 .  E5 .  G5 .  C6 .  B5 .  C6 -  -  -  -  -  -  -  -  .  .  .  .  .',
-        p2: 'E4 .  G4 .  C5 .  E5 .  D5 .  E5 -  -  -  -  -  -  -  -  .  .  .  .  .',
-        wav: 'C3 -  -  -  C3 -  -  -  G2 -  -  -  C3 -  -  -  -  -  -  .  .  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
-  bossClear: {
-    bpm: 120, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.18, decay: 0.25 }, wav: { vol: 0.22, decay: 0.25 } },
-    patterns: {
-      A: {
-        p1: 'C5 .  G5 .  E5 .  C6 .  G5 .  C6 -  -  -  -  -  -  .  .  .',
-        wav: 'C3 -  -  -  E3 -  -  -  G3 -  -  -  C3 -  -  -  -  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
-  gameOver: {
-    bpm: 84, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.4 }, wav: { vol: 0.2, decay: 0.4 } },
-    patterns: {
-      A: {
-        p1: 'C5 -  -  -  B4 -  -  -  Bb4 -  -  -  A4 -  -  -  -  -  -  -  .  .  .  .',
-        wav: 'C3 -  -  -  B2 -  -  -  Bb2 -  -  -  A2 -  -  -  -  -  -  -  .  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
-  // Held overhead: a rising arpeggio that lands an octave up.
+  // Every treasure the cartridges hand over plays SND_GETITEM
+  // (object_code/common/interactions/treasure.s), a Heart Container included.
+  fanfare: { seasons: 'getItem' },
+  fanfareShort: { seasons: 'getItem' },
+  // Seasons' own Essence fanfare (mus/getEssence.s).
+  essence: { seasons: 'getEssence' },
+  // The prize appearing after a boss: a treasure appearing plays
+  // SND_SOLVEPUZZLE on the cartridge (treasure.s).
+  bossClear: { seasons: 'solvePuzzle' },
+  // Seasons' own Game Over theme. It LOOPS, as it does on the cartridge, until
+  // the player continues and the room's music takes over.
+  gameOver: { seasons: 'gameover' },
   // Held overhead: Seasons' own item jingle (sfx/getItem.s).
   itemGet: { seasons: 'getItem' },
-  // Something opened that should not have: the six-note discovery phrase.
-  secret: {
-    bpm: 144, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.18 }, wav: { vol: 0.2, decay: 0.18 } },
-    patterns: {
-      A: {
-        p1: 'G5 .  F#5 .  D#5 .  A4 .  G#4 .  E5 .  G#5 .  C6 -  -  -  -  .  .  .',
-        wav: 'G2 .  F#2 .  D#2 .  A1 .  G#1 .  E2 .  G#2 .  C3 -  -  -  -  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
-  // Quarter heart: shorter and sweeter than a full container.
-  heartPiece: {
-    bpm: 138, rowsPerBeat: 4, loop: false,
-    cfg: { p1: { duty: 0.25, vol: 0.16, decay: 0.24 }, p2: { duty: 0.5, vol: 0.09, decay: 0.26 } },
-    patterns: {
-      A: {
-        p1: 'E5 .  G5 .  B5 .  E6 -  -  -  -  -  .  .  .  .',
-        p2: 'G4 .  B4 .  E5 .  G5 -  -  -  -  -  .  .  .  .',
-      },
-    },
-    order: ['A'],
-  },
+  // Something opened that should not have: SND_SOLVEPUZZLE, the cartridge's
+  // own discovery chime.
+  secret: { seasons: 'solvePuzzle' },
+  // A Piece of Heart is a treasure like any other on the cartridge.
+  heartPiece: { seasons: 'getItem' },
 
   // S6 AUDITION TRACK — not part of the game, and nothing wires it to a
   // room or map. It exists only so the three new engine techniques can be

@@ -150,6 +150,12 @@ const dataChecks = [];
 const dataFiles = ['src/data/tiles-core.js', 'src/data/dungeons-a.js', 'src/data/dungeons-b.js',
   'src/data/overworld.js', 'src/data/caves.js', 'src/data/story.js', 'src/data/trade.js',
   'src/data/tiles-dungeon-themes.js'];
+// Cutscene steps are written as `{ sfx: 'name' }` too, in the game code itself
+// (Game.useKeyhole's door). Every source file is read for the same field.
+for (const f of files) {
+  const rel = relative(ROOT, f);
+  if (!dataFiles.includes(rel)) dataFiles.push(rel);
+}
 for (const rel of dataFiles) {
   let src;
   try { src = await readFile(join(ROOT, rel), 'utf8'); } catch { continue; }
