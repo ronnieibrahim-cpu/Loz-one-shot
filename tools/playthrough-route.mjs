@@ -1058,7 +1058,10 @@ export const ROUTE = [
   // every entry hold swept, 4 to 32 frames.
   // S166: Seasons' 32-frame boss safety window; wins at waits 60 and 62 when
   // the robot holds off while she is still safe (`waitInvuln`).
-  ['wait', 60],
+  // S167 (no bomb drops before the bag: the run arrives with different
+  // pickups behind it): wins untouched at every wait 30-40 (38 costs one
+  // quarter), loses at 42-44 and 50-120. 34 is the middle of the band.
+  ['wait', 34],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
