@@ -120,6 +120,9 @@ const SFX = {
   enemyShoot: { seasons: 'beam' },
   block: { seasons: 'clink' },
   ricochet: { seasons: 'clink' },
+  // The sword poking a wall a bomb would open: a hollower clink (S172,
+  // commonCode2.s @bombableWallClink, SND_CLINK2).
+  clinkHollow: { seasons: 'clink2' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
   hop: { seasons: 'enemyJump' },
 

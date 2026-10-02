@@ -250,11 +250,6 @@ export const SPIN_STEP_FRAMES = [3, 2];
  *  (no Spin Ring), and @state4 ends the spin when five quarters have passed. */
 export const SPIN_FRAMES = 25;
 
-/** px — how far in front of Link the blade reaches. guessed. */
-export const SWORD_REACH = 13;
-
-/** px — gap between Link's centre and the near edge of the sword box. guessed. */
-export const SWORD_GAP = 3;
 
 /** px — where the blade can hit at each of the spin's eight positions,
  *  clockwise from up (even = cardinal, odd = the diagonal after it), as
@@ -291,11 +286,6 @@ export const SWORD_CUT_POINTS = [
  *  the frame the swing's animation ends, so the first frame after it. */
 export const SWORD_HOLD_DELAY = 1;
 
-/** qh — damage the extended blade deals on contact. guessed; half a swing's,
- *  because walking into something with the sword out is meant to be worth less
- *  than choosing to swing at it. The enemy's own invulnerability window is what
- *  rate-limits it, so this is damage per enemy-invuln period, not per frame. */
-export const SWORD_HOLD_DAMAGE = 1;
 
 /** px — knockback dealt by the extended blade. derived: ENEMY_HIT_TIERS' low
  *  hit (objectCollisionTable ENEMYCOLLISION_STANDARD_ENEMY, column
@@ -303,9 +293,18 @@ export const SWORD_HOLD_DAMAGE = 1;
  *  distance, like every other KNOCK_* — see the note above them. */
 export const KNOCK_HOLD = 16;
 
-/** f — how long after a clink off a wall the blade may clink again. guessed;
- *  without it the sfx retriggers every frame you lean on the wall. */
-export const SWORD_CLINK_COOLDOWN = 20;
+/** f — THE POKE: the held blade jabbed into a wall or an enemy, as [frames at
+ *  full reach, frames drawn back]. Link stands still for both. derived from
+ *  the cartridge: swordParent.s @checkAndRetForSwordPoke / @triggerSwordPoke
+ *  set LINK_ANIM_MODE_1f, which is data/seasons/specialObjectAnimationData.s
+ *  animationData19d0c: `$06 $b4 $44` (full reach; bit 6 breaks the tile at the
+ *  point ahead, or clinks off it), `$06 $b0 $06` (drawn back), then the end
+ *  marker. Pushed into a wall, the poke goes back to the hold with the charge
+ *  started over (@state6, counter1 $28); into an enemy, the blade is put away
+ *  (@state5 with subid 0 -> @deleteSelf). Before S172 the held blade clinked
+ *  off a wall every guessed 20 frames and kept charging, and dealt a guessed
+ *  quarter heart to anything it touched while staying out. */
+export const SWORD_POKE_PHASES = [6, 6];
 
 // ---------------------------------------------------------------------------
 // Damage, invulnerability and knockback

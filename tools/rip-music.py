@@ -74,6 +74,8 @@ SFX = [
     ('linkFall', 'ROM_SEASONS'), ('explosion', 'ROM_SEASONS'), ('lightTorch', 'ROM_SEASONS'),
     ('damageEnemy', 'ROM_SEASONS'), ('killEnemy', 'ROM_SEASONS'), ('bossDamage', 'ROM_SEASONS'),
     ('bossDead', 'ROM_SEASONS'), ('beam', 'ROM_SEASONS'), ('clink', 'ROM_SEASONS'),
+    # The sword poking a bombable wall (S172): commonCode2.s @bombableWallClink.
+    ('clink2', 'ROM_SEASONS'),
     ('enemyJump', 'ROM_SEASONS'), ('rupee', 'ROM_SEASONS'), ('gainHeart', 'ROM_SEASONS'),
     ('unknown7', 'ROM_SEASONS'), ('getSeed', 'ROM_SEASONS'), ('openChest', 'ROM_SEASONS'),
     ('solvePuzzle', 'ROM_SEASONS'), ('switch', 'ROM_SEASONS'), ('moveBlock', 'ROM_SEASONS'),

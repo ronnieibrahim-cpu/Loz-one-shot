@@ -18,7 +18,9 @@
 // eight positions out where it is, SPIN_ARC), WHAT THE BLADE CUTS (one tile
 // under one point per animation frame, SWORD_CUT_POINTS — a swing used to cut
 // four tufts), and that a charged blade FLASHES in the cartridge's palette 5
-// on 4-frame beats instead of throwing out sparkles.
+// on 4-frame beats instead of throwing out sparkles; and the POKE (the held
+// blade pushed into a wall or walked into an enemy) and the spin's double
+// damage.
 //
 //   node tools/check-sword.mjs
 import { createServer } from 'node:http';
@@ -319,6 +321,107 @@ section('a charged blade flashes');
   check('on the frame it charges the blade turns orange', r.on > 10, JSON.stringify(r));
   check('a beat later it is back in its own colours', r.off === 0, JSON.stringify(r));
   check('no sparkles are thrown out', r.sparkles === 0, JSON.stringify(r));
+}
+
+// THE POKE (S172). Held out, the blade does not stay out against what it
+// meets. Pushed into a wall Link pokes it — the blade jabs out and back over
+// SWORD_POKE_PHASES, Link rooted, a clink off the wall — and the hold starts
+// its charge over, so leaning on a wall never charges a spin. Walked into an
+// enemy it lands one swing's worth of damage and is put away until the button
+// is pressed again. Walked through grass it cuts nothing; poked into a bush,
+// it cuts the bush.
+async function holdInto(setupFn, keys, frames) {
+  return page.evaluate(async ([setupSrc, keys, frames]) => {
+    const g = window.__game, p = g.player;
+    const ent = await import('/src/game/entity.js');
+    const { CHARGE_FRAMES } = await import('/src/data/feel.js');
+    const ctx = { g, p, ent };
+    // The blade is out first, in open ground: a swing, then the hold.
+    window.__tap('a'); window.__harness.step(1);
+    window.__hold(['a']); window.__harness.step(24);
+    const extra = new Function('ctx', setupSrc)(ctx) || {};
+    const sounds = [];
+    const sfx = g.audio.sfx.bind(g.audio);
+    g.audio.sfx = (n, ...r) => { sounds.push(n); return sfx(n, ...r); };
+    window.__hold(keys);
+    let pokes = 0, maxCharge = 0, wasPoking = false, holdingAfterPoke = 0, x0 = null, movedInPoke = false;
+    for (let i = 0; i < frames; i++) {
+      window.__harness.step(1);
+      if (p.poking > 0 && !wasPoking) { pokes++; x0 = [p.x, p.y]; }
+      if (p.poking > 0 && x0 && (p.x !== x0[0] || p.y !== x0[1])) movedInPoke = true;
+      if (pokes > 0 && p.poking === 0 && p.holding) holdingAfterPoke++;
+      wasPoking = p.poking > 0;
+      maxCharge = Math.max(maxCharge, p.charge);
+    }
+    g.audio.sfx = sfx;
+    window.__hold(['a']); window.__harness.step(14);   // let go of the direction only
+    const heldAfter = p.holding;
+    window.__hold([]);
+    const out = { heldAfter, pokes, charged: maxCharge >= CHARGE_FRAMES, holdingAfterPoke, movedInPoke,
+      clinks: sounds.filter(n => n === 'block' || n === 'clinkHollow').length };
+    if (extra.after) Object.assign(out, extra.after());
+    return out;
+  }, [setupFn, keys, frames]);
+}
+section('the poke');
+{
+  // A wall: tile row above Link made solid.
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'up', items: { sword: 1 } });
+  let r = await holdInto(`
+    const { g, p } = ctx; const tx = Math.floor(p.cx / 16), ty = Math.floor(p.cy / 16);
+    for (let x = -2; x <= 2; x++) g.room.setTile(tx + x, ty - 1, 'cliff');`, ['a', 'up'], 200);
+  check('pushing the held blade into a wall pokes it, and pokes again while he keeps pushing', r.pokes >= 2, JSON.stringify(r));
+  check('each poke clinks off the wall', r.clinks >= r.pokes && r.clinks > 0, JSON.stringify(r));
+  check('Link stands still while he pokes', !r.movedInPoke, JSON.stringify(r));
+  check('once he stops pushing, the blade is held out again', r.heldAfter, JSON.stringify(r));
+  check('leaning on a wall never charges a spin: each poke starts the charge over', !r.charged, JSON.stringify(r));
+
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'up', items: { sword: 1 } });
+  r = await holdInto(`
+    const { g, p } = ctx; const tx = Math.floor(p.cx / 16), ty = Math.floor(p.cy / 16);
+    for (let x = -2; x <= 2; x++) g.room.setTile(tx + x, ty - 1, 'cliffCracked');
+    const sounds = []; const sfx = g.audio.sfx.bind(g.audio);
+    g.audio.sfx = (n, ...r) => { sounds.push(n); return sfx(n, ...r); };
+    return { after: () => ({ hollow: sounds.filter(n => n === 'clinkHollow').length, plain: sounds.filter(n => n === 'block').length }) };`, ['a', 'up'], 60);
+  check('poked, a wall a bomb would open clinks hollow', r.hollow > 0 && r.plain === 0, JSON.stringify(r));
+
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  r = await holdInto(`
+    const { g, p, ent } = ctx;
+    const e = ent.spawnEntity(g, 'octorok', 0, 0, {}); e.x = p.x; e.y = p.y + 40; e.update = () => {};
+    e.hp = 100; g.entities.push(e);
+    return { after: () => ({ lost: 100 - e.hp }) };`, ['a', 'down'], 90);
+  const { swordDamage } = await page.evaluate(async () => ({ swordDamage: (await import('/src/game/player.js')).swordDamage(1) }));
+  check('walking the held blade into an enemy hits it once, for a swing\'s damage', r.lost === swordDamage, JSON.stringify(r) + ' swing=' + swordDamage);
+  check('...pokes, and puts the sword away while the button is still held', r.pokes === 1 && r.holdingAfterPoke === 0 && !r.heldAfter, JSON.stringify(r));
+
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  r = await holdInto(`
+    const { g, p } = ctx; const tx = Math.floor(p.cx / 16), ty = Math.floor(p.cy / 16);
+    for (let y = 1; y <= 3; y++) g.room.setTile(tx, ty + y, 'tallgrass');
+    return { after: () => ({ grass: [1, 2, 3].filter(y => g.room.baseName(tx, ty + y) === 'tallgrass').length }) };`, ['a', 'down'], 50);
+  check('walking the held blade through tall grass cuts nothing', r.grass >= 2 && r.pokes === 0, JSON.stringify(r));
+
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  r = await holdInto(`
+    const { g, p } = ctx; const tx = Math.floor(p.cx / 16), ty = Math.floor(p.cy / 16);
+    g.room.setTile(tx, ty + 1, 'bush');
+    return { after: () => ({ bush: g.room.baseName(tx, ty + 1) }) };`, ['a', 'down'], 60);
+  check('poking the held blade into a bush cuts it', r.bush !== 'bush' && r.pokes >= 1, JSON.stringify(r));
+}
+
+section('a spin hits twice as hard as a swing');
+{
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  const r = await page.evaluate(async () => {
+    const g = window.__game, p = g.player;
+    const ent = await import('/src/game/entity.js');
+    const e = ent.spawnEntity(g, 'octorok', 0, 0, {}); e.x = p.x; e.y = p.y + 20; e.update = () => {};
+    e.hp = 100; g.entities.push(e);
+    p.startSpin(g); window.__hold([]); window.__harness.step(26);
+    return { lost: 100 - e.hp, swing: p.swordHit(g) };
+  });
+  check('the spin lands double the swing\'s damage', r.lost === r.swing * 2, JSON.stringify(r));
 }
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

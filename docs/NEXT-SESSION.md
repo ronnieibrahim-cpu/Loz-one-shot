@@ -1,4 +1,4 @@
-## S172 — the spin, the cut and the charged blade, as Seasons does them
+## S172 — the spin, the cut, the charged blade and the poke, as Seasons does them
 
 Branch claude/oracle-tides-s172-9zxlib, off main at 2d71369 (S171 fully
 merged by the human). The prompt left the task blank again; this session
@@ -34,20 +34,39 @@ where three things were still ours.
   direction held, the cut pattern of a swing each way and of a spin, the
   flash on and off, no sparkles). 14 go red on the S171 code.
 
+- PART TWO, at the human's word ("match Ages' and Seasons' sword behaviour"):
+  THE POKE. The held blade pushed into a wall (Link blocked moving the way he
+  faces) pokes: SWORD_POKE_PHASES [6, 6] (animationData19d0c, full reach then
+  drawn back), Link rooted from the frame it starts; on its first frame the
+  tile at the facing's SWORD_CUT_POINTS point is cut (a bush), or if solid it
+  clinks with a spark — `clinkHollow` (Seasons' SND_CLINK2, newly ripped by
+  rip-music.py) when the tile has a 'bomb' transform, a hint at a bombable
+  wall — and the hold comes back with the charge started over, so leaning on
+  a wall never charges a spin. The held blade walked into an enemy lands ONE
+  hit for the swing's damage (sword.s @state2) with KNOCK_HOLD, pokes, and is
+  put away (`swordStowed`) until the button is let go and pressed again.
+  Walking the held blade through grass cuts nothing. SWORD_HOLD_DAMAGE,
+  SWORD_CLINK_COOLDOWN, SWORD_REACH, SWORD_GAP removed. THE SPIN NOW DEALS
+  TWICE THE SWING (swordParent.s @state3 `sla` var3a) — Link's own blade, not
+  an enemy's damage or health, so outside the S150 rule.
+- check-sword: 50 assertions (poke on a wall, clink, rooted, held again once
+  he stops pushing, no charge against a wall, one hit and stowed on an enemy,
+  no cutting by walking, a poked bush cut, a hollow clink, spin x2).
+
 ### Verified
 Whole table green; check-playthrough 44/44, THE END, never died (the robot
-never spins, and every snarl it cuts is in front of it). Sent the human a
-before/now picture with Seasons' own sword graphics in both palettes.
+never spins or holds the blade, and every snarl it cuts is in front of it).
+Sent the human a before/now picture with Seasons' own sword graphics in both
+palettes, and the two clinks as sound files. Merged to main at the human's
+word.
 
 ### FUTURE ACTION ITEMS
-Item 5 (fight tuning) is the human's. Leftovers: Seasons' SWORD POKE — the
-held blade pushed into a wall plays a poke (LINK_ANIM_MODE_1f, swordParent.s
-@checkAndRetForSwordPoke), clinks via INTERAC_CLINK, and RESTARTS the charge
-(state6 sets counter1 $28 again); ours clinks on a guessed 20-frame cooldown
-and keeps charging. Spin damage is ours (Seasons doubles the swing's;
-ours adds one) — left alone under the S150 rule. From S171: a fast fade
-(speed 3) ends at offset 30; the menu page labels are ours; START on the
-CARD goes to the file select.
+Item 5 (fight tuning) is the human's. Leftovers: Seasons' poke animation draws
+Link's own poke frame ($b4 then $b0); ours reuses the swing body with the
+blade at full reach then drawn back. Seasons' "facing a wall" needs BOTH front
+corners against it (adjacentWallsBitset); ours pokes whenever the move toward
+the facing is blocked. From S171: a fast fade (speed 3) ends at offset 30; the
+menu page labels are ours; START on the CARD goes to the file select.
 
 ## S171 — the dungeon camera and the fades, as the cartridge does them
 

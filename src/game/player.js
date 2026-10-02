@@ -29,8 +29,8 @@ import {
   SHALLOW_FACTOR, CARRY_FACTOR, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
   BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_FLASH_BEAT,
-  SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_ARC, SWORD_CUT_POINTS,
-  SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
+  SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES,
+  SWORD_HOLD_DELAY, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES,
   KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE,
@@ -150,7 +150,9 @@ export class Player extends Entity {
     this.spinning = 0;
     this.holding = false;         // blade out, walking with it
     this.holdT = 0;               // frames spent in the hold
-    this.clinkCool = 0;           // sfx debounce for the blade scraping a wall
+    this.poking = 0;              // frames left of a poke (SWORD_POKE_PHASES)
+    this.pokeKeep = false;        // after the poke: back to the hold, or put away
+    this.swordStowed = false;     // put away by a poke; out again on a new press
     this.shielding = false;
     this.jumping = false;
     this.carrying = null;
@@ -208,7 +210,6 @@ export class Player extends Entity {
     if (this.flicker > 0) this.flicker--;
     if (this.speedBoost > 0) this.speedBoost--;
     if (this.conchTime > 0) this.conchTime--;
-    if (this.clinkCool > 0) this.clinkCool--;
     if (this.rodCool > 0) this.rodCool--;
     if (this.rodRing > 0) this.rodRing--;
     if (this.swordLock > 0) this.swordLock--;
@@ -238,6 +239,7 @@ export class Player extends Entity {
     this.updateTerrain(game);
 
     if (this.spinning > 0) { this.updateSpin(game); return; }
+    if (this.poking > 0) { this.updatePoke(game); return; }
     if (this.swinging > 0) { this.updateSwing(game); }
 
     this.handleInput(game);
@@ -245,7 +247,9 @@ export class Player extends Entity {
     this.updateLens(game);
     this.updateBellows(game);
     this.updateBreath(game);
-    this.updateMovement(game);
+    // A poke roots him from the frame it starts (swordParent.s
+    // @triggerSwordPoke, itemDisableLinkMovement).
+    if (this.poking === 0) this.updateMovement(game);
     this.updateJump(game);
     this.updateContactDamage(game);
     this.updateHazards(game);
@@ -422,7 +426,10 @@ export class Player extends Entity {
     // (see updateSwordHold) and, past a threshold, charges a spin.
     const slot = this.swordSlot(game);
     if (slot && hasItem(game.progress, 'sword') && !this.inDeep && !this.swordLocked()) {
-      if (i.down(slot) && this.swinging === 0) {
+      if (!i.down(slot)) this.swordStowed = false;
+      if (this.swordStowed) {
+        this.charge = 0;
+      } else if (i.down(slot) && this.swinging === 0) {
         this.charge++;
         if (this.charge === CHARGE_FRAMES) game.audio.sfx('charged');
       } else if (i.released(slot)) {
@@ -793,14 +800,18 @@ export class Player extends Entity {
   // into you, and the long hold reads as a dead wait for the spin rather than
   // as a stance you are already fighting in.
   //
-  // The contact damage is not rate-limited here. It does not need to be: the
-  // enemy's own invulnerability window after a hit is what spaces the hits out,
-  // which is exactly how the source games space them.
+  // SEASONS' HOLD (S172). The held blade does not stay out against what it
+  // meets: walked into an enemy it lands one hit, a swing's worth with a low
+  // knockback (sword.s @state2 copies the swing's damage to the held blade),
+  // and Link POKES and puts the sword away; pushed against a wall he pokes it,
+  // the tile at the blade's point is cut or clinks, and the hold starts its
+  // charge over (swordParent.s @checkAndRetForSwordPoke). Walking it through
+  // grass cuts nothing — only a poke or a swing cuts.
 
   updateSwordHold(game) {
     const slot = this.swordSlot(game);
     const out = !!slot && hasItem(game.progress, 'sword') && game.input.down(slot)
-      && this.swinging === 0 && this.spinning === 0
+      && this.swinging === 0 && this.spinning === 0 && !this.swordStowed
       && !this.inDeep && !this.carrying && !this.hookPulling && !this.swordLocked()
       && this.charge >= SWORD_HOLD_DELAY;
     if (!out) { this.holding = false; this.holdT = 0; return; }
@@ -810,26 +821,44 @@ export class Player extends Entity {
 
     const box = this.swordBox(game);
     for (const e of game.entities) {
-      if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
+      if (!e.isEnemy || e.dead || e.dormant || e.hidden || e.invuln > 0) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
-      e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD, this);
+      e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_HOLD), this);
+      this.startPoke(game, false);
+      return;
     }
-    // Walking a held blade through undergrowth cuts it, as it does in Seasons.
-    game.checkTileAction(box, 'cut');
-    this.checkSwordClink(game);
+    if (this.pushing && game.input.down(this.dir)) this.startPoke(game, true);
   }
 
-  /** The blade tip scraping something solid: a clink, a spark, no damage. */
-  checkSwordClink(game) {
-    if (this.clinkCool > 0 || !game.room || !game.input.anyDir()) return;
-    const [dx, dy] = DIR_VEC[this.dir];
-    const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
-    const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
-    if (tx < 0 || ty < 0 || tx >= game.room.pw || ty >= game.room.ph) return;
-    if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
-    this.clinkCool = SWORD_CLINK_COOLDOWN;
-    game.audio.sfx('block');
-    game.spawnEffect('spark', tx - 8, ty - 8);
+  startPoke(game, keep) {
+    this.poking = SWORD_POKE_PHASES[0] + SWORD_POKE_PHASES[1];
+    this.pokeKeep = keep;
+    this.holding = false;
+    this.holdT = 0;
+    this.charge = 0;
+    this.pushing = false;
+  }
+
+  /** The poke's frames: the blade jabbed out, then drawn back, Link rooted. On
+   *  the first, the tile at the blade's point is cut — or, poking a wall, it
+   *  clinks (hollow off a wall a bomb would open). */
+  updatePoke(game) {
+    const t = SWORD_POKE_PHASES[0] + SWORD_POKE_PHASES[1] - this.poking;
+    this.poking--;
+    if (t === 0) {
+      const [dy, dx] = SWORD_CUT_POINTS[SPIN_START[this.dir]];
+      const px = this.cx + dx, py = this.cy + dy;
+      const cut = game.checkTileAction({ x: px, y: py, w: 1, h: 1 }, 'cut');
+      if (!cut && this.pokeKeep && game.room && px >= 0 && py >= 0
+        && px < game.room.pw && py < game.room.ph
+        && game.room.solidAt(px, py, game.tide, { jumping: false, swim: false })) {
+        const name = game.room.baseName(Math.floor(px / TILE), Math.floor(py / TILE));
+        const hollow = !!transformFor(name, 'bomb');
+        game.audio.sfx(hollow ? 'clinkHollow' : 'block');
+        game.spawnEffect('spark', px - 8, py - 8);
+      }
+    }
+    if (this.poking === 0 && !this.pokeKeep) this.swordStowed = true;
   }
 
   /** The sword is out of reach: a bubble touched him, or a gel is on him. */
@@ -896,6 +925,12 @@ export class Player extends Entity {
    * spent.
    */
   bladePose() {
+    // A poke is the swing's last two poses: full reach, then drawn back.
+    if (this.poking > 0) {
+      return this.poking > SWORD_POKE_PHASES[1]
+        ? { phase: 2, dir: this.dir, reach: BLADE_REACH_PX, arc: -1 }
+        : { phase: 3, dir: this.dir, reach: BLADE_TUCK_PX, arc: -1 };
+    }
     if (this.swinging <= 0) return null;
     const phase = swingPhase(SWING_FRAMES - this.swinging - 1);
     if (phase === 0) return { phase, dir: SWING_START_DIR[this.dir], reach: BLADE_REACH_PX, arc: -1 };
@@ -970,7 +1005,9 @@ export class Player extends Entity {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.spinHit.add(e.id);
-        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
+        // Twice a swing's damage: swordParent.s @state3 doubles the blade's
+        // var3a (`sla`) as the spin starts.
+        e.hurt(game, this.swordHit(game) * 2, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
       }
     }
     const [card, diag] = SPIN_STEP_FRAMES;
@@ -1410,7 +1447,7 @@ export class Player extends Entity {
       this.knockX = 0; this.knockY = 0; this.knockTime = 0;
     }
     this.charge = 0;
-    this.holding = false; this.holdT = 0;
+    this.holding = false; this.holdT = 0; this.poking = 0;
     if (this.carrying) this.dropCarried(game);
     game.audio.sfx('linkHurt');
     // No screen shake: Seasons holds the view dead still when Link is hit
@@ -1520,7 +1557,7 @@ export class Player extends Entity {
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);
     }
     if (this.hurtTime > 0) return 'link_hurt_' + key;
-    if (this.swinging > 0) return 'link_sword_' + key;
+    if (this.swinging > 0 || this.poking > 0) return 'link_sword_' + key;
     if (this.holding) return 'link_hold_' + key;
     if (this.carrying) return 'link_carry_' + key;
     if (this.pushing) return 'link_push_' + key;
@@ -1583,7 +1620,7 @@ export class Player extends Entity {
       const [bx, by] = SPIN_BLADE[k];
       sprites.draw(ctx, 'fx_spin_' + k, ox + this.x + bx, dy + by, { pal });
     }
-    const pose = this.swinging > 0 ? this.bladePose() : null;
+    const pose = this.swinging > 0 || this.poking > 0 ? this.bladePose() : null;
     if (pose && pose.phase === 1) {
       const [name, bx, by, flip] = SWING_DIAG[this.dir];
       sprites.draw(ctx, name, ox + this.x + bx, dy + by, { pal, flipX: flip });
