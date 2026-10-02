@@ -1,3 +1,55 @@
+## S166 — boss rules, no invented poses, the Lens out of doors, half-width icons
+
+Branch claude/oracle-tides-s166, off main at d879369 (S165 merged by the
+human: "Merge all to main"). The human answered S165's four questions: "Yes
+to all your questions and match the source games otherwise. Merge all to main."
+
+### What landed
+- BOSS HIT RULES: BOSS_INVULN_FRAMES 20 -> 32, derived (collisionEffects.s
+  ENEMYDMG_30 / ENEMYDMG_0c, invincibilityCounter $20, knockbackCounter 0);
+  BOSS_KNOCK_FRAMES/BOSS_KNOCK_SCALE deleted — a boss or miniboss is never
+  shoved. Robot re-routed: Clawcrab (wait 104 inserted, diagRetreat), Two
+  Gauges ('fight' before the Anchor — a keese pecked it to death), Gohmaraq
+  (wait 288, open+diag retreat), Bogmaw (wait 60, waitInvuln), Gloomtide
+  (wait 64, waitInvuln), Iron Knight (wait 120, reachSwing+waitInvuln),
+  Wyverna (wait 180, reachSwing; she now carries `tideEscape: LOW`, read only
+  by the robot, so it drains her flood with the conch), Rootmaw (wait 90,
+  reachSwing+waitInvuln). New robot option `waitInvuln` (dBoss, opt-in):
+  hold clear while the boss is still safe. check-side's Thalassor scenario
+  steps up off the stair before looting. route-prefix.mjs gained INSERT=
+  and prints boss invuln in FRAMES traces.
+- NO INVENTED POSES: every ordinary enemy's hurtFrame, and the hand-drawn
+  attack/idle poses (octorok/darknut/wizzrobe/anglerfry/wisp _atk,
+  urchin_idle), are gone with src/data/sprites-enemies-hurt.js (deleted);
+  Enemy.spriteName has no flinch branch. Attack frames that reuse a real walk
+  frame stay. Ripped `_hurt`/`_atk`/`_death` frames from rip-enemies.py stay
+  in the manifest unused (removing them is a ripper change). Bosses keep
+  their (ripped) hurt frames.
+- THE LENS OUT OF DOORS: overworld 0,7,1 Salt Works rebuilt — tideForce 1,
+  two `_` drops off the walkway into pockets with valves (room script ->
+  forceTideStep), a nook with rupee100 between them; east wall `9` (new
+  `drownWallSalt`: cliffMarble, cliffMarble, waterD; salt legend '9'), west
+  wall `#`; side drops `<`/`>` are the escapes. Seams: 0,6,1 (9,3) and 0,8,1
+  (0,3) are cliff now. check-lens accepts an overworld fork only with
+  `prize: true` and proves (new 7th claim) nothing past its probes reaches the
+  screen edge; outdoor forks are proved with full caps (swimmer). Two
+  check-side scenarios (win by swimming the east wall; the west refused and
+  dropped out). check-strands baseline re-recorded (+3 deliberate pockets).
+  A Bottled Tide can also read it, at the price of a charge.
+- ICONS: the 15 hand-drawn gear icons redrawn 8 px wide x 16, centred, outline
+  plus 2-3 colours, like Seasons' menu icons (sprites-gear.js).
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test 86/86;
+replay 51/51; check-side 36/36; check-lens 65/65. Built; dist committed.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's — note every boss now lasts longer (32 f
+windows) and the robot's margins are thin in places (Gohmaraq 10/16 left,
+Gloomtide 17/28, Wyverna 11/32, Rootmaw 19/40). Open fidelity leftovers:
+Seasons' menu shows L-1/L-2 beside leveled items (ours shows A/B marks);
+CAM_DEADZONE_W needs footage; the game-over screen is a different design.
+
 ## S165 — Seasons' deaths, drops and bombs; every overworld screen audited; the phone layout
 
 Branch claude/oracle-tides-s165, off main at d0c88e2 (S164 merged). NOT

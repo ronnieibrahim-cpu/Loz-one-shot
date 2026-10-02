@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Give the robot the fight's own answer before sweeping (S166).** Wyverna
+  lost at every entry wait swept in 2-frame steps; one line —
+  `tideEscape: LOW`, telling the robot the conch beaches her — and she was
+  won at every wait from 60 to 300. When a sweep finds nothing, ask what a
+  player would do that the robot does not know about.
+- **A health shortfall travels (S166).** The Clawcrab's longer fight left the
+  robot at 3-6 of 12, and it died two rooms later to a keese, nowhere near a
+  boss. Sweep the fight's ENTRY (insert a wait — route-prefix INSERT=) jointly
+  with the next boss, judged by the hearts left, not by win/lose.
+- **PATCH then INSERT (S166).** route-prefix applies PATCH indices before an
+  INSERT shifts them: patch the ORIGINAL index of the directive you mean.
+
 - **A hand-drawn effect hides behind "no sheet has it" (S165).** The puff,
   the kill puff and the bomb blast were all drawn because no SHEET had them;
   the cartridge had every one on `spr_common_sprites` (VRAM bank 1, always
