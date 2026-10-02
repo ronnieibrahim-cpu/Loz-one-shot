@@ -58,6 +58,11 @@ page.on('request', (req) => {
 });
 
 await page.goto(pathToFileURL(FILE).href);
+// On a fresh load the title card waits for the press that starts the sound
+// (S169), and the card alone is three colours. Press once, as a player does,
+// so the sound starts from file:// too and the opening runs.
+await page.waitForFunction(() => !!window.__game, null, { timeout: 15000 }).catch(() => {});
+await page.keyboard.press('Enter');
 await page.waitForTimeout(RUN_MS);
 
 // The page's own error overlay catches anything the shim in index.html saw.

@@ -131,6 +131,9 @@ const tap = async (code) => {
 };
 
 // New game, skip the intro.
+// The first real key only wakes the sound while the title card waits for
+// it (S169); that press is spent, so make it before the two that count.
+if (await page.evaluate(() => window.__game.title.waitSound)) { await tap('Enter'); await frames(6); }
 await tap('Enter'); await frames(6);
 await tap('Enter'); await frames(20);
 for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cutscene'); i++) {

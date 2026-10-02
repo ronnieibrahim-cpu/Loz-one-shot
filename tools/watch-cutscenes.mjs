@@ -102,6 +102,9 @@ const frames = (n) => page.evaluate((k) => new Promise(res => {
 // standing world, so each scene is played from the same place. Real key
 // presses, the way shoot-cutscene.mjs does it — the title screen reads the
 // input layer, not a set on the game object.
+// The first real key only wakes the sound while the title card waits for
+// it (S169); that press is spent, so make it before the two that count.
+if (await page.evaluate(() => window.__game.title.waitSound)) { await page.keyboard.press('Enter'); await frames(6); }
 await page.keyboard.press('Enter'); await frames(6);
 await page.keyboard.press('Enter'); await frames(20);
 for (let i = 0; i < 200 && await page.evaluate(() => window.__game.mode === 'cutscene'); i++) {
