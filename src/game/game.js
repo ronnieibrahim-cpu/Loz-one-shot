@@ -32,6 +32,7 @@ import { audio } from '../core/audio.js';
 import { tiles as tileSheet, sprites } from '../gfx/art.js';
 import { TINTS } from '../gfx/palettes.js';
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
+import { drawScreen, screenImage } from '../gfx/screens.js';
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
@@ -65,7 +66,8 @@ import {
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
-  GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
+  DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, GAMEOVER_FADE_IN_FRAMES,
+  GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
   LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
@@ -1710,13 +1712,40 @@ export class Game {
   // and its destination is a room, never a respawn. Thalassor's whirlpool is a
   // boss behaviour and does not go through either.
 
+  /**
+   * DEATH, AS SEASONS PLAYS IT (S169): the world stops, the music goes, Link
+   * spins where he fell and collapses (`deathPose`), and then the save screen
+   * comes up as GAME OVER — CONTINUE, SAVE & CONT., SAVE & QUIT — fading in
+   * from white with the Game Over theme. Was a darkened field and our own
+   * "YOU DIED".
+   */
   onPlayerDied() {
     if (this.mode === 'gameover') return;
     this.mode = 'gameover';
     this.deathTime = 0;
+    this.deathCursor = 0;          // Seasons opens on CONTINUE
+    this.deathPicked = -1;
+    this.deathPickT = 0;
     this.progress.deaths++;
+    // Seasons ends his invincibility as he starts to die (resetLinkInvincibility):
+    // the spin is not drawn in the hit palette.
+    if (this.player) this.player.flicker = 0;
     this.audio.stop();
-    this.audio.jingle('gameOver');
+    this.audio.sfx('linkDead');
+  }
+
+  /** The frame the game over screen starts to fade in. */
+  gameOverMenuAt() {
+    return DEATH_SPIN_STEP * (1 + 4 * DEATH_SPIN_LAPS) + DEATH_COLLAPSE_FRAMES;
+  }
+
+  /** Link's pose while he dies: a facing, or null once he has collapsed. */
+  deathPose() {
+    const t = this.deathTime;
+    if (t < DEATH_SPIN_STEP) return 'down';
+    const spin = DEATH_SPIN_STEP * (1 + 4 * DEATH_SPIN_LAPS);
+    if (t >= spin) return null;
+    return ['right', 'up', 'left', 'down'][Math.floor((t - DEATH_SPIN_STEP) / DEATH_SPIN_STEP) % 4];
   }
 
   /**
@@ -1772,7 +1801,7 @@ export class Game {
     };
   }
 
-  respawn(keepProgress = true) {
+  respawn({ save = true } = {}) {
     const p = this.progress;
     p.hearts = p.maxHearts;
     const s = p.respawn;
@@ -1830,7 +1859,7 @@ export class Game {
     // DEATH IS NOT A WAY TO LOSE AN HOUR. Everything the run has earned is
     // already in `progress`; writing it here is what makes it survive the tab
     // being closed on the game-over screen, which is when a player closes it.
-    if (this.slot != null) this.save();
+    if (save && this.slot != null) this.save();
   }
 
   // ------------------------------------------------------------------ frame
@@ -2177,11 +2206,35 @@ export class Game {
 
   updateGameOver() {
     this.deathTime++;
-    if (this.deathTime < GAMEOVER_WAIT_FRAMES) return;
-    if (this.input.pressed('a') || this.input.pressed('start')) {
-      if (this.deathChoice === undefined) this.deathChoice = 0;
-      this.respawn();
-      this.deathChoice = undefined;
+    const menuAt = this.gameOverMenuAt();
+    if (this.deathTime === menuAt) this.audio.jingle('gameOver');
+    if (this.deathTime < menuAt + GAMEOVER_FADE_IN_FRAMES) return;
+    if (this.deathPicked >= 0) {
+      if (--this.deathPickT <= 0) this.gameOverChoose(this.deathPicked);
+      return;
+    }
+    const i = this.input;
+    // The cursor stops at either end; it does not wrap (saveQuitMenu_state1).
+    if (i.pressed('up') && this.deathCursor > 0) { this.deathCursor--; this.audio.sfx('cursor'); }
+    if (i.pressed('down') && this.deathCursor < 2) { this.deathCursor++; this.audio.sfx('cursor'); }
+    if (i.pressed('a') || i.pressed('start')) {
+      this.deathPicked = this.deathCursor;
+      this.deathPickT = GAMEOVER_PICK_FRAMES;
+      this.audio.sfx('confirm');
+    }
+  }
+
+  /** CONTINUE goes on without saving; SAVE & CONT. saves and goes on; SAVE &
+   *  QUIT saves and goes back to the title. All three come back on a full
+   *  bar at the respawn point, as Seasons' do. */
+  gameOverChoose(i) {
+    this.deathPicked = -1;
+    this.respawn({ save: i > 0 });
+    if (i === 2) {
+      this.audio.stop();
+      this.mode = 'title';
+      this.title.reset();
+      this.audio.play('title');
     }
   }
 
@@ -2433,14 +2486,24 @@ export class Game {
       { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }
 
+  /** The game over screen, once Link has collapsed: Seasons' own, off the
+   *  cartridge (tools/rip-save.py), the acorn on the choice. */
   drawGameOver(ctx) {
-    const t = Math.min(1, this.deathTime / 60);
-    this.screen.fade(t * 0.85);
-    if (this.deathTime > 60) {
-      drawTextCentered(ctx, 'YOU DIED', SCREEN_W / 2, 56, '#e04858');
-      if (this.deathTime > GAMEOVER_WAIT_FRAMES && (this.frame >> 4) % 2 === 0) {
-        drawTextCentered(ctx, 'Press A to continue', SCREEN_W / 2, 80, '#f8f8e8');
-      }
+    const k = this.deathTime - this.gameOverMenuAt();
+    if (k < 0) return;
+    drawScreen(ctx, 'gameOverMenu');
+    const flicker = this.deathPicked >= 0 && (this.deathPickT & 4);
+    if (!flicker) {
+      const a = screenImage('saveAcorn');
+      drawScreen(ctx, 'saveAcorn', a.ax, a.ay + 24 * this.deathCursor);
+    }
+    // In from white, in the console's four steps.
+    const step = 4 - Math.min(4, Math.floor(k * 5 / GAMEOVER_FADE_IN_FRAMES));
+    if (step > 0) {
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = step / 4;
+      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+      ctx.globalAlpha = 1;
     }
   }
 

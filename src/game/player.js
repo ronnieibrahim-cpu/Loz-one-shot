@@ -1447,6 +1447,13 @@ export class Player extends Entity {
     this.flipX = this.dir === 'left';
     const key = side ? 'side' : this.dir;
 
+    // Dying (S169): Seasons' spin where he fell, then collapsed.
+    if (game && game.mode === 'gameover') {
+      const pose = game.deathPose();
+      if (!pose) { this.flipX = false; return 'link_lie'; }
+      this.flipX = pose === 'left';
+      return 'link_walk_' + (pose === 'left' || pose === 'right' ? 'side' : pose) + '_0';
+    }
     if (this.falling > 0) {
       const t = FALL_FRAMES - this.falling;
       const [a, b] = FALL_ANIM_FRAMES;

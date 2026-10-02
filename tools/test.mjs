@@ -961,11 +961,14 @@ const main = async () => {
   await tap('Tab'); await shot('14-menu-quest');
   await tap('Tab');
   check('reached the save tab', await G(() => window.__game.menu.tab === 4));
+  // Seasons' save screen opens on CONTINUE; SAVE & CONT. saves and closes.
+  check('the save screen opens on CONTINUE', await G(() => window.__game.menu.saveCursor === 0));
+  await tap('ArrowDown');
+  await shot('15-menu-save');
   await tap('x');
-  await frames(10);
+  await frames(40); await settle();
   check('save wrote to localStorage', await G(() => !!localStorage.getItem('oracleOfTides.save.v1')));
-  await tap('Enter'); await settle();
-  check('menu closes', await G(() => window.__game.mode === 'play'));
+  check('SAVE & CONT. closes the menu', await G(() => window.__game.mode === 'play'));
 
   // The status bar holds every heart count the game can reach (S167): the
   // cap is 16 and the bar used to wrap hearts 15-16 onto a third row drawn
@@ -1017,10 +1020,23 @@ const main = async () => {
   await G(() => { const g = window.__game; g.progress.hearts = 1; g.player.invuln = 0; g.player.takeDamage(g, 99, null, {}); });
   await frames(20);
   check('death enters game over', await G(() => window.__game.mode === 'gameover'), await G(() => window.__game.mode));
+  // Seasons' death (S169): he spins through all four facings, collapses,
+  // and the save screen comes up as GAME OVER on CONTINUE.
+  const poses = await G(() => {
+    const g = window.__game, seen = [];
+    for (let t = 0; t < g.gameOverMenuAt(); t += 8) {
+      const was = g.deathTime; g.deathTime = t;
+      seen.push(g.player.spriteName(g).replace('link_walk_', '').replace('_0', ''));
+      g.deathTime = was;
+    }
+    return [...new Set(seen)].join(',');
+  });
+  check('he spins through every facing, then lies collapsed', poses === 'down,side,up,link_lie', poses);
+  await frames(Math.max(0, await G(() => window.__game.gameOverMenuAt() + 10 - window.__game.deathTime)));
   await shot('14-gameover');
-  await frames(110);
+  check('the game over screen opens on CONTINUE', await G(() => window.__game.deathCursor === 0));
   await tap('x');
-  await frames(20);
+  await frames(40);
   check('respawn returns to play', await G(() => window.__game.mode === 'play'), await G(() => window.__game.mode));
   check('respawn restores health', await G(() => window.__game.progress.hearts === window.__game.progress.maxHearts));
 
@@ -1069,6 +1085,32 @@ const main = async () => {
   check('a press in the opening cuts to the logo', opening.skipped === `logo>intro>logo@${opening.card + 300}`, opening.skipped);
   check('with no sound yet the card waits, and the press that wakes it skips nothing',
     opening.woke === `logo>intro>logo@${501 + opening.card + opening.frames - 2}`, opening.woke);
+  // Left alone on the logo, Seasons stops its music, fades to white and plays
+  // the card and the intro again (S169; TITLE_IDLE_FRAMES, derived).
+  const idle = await G(async () => {
+    const { Title } = await import('/src/game/title.js');
+    const feel = await import('/src/data/feel.js');
+    const log = [];
+    const audio = { ok: true, sfx() {}, play(n) { log.push('play:' + n); }, stop() { log.push('stop'); } };
+    const fake = { audio, frame: 0, input: { pressed: () => false } };
+    const t = new Title(fake);
+    t.opening = null;                       // straight to the logo, as after a game
+    const logoAt = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES + feel.TITLE_WHITE_FRAMES;
+    let stopAt = -1, cardAt = -1;
+    for (let f = 0; f < logoAt + feel.TITLE_IDLE_FRAMES + feel.TITLE_FADE_FRAMES + 5; f++) {
+      const n = log.length;
+      t.update();
+      if (log.length > n && log[n] === 'stop') stopAt = t.t;
+      if (cardAt < 0 && t.t === 0 && f > 0) cardAt = f;
+    }
+    return { stopAt, cardAt, want: logoAt + feel.TITLE_IDLE_FRAMES, fade: feel.TITLE_FADE_FRAMES,
+      log: log.join(','), opening: !!t.opening, stage: t.stage };
+  });
+  check('left alone, the logo stops its music after 40 seconds and fades',
+    idle.stopAt === idle.want, JSON.stringify(idle));
+  check('and the card and the opening come round again',
+    idle.cardAt === idle.want + idle.fade - 1 && idle.opening && idle.stage === 'logo' && idle.log === 'stop,play:title',
+    JSON.stringify(idle));
   check('the opening is between 20 and 40 seconds', opening.frames >= 1200 && opening.frames <= 2400, opening.frames + ' frames');
 
   console.log('\n--- Farore behind her desk (S168) ---');

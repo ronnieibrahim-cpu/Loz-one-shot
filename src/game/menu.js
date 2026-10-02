@@ -19,7 +19,7 @@ import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
 import { DUNGEON_KEYS } from '../data/keys.js';
-import { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE } from '../data/feel.js';
+import { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE, GAMEOVER_PICK_FRAMES } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 
 // THE SEASONS INVENTORY PAGE (tools/rip-screens.py, off the footage): a white
@@ -222,7 +222,9 @@ export class Menu {
     this.cursor = 0;
     this.caseRow = 1;        // index into CASE_ROWS; starts on MID, the one you own
     this.poolCursor = 0;
-    this.saveCursor = 1;
+    this.saveCursor = 0;
+    this.savePicked = -1;
+    this.savePickT = 0;
     this.message = '';
     this.messageTime = 0;
     this.descKey = '';
@@ -253,6 +255,8 @@ export class Menu {
     if (i.pressed('select')) {
       this.tab = (this.tab + 1) % TABS.length;
       this.cursor = 0;
+      this.saveCursor = 0;          // Seasons' save screen opens on CONTINUE
+      this.savePicked = -1;
       g.audio.sfx('cursor');
       return;
     }
@@ -420,25 +424,38 @@ export class Menu {
     this.flash(CHARMS[id].name + ' on ' + slot.toUpperCase());
   }
 
+  /**
+   * SEASONS' SAVE SCREEN (runSaveAndQuitMenu, S169): CONTINUE, SAVE & CONT.,
+   * SAVE & QUIT. The cursor stops at either end, and a choice flickers the
+   * acorn for GAMEOVER_PICK_FRAMES before it takes effect — the same screen
+   * and the same rules as the game over (Game.updateGameOver).
+   */
   updateSave() {
     const g = this.game, i = g.input;
-    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
-    if (i.pressed('up')) { this.saveCursor = (this.saveCursor + 2) % 3; g.audio.sfx('cursor'); }
-    if (i.pressed('down')) { this.saveCursor = (this.saveCursor + 1) % 3; g.audio.sfx('cursor'); }
-    if (i.pressed('a')) {
-      if (this.saveCursor === 0) {
-        this.close();
-      } else if (this.saveCursor === 1) {
-        const ok = g.save();
-        g.audio.sfx(ok ? 'confirm' : 'deny');
-        this.flash(ok ? 'Saved.' : 'Could not save.');
-      } else {
-        g.save();
-        g.mode = 'title';
-        g.title.reset();
-        g.audio.play('title');
-      }
+    if (this.savePicked >= 0) {
+      if (--this.savePickT <= 0) this.saveChoose(this.savePicked);
+      return;
     }
+    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
+    if (i.pressed('up') && this.saveCursor > 0) { this.saveCursor--; g.audio.sfx('cursor'); }
+    if (i.pressed('down') && this.saveCursor < 2) { this.saveCursor++; g.audio.sfx('cursor'); }
+    if (i.pressed('a')) {
+      this.savePicked = this.saveCursor;
+      this.savePickT = GAMEOVER_PICK_FRAMES;
+      g.audio.sfx('confirm');
+    }
+  }
+
+  saveChoose(n) {
+    const g = this.game;
+    this.savePicked = -1;
+    if (n === 0) { this.close(); return; }
+    const ok = g.save();
+    if (!ok) { g.audio.sfx('deny'); this.flash('Could not save.'); return; }
+    if (n === 1) { this.close(); return; }
+    g.mode = 'title';
+    g.title.reset();
+    g.audio.play('title');
   }
 
   flash(msg) { this.message = msg; this.messageTime = 90; }
@@ -799,23 +816,15 @@ export class Menu {
     return sel.name;
   }
 
-  /**
-   * THE SEASONS SAVE PROMPT, off the footage: the bark frame, a banner, and
-   * three plaques — go on without saving, save and go on, save and stop —
-   * with the cursor on the middle one, where Seasons puts it.
-   */
+  /** Seasons' save screen, off the cartridge (tools/rip-save.py). */
   drawSave(ctx) {
-    drawScreen(ctx, 'saveScreen');
-    drawTextCentered(ctx, 'SAVE', SCREEN_W / 2, 10, '#000000');
-    const opts = ['KEEP PLAYING', 'SAVE', 'SAVE AND QUIT'];
-    for (let i = 0; i < opts.length; i++) {
-      const y = 58 + i * 24;
-      drawScreen(ctx, 'savePlaque', 32, y);
-      drawText(ctx, opts[i], 46, y + 4, '#000000');
-      if (i === this.saveCursor) drawScreen(ctx, 'seedCursor', 33, y + 1);
+    drawScreen(ctx, 'saveMenu');
+    if (!(this.savePicked >= 0 && (this.savePickT & 4))) {
+      const a = screenImage('saveAcorn');
+      drawScreen(ctx, 'saveAcorn', a.ax, a.ay + 24 * this.saveCursor);
     }
     if (this.messageTime > 0) drawTextCentered(ctx, this.message, SCREEN_W / 2, 130, '#f8f8f8');
-    else drawTextCentered(ctx, 'FILE ' + (this.game.slot + 1), SCREEN_W / 2, 130, '#b0a080');
   }
+
 
 }

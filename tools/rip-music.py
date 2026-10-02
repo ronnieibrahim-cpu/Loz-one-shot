@@ -84,6 +84,8 @@ SFX = [
     # The opening (S168): the storm that puts Link on the shore. Seasons'
     # own lightning crack, the wave its ending sea plays, and its wind.
     ('lightning', 'ROM_SEASONS'), ('wave', 'ROM_SEASONS'), ('wind', 'ROM_SEASONS'),
+    # Link's death spin (S169): SND_LINK_DEAD, played as he starts to spin.
+    ('linkDead', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

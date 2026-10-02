@@ -700,10 +700,18 @@ export const CHEST_TEXT_DELAY = 36;
 export const CHEST_ITEM_DELAY = 3;
 
 /** f — how long the opening card holds before it fades, if nothing is
- *  pressed. guessed: the footage's run skips the card at its first chance
- *  (video frames 6744-6803 are 60 frames of it), so its natural length is
- *  not in the video. */
-export const TITLE_CARD_FRAMES = 180;
+ *  pressed. derived: Seasons' Nintendo/Capcom card (oracles-disasm
+ *  code/bank3Cutscenes.s, intro_capcomScreen @state0) counts 208 frames
+ *  down before it fades out to white. Was a guessed 180 (S169). */
+export const TITLE_CARD_FRAMES = 208;
+
+/** f — how long the logo sits with nothing pressed before the music stops,
+ *  the screen fades to white and the card and opening play again. derived:
+ *  Seasons' intro_titlescreen_state0 loads a 16-bit countdown of $0960
+ *  (2400) into wTmpcbb3, state1 counts it down a frame at a time, and at zero
+ *  fades out (SNDCTRL_FAST_FADEOUT, fadeoutToWhite) and intro_restart goes
+ *  back to the Capcom screen. */
+export const TITLE_IDLE_FRAMES = 2400;
 
 // ---------------------------------------------------------------------------
 // The opening (S168): a ship at sea, a storm, the shore — ours, played before
@@ -944,8 +952,36 @@ export const ITEM_HOLD_ONE_HAND_X = -4;
 /** f — how long Link is frozen when claiming an essence. guessed. */
 export const ESSENCE_FREEZE_FRAMES = 150;
 
-/** f — how long the game-over screen holds before it accepts a button. guessed. */
-export const GAMEOVER_WAIT_FRAMES = 100;
+// Link's death and the game over (S169), as Seasons plays them: he spins
+// where he fell, collapses, and the save screen comes up as GAME OVER.
+
+/** f — Link's death spin: facing the viewer for the first step, then round
+ *  right, away, left and back to the viewer, each held this long. derived:
+ *  data/seasons/specialObjectAnimationData.s animationData19beb
+ *  (LINK_ANIM_MODE_SPIN): frame 2 for $08, then a loop of 1, 0, 3 for $08
+ *  each and 2 for $07 + $01. */
+export const DEATH_SPIN_STEP = 8;
+
+/** — how many times round he spins before he collapses. derived:
+ *  object_code/common/specialObjects/link.s linkState03 sets counter1 to $04
+ *  and counts one off at each lap's end marker ($80); at zero he collapses.
+ *  4 laps of 4 steps after the first step: 136 frames. */
+export const DEATH_SPIN_LAPS = 4;
+
+/** f — how long he lies collapsed before the game over screen. derived:
+ *  animationData19be5 (LINK_ANIM_MODE_COLLAPSED) holds frame 4 for $4c, and
+ *  its next entry's $ff is what linkState03 reads as the trigger. */
+export const DEATH_COLLAPSE_FRAMES = 76;
+
+/** f — the game over screen fading in from white. derived: runSaveAndQuitMenu
+ *  calls fastFadeinFromWhite, palette thread speed 3 against fadeinFromWhite's
+ *  1 (code/bank0.s), so a third of TITLE_FADE_FRAMES' measured 21. */
+export const GAMEOVER_FADE_IN_FRAMES = 7;
+
+/** f — after a choice, how long the cursor flickers before it takes effect.
+ *  derived: saveQuitMenu_state1 sets delayCounter to $1e; the acorn hides
+ *  while bit 2 of it is set (saveQuitMenu_drawSprites). */
+export const GAMEOVER_PICK_FRAMES = 30;
 
 /** f — how long THE END holds before a button takes it back to the title, so
  *  the A that closed the ending's last line cannot also skip the card. guessed. */

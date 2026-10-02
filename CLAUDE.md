@@ -132,6 +132,7 @@ ripper credit in the header. The current set:
 | `src/data/sprites-objects.js` | `tools/rip-objects.py` (chests, the sign, torches and their flame, and each dungeon's own push block and floor button, read out of Seasons' tilesets, layouts, palettes and animation tables in `assets/objects/`) |
 | `src/data/sprites-bosses-seasons.js` | `tools/rip-bosses.py` (the cartridge's own boss graphics, frame layouts and palettes, from `assets/bosses/oracles-disasm/`) |
 | `src/data/screens-intro.js` | `tools/rip-intro.py` (the opening's pictures: the sea and sky behind Seasons' linked ending, its ship and gull (INTERAC_LINK_SHIP) and its lightning (PART_LIGHTNING), from Seasons' own graphics and tables in `assets/intro/` and `assets/effects/`, S168) |
+| `src/data/screens-save.js` | `tools/rip-save.py` (Seasons' save screen — CONTINUE, SAVE & CONT., SAVE & QUIT — and the same screen as its GAME OVER, with the acorn cursor, from Seasons' own graphics, maps and palettes in `assets/save/`, S169) |
 | `src/data/music-seasons.js` | `tools/rip-music.py` (Seasons' own channel scripts and, since S163, both cartridges' sound effects with their channel priorities, from oracles-disasm copied into `assets/music/`; played by `src/core/gbsound.js`) |
 
 This cuts both ways: **removing** an extracted icon means removing its entry

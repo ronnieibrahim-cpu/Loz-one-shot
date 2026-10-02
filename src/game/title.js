@@ -7,7 +7,7 @@ import { drawScreen, screenImage } from '../gfx/screens.js';
 import { listSaves, deleteSlot, HEART_UNITS, storageAvailable, exportCode, importCode, saveSlot } from './progress.js';
 import { essenceCount } from '../world/maps.js';
 import {
-  TITLE_CARD_FRAMES, TITLE_FADE_FRAMES, TITLE_WHITE_FRAMES, TITLE_PRESS_BLINK,
+  TITLE_CARD_FRAMES, TITLE_FADE_FRAMES, TITLE_WHITE_FRAMES, TITLE_PRESS_BLINK, TITLE_IDLE_FRAMES,
 } from '../data/feel.js';
 // The screens are the Seasons originals (tools/rip-screens.py): the logo with
 // TIDES in its plaque, and the bark frame of its file select. What is drawn in
@@ -67,6 +67,20 @@ export class Title {
         this.opening = null;
         this.stage = 'logo';
         this.t = fadeEnd;
+      }
+      return;
+    }
+
+    // LEFT ALONE, THE LOGO PLAYS IT ALL AGAIN (S169), as Seasons does: the
+    // music stops, the screen fades to white, and the card and the opening
+    // come round again. Nothing is read while it fades.
+    const idleAt = fadeEnd + TITLE_WHITE_FRAMES + TITLE_IDLE_FRAMES;
+    if (this.stage === 'logo' && this.t >= idleAt) {
+      if (this.t === idleAt) g.audio.stop();
+      if (this.t >= idleAt + TITLE_FADE_FRAMES) {
+        this.opening = new Opening(g);
+        this.t = 0;
+        g.audio.play('title', { restart: true });
       }
       return;
     }
@@ -157,6 +171,8 @@ export class Title {
     }
     if (t < logoAt) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, SCREEN_W, SCREEN_H); return; }
     this.drawLogo(ctx);
+    const idleAt = logoAt + TITLE_IDLE_FRAMES;
+    if (t >= idleAt) this.whiteout(ctx, (t - idleAt) / TITLE_FADE_FRAMES);
   }
 
   /** The card: the Seasons developer card's own pale ground and blue type. */

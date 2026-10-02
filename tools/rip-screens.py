@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract the Oracle of Seasons title, file-select, save and inventory screens.
+"""Extract the Oracle of Seasons title, file-select and inventory screens.
 
 Regenerate with:  python3 tools/rip-screens.py
 
@@ -299,19 +299,10 @@ def fs_screens():
             for x in range(x0, x1):
                 fs[y][x] = face
 
-    # SAVE, blank: the banner, and the three plaques without their words or
-    # the cursor. The plaques are cut out separately so the game can place
-    # them; the screen behind them keeps its own dark floor.
-    plaque_rows = [(58, 73), (82, 97), (106, 121)]
-    floor = sv[76][80]
-    plaque = [row[32:129] for row in sv[plaque_rows[0][0]:plaque_rows[0][1]]]
-    plaque = [r[:] for r in plaque]
-    grain = lambda p, x, y: p[0] + p[1] + p[2] < 200
-    row_fill(plaque, (6, 1, 95, 14), grain)
-    for (a, b) in plaque_rows:
-        for y in range(a, b):
-            for x in range(30, 130):
-                sv[y][x] = floor
+    # THE SAVE SCREEN ITSELF is no longer cut from the footage (S169): the
+    # footage is the Japanese cartridge, and tools/rip-save.py renders the
+    # English one, and its game over, from the cartridge's own graphics. Its
+    # frame is still where the file select's clean banner comes from.
 
     # INVENTORY, blank: white page and white strip, the block border kept.
     page = inv[40][80]
@@ -319,7 +310,7 @@ def fs_screens():
         for y in range(y0, y1):
             for x in range(x0, x1):
                 inv[y][x] = page
-    return fs, sv, plaque, cursor, inv
+    return fs, cursor, inv
 
 
 load_cache = [None, None]
@@ -328,13 +319,11 @@ load_cache = [None, None]
 def main():
     load_cache[1] = load(TITLE, LOGO)
     title, prompt = title_screens()
-    fs, sv, plaque, cursor, inv = fs_screens()
+    fs, cursor, inv = fs_screens()
     screens = {
         'titleLogo': indexed(title),
         'titlePress': dict(indexed(prompt), y=112),
         'fileSelect': indexed(fs),
-        'saveScreen': indexed(sv),
-        'savePlaque': indexed(plaque),
         'seedCursor': indexed(cursor),
         'inventory': indexed(inv),
     }

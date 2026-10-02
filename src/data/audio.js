@@ -133,6 +133,9 @@ const SFX = {
   wave: { seasons: 'wave' },
   wind: { seasons: 'wind' },
 
+  // Link's death spin (S169): the cartridge's own SND_LINK_DEAD.
+  linkDead: { seasons: 'linkDead' },
+
   // --- pickups & UI -------------------------------------------------------
   rupee: { seasons: 'rupee' },
   rupeeBig: { seasons: 'rupee' },

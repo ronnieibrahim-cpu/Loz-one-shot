@@ -39,8 +39,9 @@
 //      the player at the point he was put back on;
 //   9. the point is somewhere the player can actually STAND, asked of
 //      `canOccupy` — the engine's own question, not a model of it;
-//  10. and the run is written to its save slot, because a player who dies and
-//      closes the tab on the game-over screen should not lose the hour;
+//  10. and the run is written to its save slot when the player picks SAVE &
+//      CONT. on the game over screen — and NOT when he picks CONTINUE, as in
+//      Seasons (S169; `respawn()` called bare still writes, for the tools);
 //  11. dying to a REAL BOSS, in a fight that is actually running, lets go of
 //      the boss handle (the HUD used to draw a bar for a ghost), does not mark
 //      the dungeon beaten, puts the player at the dungeon's MOUTH rather than
@@ -361,7 +362,7 @@ console.log('\n--- 8. the sea comes back as it stood ---');
 }
 
 // --------------------------------------------------------------------------
-console.log('\n--- 9. the death is written to the save slot ---');
+console.log('\n--- 9. the game over screen choice decides whether the slot is written ---');
 {
   const ok = await page.evaluate(async () => {
     const g = window.__game;
@@ -373,14 +374,34 @@ console.log('\n--- 9. the death is written to the save slot ---');
     return true;
   });
   await frames(20);
-  await page.evaluate(() => window.__game.respawn());
+  // SINCE S169 THE PLAYER CHOOSES, as in Seasons: CONTINUE goes on without
+  // writing the slot, SAVE & CONT. writes it. Both are asked, in that order.
+  const kept = await page.evaluate(async () => {
+    const g = window.__game;
+    const prog = await import('/src/game/progress.js');
+    const before = prog.loadSlot(g.slot);
+    g.gameOverChoose(0);
+    const after = prog.loadSlot(g.slot);
+    return { before: before && before.rupees, after: after && after.rupees, mode: g.mode };
+  });
+  check('CONTINUE comes back without writing the slot',
+    kept.mode === 'play' && kept.after === kept.before && kept.after !== 77, JSON.stringify(kept));
+  await page.evaluate(() => {
+    const g = window.__game;
+    g.progress.rupees = 77;
+    g.enterMap('d1', 0, 3, 7, 72, 96, 'up', { instant: true });
+    g.progress.hearts = 1; g.player.invuln = 0;
+    g.player.takeDamage(g, 99, null, {});
+  });
+  await frames(20);
+  await page.evaluate(() => window.__game.gameOverChoose(1));
   await frames(10);
   const saved = await page.evaluate(async () => {
     const prog = await import('/src/game/progress.js');
     const p = prog.loadSlot(window.__game.slot);
     return p && { rupees: p.rupees, pos: p.pos, respawn: p.respawn };
   });
-  check('the slot holds what the run had earned', saved && saved.rupees === 77, JSON.stringify(saved));
+  check('SAVE & CONT. writes what the run had earned', saved && saved.rupees === 77, JSON.stringify(saved));
   check('and reloading it would resume where the death put him',
     saved && saved.pos && saved.pos.map === 'd1' && saved.pos.rx === 3 && saved.pos.ry === 7,
     JSON.stringify(saved && saved.pos));
