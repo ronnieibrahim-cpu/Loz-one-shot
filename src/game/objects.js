@@ -415,6 +415,9 @@ export class NPC extends Entity {
     this.shadow = false;
     // Never stands in a tree's roots, placed or wandering (`canOccupy`).
     this.avoidRoots = true;
+    // Standing ON something solid rather than on the floor — Farore's book on
+    // her desk (S168). Read only by check-placement, as for a TreeSnag.
+    this.perched = !!o.perched;
     this.dialogue = o.dialogue || null;      // dialogue id
     // A SECOND STATE FOR AN ORDINARY TOWNSPERSON.
     //

@@ -174,6 +174,10 @@ def main():
     for i, (rows, ramp) in enumerate(cartridge_npc(0x10, 'spr_farore_ralph.png')):
         art['npc_farore_%d' % i] = rows
         pals['npc_farore_%d' % i] = ramp
+    # Her book (S168): INTERAC $1c, which Seasons stands on her desk beside her.
+    for rows, ramp in cartridge_npc(0x1c, 'spr_springflower_makuleaf_farorebook.png'):
+        art['npc_farore_book'] = rows
+        pals['npc_farore_book'] = ramp
     art = dict(sorted(art.items()))
     pals = {k: pals[k] for k in art}
 

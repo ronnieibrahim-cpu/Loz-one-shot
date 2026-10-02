@@ -91,6 +91,24 @@ export const NPC_ART = {
     ...3111100003...
     ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_farore_book: { pal: 'npc_farore_book', art: `
+    ...3333333333...
+    ..313111111113..
+    ..313111111113..
+    ..313110000113..
+    ..313110000113..
+    ..313111111113..
+    ..313111111113..
+    ..313111111113..
+    ..313111111113..
+    ..313111111113..
+    ..313333333333..
+    ..333000000003..
+    ...33333333333..
+    ................
+    ................
+    ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_fisher: { pal: 'npc_fisher', art: `
     ................
     ................
@@ -206,6 +224,7 @@ export const NPC_ART_PALETTES = {
   npc_elder: ['#ffd38c', '#1882ff', '#000000', '#000000'],
   npc_farore_0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   npc_farore_1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_farore_book: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   npc_fisher: ['#ffd38c', '#1882ff', '#000000', '#000000'],
   npc_fisher2: ['#ffd38c', '#10aa42', '#ff0829', '#000000'],
   npc_shopkeeper: ['#ffd38c', '#1882ff', '#000000', '#000000'],

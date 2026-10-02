@@ -2856,6 +2856,17 @@ export function installCoreTiles() {
     nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
     dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
     ...optionalKit('Palace', 'u'),
+
+    // FARORE'S ROOM (S168): Oracle of Seasons' own, every piece cut from its
+    // tileset $4b (rip-dungeon-themes.py, `fr*`). Her desk is a COUNTER:
+    // solid, and spoken across.
+    ...Object.fromEntries(['RingTL', 'RingN', 'RingTR', 'RingW', 'RingE', 'RingBL', 'RingS', 'RingBR',
+      'JambSW', 'JambSE', 'PillarT', 'PillarB'].map(n => ['fr' + n, { art: ART['fr' + n], pal: 'fr' + n, flags: F.SOLID }])),
+    frFloor: { art: ART.frFloor, pal: 'frFloor' },
+    frCarpet: { art: ART.frCarpet, pal: 'frCarpet' },
+    frRug: { art: ART.frRug, pal: 'frRug' },
+    frDoor: { art: ART.frDoor, pal: 'frDoor', flags: F.WARP },
+    ...Object.fromEntries(['DeskW', 'Desk', 'DeskE'].map(n => ['fr' + n, { art: ART['fr' + n], pal: 'fr' + n, flags: F.SOLID, counter: true }])),
     // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
     // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
     // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile

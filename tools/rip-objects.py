@@ -244,8 +244,22 @@ class Tileset:
         self.anim_group = int(rec[7][1:], 16)
         self.vram = load_vram(self.gfx, self.src)
         self.pals = bg_palettes(self.pal_header, self.src)
-        with open(os.path.join(self.src, f'tilesetMappings{self.layout:02x}.bin'), 'rb') as f:
+        with open(os.path.join(self.src, f'tilesetMappings{self.mapping_file():02x}.bin'), 'rb') as f:
             self.map = f.read()
+
+    def mapping_file(self):
+        """Which tilesetMappings file layout `self.layout` reads. Some layouts
+        share another's file: tilesetHeaders.s stacks their labels over one
+        header (Farore's room, S168: layout $2e is $2d's). Read from that file
+        when it is present, else the layout's own number."""
+        path = os.path.join(self.src, 'tilesetHeaders.s')
+        if not os.path.exists(path):
+            return self.layout
+        ls = [l.split(';')[0].strip() for l in text('tilesetHeaders.s', self.src).split('\n')]
+        i = ls.index('tilesetLayoutGroup%02x:' % self.layout) + 1
+        while ls[i].endswith(':'):
+            i += 1
+        return int(re.search(r'tilesetMappings(\w\w)', ls[i]).group(1), 16)
 
     def metatile(self, m, vram=None):
         """(16x16 grid of colour indices, palette) of metatile `m`."""

@@ -69,7 +69,9 @@ export const ROUTE = [
   // with the conch on B and the sword on A, as the old intro left them.
   ['equip', 'conch', 'B', 400],
   ['equip', 'sword', 'A', 400],
-  ['goto', 5, 6, 600],
+  // Her room is Seasons' own since S168: the way out is the door in the
+  // south wall, a row lower than the old stone room's.
+  ['goto', 5, 7, 600],
   ['wait', 90],
 
   // The Maku Tree's hollow is the top of the village square; her grove's way

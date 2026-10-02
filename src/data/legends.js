@@ -431,6 +431,13 @@ export function installLegends() {
 
   // The Maku Tree's grove: one extracted Seasons screen, placed whole.
   registerLegend('makuGrove', { 'M': 'block:makuGrove' });
+  // Farore's room, Oracle of Seasons' own (S168): see tiles-core.js `fr*`.
+  registerLegend('faroreRoom', {
+    'A': 'frRingTL', 'N': 'frRingN', 'B': 'frRingTR', 'W': 'frRingW', 'E': 'frRingE',
+    'C': 'frRingBL', 'S': 'frRingS', 'D': 'frRingBR', '[': 'frJambSW', 'o': 'frDoor', ']': 'frJambSE',
+    '.': 'frFloor', 'c': 'frCarpet', 'r': 'frRug', 'P': 'frPillarT', 'p': 'frPillarB',
+    '(': 'frDeskW', '=': 'frDesk', ')': 'frDeskE',
+  });
   registerLegend('house', {
     ' ': 'void',
     '.': 'dFloor', '#': 'dWall', 'p': 'pot', '/': 'dStairs',

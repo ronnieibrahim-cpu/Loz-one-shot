@@ -99,12 +99,16 @@ SHEETS = {
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
     'whirl3': 'ages:5f@3',
+    # FARORE'S ROOM (S168): Seasons tileset $4b, the room she sits in
+    # (group 4 room $e8, laid out from layout group 5's room $e8).
+    'farore': 'meta:4b',
 }
 META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:41': "the Sword & Shield Maze, ice half", 'meta:3e': "the Explorer's Crypt",
               'meta:39': "the Poison Moth's Lair", 'meta:3a': 'the Dancing Dragon Dungeon',
               'meta:3c': 'the Ancient Ruins', 'meta:42': "the Sword & Shield Maze, fire half",
-              'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor'}
+              'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
+              'meta:4b': "Farore's room"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -689,6 +693,34 @@ PICKS = [
     meta('rStairsDown', 0x45, 'the stair down, the Ancient Ruins', 'ruinsMeta'),
     meta('kStairsUp', 0x44, 'the stair up, the Sword & Shield Maze (fire)', 'mazeFire'),
     meta('kStairsDown', 0x45, 'the stair down, the Sword & Shield Maze (fire)', 'mazeFire'),
+    # ---- Farore's room (S168) ------------------------------------------------
+    #
+    # The human asked for Farore to have her desk. Oracle of Seasons sits her
+    # behind one (INTERAC_FARORE at y$28 x$58 in group 4 room $e8, her book
+    # INTERAC $1c on the desk), in a room of blue flagstone with a ring of
+    # stone, two pillars a side and a rug behind the desk. Its tileset is $4b;
+    # the layout is room $e8 of layout group 5 (rooms/seasons/large/room05e8).
+    # The braziers either side are the game's lit Torch, not cut here: their
+    # metatile mixes two palettes (flame and bowl), as the Torch entity does.
+    meta('frRingTL', 0xb8, "ring corner, north-west, Farore's room", 'farore'),
+    meta('frRingN', 0xb0, "ring run, north wall, Farore's room", 'farore'),
+    meta('frRingTR', 0xb9, "ring corner, north-east, Farore's room", 'farore'),
+    meta('frRingW', 0xb3, "ring run, west wall, Farore's room", 'farore'),
+    meta('frRingE', 0xb1, "ring run, east wall, Farore's room", 'farore'),
+    meta('frRingBL', 0xba, "ring corner, south-west, Farore's room", 'farore'),
+    meta('frRingS', 0xb2, "ring run, south wall, Farore's room", 'farore'),
+    meta('frRingBR', 0xbb, "ring corner, south-east, Farore's room", 'farore'),
+    meta('frJambSW', 0xe2, "jamb west of the door in the south wall, Farore's room", 'farore'),
+    meta('frDoor', 0xe3, "the door in the south wall, Farore's room", 'farore'),
+    meta('frJambSE', 0xe4, "jamb east of the door in the south wall, Farore's room", 'farore'),
+    meta('frFloor', 0xa0, "blue flagstone floor, Farore's room", 'farore'),
+    meta('frCarpet', 0xa3, "the red carpet before the desk, Farore's room", 'farore'),
+    meta('frRug', 0xac, "the rug behind the desk, Farore's room", 'farore'),
+    meta('frPillarT', 0x68, "pillar, top half, Farore's room", 'farore'),
+    meta('frPillarB', 0x69, "pillar, bottom half, Farore's room", 'farore'),
+    meta('frDeskW', 0x8e, "her desk, west end, Farore's room", 'farore'),
+    meta('frDesk', 0x8d, "her desk, a middle run, Farore's room", 'farore'),
+    meta('frDeskE', 0x8f, "her desk, east end, Farore's room", 'farore'),
 ]
 
 # Picks that are an OBJECT standing on a floor, not a floor or a wall.

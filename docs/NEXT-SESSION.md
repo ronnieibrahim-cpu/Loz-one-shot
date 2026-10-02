@@ -1,9 +1,48 @@
-## S168 — the opening; people out of the trees; Farore from the cartridge
+## S168 — the opening; people out of the trees; Farore from the cartridge, at her desk
 
 Branch claude/oracle-tides-s168, off main at a11baef (S167 merged by the
 human). The human asked for three things: NPCs out of trees, a pixel-art intro
-"like Seasons and Ages", and Farore's sprite fixed. NOT MERGED: ask before
-moving main.
+"like Seasons and Ages", and Farore's sprite fixed. The first commit (c8dba40)
+was MERGED to main at the human's word ("Merge to main"); they then asked for
+Farore's desk and an action item for the opening's missing sound — that second
+commit is on the same branch, NOT MERGED: ask before moving main.
+
+### Part two: Farore's desk (after the merge)
+- HER ROOM IS SEASONS' OWN. faroreShrine is no longer a `home()` stone room:
+  its own map, legend `faroreRoom` (legends.js), tiles `fr*` (tiles-core.js)
+  cut by rip-dungeon-themes.py from Seasons tileset $4b (`'farore':
+  'meta:4b'`, 19 picks: ring, south door + jambs, floor, carpet, rug,
+  pillar halves, desk W/middle/E). Her Seasons room is group 4 room $e8 and
+  its LAYOUT is room $e8 of layout GROUP 5 (tileset record byte 6 picks the
+  layout group, code/bank0.s loadRoomLayout) — rooms/seasons/large/room05e8,
+  15x11 with a corridor down the east; ours is its shrine half closed to one
+  screen with the cartridge's south door (e2/e3/e4). The four braziers are
+  our lit Torch entity (their metatile mixes flame and bowl palettes). Her
+  book is new `npc_farore_book` (rip-npcs.py, INTERAC $1c, spr_springflower_
+  makuleaf_farorebook), `perched` on the desk (check-placement skips perched).
+  Farore stands at tile 4.5,2 (centred on the desk, as Seasons centres her).
+  rip-objects' Tileset learned `mapping_file()`: layout $2e has no file of
+  its own, tilesetHeaders.s stacks it on $2d (rip-objects' output unchanged).
+  New assets in assets/objects/oracles-disasm/seasons/: gfx_tileset_indoors_1/2,
+  gfx_tileset_vases, tilesetMappings2d.bin, tilesetHeaders.s.
+- COUNTERS: tiledef field `counter` (registered in tileset.js — the
+  registrar trap); Player.tryContextAction reaches one tile further when the
+  tile in front is a counter; the robot's dTalkTo tries a stand two tiles off
+  through a counter after the four beside. test.mjs: spoken to across the
+  desk, not from across the room, desk solid.
+- Verified: whole table green again; check-playthrough 44/44, THE END, never
+  died (the robot takes the conch across the desk). Picture sent beside the
+  cartridge's room.
+
+### ACTION ITEM: THE OPENING HAS NO SOUND (the human, after S168's merge)
+Browsers start audio only from a user gesture, and the game's first key
+press both starts audio (main.js `kick`) and skips the opening (title.js),
+so on a fresh load the opening almost always plays silent. To fix: e.g. a
+"press any button" beat before the card whose press only starts the sound,
+or swallow the first press of the card/opening when audio was not yet up.
+Mind the harnesses: test.mjs taps Enter once expecting the file select, and
+dNewGame taps A every 12 frames — whatever eats a press must not change what
+the second press does, and check-build boots from file:// with no gesture.
 
 ### What landed
 - PEOPLE OUT OF TREES. Two placed people stood in a tree's root mound (the
@@ -71,7 +110,8 @@ real-speed video with its sound, the three storm sounds, Farore before/now/
 Seasons', and the two people moved out of trees, before and after.
 
 ### FUTURE ACTION ITEMS
-Item 5 (fight tuning) is the human's. Farore's desk (above). Open fidelity
+THE OPENING'S SOUND (action item above) first. Item 5 (fight tuning) is the
+human's. Farore's desk: DONE (part two). Open fidelity
 leftovers from S167: Seasons takes an equipped item OUT of the inventory grid
 and lays it 4x4; the bar's letters/brackets (gfx_hud $05-$08 "B[", "]", "][",
 "A[") are a candidate rip; CAM_DEADZONE_W needs footage; the game-over

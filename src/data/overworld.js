@@ -3748,10 +3748,43 @@ function installHouses() {
 
   // Farore's shrine on Tern Point (S158). She gives the Moon Conch the first
   // time she is spoken to, and lives here for the rest of the game.
-  home('faroreShrine', "Farore's Shrine", 'village', [
-    ['npc', 4, 2, { sprite: 'npc_farore_0', frames: { down: ['npc_farore_0', 'npc_farore_1'] }, rate: FARORE_SWAY_HOLD, faceOnTalk: false, dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5,
-      beat: { scene: 'faroreConch', flag: 'gotConch' } }],
-  ], { rx: 8, ry: 9, px: 64, py: 88 });
+  //
+  // HER ROOM IS SEASONS' OWN (S168, the human: "give her a desk"). Oracle of
+  // Seasons sits Farore behind a desk, drawn from the waist up, her book on
+  // it, braziers either side, a rug behind her and two pillars a side, in
+  // blue flagstone (group 4 room $e8; tileset $4b; legend `faroreRoom`).
+  // That room is 15x11 with a corridor down its east side; this is its
+  // shrine half, the same pieces in the same order, closed to one screen
+  // with the cartridge's own south door. You speak to her across the desk.
+  registerMap({
+    id: 'faroreShrine', kind: 'interior', name: "Farore's Shrine",
+    w: 1, h: 1, floors: 1,
+    legend: 'faroreRoom', music: 'village', scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          'ANNNNNNNNB',
+          'WPrrrrrrPE',
+          'WprrrrrrpE',
+          'W.(====).E',
+          'WP..cc..PE',
+          'Wp......pE',
+          'W........E',
+          'CSSS[o]SSD',
+        ],
+        entities: [
+          ['torch', 2, 2, { lit: true }], ['torch', 7, 2, { lit: true }],
+          ['torch', 1, 3, { lit: true }], ['torch', 8, 3, { lit: true }],
+          // Centred on the desk, as Seasons centres her on hers.
+          ['npc', 4.5, 2, { sprite: 'npc_farore_0', frames: { down: ['npc_farore_0', 'npc_farore_1'] }, rate: FARORE_SWAY_HOLD, faceOnTalk: false, dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5,
+            beat: { scene: 'faroreConch', flag: 'gotConch' } }],
+          // Her book, standing on the desk where Seasons stands it.
+          ['npc', 2.5, 3, { sprite: 'npc_farore_book', faceOnTalk: false, perched: true }],
+        ],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 9, px: 64, py: 88, dir: 'down' } }],
+      },
+    },
+  });
 
   home('houseHearth', 'A Village House', 'village', [
     // Her errand (S155): the jar of bog water left at Bog Head's spring, for

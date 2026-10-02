@@ -1060,6 +1060,31 @@ const main = async () => {
   check('a press in the opening cuts to the logo', opening.skipped === `logo>intro>logo@${opening.card + 300}`, opening.skipped);
   check('the opening is between 20 and 40 seconds', opening.frames >= 1200 && opening.frames <= 2400, opening.frames + ' frames');
 
+  console.log('\n--- Farore behind her desk (S168) ---');
+  // Seasons sits Farore behind a desk and Link speaks to her across it. Below
+  // the desk, facing it, A reaches her; one tile to the side of the desk's
+  // run (facing plain floor) it does not.
+  const desk = await G(async () => {
+    const g = window.__game;
+    const was = { mapId: g.mapId, key: g.room.key, x: g.player.x, y: g.player.y, dir: g.player.dir };
+    g.enterMap('faroreShrine', 0, 0, 0, 80, 66, 'up', { instant: true });
+    const far = g.entities.find(e => e.sprite === 'npc_farore_0');
+    let spoke = 0;
+    const orig = far.interact.bind(far);
+    far.interact = () => { spoke++; };
+    g.player.x = 80; g.player.y = 66; g.player.dir = 'up';
+    g.player.tryContextAction(g);
+    const across = spoke;
+    g.player.x = 16; g.player.y = 98; g.player.dir = 'up';
+    g.player.tryContextAction(g);
+    far.interact = orig;
+    const stood = g.room.solidAt(far.cx, 56, g.tide);
+    return { across, after: spoke, stood };
+  });
+  check('Farore is spoken to across her desk', desk.across === 1, JSON.stringify(desk));
+  check('and not from across the room', desk.after === 1, JSON.stringify(desk));
+  check('her desk is solid', desk.stood, JSON.stringify(desk));
+
   console.log('\n--- art coverage ---');
   const missing = await G(() => [...window.__game.tiles.missing, ...window.__game.sprites.missing].sort());
   console.log(`  ${missing.length} unauthored art name(s)`);

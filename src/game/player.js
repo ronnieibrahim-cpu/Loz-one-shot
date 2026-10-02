@@ -455,15 +455,23 @@ export class Player extends Entity {
     const [dx, dy] = DIR_VEC[this.dir];
     const px = this.cx + dx * CONTEXT_REACH, py = this.cy + dy * CONTEXT_REACH;
     // entities first
-    for (const e of game.entities) {
-      if (e.interact && !e.dead) {
-        const r = e.rect();
-        if (px >= r.x - 4 && px <= r.x + r.w + 4 && py >= r.y - 4 && py <= r.y + r.h + 4) {
-          e.interact(game, this);
-          return true;
+    const talk = (qx, qy) => {
+      for (const e of game.entities) {
+        if (e.interact && !e.dead) {
+          const r = e.rect();
+          if (qx >= r.x - 4 && qx <= r.x + r.w + 4 && qy >= r.y - 4 && qy <= r.y + r.h + 4) {
+            e.interact(game, this);
+            return true;
+          }
         }
       }
-    }
+      return false;
+    };
+    if (talk(px, py)) return true;
+    // ACROSS A COUNTER (S168): Farore sits behind her desk, as in Seasons,
+    // and is spoken to over it — one tile further, only through a counter.
+    if (game.room && game.room.tile(Math.floor(px / TILE), Math.floor(py / TILE), game.tide).counter
+        && talk(px + dx * TILE, py + dy * TILE)) return true;
     // then tiles (signs, readable objects, doors needing keys)
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
     if (game.tileInteract(tx, ty, this)) return true;

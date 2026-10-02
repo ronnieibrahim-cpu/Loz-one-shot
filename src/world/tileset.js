@@ -132,6 +132,10 @@ export function registerTiles(defs) {
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
+      // A COUNTER (S168): a solid tile you can talk ACROSS, as Seasons lets
+      // Link speak to Farore over her desk. `Player.tryContextAction` reaches
+      // one tile further when the tile in front of him is one.
+      counter: !!def.counter,
       // A TILE THAT IS ONE CELL OF A BIGGER OBJECT. `quad` names a set of four
       // 16x16 arts — `<quad>TL`, `TR`, `BL`, `BR` — cut from one 32x32 source
       // tree. Which one this cell draws is decided by its NEIGHBOURS at render

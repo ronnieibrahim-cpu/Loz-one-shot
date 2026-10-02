@@ -16,3 +16,4 @@ and standard sprite palette 0 (the tables are read from
 | File | From | Used for |
 |---|---|---|
 | `spr_farore_ralph.png` | `gfx_compressible/seasons/` | Farore, both frames of her sway |
+| `spr_springflower_makuleaf_farorebook.png` | `gfx_compressible/seasons/` | Farore's book on her desk (INTERAC $1c, object gfx $51, S168) |

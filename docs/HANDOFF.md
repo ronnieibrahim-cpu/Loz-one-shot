@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A Seasons room's layout is not always in its own group (S168).** The
+  tileset record's byte 6 is the LAYOUT group (code/bank0.s loadRoomLayout):
+  Farore's room is group 4 room $e8, but drawn from layout group 5's $e8
+  (rooms/seasons/large/room05e8.bin). Rendering room04e8 with her tileset gave
+  a plausible-looking garbage room, which cost a session's attempt. And a
+  layout number can share another's mappings file (tilesetHeaders.s stacks
+  labels): $2e is $2d.
+
 - **A note nobody reads is not a check (S168).** check-ground had found the
   people standing in tree roots and PRINTED them, by design ("moving one is a
   judgement"); the human found them by playing. A report that is never acted

@@ -126,7 +126,7 @@ export const REQUIRED_SPRITES = {
 
   npcs: [
     'npc_villager', 'npc_villager2', 'npc_fisher', 'npc_child', 'npc_elder',
-    'npc_shopkeeper', 'npc_farore_0', 'npc_farore_1', 'npc_maku', 'maku_face', 'npc_zelda',
+    'npc_shopkeeper', 'npc_farore_0', 'npc_farore_1', 'npc_farore_book', 'npc_maku', 'maku_face', 'npc_zelda',
     'npc_nereth',
   ],
 

@@ -3004,8 +3004,16 @@ export async function installRuntime() {
     // which is a true sentence about the wrong problem.
     const why = [];
     let stand = null;
+    // ACROSS A COUNTER too (S168): Farore sits behind her desk, and the
+    // player's A reaches over a tile the room marks `counter` — the engine's
+    // own rule (Player.tryContextAction), so a stand two tiles off through
+    // one is a real place to talk from, tried after the four beside.
+    const sides = [[0, -1], [0, 1], [-1, 0], [1, 0]].map(([dx, dy]) => [dx, dy, 1]);
     for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-      const sx = tx + dx, sy = ty + dy;
+      if (g.room.tile(tx + dx, ty + dy, g.tide).counter) sides.push([dx, dy, 2]);
+    }
+    for (const [dx, dy, k] of sides) {
+      const sx = tx + dx * k, sy = ty + dy * k;
       const face = dx ? (dx > 0 ? 'left' : 'right') : (dy > 0 ? 'up' : 'down');
       // A stand off the edge of the screen is on the NEXT screen: a trader
       // wandering on the bottom row sent the walk to it straight through the
