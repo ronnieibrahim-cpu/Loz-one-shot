@@ -621,8 +621,9 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 // Which counted pickups need a container before they are worth anything, and
 // what the shopkeeper says when you have not got one. Keyed on the PICKUP id
 // because that is what the shop stocks; the capacity field is the one
-// `progress.giveItem` fills when the carrying item is granted.
-const CAPACITY_FOR = {
+// `progress.giveItem` fills when the carrying item is granted. Game.rollDrop
+// reads it too: nothing drops what Link has nowhere to put.
+export const CAPACITY_FOR = {
   bomb4: { field: 'maxBombs', deny: 'and nothing to carry them in.\nCome back with a bag.' },
   bottle: { field: 'maxBottles', deny: 'and nowhere to put it.\nCome back with a bottle.' },
 };

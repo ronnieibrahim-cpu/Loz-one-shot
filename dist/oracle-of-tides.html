@@ -18075,7 +18075,8 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 // Which counted pickups need a container before they are worth anything, and
 // what the shopkeeper says when you have not got one. Keyed on the PICKUP id
 // because that is what the shop stocks; the capacity field is the one
-// `progress.giveItem` fills when the carrying item is granted.
+// `progress.giveItem` fills when the carrying item is granted. Game.rollDrop
+// reads it too: nothing drops what Link has nowhere to put.
 const CAPACITY_FOR = {
   bomb4: { field: 'maxBombs', deny: 'and nothing to carry them in.\nCome back with a bag.' },
   bottle: { field: 'maxBottles', deny: 'and nowhere to put it.\nCome back with a bottle.' },
@@ -19058,6 +19059,7 @@ __exports["NPC"] = NPC;
 __exports["Racer"] = Racer;
 __exports["RaceGoal"] = RaceGoal;
 __exports["Sign"] = Sign;
+__exports["CAPACITY_FOR"] = CAPACITY_FOR;
 __exports["ShopItem"] = ShopItem;
 __exports["Giver"] = Giver;
 __exports["Trader"] = Trader;
@@ -29325,7 +29327,7 @@ const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } = __require("game/entity.js");
 const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
-const { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
+const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
@@ -30784,6 +30786,11 @@ class Game {
   rollDrop(x, y, table) {
     const kind = rollDropTable(table, this.rng);
     if (!kind) return null;
+    // Seasons drops nothing at all when the roll lands on something Link
+    // cannot carry yet — bombs before the bag (treasureAndDrops.s
+    // checkItemDropAvailable: the drop becomes $ff, not a re-roll).
+    const cap = CAPACITY_FOR[kind];
+    if (cap && !(this.progress[cap.field] > 0)) return null;
     const spec = PICKUPS[kind];
     const o = {};
     if (spec && spec.worth != null && this.charm('beachcomber')) o.worth = spec.worth * 2;

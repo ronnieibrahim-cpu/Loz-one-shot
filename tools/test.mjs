@@ -980,6 +980,26 @@ const main = async () => {
   check('the bar squeezes exactly past 14 hearts, as Seasons does',
     bar.find((b) => b.n === 14).hearts === 104 && bar.find((b) => b.n === 15).hearts === 96);
 
+  // Nothing drops what Link cannot carry (S167, Seasons' checkItemDropAvailable):
+  // no bombs before the bag, no Bottled Tide charges before the bottle.
+  const drops = await G(() => {
+    const g = window.__game, p = g.progress;
+    const keep = [p.maxBombs, p.maxBottles];
+    p.maxBombs = 0; p.maxBottles = 0;
+    const seen = new Set();
+    for (let i = 0; i < 400; i++) { const e = g.rollDrop(0, 0, 'good'); if (e) { seen.add(e.kind); e.dead = true; } }
+    p.maxBombs = 10; p.maxBottles = 1;
+    const seen2 = new Set();
+    for (let i = 0; i < 400; i++) { const e = g.rollDrop(0, 0, 'good'); if (e) { seen2.add(e.kind); e.dead = true; } }
+    [p.maxBombs, p.maxBottles] = keep;
+    g.pendingAdd.length = 0;
+    return { without: [...seen], with: [...seen2] };
+  });
+  check('no bomb or bottle drops before the bag and the bottle',
+    !drops.without.includes('bomb4') && !drops.without.includes('bottle'), JSON.stringify(drops.without));
+  check('bombs and bottles drop once they can be carried',
+    drops.with.includes('bomb4') && drops.with.includes('bottle'), JSON.stringify(drops.with));
+
   console.log('\n--- load a save ---');
   const ok = await G(() => {
     const g = window.__game;

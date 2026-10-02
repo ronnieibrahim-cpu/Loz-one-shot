@@ -38,7 +38,7 @@ import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } from './entity.js';
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
-import { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
+import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
@@ -1518,6 +1518,11 @@ export class Game {
   rollDrop(x, y, table) {
     const kind = rollDropTable(table, this.rng);
     if (!kind) return null;
+    // Seasons drops nothing at all when the roll lands on something Link
+    // cannot carry yet — bombs before the bag (treasureAndDrops.s
+    // checkItemDropAvailable: the drop becomes $ff, not a re-roll).
+    const cap = CAPACITY_FOR[kind];
+    if (cap && !(this.progress[cap.field] > 0)) return null;
     const spec = PICKUPS[kind];
     const o = {};
     if (spec && spec.worth != null && this.charm('beachcomber')) o.worth = spec.worth * 2;
