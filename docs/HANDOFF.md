@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Seasons' menus are one screen wearing different clothes (S169).** The
+  game over is the save-and-quit menu with a gameOver flag: one gfx file
+  swapped (the banner) and one palette. Before drawing a screen, find which
+  routine runs it in oracles-disasm and what it shares — the save page and
+  the game over came out of one ripper. The disasm is not in the repo in
+  full: `git clone --depth 1 https://github.com/Stewmath/oracles-disasm` into
+  the scratchpad; copy only what a ripper reads into assets/.
+- **A png in the disasm may be stored in 8x16 columns.** `interleave: true` in
+  its `.properties`, and every `spr_` file by default (tools/gfx/gfx.py): read
+  such a file 8 wide and 16 tall, then split top and bottom, or the tiles come
+  out in the wrong order.
+
 - **A browser's first press is spent on the sound (S169).** Audio starts only
   inside a real user gesture, so anything timed to play from power-on plays
   silent unless the screen WAITS for a press. The title card now holds

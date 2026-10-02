@@ -11,14 +11,13 @@
   — check whether the human merged it into main before branching
   (git ls-remote --heads origin).
 - Whole table green; check-playthrough 44/44, THE END, never died.
-- New in S169: on a fresh load the title card waits (PRESS ANY BUTTON) for
-  the press that starts the sound, so the opening plays with its sound.
+- New in S169: the title card waits for the press that starts the sound;
+  the title replays its opening when idle; Seasons' death spin and GAME OVER
+  screen; the save page, the bar's B[/A[ and the 4x4 inventory are Seasons'.
 
 ## The task
-Whatever the human asks. Item 5 (fight tuning) is theirs. Fidelity
-leftovers in NEXT-SESSION.md S169 (the 4x4 inventory with equipped items
-taken out, the bar's B[ ]/A[ letters, the game-over screen, the intro
-replaying when the title sits idle). Ask before anything large.
+Whatever the human asks. Item 5 (fight tuning) is theirs. Small fidelity
+leftovers are listed in NEXT-SESSION.md S169. Ask before anything large.
 
 ## Done means
 - Whatever the human chose, with the whole table green and check-playthrough

@@ -34,12 +34,59 @@ Whole table green (check-rippers 37/37 after `pip install pillow`);
 check-playthrough 44/44, THE END, never died; test 97/97; check-build OK
 from file://; shoot-cutscene and watch-cutscenes run clean.
 
+### Part two: the human said "Yes to all" (merge, and all four leftovers)
+main was fast-forwarded to 59a4807 (the sound fix) at the human's word. Then,
+all read out of oracles-disasm (cloned to the scratchpad; commit 21c924a):
+- THE TITLE REPLAYS ITS OPENING when the logo sits idle: TITLE_IDLE_FRAMES
+  2400 (intro_titlescreen_state0's $0960 countdown), then the music stops,
+  a TITLE_FADE_FRAMES fade to white, and the card and opening again
+  (intro_restart). TITLE_CARD_FRAMES is now Seasons' 208 (intro_capcomScreen),
+  was a guessed 180. test.mjs asserts both.
+- DEATH AND GAME OVER AS SEASONS. Link spins (animationData19beb:
+  DEATH_SPIN_STEP 8, DEATH_SPIN_LAPS 4 — down, then right/up/left/down) with
+  SND_LINK_DEAD (new `linkDead` sfx, rip-music.py), collapses (`link_lie`,
+  DEATH_COLLAPSE_FRAMES 76 from animationData19be5), then the GAME OVER
+  screen fades in from white (GAMEOVER_FADE_IN_FRAMES 7, fastFadeinFromWhite
+  speed 3) with the Game Over theme: CONTINUE / SAVE & CONT. / SAVE & QUIT,
+  cursor on CONTINUE, no wrap, a choice flickers the acorn
+  GAMEOVER_PICK_FRAMES 30 then acts. CONTINUE DOES NOT SAVE (Seasons);
+  `respawn({ save })` — bare `respawn()` still saves, for the tools.
+  check-respawn §9 now asserts CONTINUE leaves the slot and SAVE & CONT.
+  writes it. GAMEOVER_WAIT_FRAMES and "YOU DIED" are gone.
+- NEW RIPPER tools/rip-save.py -> src/data/screens-save.js (`saveMenu`,
+  `gameOverMenu`, `saveAcorn`): Seasons' save-and-quit screen rendered from
+  GFXH_FILE_MENU_GFX + GFXH_SAVE_MENU_LAYOUT + GFXH_SAVE_MENU_GFX (+
+  GFXH_GAME_OVER_GFX), PALH_05 / PALH_06, with the leaf sprites
+  (fileSelect_redrawDecorationsAndSetWramBank4). Interleaved pngs
+  (`.properties` interleave: true, and every spr_) are read 8x16. Sources in
+  assets/save/ (README). In check-rippers and CLAUDE.md's table.
+- THE PAUSE MENU'S SAVE PAGE is that screen (English words, was our text on
+  the Japanese footage): opens on CONTINUE, no wrap, flicker, SAVE & CONT.
+  saves AND CLOSES (it used to stay open saying "Saved."). rip-screens.py no
+  longer emits saveScreen/savePlaque.
+- THE BAR'S B[ AND A[ are the cartridge's: rip-hud-tiles.py now cuts gfx_hud
+  $05 (hud_slot_b), $08 (hud_slot_a) and $06 in the four flips
+  map_hud_normal's attribute bytes use (hud_brk_bl/tl/br/tr). Placed at our
+  slot positions (the tide gauge still takes room Seasons does not have).
+- THE INVENTORY IS SEASONS': sixteen places 4x4 (items at 24+32c, 24+24r;
+  @itemPositions), equipped items NOT on the page, A/B SWAPS the place with the
+  button (an empty place unequips), cursor +1/-1/+-4 wrapping round all 16
+  (`and $0f`) and kept between openings. `progress.invSlots` (items.js
+  `inventorySlots` reconciles lazily: an old save gets places in registry
+  order). The cursor is Seasons' own sprite (menu_cursor_l/_r, tile $0c of
+  gfx_inventory_hud_1, sprite palette 2). The strip under the page shows the
+  item's NAME and then rolls on into its description (was a separate line on
+  the page, which the fourth row now needs). The robot's dEquip walks the
+  4x4 and, for an item on the other button, first swaps that button with an
+  empty place. Playthrough still 44/44 with no re-route.
+Pictures sent: the death strip and game over, the save page, the bar before
+and after, the inventory.
+
 ### FUTURE ACTION ITEMS
-Ask the human what is next (their S169 prompt left it open). Item 5 (fight
-tuning) is the human's. Open fidelity leftovers, unchanged from S168: the 4x4
-inventory with the equipped items taken out, the bar's B[ ]/A[ letters
-(gfx_hud $05-$08), CAM_DEADZONE_W needs footage, the game-over screen,
-Seasons replaying its intro when the title sits idle.
+Item 5 (fight tuning) is the human's. Leftovers: Seasons' music SLOW-fades on
+death (SNDCTRL_SLOW_FADEOUT) where ours stops; Seasons' card fades IN from
+white after an idle replay (ours cuts); CAM_DEADZONE_W needs footage; the
+menu page labels (ITEMS etc.) are ours.
 
 ## S168 — the opening; people out of the trees; Farore from the cartridge, at her desk
 

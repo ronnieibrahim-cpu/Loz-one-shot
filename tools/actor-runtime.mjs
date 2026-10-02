@@ -2435,7 +2435,6 @@ export async function installRuntime() {
     const want = (slot || 'B').toUpperCase();
     const key = want === 'A' ? 'equipA' : 'equipB';
     if (g.progress[key] === id) return;
-    const COLS = 5;
     // Open the menu.
     for (let i = 0; i < 60 && g.mode !== 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
     if (g.mode !== 'menu') throw new Error('equip: the menu would not open');
@@ -2443,21 +2442,32 @@ export async function installRuntime() {
     // until it is in (MENU_FADE_OPEN).
     for (let i = 0; i < 120 && g.veiled(); i++) yield 0;
     const m = g.menu;
-    const idx = () => m.items.findIndex(it => it.id === id);
-    if (idx() < 0) throw new Error(`equip: ${id} is not in the item list`);
-    for (let f = 0; f < (maxF || 400); f++) {
-      const t = idx();
-      const c = m.cursor;
-      if (c === t) {
-        yield want === 'A' ? BIT.a : BIT.b;
-        yield 0;
-        break;
+    // SEASONS' PAGE (S169): the two equipped items are not on it, and A or B
+    // SWAPS the place under the cursor with that button. An item on the OTHER
+    // button is reached the way a player reaches it: swap that button with an
+    // empty place first, which puts it on the page.
+    const other = want === 'A' ? 'B' : 'A';
+    const otherKey = other === 'A' ? 'equipA' : 'equipB';
+    const walkTo = function* (pick) {
+      for (let f = 0; f < (maxF || 400); f++) {
+        const t = pick();
+        if (t < 0) throw new Error(`equip: ${id} has no place on the page`);
+        const c = m.cursor;
+        if (c === t) return;
+        const cr = c >> 2, tr = t >> 2;
+        if (cr !== tr) yield (tr > cr) ? BIT.down : BIT.up;
+        else yield (t > c) ? BIT.right : BIT.left;
+        yield 0;                                  // release: `pressed` is an edge
       }
-      const cr = Math.floor(c / COLS), tr = Math.floor(t / COLS);
-      if (cr !== tr) yield (tr > cr) ? BIT.down : BIT.up;
-      else yield (t > c) ? BIT.right : BIT.left;
-      yield 0;                                  // release: `pressed` is an edge
+    };
+    if (g.progress[otherKey] === id) {
+      yield* walkTo(() => m.items.findIndex(it => !it));
+      yield other === 'A' ? BIT.a : BIT.b;
+      yield 0;
     }
+    yield* walkTo(() => m.items.findIndex(it => it && it.id === id));
+    yield want === 'A' ? BIT.a : BIT.b;
+    yield 0;
     // Close it again and hand control back to the field.
     for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
     for (let i = 0; i < 120 && g.veiled(); i++) yield 0;   // the field fades back in

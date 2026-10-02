@@ -18,6 +18,7 @@ reproduces byte for byte.
 |---|---|---|
 | `gfx_hud.png` | `gfx_compressible/seasons/` | the status bar's tiles (GFXH_HUD, $9000): digits $10-$19, "L-" $1a, "x" $1b |
 | `gfx_key_orechunk.png` | `gfx/seasons/` | the key tile Seasons copies over the rupee's in a dungeon (bank2.s @loadMoneyGraphic) |
+| `gfx_inventory_hud_1.png` | `gfx_compressible/seasons/` | the inventory's cursor brackets, sprite tile $0c (GFXH_INVENTORY_SCREEN at $8000; bank2.s inventorySubscreen0_drawCursor) |
 | `paletteData.s` | `data/seasons/` | the status bar's palette (paletteData4830, PALH_0a) |
 | `treasureDisplayData.s` | `data/seasons/` | which items show a level (b5 $00) and which a count ($01) — read by people, not the ripper |
 

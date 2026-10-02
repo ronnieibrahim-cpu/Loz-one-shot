@@ -46,7 +46,8 @@ export const REQUIRED_SPRITES = {
   // (tools/rip-hud-tiles.py): the level beside a levelled item, the count
   // beside a counted one, on the A/B buttons and in the menu alike.
   hudTiles: [...seq('hud_d', 10), 'hud_lv', 'hud_x', 'hud_key',
-    'hud_slot_b', 'hud_slot_a', 'hud_brk_bl', 'hud_brk_tl', 'hud_brk_br', 'hud_brk_tr'],
+    'hud_slot_b', 'hud_slot_a', 'hud_brk_bl', 'hud_brk_tl', 'hud_brk_br', 'hud_brk_tr',
+    'menu_cursor_l', 'menu_cursor_r'],
 
   ui: [
     ...seq('hud_heart', 5), 'hud_rupee',
@@ -227,6 +228,7 @@ export function expectedSize(name) {
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];
   if (name.startsWith('hud_')) return [8, 8];
+  if (name === 'menu_cursor_l' || name === 'menu_cursor_r') return [8, 16];   // one 8x16 hardware sprite each
   // The title screen's seven pieces, at the sizes sprites-title.js actually
   // assembles them to. Stated here rather than imported from that module on
   // purpose: an edit to a glyph table that changes a piece's size has to be a

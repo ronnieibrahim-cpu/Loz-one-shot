@@ -15150,6 +15150,8 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // items: id -> level (1+). Absent or 0 means not owned.
     items: {},
     equipB: null, equipA: null,
+    // the inventory's sixteen places (items.js inventorySlots), made on first use
+    invSlots: null,
     // scrimshaw: carved charms, and the three tide-level cases they slot into.
     // You start with the MID case only; LOW and HIGH open over the game, and
     // the case upgrade raises charmCase to CHARM_CASE_MAX.
@@ -17143,6 +17145,39 @@ function equippableItems(progress) {
   return out;
 }
 
+/** How many places the inventory has: Seasons' 4x4 (INVENTORY_CAPACITY). */
+const INVENTORY_SLOTS = 16;
+
+/**
+ * THE INVENTORY AS SEASONS KEEPS IT (S169; code/bank2.s @equipItem): sixteen
+ * fixed places, and the two items on the buttons are in none of them —
+ * equipping swaps the item under the cursor with the button's, so a thing
+ * stays where it was put, and swapping an empty place takes an item off its
+ * button. Kept in `progress.invSlots` (id or null), so the order survives a
+ * save. Reconciled here rather than at each grant: anything owned, equippable
+ * and on neither button that has no place yet takes the first empty one (as
+ * a new item does on the cartridge); anything in a place that is no longer
+ * owned, or is now on a button, gives it up. An old save gets its places
+ * here, in the registry's order.
+ */
+function inventorySlots(progress) {
+  if (!Array.isArray(progress.invSlots) || progress.invSlots.length !== INVENTORY_SLOTS) {
+    progress.invSlots = new Array(INVENTORY_SLOTS).fill(null);
+  }
+  const s = progress.invSlots;
+  const owned = equippableItems(progress).map(it => it.id);
+  const onButton = id => id === progress.equipA || id === progress.equipB;
+  for (let i = 0; i < INVENTORY_SLOTS; i++) {
+    if (s[i] && (!owned.includes(s[i]) || onButton(s[i]) || s.indexOf(s[i]) !== i)) s[i] = null;
+  }
+  for (const id of owned) {
+    if (onButton(id) || s.includes(id)) continue;
+    const k = s.indexOf(null);
+    if (k >= 0) s[k] = id;
+  }
+  return s;
+}
+
 /** Use whatever is bound to a button. Returns true if the press was consumed. */
 function useEquipped(game, player, slot) {
   const p = game.progress;
@@ -17170,6 +17205,8 @@ __exports["itemName"] = itemName;
 __exports["itemExtra"] = itemExtra;
 __exports["itemIcon"] = itemIcon;
 __exports["equippableItems"] = equippableItems;
+__exports["INVENTORY_SLOTS"] = INVENTORY_SLOTS;
+__exports["inventorySlots"] = inventorySlots;
 __exports["useEquipped"] = useEquipped;
 });
 
@@ -21359,16 +21396,19 @@ function drawHud(ctx, game) {
 
 /**
  * `B[icon L-1]`: the button letter, then the item and what Seasons writes
- * beside it, framed by two drawn brackets. The brackets are pixel art rather
- * than font glyphs so they can stand the full height of the icon, which is
- * what makes the Oracle bar read as a bar. With no letter (the squeezed bar's
- * A slot) the bracket takes the letter's place.
+ * beside it, framed by the cartridge's own bracket tiles (S169;
+ * tools/rip-hud-tiles.py): "B[" or "A[" over the bottom of a "[", and the
+ * same bottom tile flipped for the "]". Each "[" stands in its tile's
+ * seventh column and each "]" in its second, so the tiles sit a pixel either
+ * side of the uprights `l` and `l + 25`. With no letter (the squeezed bar's
+ * A slot) a bare "[" takes the letter's place, as Seasons' does.
  */
 function drawSlot(ctx, x, itemId, p, label) {
-  let l = x;
-  if (label) { drawText(ctx, label, x, 4, INK); l = x + 6; }
-  bracket(ctx, l, 1, 1);
-  bracket(ctx, l + 25, 1, -1);
+  const l = label ? x + 6 : x;
+  sprites.draw(ctx, label === 'B' ? 'hud_slot_b' : label === 'A' ? 'hud_slot_a' : 'hud_brk_tl', l - 6, 0);
+  sprites.draw(ctx, 'hud_brk_bl', l - 6, 8);
+  sprites.draw(ctx, 'hud_brk_tr', l + 24, 0);
+  sprites.draw(ctx, 'hud_brk_br', l + 24, 8);
 
   if (!itemId || !ITEMS[itemId]) return;
   const def = ITEMS[itemId];
@@ -21397,14 +21437,6 @@ function drawItemExtra(ctx, id, p, x, y) {
     sprites.draw(ctx, 'hud_d' + Math.floor(n / 10), x, y);
     sprites.draw(ctx, 'hud_d' + (n % 10), x + 8, y);
   }
-}
-
-/** One half of the pair framing an item. `dir` 1 draws '[', -1 draws ']'. */
-function bracket(ctx, x, y, dir) {
-  ctx.fillStyle = INK;
-  ctx.fillRect(x, y, 1, 13);                 // the upright
-  ctx.fillRect(dir > 0 ? x : x - 1, y, 2, 1);          // top nub
-  ctx.fillRect(dir > 0 ? x : x - 1, y + 12, 2, 1);     // bottom nub
 }
 
 function drawHearts(ctx, p, x0, perRow) {
@@ -21930,10 +21962,10 @@ const { sprites, tiles } = __require("gfx/art.js");
 const { getPalette } = __require("gfx/palettes.js");
 const { tileArt } = __require("world/tileset.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
-const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
+const { ITEMS, itemIcon, itemName, inventorySlots, INVENTORY_SLOTS } = __require("game/items.js");
 const { drawItemExtra } = __require("game/hud.js");
 const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
-const { HEART_UNITS, flag } = __require("game/progress.js");
+const { HEART_UNITS, flag, itemLevel } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
 const { MAPS, getMap, hasRoom, getRoom, roomKeyAt } = __require("world/maps.js");
 const { TIDE_NAMES, TIDE_COUNT } = __require("game/tide.js");
@@ -22151,7 +22183,9 @@ class Menu {
     this.descT = 0;
   }
 
-  open() { this.game.mode = 'menu'; this.tab = 0; this.cursor = 0; }
+  // The item cursor stays where it was left, page to page and opening to
+  // opening, as Seasons' wInventorySubmenu0CursorPos does.
+  open() { this.game.mode = 'menu'; this.tab = 0; }
   close() {
     // Through white again, the way it came (MENU_FADE_CLOSE).
     const g = this.game;
@@ -22159,7 +22193,11 @@ class Menu {
     g.fadeOut(() => { g.mode = 'play'; }, true, MENU_FADE_CLOSE);
   }
 
-  get items() { return equippableItems(this.game.progress); }
+  /** The inventory's sixteen places, each `{ id, level, def }` or null. */
+  get items() {
+    const p = this.game.progress;
+    return inventorySlots(p).map(id => id ? { id, level: itemLevel(p, id), def: ITEMS[id] } : null);
+  }
 
   update() {
     const g = this.game;
@@ -22174,7 +22212,6 @@ class Menu {
     // Tab switching with SELECT, or left/right at the row edges.
     if (i.pressed('select')) {
       this.tab = (this.tab + 1) % TABS.length;
-      this.cursor = 0;
       this.saveCursor = 0;          // Seasons' save screen opens on CONTINUE
       this.savePicked = -1;
       g.audio.sfx('cursor');
@@ -22188,37 +22225,37 @@ class Menu {
     else this.updateSave();
   }
 
+  /**
+   * SEASONS' ITEM PAGE (S169; code/bank2.s inventoryMenuState1 @subscreen0):
+   * sixteen places, four by four; the cursor steps one place across or four
+   * down and runs on round all sixteen (`and $0f`). A or B swaps the place
+   * under the cursor with that button's item — the item comes off the page and
+   * the button's goes into its place, and an empty place takes the item off
+   * the button.
+   */
   updateItems() {
-    const g = this.game, i = g.input, list = this.items;
-    const n = list.length;
-    if (!n) { if (i.pressed('b')) this.close(); return; }
-    const rows = Math.ceil(n / COLS);
+    const g = this.game, i = g.input;
     let c = this.cursor;
-    if (i.pressed('left')) { c = (c % COLS === 0) ? c + Math.min(COLS - 1, n - 1 - c) : c - 1; g.audio.sfx('cursor'); }
-    if (i.pressed('right')) { c = (c % COLS === COLS - 1 || c === n - 1) ? c - (c % COLS) : c + 1; g.audio.sfx('cursor'); }
-    if (i.pressed('up')) { c = (c - COLS + rows * COLS) % (rows * COLS); g.audio.sfx('cursor'); }
-    if (i.pressed('down')) { c = (c + COLS) % (rows * COLS); g.audio.sfx('cursor'); }
-    this.cursor = Math.max(0, Math.min(n - 1, c));
-
-    const sel = list[this.cursor];
-    if (!sel) return;
-
-    // Seed satchel: cycle which seed is selected with up/down on the item itself.
-    if ((sel.id === 'satchel' || sel.id === 'slingshot') && i.pressed('select')) {
+    if (i.pressed('right')) c += 1;
+    else if (i.pressed('left')) c -= 1;
+    else if (i.pressed('up')) c -= 4;
+    else if (i.pressed('down')) c += 4;
+    if (c !== this.cursor) {
+      this.cursor = (c + INVENTORY_SLOTS) % INVENTORY_SLOTS;
       g.audio.sfx('cursor');
     }
-    if (i.pressed('a')) { this.assign(sel.id, 'A'); }
-    if (i.pressed('b')) { this.assign(sel.id, 'B'); }
+    if (i.pressed('a')) this.assign('A');
+    else if (i.pressed('b')) this.assign('B');
   }
 
-  assign(id, slot) {
+  assign(slot) {
     const p = this.game.progress;
-    const other = slot === 'A' ? 'equipB' : 'equipA';
-    const mine = slot === 'A' ? 'equipA' : 'equipB';
-    if (p[other] === id) p[other] = p[mine];
-    p[mine] = id;
+    const s = inventorySlots(p);
+    const key = slot === 'A' ? 'equipA' : 'equipB';
+    const here = s[this.cursor];
+    s[this.cursor] = p[key] || null;
+    p[key] = here;
     this.game.audio.sfx('confirm');
-    this.flash(`${itemName(id, p.items[id])} on ${slot}`);
   }
 
   updateMap() {
@@ -22403,6 +22440,11 @@ class Menu {
     else if (this.tab === 2) strip = this.drawCharms(ctx);
     else strip = this.drawQuest(ctx);
 
+    // The item page hands back its strip with the scroll it is part of.
+    if (strip && typeof strip === 'object') {
+      if (strip.w.more) this.drawScrollMark(ctx, SCREEN_W - 12, STRIP_Y, strip.w);
+      strip = strip.text;
+    }
     const line = this.messageTime > 0 ? this.message : strip;
     if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
     else drawTextCentered(ctx, 'SELECT: page  START: close', SCREEN_W / 2, STRIP_Y, DIM);
@@ -22417,33 +22459,32 @@ class Menu {
     }
   }
 
+  /**
+   * The places where Seasons draws them (inventorySubscreen0_drawStoredItems
+   * @itemPositions): an item's 8x16 picture at tile (3 + 4 col, 3 + 3 row) of
+   * the screen, its level or count one tile right and one down, and the
+   * cursor's two brackets a tile either side (inventorySubscreen0_drawCursor).
+   * The name and then the description run in the strip below the page.
+   */
   drawItems(ctx) {
-    const g = this.game, p = g.progress;
+    const p = this.game.progress;
     const list = this.items;
-    const x0 = PAGE.x + 4, y0 = PAGE.y + 3, cw = 28, ch = 20;
     list.forEach((it, i) => {
-      const cx = x0 + (i % COLS) * cw, cy = y0 + Math.floor(i / COLS) * ch;
-      // The icon is an 8px picture centred in a 16px cell, so its own tile is
-      // the cell's middle: drawn at cx - 2 that tile is cx+2..cx+9, and the
-      // level or count goes in the two tiles after it, on the icon's lower
-      // half — where Seasons' inventory writes them (drawTreasureDisplayDataToBg:
-      // one row down, one tile right). The A/B marks are ours (Seasons takes an
-      // equipped item OUT of the grid) and sit above them, B then A.
-      sprites.draw(ctx, itemIcon(it.id, it.level), cx - 2, cy + 2, { pal: it.def.pal });
-      drawItemExtra(ctx, it.id, p, cx + 10, cy + 10);
-      if (p.equipB === it.id) drawText(ctx, 'B', cx + 12, cy + 1, BLUE);
-      if (p.equipA === it.id) drawText(ctx, 'A', cx + 19, cy + 1, '#c01830');
-      if (i === this.cursor) this.drawCursor(ctx, cx, cy, cw - 2, ch);
+      const x = 24 + (i & 3) * 32, y = 24 + (i >> 2) * 24;
+      if (i === this.cursor) {
+        sprites.draw(ctx, 'menu_cursor_l', x - 8, y);
+        sprites.draw(ctx, 'menu_cursor_r', x + 24, y);
+      }
+      if (!it) return;
+      // The icon is an 8px picture centred in a 16px cell.
+      sprites.draw(ctx, itemIcon(it.id, it.level), x - 4, y, { pal: it.def.pal });
+      drawItemExtra(ctx, it.id, p, x + 8, y + 8);
     });
     const sel = list[this.cursor];
-    if (!sel) {
-      drawText(ctx, 'No items yet.', PAGE.x + 6, PAGE.y + 6, DIM);
-      return null;
-    }
-    const w = this.descWindow(sel.def.desc, DESC_WRAP_W.item);
-    drawText(ctx, w.lines[0] || '', PAGE.x + 4, PAGE.y + PAGE.h - 10, INK);
-    if (w.more) this.drawScrollMark(ctx, PAGE.x + PAGE.w - 6, PAGE.y + PAGE.h - 10, w);
-    return itemName(sel.id, sel.level);
+    if (!sel) return null;
+    const name = itemName(sel.id, sel.level);
+    const w = this.descWindow(name + '\n' + (sel.def.desc || ''), DESC_WRAP_W.item);
+    return { text: w.lines[0] || '', w };
   }
 
   /** Two different screens that used to be one loop. See each one's own note. */
@@ -65715,6 +65756,46 @@ const { registerPalettes } = __require("gfx/palettes.js");
 
 const HUD_TILE_ART = {
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_bl: { pal: 'hud_brk_bl', art: `
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......33
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_br: { pal: 'hud_brk_br', art: `
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......
+    33......
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_tl: { pal: 'hud_brk_tl', art: `
+    ........
+    ......33
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_tr: { pal: 'hud_brk_tr', art: `
+    ........
+    33......
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   hud_d0: { pal: 'hud_d0', art: `
     ........
     ..3333..
@@ -65835,6 +65916,26 @@ const HUD_TILE_ART = {
     ..3333..
     ........` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_slot_a: { pal: 'hud_slot_a', art: `
+    ........
+    ..33..33
+    .3..3.3.
+    .3..3.3.
+    .3333.3.
+    .3..3.3.
+    .3..3.3.
+    .3..3.3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_slot_b: { pal: 'hud_slot_b', art: `
+    ........
+    .333..33
+    .3..3.3.
+    .3..3.3.
+    .333..3.
+    .3..3.3.
+    .3..3.3.
+    .333..3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   hud_x: { pal: 'hud_x', art: `
     ........
     ........
@@ -65844,10 +65945,50 @@ const HUD_TILE_ART = {
     ..3.3...
     .3...3..
     ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  menu_cursor_l: { pal: 'menu_cursor_l', art: `
+    ........
+    ......11
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......1.
+    ......11
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  menu_cursor_r: { pal: 'menu_cursor_r', art: `
+    ........
+    11......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    .1......
+    11......
+    ........` },
 };
 
 // One palette per sprite, taken from the source artwork.
 const HUD_TILE_ART_PALETTES = {
+  hud_brk_bl: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_brk_br: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_brk_tl: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_brk_tr: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_d0: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_d1: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_d2: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
@@ -65860,7 +66001,11 @@ const HUD_TILE_ART_PALETTES = {
   hud_d9: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_key: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_lv: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_slot_a: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_slot_b: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_x: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  menu_cursor_l: ['#ffffff', '#000000', '#ff0829', '#ffd68c'],
+  menu_cursor_r: ['#ffffff', '#000000', '#ff0829', '#ffd68c'],
 };
 
 function installHudTileSprites() {

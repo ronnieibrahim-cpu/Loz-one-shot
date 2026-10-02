@@ -48,6 +48,8 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // items: id -> level (1+). Absent or 0 means not owned.
     items: {},
     equipB: null, equipA: null,
+    // the inventory's sixteen places (items.js inventorySlots), made on first use
+    invSlots: null,
     // scrimshaw: carved charms, and the three tide-level cases they slot into.
     // You start with the MID case only; LOW and HIGH open over the game, and
     // the case upgrade raises charmCase to CHARM_CASE_MAX.

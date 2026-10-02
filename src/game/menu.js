@@ -7,13 +7,13 @@ import { sprites, tiles } from '../gfx/art.js';
 import { getPalette } from '../gfx/palettes.js';
 import { tileArt } from '../world/tileset.js';
 import { drawPanel, drawBox } from './dialogue.js';
-import { ITEMS, itemIcon, itemName, equippableItems } from './items.js';
+import { ITEMS, itemIcon, itemName, inventorySlots, INVENTORY_SLOTS } from './items.js';
 import { drawItemExtra } from './hud.js';
 import {
   CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm,
   caseSize, slotOpen, equippedIn,
 } from './scrimshaw.js';
-import { HEART_UNITS, flag } from './progress.js';
+import { HEART_UNITS, flag, itemLevel } from './progress.js';
 import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
@@ -231,7 +231,9 @@ export class Menu {
     this.descT = 0;
   }
 
-  open() { this.game.mode = 'menu'; this.tab = 0; this.cursor = 0; }
+  // The item cursor stays where it was left, page to page and opening to
+  // opening, as Seasons' wInventorySubmenu0CursorPos does.
+  open() { this.game.mode = 'menu'; this.tab = 0; }
   close() {
     // Through white again, the way it came (MENU_FADE_CLOSE).
     const g = this.game;
@@ -239,7 +241,11 @@ export class Menu {
     g.fadeOut(() => { g.mode = 'play'; }, true, MENU_FADE_CLOSE);
   }
 
-  get items() { return equippableItems(this.game.progress); }
+  /** The inventory's sixteen places, each `{ id, level, def }` or null. */
+  get items() {
+    const p = this.game.progress;
+    return inventorySlots(p).map(id => id ? { id, level: itemLevel(p, id), def: ITEMS[id] } : null);
+  }
 
   update() {
     const g = this.game;
@@ -254,7 +260,6 @@ export class Menu {
     // Tab switching with SELECT, or left/right at the row edges.
     if (i.pressed('select')) {
       this.tab = (this.tab + 1) % TABS.length;
-      this.cursor = 0;
       this.saveCursor = 0;          // Seasons' save screen opens on CONTINUE
       this.savePicked = -1;
       g.audio.sfx('cursor');
@@ -268,37 +273,37 @@ export class Menu {
     else this.updateSave();
   }
 
+  /**
+   * SEASONS' ITEM PAGE (S169; code/bank2.s inventoryMenuState1 @subscreen0):
+   * sixteen places, four by four; the cursor steps one place across or four
+   * down and runs on round all sixteen (`and $0f`). A or B swaps the place
+   * under the cursor with that button's item — the item comes off the page and
+   * the button's goes into its place, and an empty place takes the item off
+   * the button.
+   */
   updateItems() {
-    const g = this.game, i = g.input, list = this.items;
-    const n = list.length;
-    if (!n) { if (i.pressed('b')) this.close(); return; }
-    const rows = Math.ceil(n / COLS);
+    const g = this.game, i = g.input;
     let c = this.cursor;
-    if (i.pressed('left')) { c = (c % COLS === 0) ? c + Math.min(COLS - 1, n - 1 - c) : c - 1; g.audio.sfx('cursor'); }
-    if (i.pressed('right')) { c = (c % COLS === COLS - 1 || c === n - 1) ? c - (c % COLS) : c + 1; g.audio.sfx('cursor'); }
-    if (i.pressed('up')) { c = (c - COLS + rows * COLS) % (rows * COLS); g.audio.sfx('cursor'); }
-    if (i.pressed('down')) { c = (c + COLS) % (rows * COLS); g.audio.sfx('cursor'); }
-    this.cursor = Math.max(0, Math.min(n - 1, c));
-
-    const sel = list[this.cursor];
-    if (!sel) return;
-
-    // Seed satchel: cycle which seed is selected with up/down on the item itself.
-    if ((sel.id === 'satchel' || sel.id === 'slingshot') && i.pressed('select')) {
+    if (i.pressed('right')) c += 1;
+    else if (i.pressed('left')) c -= 1;
+    else if (i.pressed('up')) c -= 4;
+    else if (i.pressed('down')) c += 4;
+    if (c !== this.cursor) {
+      this.cursor = (c + INVENTORY_SLOTS) % INVENTORY_SLOTS;
       g.audio.sfx('cursor');
     }
-    if (i.pressed('a')) { this.assign(sel.id, 'A'); }
-    if (i.pressed('b')) { this.assign(sel.id, 'B'); }
+    if (i.pressed('a')) this.assign('A');
+    else if (i.pressed('b')) this.assign('B');
   }
 
-  assign(id, slot) {
+  assign(slot) {
     const p = this.game.progress;
-    const other = slot === 'A' ? 'equipB' : 'equipA';
-    const mine = slot === 'A' ? 'equipA' : 'equipB';
-    if (p[other] === id) p[other] = p[mine];
-    p[mine] = id;
+    const s = inventorySlots(p);
+    const key = slot === 'A' ? 'equipA' : 'equipB';
+    const here = s[this.cursor];
+    s[this.cursor] = p[key] || null;
+    p[key] = here;
     this.game.audio.sfx('confirm');
-    this.flash(`${itemName(id, p.items[id])} on ${slot}`);
   }
 
   updateMap() {
@@ -483,6 +488,11 @@ export class Menu {
     else if (this.tab === 2) strip = this.drawCharms(ctx);
     else strip = this.drawQuest(ctx);
 
+    // The item page hands back its strip with the scroll it is part of.
+    if (strip && typeof strip === 'object') {
+      if (strip.w.more) this.drawScrollMark(ctx, SCREEN_W - 12, STRIP_Y, strip.w);
+      strip = strip.text;
+    }
     const line = this.messageTime > 0 ? this.message : strip;
     if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
     else drawTextCentered(ctx, 'SELECT: page  START: close', SCREEN_W / 2, STRIP_Y, DIM);
@@ -497,33 +507,32 @@ export class Menu {
     }
   }
 
+  /**
+   * The places where Seasons draws them (inventorySubscreen0_drawStoredItems
+   * @itemPositions): an item's 8x16 picture at tile (3 + 4 col, 3 + 3 row) of
+   * the screen, its level or count one tile right and one down, and the
+   * cursor's two brackets a tile either side (inventorySubscreen0_drawCursor).
+   * The name and then the description run in the strip below the page.
+   */
   drawItems(ctx) {
-    const g = this.game, p = g.progress;
+    const p = this.game.progress;
     const list = this.items;
-    const x0 = PAGE.x + 4, y0 = PAGE.y + 3, cw = 28, ch = 20;
     list.forEach((it, i) => {
-      const cx = x0 + (i % COLS) * cw, cy = y0 + Math.floor(i / COLS) * ch;
-      // The icon is an 8px picture centred in a 16px cell, so its own tile is
-      // the cell's middle: drawn at cx - 2 that tile is cx+2..cx+9, and the
-      // level or count goes in the two tiles after it, on the icon's lower
-      // half — where Seasons' inventory writes them (drawTreasureDisplayDataToBg:
-      // one row down, one tile right). The A/B marks are ours (Seasons takes an
-      // equipped item OUT of the grid) and sit above them, B then A.
-      sprites.draw(ctx, itemIcon(it.id, it.level), cx - 2, cy + 2, { pal: it.def.pal });
-      drawItemExtra(ctx, it.id, p, cx + 10, cy + 10);
-      if (p.equipB === it.id) drawText(ctx, 'B', cx + 12, cy + 1, BLUE);
-      if (p.equipA === it.id) drawText(ctx, 'A', cx + 19, cy + 1, '#c01830');
-      if (i === this.cursor) this.drawCursor(ctx, cx, cy, cw - 2, ch);
+      const x = 24 + (i & 3) * 32, y = 24 + (i >> 2) * 24;
+      if (i === this.cursor) {
+        sprites.draw(ctx, 'menu_cursor_l', x - 8, y);
+        sprites.draw(ctx, 'menu_cursor_r', x + 24, y);
+      }
+      if (!it) return;
+      // The icon is an 8px picture centred in a 16px cell.
+      sprites.draw(ctx, itemIcon(it.id, it.level), x - 4, y, { pal: it.def.pal });
+      drawItemExtra(ctx, it.id, p, x + 8, y + 8);
     });
     const sel = list[this.cursor];
-    if (!sel) {
-      drawText(ctx, 'No items yet.', PAGE.x + 6, PAGE.y + 6, DIM);
-      return null;
-    }
-    const w = this.descWindow(sel.def.desc, DESC_WRAP_W.item);
-    drawText(ctx, w.lines[0] || '', PAGE.x + 4, PAGE.y + PAGE.h - 10, INK);
-    if (w.more) this.drawScrollMark(ctx, PAGE.x + PAGE.w - 6, PAGE.y + PAGE.h - 10, w);
-    return itemName(sel.id, sel.level);
+    if (!sel) return null;
+    const name = itemName(sel.id, sel.level);
+    const w = this.descWindow(name + '\n' + (sel.def.desc || ''), DESC_WRAP_W.item);
+    return { text: w.lines[0] || '', w };
   }
 
   /** Two different screens that used to be one loop. See each one's own note. */

@@ -31,7 +31,8 @@ when Link is in a dungeon (code/bank2.s loadCommonGraphics_body,
 and (S169) the frames round the A and B items, which map_hud_normal builds
 from three tiles: hud_slot_b ($05, "B["), hud_slot_a ($08, "A["), and $06,
 the bottom of a "[", in the four flips its attribute bytes ask for
-(hud_brk_bl / _tl / _br / _tr).
+(hud_brk_bl / _tl / _br / _tr). And the inventory's cursor brackets,
+menu_cursor_l / _r (see CURSOR below).
 
 Each tile is 8x8, 2 bits a pixel. Index 3 is the ink; indices 0-2 are the
 paper the tile sits on, which on the cartridge is the panel's own colour, so
@@ -84,9 +85,29 @@ def palette(label, index):
     return [tuple((c << 3) | (c >> 2) for c in rgb) for rgb in cols[index * 4:index * 4 + 4]]
 
 
+# The inventory's cursor (S169): code/bank2.s inventorySubscreen0_drawCursor
+# lays two 8x16 sprites, tile $0c of GFXH_INVENTORY_SCREEN's sprite graphics
+# (gfx_inventory_hud_1 at $8000) in sprite palette 2 of PALH_0a
+# (standardSpritePaletteData) — the left one with attribute $22, mirrored, the
+# right one $02. Unlike the bar's tiles these are sprites, so index 0 is the
+# transparent one and the bracket is colour 1.
+CURSOR = {'menu_cursor_l': 'x', 'menu_cursor_r': ''}
+
+
 def main():
     pal = ['#%02x%02x%02x' % c for c in palette('paletteData4830', 0)]
     art, pals = {}, {}
+    cur = Image.open(os.path.join(SRC, 'gfx_inventory_hud_1.png'))
+    spal = ['#%02x%02x%02x' % c for c in palette('standardSpritePaletteData', 2)]
+    for name, flip in CURSOR.items():
+        rows = []
+        for y in range(16):
+            t = 0x0c + y // 8
+            x0, y0 = (t % 16) * 8, (t // 16) * 8
+            rows.append(''.join(str(v) if v else '.' for v in (
+                cur.getpixel((x0 + (7 - x if flip else x), y0 + y % 8)) & 3 for x in range(8))))
+        art[name] = rows
+        pals[name] = spal
     for name, (src, t, *flip) in sorted(TILES.items()):
         flip = flip[0] if flip else ''
         im = Image.open(os.path.join(SRC, src))

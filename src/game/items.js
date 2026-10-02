@@ -1323,6 +1323,39 @@ export function equippableItems(progress) {
   return out;
 }
 
+/** How many places the inventory has: Seasons' 4x4 (INVENTORY_CAPACITY). */
+export const INVENTORY_SLOTS = 16;
+
+/**
+ * THE INVENTORY AS SEASONS KEEPS IT (S169; code/bank2.s @equipItem): sixteen
+ * fixed places, and the two items on the buttons are in none of them —
+ * equipping swaps the item under the cursor with the button's, so a thing
+ * stays where it was put, and swapping an empty place takes an item off its
+ * button. Kept in `progress.invSlots` (id or null), so the order survives a
+ * save. Reconciled here rather than at each grant: anything owned, equippable
+ * and on neither button that has no place yet takes the first empty one (as
+ * a new item does on the cartridge); anything in a place that is no longer
+ * owned, or is now on a button, gives it up. An old save gets its places
+ * here, in the registry's order.
+ */
+export function inventorySlots(progress) {
+  if (!Array.isArray(progress.invSlots) || progress.invSlots.length !== INVENTORY_SLOTS) {
+    progress.invSlots = new Array(INVENTORY_SLOTS).fill(null);
+  }
+  const s = progress.invSlots;
+  const owned = equippableItems(progress).map(it => it.id);
+  const onButton = id => id === progress.equipA || id === progress.equipB;
+  for (let i = 0; i < INVENTORY_SLOTS; i++) {
+    if (s[i] && (!owned.includes(s[i]) || onButton(s[i]) || s.indexOf(s[i]) !== i)) s[i] = null;
+  }
+  for (const id of owned) {
+    if (onButton(id) || s.includes(id)) continue;
+    const k = s.indexOf(null);
+    if (k >= 0) s[k] = id;
+  }
+  return s;
+}
+
 /** Use whatever is bound to a button. Returns true if the press was consumed. */
 export function useEquipped(game, player, slot) {
   const p = game.progress;
