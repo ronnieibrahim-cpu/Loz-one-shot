@@ -15,7 +15,7 @@
 // (never `getRoom`'s, whose render cache the game is about to need) at fixed
 // tide levels (never `game.tide`, whose stamp keys every room's cache).
 
-import { SCREEN_W, SCREEN_H } from '../core/screen.js';
+import { SCREEN_W, SCREEN_H, paletteFade } from '../core/screen.js';
 import { drawScreen, drawObject, screenImage } from '../gfx/screens.js';
 import { sprites } from '../gfx/art.js';
 import { MAPS } from '../world/maps.js';
@@ -88,18 +88,15 @@ export class Opening {
     if (t < P_WHITE) this.drawSea(ctx, t);
     else if (t < P_SHORE) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, SCREEN_W, SCREEN_H); return; }
     else this.drawShore(ctx, t);
-    // Fades: in from white at the start of each scene, out to white at the end.
+    // Fades: in from white at the start of each scene, out to white at the
+    // end, as Seasons' palette thread does them (paletteFade).
     let white = 0;
-    if (t < TITLE_FADE_FRAMES) white = 4 - step4(t / TITLE_FADE_FRAMES);
-    else if (t >= P_WHITE - TITLE_FADE_FRAMES && t < P_WHITE) white = step4((t - P_WHITE + TITLE_FADE_FRAMES) / TITLE_FADE_FRAMES);
-    else if (t >= P_SHORE && t < P_SHORE + TITLE_FADE_FRAMES) white = 4 - step4((t - P_SHORE) / TITLE_FADE_FRAMES);
-    else if (t >= INTRO_FRAMES - TITLE_FADE_FRAMES) white = step4((t - INTRO_FRAMES + TITLE_FADE_FRAMES) / TITLE_FADE_FRAMES);
-    if (white > 0) {
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = white / 4;
-      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-      ctx.globalAlpha = 1;
-    }
+    const F = TITLE_FADE_FRAMES;
+    if (t < F) white = 1 - t / F;
+    else if (t >= P_WHITE - F && t < P_WHITE) white = (t - P_WHITE + F) / F;
+    else if (t >= P_SHORE && t < P_SHORE + F) white = 1 - (t - P_SHORE) / F;
+    else if (t >= INTRO_FRAMES - F) white = (t - INTRO_FRAMES + F) / F;
+    paletteFade(ctx, white, true);
   }
 
   // ---- the sea --------------------------------------------------------------

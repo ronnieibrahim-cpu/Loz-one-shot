@@ -1173,6 +1173,26 @@ const main = async () => {
   check('START on the logo fades to white before the file select cuts in',
     toFiles.filesAt === toFiles.want && toFiles.swallowed
       && toFiles.log === `sfx:confirm,fade:${toFiles.fadeMask},play:fileSelect`, JSON.stringify(toFiles));
+  // Seasons' fade (S171): one offset added to every colour's red, green and
+  // blue (0-31), pinned at 31 or 0 — not a white sheet laid over the picture.
+  const fadeMath = await G(async () => {
+    const { paletteFade } = await import('/src/core/screen.js');
+    const c = document.createElement('canvas'); c.width = 4; c.height = 1;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    const cols = [[0, 0, 0], [0x84, 0x42, 0x08], [0xf7, 0xf7, 0xf7], [0x21, 0x84, 0xff]];
+    const at = (k, white) => {
+      cols.forEach(([r, g, b], i) => { x.fillStyle = `rgb(${r},${g},${b})`; x.fillRect(i, 0, 1, 1); });
+      paletteFade(x, k, white);
+      return Array.from(x.getImageData(0, 0, 4, 1).data).filter((_, i) => i % 4 !== 3);
+    };
+    return { half: at(0.5, true), full: at(1, true), dark: at(0.25, false) };
+  });
+  const c5 = v => (v << 3) | (v >> 2);
+  check('a fade to white adds the same step to every colour, pinned at full',
+    JSON.stringify(fadeMath.half) === JSON.stringify([16, 16, 16, 31, 24, 17, 31, 31, 31, 20, 31, 31].map(c5))
+      && fadeMath.full.every(v => v === 255)
+      && JSON.stringify(fadeMath.dark) === JSON.stringify([0, 0, 0, 8, 0, 0, 22, 22, 22, 0, 8, 23].map(c5)),
+    JSON.stringify(fadeMath));
   check('the opening is between 20 and 40 seconds', opening.frames >= 1200 && opening.frames <= 2400, opening.frames + ' frames');
 
   console.log('\n--- Farore behind her desk (S168) ---');

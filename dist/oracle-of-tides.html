@@ -240,16 +240,55 @@ class Screen {
     this.ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
   }
 
-  // Quantized darkening/brightening overlay. The real hardware faded by rewriting
-  // palette RAM; a 4-step overlay reads almost identically at this resolution.
-  fade(amount, toWhite = false) {
-    if (amount <= 0) return;
-    const a = Math.min(1, Math.round(amount * 4) / 4);
-    this.ctx.globalAlpha = a;
-    this.ctx.fillStyle = toWhite ? '#ffffff' : '#000000';
-    this.ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    this.ctx.globalAlpha = 1;
+  /** A fade to black or white over the whole screen; see paletteFade. */
+  fade(amount, toWhite = false) { paletteFade(this.ctx, amount, toWhite); }
+}
+
+// SEASONS' FADE (S171). The cartridge never lays a sheet over the picture: its
+// palette thread (oracles-disasm bank1.s paletteFadeHandler01/02/03 and
+// paletteThread_calculateFadingPalettes) adds one offset to the red, green and
+// blue of every colour, each 0-31, and a component that goes past 31 (or
+// below 0) is pinned there. The offset moves by the fade's speed each frame
+// toward 32 (white) or -32 (black), so dark colours stay visible longest and
+// the picture washes out evenly instead of going milky. `amount` 0..1 is how
+// far through the fade we are; offset = amount * 32, at most 31, so amount 1
+// is every component pinned. Colours go to 5 bits and back the way the
+// rippers bring them in ((c << 3) | (c >> 2)).
+const FADE_LUT = new Map();
+function fadeLut(offset) {
+  let lut = FADE_LUT.get(offset);
+  if (!lut) {
+    lut = new Uint8ClampedArray(256);
+    for (let c = 0; c < 256; c++) {
+      const v = Math.max(0, Math.min(31, Math.round(c * 31 / 255) + offset));
+      lut[c] = (v << 3) | (v >> 2);
+    }
+    FADE_LUT.set(offset, lut);
   }
+  return lut;
+}
+
+// The picture is copied to a CPU-side scratch canvas and read back from that,
+// so the main canvas keeps its GPU backing outside a fade.
+let fadeScratch = null;
+function paletteFade(ctx, amount, toWhite = false) {
+  if (!(amount > 0)) return;
+  const off = Math.min(31, Math.floor(Math.min(1, amount) * 32)) * (toWhite ? 1 : -1);
+  if (off === 0) return;
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  if (!fadeScratch || fadeScratch.canvas.width !== w || fadeScratch.canvas.height !== h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    fadeScratch = c.getContext('2d', { willReadFrequently: true });
+  }
+  fadeScratch.clearRect(0, 0, w, h);
+  fadeScratch.drawImage(ctx.canvas, 0, 0);
+  const img = fadeScratch.getImageData(0, 0, w, h);
+  const d = img.data, lut = fadeLut(off);
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]];
+  }
+  ctx.putImageData(img, 0, 0);
 }
 
 // A reusable offscreen canvas factory. Used for tile caches and room composites.
@@ -269,6 +308,7 @@ __exports["TILE"] = TILE;
 __exports["ROOM_W"] = ROOM_W;
 __exports["ROOM_H"] = ROOM_H;
 __exports["Screen"] = Screen;
+__exports["paletteFade"] = paletteFade;
 __exports["offscreen"] = offscreen;
 });
 
@@ -1900,29 +1940,17 @@ const ROOM_EXIT_MARGIN = 1;
 
 // THE CAMERA, inside a multi-screen dungeon room only.
 //
-// S147 stepped Seasons' own big dungeon rooms: its view sits centred on Link
-// and follows him at ONE pixel a frame, slower than he walks, so on a long walk
-// he pulls ahead of the middle and the view catches up when he stops. Two of
-// the three are measured from that; the width is by analogy. `KeyI` still
-// draws the deadzone box in game.
+// Seasons has no deadzone (S171, read from oracles-disasm bank1.s
+// updateCameraPosition): every frame the view's target is Link's position
+// minus half the screen (SCREEN_HEIGHT*16/2, SCREEN_WIDTH*16/2), clamped to the
+// room, and hCameraY/X step ONE pixel toward it — so a walking Link pulls ahead
+// of the middle and the view catches up when he stops. S147 measured 4 px of
+// slack in the footage; the cartridge's own code says the target is the centre
+// itself, and the footage's 4 px was its measurement's own pixel or two.
+// CAM_DEADZONE_W/H (8 and 8, one guessed) are gone with it.
 //
-// None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
-// and that range is empty on one screen, so retuning these three numbers cannot
-// move a pixel in any room the game currently has.
-
-/** px — width of the box Link moves inside without the view following.
- *  guessed, by analogy with CAM_DEADZONE_H: the footage shows a sideways
- *  follow already under way (video frames 5781-5814) but never the frame it
- *  began. It was 96, which let him walk to within two tiles of the edge
- *  before the view moved at all — nothing like Seasons. */
-const CAM_DEADZONE_W = 8;
-
-/** px — height of that box. measured, to a pixel or two: the view starts to
- *  follow on the frame Link's middle is about 4 px past the middle of the
- *  playfield. reference: assets/footage/seasons-tas-rooster-adventure.mp4, Link walking
- *  up the tall entrance room of the first dungeon — still view to video frame
- *  3852, following from 3853 with his sprite top at screen y 76. It was 64. */
-const CAM_DEADZONE_H = 8;
+// It cannot affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W] and
+// that range is empty on one screen (Seasons: `@smallRoom`, camera 0,0).
 
 /** px/f — the fastest the camera may travel. measured: 1. reference:
  *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen shift between frames
@@ -3816,8 +3844,6 @@ __exports["PUSH_PROBE_REACH"] = PUSH_PROBE_REACH;
 __exports["ROOM_TRANSITION_FRAMES_H"] = ROOM_TRANSITION_FRAMES_H;
 __exports["ROOM_TRANSITION_FRAMES_V"] = ROOM_TRANSITION_FRAMES_V;
 __exports["ROOM_EXIT_MARGIN"] = ROOM_EXIT_MARGIN;
-__exports["CAM_DEADZONE_W"] = CAM_DEADZONE_W;
-__exports["CAM_DEADZONE_H"] = CAM_DEADZONE_H;
 __exports["CAM_MAX_SPEED"] = CAM_MAX_SPEED;
 __exports["TIDE_SWEEP_FRAMES"] = TIDE_SWEEP_FRAMES;
 __exports["FADE_RATE"] = FADE_RATE;
@@ -22905,19 +22931,15 @@ __define("game/camera.js", function (__exports, __require) {
 // alter a single pixel of any of them — the replays prove it, but the clamp is
 // the reason they can.
 //
-// DEADZONE, NOT CENTRING
+// CENTRING, ONE PIXEL A FRAME
 //
-// The source games do not keep Link in the middle of a large room. The view
-// holds still while he moves around inside it and only gives way when he
-// pushes at an edge. So: a box in VIEW space; while Link's centre is inside it
-// the camera does not move at all; when he leaves it the camera moves by
-// exactly enough to put him back on the boundary, capped at CAM_MAX_SPEED so a
-// knockback or a warp cannot snap the view.
-//
-// The three constants are in feel.js and all three are `guessed`. Nobody has
-// frame-stepped a reference for them; `KeyI` draws the box so they can be
-// settled by play, which is the same argument the anchor radius got.
-//
+// As Seasons' updateCameraPosition (oracles-disasm bank1.s): the target is
+// the camera that puts Link's centre in the middle of the view, clamped to the
+// room, and the camera steps CAM_MAX_SPEED toward it each frame — so a walking
+// Link drifts ahead of the middle and the view catches up when he stops, and
+// a knockback or a warp cannot snap the view. There is no deadzone: S147 gave
+// it one from footage, S171 read the cartridge and took it out.
+
 // THE CAMERA IS NOT PART OF THE RENDER CACHE KEY, IN EITHER DIRECTION.
 //
 // Moving the camera does not change what the room looks like — it changes which
@@ -22928,7 +22950,7 @@ __define("game/camera.js", function (__exports, __require) {
 // are silent, and both are traps.
 
 const { VIEW_W, VIEW_H } = __require("core/screen.js");
-const { CAM_DEADZONE_W, CAM_DEADZONE_H, CAM_MAX_SPEED } = __require("data/feel.js");
+const { CAM_MAX_SPEED } = __require("data/feel.js");
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 
@@ -22942,12 +22964,8 @@ class Camera {
 
   /**
    * Put the camera where it would sit if the player had always been at `p`.
-   * Used on room entry and on any teleport: the deadzone is a history-dependent
-   * rule and a room you have just arrived in has no history.
-   *
-   * Centred-and-clamped rather than deadzoned, because the entry point of a
-   * wide room is almost always at one end and the clamp resolves it to that end
-   * anyway.
+   * Used on room entry and on any teleport: Seasons' calculateCameraPosition,
+   * the same centred-and-clamped target set at once instead of a pixel a frame.
    */
   snap(room, p) {
     if (!room) { this.x = 0; this.y = 0; return this; }
@@ -22971,17 +22989,8 @@ class Camera {
     if (mx === 0 && my === 0) { this.x = 0; this.y = 0; return; }
     if (!p) { this.x = clamp(this.x, 0, mx); this.y = clamp(this.y, 0, my); return; }
 
-    // The deadzone in ROOM space, i.e. the box slid to where the camera is.
-    const dzx0 = this.x + (VIEW_W - CAM_DEADZONE_W) / 2;
-    const dzx1 = dzx0 + CAM_DEADZONE_W;
-    const dzy0 = this.y + (VIEW_H - CAM_DEADZONE_H) / 2;
-    const dzy1 = dzy0 + CAM_DEADZONE_H;
-
-    let wantX = this.x, wantY = this.y;
-    if (p.cx < dzx0) wantX = this.x - (dzx0 - p.cx);
-    else if (p.cx > dzx1) wantX = this.x + (p.cx - dzx1);
-    if (p.cy < dzy0) wantY = this.y - (dzy0 - p.cy);
-    else if (p.cy > dzy1) wantY = this.y + (p.cy - dzy1);
+    // Seasons' target: Link's centre in the middle of the view.
+    let wantX = p.cx - VIEW_W / 2, wantY = p.cy - VIEW_H / 2;
 
     wantX = clamp(Math.round(wantX), 0, mx);
     wantY = clamp(Math.round(wantY), 0, my);
@@ -23697,7 +23706,7 @@ __define("game/intro.js", function (__exports, __require) {
 // (never `getRoom`'s, whose render cache the game is about to need) at fixed
 // tide levels (never `game.tide`, whose stamp keys every room's cache).
 
-const { SCREEN_W, SCREEN_H } = __require("core/screen.js");
+const { SCREEN_W, SCREEN_H, paletteFade } = __require("core/screen.js");
 const { drawScreen, drawObject, screenImage } = __require("gfx/screens.js");
 const { sprites } = __require("gfx/art.js");
 const { MAPS } = __require("world/maps.js");
@@ -23764,18 +23773,15 @@ class Opening {
     if (t < P_WHITE) this.drawSea(ctx, t);
     else if (t < P_SHORE) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, SCREEN_W, SCREEN_H); return; }
     else this.drawShore(ctx, t);
-    // Fades: in from white at the start of each scene, out to white at the end.
+    // Fades: in from white at the start of each scene, out to white at the
+    // end, as Seasons' palette thread does them (paletteFade).
     let white = 0;
-    if (t < TITLE_FADE_FRAMES) white = 4 - step4(t / TITLE_FADE_FRAMES);
-    else if (t >= P_WHITE - TITLE_FADE_FRAMES && t < P_WHITE) white = step4((t - P_WHITE + TITLE_FADE_FRAMES) / TITLE_FADE_FRAMES);
-    else if (t >= P_SHORE && t < P_SHORE + TITLE_FADE_FRAMES) white = 4 - step4((t - P_SHORE) / TITLE_FADE_FRAMES);
-    else if (t >= INTRO_FRAMES - TITLE_FADE_FRAMES) white = step4((t - INTRO_FRAMES + TITLE_FADE_FRAMES) / TITLE_FADE_FRAMES);
-    if (white > 0) {
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = white / 4;
-      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-      ctx.globalAlpha = 1;
-    }
+    const F = TITLE_FADE_FRAMES;
+    if (t < F) white = 1 - t / F;
+    else if (t >= P_WHITE - F && t < P_WHITE) white = (t - P_WHITE + F) / F;
+    else if (t >= P_SHORE && t < P_SHORE + F) white = 1 - (t - P_SHORE) / F;
+    else if (t >= INTRO_FRAMES - F) white = (t - INTRO_FRAMES + F) / F;
+    paletteFade(ctx, white, true);
   }
 
   // ---- the sea --------------------------------------------------------------
@@ -23887,7 +23893,7 @@ __exports["Opening"] = Opening;
 __define("game/title.js", function (__exports, __require) {
 // Title screen and file select.
 
-const { SCREEN_W, SCREEN_H } = __require("core/screen.js");
+const { SCREEN_W, SCREEN_H, paletteFade } = __require("core/screen.js");
 const { drawText, drawTextCentered } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
@@ -24101,15 +24107,8 @@ class Title {
     }
   }
 
-  /** A fade to white in the console's four steps, not a smooth alpha. */
-  whiteout(ctx, k) {
-    const step = Math.min(4, Math.floor(k * 5));
-    if (step <= 0) return;
-    ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = step / 4;
-    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    ctx.globalAlpha = 1;
-  }
+  /** A fade to white as Seasons' palette thread does it (paletteFade). */
+  whiteout(ctx, k) { paletteFade(ctx, k, true); }
 
   drawLogo(ctx) {
     drawScreen(ctx, 'titleLogo');
@@ -31215,7 +31214,7 @@ __define("game/game.js", function (__exports, __require) {
 //                                         // 'tide' | 'valve' | 'puzzle'
 //     }
 
-const { Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen } = __require("core/screen.js");
+const { Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen, paletteFade } = __require("core/screen.js");
 const { Input } = __require("core/input.js");
 const { audio } = __require("core/audio.js");
 const { tiles: tileSheet, sprites } = __require("gfx/art.js");
@@ -31243,7 +31242,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -33361,21 +33360,16 @@ class Game {
   }
 
   /**
-   * KeyI: the deadzone box and where the camera is in the room.
-   *
-   * Debug-only for the same reason the anchor's patch outline is: the three
-   * camera constants are `guessed` and there is no reference to check them
-   * against, so they are settled by watching the box and the player fight over
-   * the view. Drawn in SCREEN space — this is the one thing on the playfield
-   * that is about the window rather than about the room.
+   * KeyI: the middle of the view (where the camera is taking Link) and where
+   * the camera is in the room. Drawn in SCREEN space — this is the one thing on
+   * the playfield that is about the window rather than about the room.
    */
   drawCameraDebug(ctx) {
     const room = this.room;
     if (!room) return;
-    const dx = (VIEW_W - CAM_DEADZONE_W) / 2, dy = (VIEW_H - CAM_DEADZONE_H) / 2;
-    ctx.strokeStyle = 'rgba(255, 216, 96, 0.9)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(dx + 0.5, HUD_H + dy + 0.5, CAM_DEADZONE_W - 1, CAM_DEADZONE_H - 1);
+    ctx.fillStyle = 'rgba(255, 216, 96, 0.9)';
+    ctx.fillRect(VIEW_W / 2 - 3, HUD_H + VIEW_H / 2, 7, 1);
+    ctx.fillRect(VIEW_W / 2, HUD_H + VIEW_H / 2 - 3, 1, 7);
     // The room, drawn as a bar, with the camera window inside it. A 1x1 room
     // shows a full bar and a window that fills it, which is the picture of the
     // camera being a no-op there.
@@ -33695,14 +33689,8 @@ class Game {
       const a = screenImage('saveAcorn');
       drawScreen(ctx, 'saveAcorn', a.ax, a.ay + 24 * this.deathCursor);
     }
-    // In from white, in the console's four steps.
-    const step = 4 - Math.min(4, Math.floor(k * 5 / GAMEOVER_FADE_IN_FRAMES));
-    if (step > 0) {
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = step / 4;
-      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-      ctx.globalAlpha = 1;
-    }
+    // In from white, as Seasons' palette thread brings it in.
+    paletteFade(ctx, 1 - k / GAMEOVER_FADE_IN_FRAMES, true);
   }
 
   drawDebug(ctx) {

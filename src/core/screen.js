@@ -83,16 +83,55 @@ export class Screen {
     this.ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
   }
 
-  // Quantized darkening/brightening overlay. The real hardware faded by rewriting
-  // palette RAM; a 4-step overlay reads almost identically at this resolution.
-  fade(amount, toWhite = false) {
-    if (amount <= 0) return;
-    const a = Math.min(1, Math.round(amount * 4) / 4);
-    this.ctx.globalAlpha = a;
-    this.ctx.fillStyle = toWhite ? '#ffffff' : '#000000';
-    this.ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    this.ctx.globalAlpha = 1;
+  /** A fade to black or white over the whole screen; see paletteFade. */
+  fade(amount, toWhite = false) { paletteFade(this.ctx, amount, toWhite); }
+}
+
+// SEASONS' FADE (S171). The cartridge never lays a sheet over the picture: its
+// palette thread (oracles-disasm bank1.s paletteFadeHandler01/02/03 and
+// paletteThread_calculateFadingPalettes) adds one offset to the red, green and
+// blue of every colour, each 0-31, and a component that goes past 31 (or
+// below 0) is pinned there. The offset moves by the fade's speed each frame
+// toward 32 (white) or -32 (black), so dark colours stay visible longest and
+// the picture washes out evenly instead of going milky. `amount` 0..1 is how
+// far through the fade we are; offset = amount * 32, at most 31, so amount 1
+// is every component pinned. Colours go to 5 bits and back the way the
+// rippers bring them in ((c << 3) | (c >> 2)).
+const FADE_LUT = new Map();
+function fadeLut(offset) {
+  let lut = FADE_LUT.get(offset);
+  if (!lut) {
+    lut = new Uint8ClampedArray(256);
+    for (let c = 0; c < 256; c++) {
+      const v = Math.max(0, Math.min(31, Math.round(c * 31 / 255) + offset));
+      lut[c] = (v << 3) | (v >> 2);
+    }
+    FADE_LUT.set(offset, lut);
   }
+  return lut;
+}
+
+// The picture is copied to a CPU-side scratch canvas and read back from that,
+// so the main canvas keeps its GPU backing outside a fade.
+let fadeScratch = null;
+export function paletteFade(ctx, amount, toWhite = false) {
+  if (!(amount > 0)) return;
+  const off = Math.min(31, Math.floor(Math.min(1, amount) * 32)) * (toWhite ? 1 : -1);
+  if (off === 0) return;
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  if (!fadeScratch || fadeScratch.canvas.width !== w || fadeScratch.canvas.height !== h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    fadeScratch = c.getContext('2d', { willReadFrequently: true });
+  }
+  fadeScratch.clearRect(0, 0, w, h);
+  fadeScratch.drawImage(ctx.canvas, 0, 0);
+  const img = fadeScratch.getImageData(0, 0, w, h);
+  const d = img.data, lut = fadeLut(off);
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]];
+  }
+  ctx.putImageData(img, 0, 0);
 }
 
 // A reusable offscreen canvas factory. Used for tile caches and room composites.

@@ -25,7 +25,7 @@
 //     }
 
 import {
-  Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen,
+  Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen, paletteFade,
 } from '../core/screen.js';
 import { Input } from '../core/input.js';
 import { audio } from '../core/audio.js';
@@ -2522,14 +2522,8 @@ export class Game {
       const a = screenImage('saveAcorn');
       drawScreen(ctx, 'saveAcorn', a.ax, a.ay + 24 * this.deathCursor);
     }
-    // In from white, in the console's four steps.
-    const step = 4 - Math.min(4, Math.floor(k * 5 / GAMEOVER_FADE_IN_FRAMES));
-    if (step > 0) {
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = step / 4;
-      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-      ctx.globalAlpha = 1;
-    }
+    // In from white, as Seasons' palette thread brings it in.
+    paletteFade(ctx, 1 - k / GAMEOVER_FADE_IN_FRAMES, true);
   }
 
   drawDebug(ctx) {

@@ -1,3 +1,42 @@
+## S171 — the dungeon camera and the fades, as the cartridge does them
+
+Branch claude/oracle-tides-s171-w2jhl4, off main at 923ead8 (S170 fully
+merged by the human). The prompt left the task blank again, so this session
+took S170's leftovers, read out of oracles-disasm (cloned to the scratchpad).
+
+### What landed
+- THE CAMERA HAS NO DEADZONE. Seasons' updateCameraPosition (bank1.s): the
+  target is Link's position minus half the screen, clamped to the room, and
+  hCameraY/X step one pixel toward it each frame (not while text is up — ours
+  already returns before the camera on a text box). CAM_DEADZONE_W/H removed
+  from feel.js; camera.js targets p.cx - VIEW_W/2, p.cy - VIEW_H/2. KeyI now
+  draws a cross at the middle of the view. check-camera promise 6 asserts
+  there is no deadzone (2 px off the middle moves the view 1 px). Replay
+  d1-descent re-recorded: only Link's mid-scroll drawn x moved (the scroll
+  carries him in the outgoing window's space); every final state unchanged.
+- THE FADES ARE SEASONS' PALETTE FADE. `paletteFade(ctx, amount, toWhite)`
+  in screen.js: every pixel's R, G, B to 5 bits, plus one offset
+  (floor(amount*32), at most 31; negative for black), pinned at 31/0, back
+  with (c<<3)|(c>>2) — paletteFadeHandler01/02/03 +
+  paletteThread_calculateFadingPalettes. Used by Screen.fade (every in-game
+  fade: stairs, doors, menu, cutscenes), the title's whiteout, the opening's
+  fades and the game-over fade-in. All four-step alpha sheets are gone (the
+  opening's storm darkening is a tint, untouched). Reads back through a
+  willReadFrequently scratch canvas. test.mjs +1 (the exact arithmetic on four
+  colours, to white and to black).
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test
+108/108; check-build OK. Sent the human the logo fade, Seasons' footage
+(video 6864-6892) beside ours before and after, frame for frame.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: a fast fade (speed 3) in
+Seasons ends at offset 30, leaving black faintly visible; ours always ends
+fully white (amount 1 -> 31). The menu page labels (ITEMS etc.) are ours.
+Seasons' START on the CARD skips to the logo, ours to the file select (kept
+for the harnesses — changing it means re-teaching nine tools and dNewGame).
+
 ## S170 — the music when Link dies; the title's fades
 
 Branch claude/oracle-tides-s170-4osfx5, off main at 4e08143 (S169 fully

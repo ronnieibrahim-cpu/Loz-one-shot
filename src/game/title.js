@@ -1,6 +1,6 @@
 // Title screen and file select.
 
-import { SCREEN_W, SCREEN_H } from '../core/screen.js';
+import { SCREEN_W, SCREEN_H, paletteFade } from '../core/screen.js';
 import { drawText, drawTextCentered } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
@@ -217,15 +217,8 @@ export class Title {
     }
   }
 
-  /** A fade to white in the console's four steps, not a smooth alpha. */
-  whiteout(ctx, k) {
-    const step = Math.min(4, Math.floor(k * 5));
-    if (step <= 0) return;
-    ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = step / 4;
-    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    ctx.globalAlpha = 1;
-  }
+  /** A fade to white as Seasons' palette thread does it (paletteFade). */
+  whiteout(ctx, k) { paletteFade(ctx, k, true); }
 
   drawLogo(ctx) {
     drawScreen(ctx, 'titleLogo');
