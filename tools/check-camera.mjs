@@ -6,7 +6,7 @@
 // the current engine rather than a port of code nobody can read (`T56`).
 //
 // It drives the REAL `Camera` (`src/game/camera.js`) against the REAL rooms of
-// the real maps. It does not model the deadzone, it does not recompute where
+// the real maps. It does not recompute where
 // the camera ought to be; it calls `snap` and `update` and checks the promises
 // those two make. Same rule as a collision checker calling `solidAt` (`R4`): a
 // private copy of the rule does not fail when the real rule moves.
@@ -26,8 +26,10 @@
 //      tile in the room and turns the whole screen soft (`R2` in spirit).
 //   5. In a room bigger than the view the follower actually FOLLOWS: walk from
 //      one end to the other and the camera ends clamped at the far edge.
-//   6. A player moving inside the deadzone does not move the camera. That is
-//      what the deadzone is; without this the camera is just a centring rule.
+//   6. There is NO deadzone (Seasons' updateCameraPosition, S171): a player
+//      standing in the middle of the view leaves it where it is, and a player
+//      even two pixels off the middle moves it a pixel toward him on the next
+//      frame, on each axis that has room to scroll.
 //
 // Usage: node tools/check-camera.mjs [--verbose]
 
@@ -35,7 +37,7 @@ import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { Camera } from '../src/game/camera.js';
 import { VIEW_W, VIEW_H } from '../src/core/screen.js';
-import { CAM_DEADZONE_W, CAM_DEADZONE_H, CAM_MAX_SPEED } from '../src/data/feel.js';
+import { CAM_MAX_SPEED } from '../src/data/feel.js';
 
 const VERBOSE = process.argv.includes('--verbose');
 installData();
@@ -115,21 +117,23 @@ for (const m of MAPS.values()) {
       }
     }
 
-    // --- the deadzone is a deadzone -----------------------------------------
-    // A player nudged around the middle of the view must not move the camera.
+    // --- no deadzone: the middle of the view is the target -------------------
     {
       const u = new Camera();
       u.x = Math.min(mx, 8); u.y = Math.min(my, 8);
       const bx = u.x, by = u.y;
-      // Dead centre of the view, then a step that stays inside the deadzone.
       const cx = u.x + VIEW_W / 2, cy = u.y + VIEW_H / 2;
-      for (const [dx, dy] of [[0, 0], [CAM_DEADZONE_W / 2 - 2, 0], [0, CAM_DEADZONE_H / 2 - 2],
-                              [-(CAM_DEADZONE_W / 2 - 2), 0], [0, -(CAM_DEADZONE_H / 2 - 2)]]) {
-        u.update(room, at(cx + dx, cy + dy));
-      }
+      u.update(room, at(cx, cy));
       if (u.x !== bx || u.y !== by) {
-        problems.push(`${where}: the camera moved (${bx},${by} -> ${u.x},${u.y}) for a player that ` +
-          `never left the deadzone`);
+        problems.push(`${where}: the camera moved (${bx},${by} -> ${u.x},${u.y}) for a player ` +
+          `standing in the middle of the view`);
+      }
+      // Two pixels off the middle, toward the room's far side where it has room.
+      const sx = mx > bx ? 1 : 0, sy = my > by ? 1 : 0;
+      u.update(room, at(cx + 2 * sx, cy + 2 * sy));
+      if (u.x !== bx + sx || u.y !== by + sy) {
+        problems.push(`${where}: a player 2 px off the middle moved the camera ${bx},${by} -> ` +
+          `${u.x},${u.y}, not a pixel toward him — a deadzone has come back`);
       }
     }
 

@@ -74,7 +74,6 @@ import {
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
   WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
-  CAM_DEADZONE_W, CAM_DEADZONE_H,
   COILBONE_INVULN_FRAMES,
 } from '../data/feel.js';
 
@@ -2194,21 +2193,16 @@ export class Game {
   }
 
   /**
-   * KeyI: the deadzone box and where the camera is in the room.
-   *
-   * Debug-only for the same reason the anchor's patch outline is: the three
-   * camera constants are `guessed` and there is no reference to check them
-   * against, so they are settled by watching the box and the player fight over
-   * the view. Drawn in SCREEN space — this is the one thing on the playfield
-   * that is about the window rather than about the room.
+   * KeyI: the middle of the view (where the camera is taking Link) and where
+   * the camera is in the room. Drawn in SCREEN space — this is the one thing on
+   * the playfield that is about the window rather than about the room.
    */
   drawCameraDebug(ctx) {
     const room = this.room;
     if (!room) return;
-    const dx = (VIEW_W - CAM_DEADZONE_W) / 2, dy = (VIEW_H - CAM_DEADZONE_H) / 2;
-    ctx.strokeStyle = 'rgba(255, 216, 96, 0.9)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(dx + 0.5, HUD_H + dy + 0.5, CAM_DEADZONE_W - 1, CAM_DEADZONE_H - 1);
+    ctx.fillStyle = 'rgba(255, 216, 96, 0.9)';
+    ctx.fillRect(VIEW_W / 2 - 3, HUD_H + VIEW_H / 2, 7, 1);
+    ctx.fillRect(VIEW_W / 2, HUD_H + VIEW_H / 2 - 3, 1, 7);
     // The room, drawn as a bar, with the camera window inside it. A 1x1 room
     // shows a full bar and a window that fills it, which is the picture of the
     // camera being a no-op there.

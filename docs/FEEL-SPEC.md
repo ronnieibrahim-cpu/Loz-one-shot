@@ -477,6 +477,11 @@ played it and what they chose.
 > `CAM_DEADZONE_W` is 8 by analogy: Seasons keeps Link centred and follows at
 > one pixel a frame, so a walking Link pulls ahead of the middle. The paragraphs
 > below describe the old guessed values and the mechanism, which is unchanged.
+>
+> **S171:** the deadzone is GONE. oracles-disasm bank1.s `updateCameraPosition`
+> targets Link's position minus half the screen, clamped, and steps one pixel
+> toward it every frame (not while text is up) — no box at all. Both
+> `CAM_DEADZONE_*` constants were removed; `CAM_MAX_SPEED` is the only one left.
 
 `CAM_DEADZONE_W = 96`, `CAM_DEADZONE_H = 64` and `CAM_MAX_SPEED = 2` arrived
 with P7.6 and all three are **`guessed`**, in the strongest sense the word has

@@ -591,29 +591,17 @@ export const ROOM_EXIT_MARGIN = 1;
 
 // THE CAMERA, inside a multi-screen dungeon room only.
 //
-// S147 stepped Seasons' own big dungeon rooms: its view sits centred on Link
-// and follows him at ONE pixel a frame, slower than he walks, so on a long walk
-// he pulls ahead of the middle and the view catches up when he stops. Two of
-// the three are measured from that; the width is by analogy. `KeyI` still
-// draws the deadzone box in game.
+// Seasons has no deadzone (S171, read from oracles-disasm bank1.s
+// updateCameraPosition): every frame the view's target is Link's position
+// minus half the screen (SCREEN_HEIGHT*16/2, SCREEN_WIDTH*16/2), clamped to the
+// room, and hCameraY/X step ONE pixel toward it — so a walking Link pulls ahead
+// of the middle and the view catches up when he stops. S147 measured 4 px of
+// slack in the footage; the cartridge's own code says the target is the centre
+// itself, and the footage's 4 px was its measurement's own pixel or two.
+// CAM_DEADZONE_W/H (8 and 8, one guessed) are gone with it.
 //
-// None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
-// and that range is empty on one screen, so retuning these three numbers cannot
-// move a pixel in any room the game currently has.
-
-/** px — width of the box Link moves inside without the view following.
- *  guessed, by analogy with CAM_DEADZONE_H: the footage shows a sideways
- *  follow already under way (video frames 5781-5814) but never the frame it
- *  began. It was 96, which let him walk to within two tiles of the edge
- *  before the view moved at all — nothing like Seasons. */
-export const CAM_DEADZONE_W = 8;
-
-/** px — height of that box. measured, to a pixel or two: the view starts to
- *  follow on the frame Link's middle is about 4 px past the middle of the
- *  playfield. reference: assets/footage/seasons-tas-rooster-adventure.mp4, Link walking
- *  up the tall entrance room of the first dungeon — still view to video frame
- *  3852, following from 3853 with his sprite top at screen y 76. It was 64. */
-export const CAM_DEADZONE_H = 8;
+// It cannot affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W] and
+// that range is empty on one screen (Seasons: `@smallRoom`, camera 0,0).
 
 /** px/f — the fastest the camera may travel. measured: 1. reference:
  *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen shift between frames
