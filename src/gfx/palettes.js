@@ -62,6 +62,12 @@ export const PALETTES = {
   // slot takes which is guessed from how the frames read.
   linkhurt:['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   linkswim:['#f8e0b8', '#68c058', '#2868b8', '#181410'],
+  // A charged blade flashing (S172): Seasons swaps the sword's sprite palette 0
+  // for palette 5 (oracles-disasm sword.s @state3, OAM flags $0d), which puts
+  // orange $1f/$16/$06 where his black was, red $1b/$00/$00 where his green
+  // was and black where his skin was (data/seasons/paletteData.s
+  // standardSpritePaletteData), brought to 8 bits as the rippers do.
+  swordflash:['#000000', '#de0000', '#de0000', '#ffb531'],
   zelda:   ['#f8e0b8', '#f0d060', '#d05878', '#201820'],
   farore:  ['#e8f8d8', '#78d888', '#2c8058', '#10281c'],
   npc:     ['#f8e0b8', '#d88860', '#7c4838', '#201810'],

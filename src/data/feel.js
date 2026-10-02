@@ -140,9 +140,6 @@ export const SHALLOW_FACTOR = 1;
  *  the human's word "match the original"; it was a guessed 0.9). */
 export const CARRY_FACTOR = 1;
 
-/** sp/f — drift in the facing direction during a spin attack. guessed. */
-export const SPIN_DRIFT_SPEED = 96;
-
 /** sp/f — sideways push from a current tile while swimming is the tile's own
  *  `push` vector; this scales the aquatic-enemy drift per tide level. guessed.
  *  Below one pixel per frame, which only moves anything at all because
@@ -230,8 +227,15 @@ export const BEAM_SHOT_RADIUS = 3;
  *  it a frame and charges when it passes zero — the 41st frame. */
 export const CHARGE_FRAMES = 41;
 
-/** f — interval between charge sparkles once charged. guessed. */
-export const CHARGE_SPARKLE_EVERY = 6;
+/** f — once a spin is charged the BLADE flashes: this many frames in the
+ *  orange-and-black flash palette, then this many in its own colours, from
+ *  the frame it charges. derived from the cartridge: oracles-disasm
+ *  object_code/common/items/sword.s @state3 ("sword fully charged, flashing")
+ *  counts counter1 up a frame and, while its bit 2 is clear, sets the blade's
+ *  OAM flags to $0d (sprite palette 5, data/seasons/paletteData.s
+ *  standardSpritePaletteData). There are no sparkles: the blade itself
+ *  blinks. Before S172 Link threw out gold sparkles every 6 frames, guessed. */
+export const CHARGE_FLASH_BEAT = 4;
 
 /** f — how long the blade holds each of the spin's eight positions, as
  *  [cardinal, the diagonal after it]: a quarter turn is five frames. derived:
@@ -252,8 +256,34 @@ export const SWORD_REACH = 13;
 /** px — gap between Link's centre and the near edge of the sword box. guessed. */
 export const SWORD_GAP = 3;
 
-/** px — side of the square hitbox swept by a spin attack. guessed. */
-export const SPIN_BOX = 30;
+/** px — where the blade can hit at each of the spin's eight positions,
+ *  clockwise from up (even = cardinal, odd = the diagonal after it), as
+ *  [radiusY, radiusX, offsetY, offsetX] from Link's centre: an 18x18 box out
+ *  where the blade is, not a square around him. derived from the cartridge:
+ *  oracles-disasm object_code/common/items/postUpdate.s, swordArcData rows
+ *  16-23, which updateSwingableItemAnimation picks while the spin animation's
+ *  parameter is $10-$17 (data/seasons/specialObjectAnimationData.s,
+ *  animationData19d66..19d78). Before S172 the spin hit a guessed 30x30
+ *  square on Link, which reached 15 px; the blade reaches 28. */
+export const SPIN_ARC = [
+  [9, 9, -17, -4], [9, 9, -14, 16], [9, 9, 2, 19], [9, 9, 18, 16],
+  [9, 9, 21, 3], [9, 9, 17, -13], [9, 9, 2, -19], [9, 9, -11, -13],
+];
+
+/** px — the ONE point the blade cuts grass, bushes and snarls at, as [dy, dx]
+ *  from Link's centre: for each of the eight blade positions clockwise from
+ *  up, then (index 8) under Link himself. A swing cuts at its facing's point
+ *  on the full-reach frame; a spin cuts at each position's point as the blade
+ *  arrives there, and under Link as it ends. derived from the cartridge:
+ *  oracles-disasm object_code/common/items/commonCode2.s, tryBreakTileWithSword
+ *  @linkOffsets, called from postUpdate.s updateSwingableItemAnimation on
+ *  every animation frame whose parameter has bit 6 set (the swing's $64, each
+ *  spin step's $5x/$dx) and from sword.s @state5 with 8. Before S172 the
+ *  blade cut every tile under its whole hit box, so a swing reached grass
+ *  28 px off and could cut two tufts at once. */
+export const SWORD_CUT_POINTS = [
+  [-14, 0], [-14, 13], [0, 13], [13, 13], [13, 0], [13, -14], [0, -14], [-14, -14], [0, 0],
+];
 
 /** f — frames after a swing ends before the still-held button becomes a hold
  *  rather than the tail of the swing. derived from the cartridge: swordParent.s
@@ -1485,9 +1515,6 @@ export const EXPLOSION_FRAMES = EXPLOSION_HOLDS.reduce((a, b) => a + b, 0);
  *  live for 26 frames and grows; it was one hit on its first frame with a
  *  fixed 14 px reach. */
 export const EXPLOSION_RADII = [6, 6, 6, 10, 15, 0];
-
-/** px — radius Link's charge sparkles scatter over. guessed. */
-export const CHARGE_SPARKLE_SPREAD = 12;
 
 /** px — radius an essence's sparkles scatter over. guessed. */
 export const ESSENCE_SPARKLE_SPREAD = 10;

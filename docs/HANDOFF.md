@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A hit area is not a cut area (S172).** The sword's hit boxes were taken
+  from the cartridge at S149, and the grass-cutting was left reading the same
+  box — so one swing mowed four tufts and reached grass 28 px off, where the
+  cartridge breaks exactly one tile, under one point 13-14 px out
+  (tryBreakTileWithSword @linkOffsets). When a box is made faithful, ask what
+  ELSE was reading the old box; the cartridge usually answers each question
+  with its own table.
+
 - **Read the sound engine before believing a sound command (S170).** S169's
   leftover said "Seasons' music slow-fades on death". The game DOES send
   SNDCTRL_SLOW_FADEOUT the frame after Link dies — but code/audio.s's

@@ -14,6 +14,12 @@
 // what the cartridge's own arc gives for that place — including the misses:
 // a foe on the side the swing ENDS on, or behind him, is not struck.
 //
+// Since S172 it also checks the SPIN (Link stands still; the blade hits from
+// eight positions out where it is, SPIN_ARC), WHAT THE BLADE CUTS (one tile
+// under one point per animation frame, SWORD_CUT_POINTS — a swing used to cut
+// four tufts), and that a charged blade FLASHES in the cartridge's palette 5
+// on 4-frame beats instead of throwing out sparkles.
+//
 //   node tools/check-sword.mjs
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -203,6 +209,116 @@ section('the blade is live from the first frame');
     return { hurt: e.hp < hp0 };
   });
   check('a foe at Link\'s side is struck on the swing\'s very first frame', r.hurt, JSON.stringify(r));
+}
+
+// THE SPIN (S172). Seasons roots Link for the whole spin and hits with the
+// blade where it is at each of eight positions (SPIN_ARC): an 18x18 box out at
+// up to 19 px, so it reaches two tiles off on a cardinal — where the old 30x30
+// square on Link reached 15 px — and still misses what is past the blade.
+async function spinAt(dir, dx, dy) {
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir, items: { sword: 1 } });
+  return page.evaluate(async ([dir, dx, dy]) => {
+    const g = window.__game, p = g.player;
+    const ent = await import('/src/game/entity.js');
+    const e = ent.spawnEntity(g, 'octorok', 0, 0, {});
+    e.x = p.x + dx; e.y = p.y + dy;
+    e.update = () => {};
+    g.entities.push(e);
+    const hp0 = e.hp;
+    p.dir = dir;
+    const x0 = p.x, y0 = p.y;
+    p.startSpin(g);
+    let moved = false;
+    window.__hold([dir]);       // pushing the way he faces all spin long
+    for (let i = 0; i < 25; i++) { window.__harness.step(1); if (p.spinning > 0 && (p.x !== x0 || p.y !== y0)) moved = true; }
+    window.__hold([]);
+    return { hurt: e.hp < hp0 || e.dead, moved };
+  }, [dir, dx, dy]);
+}
+
+const SPIN_CASES = [
+  ['down', 32, 0, true, 'two tiles to his side, past the old square'],
+  ['down', 0, -28, true, 'most of two tiles behind him'],
+  ['right', 24, 24, true, 'on the diagonal a tile and a half off'],
+  ['down', 32, 32, false, 'two tiles off on the diagonal, past the blade'],
+  ['up', 48, 0, false, 'three tiles off'],
+];
+section('where a spin lands, and that he stands still');
+for (const [dir, dx, dy, want, why] of SPIN_CASES) {
+  const r = await spinAt(dir, dx, dy);
+  check(`spinning facing ${dir}, a foe ${why} (${dx},${dy}) is ${want ? 'hit' : 'missed'}`, r.hurt === want, JSON.stringify(r));
+  check(`spinning facing ${dir} with the direction held, Link does not move`, !r.moved, JSON.stringify(r));
+}
+
+// WHAT THE BLADE CUTS (S172). The cartridge breaks ONE tile per animation
+// frame that asks for it: the tile under a point 13-14 px from Link's centre
+// (SWORD_CUT_POINTS). A swing cuts the tuft right in front of him and not the
+// one beyond it, nor the one on the diagonal; a spin cuts all eight round him
+// and the one he stands on.
+async function cutPattern(spin, dir) {
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir, items: { sword: 1 } });
+  return page.evaluate(async ([spin, dir]) => {
+    const g = window.__game, p = g.player, room = g.room;
+    const tx = Math.floor(p.cx / 16), ty = Math.floor(p.cy / 16);
+    const cells = [];
+    for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
+      room.setTile(tx + x, ty + y, 'tallgrass'); cells.push([x, y]);
+    }
+    p.dir = dir;
+    if (spin) { p.startSpin(g); window.__hold([]); window.__harness.step(27); }
+    else { window.__tap('a'); window.__harness.step(1); window.__hold([]); window.__harness.step(24); }
+    const cut = cells.filter(([x, y]) => room.baseName(tx + x, ty + y) !== 'tallgrass').map(c => c.join(','));
+    return cut.sort().join(' ');
+  }, [spin, dir]);
+}
+section('what the blade cuts');
+{
+  const want = { down: '0,1', up: '0,-1', right: '1,0', left: '-1,0' };
+  for (const dir of ['down', 'up', 'right', 'left']) {
+    const r = await cutPattern(false, dir);
+    check(`a swing facing ${dir} cuts the one tuft in front of him (${want[dir]})`, r === want[dir], r);
+  }
+  const ring = ['-1,-1', '-1,0', '-1,1', '0,-1', '0,0', '0,1', '1,-1', '1,0', '1,1'].sort().join(' ');
+  const r = await cutPattern(true, 'down');
+  check('a spin cuts the eight tufts round him and the one under him, nothing further', r === ring, r);
+}
+
+// CHARGED, THE BLADE FLASHES (S172): sword.s @state3 puts the blade in sprite
+// palette 5 on alternate 4-frame beats from the frame it charges — orange
+// where it was black — and throws out no sparkles.
+section('a charged blade flashes');
+{
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  const r = await page.evaluate(async () => {
+    const g = window.__game, p = g.player;
+    const { CHARGE_FRAMES, CHARGE_FLASH_BEAT } = await import('/src/data/feel.js');
+    const orange = () => {
+      g.draw();
+      const d = g.screen.ctx.getImageData(0, 0, g.screen.ctx.canvas.width, g.screen.ctx.canvas.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] === 255 && d[i + 1] === 181 && d[i + 2] === 49) n++;
+      return n;
+    };
+    window.__tap('a'); window.__harness.step(1);
+    window.__hold(['a']);
+    let sparkles = 0;
+    const spawn = g.spawnEffect;
+    g.spawnEffect = function (name, ...rest) { if (name === 'sparkle') sparkles++; return spawn.call(this, name, ...rest); };
+    const before = orange();
+    while (p.charge < CHARGE_FRAMES) window.__harness.step(1);
+    const on = orange();
+    for (let i = 0; i < CHARGE_FLASH_BEAT; i++) {
+      window.__harness.step(1);
+    }
+    const off = orange();
+    for (let i = 0; i < 30; i++) window.__harness.step(1);
+    g.spawnEffect = spawn;
+    return { before, on, off, sparkles, hold: p.spriteName(g) };
+  });
+  check('the blade is in its own colours while it charges', r.before === 0, JSON.stringify(r));
+  check('on the frame it charges the blade turns orange', r.on > 10, JSON.stringify(r));
+  check('a beat later it is back in its own colours', r.off === 0, JSON.stringify(r));
+  check('no sparkles are thrown out', r.sparkles === 0, JSON.stringify(r));
 }
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

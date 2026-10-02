@@ -1,3 +1,54 @@
+## S172 — the spin, the cut and the charged blade, as Seasons does them
+
+Branch claude/oracle-tides-s172-9zxlib, off main at 2d71369 (S171 fully
+merged by the human). The prompt left the task blank again; this session
+took Link's sword, read out of oracles-disasm (cloned to the scratchpad),
+where three things were still ours.
+
+### What landed
+- THE SPIN. Seasons roots Link for the whole spin (swordParent.s @state3,
+  itemDisableLinkMovement); ours slid him 0.375 px/f forward
+  (SPIN_DRIFT_SPEED, guessed, removed). Its hit area is the blade's own: an
+  18x18 box at each of the eight positions (postUpdate.s swordArcData rows
+  16-23, picked by the spin animation's parameter $10-$17) — SPIN_ARC in
+  feel.js, replacing SPIN_BOX (a guessed 30x30 square on Link). It now
+  reaches two tiles on a cardinal and misses two tiles off on a diagonal.
+  `spinPos(t)` takes the frame; the drawn pose is the frame just updated, so
+  the first position now shows its full 3 frames.
+- WHAT THE BLADE CUTS. The cartridge breaks ONE tile per animation frame that
+  sets bit 6 of its parameter: the tile under a point 13-14 px from Link's
+  centre (commonCode2.s tryBreakTileWithSword @linkOffsets) — SWORD_CUT_POINTS.
+  A swing cuts on its full-reach frame at its facing's point; it used to cut
+  every tile under the 18x12 hit box, so one swing down mowed FOUR tufts
+  (two ahead, two on the diagonal). A spin cuts each position's point as the
+  blade arrives and the tile under Link as it ends (sword.s @state5, 8).
+  `Player.cutAt(game, k)`. The held blade still cuts what it is walked into.
+- THE CHARGED BLADE FLASHES. sword.s @state3 swaps the blade's palette for
+  sprite palette 5 (orange where it was black, red for green, black for skin)
+  on alternate 4-frame beats from the frame it charges — CHARGE_FLASH_BEAT,
+  palette `swordflash`. No sparkles (CHARGE_SPARKLE_EVERY/SPREAD removed). The
+  blade is cut out of the held frame at runtime (`heldBlade`: the held
+  frame's pixels wherever `fx_blade_*` lies over them, HELD_BLADE_AT) and
+  drawn back over him.
+- check-sword: 20 -> 39 assertions (spin reach and misses, rooted with the
+  direction held, the cut pattern of a swing each way and of a spin, the
+  flash on and off, no sparkles). 14 go red on the S171 code.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died (the robot
+never spins, and every snarl it cuts is in front of it). Sent the human a
+before/now picture with Seasons' own sword graphics in both palettes.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: Seasons' SWORD POKE — the
+held blade pushed into a wall plays a poke (LINK_ANIM_MODE_1f, swordParent.s
+@checkAndRetForSwordPoke), clinks via INTERAC_CLINK, and RESTARTS the charge
+(state6 sets counter1 $28 again); ours clinks on a guessed 20-frame cooldown
+and keeps charging. Spin damage is ours (Seasons doubles the swing's;
+ours adds one) — left alone under the S150 rule. From S171: a fast fade
+(speed 3) ends at offset 30; the menu page labels are ours; START on the
+CARD goes to the file select.
+
 ## S171 — the dungeon camera and the fades, as the cartridge does them
 
 Branch claude/oracle-tides-s171-w2jhl4, off main at 923ead8 (S170 fully

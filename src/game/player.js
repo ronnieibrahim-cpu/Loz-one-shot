@@ -26,10 +26,10 @@ import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
-  SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
+  SHALLOW_FACTOR, CARRY_FACTOR, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
-  BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
-  SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX,
+  BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_FLASH_BEAT,
+  SPIN_FRAMES, SPIN_STEP_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_ARC, SWORD_CUT_POINTS,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES,
@@ -45,7 +45,7 @@ import {
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
   CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS,
   ROD_RING_FRAMES,
-  CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
+  WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
@@ -79,6 +79,33 @@ const SWORD_SOUNDS = ['sword1', 'sword2', 'sword3', 'sword1', 'sword1', 'sword2'
 
 const SPIN_BLADE = [[0, -16], [16, -13], [16, 0], [13, 16], [0, 16], [-13, 12], [-16, 0], [-10, -13]];
 const SPIN_START = { up: 0, right: 2, down: 4, left: 6 };
+
+// Where the separate blade sprite (`fx_blade_*`) lies inside each held-sword
+// frame (`link_hold_*`), [x, y]: found by laying one over the other — every
+// blade pixel but the pommel's two, which his body covers facing down or up,
+// lands on the same pixel of the held frame.
+const HELD_BLADE_AT = { down: [0, 14], up: [0, 0], side: [12, 0] };
+
+/** The blade alone, cut out of a held-sword frame: the held frame's own
+ *  pixels wherever the blade sprite lies over them, so it can be drawn back
+ *  over him in another palette. Built once per frame name, on first use. */
+function heldBlade(holdName) {
+  const name = holdName + '_blade';
+  if (sprites.has(name)) return name;
+  const key = holdName.slice('link_hold_'.length);
+  const H = sprites.defs.get(holdName).art, B = sprites.defs.get('fx_blade_' + key).art;
+  const [ox, oy] = HELD_BLADE_AT[key];
+  const px = new Uint8Array(H.w * H.h).fill(255);
+  for (let y = 0; y < B.h; y++) {
+    for (let x = 0; x < B.w; x++) {
+      const v = B.px[y * B.w + x], hx = x + ox, hy = y + oy;
+      if (v === 255 || hx < 0 || hy < 0 || hx >= H.w || hy >= H.h) continue;
+      if (H.px[hy * H.w + hx] === v) px[hy * H.w + hx] = v;
+    }
+  }
+  sprites.defs.set(name, { art: { w: H.w, h: H.h, px }, pal: 'link' });
+  return name;
+}
 
 /** Which of the swing's four phases frame `t` (0-based) of it falls in. */
 export function swingPhase(t) {
@@ -398,11 +425,6 @@ export class Player extends Entity {
       if (i.down(slot) && this.swinging === 0) {
         this.charge++;
         if (this.charge === CHARGE_FRAMES) game.audio.sfx('charged');
-        if (this.charge > CHARGE_FRAMES && this.charge % CHARGE_SPARKLE_EVERY === 0) {
-          const s = CHARGE_SPARKLE_SPREAD / 2;
-          game.spawnEffect('sparkle',
-            this.x + game.rng.range(-s, s), this.y + game.rng.range(-s, s), { life: 12 });
-        }
       } else if (i.released(slot)) {
         if (this.charge >= CHARGE_FRAMES) this.startSpin(game);
         this.charge = 0;
@@ -852,8 +874,19 @@ export class Player extends Entity {
       }
     }
     // Bushes and grass are cut by the blade at full reach, as the cartridge
-    // breaks tiles only on that phase's animation frame.
-    if (phase === 2) game.checkTileAction(box, 'cut');
+    // breaks tiles only on that phase's animation frame — and only the ONE
+    // tile under a point just ahead of Link, not everything the blade's hit
+    // area touches (SWORD_CUT_POINTS).
+    if (phase === 2 && t === SWING_PHASE_FRAMES[0] + SWING_PHASE_FRAMES[1]) {
+      this.cutAt(game, SPIN_START[this.dir]);
+    }
+  }
+
+  /** Cut the tile under the blade's point `k` (SWORD_CUT_POINTS: 0..7
+   *  clockwise from up, 8 under Link). */
+  cutAt(game, k) {
+    const [dy, dx] = SWORD_CUT_POINTS[k];
+    game.checkTileAction({ x: this.cx + dx, y: this.cy + dy, w: 1, h: 1 }, 'cut');
   }
 
   /**
@@ -911,23 +944,28 @@ export class Player extends Entity {
     game.audio.sfx('spin');
   }
 
-  /** Where the blade is in the spin, 0..7 clockwise from up. It starts on the
-   *  way Link faces and moves a quarter turn every SPIN_STEP_FRAMES. */
-  spinPos() {
-    const t = SPIN_FRAMES - this.spinning;
+  /** Where the blade is on frame `t` (0-based) of the spin, 0..7 clockwise
+   *  from up. It starts on the way Link faces and moves a quarter turn every
+   *  SPIN_STEP_FRAMES. With no `t`, the frame just updated — the one drawn. */
+  spinPos(t = SPIN_FRAMES - this.spinning - 1) {
     const [card, diag] = SPIN_STEP_FRAMES;
     const q = Math.floor(t / (card + diag));
     const half = t % (card + diag) < card ? 0 : 1;
     return (SPIN_START[this.dir] + q * 2 + half) % 8;
   }
 
+  // SEASONS' SPIN (S172). Link stands still for all of it — swordParent.s
+  // @state3 disables his movement until the spin is over — and the blade hits
+  // where the blade IS: an 18x18 box at each of the eight positions it passes
+  // through (SPIN_ARC), not a square around him. It cuts the tile under each
+  // position's point as it arrives there, and the one under Link as it ends.
   updateSpin(game) {
+    const t = SPIN_FRAMES - this.spinning;
     this.spinning--;
     this.animT++;
-    // Spin drifts you slightly in the facing direction.
-    const [dx, dy] = DIR_VEC[this.dir];
-    moveEntity(game, this, dx * SPIN_DRIFT_SPEED, dy * SPIN_DRIFT_SPEED);
-    const box = { x: this.cx - SPIN_BOX / 2, y: this.cy - SPIN_BOX / 2, w: SPIN_BOX, h: SPIN_BOX };
+    const k = this.spinPos(t);
+    const [ry, rx, oy, ox] = SPIN_ARC[k];
+    const box = { x: this.cx + ox - rx, y: this.cy + oy - ry, w: rx * 2, h: ry * 2 };
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
@@ -935,7 +973,10 @@ export class Player extends Entity {
         e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
       }
     }
-    game.checkTileAction(box, 'cut');
+    const [card, diag] = SPIN_STEP_FRAMES;
+    const into = t % (card + diag);
+    if (into === 0 || into === card) this.cutAt(game, k);
+    if (this.spinning === 0) this.cutAt(game, 8);
   }
 
   // ------------------------------------------------------------------ jump
@@ -1565,8 +1606,13 @@ export class Player extends Entity {
         ox + this.x + ddx * (pose.reach + 1), dy + ddy * (pose.reach + 1),
         { pal: this.swordLevel >= 3 ? 'essence' : 'spark', flipX: pose.dir === 'left' });
     }
-    if (this.charge >= CHARGE_FRAMES && (this.frame >> 2) % 2 === 0) {
-      sprites.draw(ctx, 'fx_sparkle1', ox + this.x, dy - 4, { pal: 'gold' });
+    // CHARGED, THE BLADE FLASHES: its own sprite laid back over the held
+    // frame in Seasons' flash palette, on alternate CHARGE_FLASH_BEAT-frame
+    // beats starting on the frame it charges (sword.s @state3).
+    if (this.charge >= CHARGE_FRAMES && name.startsWith('link_hold_')
+      && Math.floor((this.charge - CHARGE_FRAMES) / CHARGE_FLASH_BEAT) % 2 === 0) {
+      sprites.draw(ctx, heldBlade(name), ox + this.x + ax, dy + ay,
+        { pal: 'swordflash', flipX: this.flipX, h: cropH == null ? null : cropH - ay });
     }
     if (this.shielding) {
       const side = this.dir === 'left' || this.dir === 'right';
