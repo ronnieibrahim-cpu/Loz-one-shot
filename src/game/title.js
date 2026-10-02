@@ -14,6 +14,7 @@ import {
 // code here is only words, the conch, and the file's own details.
 // Imported for its side effect of registering title_conch.
 import { TITLE_LAYOUT } from '../data/sprites-title.js';
+import { Opening } from './intro.js';
 
 export class Title {
   constructor(game) {
@@ -22,8 +23,12 @@ export class Title {
   }
 
   reset() {
-    this.stage = 'logo';     // 'logo' | 'files' | 'confirmErase'
+    this.stage = 'logo';     // 'logo' | 'intro' | 'files' | 'confirmErase'
     this.t = 0;
+    // THE OPENING (S168) plays once a power-on, between the card's fade to
+    // white and the logo, as Seasons plays its ride. Not again after a game
+    // ends and comes back here: Seasons replays its intro only from idle.
+    this.opening = this.opening === undefined ? new Opening(this.game) : null;
     this.cursor = 0;
     this.saves = listSaves();
     this.storageOk = storageAvailable();
@@ -32,6 +37,19 @@ export class Title {
   update() {
     const g = this.game, i = g.input;
     this.t++;
+
+    const fadeEnd = TITLE_CARD_FRAMES + TITLE_FADE_FRAMES;
+    if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
+    if (this.stage === 'intro') {
+      // Any press, or the end of it, cuts to the white beat before the logo —
+      // Seasons' START in its intro goes to the title, not past it.
+      if (this.opening.update() || i.pressed('start') || i.pressed('a')) {
+        this.opening = null;
+        this.stage = 'logo';
+        this.t = fadeEnd;
+      }
+      return;
+    }
 
     if (this.stage === 'logo') {
       if (i.pressed('start') || i.pressed('a')) {
@@ -96,6 +114,7 @@ export class Title {
 
   draw(ctx) {
     if (this.stage === 'logo') this.drawOpening(ctx);
+    else if (this.stage === 'intro') this.opening.draw(ctx);
     else if (this.stage === 'files') this.drawFiles(ctx);
     else this.drawErase(ctx);
   }

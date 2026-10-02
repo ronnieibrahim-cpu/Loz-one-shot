@@ -1,3 +1,84 @@
+## S168 — the opening; people out of the trees; Farore from the cartridge
+
+Branch claude/oracle-tides-s168, off main at a11baef (S167 merged by the
+human). The human asked for three things: NPCs out of trees, a pixel-art intro
+"like Seasons and Ages", and Farore's sprite fixed. NOT MERGED: ask before
+moving main.
+
+### What landed
+- PEOPLE OUT OF TREES. Two placed people stood in a tree's root mound (the
+  walkable bottom half of a 32x32 tree's 2x2 block): the Tide Gate fisherman
+  (overworld 0,8,7, moved 1,3 -> 2,4, beside the pool) and the race's Pip
+  (0,3,9, 1,3 -> 2,3). THE RULE IS NOW THE ENGINE'S: `Room.quadRootCover`
+  (room.js, the mirror of `quadCanopySolid` for the root row) and `canOccupy`
+  refuses it for anything carrying `avoidRoots` — every NPC (objects.js), so
+  a wanderer can no longer stroll into one either. check-placement fails a
+  placed one (it already asks canOccupy) and gained a claim that walks every
+  wanderer 7200 frames at each tide and never lets its feet (hitbox) touch a
+  root cell — red with avoidRoots off and a wanderer next to a tree (proved
+  by hand, see HANDOFF). check-ground's people note is an ASSERTION now, and
+  counts `racer`/`raceGoal` as people. Link still crosses root mounds.
+- FARORE FROM THE CARTRIDGE. rip-npcs.py cuts `npc_farore_0/1` from Seasons'
+  spr_farore_ralph (assets/npcs/oracles-disasm/seasons/, README there):
+  INTERAC_FARORE ($10) default animation 2 = interactionAnimation51d97, two
+  oam frames (the second the first swapped and mirrored) held $10 frames
+  each, standard sprite palette 0 (green hair). Tables read from
+  assets/effects/ (identical at 21c924a). She sways: `frames` + `rate:
+  FARORE_SWAY_HOLD` (feel.js, derived 16), `faceOnTalk: false`.
+  OPEN QUESTION FOR THE HUMAN: Seasons draws her from the waist up because she
+  sits BEHIND A DESK (group 4 room $e8, her at y$28 x$58, her book
+  INTERAC $1c beside her); ours stands in an empty stone room. Rendering that
+  room from the cartridge failed (tileset $4b's layout $2e aliases $2d in
+  tilesetHeaders.s, and the render was still garbage — the VRAM for
+  GFXH_TILESET_INDOORS is not what rip-objects' Tileset loads). Asked whether
+  to give her a desk.
+- THE OPENING (src/game/intro.js, `Opening`). The human chose, of three
+  storyboards, "only our own scenes", played "before the title, like
+  Seasons". Card -> fade to white -> opening -> white beat -> logo; any press
+  in it cuts to the white beat (Seasons' START in its intro goes to the
+  title). Once a power-on only (Title.reset makes it null after a game).
+  Scenes: a calm sea, the ship drifting in, three gulls; the sky darkens in
+  four palette steps (screens.js bakes a TINTED copy — palette rewrite, never
+  an overlay); five lightning strikes with Seasons' screenFlashingData @data0
+  flash; the sea rises over the ship (the water band stretched up); white;
+  the game's first screen (0,4,9) at HIGH, the conch's own wave
+  (`drawTideWipe`, now a pure function in tide.js that Tide.drawSweep calls)
+  takes it to LOW and Link is lying in the tide pool (72,52). ~24 s.
+  NEW RIPPER tools/rip-intro.py -> src/data/screens-intro.js (check-rippers,
+  CLAUDE.md table, assets/intro/ README): `introSea` (GFXH_CREDITS_LINKED_
+  THE_END in PALH_SEASONS_aa — the sea behind Seasons' linked ending),
+  `introShip`/`introGull` (INTERAC_LINK_SHIP subids 0/1; the ship is two
+  palettes, hence indexed images with `ax`/`ay` anchors, drawn by
+  screens.js `drawObject`), `introBolt0-8` (PART_LIGHTNING: spr_projectiles_2,
+  base $0e, partAnimation574dd). Link lying is new `link_lie` (rip-link.py,
+  the Ages sheet's last Hurt/Death frame, 1465,127).
+  Timings in feel.js INTRO_*: bob table, ship/gull bob periods, bolt holds
+  and flash are DERIVED (linkShip.s, partAnimations.s, bank3Cutscenes.s);
+  scene lengths, drift, strike times, swell are GUESSED.
+  Sounds: Seasons' lightning, wave, wind added to rip-music.py SFX and
+  audio.js (`lightning`, `wave`, `wind`). The browser starts audio on the
+  first key, which also skips — so most power-ons see it silent, as an
+  attract loop. Our music is unchanged (the title track plays under it when
+  audio is already up).
+- test.mjs: three opening assertions (plays card->intro->logo to its end;
+  a press cuts to the logo at that frame; 20-40 s long).
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test 93/93;
+replay 51/51; check-rippers 37/37; check-placement 4/4; check-ground 8/8;
+check-side 36/36. Built; dist committed. Sent the human: the opening as a
+real-speed video with its sound, the three storm sounds, Farore before/now/
+Seasons', and the two people moved out of trees, before and after.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Farore's desk (above). Open fidelity
+leftovers from S167: Seasons takes an equipped item OUT of the inventory grid
+and lays it 4x4; the bar's letters/brackets (gfx_hud $05-$08 "B[", "]", "][",
+"A[") are a candidate rip; CAM_DEADZONE_W needs footage; the game-over
+screen. Ages' INTERAC_RAFTWRECK_CUTSCENE is a storm-at-sea scene (screen
+flash @data1) — a reference if the opening is ever revisited. Seasons
+replays its intro after the title sits idle (intro_restart); ours does not.
+
 ## S167 — Seasons' level labels and counts; the status bar re-laid to fit them
 
 Branch claude/oracle-tides-s167-6s4mfb, off main at bd3059a (S166 merged).

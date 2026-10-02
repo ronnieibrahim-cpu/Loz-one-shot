@@ -48,8 +48,14 @@ function check(name, cond, detail) {
 // because row 6 goes round. A solid entity in a thoroughfare is legal for a
 // flood and still wrong for a person walking. Moving one is a composition
 // decision and wants an eye, so this prints them and leaves them.
+//
+// THEY ARE ASSERTED NOW (S168), and the eye was the human's: "npcs sitting
+// inside trees". The engine refuses it — an NPC carries `avoidRoots` and
+// `canOccupy` keeps it out of a root mound (Room.quadRootCover), so a placed
+// one fails check-placement too and a wanderer can no longer stroll into one.
+// Still no automatic move: the fix for each was picked by hand.
 const STATIC_ENTITIES = new Set(['sign', 'pickup', 'chest', 'essence', 'torch']);
-const PEOPLE_ENTITIES = new Set(['npc', 'trader', 'giver', 'scrimshander', 'makuTree']);
+const PEOPLE_ENTITIES = new Set(['npc', 'trader', 'giver', 'scrimshander', 'makuTree', 'racer', 'raceGoal']);
 
 const bad = [];
 let props = 0, rooms = 0;
@@ -328,11 +334,9 @@ for (const [mapId, m] of MAPS) {
 for (const s2 of shaded.slice(0, 8)) console.log('  shade  ' + s2);
 check('no placed object is standing in an overhang', shaded.length === 0,
   shaded.length ? `${shaded.length} entities` : '');
-if (shadedPeople.length) {
-  console.log(`  note: ${shadedPeople.length} people stand in one; each is beside`
-    + ' the thing they belong to and moving one is a judgement, not a rule:');
-  for (const p of shadedPeople) console.log('         ' + p);
-}
+for (const p of shadedPeople) console.log('  shade  ' + p + ' is a person inside an overhang');
+check('no person is standing in an overhang', shadedPeople.length === 0,
+  shadedPeople.length ? `${shadedPeople.length} people` : '');
 
 // A checker that swept nothing passes for the wrong reason. The world has
 // roughly two thousand prop cells; anything near zero means the sweep broke,

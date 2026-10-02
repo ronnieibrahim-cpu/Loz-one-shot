@@ -413,6 +413,8 @@ export class NPC extends Entity {
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
+    // Never stands in a tree's roots, placed or wandering (`canOccupy`).
+    this.avoidRoots = true;
     this.dialogue = o.dialogue || null;      // dialogue id
     // A SECOND STATE FOR AN ORDINARY TOWNSPERSON.
     //

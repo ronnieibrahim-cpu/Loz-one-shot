@@ -356,39 +356,52 @@ export class Tide {
    * behind an advancing wave front with foam at its edge.
    */
   drawSweep(ctx, ox, oy, newCanvas, drawNewExtras) {
-    const t = this.sweepT;
     const room = this.game.room;
-    const RW = room ? room.pw : 160, RH = room ? room.ph : 128;
-    const front = Math.round(t * (RW + 40)) - 20;
-    // old state on the right of the front
-    if (this.snapshot) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(ox + Math.max(0, front), oy, RW, RH);
-      ctx.clip();
-      ctx.drawImage(this.snapshot.canvas, ox, oy);
-      ctx.restore();
-    }
-    // new state on the left
+    const rising = this.level > this.prevLevel || (this.prevLevel === 2 && this.level === 0);
+    drawTideWipe(ctx, ox, oy, this.snapshot ? this.snapshot.canvas : null, newCanvas, {
+      t: this.sweepT, phase: this.sweep, rising,
+      w: room ? room.pw : 160, h: room ? room.ph : 128, extras: drawNewExtras,
+    });
+  }
+}
+
+/**
+ * THE WIPE ITSELF, with nothing of a live game in it: the old picture on the
+ * right of an advancing front, the new one on its left, and foam at the edge —
+ * the shore's colours when the sea draws back, the sea's when it comes in.
+ * `Tide.drawSweep` draws every conch press through it, and the opening (S168)
+ * draws the sea leaving Link on the beach through it, so the two are one wave.
+ * `t` is progress 0..1; `phase` the frame count the foam wobbles on.
+ */
+export function drawTideWipe(ctx, ox, oy, oldCanvas, newCanvas, { t, phase, rising, w: RW, h: RH, extras = null }) {
+  const front = Math.round(t * (RW + 40)) - 20;
+  // old state on the right of the front
+  if (oldCanvas) {
     ctx.save();
     ctx.beginPath();
-    ctx.rect(ox, oy, Math.max(0, Math.min(RW, front)), RH);
+    ctx.rect(ox + Math.max(0, front), oy, RW, RH);
     ctx.clip();
-    ctx.drawImage(newCanvas, ox, oy);
-    if (drawNewExtras) drawNewExtras();
+    ctx.drawImage(oldCanvas, ox, oy);
     ctx.restore();
+  }
+  // new state on the left
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(ox, oy, Math.max(0, Math.min(RW, front)), RH);
+  ctx.clip();
+  ctx.drawImage(newCanvas, ox, oy);
+  if (extras) extras();
+  ctx.restore();
 
-    // foam column at the wave front
-    const rising = this.level > this.prevLevel || (this.prevLevel === 2 && this.level === 0);
-    const pal = rising ? ['#ffffff', '#b0e8f8', '#58b0e0'] : ['#ffffff', '#e0c078', '#a88048'];
-    for (let i = 0; i < 3; i++) {
-      const x = front - i * 3;
-      if (x < 0 || x >= RW) continue;
-      ctx.fillStyle = pal[i];
-      for (let y = 0; y < RH; y += 2) {
-        const wob = Math.sin((y * 0.35) + this.sweep * 0.5) * 3;
-        ctx.fillRect(ox + Math.round(x + wob), oy + y, 2, 2);
-      }
+  // foam column at the wave front
+  const pal = rising ? ['#ffffff', '#b0e8f8', '#58b0e0'] : ['#ffffff', '#e0c078', '#a88048'];
+  for (let i = 0; i < 3; i++) {
+    const x = front - i * 3;
+    if (x < 0 || x >= RW) continue;
+    ctx.fillStyle = pal[i];
+    for (let y = 0; y < RH; y += 2) {
+      const wob = Math.sin((y * 0.35) + phase * 0.5) * 3;
+      ctx.fillRect(ox + Math.round(x + wob), oy + y, 2, 2);
     }
   }
 }

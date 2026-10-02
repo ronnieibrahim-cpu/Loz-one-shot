@@ -447,6 +447,27 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A note nobody reads is not a check (S168).** check-ground had found the
+  people standing in tree roots and PRINTED them, by design ("moving one is a
+  judgement"); the human found them by playing. A report that is never acted
+  on is the same as no report. It is an assertion now, and the rule moved into
+  the engine (`avoidRoots` / `Room.quadRootCover`) so wanderers obey it too.
+- **A random walk can be green for want of a chance to fail (S168).** The new
+  wanderer claim passed with the protection switched OFF, because no wanderer
+  happened to stroll into roots in 7200 frames. Prove a probe red on a planted
+  case (a wanderer placed IN the roots) before believing its green.
+- **Drawing a room outside the game must not use the game's tide (S168).** A
+  room's render cache is keyed on `tide.stamp` alone, and `newGame` sets
+  `tide.level` without touching the stamp — so the opening rendering the first
+  screen at LOW through `game.tide` would have left a stale LOW picture for
+  the new game's first frame. The opening builds Rooms of its own and passes a
+  plain number as the tide (`cacheKeyFor` keys a number apart from a stamp).
+- **Ages has a storm-at-sea cutscene (S168)**: INTERAC_RAFTWRECK_CUTSCENE,
+  Link's raft wrecked on the way to Tokay Island, with its own screen-flash
+  table. And Seasons' ENDING has a whole sea-and-sky background and a ship
+  (credits "linked the end"). Look at endings and other cartridge's
+  cutscenes, not only intros, before drawing a scene.
+
 - **A status bar that only holds 14 hearts was given 16 (S167).** The
   heart rows were 7 wide and two tall; the cap is 16, so hearts 15 and 16 drew
   a third row INTO the playfield, and nothing in the table looks at the HUD

@@ -81,6 +81,9 @@ SFX = [
     ('text2', 'ROM_SEASONS'), ('menuMove', 'ROM_SEASONS'), ('selectItem', 'ROM_SEASONS'),
     ('error', 'ROM_SEASONS'), ('openMenu', 'ROM_SEASONS'), ('heartBeep', 'ROM_SEASONS'),
     ('bombLand', 'ROM_SEASONS'), ('rumble', 'ROM_SEASONS'),
+    # The opening (S168): the storm that puts Link on the shore. Seasons'
+    # own lightning crack, the wave its ending sea plays, and its wind.
+    ('lightning', 'ROM_SEASONS'), ('wave', 'ROM_SEASONS'), ('wind', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

@@ -6,18 +6,30 @@
 // from the cache after that. No per-pixel work happens in a draw.
 
 import { SEASONS_SCREENS } from '../data/screens-seasons.js';
+import { INTRO_SCREENS } from '../data/screens-intro.js';
+
+const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS };
 
 const KEYS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const cache = new Map();
 
-function bake(name) {
-  const s = SEASONS_SCREENS[name];
+/**
+ * A screen baked through `tint` — `{ key, fn }`, where `fn(r, g, b)` returns
+ * the colour to paint instead. A Game Boy Color darkens a scene by rewriting
+ * its palettes, never by laying a shade over it; this is that, done once per
+ * palette entry and cached under the tint's key.
+ */
+function bake(name, tint = null) {
+  const s = ALL[name];
   if (!s) throw new Error(`screens: no image named ${name}`);
   const c = document.createElement('canvas');
   c.width = s.w; c.height = s.h;
   const g = c.getContext('2d');
   const img = g.createImageData(s.w, s.h);
-  const rgb = s.pal.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  const rgb = s.pal.map(h => {
+    const c = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    return tint ? tint.fn(c[0], c[1], c[2]) : c;
+  });
   for (let y = 0; y < s.h; y++) {
     const row = s.rows[y];
     for (let x = 0; x < s.w; x++) {
@@ -28,16 +40,26 @@ function bake(name) {
     }
   }
   g.putImageData(img, 0, 0);
-  const out = { canvas: c, w: s.w, h: s.h, y: s.y || 0 };
-  cache.set(name, out);
+  const out = { canvas: c, w: s.w, h: s.h, y: s.y || 0, ax: s.ax || 0, ay: s.ay || 0 };
+  cache.set(tint ? name + '|' + tint.key : name, out);
   return out;
 }
 
-/** The baked image, for its size and its own `y` if the ripper gave one. */
-export function screenImage(name) { return cache.get(name) || bake(name); }
+/** The baked image, for its size, its own `y` if the ripper gave one, and
+ *  `ax`/`ay`, where an object's position falls in it. */
+export function screenImage(name, tint = null) {
+  return cache.get(tint ? name + '|' + tint.key : name) || bake(name, tint);
+}
 
 /** Draw a screen image with its top-left at (x, y). */
-export function drawScreen(ctx, name, x = 0, y = 0) {
-  const s = screenImage(name);
+export function drawScreen(ctx, name, x = 0, y = 0, tint = null) {
+  const s = screenImage(name, tint);
   ctx.drawImage(s.canvas, Math.round(x), Math.round(y));
+}
+
+/** Draw an object picture (the opening's ship, gull, bolt) with its own
+ *  position at (x, y). */
+export function drawObject(ctx, name, x, y, tint = null) {
+  const s = screenImage(name, tint);
+  ctx.drawImage(s.canvas, Math.round(x - s.ax), Math.round(y - s.ay));
 }

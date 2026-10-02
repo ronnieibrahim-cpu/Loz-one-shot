@@ -31,6 +31,7 @@
 // gated nothing, because the Cliffs back door reaches the same screens.
 
 import { registerMap } from '../world/maps.js';
+import { FARORE_SWAY_HOLD } from './feel.js';
 
 export const OVERWORLD_W = 17;
 export const OVERWORLD_H = 10;
@@ -2418,7 +2419,7 @@ const rooms = {
     ],
     entities: [
       ['octorok', 6, 3],
-      ['racer', 1, 3, {
+      ['racer', 2, 3, {
         race: 'shore', sprite: 'npc_child', ask: 'raceAsk', busy: 'raceBusy',
         win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
       }],
@@ -3219,7 +3220,7 @@ const rooms = {
       'ggyyygggTT',
     ],
     entities: [
-      ['trader', 1, 3, {
+      ['trader', 2, 4, {
         sprite: 'npc_fisher2', waiting: 'coastFisher', after: 'mirrenAfter',
         deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
       }],
@@ -3748,7 +3749,7 @@ function installHouses() {
   // Farore's shrine on Tern Point (S158). She gives the Moon Conch the first
   // time she is spoken to, and lives here for the rest of the game.
   home('faroreShrine', "Farore's Shrine", 'village', [
-    ['npc', 4, 2, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5,
+    ['npc', 4, 2, { sprite: 'npc_farore_0', frames: { down: ['npc_farore_0', 'npc_farore_1'] }, rate: FARORE_SWAY_HOLD, faceOnTalk: false, dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5,
       beat: { scene: 'faroreConch', flag: 'gotConch' } }],
   ], { rx: 8, ry: 9, px: 64, py: 88 });
 

@@ -348,6 +348,10 @@ export function canOccupy(game, e, x, y, caps, terrainOnly = false) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
         if (room.flagsAt(tx, ty, game.tide) & avoid) return false;
       }
+      // A townsperson keeps out of a tree's root mound (S168): see
+      // `Room.quadRootCover`. Walkable for Link, never somewhere to stand.
+      if (e.avoidRoots && !airborne
+          && room.quadRootCover(Math.floor(px / TILE), Math.floor(py / TILE), game.tide)) return false;
     }
   }
   if (!airborne && !terrainOnly) {

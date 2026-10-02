@@ -183,6 +183,52 @@ for (const b of report.out) {
 check('every placed entity can stand where it was placed, at some tide',
   report.out.length === 0, report.out.length ? `${report.out.length} cannot, at any level` : '');
 
+// NOBODY WANDERS INTO A TREE (S168). A townsperson with `wander` picks a
+// direction every so often and walks it, and a tree's root mound is walkable
+// ground with a trunk drawn on it — so the village child spent half the game
+// standing inside the nearest oak, and nothing above can see it, because it
+// only looks at where a person was PLACED. Every wanderer is walked for two
+// minutes of game time in its own room at each tide, and its feet (its
+// hitbox, as for Link: the sprite is 2px wider each side) must never be over a root mound (`Room.quadRootCover`, the engine's
+// answer, which `canOccupy` refuses for anything carrying `avoidRoots`).
+const wander = await page.evaluate(async () => {
+  const g = window.__game;
+  const maps = await import('/src/world/maps.js');
+  const out = []; let walked = 0, moved = 0;
+  for (const map of maps.MAPS.values()) {
+    for (const key of Object.keys(map.roomDefs || {})) {
+      const def = map.roomDefs[key];
+      if (!(def.entities || []).some(s => s[3] && s[3].wander)) continue;
+      const [f, rx, ry] = key.split(',').map(Number);
+      g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
+      for (const lv of [0, 1, 2]) {
+        g.tide.setLevel(lv, { instant: true });
+        for (const e of g.entities.filter(e => e.wander)) {
+          walked++;
+          const x0 = e.x, y0 = e.y; let bad = null;
+          for (let i = 0; i < 7200 && !bad; i++) {
+            e.update(g);
+            for (const px of [e.x + e.hb.x, e.x + 8, e.x + e.hb.x + e.hb.w - 1]) {
+              for (const py of [e.y + e.hb.y, e.y + e.hb.y + e.hb.h - 1]) {
+                const tx = Math.floor(px / 16), ty = Math.floor(py / 16);
+                if (g.room.quadRootCover(tx, ty, g.tide)) bad = `${tx},${ty}`;
+              }
+            }
+          }
+          if (e.x !== x0 || e.y !== y0) moved++;
+          if (bad) out.push(`${map.id}/${key} ${e.sprite} walked into the roots at ${bad} (tide ${lv})`);
+          e.x = x0; e.y = y0;
+        }
+      }
+    }
+  }
+  return { out, walked, moved };
+});
+console.log(`check-placement: ${wander.walked} wanderers walked for 7200 frames at each tide`);
+for (const l of wander.out) console.log('  roots  ' + l);
+check('no wandering townsperson walks into a tree', wander.walked > 0 && wander.moved > 0 && wander.out.length === 0,
+  wander.out.length ? `${wander.out.length} did` : `${wander.walked} walked, ${wander.moved} moved`);
+
 // WHAT A CHEST HANDS OUT LANDS WHERE IT CAN BE PICKED UP (S162). A chest
 // holding a key, a Boss Key or a chartstone does not give it: it pops a pickup
 // out above itself (`Game.openChest`), which settles a tile up and has to be

@@ -659,6 +659,31 @@ export class Room {
   }
 
   /**
+   * True if (x,y) is painted with the ROOT (bottom) half of a 32x32 object
+   * whose own footprint is elsewhere in this fixed 2x2 block — the half
+   * `quadCanopySolid` leaves walkable on purpose. Link may cross a root mound;
+   * a townsperson may not stand in one (S168): a shopkeeper drawn waist deep
+   * in a trunk reads as a person inside a tree, and a wanderer strolled into
+   * the roots of whatever tree was nearest. `canOccupy` asks this for an
+   * entity carrying `avoidRoots`.
+   */
+  quadRootCover(x, y, tide) {
+    if (y % 2 !== 1) return false;
+    const d = this.tile(x, y, tide);
+    if (d.quad || d.big) return false;
+    const bx = x & ~1, by = y - 1;
+    let q = null;
+    for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const nx = bx + ox, ny = by + oy;
+      if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
+      const nd = this.tile(nx, ny, tide);
+      if (nd.quad || nd.big) { q = nd.quad || nd.big; break; }
+    }
+    if (!q) return false;
+    return this.quadMayCover(x, y, tide, q);
+  }
+
+  /**
    * The ground to draw under a prop.
    *
    * A prop names one — `rock` stands on grass, `rockSand` on sand — and where

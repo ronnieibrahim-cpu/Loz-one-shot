@@ -1024,6 +1024,42 @@ const main = async () => {
   const fps = await G(() => window.__game.fps);
   check('frame rate is healthy', fps === undefined || fps >= 40, 'fps=' + fps);
 
+  console.log('\n--- the opening (S168) ---');
+  // A Title of its own over a stand-in for the game, so the real one is not
+  // disturbed: the card, then the opening, then the logo — and one press in
+  // the opening cuts to the logo, not past it.
+  const opening = await G(async () => {
+    const g = window.__game;
+    const { Title } = await import('/src/game/title.js');
+    const { INTRO_FRAMES } = await import('/src/game/intro.js');
+    const feel = await import('/src/data/feel.js');
+    let press = false;
+    const fake = { audio: g.audio, frame: 0, input: { pressed: b => press && b === 'a' } };
+    const c = document.createElement('canvas'); c.width = 160; c.height = 144;
+    const ctx = c.getContext('2d');
+    const run = (skipAt) => {
+      const t = new Title(fake);
+      const seen = []; let back = -1;
+      for (let f = 0; f < feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES + INTRO_FRAMES + 60; f++) {
+        press = f === skipAt;
+        t.update(); fake.frame++;
+        if (seen[seen.length - 1] === 'intro' && t.stage === 'logo') back = f;
+        if (seen[seen.length - 1] !== t.stage) seen.push(t.stage);
+        if (f % 7 === 0) t.draw(ctx);
+        if (t.stage === 'files') break;
+      }
+      return seen.join('>') + '@' + back;
+    };
+    const card = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES;
+    return { whole: run(-1), skipped: run(card + 300), frames: INTRO_FRAMES, card };
+  });
+  // The card's last frame (the update that makes t reach it, f = card - 1) is
+  // the opening's first, so its last is INTRO_FRAMES - 1 updates after that.
+  check('the opening plays between the card and the logo, to its end',
+    opening.whole === `logo>intro>logo@${opening.card + opening.frames - 2}`, opening.whole);
+  check('a press in the opening cuts to the logo', opening.skipped === `logo>intro>logo@${opening.card + 300}`, opening.skipped);
+  check('the opening is between 20 and 40 seconds', opening.frames >= 1200 && opening.frames <= 2400, opening.frames + ' frames');
+
   console.log('\n--- art coverage ---');
   const missing = await G(() => [...window.__game.tiles.missing, ...window.__game.sprites.missing].sort());
   console.log(`  ${missing.length} unauthored art name(s)`);

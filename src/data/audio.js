@@ -127,6 +127,12 @@ const SFX = {
   // coral pillar and the hauled boulder keep our `rumble`.
   doorRumble: { seasons: 'rumble' },
 
+  // The opening's storm (S168): the cartridge's own lightning crack, the
+  // wave its ending sea plays, and its wind.
+  lightning: { seasons: 'lightning' },
+  wave: { seasons: 'wave' },
+  wind: { seasons: 'wind' },
+
   // --- pickups & UI -------------------------------------------------------
   rupee: { seasons: 'rupee' },
   rupeeBig: { seasons: 'rupee' },

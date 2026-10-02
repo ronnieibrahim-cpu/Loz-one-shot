@@ -152,6 +152,12 @@ FRAMES = {
     'link_hurt_up':     (912, IDLE_Y, False),
     'link_hurt_side':   (929, IDLE_Y, True),
 
+    # ---- lying where the sea left him (S168) ---------------------------------
+    #
+    # The last frame of the sheet's Hurt/Death band: Link flat on his back,
+    # the pose the death spin ends in. The opening puts him on the beach in it.
+    'link_lie':         (1465, 127, False),
+
     # ---- the spin attack -----------------------------------------------------
     #
     # THE SPIN HAD NO SWORD IN IT (S153). It used to borrow the four slash

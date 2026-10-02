@@ -705,6 +705,74 @@ export const CHEST_ITEM_DELAY = 3;
  *  not in the video. */
 export const TITLE_CARD_FRAMES = 180;
 
+// ---------------------------------------------------------------------------
+// The opening (S168): a ship at sea, a storm, the shore — ours, played before
+// the title the way Seasons plays its ride. Its pictures are the cartridge's
+// (tools/rip-intro.py); how long each scene runs is ours.
+// ---------------------------------------------------------------------------
+
+/** f — the calm sea before the weather turns. guessed. */
+export const INTRO_SEA_FRAMES = 300;
+
+/** f — the sky darkening into the storm, in the console's four palette
+ *  steps. guessed. */
+export const INTRO_DARKEN_FRAMES = 120;
+
+/** f — the storm itself, lightning and all, before the sea rises. guessed. */
+export const INTRO_STORM_FRAMES = 330;
+
+/** f — the sea rising over the ship. guessed. */
+export const INTRO_SWELL_FRAMES = 96;
+
+/** px — how far the sea rises over the ship, top to bottom. guessed. */
+export const INTRO_SWELL_RISE = 56;
+
+/** f — the white the sea leaves before the shore fades in. guessed. */
+export const INTRO_WHITE_FRAMES = 40;
+
+/** f — the shore at HIGH before the sea draws back. guessed. */
+export const INTRO_SHORE_HIGH_FRAMES = 120;
+
+/** f — the shore after the sea has drawn back off Link, before the title.
+ *  guessed. */
+export const INTRO_SHORE_LOW_FRAMES = 210;
+
+/** f per px — the ship's drift across the calm sea, one pixel every this many
+ *  frames. guessed. */
+export const INTRO_SHIP_DRIFT = 6;
+
+/** f — how often the ship steps through INTRO_BOB_Z. derived: Seasons'
+ *  INTERAC_LINK_SHIP (object_code/common/interactions/linkShip.s in
+ *  oracles-disasm) updates the ship's Z every 32 frames. */
+export const INTRO_SHIP_BOB = 32;
+
+/** f — how often a gull steps through INTRO_BOB_Z. derived: linkShip.s
+ *  steps a seagull's Z when its counter's low three bits are clear, every 8
+ *  frames. */
+export const INTRO_GULL_BOB = 8;
+
+/** px — the bob, one entry a step (negative is up). derived: linkShip.s
+ *  @zPositions, $00 $ff $ff $00 $00 $01 $01 $00. */
+export const INTRO_BOB_Z = [0, -1, -1, 0, 0, 1, 1, 0];
+
+/** px per f — a gull's glide, and its climb out of the storm. guessed. */
+export const INTRO_GULL_SPEED = 0.25;
+
+/** f — each frame of a lightning bolt. derived: Seasons' PART_LIGHTNING
+ *  animation (data/seasons/partAnimations.s partAnimation574dd), nine frames
+ *  held 1 1 1 1 2 2 4 4 4. */
+export const INTRO_BOLT_HOLDS = [1, 1, 1, 1, 2, 2, 4, 4, 4];
+
+/** f — when the screen flashes as lightning strikes: white until the first
+ *  entry, normal until the second, and so on; normal for good from the last.
+ *  derived: Seasons' screenFlashingData @data0 (code/bank3Cutscenes.s,
+ *  flashScreen_body), $02 $04 $06 $0c $0e. */
+export const INTRO_FLASH = [2, 4, 6, 12, 14];
+
+/** f — when each lightning bolt strikes, counted from the storm's start.
+ *  guessed. */
+export const INTRO_STRIKES = [40, 128, 170, 250, 300];
+
 /** f — the card's fade to white. measured: 21 frames. reference:
  *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen brightness rising from
  *  video frame 6804 to full white at 6825. */
@@ -1217,6 +1285,12 @@ export const BOSS_MUSIC_RESUME_FRAMES = 220;
 // ---------------------------------------------------------------------------
 // NPCs
 // ---------------------------------------------------------------------------
+
+/** f — how long Farore holds each of her two frames as she sways at her
+ *  desk. derived: Oracle of Seasons' INTERAC_FARORE default animation 2,
+ *  interactionAnimation51d97 (data/seasons/interactionAnimations.s in
+ *  oracles-disasm), holds each oam frame $10 frames. */
+export const FARORE_SWAY_HOLD = 16;
 
 /** f — how often a wandering NPC picks a new direction. guessed. */
 export const NPC_WANDER_PERIOD = 90;

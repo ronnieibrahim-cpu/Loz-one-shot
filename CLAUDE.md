@@ -116,7 +116,7 @@ ripper credit in the header. The current set:
 | Generated file | Tool |
 |---|---|
 | `src/data/sprites-player.js` | `tools/rip-link.py` |
-| `src/data/sprites-npcs.js` | `tools/rip-npcs.py` |
+| `src/data/sprites-npcs.js` | `tools/rip-npcs.py` (Farore from Seasons' own graphics in `assets/npcs/`, S168) |
 | `src/data/sprites-races.js` | `tools/rip-races.py` |
 | `src/data/sprites-enemies.js` | `tools/rip-enemies.py` |
 | `src/data/sprites-hud.js` | `tools/rip-hud.py` |
@@ -131,6 +131,7 @@ ripper credit in the header. The current set:
 | `src/data/sprites-hud-tiles.js` | `tools/rip-hud-tiles.py` (the status bar's own bold digits, its "L-" and "x", and the dungeon key that replaces the rupee, from Seasons' gfx_hud and gfx_key_orechunk in `assets/hud/`, S167) |
 | `src/data/sprites-objects.js` | `tools/rip-objects.py` (chests, the sign, torches and their flame, and each dungeon's own push block and floor button, read out of Seasons' tilesets, layouts, palettes and animation tables in `assets/objects/`) |
 | `src/data/sprites-bosses-seasons.js` | `tools/rip-bosses.py` (the cartridge's own boss graphics, frame layouts and palettes, from `assets/bosses/oracles-disasm/`) |
+| `src/data/screens-intro.js` | `tools/rip-intro.py` (the opening's pictures: the sea and sky behind Seasons' linked ending, its ship and gull (INTERAC_LINK_SHIP) and its lightning (PART_LIGHTNING), from Seasons' own graphics and tables in `assets/intro/` and `assets/effects/`, S168) |
 | `src/data/music-seasons.js` | `tools/rip-music.py` (Seasons' own channel scripts and, since S163, both cartridges' sound effects with their channel priorities, from oracles-disasm copied into `assets/music/`; played by `src/core/gbsound.js`) |
 
 This cuts both ways: **removing** an extracted icon means removing its entry

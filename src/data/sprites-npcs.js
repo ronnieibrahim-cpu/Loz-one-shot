@@ -6,7 +6,13 @@
 //
 // Each sprite carries its own four colours, quantised light to dark, so
 // the palettes below are registered at load time rather than reusing the
-// hand-authored set. Farore is a palette swap: the sheet has no oracle.
+// hand-authored set.
+//
+// Farore (npc_farore_*) is not from the sheet: she is cut from Oracle of
+// Seasons' own graphics (spr_farore_ralph, INTERAC_FARORE's default
+// animation and palette) out of Stewmath's oracles-disasm
+// (github.com/Stewmath/oracles-disasm, commit 21c924a); credit to that
+// project and its contributors.
 
 import { sprites } from '../gfx/art.js';
 import { registerPalettes } from '../gfx/palettes.js';
@@ -50,40 +56,40 @@ export const NPC_ART = {
     ...222222222....` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_farore_0: { pal: 'npc_farore_0', art: `
-    ................
-    ....22222.......
-    ...200000222....
-    ..2002220021222.
-    ..20120020021212
-    .201200002021212
-    .202000002221112
-    .21200000002112.
-    ..220200200212..
-    ...20000001222..
-    ..2222000122112.
-    220200222222212.
-    220200222222.22.
-    ..2222222212....
-    ....22111122....
-    ....2222222.....` },
+    .3333.3333..333.
+    3311131001331133
+    3111031111130113
+    3110311131113013
+    .33311130311333.
+    ..303333033303..
+    ..303030030303..
+    ...3003003003...
+    ....30000003....
+    ....33000033....
+    ...3133333313...
+    ..303011103003..
+    ..303100013003..
+    ...31111111333..
+    ...3000011113...
+    ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_farore_1: { pal: 'npc_farore_1', art: `
-    ................
-    .......22222....
-    ....222000002...
-    .2221200222002..
-    21212002002102..
-    212120200002102.
-    211122200000202.
-    .21120000000212.
-    ..212002002022..
-    ..22210000002...
-    .2112210002222..
-    .212222222002022
-    .22.222222002022
-    ....2122222222..
-    ....22111122....
-    .....2222222....` },
+    .333..3333.3333.
+    3311331001311133
+    3110311111301113
+    3103111311130113
+    .33311303111333.
+    ..303330333303..
+    ..303030030303..
+    ...3003003003...
+    ....30000003....
+    ....33000033....
+    ...3133333313...
+    ..300301110303..
+    ..300310001303..
+    ..33311111113...
+    ...3111100003...
+    ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_fisher: { pal: 'npc_fisher', art: `
     ................
@@ -198,8 +204,8 @@ export const NPC_ART = {
 export const NPC_ART_PALETTES = {
   npc_child: ['#ffd38c', '#1882ff', '#10aa42', '#000000'],
   npc_elder: ['#ffd38c', '#1882ff', '#000000', '#000000'],
-  npc_farore_0: ['#e8f8d8', '#78d888', '#2c8058', '#000000'],
-  npc_farore_1: ['#e8f8d8', '#78d888', '#2c8058', '#000000'],
+  npc_farore_0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_farore_1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   npc_fisher: ['#ffd38c', '#1882ff', '#000000', '#000000'],
   npc_fisher2: ['#ffd38c', '#10aa42', '#ff0829', '#000000'],
   npc_shopkeeper: ['#ffd38c', '#1882ff', '#000000', '#000000'],
