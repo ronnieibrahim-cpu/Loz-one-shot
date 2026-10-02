@@ -1,3 +1,57 @@
+## S170 — the music when Link dies; the title's fades
+
+Branch claude/oracle-tides-s170-4osfx5, off main at 4e08143 (S169 fully
+merged by the human). The human's prompt left the task blank, so this session
+took S169's small fidelity leftovers, all read out of oracles-disasm (cloned
+to the scratchpad).
+
+### What landed
+- DEATH AS THE CARTRIDGE PLAYS IT. A killing hit still knocks Link back first
+  (linkState03 substate0 runs linkUpdateKnockback, still flashing) — ours
+  started the spin on the spot. `Game.deathKnock` holds the hit's remaining
+  knockTime; updateGameOver runs the freeze, then the shove, then
+  `startDeathSpin` (flicker off, SND_LINK_DEAD). gameOverMenuAt is counted
+  from the spin, unchanged.
+- THE MUSIC NO LONGER STOPS WHEN HE DIES. Audio gained the cartridge's master
+  volume and fade (`fadeOut(mask)`, `tickFade` once a game frame from
+  Game.update, `volume`, `fading`): NR50 0-7 scaling every channel by (v+1)/8,
+  a step whenever the counter has all of `mask`'s bits set, everything stopped
+  one step past 0, and ANY sound started (sfx/play/jingle) ends the fade at
+  full volume. The death asks for DEATH_MUSIC_FADE_MASK $1f (SNDCTRL_SLOW_
+  FADEOUT, standardGameState). Net effect, as in Seasons: killed by a hit, the
+  death sound ends the fade before its first step and the music plays on at
+  full volume under the spin; killed with no knockback, the music fades a
+  step every 32 frames. The game over screen stops whatever is playing and
+  starts its theme (restartSound + MUS_GAMEOVER) — it used to rely on the
+  music already being stopped.
+- THE TITLE'S FADES. The card fades in from white (TITLE_CARD_FADE_IN_FRAMES
+  21, derived: intro_capcomScreen's fadeinFromWhite), at power-on and when the
+  idle logo comes round again; START on the LOGO now plays the select sound,
+  fades the music fast (TITLE_MUSIC_FADE_MASK $07, SNDCTRL_FAST_FADEOUT) and
+  the screen to white (TITLE_LOGO_FADE_FRAMES 28, measured, video 6864-6892),
+  holds white (TITLE_FILES_WHITE_FRAMES 20, measured, 6893-6912) and then cuts
+  to the file select; presses meanwhile are ignored. The idle replay uses the
+  same fast music fade and 28-frame fade (was: music stopped, 21 frames). A
+  press on the CARD still goes straight to the file select, so the robot and
+  the nine tools that start a game with real keys are untouched.
+- test.mjs: +6 assertions (knocked back before the spin; music on at full
+  volume after a hit; fade a step per 32 frames with no knockback; idle fade
+  is the fast one; card fades in; START fades before the file select).
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test
+107/107; check-build OK. Sent the human: the two deaths as sound clips, and
+the logo-to-file-select fade beside Seasons' footage, with the card's fade-in.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: our `whiteout` is a 4-step
+alpha that is fully white at 80% of a fade, where Seasons brings each colour
+up a step at a time and is still faintly visible at the end (see the strip);
+CAM_DEADZONE_W needs footage; the menu page labels (ITEMS etc.) are ours;
+Seasons' START on the CARD skips to the logo, ours to the file select (kept
+for the harnesses' sake — changing it means re-teaching nine tools and
+dNewGame).
+
 ## S169 — the opening has its sound
 
 Branch claude/oracle-tides-opening-sound-y9zhg5, off main at f63f293 (S168

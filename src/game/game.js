@@ -66,7 +66,7 @@ import {
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
-  DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, GAMEOVER_FADE_IN_FRAMES,
+  DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES,
   GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
@@ -130,6 +130,7 @@ export class Game {
     this.anchorRadius = null;
     this.anchorShape = null;
     this.deathTime = 0;
+    this.deathKnock = 0;
     this.tintKey = 'none';
     // Which window of the room is on screen. Clamps to 0 in a 1x1 room, which
     // is every room the game currently has; see camera.js.
@@ -1727,10 +1728,25 @@ export class Game {
     this.deathPicked = -1;
     this.deathPickT = 0;
     this.progress.deaths++;
-    // Seasons ends his invincibility as he starts to die (resetLinkInvincibility):
-    // the spin is not drawn in the hit palette.
+    // A HIT THAT KILLS STILL KNOCKS HIM BACK FIRST (S170): linkState03's
+    // substate0 runs linkUpdateKnockback until knockbackCounter is spent, still
+    // flashing, and only then starts the spin and plays SND_LINK_DEAD.
+    this.deathKnock = this.player ? Math.max(0, this.player.knockTime) : 0;
+    if (!this.deathKnock) this.startDeathSpin();
+    // Seasons' music does not stop for a death: the frame after, the game asks
+    // for a SLOW fade (standardGameState), and the death sound ends any fade
+    // it finds (Audio.fadeOut). Killed by a hit, the sound comes after the
+    // knockback, long before the fade's first step, so the music plays on at
+    // full volume under the spin; killed with no knockback, the sound came
+    // first and the music fades away under him.
+    this.audio.fadeOut(DEATH_MUSIC_FADE_MASK);
+  }
+
+  /** The spin begins: Seasons ends his invincibility here
+   *  (resetLinkInvincibility), so it is not drawn in the hit palette. */
+  startDeathSpin() {
+    this.deathKnock = 0;
     if (this.player) this.player.flicker = 0;
-    this.audio.stop();
     this.audio.sfx('linkDead');
   }
 
@@ -1806,6 +1822,7 @@ export class Game {
     p.hearts = p.maxHearts;
     const s = p.respawn;
     this.mode = 'play';
+    this.deathKnock = 0;
     this.entities.length = 0;
     // THE ROOM HE DIED IN IS LET GO OF FIRST (S160). The sea is reset below
     // before the respawn room is entered, and a tide change is a room event —
@@ -1868,6 +1885,7 @@ export class Game {
     this.frame++;
     this.input.update();
     this.audio.update();
+    this.audio.tickFade();
     this.progress.frames++;
     this.updateTimers();
     this.updateFade();
@@ -2205,9 +2223,22 @@ export class Game {
   }
 
   updateGameOver() {
+    if (this.deathKnock > 0) {
+      // The killing hit's knockback, as it runs in play: the freeze first,
+      // then the shove a frame at a time.
+      if (this.hitstop > 0) { this.hitstop--; return; }
+      const p = this.player;
+      if (p.flicker > 0) p.flicker--;
+      moveEntity(this, p, p.knockX, p.knockY);
+      p.knockTime = Math.max(0, p.knockTime - 1);
+      if (--this.deathKnock <= 0) this.startDeathSpin();
+      return;
+    }
     this.deathTime++;
     const menuAt = this.gameOverMenuAt();
-    if (this.deathTime === menuAt) this.audio.jingle('gameOver');
+    // runSaveAndQuitMenu: restartSound, then MUS_GAMEOVER — whatever was
+    // still playing stops, and is not picked up again after.
+    if (this.deathTime === menuAt) { this.audio.stop(); this.audio.jingle('gameOver'); }
     if (this.deathTime < menuAt + GAMEOVER_FADE_IN_FRAMES) return;
     if (this.deathPicked >= 0) {
       if (--this.deathPickT <= 0) this.gameOverChoose(this.deathPicked);

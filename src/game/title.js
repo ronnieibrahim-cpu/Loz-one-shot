@@ -8,6 +8,7 @@ import { listSaves, deleteSlot, HEART_UNITS, storageAvailable, exportCode, impor
 import { essenceCount } from '../world/maps.js';
 import {
   TITLE_CARD_FRAMES, TITLE_FADE_FRAMES, TITLE_WHITE_FRAMES, TITLE_PRESS_BLINK, TITLE_IDLE_FRAMES,
+  TITLE_MUSIC_FADE_MASK, TITLE_LOGO_FADE_FRAMES, TITLE_FILES_WHITE_FRAMES, TITLE_CARD_FADE_IN_FRAMES,
 } from '../data/feel.js';
 // The screens are the Seasons originals (tools/rip-screens.py): the logo with
 // TIDES in its plaque, and the bark frame of its file select. What is drawn in
@@ -39,6 +40,8 @@ export class Title {
     this.waitSound = !(this.game.audio && this.game.audio.ok);
     this.swallow = false;
     this.waitT = 0;
+    this.cardIn = 0;         // frames of the card's fade in from white
+    this.toFilesT = -1;      // >= 0: START pressed, the logo going to white
     this.cursor = 0;
     this.saves = listSaves();
     this.storageOk = storageAvailable();
@@ -55,8 +58,22 @@ export class Title {
     const g = this.game, i = g.input;
     if (this.swallow) { this.swallow = false; return; }
     const waiting = this.waitSound && this.stage === 'logo' && this.t === 0;
+    if (this.stage === 'logo' && this.t < TITLE_CARD_FRAMES && this.cardIn < TITLE_CARD_FADE_IN_FRAMES) this.cardIn++;
     if (waiting) this.waitT++;
     else this.t++;
+
+    // START ON THE LOGO (S170): Seasons' intro_titlescreen_state1 plays the
+    // select sound, fades the music out fast and the screen to white, and only
+    // then starts the file select, which cuts in. Nothing is read meanwhile.
+    if (this.toFilesT >= 0) {
+      if (++this.toFilesT >= TITLE_LOGO_FADE_FRAMES + TITLE_FILES_WHITE_FRAMES) {
+        this.toFilesT = -1;
+        this.stage = 'files';
+        this.saves = listSaves();
+        g.audio.play('fileSelect');      // Seasons has a song of its own here
+      }
+      return;
+    }
 
     const fadeEnd = TITLE_CARD_FRAMES + TITLE_FADE_FRAMES;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
@@ -76,10 +93,11 @@ export class Title {
     // come round again. Nothing is read while it fades.
     const idleAt = fadeEnd + TITLE_WHITE_FRAMES + TITLE_IDLE_FRAMES;
     if (this.stage === 'logo' && this.t >= idleAt) {
-      if (this.t === idleAt) g.audio.stop();
-      if (this.t >= idleAt + TITLE_FADE_FRAMES) {
+      if (this.t === idleAt) g.audio.fadeOut(TITLE_MUSIC_FADE_MASK);
+      if (this.t >= idleAt + TITLE_LOGO_FADE_FRAMES) {
         this.opening = new Opening(g);
         this.t = 0;
+        this.cardIn = 0;
         g.audio.play('title', { restart: true });
       }
       return;
@@ -87,10 +105,17 @@ export class Title {
 
     if (this.stage === 'logo') {
       if (i.pressed('start') || i.pressed('a')) {
-        this.stage = 'files';
-        this.saves = listSaves();
         g.audio.sfx('confirm');
-        g.audio.play('fileSelect');      // Seasons has a song of its own here
+        // The card and its white beat are not the logo: a press there goes
+        // straight on, as it always has. On the logo itself, Seasons' fade.
+        if (this.t >= fadeEnd + TITLE_WHITE_FRAMES) {
+          this.toFilesT = 0;
+          g.audio.fadeOut(TITLE_MUSIC_FADE_MASK);
+        } else {
+          this.stage = 'files';
+          this.saves = listSaves();
+          g.audio.play('fileSelect');
+        }
       }
       return;
     }
@@ -167,12 +192,14 @@ export class Title {
     if (t < fadeEnd) {
       this.drawCard(ctx);
       if (t >= TITLE_CARD_FRAMES) this.whiteout(ctx, (t - TITLE_CARD_FRAMES) / TITLE_FADE_FRAMES);
+      else if (this.cardIn < TITLE_CARD_FADE_IN_FRAMES) this.whiteout(ctx, 1 - this.cardIn / TITLE_CARD_FADE_IN_FRAMES);
       return;
     }
     if (t < logoAt) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, SCREEN_W, SCREEN_H); return; }
     this.drawLogo(ctx);
     const idleAt = logoAt + TITLE_IDLE_FRAMES;
-    if (t >= idleAt) this.whiteout(ctx, (t - idleAt) / TITLE_FADE_FRAMES);
+    if (this.toFilesT >= 0) this.whiteout(ctx, this.toFilesT / TITLE_LOGO_FADE_FRAMES);
+    else if (t >= idleAt) this.whiteout(ctx, (t - idleAt) / TITLE_LOGO_FADE_FRAMES);
   }
 
   /** The card: the Seasons developer card's own pale ground and blue type. */

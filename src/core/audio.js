@@ -380,6 +380,12 @@ export class Audio {
     this._jingle = null;
     this._pendingTrack = undefined;
     this._fade = 1;
+    // The cartridge's master volume (NR50, 0-7) and its fade (code/audio.s
+    // updateSound): see `fadeOut`.
+    this._vol = 7;
+    this._fadeDir = 0;
+    this._fadeMask = 0;
+    this._fadeCount = 0;
   }
 
   /** Must be called from a user gesture (browser autoplay policy) for real
@@ -397,7 +403,7 @@ export class Audio {
       }
       this.ctx = ctx;
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.9;
+      this._applyMaster();
       this.master.connect(this.ctx.destination);
       this.musicBus = this.ctx.createGain();
       this.musicBus.gain.value = this.musicVol;
@@ -435,8 +441,52 @@ export class Audio {
 
   setMuted(m) {
     this.muted = m;
-    if (this.master) this.master.gain.value = m ? 0 : 0.9;
+    this._applyMaster();
   }
+
+  /** The master gain: mute, and the cartridge's NR50 level 0-7, which scales
+   *  every channel, music and effects alike, by (level + 1) / 8. */
+  _applyMaster() {
+    if (this.master) this.master.gain.value = this.muted ? 0 : 0.9 * (this._vol + 1) / 8;
+  }
+
+  /**
+   * Oracle of Seasons' SNDCTRL_*_FADEOUT (code/audio.s): the master volume
+   * starts at 7 and drops one step each time the fade's counter, counting
+   * frames, has every bit of `mask` set (the SLOW fade's $1f: frame 31, then
+   * every 32nd); one step past 0, everything stops. ANY SOUND STARTED MEANWHILE
+   * ENDS THE FADE AND PUTS THE VOLUME BACK TO 7 (playSound's @normalSound and
+   * @setVolumeAndEnd), music or effect alike — which is why a fade can come to
+   * nothing. `tickFade` runs it, once a game frame.
+   */
+  fadeOut(mask) {
+    this._fadeMask = mask;
+    this._fadeCount = 0;
+    this._fadeDir = 1;
+    this._setVol(7);
+  }
+
+  tickFade() {
+    if (!this._fadeDir) return;
+    this._fadeCount = (this._fadeCount + 1) & 0xff;
+    if ((this._fadeCount & this._fadeMask) !== this._fadeMask) return;
+    if (this._vol > 0) { this._setVol(this._vol - 1); return; }
+    this._fadeDir = 0;
+    this._fadeCount = 0;
+    this.stop();
+  }
+
+  /** A sound started: the fade is over and the volume is whole again. */
+  _soundStarted() {
+    this._fadeDir = 0;
+    if (this._vol !== 7) this._setVol(7);
+  }
+
+  _setVol(v) { this._vol = v; this._applyMaster(); }
+
+  /** The master level 0-7, and whether a fade is running. */
+  get volume() { return this._vol; }
+  get fading() { return !!this._fadeDir; }
   toggleMute() { this.setMuted(!this.muted); return this.muted; }
 
   /** Start a named track. No-op if it is already playing. */
@@ -445,6 +495,7 @@ export class Audio {
     if (this.trackName === name && !restart) return;
     const t = this.tracks.get(name);
     this.trackName = name;
+    this._soundStarted();
     this._releaseAll();
     // Oracle of Seasons' own track, or one of ours compiled to a channel
     // script (S164): either way the cartridge's engine renders it
@@ -464,6 +515,7 @@ export class Audio {
     const gb = gbSource(name, this.tracks.get(name));
     if (!gb) return;
     const resume = this._jingle ? this._jingle.resume : this.trackName;
+    this._soundStarted();
     this._releaseAll();
     this._jingle = { resume };
     this.trackName = '$jingle:' + name;
@@ -623,6 +675,7 @@ export class Audio {
     if (!this.ok || this.muted) return;
     const d = this.sfxDefs.get(name);
     if (!d) return;
+    this._soundStarted();
     this._renderSfx(d, this.ctx.currentTime + 0.001, pitch, vol);
   }
 

@@ -713,6 +713,28 @@ export const TITLE_CARD_FRAMES = 208;
  *  back to the Capcom screen. */
 export const TITLE_IDLE_FRAMES = 2400;
 
+/** f (a frame-count mask) — the title's music fading out, when the logo is
+ *  left alone and when START is pressed on it: a volume step each time the
+ *  fade's counter has these bits set (every 8th frame), silent after 64.
+ *  derived: intro_titlescreen_state1 plays SNDCTRL_FAST_FADEOUT; code/audio.s
+ *  @sndfa loads wSoundFadeSpeed $07. */
+export const TITLE_MUSIC_FADE_MASK = 0x07;
+
+/** f — the logo's fade to white when START is pressed on it (or when it is
+ *  left alone). measured: 28 frames. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, the logo still at video
+ *  frame 6864, whole-screen brightness rising from 6865 to full white at
+ *  6892. Longer than the card's TITLE_FADE_FRAMES because the logo has black
+ *  in it, and fadeoutToWhite brings each colour up a step at a time. */
+export const TITLE_LOGO_FADE_FRAMES = 28;
+
+/** f — the white between the logo's fade and the file select cutting in.
+ *  measured: 20 frames. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, full white from video
+ *  frame 6893 to 6912; the file select is on the screen at 6913, with no fade
+ *  in. */
+export const TITLE_FILES_WHITE_FRAMES = 20;
+
 // ---------------------------------------------------------------------------
 // The opening (S168): a ship at sea, a storm, the shore — ours, played before
 // the title the way Seasons plays its ride. Its pictures are the cartridge's
@@ -785,6 +807,14 @@ export const INTRO_STRIKES = [40, 128, 170, 250, 300];
  *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen brightness rising from
  *  video frame 6804 to full white at 6825. */
 export const TITLE_FADE_FRAMES = 21;
+
+/** f — the card fading in from white, at power-on and when the idle logo
+ *  comes round to it again. derived: intro_capcomScreen @state0 calls
+ *  fadeinFromWhite, the same palette-thread speed (1) as the fadeoutToWhite
+ *  measured above on the same colours, so the same 21 frames. (The Japanese
+ *  footage's card cuts in: that is intro_japaneseOnlyScreen, which has no
+ *  fade; the card everyone else sees is the Capcom one.) */
+export const TITLE_CARD_FADE_IN_FRAMES = 21;
 
 /** f — the beat of plain white before the logo cuts in. measured: 22
  *  frames. reference: assets/footage/seasons-tas-rooster-adventure.mp4, white from video
@@ -972,6 +1002,15 @@ export const DEATH_SPIN_LAPS = 4;
  *  animationData19be5 (LINK_ANIM_MODE_COLLAPSED) holds frame 4 for $4c, and
  *  its next entry's $ff is what linkState03 reads as the trigger. */
 export const DEATH_COLLAPSE_FRAMES = 76;
+
+/** f (a frame-count mask) — the music's fade when Link dies: the master
+ *  volume drops a step each time the fade's frame counter has all of these
+ *  bits set (frame 31, then every 32nd), and stops everything one step past
+ *  silent. derived: code/bank1.s standardGameState plays SNDCTRL_SLOW_FADEOUT
+ *  the frame after wLinkDeathTrigger goes $ff; code/audio.s @sndfc loads
+ *  wSoundFadeSpeed $1f and updateSound steps on (counter & speed) == speed.
+ *  The death sound, once it plays, ends the fade (Audio.fadeOut). */
+export const DEATH_MUSIC_FADE_MASK = 0x1f;
 
 /** f — the game over screen fading in from white. derived: runSaveAndQuitMenu
  *  calls fastFadeinFromWhite, palette thread speed 3 against fadeinFromWhite's

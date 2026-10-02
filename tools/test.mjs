@@ -1017,9 +1017,38 @@ const main = async () => {
   check('save round-trips', ok);
 
   console.log('\n--- death and respawn ---');
+  // S170: killed by a hit, Link is first knocked back (still flashing) and
+  // only then spins; the music's slow fade is ended by the death sound
+  // before its first step, so it plays on at full volume.
+  const knock = await G(() => {
+    const g = window.__game, p = g.player;
+    g.progress.hearts = 1; p.invuln = 0;
+    const x0 = p.x;
+    p.takeDamage(g, 99, { cx: p.cx + 12, cy: p.cy }, {});
+    return { k: g.deathKnock, x0 };
+  });
+  await frames(Math.max(0, knock.k) + 12);
+  const afterKnock = await G(() => {
+    const g = window.__game;
+    return { x: g.player.x, knock: g.deathKnock, t: g.deathTime, vol: g.audio.volume, fading: g.audio.fading, pose: g.player.spriteName(g) };
+  });
+  check('a killing hit knocks him back before he spins',
+    knock.k > 0 && afterKnock.knock === 0 && afterKnock.x < knock.x0 && afterKnock.t > 0,
+    JSON.stringify({ knock, afterKnock }));
+  await frames(40);
+  check('killed by a hit, the music plays on at full volume',
+    await G(() => window.__game.audio.volume === 7 && !window.__game.audio.fading));
+  await G(() => window.__game.respawn({ save: false }));
+  await frames(5);
   await G(() => { const g = window.__game; g.progress.hearts = 1; g.player.invuln = 0; g.player.takeDamage(g, 99, null, {}); });
   await frames(20);
   check('death enters game over', await G(() => window.__game.mode === 'gameover'), await G(() => window.__game.mode));
+  // With no knockback the death sound comes first, so the slow fade runs:
+  // a step on frame 31, then every 32nd.
+  await frames(Math.max(0, await G(() => 31 + 32 + 2 - window.__game.deathTime)));
+  check('killed with no knockback, the music fades a step every 32 frames',
+    await G(() => window.__game.audio.volume === 5 && window.__game.audio.fading),
+    await G(() => window.__game.audio.volume));
   // Seasons' death (S169): he spins through all four facings, collapses,
   // and the save screen comes up as GAME OVER on CONTINUE.
   const poses = await G(() => {
@@ -1091,26 +1120,59 @@ const main = async () => {
     const { Title } = await import('/src/game/title.js');
     const feel = await import('/src/data/feel.js');
     const log = [];
-    const audio = { ok: true, sfx() {}, play(n) { log.push('play:' + n); }, stop() { log.push('stop'); } };
+    const audio = { ok: true, sfx() {}, play(n) { log.push('play:' + n); }, stop() { log.push('stop'); },
+      fadeOut(m) { log.push('fade:' + m); } };
     const fake = { audio, frame: 0, input: { pressed: () => false } };
     const t = new Title(fake);
     t.opening = null;                       // straight to the logo, as after a game
     const logoAt = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES + feel.TITLE_WHITE_FRAMES;
     let stopAt = -1, cardAt = -1;
-    for (let f = 0; f < logoAt + feel.TITLE_IDLE_FRAMES + feel.TITLE_FADE_FRAMES + 5; f++) {
+    for (let f = 0; f < logoAt + feel.TITLE_IDLE_FRAMES + feel.TITLE_LOGO_FADE_FRAMES + 5; f++) {
       const n = log.length;
       t.update();
-      if (log.length > n && log[n] === 'stop') stopAt = t.t;
+      if (log.length > n && log[n].startsWith('fade:')) stopAt = t.t;
       if (cardAt < 0 && t.t === 0 && f > 0) cardAt = f;
     }
-    return { stopAt, cardAt, want: logoAt + feel.TITLE_IDLE_FRAMES, fade: feel.TITLE_FADE_FRAMES,
+    return { stopAt, cardAt, want: logoAt + feel.TITLE_IDLE_FRAMES, fade: feel.TITLE_LOGO_FADE_FRAMES,
+      fadeMask: feel.TITLE_MUSIC_FADE_MASK, cardIn: t.cardIn,
       log: log.join(','), opening: !!t.opening, stage: t.stage };
   });
-  check('left alone, the logo stops its music after 40 seconds and fades',
+  check('left alone, the logo fades its music out fast after 40 seconds, and fades to white',
     idle.stopAt === idle.want, JSON.stringify(idle));
-  check('and the card and the opening come round again',
-    idle.cardAt === idle.want + idle.fade - 1 && idle.opening && idle.stage === 'logo' && idle.log === 'stop,play:title',
+  check('and the card and the opening come round again, the card fading in from white',
+    idle.cardAt === idle.want + idle.fade - 1 && idle.opening && idle.stage === 'logo'
+      && idle.log === `fade:${idle.fadeMask},play:title` && idle.cardIn > 0 && idle.cardIn < 21,
     JSON.stringify(idle));
+  // START on the logo (S170): the select sound, a fast music fade and a fade
+  // to white, a beat of white, and only then the file select, cutting in.
+  const toFiles = await G(async () => {
+    const { Title } = await import('/src/game/title.js');
+    const feel = await import('/src/data/feel.js');
+    const log = [];
+    let press = false;
+    const audio = { ok: true, sfx(n) { log.push('sfx:' + n); }, play(n) { log.push('play:' + n); }, stop() { log.push('stop'); },
+      fadeOut(m) { log.push('fade:' + m); } };
+    const fake = { audio, frame: 0, input: { pressed: b => press && b === 'start' } };
+    const t = new Title(fake);
+    t.opening = null;
+    const logoAt = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES + feel.TITLE_WHITE_FRAMES;
+    // The card fades in from white over its first frames.
+    let cardInAt = -1;
+    for (let f = 0; f < logoAt + 10; f++) { t.update(); if (cardInAt < 0 && t.cardIn >= feel.TITLE_CARD_FADE_IN_FRAMES) cardInAt = f; }
+    press = true; t.update(); press = false;
+    let filesAt = -1, swallowed = true;
+    for (let f = 1; f < 200 && filesAt < 0; f++) {
+      press = f === 10; t.update(); press = false;
+      if (f === 11 && t.stage !== 'logo') swallowed = false;
+      if (t.stage === 'files') filesAt = f;
+    }
+    return { log: log.join(','), filesAt, swallowed, cardInAt, want: feel.TITLE_LOGO_FADE_FRAMES + feel.TITLE_FILES_WHITE_FRAMES,
+      fadeMask: feel.TITLE_MUSIC_FADE_MASK, cardIn: feel.TITLE_CARD_FADE_IN_FRAMES };
+  });
+  check('the card fades in from white', toFiles.cardInAt === toFiles.cardIn - 1, JSON.stringify(toFiles));
+  check('START on the logo fades to white before the file select cuts in',
+    toFiles.filesAt === toFiles.want && toFiles.swallowed
+      && toFiles.log === `sfx:confirm,fade:${toFiles.fadeMask},play:fileSelect`, JSON.stringify(toFiles));
   check('the opening is between 20 and 40 seconds', opening.frames >= 1200 && opening.frames <= 2400, opening.frames + ' frames');
 
   console.log('\n--- Farore behind her desk (S168) ---');

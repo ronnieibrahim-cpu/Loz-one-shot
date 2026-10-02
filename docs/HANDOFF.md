@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Read the sound engine before believing a sound command (S170).** S169's
+  leftover said "Seasons' music slow-fades on death". The game DOES send
+  SNDCTRL_SLOW_FADEOUT the frame after Link dies — but code/audio.s's
+  playSound ends any fade and puts the volume back to full for EVERY sound it
+  starts (@normalSound clears wSoundFadeDirection, @setVolumeAndEnd writes
+  $77), and Link's death sound comes only after the killing hit's knockback
+  (linkState03 substate0), 8-15 frames later, long before the fade's first
+  step on frame 31. So killed by a hit, the music plays on at full volume
+  under the spin; only a death with no knockback hears the fade. Audio now
+  models this generally (`fadeOut`/`tickFade`, any sfx/play/jingle ends it),
+  so a future fade elsewhere inherits the same rule.
+- **The Japanese footage's developer card is not the Capcom card (S170).** It
+  cuts in with no fade and holds 60 frames: that is intro_japaneseOnlyScreen.
+  The Capcom card (whose 208 frames TITLE_CARD_FRAMES uses) fades in from
+  white. Ours takes the Capcom card's behaviour, on the footage card's look.
+
 - **Seasons' menus are one screen wearing different clothes (S169).** The
   game over is the save-and-quit menu with a gameOver flag: one gfx file
   swapped (the banner) and one palette. Before drawing a screen, find which

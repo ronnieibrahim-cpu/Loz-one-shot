@@ -2022,6 +2022,28 @@ const TITLE_CARD_FRAMES = 208;
  *  back to the Capcom screen. */
 const TITLE_IDLE_FRAMES = 2400;
 
+/** f (a frame-count mask) — the title's music fading out, when the logo is
+ *  left alone and when START is pressed on it: a volume step each time the
+ *  fade's counter has these bits set (every 8th frame), silent after 64.
+ *  derived: intro_titlescreen_state1 plays SNDCTRL_FAST_FADEOUT; code/audio.s
+ *  @sndfa loads wSoundFadeSpeed $07. */
+const TITLE_MUSIC_FADE_MASK = 0x07;
+
+/** f — the logo's fade to white when START is pressed on it (or when it is
+ *  left alone). measured: 28 frames. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, the logo still at video
+ *  frame 6864, whole-screen brightness rising from 6865 to full white at
+ *  6892. Longer than the card's TITLE_FADE_FRAMES because the logo has black
+ *  in it, and fadeoutToWhite brings each colour up a step at a time. */
+const TITLE_LOGO_FADE_FRAMES = 28;
+
+/** f — the white between the logo's fade and the file select cutting in.
+ *  measured: 20 frames. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, full white from video
+ *  frame 6893 to 6912; the file select is on the screen at 6913, with no fade
+ *  in. */
+const TITLE_FILES_WHITE_FRAMES = 20;
+
 // ---------------------------------------------------------------------------
 // The opening (S168): a ship at sea, a storm, the shore — ours, played before
 // the title the way Seasons plays its ride. Its pictures are the cartridge's
@@ -2094,6 +2116,14 @@ const INTRO_STRIKES = [40, 128, 170, 250, 300];
  *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen brightness rising from
  *  video frame 6804 to full white at 6825. */
 const TITLE_FADE_FRAMES = 21;
+
+/** f — the card fading in from white, at power-on and when the idle logo
+ *  comes round to it again. derived: intro_capcomScreen @state0 calls
+ *  fadeinFromWhite, the same palette-thread speed (1) as the fadeoutToWhite
+ *  measured above on the same colours, so the same 21 frames. (The Japanese
+ *  footage's card cuts in: that is intro_japaneseOnlyScreen, which has no
+ *  fade; the card everyone else sees is the Capcom one.) */
+const TITLE_CARD_FADE_IN_FRAMES = 21;
 
 /** f — the beat of plain white before the logo cuts in. measured: 22
  *  frames. reference: assets/footage/seasons-tas-rooster-adventure.mp4, white from video
@@ -2281,6 +2311,15 @@ const DEATH_SPIN_LAPS = 4;
  *  animationData19be5 (LINK_ANIM_MODE_COLLAPSED) holds frame 4 for $4c, and
  *  its next entry's $ff is what linkState03 reads as the trigger. */
 const DEATH_COLLAPSE_FRAMES = 76;
+
+/** f (a frame-count mask) — the music's fade when Link dies: the master
+ *  volume drops a step each time the fade's frame counter has all of these
+ *  bits set (frame 31, then every 32nd), and stops everything one step past
+ *  silent. derived: code/bank1.s standardGameState plays SNDCTRL_SLOW_FADEOUT
+ *  the frame after wLinkDeathTrigger goes $ff; code/audio.s @sndfc loads
+ *  wSoundFadeSpeed $1f and updateSound steps on (counter & speed) == speed.
+ *  The death sound, once it plays, ends the fade (Audio.fadeOut). */
+const DEATH_MUSIC_FADE_MASK = 0x1f;
 
 /** f — the game over screen fading in from white. derived: runSaveAndQuitMenu
  *  calls fastFadeinFromWhite, palette thread speed 3 against fadeinFromWhite's
@@ -3795,6 +3834,9 @@ __exports["CHEST_TEXT_DELAY"] = CHEST_TEXT_DELAY;
 __exports["CHEST_ITEM_DELAY"] = CHEST_ITEM_DELAY;
 __exports["TITLE_CARD_FRAMES"] = TITLE_CARD_FRAMES;
 __exports["TITLE_IDLE_FRAMES"] = TITLE_IDLE_FRAMES;
+__exports["TITLE_MUSIC_FADE_MASK"] = TITLE_MUSIC_FADE_MASK;
+__exports["TITLE_LOGO_FADE_FRAMES"] = TITLE_LOGO_FADE_FRAMES;
+__exports["TITLE_FILES_WHITE_FRAMES"] = TITLE_FILES_WHITE_FRAMES;
 __exports["INTRO_SEA_FRAMES"] = INTRO_SEA_FRAMES;
 __exports["INTRO_DARKEN_FRAMES"] = INTRO_DARKEN_FRAMES;
 __exports["INTRO_STORM_FRAMES"] = INTRO_STORM_FRAMES;
@@ -3812,6 +3854,7 @@ __exports["INTRO_BOLT_HOLDS"] = INTRO_BOLT_HOLDS;
 __exports["INTRO_FLASH"] = INTRO_FLASH;
 __exports["INTRO_STRIKES"] = INTRO_STRIKES;
 __exports["TITLE_FADE_FRAMES"] = TITLE_FADE_FRAMES;
+__exports["TITLE_CARD_FADE_IN_FRAMES"] = TITLE_CARD_FADE_IN_FRAMES;
 __exports["TITLE_WHITE_FRAMES"] = TITLE_WHITE_FRAMES;
 __exports["TITLE_PRESS_BLINK"] = TITLE_PRESS_BLINK;
 __exports["BANNER_FRAMES"] = BANNER_FRAMES;
@@ -3842,6 +3885,7 @@ __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
 __exports["DEATH_SPIN_STEP"] = DEATH_SPIN_STEP;
 __exports["DEATH_SPIN_LAPS"] = DEATH_SPIN_LAPS;
 __exports["DEATH_COLLAPSE_FRAMES"] = DEATH_COLLAPSE_FRAMES;
+__exports["DEATH_MUSIC_FADE_MASK"] = DEATH_MUSIC_FADE_MASK;
 __exports["GAMEOVER_FADE_IN_FRAMES"] = GAMEOVER_FADE_IN_FRAMES;
 __exports["GAMEOVER_PICK_FRAMES"] = GAMEOVER_PICK_FRAMES;
 __exports["THE_END_HOLD_FRAMES"] = THE_END_HOLD_FRAMES;
@@ -5128,6 +5172,12 @@ class Audio {
     this._jingle = null;
     this._pendingTrack = undefined;
     this._fade = 1;
+    // The cartridge's master volume (NR50, 0-7) and its fade (code/audio.s
+    // updateSound): see `fadeOut`.
+    this._vol = 7;
+    this._fadeDir = 0;
+    this._fadeMask = 0;
+    this._fadeCount = 0;
   }
 
   /** Must be called from a user gesture (browser autoplay policy) for real
@@ -5145,7 +5195,7 @@ class Audio {
       }
       this.ctx = ctx;
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.9;
+      this._applyMaster();
       this.master.connect(this.ctx.destination);
       this.musicBus = this.ctx.createGain();
       this.musicBus.gain.value = this.musicVol;
@@ -5183,8 +5233,52 @@ class Audio {
 
   setMuted(m) {
     this.muted = m;
-    if (this.master) this.master.gain.value = m ? 0 : 0.9;
+    this._applyMaster();
   }
+
+  /** The master gain: mute, and the cartridge's NR50 level 0-7, which scales
+   *  every channel, music and effects alike, by (level + 1) / 8. */
+  _applyMaster() {
+    if (this.master) this.master.gain.value = this.muted ? 0 : 0.9 * (this._vol + 1) / 8;
+  }
+
+  /**
+   * Oracle of Seasons' SNDCTRL_*_FADEOUT (code/audio.s): the master volume
+   * starts at 7 and drops one step each time the fade's counter, counting
+   * frames, has every bit of `mask` set (the SLOW fade's $1f: frame 31, then
+   * every 32nd); one step past 0, everything stops. ANY SOUND STARTED MEANWHILE
+   * ENDS THE FADE AND PUTS THE VOLUME BACK TO 7 (playSound's @normalSound and
+   * @setVolumeAndEnd), music or effect alike — which is why a fade can come to
+   * nothing. `tickFade` runs it, once a game frame.
+   */
+  fadeOut(mask) {
+    this._fadeMask = mask;
+    this._fadeCount = 0;
+    this._fadeDir = 1;
+    this._setVol(7);
+  }
+
+  tickFade() {
+    if (!this._fadeDir) return;
+    this._fadeCount = (this._fadeCount + 1) & 0xff;
+    if ((this._fadeCount & this._fadeMask) !== this._fadeMask) return;
+    if (this._vol > 0) { this._setVol(this._vol - 1); return; }
+    this._fadeDir = 0;
+    this._fadeCount = 0;
+    this.stop();
+  }
+
+  /** A sound started: the fade is over and the volume is whole again. */
+  _soundStarted() {
+    this._fadeDir = 0;
+    if (this._vol !== 7) this._setVol(7);
+  }
+
+  _setVol(v) { this._vol = v; this._applyMaster(); }
+
+  /** The master level 0-7, and whether a fade is running. */
+  get volume() { return this._vol; }
+  get fading() { return !!this._fadeDir; }
   toggleMute() { this.setMuted(!this.muted); return this.muted; }
 
   /** Start a named track. No-op if it is already playing. */
@@ -5193,6 +5287,7 @@ class Audio {
     if (this.trackName === name && !restart) return;
     const t = this.tracks.get(name);
     this.trackName = name;
+    this._soundStarted();
     this._releaseAll();
     // Oracle of Seasons' own track, or one of ours compiled to a channel
     // script (S164): either way the cartridge's engine renders it
@@ -5212,6 +5307,7 @@ class Audio {
     const gb = gbSource(name, this.tracks.get(name));
     if (!gb) return;
     const resume = this._jingle ? this._jingle.resume : this.trackName;
+    this._soundStarted();
     this._releaseAll();
     this._jingle = { resume };
     this.trackName = '$jingle:' + name;
@@ -5371,6 +5467,7 @@ class Audio {
     if (!this.ok || this.muted) return;
     const d = this.sfxDefs.get(name);
     if (!d) return;
+    this._soundStarted();
     this._renderSfx(d, this.ctx.currentTime + 0.001, pitch, vol);
   }
 
@@ -18632,7 +18729,7 @@ class Player extends Entity {
     const key = side ? 'side' : this.dir;
 
     // Dying (S169): Seasons' spin where he fell, then collapsed.
-    if (game && game.mode === 'gameover') {
+    if (game && game.mode === 'gameover' && !(game.deathKnock > 0)) {
       const pose = game.deathPose();
       if (!pose) { this.flipX = false; return 'link_lie'; }
       this.flipX = pose === 'left';
@@ -23796,7 +23893,7 @@ const { sprites } = __require("gfx/art.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 const { listSaves, deleteSlot, HEART_UNITS, storageAvailable, exportCode, importCode, saveSlot } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
-const { TITLE_CARD_FRAMES, TITLE_FADE_FRAMES, TITLE_WHITE_FRAMES, TITLE_PRESS_BLINK, TITLE_IDLE_FRAMES } = __require("data/feel.js");
+const { TITLE_CARD_FRAMES, TITLE_FADE_FRAMES, TITLE_WHITE_FRAMES, TITLE_PRESS_BLINK, TITLE_IDLE_FRAMES, TITLE_MUSIC_FADE_MASK, TITLE_LOGO_FADE_FRAMES, TITLE_FILES_WHITE_FRAMES, TITLE_CARD_FADE_IN_FRAMES } = __require("data/feel.js");
 // The screens are the Seasons originals (tools/rip-screens.py): the logo with
 // TIDES in its plaque, and the bark frame of its file select. What is drawn in
 // code here is only words, the conch, and the file's own details.
@@ -23827,6 +23924,8 @@ class Title {
     this.waitSound = !(this.game.audio && this.game.audio.ok);
     this.swallow = false;
     this.waitT = 0;
+    this.cardIn = 0;         // frames of the card's fade in from white
+    this.toFilesT = -1;      // >= 0: START pressed, the logo going to white
     this.cursor = 0;
     this.saves = listSaves();
     this.storageOk = storageAvailable();
@@ -23843,8 +23942,22 @@ class Title {
     const g = this.game, i = g.input;
     if (this.swallow) { this.swallow = false; return; }
     const waiting = this.waitSound && this.stage === 'logo' && this.t === 0;
+    if (this.stage === 'logo' && this.t < TITLE_CARD_FRAMES && this.cardIn < TITLE_CARD_FADE_IN_FRAMES) this.cardIn++;
     if (waiting) this.waitT++;
     else this.t++;
+
+    // START ON THE LOGO (S170): Seasons' intro_titlescreen_state1 plays the
+    // select sound, fades the music out fast and the screen to white, and only
+    // then starts the file select, which cuts in. Nothing is read meanwhile.
+    if (this.toFilesT >= 0) {
+      if (++this.toFilesT >= TITLE_LOGO_FADE_FRAMES + TITLE_FILES_WHITE_FRAMES) {
+        this.toFilesT = -1;
+        this.stage = 'files';
+        this.saves = listSaves();
+        g.audio.play('fileSelect');      // Seasons has a song of its own here
+      }
+      return;
+    }
 
     const fadeEnd = TITLE_CARD_FRAMES + TITLE_FADE_FRAMES;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
@@ -23864,10 +23977,11 @@ class Title {
     // come round again. Nothing is read while it fades.
     const idleAt = fadeEnd + TITLE_WHITE_FRAMES + TITLE_IDLE_FRAMES;
     if (this.stage === 'logo' && this.t >= idleAt) {
-      if (this.t === idleAt) g.audio.stop();
-      if (this.t >= idleAt + TITLE_FADE_FRAMES) {
+      if (this.t === idleAt) g.audio.fadeOut(TITLE_MUSIC_FADE_MASK);
+      if (this.t >= idleAt + TITLE_LOGO_FADE_FRAMES) {
         this.opening = new Opening(g);
         this.t = 0;
+        this.cardIn = 0;
         g.audio.play('title', { restart: true });
       }
       return;
@@ -23875,10 +23989,17 @@ class Title {
 
     if (this.stage === 'logo') {
       if (i.pressed('start') || i.pressed('a')) {
-        this.stage = 'files';
-        this.saves = listSaves();
         g.audio.sfx('confirm');
-        g.audio.play('fileSelect');      // Seasons has a song of its own here
+        // The card and its white beat are not the logo: a press there goes
+        // straight on, as it always has. On the logo itself, Seasons' fade.
+        if (this.t >= fadeEnd + TITLE_WHITE_FRAMES) {
+          this.toFilesT = 0;
+          g.audio.fadeOut(TITLE_MUSIC_FADE_MASK);
+        } else {
+          this.stage = 'files';
+          this.saves = listSaves();
+          g.audio.play('fileSelect');
+        }
       }
       return;
     }
@@ -23955,12 +24076,14 @@ class Title {
     if (t < fadeEnd) {
       this.drawCard(ctx);
       if (t >= TITLE_CARD_FRAMES) this.whiteout(ctx, (t - TITLE_CARD_FRAMES) / TITLE_FADE_FRAMES);
+      else if (this.cardIn < TITLE_CARD_FADE_IN_FRAMES) this.whiteout(ctx, 1 - this.cardIn / TITLE_CARD_FADE_IN_FRAMES);
       return;
     }
     if (t < logoAt) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, SCREEN_W, SCREEN_H); return; }
     this.drawLogo(ctx);
     const idleAt = logoAt + TITLE_IDLE_FRAMES;
-    if (t >= idleAt) this.whiteout(ctx, (t - idleAt) / TITLE_FADE_FRAMES);
+    if (this.toFilesT >= 0) this.whiteout(ctx, this.toFilesT / TITLE_LOGO_FADE_FRAMES);
+    else if (t >= idleAt) this.whiteout(ctx, (t - idleAt) / TITLE_LOGO_FADE_FRAMES);
   }
 
   /** The card: the Seasons developer card's own pale ground and blue type. */
@@ -31120,7 +31243,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -31174,6 +31297,7 @@ class Game {
     this.anchorRadius = null;
     this.anchorShape = null;
     this.deathTime = 0;
+    this.deathKnock = 0;
     this.tintKey = 'none';
     // Which window of the room is on screen. Clamps to 0 in a 1x1 room, which
     // is every room the game currently has; see camera.js.
@@ -32771,10 +32895,25 @@ class Game {
     this.deathPicked = -1;
     this.deathPickT = 0;
     this.progress.deaths++;
-    // Seasons ends his invincibility as he starts to die (resetLinkInvincibility):
-    // the spin is not drawn in the hit palette.
+    // A HIT THAT KILLS STILL KNOCKS HIM BACK FIRST (S170): linkState03's
+    // substate0 runs linkUpdateKnockback until knockbackCounter is spent, still
+    // flashing, and only then starts the spin and plays SND_LINK_DEAD.
+    this.deathKnock = this.player ? Math.max(0, this.player.knockTime) : 0;
+    if (!this.deathKnock) this.startDeathSpin();
+    // Seasons' music does not stop for a death: the frame after, the game asks
+    // for a SLOW fade (standardGameState), and the death sound ends any fade
+    // it finds (Audio.fadeOut). Killed by a hit, the sound comes after the
+    // knockback, long before the fade's first step, so the music plays on at
+    // full volume under the spin; killed with no knockback, the sound came
+    // first and the music fades away under him.
+    this.audio.fadeOut(DEATH_MUSIC_FADE_MASK);
+  }
+
+  /** The spin begins: Seasons ends his invincibility here
+   *  (resetLinkInvincibility), so it is not drawn in the hit palette. */
+  startDeathSpin() {
+    this.deathKnock = 0;
     if (this.player) this.player.flicker = 0;
-    this.audio.stop();
     this.audio.sfx('linkDead');
   }
 
@@ -32850,6 +32989,7 @@ class Game {
     p.hearts = p.maxHearts;
     const s = p.respawn;
     this.mode = 'play';
+    this.deathKnock = 0;
     this.entities.length = 0;
     // THE ROOM HE DIED IN IS LET GO OF FIRST (S160). The sea is reset below
     // before the respawn room is entered, and a tide change is a room event —
@@ -32912,6 +33052,7 @@ class Game {
     this.frame++;
     this.input.update();
     this.audio.update();
+    this.audio.tickFade();
     this.progress.frames++;
     this.updateTimers();
     this.updateFade();
@@ -33249,9 +33390,22 @@ class Game {
   }
 
   updateGameOver() {
+    if (this.deathKnock > 0) {
+      // The killing hit's knockback, as it runs in play: the freeze first,
+      // then the shove a frame at a time.
+      if (this.hitstop > 0) { this.hitstop--; return; }
+      const p = this.player;
+      if (p.flicker > 0) p.flicker--;
+      moveEntity(this, p, p.knockX, p.knockY);
+      p.knockTime = Math.max(0, p.knockTime - 1);
+      if (--this.deathKnock <= 0) this.startDeathSpin();
+      return;
+    }
     this.deathTime++;
     const menuAt = this.gameOverMenuAt();
-    if (this.deathTime === menuAt) this.audio.jingle('gameOver');
+    // runSaveAndQuitMenu: restartSound, then MUS_GAMEOVER — whatever was
+    // still playing stops, and is not picked up again after.
+    if (this.deathTime === menuAt) { this.audio.stop(); this.audio.jingle('gameOver'); }
     if (this.deathTime < menuAt + GAMEOVER_FADE_IN_FRAMES) return;
     if (this.deathPicked >= 0) {
       if (--this.deathPickT <= 0) this.gameOverChoose(this.deathPicked);
