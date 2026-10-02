@@ -22,8 +22,17 @@ fully merged by the human, Farore's desk included).
   -> audio running, card continues; 4.5 s later -> in the opening; Enter ->
   logo.
 
+- NINE TOOLS started a new game with two real Enters and broke (check-gates,
+  solve-switches, check-exits, check-respawn, shoot-cutscene/-map/-player/
+  -rooms, watch-cutscenes): each now makes one waking press first when
+  `title.waitSound` is set. check-build presses once after load (the card
+  alone is three colours and failed its "is it rendering" claim). A NEW
+  TOOL that drives the title with real keys must do the same.
+
 ### Verified
-See the S169 commit: whole table, check-playthrough to THE END.
+Whole table green (check-rippers 37/37 after `pip install pillow`);
+check-playthrough 44/44, THE END, never died; test 97/97; check-build OK
+from file://; shoot-cutscene and watch-cutscenes run clean.
 
 ### FUTURE ACTION ITEMS
 Ask the human what is next (their S169 prompt left it open). Item 5 (fight
