@@ -23548,14 +23548,34 @@ class Title {
     // white and the logo, as Seasons plays its ride. Not again after a game
     // ends and comes back here: Seasons replays its intro only from idle.
     this.opening = this.opening === undefined ? new Opening(this.game) : null;
+    // THE CARD WAITS FOR THE SOUND (S169). A browser starts audio only from
+    // a press, so a power-on that ran straight on played its opening silent
+    // and the first press both woke the sound and skipped it. While the sound
+    // is not up the card holds, asking for a press, and the press that wakes
+    // the sound (`soundStarted`, from main.js) does nothing else. A press the
+    // sound did not answer — a gamepad, a harness, a browser with no audio —
+    // still goes to the file select, as it always has.
+    this.waitSound = !(this.game.audio && this.game.audio.ok);
+    this.swallow = false;
+    this.waitT = 0;
     this.cursor = 0;
     this.saves = listSaves();
     this.storageOk = storageAvailable();
   }
 
+  /** The sound has just been woken by a press: that press is spent. */
+  soundStarted() {
+    if (!this.waitSound) return;
+    this.waitSound = false;
+    this.swallow = true;
+  }
+
   update() {
     const g = this.game, i = g.input;
-    this.t++;
+    if (this.swallow) { this.swallow = false; return; }
+    const waiting = this.waitSound && this.stage === 'logo' && this.t === 0;
+    if (waiting) this.waitT++;
+    else this.t++;
 
     const fadeEnd = TITLE_CARD_FRAMES + TITLE_FADE_FRAMES;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
@@ -23668,6 +23688,9 @@ class Title {
       ['ART FROM THE', 8, 92], ['ORACLE CARTRIDGES', 24, 104],
     ];
     for (const [text, x, y] of lines) drawText(ctx, text, x, y, CARD.ink, CARD.shade);
+    if (this.waitSound && this.t === 0 && Math.floor(this.waitT / TITLE_PRESS_BLINK) % 2 === 0) {
+      drawTextCentered(ctx, 'PRESS ANY BUTTON', SCREEN_W / 2, 124, CARD.ink, CARD.shade);
+    }
   }
 
   /** A fade to white in the console's four steps, not a smooth alpha. */
@@ -67798,6 +67821,7 @@ function boot() {
   // The audio context can only start from a user gesture.
   const kick = () => {
     if (audio.init()) {
+      game.title.soundStarted();       // that press only woke the sound
       audio.play(game.mode === 'title' ? 'title' : 'overworld');
       window.removeEventListener('keydown', kick);
       window.removeEventListener('pointerdown', kick);

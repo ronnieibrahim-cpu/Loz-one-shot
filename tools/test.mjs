@@ -366,7 +366,11 @@ const main = async () => {
   await shot('01-title');
 
   console.log('\n--- file select and new game ---');
-  await tap('Enter');           // START -> file select
+  // The first real key also wakes the sound, and that press is spent on it
+  // (S169) — unless this browser could not start audio, when it goes on to
+  // the file select as it always did. So START until the file select shows.
+  await tap('Enter');
+  if (await G(() => window.__game.title.stage !== 'files')) await tap('Enter');
   check('file select shown', await G(() => window.__game.title.stage === 'files'));
   await shot('02-files');
   await tap('Enter');           // pick slot 1 -> new game
@@ -1034,14 +1038,17 @@ const main = async () => {
     const { INTRO_FRAMES } = await import('/src/game/intro.js');
     const feel = await import('/src/data/feel.js');
     let press = false;
-    const fake = { audio: g.audio, frame: 0, input: { pressed: b => press && b === 'a' } };
+    const up = { ok: true, sfx() {}, play() {} };
+    const fake = { audio: up, frame: 0, input: { pressed: b => press && b === 'a' } };
     const c = document.createElement('canvas'); c.width = 160; c.height = 144;
     const ctx = c.getContext('2d');
-    const run = (skipAt) => {
+    const run = (skipAt, wakeAt = -1) => {
+      fake.audio = wakeAt < 0 ? up : { ok: false, sfx() {}, play() {} };
       const t = new Title(fake);
       const seen = []; let back = -1;
-      for (let f = 0; f < feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES + INTRO_FRAMES + 60; f++) {
-        press = f === skipAt;
+      for (let f = 0; f < feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES + INTRO_FRAMES + 60 + Math.max(0, wakeAt); f++) {
+        press = f === skipAt || f === wakeAt;
+        if (f === wakeAt) { fake.audio.ok = true; t.soundStarted(); }
         t.update(); fake.frame++;
         if (seen[seen.length - 1] === 'intro' && t.stage === 'logo') back = f;
         if (seen[seen.length - 1] !== t.stage) seen.push(t.stage);
@@ -1051,13 +1058,17 @@ const main = async () => {
       return seen.join('>') + '@' + back;
     };
     const card = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES;
-    return { whole: run(-1), skipped: run(card + 300), frames: INTRO_FRAMES, card };
+    // Silent at power-on: the card holds 500 frames for a press, the press
+    // that wakes the sound is spent on it, and the opening then plays whole.
+    return { whole: run(-1), skipped: run(card + 300), woke: run(-1, 500), frames: INTRO_FRAMES, card };
   });
   // The card's last frame (the update that makes t reach it, f = card - 1) is
   // the opening's first, so its last is INTRO_FRAMES - 1 updates after that.
   check('the opening plays between the card and the logo, to its end',
     opening.whole === `logo>intro>logo@${opening.card + opening.frames - 2}`, opening.whole);
   check('a press in the opening cuts to the logo', opening.skipped === `logo>intro>logo@${opening.card + 300}`, opening.skipped);
+  check('with no sound yet the card waits, and the press that wakes it skips nothing',
+    opening.woke === `logo>intro>logo@${501 + opening.card + opening.frames - 2}`, opening.woke);
   check('the opening is between 20 and 40 seconds', opening.frames >= 1200 && opening.frames <= 2400, opening.frames + ' frames');
 
   console.log('\n--- Farore behind her desk (S168) ---');

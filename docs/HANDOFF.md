@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A browser's first press is spent on the sound (S169).** Audio starts only
+  inside a real user gesture, so anything timed to play from power-on plays
+  silent unless the screen WAITS for a press. The title card now holds
+  (`Title.waitSound`) until main.js's `kick` wakes the audio, and the waking
+  press is swallowed for one update (`soundStarted`). A press the sound did
+  not answer (harness input bits, a gamepad, no AudioContext) passes through
+  as before — which is what keeps the robot's title run frame-identical.
+  Playwright's `keyboard.press` IS a real gesture: headless Chromium starts
+  audio from it, so test.mjs's first Enter is now spent on the sound.
+
 - **A Seasons room's layout is not always in its own group (S168).** The
   tileset record's byte 6 is the LAYOUT group (code/bank0.s loadRoomLayout):
   Farore's room is group 4 room $e8, but drawn from layout group 5's $e8

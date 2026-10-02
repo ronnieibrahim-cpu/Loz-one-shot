@@ -38,6 +38,7 @@ function boot() {
   // The audio context can only start from a user gesture.
   const kick = () => {
     if (audio.init()) {
+      game.title.soundStarted();       // that press only woke the sound
       audio.play(game.mode === 'title' ? 'title' : 'overworld');
       window.removeEventListener('keydown', kick);
       window.removeEventListener('pointerdown', kick);

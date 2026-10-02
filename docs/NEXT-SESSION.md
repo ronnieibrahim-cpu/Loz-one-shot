@@ -1,3 +1,37 @@
+## S169 — the opening has its sound
+
+Branch claude/oracle-tides-opening-sound-y9zhg5, off main at f63f293 (S168
+fully merged by the human, Farore's desk included).
+
+### What landed
+- THE OPENING PLAYS WITH SOUND (S168's action item). On a fresh load the
+  card now holds, blinking PRESS ANY BUTTON (TITLE_PRESS_BLINK, in the card's
+  own ink) under its credits, until a press wakes the sound. That press does
+  nothing else (`Title.soundStarted`, called from main.js `kick`, swallows the
+  next update); the card then runs its usual 180 frames, fades, and the
+  opening plays with its lightning, wind and waves. A second press skips it
+  exactly as before. A press the sound did NOT answer — the robot's input
+  bits, a gamepad, a browser with no audio — still goes straight to the file
+  select, so the playthrough's run from the title is not a frame longer. After
+  a game ends the title comes back with the sound already up: no wait.
+- test.mjs: the boot step presses START until the file select shows (the
+  first real key is spent on the sound in headless Chromium too); the opening
+  test uses a stand-in sound, and a new assertion runs it silent: the card
+  waits 500 frames, the waking press is spent, the opening then plays whole.
+- Proved in a cold browser: idle 4 s -> card holding, no audio; first Enter
+  -> audio running, card continues; 4.5 s later -> in the opening; Enter ->
+  logo.
+
+### Verified
+See the S169 commit: whole table, check-playthrough to THE END.
+
+### FUTURE ACTION ITEMS
+Ask the human what is next (their S169 prompt left it open). Item 5 (fight
+tuning) is the human's. Open fidelity leftovers, unchanged from S168: the 4x4
+inventory with the equipped items taken out, the bar's B[ ]/A[ letters
+(gfx_hud $05-$08), CAM_DEADZONE_W needs footage, the game-over screen,
+Seasons replaying its intro when the title sits idle.
+
 ## S168 — the opening; people out of the trees; Farore from the cartridge, at her desk
 
 Branch claude/oracle-tides-s168, off main at a11baef (S167 merged by the
