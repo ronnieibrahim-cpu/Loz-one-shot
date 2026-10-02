@@ -14,6 +14,46 @@ import { registerPalettes } from '../gfx/palettes.js';
 
 export const HUD_TILE_ART = {
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_bl: { pal: 'hud_brk_bl', art: `
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......33
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_br: { pal: 'hud_brk_br', art: `
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......
+    33......
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_tl: { pal: 'hud_brk_tl', art: `
+    ........
+    ......33
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.
+    ......3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_brk_tr: { pal: 'hud_brk_tr', art: `
+    ........
+    33......
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......
+    .3......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   hud_d0: { pal: 'hud_d0', art: `
     ........
     ..3333..
@@ -134,6 +174,26 @@ export const HUD_TILE_ART = {
     ..3333..
     ........` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_slot_a: { pal: 'hud_slot_a', art: `
+    ........
+    ..33..33
+    .3..3.3.
+    .3..3.3.
+    .3333.3.
+    .3..3.3.
+    .3..3.3.
+    .3..3.3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_slot_b: { pal: 'hud_slot_b', art: `
+    ........
+    .333..33
+    .3..3.3.
+    .3..3.3.
+    .333..3.
+    .3..3.3.
+    .3..3.3.
+    .333..3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   hud_x: { pal: 'hud_x', art: `
     ........
     ........
@@ -147,6 +207,10 @@ export const HUD_TILE_ART = {
 
 // One palette per sprite, taken from the source artwork.
 export const HUD_TILE_ART_PALETTES = {
+  hud_brk_bl: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_brk_br: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_brk_tl: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_brk_tr: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_d0: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_d1: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_d2: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
@@ -159,6 +223,8 @@ export const HUD_TILE_ART_PALETTES = {
   hud_d9: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_key: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_lv: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_slot_a: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_slot_b: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
   hud_x: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
 };
 

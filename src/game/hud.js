@@ -86,16 +86,19 @@ export function drawHud(ctx, game) {
 
 /**
  * `B[icon L-1]`: the button letter, then the item and what Seasons writes
- * beside it, framed by two drawn brackets. The brackets are pixel art rather
- * than font glyphs so they can stand the full height of the icon, which is
- * what makes the Oracle bar read as a bar. With no letter (the squeezed bar's
- * A slot) the bracket takes the letter's place.
+ * beside it, framed by the cartridge's own bracket tiles (S169;
+ * tools/rip-hud-tiles.py): "B[" or "A[" over the bottom of a "[", and the
+ * same bottom tile flipped for the "]". Each "[" stands in its tile's
+ * seventh column and each "]" in its second, so the tiles sit a pixel either
+ * side of the uprights `l` and `l + 25`. With no letter (the squeezed bar's
+ * A slot) a bare "[" takes the letter's place, as Seasons' does.
  */
 function drawSlot(ctx, x, itemId, p, label) {
-  let l = x;
-  if (label) { drawText(ctx, label, x, 4, INK); l = x + 6; }
-  bracket(ctx, l, 1, 1);
-  bracket(ctx, l + 25, 1, -1);
+  const l = label ? x + 6 : x;
+  sprites.draw(ctx, label === 'B' ? 'hud_slot_b' : label === 'A' ? 'hud_slot_a' : 'hud_brk_tl', l - 6, 0);
+  sprites.draw(ctx, 'hud_brk_bl', l - 6, 8);
+  sprites.draw(ctx, 'hud_brk_tr', l + 24, 0);
+  sprites.draw(ctx, 'hud_brk_br', l + 24, 8);
 
   if (!itemId || !ITEMS[itemId]) return;
   const def = ITEMS[itemId];
@@ -124,14 +127,6 @@ export function drawItemExtra(ctx, id, p, x, y) {
     sprites.draw(ctx, 'hud_d' + Math.floor(n / 10), x, y);
     sprites.draw(ctx, 'hud_d' + (n % 10), x + 8, y);
   }
-}
-
-/** One half of the pair framing an item. `dir` 1 draws '[', -1 draws ']'. */
-function bracket(ctx, x, y, dir) {
-  ctx.fillStyle = INK;
-  ctx.fillRect(x, y, 1, 13);                 // the upright
-  ctx.fillRect(dir > 0 ? x : x - 1, y, 2, 1);          // top nub
-  ctx.fillRect(dir > 0 ? x : x - 1, y + 12, 2, 1);     // bottom nub
 }
 
 function drawHearts(ctx, p, x0, perRow) {

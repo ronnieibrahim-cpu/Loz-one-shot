@@ -28,6 +28,11 @@ when Link is in a dungeon (code/bank2.s loadCommonGraphics_body,
 
   hud_key            gfx_key_orechunk tile 0
 
+and (S169) the frames round the A and B items, which map_hud_normal builds
+from three tiles: hud_slot_b ($05, "B["), hud_slot_a ($08, "A["), and $06,
+the bottom of a "[", in the four flips its attribute bytes ask for
+(hud_brk_bl / _tl / _br / _tr).
+
 Each tile is 8x8, 2 bits a pixel. Index 3 is the ink; indices 0-2 are the
 paper the tile sits on, which on the cartridge is the panel's own colour, so
 here they are transparent and the glyph lies on whatever panel draws it. The
@@ -50,7 +55,18 @@ OUT = os.path.join(ROOT, 'src', 'data', 'sprites-hud-tiles.js')
 # name -> (graphics file, tile index in it)
 TILES = {**{f'hud_d{n}': ('gfx_hud.png', 0x10 + n) for n in range(10)},
          'hud_lv': ('gfx_hud.png', 0x1a), 'hud_x': ('gfx_hud.png', 0x1b),
-         'hud_key': ('gfx_key_orechunk.png', 0)}
+         'hud_key': ('gfx_key_orechunk.png', 0),
+         # The A and B buttons' frames (S169): the BG tiles GFXH_HUD_LAYOUT_NORMAL
+         # (map_hud_normal / flg_hud_normal) lays round each item. Tile $05 is
+         # "B" and the top of its "[", $08 the same for "A", and $06 the bottom
+         # of a "["; the map draws every other corner as $06 flipped by its
+         # attribute byte ($a0 x, $e0 x and y), which is what the third field
+         # here says.
+         'hud_slot_b': ('gfx_hud.png', 0x05), 'hud_slot_a': ('gfx_hud.png', 0x08),
+         'hud_brk_bl': ('gfx_hud.png', 0x06),
+         'hud_brk_tl': ('gfx_hud.png', 0x06, 'y'),
+         'hud_brk_br': ('gfx_hud.png', 0x06, 'x'),
+         'hud_brk_tr': ('gfx_hud.png', 0x06, 'xy')}
 
 
 def palette(label, index):
@@ -71,14 +87,16 @@ def palette(label, index):
 def main():
     pal = ['#%02x%02x%02x' % c for c in palette('paletteData4830', 0)]
     art, pals = {}, {}
-    for name, (src, t) in sorted(TILES.items()):
+    for name, (src, t, *flip) in sorted(TILES.items()):
+        flip = flip[0] if flip else ''
         im = Image.open(os.path.join(SRC, src))
         per = im.width // 8
         x0, y0 = (t % per) * 8, (t // per) * 8
         rows = []
         for y in range(8):
-            rows.append(''.join('3' if (im.getpixel((x0 + x, y0 + y)) & 3) == 3 else '.'
-                                for x in range(8)))
+            sy = 7 - y if 'y' in flip else y
+            rows.append(''.join('3' if (im.getpixel((x0 + (7 - x if 'x' in flip else x), y0 + sy)) & 3) == 3
+                                else '.' for x in range(8)))
         art[name] = rows
         pals[name] = pal
 

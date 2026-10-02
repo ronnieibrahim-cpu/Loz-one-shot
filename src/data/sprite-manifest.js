@@ -45,7 +45,8 @@ export const REQUIRED_SPRITES = {
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud
   // (tools/rip-hud-tiles.py): the level beside a levelled item, the count
   // beside a counted one, on the A/B buttons and in the menu alike.
-  hudTiles: [...seq('hud_d', 10), 'hud_lv', 'hud_x', 'hud_key'],
+  hudTiles: [...seq('hud_d', 10), 'hud_lv', 'hud_x', 'hud_key',
+    'hud_slot_b', 'hud_slot_a', 'hud_brk_bl', 'hud_brk_tl', 'hud_brk_br', 'hud_brk_tr'],
 
   ui: [
     ...seq('hud_heart', 5), 'hud_rupee',
