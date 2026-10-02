@@ -1231,7 +1231,10 @@ export const ROUTE = [
   // Re-swept at S139 in the Oracle arena, with the ink spit at a quarter
   // heart: settles 150..180 all win from this doorway (17-19 quarter-hearts
   // left), 140 and 190 lose. 165 sits in the middle of that window.
-  ['wait', 64],     // S166: 58-70 win (waitInvuln, below), was 165
+  // S167 (no bomb drops before the bag): the plain reach swing now wins only
+  // at 66-68 on 8 of 28; with BOTH retreats it wins at 28, 44, 52, 56-60 and
+  // 66-68 (17/28 at 52, the S166 margin) and loses between. Thin; item 5.
+  ['wait', 52],     // S166: 58-70 win (waitInvuln, below), was 165
 
   // ---------------------------------------------------------------- d3 0,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1242,7 +1245,9 @@ export const ROUTE = [
   // S151: re-swept after Seasons' enemies and the height rule: the reach
   // swing wins on 23 of 28; the plain fight now loses.
   // S166: Seasons' 32-frame boss safety window — hold off while he is safe.
-  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true }],
+  // S167: `openRetreat` and `diagRetreat` both on (see the wait above) — the
+  // S131 seed that openRetreat flipped is long gone.
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —

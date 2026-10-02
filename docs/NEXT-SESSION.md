@@ -30,9 +30,21 @@ The human chose the menu's L-1/L-2 labels. NOT MERGED: ask before moving main.
   (cp 14*4+1): 8 hearts a row from x=96, the A slot loses its letter and
   shares B's bracket, everything else shifts 7-8px left.
 
+- DROPS (the human: "monsters drop bombs before I even have a bomb bag"):
+  Game.rollDrop returns nothing when the roll lands on a pickup whose
+  container Link lacks — CAPACITY_FOR in objects.js (bomb4 -> maxBombs,
+  bottle -> maxBottles), the list the shop already used. Seasons does exactly
+  this (treasureAndDrops.s checkItemDropAvailable: the drop becomes $ff, no
+  re-roll). test.mjs asserts both ways. Robot re-routed: Bogmaw wait 60 -> 34
+  (30-40 all win untouched); Gloomtide wait 64 -> 52 with openRetreat +
+  diagRetreat added (17/28 left; wins are scattered — thin, item 5). Replays
+  d1-descent and tide-steps-split re-recorded (one fewer bomb on the floor).
+- The human asked whether there is a pixel-art intro: no — it is still the
+  two text cards (story.js `intro`); it stays tabled until they ask for it.
+
 ### Verified
-Whole table green; check-playthrough 44/44, THE END, never died. Built; dist
-committed. Pictures (menu and the bar in three states, beside Seasons') sent.
+Whole table green; check-playthrough 44/44, THE END, never died; replay 51/51.
+Built; dist committed. Pictures (menu and the bar, beside Seasons') sent.
 
 ### FUTURE ACTION ITEMS
 Item 5 (fight tuning) is the human's. Open fidelity leftovers: Seasons takes
