@@ -1,3 +1,47 @@
+## S167 — Seasons' level labels and counts; the status bar re-laid to fit them
+
+Branch claude/oracle-tides-s167-6s4mfb, off main at bd3059a (S166 merged).
+The human chose the menu's L-1/L-2 labels. NOT MERGED: ask before moving main.
+
+### What landed
+- NEW RIPPER tools/rip-hud-tiles.py -> src/data/sprites-hud-tiles.js (in
+  check-rippers and CLAUDE.md's table; sources in assets/hud/ with a README,
+  oracles-disasm commit 21c924a): hud_d0-9 (gfx_hud $10-$19, the bar's bold
+  digits), hud_lv ($1a, "L-"), hud_x ($1b), hud_key (gfx_key_orechunk tile 0).
+  Ink only (index 3, paletteData4830 colour 3 = black); paper transparent.
+  Manifest group `hudTiles`.
+- THE RULE (code/bank2.s drawTreasureExtraTiles, treasureDisplayData.s b5):
+  a levelled item shows "L-" + level ALWAYS, L-1 included; a counted one its
+  count as two digits, tens first ("07"). `itemExtra(id)` in items.js: counted
+  -> 'count', more than one name -> 'level' (sword, shield, Lens, Dredge Line,
+  Cleats); hud.js `drawItemExtra` draws it for the bar and the menu alike.
+- MENU: the icon's 8px tile then the two extra tiles on its lower half, one
+  row down one tile right as drawTreasureDisplayDataToBg puts them. Our A/B
+  marks (Seasons has none: it takes an equipped item OUT of the grid) moved
+  to the top row, B then A. The Boss Key, once held, is drawn in the dungeon
+  map page's bottom-right corner (Seasons shows it on its map screen).
+- STATUS BAR re-laid (hud.js LAYOUT): slots 32px each (letter, [, icon tile,
+  extra tiles, ]); tide gauge 66; Seasons' money column at 80 — rupee over
+  three bold digits, or in a dungeon key x count over them (the old separate
+  key/essence column and the boss-key mark are gone; the Essence count rides
+  beside the rupee out of doors, where Seasons leaves two blank tiles).
+  BUG FIXED: with 15-16 hearts (the cap is 16) the hearts wrapped to a THIRD
+  row drawn into the playfield. Now Seasons' squeezed bar past 14 hearts
+  (cp 14*4+1): 8 hearts a row from x=96, the A slot loses its letter and
+  shares B's bracket, everything else shifts 7-8px left.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died. Built; dist
+committed. Pictures (menu and the bar in three states, beside Seasons') sent.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Open fidelity leftovers: Seasons takes
+an equipped item OUT of the inventory grid (equipping swaps it with the
+button's item) and lays the grid 4x4 at 32px x 24px — ours keeps everything
+in a 5-column grid with A/B marks (asked the human); the bar's letters and
+brackets are ours (gfx_hud $05-$08 are Seasons' "B[", "]", "][", "A[" tiles —
+a candidate rip); CAM_DEADZONE_W needs footage; the game-over screen.
+
 ## S166 — boss rules, no invented poses, the Lens out of doors, half-width icons
 
 Branch claude/oracle-tides-s166, off main at d879369 (S165 merged by the

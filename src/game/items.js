@@ -1292,6 +1292,20 @@ export function itemName(id, level = 1) {
   return it.names[Math.min(it.names.length - 1, Math.max(0, level - 1))];
 }
 
+/**
+ * What Seasons writes beside an item (treasureDisplayData.s b5): 'level' for
+ * one that comes in levels, "L-1" even at the first; 'count' for a counted
+ * one, its two digits; null for the rest. Ours follows the same two rules —
+ * an item with more than one name has levels — so a new item needs no entry.
+ */
+export function itemExtra(id) {
+  const it = ITEMS[id];
+  if (!it) return null;
+  if (it.counted) return 'count';
+  if (it.names && it.names.length > 1) return 'level';
+  return null;
+}
+
 export function itemIcon(id, level = 1) {
   const it = ITEMS[id];
   if (!it) return 'i_unknown';

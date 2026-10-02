@@ -963,6 +963,23 @@ const main = async () => {
   await tap('Enter'); await settle();
   check('menu closes', await G(() => window.__game.mode === 'play'));
 
+  // The status bar holds every heart count the game can reach (S167): the
+  // cap is 16 and the bar used to wrap hearts 15-16 onto a third row drawn
+  // into the playfield. Seasons squeezes the bar past 14 (loadStatusBarMap).
+  const bar = await G(async () => {
+    const { hudLayout } = await import('/src/game/hud.js');
+    const out = [];
+    for (let n = 3; n <= 16; n++) {
+      const L = hudLayout(n * 4);
+      out.push({ n, rows: Math.ceil(n / L.perRow), right: L.hearts + L.perRow * 8, moneyEnd: L.money + 24, hearts: L.hearts });
+    }
+    return out;
+  });
+  check('every heart count from 3 to 16 fits the bar in two rows',
+    bar.every((b) => b.rows <= 2 && b.right <= 160 && b.moneyEnd <= b.hearts), JSON.stringify(bar.filter((b) => b.rows > 2 || b.right > 160)));
+  check('the bar squeezes exactly past 14 hearts, as Seasons does',
+    bar.find((b) => b.n === 14).hearts === 104 && bar.find((b) => b.n === 15).hearts === 96);
+
   console.log('\n--- load a save ---');
   const ok = await G(() => {
     const g = window.__game;

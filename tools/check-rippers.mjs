@@ -58,6 +58,7 @@ const RIPPERS = [
   ['rip-keys.py',            'src/data/sprites-keys.js'],  // S154: the six dungeon keys from the Oracles' key-item graphics
   ['rip-treasures.py',       'src/data/sprites-treasures.js'],  // S155: rupees, hearts, keys, map lying in the world, from Seasons' own graphics
   ['rip-effects.py',         'src/data/sprites-effects.js'],    // S165: the puffs and the bomb blast, from Seasons' common sprites
+  ['rip-hud-tiles.py',       'src/data/sprites-hud-tiles.js'],  // S167: the status bar's digits and "L-", from Seasons' gfx_hud
   ['rip-objects.py',         'src/data/sprites-objects.js'],    // S156: chests, sign, torches, push blocks, floor buttons, from Seasons' own room tiles
 ];
 // Verified by check-tilesets.mjs through its own --verify flag, and it emits a

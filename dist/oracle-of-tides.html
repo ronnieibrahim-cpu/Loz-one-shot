@@ -14938,6 +14938,20 @@ function itemName(id, level = 1) {
   return it.names[Math.min(it.names.length - 1, Math.max(0, level - 1))];
 }
 
+/**
+ * What Seasons writes beside an item (treasureDisplayData.s b5): 'level' for
+ * one that comes in levels, "L-1" even at the first; 'count' for a counted
+ * one, its two digits; null for the rest. Ours follows the same two rules —
+ * an item with more than one name has levels — so a new item needs no entry.
+ */
+function itemExtra(id) {
+  const it = ITEMS[id];
+  if (!it) return null;
+  if (it.counted) return 'count';
+  if (it.names && it.names.length > 1) return 'level';
+  return null;
+}
+
 function itemIcon(id, level = 1) {
   const it = ITEMS[id];
   if (!it) return 'i_unknown';
@@ -14979,6 +14993,7 @@ __exports["FerrymanCoin"] = FerrymanCoin;
 __exports["ringResonance"] = ringResonance;
 __exports["ITEMS"] = ITEMS;
 __exports["itemName"] = itemName;
+__exports["itemExtra"] = itemExtra;
 __exports["itemIcon"] = itemIcon;
 __exports["equippableItems"] = equippableItems;
 __exports["useEquipped"] = useEquipped;
@@ -19070,10 +19085,23 @@ __define("game/hud.js", function (__exports, __require) {
 // Seven per row is exactly right for this game — 3 starting hearts + 8 boss
 // containers + 8 heart pieces caps at 13.
 //
-// The 160px budget, left to right:
-//   0..27    B slot           29..56   A slot
-//   58..70   tide gauge       73..91   rupees, icon over digits
-//   94..103  keys / essences  104..159 hearts (7 per row, 8px each)
+// The 160px budget, left to right, in Seasons' two layouts (code/bank2.s
+// loadStatusBarMap: the second once Link has MORE than 14 hearts, which takes
+// one tile from the item slots so the hearts can run eight to a row):
+//
+//                 up to 14 hearts           15 or 16 hearts
+//   B slot        0..31                     0..31
+//   A slot        33..64                    32..57 (no letter, as Seasons)
+//   tide gauge    66..78                    59..71
+//   money column  80..103                   72..95
+//   hearts        104..159, 7 a row         96..159, 8 a row
+//
+// Each slot is the letter, a bracket, the item's 8px tile and Seasons' two
+// "extra" tiles (L-1, or a count) on its lower half, and a bracket. The money
+// column is Seasons' own: three digits of the bar's bold font under a rupee,
+// or, in a dungeon, under key x count (the rupee tile is swapped for the key).
+// The tide gauge is ours and takes the room Seasons leaves between the slots
+// and the money.
 //
 // The panel is a warm tan rather than the text box's near-white on purpose:
 // most item icons use palette `ui`, whose lightest index is #f8f8e8, and on a
@@ -19083,22 +19111,27 @@ const { SCREEN_W, HUD_H } = __require("core/screen.js");
 const { drawText, drawTextCentered, textWidth } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
 const { HEART_UNITS } = __require("game/progress.js");
-const { itemIcon, ITEMS } = __require("game/items.js");
+const { itemIcon, itemExtra, ITEMS } = __require("game/items.js");
 const { TIDE_NAMES } = __require("game/tide.js");
 
 const PANEL = '#f0e0b0';       // parchment
 const INK = '#181c18';         // glyphs and brackets, same as the text box
 const FAINT = '#c0a870';       // the panel's under-shadow and gauge ticks
-const GOLD = '#785010';        // keys
 const TEAL = '#186878';        // essences
 
-const SLOT_B_X = 0;
-const SLOT_A_X = 29;
-const TIDE_X = 58;
-const RUPEE_X = 73;
-const INFO_X = 94;
-const HEART_X = 104;
-const HEARTS_PER_ROW = 7;
+// One row per layout: [B slot, A slot, A letter?, tide, money, hearts, per row].
+const LAYOUT = {
+  normal: { b: 0, a: 33, aLetter: true, tide: 66, money: 80, hearts: 104, perRow: 7 },
+  squeezed: { b: 0, a: 32, aLetter: false, tide: 59, money: 72, hearts: 96, perRow: 8 },
+};
+/** Seasons squeezes the bar once max health is past 14 hearts (cp 14*4+1). */
+const SQUEEZE_ABOVE = 14 * HEART_UNITS;
+const EXTRA_Y = 7;
+
+/** Which of the two bars a max health (in quarter hearts) gets. */
+function hudLayout(maxHearts) {
+  return maxHearts > SQUEEZE_ABOVE ? LAYOUT.squeezed : LAYOUT.normal;
+}      // the extra tiles' top: their ink rows sit over the bar's lower line
 
 function drawHud(ctx, game) {
   const p = game.progress;
@@ -19118,38 +19151,56 @@ function drawHud(ctx, game) {
   ctx.fillStyle = INK;
   ctx.fillRect(0, HUD_H - 1, SCREEN_W, 1);
 
-  drawSlot(ctx, SLOT_B_X, p.equipB, p, 'B');
-  drawSlot(ctx, SLOT_A_X, p.equipA, p, 'A');
-  drawTideGauge(ctx, game);
-  drawRupees(ctx, p);
-  drawDungeonInfo(ctx, game);
-  drawHearts(ctx, p);
+  const L = hudLayout(p.maxHearts);
+  drawSlot(ctx, L.b, p.equipB, p, 'B');
+  drawSlot(ctx, L.a, p.equipA, p, L.aLetter ? 'A' : null);
+  drawTideGauge(ctx, game, L.tide);
+  drawMoney(ctx, game, L.money);
+  drawHearts(ctx, p, L.hearts, L.perRow);
 
   sprites.setTint(tint, tintKey);
 }
 
 /**
- * `B[icon]`: the button letter, then the item framed by two drawn brackets.
- * The brackets are pixel art rather than font glyphs so they can stand the full
- * height of the icon, which is what makes the Oracle bar read as a bar.
+ * `B[icon L-1]`: the button letter, then the item and what Seasons writes
+ * beside it, framed by two drawn brackets. The brackets are pixel art rather
+ * than font glyphs so they can stand the full height of the icon, which is
+ * what makes the Oracle bar read as a bar. With no letter (the squeezed bar's
+ * A slot) the bracket takes the letter's place.
  */
 function drawSlot(ctx, x, itemId, p, label) {
-  drawText(ctx, label, x, 4, INK);
-  bracket(ctx, x + 6, 1, 1);
-  bracket(ctx, x + 26, 1, -1);
+  let l = x;
+  if (label) { drawText(ctx, label, x, 4, INK); l = x + 6; }
+  bracket(ctx, l, 1, 1);
+  bracket(ctx, l + 25, 1, -1);
 
   if (!itemId || !ITEMS[itemId]) return;
   const def = ITEMS[itemId];
   const lv = p.items[itemId] || 1;
-  sprites.draw(ctx, itemIcon(itemId, lv), x + 9, 0, { pal: def.pal });
+  // The icon is an 8px picture centred in a 16px cell: its own tile starts 4
+  // in, one pixel clear of the bracket, and the extra tiles follow it.
+  sprites.draw(ctx, itemIcon(itemId, lv), l - 3, 0, { pal: def.pal });
+  drawItemExtra(ctx, itemId, p, l + 9, EXTRA_Y);
+}
 
-  // Counted items show their quantity; levelled ones show the level, both
-  // tucked into the icon's bottom-right the way the Oracle bar does.
-  // A counted item shows what is left of it in the corner of its button. The
-  // field name is the item's own, so adding a consumable is a data change.
-  if (def.counted) corner(ctx, String(p[def.counted] || 0), x + 25);
-  else if (itemId === 'satchel' || itemId === 'slingshot') {
-  } else if (lv > 1) corner(ctx, 'L' + lv, x + 25);
+/**
+ * Seasons' "extra tiles" beside an item (code/bank2.s drawTreasureExtraTiles):
+ * two 8x8 tiles of the status bar's own font, the first at (x, y). A levelled
+ * item gets "L-" and its level; a counted one gets its count as two digits,
+ * tens first, "07" not " 7" (the count is BCD there and the tens tile is
+ * always written). Both the A/B buttons and the menu draw it, as the
+ * cartridge's one routine does for both.
+ */
+function drawItemExtra(ctx, id, p, x, y) {
+  const kind = itemExtra(id);
+  if (kind === 'level') {
+    sprites.draw(ctx, 'hud_lv', x, y);
+    sprites.draw(ctx, 'hud_d' + Math.min(9, p.items[id] || 1), x + 8, y);
+  } else if (kind === 'count') {
+    const n = Math.max(0, Math.min(99, p[ITEMS[id].counted] || 0));
+    sprites.draw(ctx, 'hud_d' + Math.floor(n / 10), x, y);
+    sprites.draw(ctx, 'hud_d' + (n % 10), x + 8, y);
+  }
 }
 
 /** One half of the pair framing an item. `dir` 1 draws '[', -1 draws ']'. */
@@ -19160,32 +19211,39 @@ function bracket(ctx, x, y, dir) {
   ctx.fillRect(dir > 0 ? x : x - 1, y + 12, 2, 1);     // bottom nub
 }
 
-/**
- * A small right-aligned badge over the bottom of an item icon. Light on dark,
- * because it has to stay readable over a bomb, a sword or a leaf alike.
- */
-function corner(ctx, s, rightX) {
-  const w = textWidth(s);
-  ctx.fillStyle = INK;
-  ctx.fillRect(rightX - w - 1, 8, w + 1, 7);
-  drawText(ctx, s, rightX - w, 7, PANEL);
-}
-
-function drawHearts(ctx, p) {
+function drawHearts(ctx, p, x0, perRow) {
   const total = Math.ceil(p.maxHearts / HEART_UNITS);
   for (let i = 0; i < total; i++) {
-    const x = HEART_X + (i % HEARTS_PER_ROW) * 8;
-    const y = Math.floor(i / HEARTS_PER_ROW) * 8;
+    const x = x0 + (i % perRow) * 8;
+    const y = Math.floor(i / perRow) * 8;
     const filled = Math.max(0, Math.min(HEART_UNITS, p.hearts - i * HEART_UNITS));
     sprites.draw(ctx, 'hud_heart' + filled, x, y);
   }
 }
 
-/** Rupee icon stacked over a three-digit count, as in the Oracle bar. */
-function drawRupees(ctx, p) {
-  sprites.draw(ctx, 'hud_rupee', RUPEE_X, 0);
+/**
+ * Seasons' money column: the rupee over three digits of the bar's own bold
+ * font. In a dungeon the rupee tile gives way to the key, the "x" and the
+ * count of small keys (bank2.s @loadMoneyGraphic / updateStatusBar_body).
+ * Ours adds one thing beside the rupee out of doors, where Seasons leaves the
+ * two tiles blank: the Essence count, in the spark the menu draws them with.
+ */
+function drawMoney(ctx, game, x) {
+  const p = game.progress;
+  const map = game.map;
+  if (map && map.kind === 'dungeon') {
+    sprites.draw(ctx, 'hud_key', x, 0);
+    sprites.draw(ctx, 'hud_x', x + 8, 0);
+    sprites.draw(ctx, 'hud_d' + Math.min(9, p.keys[map.id] || 0), x + 16, 0);
+  } else {
+    sprites.draw(ctx, 'hud_rupee', x, 0);
+    if (p.essences.length) {
+      drawText(ctx, '\x06', x + 9, 0, TEAL);
+      sprites.draw(ctx, 'hud_d' + Math.min(9, p.essences.length), x + 16, 0);
+    }
+  }
   const s = String(Math.min(999, p.rupees)).padStart(3, '0');
-  drawText(ctx, s, RUPEE_X, 8, INK);
+  for (let i = 0; i < 3; i++) sprites.draw(ctx, 'hud_d' + s[i], x + i * 8, EXTRA_Y);
 }
 
 /**
@@ -19194,9 +19252,9 @@ function drawRupees(ctx, p) {
  * always visible — the Oracle bar has no equivalent, so it takes the gap those
  * games leave between the item slots and the rupee counter.
  */
-function drawTideGauge(ctx, game) {
+function drawTideGauge(ctx, game, x) {
   const lvl = game.tide.level;
-  const x = TIDE_X, y = 0;
+  const y = 0;
   ctx.fillStyle = INK;
   ctx.fillRect(x, y, 13, 8);
   ctx.fillStyle = '#f8f8f0';
@@ -19225,26 +19283,6 @@ function drawTideGauge(ctx, game) {
       ctx.fillStyle = ['#e0c078', '#58b0e0', '#2878c0'][here];
       ctx.fillRect(x + 10, y + 1, 2, 2);
     }
-  }
-}
-
-/** Keys and boss key in dungeons; essence count in the overworld. */
-function drawDungeonInfo(ctx, game) {
-  const p = game.progress;
-  const map = game.map;
-  if (!map || map.kind !== 'dungeon') {
-    if (p.essences.length) {
-      drawText(ctx, '\x06', INFO_X, 0, TEAL);
-      drawText(ctx, String(p.essences.length), INFO_X, 8, INK);
-    }
-    return;
-  }
-  drawText(ctx, '\x04', INFO_X, 0, GOLD);
-  drawText(ctx, String(p.keys[map.id] || 0), INFO_X, 8, INK);
-  if (p.bossKeys[map.id]) {
-    ctx.fillStyle = GOLD;
-    ctx.fillRect(INFO_X + 7, 2, 3, 3);
-    ctx.fillRect(INFO_X + 8, 5, 1, 4);
   }
 }
 
@@ -19278,7 +19316,9 @@ function drawBossBar(ctx, game) {
   ctx.fillStyle = frac > 0.35 ? '#e04858' : '#f8b820';
   ctx.fillRect(x, y, Math.round(w * frac), 4);
 }
+__exports["hudLayout"] = hudLayout;
 __exports["drawHud"] = drawHud;
+__exports["drawItemExtra"] = drawItemExtra;
 __exports["drawAreaBanner"] = drawAreaBanner;
 __exports["drawBossBar"] = drawBossBar;
 });
@@ -20425,6 +20465,7 @@ const { getPalette } = __require("gfx/palettes.js");
 const { tileArt } = __require("world/tileset.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
+const { drawItemExtra } = __require("game/hud.js");
 const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
 const { HEART_UNITS, flag } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
@@ -20899,8 +20940,15 @@ class Menu {
     const x0 = PAGE.x + 4, y0 = PAGE.y + 3, cw = 28, ch = 20;
     list.forEach((it, i) => {
       const cx = x0 + (i % COLS) * cw, cy = y0 + Math.floor(i / COLS) * ch;
-      sprites.draw(ctx, itemIcon(it.id, it.level), cx + 2, cy + 2, { pal: it.def.pal });
-      if (p.equipB === it.id) drawText(ctx, 'B', cx + 19, cy + 10, BLUE);
+      // The icon is an 8px picture centred in a 16px cell, so its own tile is
+      // the cell's middle: drawn at cx - 2 that tile is cx+2..cx+9, and the
+      // level or count goes in the two tiles after it, on the icon's lower
+      // half — where Seasons' inventory writes them (drawTreasureDisplayDataToBg:
+      // one row down, one tile right). The A/B marks are ours (Seasons takes an
+      // equipped item OUT of the grid) and sit above them, B then A.
+      sprites.draw(ctx, itemIcon(it.id, it.level), cx - 2, cy + 2, { pal: it.def.pal });
+      drawItemExtra(ctx, it.id, p, cx + 10, cy + 10);
+      if (p.equipB === it.id) drawText(ctx, 'B', cx + 12, cy + 1, BLUE);
       if (p.equipA === it.id) drawText(ctx, 'A', cx + 19, cy + 1, '#c01830');
       if (i === this.cursor) this.drawCursor(ctx, cx, cy, cw - 2, ch);
     });
@@ -21068,7 +21116,12 @@ class Menu {
       }
     }
     if (isDungeon) {
-      drawText(ctx, 'FLOOR ' + (floor + 1) + '/' + m.floors, PAGE.x + 2, PAGE.y + 1, INK);
+      const fl = 'FLOOR ' + (floor + 1) + '/' + m.floors;
+      drawText(ctx, fl, PAGE.x + 2, PAGE.y + 1, INK);
+      // The Boss Key, once held, in the page's corner — on the map screen, where
+      // Seasons shows it. It used to be a mark on the status bar, which now
+      // carries Seasons' key x count in that place and has no room for two keys.
+      if (g.progress.bossKeys[m.id]) sprites.draw(ctx, 'p_bosskey', PAGE.x + PAGE.w - 18, PAGE.y + PAGE.h - 17);
       if (!haveMap) drawText(ctx, 'NO MAP', PAGE.x + 2, PAGE.y + PAGE.h - 9, '#c01830');
       if (haveChart) {
         // The key, in the same stacking order as the pips.
@@ -63389,6 +63442,181 @@ __exports["HUD_ART_PALETTES"] = HUD_ART_PALETTES;
 __exports["installHudSprites"] = installHudSprites;
 });
 
+/* ===== src/data/sprites-hud-tiles.js ===== */
+__define("data/sprites-hud-tiles.js", function (__exports, __require) {
+// The status bar's own digits and its "L-", cut from Oracle of Seasons' HUD
+// graphics (gfx_hud, tiles $10-$1b) and its dungeon key (gfx_key_orechunk).
+//
+// Generated by tools/rip-hud-tiles.py — edit that, not this file.
+// Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm),
+// copied into assets/hud/oracles-disasm/. Credit to that project and its
+// contributors; the artwork is Nintendo's and Capcom's. Fan-work use only.
+//
+// Ink only: the paper of each tile is transparent, so a glyph lies on
+// whatever panel draws it, as the cartridge's tiles lie on its own.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const HUD_TILE_ART = {
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d0: { pal: 'hud_d0', art: `
+    ........
+    ..3333..
+    .33..33.
+    .33..33.
+    .33..33.
+    .33..33.
+    ..3333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d1: { pal: 'hud_d1', art: `
+    ........
+    ...33...
+    ..333...
+    ...33...
+    ...33...
+    ...33...
+    ...33...
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d2: { pal: 'hud_d2', art: `
+    ........
+    ..3333..
+    .33..33.
+    .....33.
+    ..3333..
+    .33.....
+    .333333.
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d3: { pal: 'hud_d3', art: `
+    ........
+    ..3333..
+    .33..33.
+    ....33..
+    .....33.
+    .33..33.
+    ..3333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d4: { pal: 'hud_d4', art: `
+    ........
+    ....33..
+    ...333..
+    ..3333..
+    .33.33..
+    .333333.
+    ....33..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d5: { pal: 'hud_d5', art: `
+    ........
+    .33333..
+    .33.....
+    .33333..
+    .....33.
+    .....33.
+    .33333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d6: { pal: 'hud_d6', art: `
+    ........
+    ..3333..
+    .33.....
+    .33333..
+    .33..33.
+    .33..33.
+    ..3333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d7: { pal: 'hud_d7', art: `
+    ........
+    .333333.
+    .....33.
+    ....33..
+    ...33...
+    ...33...
+    ...33...
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d8: { pal: 'hud_d8', art: `
+    ........
+    ..3333..
+    .33..33.
+    ..3333..
+    .33..33.
+    .33..33.
+    ..3333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_d9: { pal: 'hud_d9', art: `
+    ........
+    ..3333..
+    .33..33.
+    .33..33.
+    ..33333.
+    .....33.
+    ..3333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_key: { pal: 'hud_key', art: `
+    ....333.
+    ...33.33
+    ...3...3
+    ...33.33
+    ..33333.
+    .33.....
+    3333....
+    3.3.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_lv: { pal: 'hud_lv', art: `
+    ........
+    ..33....
+    ..33....
+    ..33....
+    ..33..33
+    ..33....
+    ..3333..
+    ........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  hud_x: { pal: 'hud_x', art: `
+    ........
+    ........
+    .3...3..
+    ..3.3...
+    ...3....
+    ..3.3...
+    .3...3..
+    ........` },
+};
+
+// One palette per sprite, taken from the source artwork.
+const HUD_TILE_ART_PALETTES = {
+  hud_d0: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d1: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d2: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d3: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d4: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d5: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d6: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d7: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d8: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_d9: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_key: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_lv: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+  hud_x: ['#6b0829', '#ef0818', '#ffd68c', '#000000'],
+};
+
+function installHudTileSprites() {
+  registerPalettes(HUD_TILE_ART_PALETTES);
+  sprites.add(HUD_TILE_ART, 'ui');
+}
+__exports["HUD_TILE_ART"] = HUD_TILE_ART;
+__exports["HUD_TILE_ART_PALETTES"] = HUD_TILE_ART_PALETTES;
+__exports["installHudTileSprites"] = installHudTileSprites;
+});
+
 /* ===== src/data/sprites-gear.js ===== */
 __define("data/sprites-gear.js", function (__exports, __require) {
 // Gear icons this game needs that the Oracle of Seasons sheet has no
@@ -65496,6 +65724,7 @@ const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installSeasonsBossSprites, BOSS_SEASONS_ART } = __require("data/sprites-bosses-seasons.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
+const { installHudTileSprites, HUD_TILE_ART } = __require("data/sprites-hud-tiles.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
 const { installTitleSprites, TITLE_ART } = __require("data/sprites-title.js");
 const { installTradeSprites, TRADE_ART } = __require("data/sprites-trade.js");
@@ -65530,6 +65759,7 @@ const SPRITE_PACKS = {
   minibosses: MINIBOSS_ART,
   bossesSeasons: BOSS_SEASONS_ART,
   hudRipped: HUD_ART,
+  hudTiles: HUD_TILE_ART,
   gear: GEAR_ART,
   title: TITLE_ART,
   trade: TRADE_ART,
@@ -65569,6 +65799,7 @@ function installData() {
   // After sprites-link.js, so the extracted HUD and gear icons override the
   // hand-drawn ones for the items Oracle of Seasons actually has.
   installHudSprites();
+  installHudTileSprites();
   // Drawn to match the extracted icons, for the gear Seasons does not have.
   installGearSprites();
   installTitleSprites();

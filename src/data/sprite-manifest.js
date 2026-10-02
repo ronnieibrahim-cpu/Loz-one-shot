@@ -42,6 +42,11 @@ export const REQUIRED_SPRITES = {
   fxBig: [...seq('fx_puff', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
     ...seq('fx_boom', 5)],
 
+  // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud
+  // (tools/rip-hud-tiles.py): the level beside a levelled item, the count
+  // beside a counted one, on the A/B buttons and in the menu alike.
+  hudTiles: [...seq('hud_d', 10), 'hud_lv', 'hud_x', 'hud_key'],
+
   ui: [
     ...seq('hud_heart', 5), 'hud_rupee',
     'i_sword1', 'i_sword2', 'i_sword3',

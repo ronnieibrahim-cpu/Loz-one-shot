@@ -8,10 +8,23 @@
 // Seven per row is exactly right for this game — 3 starting hearts + 8 boss
 // containers + 8 heart pieces caps at 13.
 //
-// The 160px budget, left to right:
-//   0..27    B slot           29..56   A slot
-//   58..70   tide gauge       73..91   rupees, icon over digits
-//   94..103  keys / essences  104..159 hearts (7 per row, 8px each)
+// The 160px budget, left to right, in Seasons' two layouts (code/bank2.s
+// loadStatusBarMap: the second once Link has MORE than 14 hearts, which takes
+// one tile from the item slots so the hearts can run eight to a row):
+//
+//                 up to 14 hearts           15 or 16 hearts
+//   B slot        0..31                     0..31
+//   A slot        33..64                    32..57 (no letter, as Seasons)
+//   tide gauge    66..78                    59..71
+//   money column  80..103                   72..95
+//   hearts        104..159, 7 a row         96..159, 8 a row
+//
+// Each slot is the letter, a bracket, the item's 8px tile and Seasons' two
+// "extra" tiles (L-1, or a count) on its lower half, and a bracket. The money
+// column is Seasons' own: three digits of the bar's bold font under a rupee,
+// or, in a dungeon, under key x count (the rupee tile is swapped for the key).
+// The tide gauge is ours and takes the room Seasons leaves between the slots
+// and the money.
 //
 // The panel is a warm tan rather than the text box's near-white on purpose:
 // most item icons use palette `ui`, whose lightest index is #f8f8e8, and on a
@@ -21,22 +34,27 @@ import { SCREEN_W, HUD_H } from '../core/screen.js';
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
 import { HEART_UNITS } from './progress.js';
-import { itemIcon, ITEMS } from './items.js';
+import { itemIcon, itemExtra, ITEMS } from './items.js';
 import { TIDE_NAMES } from './tide.js';
 
 const PANEL = '#f0e0b0';       // parchment
 const INK = '#181c18';         // glyphs and brackets, same as the text box
 const FAINT = '#c0a870';       // the panel's under-shadow and gauge ticks
-const GOLD = '#785010';        // keys
 const TEAL = '#186878';        // essences
 
-const SLOT_B_X = 0;
-const SLOT_A_X = 29;
-const TIDE_X = 58;
-const RUPEE_X = 73;
-const INFO_X = 94;
-const HEART_X = 104;
-const HEARTS_PER_ROW = 7;
+// One row per layout: [B slot, A slot, A letter?, tide, money, hearts, per row].
+const LAYOUT = {
+  normal: { b: 0, a: 33, aLetter: true, tide: 66, money: 80, hearts: 104, perRow: 7 },
+  squeezed: { b: 0, a: 32, aLetter: false, tide: 59, money: 72, hearts: 96, perRow: 8 },
+};
+/** Seasons squeezes the bar once max health is past 14 hearts (cp 14*4+1). */
+const SQUEEZE_ABOVE = 14 * HEART_UNITS;
+const EXTRA_Y = 7;
+
+/** Which of the two bars a max health (in quarter hearts) gets. */
+export function hudLayout(maxHearts) {
+  return maxHearts > SQUEEZE_ABOVE ? LAYOUT.squeezed : LAYOUT.normal;
+}      // the extra tiles' top: their ink rows sit over the bar's lower line
 
 export function drawHud(ctx, game) {
   const p = game.progress;
@@ -56,38 +74,56 @@ export function drawHud(ctx, game) {
   ctx.fillStyle = INK;
   ctx.fillRect(0, HUD_H - 1, SCREEN_W, 1);
 
-  drawSlot(ctx, SLOT_B_X, p.equipB, p, 'B');
-  drawSlot(ctx, SLOT_A_X, p.equipA, p, 'A');
-  drawTideGauge(ctx, game);
-  drawRupees(ctx, p);
-  drawDungeonInfo(ctx, game);
-  drawHearts(ctx, p);
+  const L = hudLayout(p.maxHearts);
+  drawSlot(ctx, L.b, p.equipB, p, 'B');
+  drawSlot(ctx, L.a, p.equipA, p, L.aLetter ? 'A' : null);
+  drawTideGauge(ctx, game, L.tide);
+  drawMoney(ctx, game, L.money);
+  drawHearts(ctx, p, L.hearts, L.perRow);
 
   sprites.setTint(tint, tintKey);
 }
 
 /**
- * `B[icon]`: the button letter, then the item framed by two drawn brackets.
- * The brackets are pixel art rather than font glyphs so they can stand the full
- * height of the icon, which is what makes the Oracle bar read as a bar.
+ * `B[icon L-1]`: the button letter, then the item and what Seasons writes
+ * beside it, framed by two drawn brackets. The brackets are pixel art rather
+ * than font glyphs so they can stand the full height of the icon, which is
+ * what makes the Oracle bar read as a bar. With no letter (the squeezed bar's
+ * A slot) the bracket takes the letter's place.
  */
 function drawSlot(ctx, x, itemId, p, label) {
-  drawText(ctx, label, x, 4, INK);
-  bracket(ctx, x + 6, 1, 1);
-  bracket(ctx, x + 26, 1, -1);
+  let l = x;
+  if (label) { drawText(ctx, label, x, 4, INK); l = x + 6; }
+  bracket(ctx, l, 1, 1);
+  bracket(ctx, l + 25, 1, -1);
 
   if (!itemId || !ITEMS[itemId]) return;
   const def = ITEMS[itemId];
   const lv = p.items[itemId] || 1;
-  sprites.draw(ctx, itemIcon(itemId, lv), x + 9, 0, { pal: def.pal });
+  // The icon is an 8px picture centred in a 16px cell: its own tile starts 4
+  // in, one pixel clear of the bracket, and the extra tiles follow it.
+  sprites.draw(ctx, itemIcon(itemId, lv), l - 3, 0, { pal: def.pal });
+  drawItemExtra(ctx, itemId, p, l + 9, EXTRA_Y);
+}
 
-  // Counted items show their quantity; levelled ones show the level, both
-  // tucked into the icon's bottom-right the way the Oracle bar does.
-  // A counted item shows what is left of it in the corner of its button. The
-  // field name is the item's own, so adding a consumable is a data change.
-  if (def.counted) corner(ctx, String(p[def.counted] || 0), x + 25);
-  else if (itemId === 'satchel' || itemId === 'slingshot') {
-  } else if (lv > 1) corner(ctx, 'L' + lv, x + 25);
+/**
+ * Seasons' "extra tiles" beside an item (code/bank2.s drawTreasureExtraTiles):
+ * two 8x8 tiles of the status bar's own font, the first at (x, y). A levelled
+ * item gets "L-" and its level; a counted one gets its count as two digits,
+ * tens first, "07" not " 7" (the count is BCD there and the tens tile is
+ * always written). Both the A/B buttons and the menu draw it, as the
+ * cartridge's one routine does for both.
+ */
+export function drawItemExtra(ctx, id, p, x, y) {
+  const kind = itemExtra(id);
+  if (kind === 'level') {
+    sprites.draw(ctx, 'hud_lv', x, y);
+    sprites.draw(ctx, 'hud_d' + Math.min(9, p.items[id] || 1), x + 8, y);
+  } else if (kind === 'count') {
+    const n = Math.max(0, Math.min(99, p[ITEMS[id].counted] || 0));
+    sprites.draw(ctx, 'hud_d' + Math.floor(n / 10), x, y);
+    sprites.draw(ctx, 'hud_d' + (n % 10), x + 8, y);
+  }
 }
 
 /** One half of the pair framing an item. `dir` 1 draws '[', -1 draws ']'. */
@@ -98,32 +134,39 @@ function bracket(ctx, x, y, dir) {
   ctx.fillRect(dir > 0 ? x : x - 1, y + 12, 2, 1);     // bottom nub
 }
 
-/**
- * A small right-aligned badge over the bottom of an item icon. Light on dark,
- * because it has to stay readable over a bomb, a sword or a leaf alike.
- */
-function corner(ctx, s, rightX) {
-  const w = textWidth(s);
-  ctx.fillStyle = INK;
-  ctx.fillRect(rightX - w - 1, 8, w + 1, 7);
-  drawText(ctx, s, rightX - w, 7, PANEL);
-}
-
-function drawHearts(ctx, p) {
+function drawHearts(ctx, p, x0, perRow) {
   const total = Math.ceil(p.maxHearts / HEART_UNITS);
   for (let i = 0; i < total; i++) {
-    const x = HEART_X + (i % HEARTS_PER_ROW) * 8;
-    const y = Math.floor(i / HEARTS_PER_ROW) * 8;
+    const x = x0 + (i % perRow) * 8;
+    const y = Math.floor(i / perRow) * 8;
     const filled = Math.max(0, Math.min(HEART_UNITS, p.hearts - i * HEART_UNITS));
     sprites.draw(ctx, 'hud_heart' + filled, x, y);
   }
 }
 
-/** Rupee icon stacked over a three-digit count, as in the Oracle bar. */
-function drawRupees(ctx, p) {
-  sprites.draw(ctx, 'hud_rupee', RUPEE_X, 0);
+/**
+ * Seasons' money column: the rupee over three digits of the bar's own bold
+ * font. In a dungeon the rupee tile gives way to the key, the "x" and the
+ * count of small keys (bank2.s @loadMoneyGraphic / updateStatusBar_body).
+ * Ours adds one thing beside the rupee out of doors, where Seasons leaves the
+ * two tiles blank: the Essence count, in the spark the menu draws them with.
+ */
+function drawMoney(ctx, game, x) {
+  const p = game.progress;
+  const map = game.map;
+  if (map && map.kind === 'dungeon') {
+    sprites.draw(ctx, 'hud_key', x, 0);
+    sprites.draw(ctx, 'hud_x', x + 8, 0);
+    sprites.draw(ctx, 'hud_d' + Math.min(9, p.keys[map.id] || 0), x + 16, 0);
+  } else {
+    sprites.draw(ctx, 'hud_rupee', x, 0);
+    if (p.essences.length) {
+      drawText(ctx, '\x06', x + 9, 0, TEAL);
+      sprites.draw(ctx, 'hud_d' + Math.min(9, p.essences.length), x + 16, 0);
+    }
+  }
   const s = String(Math.min(999, p.rupees)).padStart(3, '0');
-  drawText(ctx, s, RUPEE_X, 8, INK);
+  for (let i = 0; i < 3; i++) sprites.draw(ctx, 'hud_d' + s[i], x + i * 8, EXTRA_Y);
 }
 
 /**
@@ -132,9 +175,9 @@ function drawRupees(ctx, p) {
  * always visible — the Oracle bar has no equivalent, so it takes the gap those
  * games leave between the item slots and the rupee counter.
  */
-function drawTideGauge(ctx, game) {
+function drawTideGauge(ctx, game, x) {
   const lvl = game.tide.level;
-  const x = TIDE_X, y = 0;
+  const y = 0;
   ctx.fillStyle = INK;
   ctx.fillRect(x, y, 13, 8);
   ctx.fillStyle = '#f8f8f0';
@@ -163,26 +206,6 @@ function drawTideGauge(ctx, game) {
       ctx.fillStyle = ['#e0c078', '#58b0e0', '#2878c0'][here];
       ctx.fillRect(x + 10, y + 1, 2, 2);
     }
-  }
-}
-
-/** Keys and boss key in dungeons; essence count in the overworld. */
-function drawDungeonInfo(ctx, game) {
-  const p = game.progress;
-  const map = game.map;
-  if (!map || map.kind !== 'dungeon') {
-    if (p.essences.length) {
-      drawText(ctx, '\x06', INFO_X, 0, TEAL);
-      drawText(ctx, String(p.essences.length), INFO_X, 8, INK);
-    }
-    return;
-  }
-  drawText(ctx, '\x04', INFO_X, 0, GOLD);
-  drawText(ctx, String(p.keys[map.id] || 0), INFO_X, 8, INK);
-  if (p.bossKeys[map.id]) {
-    ctx.fillStyle = GOLD;
-    ctx.fillRect(INFO_X + 7, 2, 3, 3);
-    ctx.fillRect(INFO_X + 8, 5, 1, 4);
   }
 }
 

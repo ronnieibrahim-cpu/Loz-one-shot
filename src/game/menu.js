@@ -8,6 +8,7 @@ import { getPalette } from '../gfx/palettes.js';
 import { tileArt } from '../world/tileset.js';
 import { drawPanel, drawBox } from './dialogue.js';
 import { ITEMS, itemIcon, itemName, equippableItems } from './items.js';
+import { drawItemExtra } from './hud.js';
 import {
   CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm,
   caseSize, slotOpen, equippedIn,
@@ -485,8 +486,15 @@ export class Menu {
     const x0 = PAGE.x + 4, y0 = PAGE.y + 3, cw = 28, ch = 20;
     list.forEach((it, i) => {
       const cx = x0 + (i % COLS) * cw, cy = y0 + Math.floor(i / COLS) * ch;
-      sprites.draw(ctx, itemIcon(it.id, it.level), cx + 2, cy + 2, { pal: it.def.pal });
-      if (p.equipB === it.id) drawText(ctx, 'B', cx + 19, cy + 10, BLUE);
+      // The icon is an 8px picture centred in a 16px cell, so its own tile is
+      // the cell's middle: drawn at cx - 2 that tile is cx+2..cx+9, and the
+      // level or count goes in the two tiles after it, on the icon's lower
+      // half — where Seasons' inventory writes them (drawTreasureDisplayDataToBg:
+      // one row down, one tile right). The A/B marks are ours (Seasons takes an
+      // equipped item OUT of the grid) and sit above them, B then A.
+      sprites.draw(ctx, itemIcon(it.id, it.level), cx - 2, cy + 2, { pal: it.def.pal });
+      drawItemExtra(ctx, it.id, p, cx + 10, cy + 10);
+      if (p.equipB === it.id) drawText(ctx, 'B', cx + 12, cy + 1, BLUE);
       if (p.equipA === it.id) drawText(ctx, 'A', cx + 19, cy + 1, '#c01830');
       if (i === this.cursor) this.drawCursor(ctx, cx, cy, cw - 2, ch);
     });
@@ -654,7 +662,12 @@ export class Menu {
       }
     }
     if (isDungeon) {
-      drawText(ctx, 'FLOOR ' + (floor + 1) + '/' + m.floors, PAGE.x + 2, PAGE.y + 1, INK);
+      const fl = 'FLOOR ' + (floor + 1) + '/' + m.floors;
+      drawText(ctx, fl, PAGE.x + 2, PAGE.y + 1, INK);
+      // The Boss Key, once held, in the page's corner — on the map screen, where
+      // Seasons shows it. It used to be a mark on the status bar, which now
+      // carries Seasons' key x count in that place and has no room for two keys.
+      if (g.progress.bossKeys[m.id]) sprites.draw(ctx, 'p_bosskey', PAGE.x + PAGE.w - 18, PAGE.y + PAGE.h - 17);
       if (!haveMap) drawText(ctx, 'NO MAP', PAGE.x + 2, PAGE.y + PAGE.h - 9, '#c01830');
       if (haveChart) {
         // The key, in the same stacking order as the pips.

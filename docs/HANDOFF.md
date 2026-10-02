@@ -447,6 +447,13 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A status bar that only holds 14 hearts was given 16 (S167).** The
+  heart rows were 7 wide and two tall; the cap is 16, so hearts 15 and 16 drew
+  a third row INTO the playfield, and nothing in the table looks at the HUD
+  with a late-game heart count. Seasons' answer (bank2.s loadStatusBarMap,
+  drawHeartDisplay) is a second, squeezed bar past 14 hearts. Any HUD change
+  wants a picture at 3 hearts AND at 16.
+
 - **Give the robot the fight's own answer before sweeping (S166).** Wyverna
   lost at every entry wait swept in 2-frame steps; one line —
   `tideEscape: LOW`, telling the robot the conch beaches her — and she was

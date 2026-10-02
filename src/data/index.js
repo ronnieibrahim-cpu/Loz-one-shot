@@ -23,6 +23,7 @@ import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
 import { installSeasonsBossSprites, BOSS_SEASONS_ART } from './sprites-bosses-seasons.js';
 import { installHudSprites, HUD_ART } from './sprites-hud.js';
+import { installHudTileSprites, HUD_TILE_ART } from './sprites-hud-tiles.js';
 import { installGearSprites, GEAR_ART } from './sprites-gear.js';
 import { installTitleSprites, TITLE_ART } from './sprites-title.js';
 import { installTradeSprites, TRADE_ART } from './sprites-trade.js';
@@ -57,6 +58,7 @@ export const SPRITE_PACKS = {
   minibosses: MINIBOSS_ART,
   bossesSeasons: BOSS_SEASONS_ART,
   hudRipped: HUD_ART,
+  hudTiles: HUD_TILE_ART,
   gear: GEAR_ART,
   title: TITLE_ART,
   trade: TRADE_ART,
@@ -96,6 +98,7 @@ export function installData() {
   // After sprites-link.js, so the extracted HUD and gear icons override the
   // hand-drawn ones for the items Oracle of Seasons actually has.
   installHudSprites();
+  installHudTileSprites();
   // Drawn to match the extracted icons, for the gear Seasons does not have.
   installGearSprites();
   installTitleSprites();
