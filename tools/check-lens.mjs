@@ -151,9 +151,10 @@ function walkableDef(d, caps) {
  * there is no level axis in this state space — which is the point, and the
  * reason this tool is so much simpler than check-anchor.mjs.
  */
-function flood(room, start, level) {
+function flood(room, start, level, blocked = null) {
   const { grid, legend, W, H, caps } = room;
-  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null : defAt(legend, grid[y][x], level));
+  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H || (blocked && blocked.has(x + ',' + y))
+    ? null : defAt(legend, grid[y][x], level));
   const walk = (x, y) => walkableDef(at(x, y), caps);
 
   const seen = new Set(), q = [];
@@ -211,7 +212,10 @@ for (const [mapId, m] of MAPS) {
       W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
       grid: def.map, legend: getLegend(def.legend || m.legend), def, L: def.lensRoom,
       index: m.dungeon ? (m.dungeon.index | 0) : null,
-      caps: m.dungeon ? capsForDungeonIndex(m.dungeon.index) : capsForMode('foot'),
+      // Out of doors (S166) a fork is proved against a player holding
+      // everything the world hands out — the Cleats included — since an
+      // overworld screen can be come back to at any point after it opens.
+      caps: m.dungeon ? capsForDungeonIndex(m.dungeon.index) : capsForDungeonIndex(99),
     });
   }
 }
@@ -234,9 +238,15 @@ const LENS_INDEX = (() => {
   return 2;
 })();
 
+// OUT OF DOORS ONLY FOR A PRIZE (S166). An overworld fork may exist — the
+// Salt Pans were always meant to have one (docs/ITEMS.md) — but only as a
+// side pocket: it declares `prize: true`, and asserted below, nothing past
+// its probes leads anywhere but back into the fork. A fork that guarded a
+// way ON would gate the world on an informational item.
 const outdoors = rooms.filter(r => r.index === null);
-check('every declared Lens fork is inside a dungeon', outdoors.length === 0,
-  outdoors.map(r => `${r.mapId} ${r.key}`).join(', ')
+check('every Lens fork out of doors is a prize, not a way on',
+  outdoors.every(r => r.L.prize === true),
+  outdoors.filter(r => r.L.prize !== true).map(r => `${r.mapId} ${r.key}`).join(', ')
   + ' — docs/ITEMS.md: the Lens is never a gate at region scope');
 
 const early = rooms.filter(r => r.index !== null && r.index < LENS_INDEX);
@@ -245,7 +255,10 @@ check('no Lens fork stands before the dungeon that hands the Lens over', early.l
   + ` — the Lens is D${LENS_INDEX}'s item, so a fork below that is a coin flip`);
 
 for (const r of rooms) {
-  if (r.index === null) continue;
+  if (r.index === null) {
+    console.log(`  note ${r.mapId} ${r.key}: out of doors — proved against a player who HOLDS the Cleats`);
+    continue;
+  }
   console.log(`  note ${r.mapId} ${r.key}: proved against a player who `
     + `${r.caps.swim ? 'HOLDS the Cleats — every claim below is asked of a swimmer'
                      : 'cannot swim yet'}`);
@@ -332,6 +345,20 @@ for (const r of rooms) {
         + `(${nameAt(r.legend, r.grid[b.probe[1]][b.probe[0]], pin)} -> `
         + `${nameAt(r.legend, r.grid[b.probe[1]][b.probe[0]], reveals)}), way on ${b.onward}`);
     }
+  }
+  // 7. OUT OF DOORS, THE NOOK GOES NOWHERE (S166). With every probe walled
+  //    off, nothing reached from any branch's `onward`, at any level, touches
+  //    the screen's edge — so what the Lens wins is a prize, never a way on.
+  if (r.index === null) {
+    const probes = new Set(branches.map(b => b.probe[0] + ',' + b.probe[1]));
+    const leaks = [];
+    for (const b of branches) for (let lv = 0; lv < 3; lv++) {
+      for (const k of flood(r, b.onward, lv, probes)) {
+        const [x, y] = k.split(',').map(Number);
+        if (x === 0 || y === 0 || x === r.W - 1 || y === r.H - 1) leaks.push(`${b.name} @${lv}: ${k}`);
+      }
+    }
+    check(`${where}: past its walls the fork holds a prize, not a way on`, leaks.length === 0, leaks.join('; '));
   }
 }
 

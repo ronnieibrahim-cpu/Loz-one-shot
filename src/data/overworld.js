@@ -2727,7 +2727,7 @@ const rooms = {
       '##########',
       '##gg###gg#',
       'gg..gg..gg',
-      'gg.2222.gg',
+      'gg.2222.g#',
       'gG.2222.gg',
       'gggggggggg',
       '#ggg##ggg#',
@@ -2902,19 +2902,45 @@ const rooms = {
   '0,7,1': {
     name: "Salt Works",
     legend: 'salt', music: 'salt',
+    // THE LENS OUT OF DOORS (S166), the use docs/ITEMS.md always gave it: which
+    // pan wall the high sea covers cannot be seen from the shore. Two drops
+    // off the walkway, one into each pocket, and between the pockets a walled
+    // nook with the prize. The sea is pinned at MID here, the conch refused;
+    // each pocket's valve raises it one step. The east pocket's wall is a low
+    // one (`9`) and goes under at HIGH; the west's is the terrace itself.
+    // From the walkway both are the same marble — the Lens shows which turns
+    // to water. Either pocket drops out to the side, so a wrong guess is a
+    // walk round, never a trap; and the nook is a prize, never a way on, so
+    // the Lens is still no gate (tools/check-lens.mjs proves both).
     map: [
       '##########',
       '#gggggggg#',
-      'gg.q..q.gg',
-      'gg......gg',
-      'gg.o..b.gg',
-      'gggg33gggg',
-      '#gggggggg#',
+      'gggggggggg',
+      '##_####_##',
+      'g<g#gg9g>g',
+      'g#g#gg#g#g',
+      '##########',
       '##########',
     ],
+    tideForce: 1,
+    lensRoom: {
+      pin: 1, reveals: 2, decide: [4, 2], prize: true,
+      branches: [
+        { name: 'the west pocket', land: [2, 4], probe: [3, 4], onward: [4, 4], escape: [0, 4] },
+        { name: 'the east pocket', land: [7, 4], probe: [6, 4], onward: [5, 4], escape: [9, 4] },
+      ],
+    },
     entities: [
-      ['zol', 4, 3],
+      ['valve', 2, 5],
+      ['valve', 7, 5],
+      ['pickup', 4, 5, { kind: 'rupee100' }],
+      ['sign', 8, 1, { text: 'The works keep their pans walled in salt.\nSome walls the high sea climbs; some it never will.' }],
     ],
+    script: {
+      onEvent(game, name) {
+        if (name === 'valve') game.forceTideStep();
+      },
+    },
   },
   '0,7,2': {
     name: "Sandbar Pans",
@@ -3082,7 +3108,7 @@ const rooms = {
       '##########',
       '##gggggg##',
       'gg.1111.gg',
-      'gg.1221.gg',
+      '#g.1221.gg',
       'gg.1111.gg',
       'gggggggggg',
       '#ggggggg##',

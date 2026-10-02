@@ -471,6 +471,22 @@ const SCENARIOS = [
     expect: `g.progress.flags.palace_eel && g.progress.heartPieces === 1 || ('eel ' + !!g.progress.flags.palace_eel + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
   },
   {
+    name: 'Salt Works (the Lens out of doors): the east pocket\'s wall goes under at HIGH — swim to the prize',
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1, lens: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 0, enter: ['overworld', 0, 7, 1, 72, 32, 'down'] }),
+    steps: [['goto', 7, 2, 300], ['hold', ['down'], 60], ['hold', ['down'], 4], ['tap', 'a', 40], ['dialogue', 300], ['wait', 90],
+      ['hold', ['up'], 3], ['hold', ['left'], 90], ['goto', 4, 5, 300], ['wait', 30]],
+    expect: `g.progress.rupees >= 100 || ('rupees ' + g.progress.rupees + ', tide ' + g.tide.level + ' at ' + g.player.x + ',' + g.player.y)`,
+  },
+  {
+    name: 'Salt Works: the west pocket\'s wall is the terrace itself — no way to the prize, and a drop out to the side',
+    setup: setup({ items: { sword: 2, conch: 1, cleats: 1, lens: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 24, hearts: 24, tide: 0, enter: ['overworld', 0, 7, 1, 72, 32, 'down'] }),
+    steps: [['goto', 2, 2, 300], ['hold', ['down'], 60], ['hold', ['down'], 4], ['tap', 'a', 40], ['dialogue', 300], ['wait', 90],
+      ['hold', ['up'], 3], ['hold', ['right'], 120], ['wait', 10], ['hold', ['left'], 60], ['wait', 20]],
+    expect: `g.progress.rupees === 0 && g.tide.level === 2 && (g.room.key === '0,6,1' || g.player.x < 16) || ('rupees ' + g.progress.rupees + ', tide ' + g.tide.level + ' at ' + g.player.x + ',' + g.player.y + ' in ' + g.room.key)`,
+  },
+  {
     name: 'The Sunken Palace: below HIGH the Throne Pool\'s rim is a wall',
     setup: setup({ items: { sword: 2, conch: 1, cleats: 1 }, equipA: 'sword', equipB: 'conch',
       maxHearts: 24, hearts: 24, tide: 1, enter: ['palace', 1, 1, 0, 112, 144, 'up'] }),

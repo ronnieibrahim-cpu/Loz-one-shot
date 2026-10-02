@@ -2193,6 +2193,10 @@ export function installCoreTiles() {
     // already carries its own cliff body for exactly this reason — so it
     // gets its own top too: `cliffSandTop`, below.
     drownWallSand: { tide: ['cliffSand', 'cliffSand', 'waterD'] },
+    // The Salt Pans' own (S166): the same marble as every pan wall round it,
+    // so at low and mid it is indistinguishable from one, and only high water
+    // shows which walls are low enough to swim over. The Lens reads it early.
+    drownWallSalt: { tide: ['cliffMarble', 'cliffMarble', 'waterD'] },
     tideGrass: { tide: ['grass', 'grass', 'waterS'] },
     mudflat: { tide: ['mud', 'waterS', 'waterD'] },
     abyssHole: { tide: ['waterD', 'waterAbyss', 'waterAbyss'] },
