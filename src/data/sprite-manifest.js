@@ -142,20 +142,18 @@ export const REQUIRED_SPRITES = {
     // Cut by rip-enemies.py and unused since S165 (Seasons has no defeat pose:
     // an enemy dies in PART_ENEMY_DESTROYED's puff). Removing them is a ripper change.
     'darknut_death', 'jellyfish_death', 'leever_death', 'pincer_death', 'urchin_death', 'wizzrobe_death',
-    ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2), 'octorokSea_hurt', 'octorok_atk',
+    ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2),
     ...seq('crab_', 2), ...seq('zol_', 2), ...seq('gel_', 2), ...seq('keese_', 2),
     ...seq('leever_', 2), ...seq('bubble_', 2), ...seq('beamos_', 2), 'beamos_atk',
-    ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', ...seq('tektite_', 2),
-    ...seq('wisp_', 2), 'wisp_hurt', 'wisp_atk', ...seq('urchin_', 2), 'urchin_idle',
-    ...seq('moblin_d', 2), ...seq('moblin_u', 2), ...seq('moblin_s', 2), 'moblin_hurt',
-    ...seq('stalfos_d', 2), ...seq('stalfos_s', 2), 'stalfos_hurt',
-    ...seq('darknut_d', 2), ...seq('darknut_s', 2), 'darknut_hurt', 'darknut_atk',
-    ...seq('wizzrobe_', 2), 'wizzrobe_hurt', 'wizzrobe_atk', ...seq('anglerfry_', 2), 'anglerfry_hurt', 'anglerfry_atk', ...seq('barnacle_', 2), 'barnacle_atk',
-    ...seq('jellyfish_', 2), ...seq('siren_', 2), 'siren_hurt', ...seq('pincer_', 2), 'pincer_hurt',
-    // S146: the flinch and death frames every enemy gained.
-    'crab_hurt', 'zol_hurt', 'gel_hurt', 'keese_hurt', 'leever_hurt', 'tektite_hurt',
+    ...seq('beetle_d', 2), ...seq('beetle_s', 2), ...seq('tektite_', 2),
+    ...seq('wisp_', 2), ...seq('urchin_', 2),
+    ...seq('moblin_d', 2), ...seq('moblin_u', 2), ...seq('moblin_s', 2),
+    ...seq('stalfos_d', 2), ...seq('stalfos_s', 2),
+    ...seq('darknut_d', 2), ...seq('darknut_s', 2),
+    ...seq('wizzrobe_', 2), ...seq('anglerfry_', 2), ...seq('barnacle_', 2), 'barnacle_atk',
+    ...seq('jellyfish_', 2), ...seq('siren_', 2), ...seq('pincer_', 2), 'pincer_hurt',
+    // S146: the flinch and death frames every enemy gained.,
     'urchin_hurt', 'jellyfish_hurt', 'barnacle_hurt',
-    'bubble_hurt', 'beamos_hurt',
   ],
 
   // ---- pack: sprites-bosses.js -----------------------------------------

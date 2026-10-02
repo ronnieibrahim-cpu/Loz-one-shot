@@ -51,13 +51,11 @@ export function installEnemies() {
     // The sea octorok's flinch, shared: the two draw from the same four
     // sheet frames, so the land one squints the same way. hp 2 means a
     // level-1 sword kills it outright; a chain or a held blade shows it.
-    hurtFrame: 'octorokSea_hurt',
     frames: {
       down: ['octorok_d0', 'octorok_d1'],
       up: ['octorok_u0', 'octorok_u1'],
       side: ['octorok_s0', 'octorok_s1'],
     },
-    attackFrame: 'octorok_atk',
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
     // Seasons' red octorok (octorok.s): walk a while, then usually stand and
@@ -108,7 +106,6 @@ export function installEnemies() {
       up: ['octorok_u0', 'octorok_u1'],
       side: ['octorok_s0', 'octorok_s1'],
     },
-    hurtFrame: 'octorokSea_hurt',
     // Reuses octorok's own deathFrame on purpose rather than drawing a second
     // one: octorokSea's frames: block above names the exact same sprite keys
     // (octorok_d0/d1/u0/u1/s0/s1) as land octorok, so the two are already the
@@ -126,7 +123,6 @@ export function installEnemies() {
     // nothing about that pose actually claims "rock" specifically; a second
     // hand-drawn pose here would only diverge for a difference the sprite
     // itself never shows.
-    attackFrame: 'octorok_atk',
     drops: 'common',
     tideOnly: [1, 2],
     ai(e, g) {
@@ -141,7 +137,6 @@ export function installEnemies() {
   defineEnemy('crab', {
     hp: 2, damage: 2, pal: 'enemyr', rate: 8,
     frames: ['crab_0', 'crab_1'],
-    hurtFrame: 'crab_hurt',
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
     shield: 'front',
@@ -168,7 +163,6 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'slime', rate: 14,
     frames: ['zol_0', 'zol_1'],
-    hurtFrame: 'zol_hurt',
     // Reuses zol's own zol_1 as its attackFrame — a real shape change from
     // zol_0 (short and wide vs. tall and narrow), already described in
     // rip-enemies.py's own FRAMES comment as "round at rest, stretched tall
@@ -230,7 +224,6 @@ export function installEnemies() {
     frames: ['gel_0', 'gel_1'],
     // Present for completeness and never drawn today: at hp 1 every hit is
     // the killing one, and the death pose outranks the flinch.
-    hurtFrame: 'gel_hurt',
     // hp 1, deliberately: deathFrame has no hp-vs-swordDamage() constraint
     // (unlike hurtFrame, which gel was ruled out for in S12) — die() defers
     // removal on the hit that reaches hp 0 regardless of how many hits that
@@ -315,7 +308,6 @@ export function installEnemies() {
     hp: 1, damage: 1, pal: 'shadow', rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
     // Never drawn today, for the same hp-1 reason as gel's.
-    hurtFrame: 'keese_hurt',
     // Reuses keese's own keese_0 as its attackFrame — the sheet's "wings
     // spread" pose vs. keese_1's "wings folded" (rip-enemies.py's own
     // FRAMES comment), a real shape change. keese's own rest/dash cycle
@@ -383,7 +375,6 @@ export function installEnemies() {
     // Coming up: the sand mound, then half out; going down, the same backwards.
     pose: (e) => e.aiState === 'rise' ? (e.aiTimer > (LEEVER_RISE_FRAMES >> 1) ? 'leever_rise0' : 'leever_rise1')
       : e.aiState === 'sink' ? (e.aiTimer > (LEEVER_SINK_FRAMES >> 1) ? 'leever_rise1' : 'leever_rise0') : null,
-    hurtFrame: 'leever_hurt',
     terrain: 'land',
     drops: 'common',
     // Seasons' leever (leever.s, subid 0): waits underground, then rises three
@@ -445,7 +436,6 @@ export function installEnemies() {
     frames: ['bubble_0', 'bubble_1'],
     // Shown only when the Resonance Rod has rung it and a blow gets through;
     // the death pose is ready but unreachable while hp is 999.
-    hurtFrame: 'bubble_hurt',
     shield: 'all',
     drops: 'none',
     z: 6,
@@ -474,7 +464,6 @@ export function installEnemies() {
     hp: 999, damage: 2, pal: 'stonedk', speed: 0, rate: 12,
     frames: ['beamos_0', 'beamos_1'],
     // Same as bubble: the flinch needs the Rod, the death pose waits.
-    hurtFrame: 'beamos_hurt',
     // Its eye shows where it is looking, eight ways round (the cartridge's
     // animation follows its angle, beamos.s): the angle's nearest 45 degrees.
     pose: (e) => e.aiState ? 'beamos_e' + (((e.angle + 2) >> 2) & 7) : null,
@@ -527,7 +516,6 @@ export function installEnemies() {
     idleFrame: 'beetle_s0',
     // hp 3 > swordDamage() at sword level 1 (2) — the hurtFrame hp rule S12
     // found (src/game/enemy.js's Enemy.die(), docs/prompts/LEDGER.md).
-    hurtFrame: 'beetle_hurt',
     // Nothing hurts it right way up (ENEMYCOLLISION_SPIKED_BEETLE); a raised
     // shield turns it over and then it can be struck. `shield` is set per
     // state in ai.
@@ -601,11 +589,9 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'enemyb', rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
-    hurtFrame: 'tektite_hurt',
     // Reuses tektite's own tektite_1 as its attackFrame — a real shape
     // change from tektite_0 (compact body, short tucked legs) to legs
-    // extended long and dangling, already referred to in passing as "the
-    // hop-apex tuck" in zol_death's own comment (sprites-enemies-hurt.js).
+    // extended long and dangling.
     // hop()'s windup window (src/game/enemy.js) now guarantees this pose
     // shows in the run-up to every hop, the same beetle_s0/zol_1 shape.
     attackFrame: 'tektite_1',
@@ -652,11 +638,6 @@ export function installEnemies() {
     light: true,
     hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
     frames: ['wisp_0', 'wisp_1'],
-    hurtFrame: 'wisp_hurt',
-    // First enemy to carry both fields at once — see the wisp_death header
-    // comment in sprites-enemies-hurt.js for why this is the real test of
-    // spriteName()'s dying-before-hurtFrame ordering (src/game/enemy.js).
-    attackFrame: 'wisp_atk',
     z: 8,
     drops: 'good',
     // Moves as Seasons' whisp does (whisp.s): on a diagonal, off every wall.
@@ -674,13 +655,6 @@ export function installEnemies() {
   defineEnemy('urchin', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
-    hurtFrame: 'urchin_hurt',
-    // First idleFrame in the roster (docs/ENEMIES.md's idle scoping
-    // section). Hand-drawn — src/data/sprites-enemies-hurt.js's own comment
-    // on `urchin_idle` has the sheet-exhaustion account. Gated directly by
-    // ai() below on the exact condition that already decides whether this
-    // enemy does anything at all, not a generic movement timer.
-    idleFrame: 'urchin_idle',
     shield: 'front',
     drops: 'common',
     ai(e, g) {
@@ -707,7 +681,6 @@ export function installEnemies() {
       up: ['moblin_u0', 'moblin_u1'],
       side: ['moblin_s0', 'moblin_s1'],
     },
-    hurtFrame: 'moblin_hurt',
     // The "spear raised" pose (rip-enemies.py's own FRAMES comment: "idle
     // frame, then the same angle with its spear raised") already alternates
     // into the ordinary walk cycle above as moblin_d1/u1/s1 — left there on
@@ -761,7 +734,6 @@ export function installEnemies() {
     // hurt()) is what defers removal, and die() only ever runs once, on the
     // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
     // as a 3-hit one. See src/game/enemy.js's Enemy.die().
-    hurtFrame: 'stalfos_hurt',
     drops: 'good',
     // Seasons' stalfos (stalfos.s, subid 1): ambles on any of the 32 angles,
     // off every wall — now and then straight at Link — and when he swings
@@ -821,12 +793,7 @@ export function installEnemies() {
       const left = e.dir === 'left';
       sprites.draw(ctx, 'darknut_sword_s', ox + e.x + (left ? -12 : 12), oy + e.y - e.z, { flipX: left });
     },
-    hurtFrame: 'darknut_hurt',
-    // One non-directional pose (like octorok_atk/beetle_s0), not per-facing:
-    // only a front pose was drawn (darknut_atk, sprites-enemies-hurt.js) —
-    // darknut_s0/s1 (side) have no equivalent shield-braced variant, so a
-    // per-facing set would need a second new pose anyway.
-    attackFrame: 'darknut_atk',
+    // S166: its hand-drawn braced pose is gone; Seasons' darknut has none.
     hb: { x: 2, y: 4, w: 12, h: 11 },
     shield: 'front',
     drops: 'rich',
@@ -882,8 +849,6 @@ export function installEnemies() {
   defineEnemy('wizzrobe', {
     hp: 3, damage: 3, pal: 'enemyp', speed: 0, rate: 12, terrain: 'any',
     frames: ['wizzrobe_0', 'wizzrobe_1'],
-    hurtFrame: 'wizzrobe_hurt',
-    attackFrame: 'wizzrobe_atk',
     drops: 'good',
     // Seasons' red wizzrobe (wizzrobe.s, subid 1): picks an open tile on the
     // screen, faces Link and phases in, flickering; stands, fires once along
@@ -934,8 +899,6 @@ export function installEnemies() {
     light: true,
     hp: 3, damage: 3, pal: 'enemyb', speed: 0.35, rate: 12, terrain: 'water',
     frames: ['anglerfry_0', 'anglerfry_1'],
-    hurtFrame: 'anglerfry_hurt',
-    attackFrame: 'anglerfry_atk',
     drops: 'good',
     tideOnly: [1, 2],
     ai(e, g) {
@@ -950,7 +913,6 @@ export function installEnemies() {
     hp: 999, damage: 2, pal: 'enemyk', speed: 0, rate: 22, terrain: 'any',
     frames: ['barnacle_0', 'barnacle_1'],
     // Same as bubble: the flinch needs the Rod, the death pose waits.
-    hurtFrame: 'barnacle_hurt',
     attackFrame: 'barnacle_atk',
     shield: 'all',
     drops: 'none',
@@ -967,7 +929,6 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
     frames: ['jellyfish_0', 'jellyfish_1'],
-    hurtFrame: 'jellyfish_hurt',
     hb: { x: 3, y: 4, w: 10, h: 10 },
     drops: 'common',
     ai(e, g) {
@@ -982,7 +943,6 @@ export function installEnemies() {
   defineEnemy('siren', {
     hp: 4, damage: 3, pal: 'enemyb', speed: 0, rate: 16, terrain: 'water',
     frames: ['siren_0', 'siren_1'],
-    hurtFrame: 'siren_hurt',
     // Reuses siren's own siren_1 as its attackFrame rather than hand-drawing
     // a new pose — the same zero-new-art shape S43 found on moblin_d1, not a
     // hand-draw like octorok_atk/wisp_atk/wizzrobe_atk needed. S89's survey
@@ -1015,8 +975,7 @@ export function installEnemies() {
   // --- Pincer: an eel head on a tether, lunging out of its burrow -------
   defineEnemy('pincer', {
     hp: 3, damage: 3, pal: 'enemyr', speed: 0, rate: 10, terrain: 'any',
-    frames: ['pincer_0', 'pincer_1'], hurtFrame: 'pincer_hurt',
-    // Three beads string out behind the head, at 3/4, 2/4 and 1/4 of how far
+    frames: ['pincer_0', 'pincer_1'],    // Three beads string out behind the head, at 3/4, 2/4 and 1/4 of how far
     // it has lunged (pincer.s pincer_body_updateExtendedAmount), shown while
     // it is out of its hole (head state $0b and on).
     drawUnder(e, g, ctx, ox, oy) {

@@ -349,7 +349,11 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d1 0,5,3
   // THE CLAWCRAB, fought at MID in its own long den, then the third key on
   // the den's west door.
-  ['boss', 6000, 'clawcrab', { reachSwing: true }],
+  // S166: with Seasons' 32-frame boss safety window the Clawcrab cost 6-9
+  // quarter-hearts; let it settle first (100-104 all leave 10 of 12; 104 is
+  // the one Gohmaraq's fight is then won from, on 10 of 16).
+  ['wait', 104],
+  ['boss', 6000, 'clawcrab', { reachSwing: true, diagRetreat: true }],
   ['dialogue', 600],
   ['loot', 1500],
   ['dialogue', 400],
@@ -362,7 +366,9 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d1 0,4,3
   // THE TWO GAUGES. Hold the west well drained under the iron and take the
   // sea to HIGH: one empty, one full, and the shutter gives. Behind it, a
-  // Piece of Heart and the stair home.
+  // Piece of Heart and the stair home. S166: the keese first, sword in hand —
+  // with the anchor on A it pecked the robot to death through the placement.
+  ['fight', 2000, 600],
   ['equip', 'anchor', 'A', 400],
   ['use', 'conch', 2, 140],
   ['anchor', 4, 4, 1600],
@@ -454,7 +460,7 @@ export const ROUTE = [
   ['tap', 'a', 30],
   ['dialogue', 300],
   ['exit', 'up', 400],
-  ['wait', 120],
+  ['wait', 288],    // S166: 288 with the two retreats below; see there
 
   // ---------------------------------------------------------------- d1 0,3,1
   // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
@@ -467,7 +473,9 @@ export const ROUTE = [
   // on 11 of 16. It is a knife edge again; the next change here should sweep.
   // S164 (walking back to Seasons' 1 px/f): `reachSwing`, which wins at
   // every entry wait swept from 60 to 240 frames.
-  ['boss', 20000, null, { reachSwing: true }],
+  // S166 (Seasons' 32-frame boss safety window, no shove): swept jointly
+  // with the Clawcrab's wait; 240-288 win with both retreats, 288 on 10 of 16.
+  ['boss', 20000, null, { reachSwing: true, openRetreat: true, diagRetreat: true }],
   ['wait', 300],
   // WALK ONTO THE ESSENCE BY HAND — `dLoot` cannot collect it: `Essence` has
   // no `isDrop`. It appears in the middle of the arena, tile 7,4.
@@ -1048,7 +1056,10 @@ export const ROUTE = [
   ['hold', ['down'], 12],
   // S164 (walking at Seasons' 1 px/f): the open-floor retreat added wins at
   // every entry hold swept, 4 to 32 frames.
-  ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true }],
+  // S166: Seasons' 32-frame boss safety window; wins at waits 60 and 62 when
+  // the robot holds off while she is still safe (`waitInvuln`).
+  ['wait', 60],
+  ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -1217,7 +1228,7 @@ export const ROUTE = [
   // Re-swept at S139 in the Oracle arena, with the ink spit at a quarter
   // heart: settles 150..180 all win from this doorway (17-19 quarter-hearts
   // left), 140 and 190 lose. 165 sits in the middle of that window.
-  ['wait', 165],
+  ['wait', 64],     // S166: 58-70 win (waitInvuln, below), was 165
 
   // ---------------------------------------------------------------- d3 0,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1227,7 +1238,8 @@ export const ROUTE = [
   // from the route's own doorway, it flips a seed from a win to a death.
   // S151: re-swept after Seasons' enemies and the height rule: the reach
   // swing wins on 23 of 28; the plain fight now loses.
-  ['boss', 14000, null, { clearAdds: true, reachSwing: true }],
+  // S166: Seasons' 32-frame boss safety window — hold off while he is safe.
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —
@@ -1544,7 +1556,7 @@ export const ROUTE = [
   ['equip', 'sword', 'A', 400],
   ['goto', 13, 5, 1200],
   ['exit', 'right', 300],
-  ['wait', 90],
+  ['wait', 120],     // S166
 
   // ---------------------------------------------------------------- d4 0,5,3
   // THE IRONKNIGHT GALLERY. The miniboss is not `g.boss` — a miniboss clears
@@ -1552,7 +1564,9 @@ export const ROUTE = [
   // is named to the fight verb rather than found by it. Fought at HIGH, where
   // the drown-wall block in the middle of the room is simply gone and there is
   // nothing for it to charge around.
-  ['boss', 14000, 'ironknight'],
+  // S166: Seasons' 32-frame safety window; the reach swing while holding off
+  // until he can be hurt wins at every entry wait from 30 to 240.
+  ['boss', 14000, 'ironknight', { reachSwing: true, waitInvuln: true }],
   ['wait', 120],
   ['fight', 4000, 1500],
   ['dialogue', 600],
@@ -1626,7 +1640,9 @@ export const ROUTE = [
   ['hold', ['up'], 60],
   // S165: 148, not 120 — with no freeze on a hit (Seasons has none) the fight
   // ran a few frames past her last flood at 120; 148 and 150 win on 22 qh.
-  ['wait', 148],
+  // S166: with her `tideEscape` the robot drains her flood with the conch, and
+  // every wait 60-300 wins; 180 on 11 qh.
+  ['wait', 180],
 
   // ---------------------------------------------------------------- d4 0,3,1
   // WYVERNA, THE SEA WYVERN, and the fourth Essence. `clearAdds` is left off:
@@ -1636,7 +1652,8 @@ export const ROUTE = [
   // is left in the room.
   // S151: re-swept; the reach swing wins (15 -> 11); the plain fight loses.
   // S165: and the diagonal retreat with it, after the hit freeze went.
-  ['boss', 24000, null, { reachSwing: true, diagRetreat: true }],
+  // S166: the reach swing alone again, now the conch answers her flood.
+  ['boss', 24000, null, { reachSwing: true }],
   ['wait', 240],
   ['goto', 7, 4, 600],
   ['dialogue', 900],
@@ -2111,7 +2128,7 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['hold', ['up'], 60],
-  ['wait', 120],
+  ['wait', 90],      // S166: 60-240 win; 90 on 19 of 40
 
   // ---------------------------------------------------------------- d5 0,3,1
   // ROOTMAW, THE DROWNED WOOD, and the fifth Essence, which stands at 7,4 in
@@ -2121,7 +2138,9 @@ export const ROUTE = [
   // a zol and its two gels parked between Link and the boss while the verb
   // steered round them on a fresh invuln window it could have walked through.
   // Rig, 13 seeds from this door: 8 wins without it, 13 with.
-  ['boss', 24000, null, { pushThrough: true }],
+  // S166 (Seasons' 32-frame boss safety window): reach swing + hold off
+  // while he is safe; wins at 60, 90, 180 and 240.
+  ['boss', 24000, null, { pushThrough: true, reachSwing: true, waitInvuln: true }],
   ['wait', 240],
   ['goto', 7, 4, 900],
   ['dialogue', 900],

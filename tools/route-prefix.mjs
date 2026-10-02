@@ -28,6 +28,12 @@ if (process.env.PATCH) for (const part of process.env.PATCH.split(';')) {
   const k = part.indexOf('=');
   ROUTE[Number(part.slice(0, k))] = JSON.parse(part.slice(k + 1));
 }
+// INSERT='<index>=<json directive>' puts one directive in before <index>
+// (indices after it shift by one), so a wait can be swept where there was none.
+if (process.env.INSERT) {
+  const k = process.env.INSERT.indexOf('=');
+  ROUTE.splice(Number(process.env.INSERT.slice(0, k)), 0, JSON.parse(process.env.INSERT.slice(k + 1)));
+}
 const start = Number(process.argv[2]), end = Number(process.argv[3] || ROUTE.length);
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname); if (p.endsWith('/')) p += 'index.html';
@@ -79,7 +85,7 @@ if (process.env.FRAMES) {
       if (g.frame >= a && g.frame <= b && g.player) {
         const p = g.player, i = g.input;
         const held = ['up', 'down', 'left', 'right', 'a', 'b'].filter(k => i.down(k)).join('');
-        const foes = g.entities.filter(e => e.isEnemy && !e.dead).map(e => `${e.kind || e.type}@${Math.round(e.x)},${Math.round(e.y)}${e.dir ? e.dir[0] : ""}${e.knockTime ? "k" : ""}${e.isBoss ? ` hp${e.hp}${e.weakOpen ? "O" : ""}${e.charging ? "C" : ""}${e.stun ? "S" : ""}` : ""}`).join(" ");
+        const foes = g.entities.filter(e => e.isEnemy && !e.dead).map(e => `${e.kind || e.type}@${Math.round(e.x)},${Math.round(e.y)}${e.dir ? e.dir[0] : ""}${e.knockTime ? "k" : ""}${e.isBoss ? ` hp${e.hp}i${e.invuln}${e.weakOpen ? "O" : ""}${e.charging ? "C" : ""}${e.stun ? "S" : ""}` : ""}`).join(" ");
         window.__frames.push(`F${g.frame} L${p.x},${p.y}${p.dir[0]} hp${g.progress.hearts} inv${p.invuln} sw${p.swinging} [${held}] ${foes}`);
       }
       return r;

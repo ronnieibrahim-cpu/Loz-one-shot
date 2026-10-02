@@ -1613,6 +1613,7 @@ export async function installRuntime() {
     sword();                                 // up front, for the reason dFight gives
     bossDiagRetreat = !!(opts && opts.diagRetreat);
     const reachSwing = !!(opts && opts.reachSwing);
+    const waitInvuln = !!(opts && opts.waitInvuln);
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
@@ -2192,6 +2193,21 @@ export async function installRuntime() {
           const backPerp2 = axisX2 ? (dy2 > 0 ? BIT.up : BIT.down) : (dx2 > 0 ? BIT.left : BIT.right);
           yield safe(retreatMask(backAlong2, backPerp2), true); f++;
           continue;
+        }
+        // WAIT OUT ITS WINDOW (S166, opt-in `waitInvuln`). A Seasons boss is
+        // safe for 32 frames after every hit (BOSS_INVULN_FRAMES); walking
+        // back in while it still is buys nothing but its contact and its
+        // shots. Hold clear until the window will have closed by the time
+        // the walk-in does (1 px a frame).
+        if (waitInvuln && b.invuln > 0) {
+          const gx = b.cx - p.cx, gy = b.cy - p.cy;
+          if (b.invuln > Math.abs(gx) + Math.abs(gy) - NEAR - 6) {
+            const ax3 = Math.abs(gx) > Math.abs(gy);
+            const along3 = ax3 ? (gx > 0 ? BIT.left : BIT.right) : (gy > 0 ? BIT.up : BIT.down);
+            const perp3 = ax3 ? (gy > 0 ? BIT.up : BIT.down) : (gx > 0 ? BIT.left : BIT.right);
+            yield safe(Math.abs(gx) + Math.abs(gy) < NEAR + 18 ? retreatMask(along3, perp3) : 0, true); f++;
+            continue;
+          }
         }
         // No invuln banked: close the distance and take the shot. Retreating
         // first because the eye-open range READS as far is what pinned this

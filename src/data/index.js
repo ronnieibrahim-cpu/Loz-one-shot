@@ -20,7 +20,6 @@ import { installRaceSprites, RACE_ART } from './sprites-races.js';
 import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
 import { installFairies, FAIRY_ART } from './sprites-fairies.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
-import { installEnemyHurtSprites, ENEMY_HURT_ART } from './sprites-enemies-hurt.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
 import { installSeasonsBossSprites, BOSS_SEASONS_ART } from './sprites-bosses-seasons.js';
 import { installHudSprites, HUD_ART } from './sprites-hud.js';
@@ -54,7 +53,6 @@ export const SPRITE_PACKS = {
   shots: SHOT_ART,
   npcs: NPC_ART,
   enemies: ENEMY_ART,
-  enemiesHurt: ENEMY_HURT_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
   bossesSeasons: BOSS_SEASONS_ART,
@@ -91,7 +89,6 @@ export function installData() {
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();
-  installEnemyHurtSprites();
   installBossSprites();
   // After the hand-drawn pack: a boss assembled from Seasons' own boss
   // graphics takes its frame names off the hand-drawn one it replaces.

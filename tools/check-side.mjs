@@ -463,7 +463,10 @@ const SCENARIOS = [
     steps: [
       ['hold', ['up'], 200], ['wait', 90],
       ['tide', 0, 20, 900], ['wait', 30],
-      ['boss', 20000, 'thalassor'], ['wait', 120], ['tide', 0, 140, 900], ['goto', 1, 6, 400], ['loot', 900], ['wait', 60],
+      ['boss', 20000, 'thalassor'], ['wait', 120], ['tide', 0, 140, 900],
+      // S166: the fight can end with the robot on the stair out, which opens
+      // with the eel's death; step up off it before going for the loot.
+      ['hold', ['up'], 32], ['goto', 1, 6, 400], ['loot', 900], ['wait', 60],
     ],
     expect: `g.progress.flags.palace_eel && g.progress.heartPieces === 1 || ('eel ' + !!g.progress.flags.palace_eel + ', pieces ' + g.progress.heartPieces + ' in ' + g.room.key)`,
   },

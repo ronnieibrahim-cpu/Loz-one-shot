@@ -497,6 +497,10 @@ export function installBosses() {
     openFrames: ['boss_wyverna_open_0'],
     hurtFrame: 'boss_wyverna_hurt',
     intro: 80, shell: true, terrain: 'air', drops: 'none',
+    // Read only by tools/actor-runtime.mjs's `dBoss` (as Rootmaw's is): when
+    // she has flooded the cistern and flown out of reach, one sound of the
+    // conch (HIGH -> LOW) beaches her — the fight's own answer (S166).
+    tideEscape: LOW,
     init(e) { e._open = 0; e.shadow = true; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {

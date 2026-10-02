@@ -444,18 +444,18 @@ export const KNOCK_THROWN = 22;
  *  than 5 since the S150 knockback moves in 2 px frames. */
 export const KNOCK_TOOL = 6;
 
-/** f — invulnerability after a boss takes a hit. guessed; shorter than an
- *  ordinary enemy's so a boss can be combo'd. */
-export const BOSS_INVULN_FRAMES = 20;
+/** f — invulnerability after a boss or miniboss takes a hit, and how long it
+ *  flashes. derived from the cartridge: oracles-disasm code/collisionEffects.s,
+ *  the effects a boss's weak point gives a sword (COLLISIONEFFECT_21 ->
+ *  ENEMYDMG_30, COLLISIONEFFECT_SWORD_NO_KNOCKBACK -> ENEMYDMG_0c; e.g.
+ *  data/seasons/objectCollisionTable.s ENEMYCOLLISION_AQUAMENTUS_HORN,
+ *  ENEMYCOLLISION_MOTHULA): invincibilityCounter $20, knockbackCounter 0.
+ *  Was a guessed 20 "so a boss can be combo'd" (S166, the human: match). */
+export const BOSS_INVULN_FRAMES = 32;
 
 /** f — invulnerability granted to a boss when it changes phase. guessed. */
 export const BOSS_PHASE_INVULN_FRAMES = 20;
 
-/** f — how long a boss is shoved after a hit. guessed. */
-export const BOSS_KNOCK_FRAMES = 6;
-
-/** x — bosses travel this fraction of the distance an enemy would. guessed. */
-export const BOSS_KNOCK_SCALE = 0.4;
 
 /** qh — damage from stepping on spikes: one heart. derived from the
  *  cartridge: oracles-disasm object_code/common/specialObjects/commonCode.s,

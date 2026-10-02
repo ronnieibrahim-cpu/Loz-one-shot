@@ -64,7 +64,6 @@ import {
   ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
-  BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
   BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
   SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
@@ -165,12 +164,8 @@ export class Enemy extends Entity {
   }
 
   spriteName() {
-    // Same mechanism Boss.spriteName already uses: while the invuln flicker is
-    // running, show the flinch pose instead of the walk cycle. Ordinary
-    // enemies had no path to this at all until now — only bosses declared
-    // `hurtFrame` — so most of the roster has none and falls through to the
-    // walk cycle exactly as before.
-    if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
+    // No flinch pose: a struck Seasons enemy keeps its frame and flashes
+    // (Entity.draw's `hitflash`). The hand-drawn ones went at S166.
     // A pose the enemy's own state picks (the beamos's eye, the leever
     // rising): after the flinch, before everything else (S152).
     if (this.spec.pose) { const n = this.spec.pose(this); if (n) { this.flipX = false; return n; } }
@@ -530,14 +525,8 @@ export class Boss extends Enemy {
     this.hp -= dmg;
     this.invuln = BOSS_INVULN_FRAMES;
     this.flicker = BOSS_INVULN_FRAMES;
-    if (knock && dir) {
-      // `knock` is a distance; a boss covers a fraction of it, at a constant
-      // speed, over BOSS_KNOCK_FRAMES frames.
-      const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      const per = sp(knock * BOSS_KNOCK_SCALE) / BOSS_KNOCK_FRAMES;
-      this.knockX = Math.round(dx * per); this.knockY = Math.round(dy * per);
-      this.knockTime = BOSS_KNOCK_FRAMES;
-    }
+    // Never shoved: a Seasons boss's weak point takes no knockback
+    // (ENEMYDMG_30 / ENEMYDMG_0c, knockbackCounter 0; S166).
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
     // `Boss.hurt` overrides `Entity.hurt` rather than extending it, so the
     // freeze that every other enemy gets from the base class has to be spelled
