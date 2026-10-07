@@ -496,6 +496,93 @@ section('the swing as Seasons draws it');
   }
 }
 
+// S174: A BLOCK SHOVES BY THE SAME RULE. Seasons moves a block only while
+// wLinkPushingDirection is set — both front corners against it, the push
+// pose's own rule — and counts its twenty frames only while that holds,
+// starting over the moment it does not (interactableTiles.s
+// nextToPushableBlock, specialObjectCheckPushingAgainstTile).
+section('a block shoves only squarely');
+{
+  const { PUSH_DELAY_FRAMES } = await import('../src/data/feel.js');
+  for (const [name, shift, plan, want] of [
+    ['squarely against a block, it moves', 0, [[40, ['up']]], true],
+    // 5 px over: his middle is still on the block, his right corner is not.
+    ['one front corner on a block, his middle on it, it does not', 5, [[80, ['up']]], false],
+    ['pushed, let go, pushed again short of the count each time, it does not', 0,
+      [[PUSH_DELAY_FRAMES - 6, ['up']], [4, []], [PUSH_DELAY_FRAMES - 6, ['up']]], false],
+  ]) {
+    await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'up', items: {} });
+    const r = await page.evaluate(async ([shift, plan]) => {
+      const g = window.__game, p = g.player;
+      const ent = await import('/src/game/entity.js');
+      for (let x = -2; x <= 2; x++) for (let y = -3; y <= 1; y++) g.room.setTile(4 + x, 4 + y, 'grass');
+      const b = ent.spawnEntity(g, 'block', 4, 3, {});
+      g.entities.push(b);
+      p.x = 4 * 16 + shift; p.y = 4 * 16; p.lastSafe = { x: p.x, y: p.y };
+      for (const [n, keys] of plan) { window.__hold(keys); window.__harness.step(n); }
+      window.__hold([]); window.__harness.step(40);
+      return { moved: b.moved || !!b.slide, by: b.y, px: p.x, py: p.y };
+    }, [shift, plan]);
+    check(name, r.moved === want, JSON.stringify(r));
+  }
+}
+
+// S174: the HELD sword as Seasons draws it. The swing's animation ends on the
+// last phase's parameter and the sword stays there while the button is held;
+// Link is in his own walking frames (the hold's frame priority ties his, and
+// a tie is his), cannot turn (itemDisableLinkTurning for the sword's whole
+// life), and the sword is its own object — so it keeps its colours when he
+// flashes red.
+section('the held sword as Seasons draws it');
+{
+  const PIC = { up: [2, 1, 0, 0], right: [0, 1, 2, 2], down: [6, 5, 4, 4], left: [0, 7, 6, 6] };
+  const SIDE = { down: 'right', up: 'right', right: 'down', left: 'up' };
+  for (const dir of ['down', 'up', 'right', 'left']) {
+    await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir, items: { sword: 1 } });
+    const r = await page.evaluate(async ([dir, side]) => {
+      const g = window.__game, p = g.player;
+      const { sprites } = await import('/src/gfx/art.js');
+      const { SWORD_ARC, PLAYER_FLICKER_FRAMES } = await import('/src/data/feel.js');
+      const draw = sprites.draw.bind(sprites);
+      let log = null;
+      sprites.draw = (ctx, name, x, y, o) => { if (log) log.push([name, x, y, o && o.pal]); return draw(ctx, name, x, y, o); };
+      const shot = () => {
+        log = []; g.draw();
+        const body = log.findIndex(l => l[0].startsWith('link_'));
+        const blade = log.findIndex(l => l[0].startsWith('fx_sword_'));
+        const out = { dir: p.dir, holding: p.holding, body: log[body], blade: log[blade], behind: blade >= 0 && blade < body };
+        log = null; return out;
+      };
+      window.__tap('a'); window.__harness.step(1); window.__hold(['a']);
+      window.__harness.step(24);
+      const still = shot();
+      const x0 = p.x, y0 = p.y;
+      window.__hold(['a', side]);
+      const walking = [];
+      for (let i = 0; i < 16; i++) { window.__harness.step(1); walking.push(shot()); }
+      const moved = Math.abs(p.x - x0) + Math.abs(p.y - y0);
+      window.__hold(['a']); window.__harness.step(1);
+      p.flicker = PLAYER_FLICKER_FRAMES; p.invuln = 1e6;
+      const hurt = shot();
+      sprites.draw = draw;
+      return { still, walking, moved, hurt, arc: SWORD_ARC[dir][3] };
+    }, [dir, SIDE[dir]]);
+    const key = dir === 'left' || dir === 'right' ? 'side' : dir;
+    const all = [r.still, ...r.walking];
+    check(`held facing ${dir}: his own walking frames, both steps`,
+      all.every(f => f.holding && /^link_walk_/.test(f.body[0]) && f.body[0].startsWith('link_walk_' + key))
+      && new Set(r.walking.map(f => f.body[0])).size === 2, JSON.stringify(all.map(f => f.body && f.body[0])));
+    check(`held facing ${dir}: walking ${SIDE[dir]} he keeps facing the blade's way`,
+      r.moved > 4 && all.every(f => f.dir === dir), JSON.stringify({ moved: r.moved, dirs: all.map(f => f.dir) }));
+    const placed = all.every(f => f.blade && f.blade[0] === 'fx_sword_' + PIC[dir][3] && f.behind
+      && f.blade[1] - f.body[1] === 8 + r.arc[3] - 16 && f.blade[2] - f.body[2] === 8 + r.arc[2] - 2 - 16);
+    check(`held facing ${dir}: the sword's own picture, drawn back, behind him`, placed,
+      JSON.stringify(all.slice(0, 3).map(f => [f.blade, f.body, f.behind])));
+    check(`held facing ${dir}: struck, he flashes red and the sword does not`,
+      r.hurt.body[3] === 'linkhurt' && r.hurt.blade && r.hurt.blade[3] !== 'linkhurt', JSON.stringify(r.hurt));
+  }
+}
+
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
 if (errs.length) { console.log(errs.slice(0, 5).join('\n')); }
 await browser.close(); server.close();

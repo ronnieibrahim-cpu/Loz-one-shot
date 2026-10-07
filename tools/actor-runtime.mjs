@@ -3134,8 +3134,15 @@ export async function installRuntime() {
   function* dKeyhole(tx, ty, dir, flagName, maxF) {
     const g = window.__game;
     if (!g.progress.flags[flagName]) yield* dGoto(tx, ty, 900);
+    // Knocked off the lock (a wisp, at D5), step back onto the spot: Seasons
+    // counts the lean only while Link is squarely on it and starts the count
+    // over otherwise (S174), so leaning on from one tile over never turns it.
+    const across = dir === 'up' || dir === 'down';
     for (let f = 0; f < (maxF || 600) && !g.progress.flags[flagName]; f++) {
       if (g.dialogue.active) { yield (f % 6 === 0) ? BIT.a : 0; continue; }
+      const p = g.player;
+      if (g.mode === 'play' && p && !(p.knockTime > 0)
+        && Math.abs(across ? p.x - tx * TILE : p.y - ty * TILE) > 1) { yield* dGoto(tx, ty, 300); continue; }
       yield g.mode === 'play' ? BIT[dir] : 0;
     }
     yield* dDialogueClear(200);

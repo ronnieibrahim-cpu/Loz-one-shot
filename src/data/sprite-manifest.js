@@ -13,7 +13,6 @@ export const REQUIRED_SPRITES = {
     ...seq('link_walk_down_', 2), ...seq('link_walk_up_', 2), ...seq('link_walk_side_', 2),
     'link_swing0_down', 'link_swing0_up', 'link_swing0_side',
     'link_swing1_down', 'link_swing1_up', 'link_swing1_side',
-    'link_hold_down', 'link_hold_up', 'link_hold_side',
     ...seq('link_swim_down_', 2), ...seq('link_swim_up_', 2), ...seq('link_swim_side_', 2),
     'link_carry_down', 'link_carry_up', 'link_carry_side',
     'link_get_1', 'link_get_2',
@@ -203,18 +202,10 @@ const SEASONS_BOSS_CANVAS = {
 
 /** Expected pixel size for a sprite name, used by the validator. */
 export function expectedSize(name) {
-  // The held-blade poses are the only Link frames that are not 16x16: the
-  // source game draws the extended sword past the edge of his cell, and
-  // cropping it back to 16x16 would remove the sword. The engine derives the
-  // draw anchor from these dimensions (see Player.draw), so if the ripper's
-  // crop changes, this must change with it — that is what the assert is for.
   // The darknut holding its sword past its cell, down or up, at the size the
   // sheet draws it (tools/rip-enemies.py TALL, S152).
   const darknut = { darknut_down0: [16, 23], darknut_down1: [16, 25], darknut_up0: [16, 24], darknut_up1: [16, 26] }[name];
   if (darknut) return darknut;
-  if (name === 'link_hold_down') return [16, 30];
-  if (name === 'link_hold_up') return [16, 28];
-  if (name === 'link_hold_side') return [28, 16];
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
   // A boss assembled from Seasons' own graphics (tools/rip-bosses.py) is drawn
   // at the cartridge's size, not ours: every frame of one boss shares one

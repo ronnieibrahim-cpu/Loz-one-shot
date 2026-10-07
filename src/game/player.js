@@ -9,7 +9,6 @@
 //   link_push_down         link_push_up         link_push_side
 //   link_hurt              link_fall_0/1/2
 //   link_dive
-//   link_hold_down/up/side (blade held out, walking with it)
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
 import {
@@ -78,32 +77,13 @@ const SWORD_SOUNDS = ['sword1', 'sword2', 'sword3', 'sword1', 'sword1', 'sword2'
 
 const SPIN_START = { up: 0, right: 2, down: 4, left: 6 };
 
-// Where the separate blade sprite (`fx_blade_*`) lies inside each held-sword
-// frame (`link_hold_*`), [x, y]: found by laying one over the other — every
-// blade pixel but the pommel's two, which his body covers facing down or up,
-// lands on the same pixel of the held frame.
-const HELD_BLADE_AT = { down: [0, 14], up: [0, 0], side: [12, 0] };
-
-/** The blade alone, cut out of a held-sword frame: the held frame's own
- *  pixels wherever the blade sprite lies over them, so it can be drawn back
- *  over him in another palette. Built once per frame name, on first use. */
-function heldBlade(holdName) {
-  const name = holdName + '_blade';
-  if (sprites.has(name)) return name;
-  const key = holdName.slice('link_hold_'.length);
-  const H = sprites.defs.get(holdName).art, B = sprites.defs.get('fx_blade_' + key).art;
-  const [ox, oy] = HELD_BLADE_AT[key];
-  const px = new Uint8Array(H.w * H.h).fill(255);
-  for (let y = 0; y < B.h; y++) {
-    for (let x = 0; x < B.w; x++) {
-      const v = B.px[y * B.w + x], hx = x + ox, hy = y + oy;
-      if (v === 255 || hx < 0 || hy < 0 || hx >= H.w || hy >= H.h) continue;
-      if (H.px[hy * H.w + hx] === v) px[hy * H.w + hx] = v;
-    }
-  }
-  sprites.defs.set(name, { art: { w: H.w, h: H.h, px }, pal: 'link' });
-  return name;
-}
+// THE HELD BLADE (S174). The swing's animation ends on parameter $86
+// (animationData19d1e), whose low bits name the swing's LAST phase — the
+// blade drawn back — and the sword object stays there for as long as the
+// button is held. Link himself goes back to his own walking frames: in the
+// hold the parent item's frame priority (var3f) is 0, which ties Link's, and
+// a tie is his (specialObjectAnimationsAndDamage.s func_4553).
+const HELD_PHASE = 3;
 
 /** Which of the swing's four phases frame `t` (0-based) of it falls in. */
 export function swingPhase(t) {
@@ -521,7 +501,11 @@ export class Player extends Entity {
     // Attacking roots you in place, as in the GBC games.
     if (this.swinging > 0) { this.animT++; return; }
 
-    if (dx || dy) {
+    // The held blade keeps him facing the way it points: Seasons disables
+    // turning for the sword's whole life, hold included (commonCode.s
+    // parentItemLoadAnimationAndIncState -> itemDisableLinkTurning, cleared
+    // only by clearParentItem), so he walks with it out sideways and back.
+    if ((dx || dy) && !this.holding) {
       if (!(this.jumping && this.lockDir)) {
         // Face the newly pressed axis so turning is responsive.
         if (dy && !this._lastDy) this.dir = dy < 0 ? 'up' : 'down';
@@ -589,6 +573,7 @@ export class Player extends Entity {
       // corners against something. See facingWall.
       this.againstWall = game.input.down(this.dir) && this.facingWall(game);
       if (this.pushing) this.tryPush(game, dx, dy);
+      else this._pushT = 0;
       // WALKING INTO THE WALL BESIDE A DOOR TAKES YOU IN. The rule lives in
       // `Game.doorwayPull`, beside `checkWarpTile`, so the tile the player is
       // drawn toward and the tile the warp fires on are the same tile — see
@@ -599,6 +584,7 @@ export class Player extends Entity {
     } else {
       this.pushing = false;
       this.againstWall = false;
+      this._pushT = 0;
       if (this.inDeep) this.animT++;      // treading water keeps animating
     }
   }
@@ -773,6 +759,12 @@ export class Player extends Entity {
     // Shoving a block along the floor of the sea is Cleats L2 — the Mermaid
     // Suit. At L1 you can stand next to it down there and get nowhere.
     if (this.underwater && this._cleats < 2) return;
+    // Squarely, and straight: Seasons shoves only while wLinkPushingDirection
+    // is set — the push pose's own rule, both front corners against it (see
+    // facingWall) — and not while a diagonal is held
+    // (interactableTiles.s specialObjectCheckPushingAgainstTile). Anything
+    // else starts the count over (resetPushingAgainstTileCounter).
+    if (!this.againstWall || (dx && dy)) { this._pushT = 0; return; }
     this._pushT = (this._pushT || 0) + 1;
     if (this._pushT < PUSH_DELAY_FRAMES) return;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
@@ -794,8 +786,9 @@ export class Player extends Entity {
   //
   // In the Oracles the sword is three verbs, not one. Tapping swings. Holding
   // charges a spin. And holding ALSO keeps the blade extended in front of you
-  // and lets you walk with it out: it damages what it touches, it clinks off
-  // walls, and Link is drawn in a different pose the whole time.
+  // and lets you walk with it out: it damages what it touches and it clinks
+  // off walls. (Drawn as Seasons draws it since S174: his own walking frames,
+  // facing locked, the sword at the swing's last phase — see HELD_PHASE.)
   //
   // The engine had the first two. Without the third, the most-used button in
   // the game does a third less than it should — you cannot shave a bush by
@@ -1590,9 +1583,10 @@ export class Player extends Entity {
     if (this.swinging > 0 || this.poking > 0) {
       return (this.bladePhase() === 0 ? 'link_swing0_' : 'link_swing1_') + key;
     }
-    if (this.holding) return 'link_hold_' + key;
     if (this.carrying) return 'link_carry_' + key;
-    if (this.againstWall) return 'link_push_' + key;
+    // Holding the sword he walks in his own frames, never the push pose:
+    // getLinkWalkingAnimation skips it while turning is disabled.
+    if (this.againstWall && !this.holding) return 'link_push_' + key;
     const moving = this._lastDx || this._lastDy;
     if (!moving) return 'link_walk_' + key + '_0';
     return 'link_walk_' + key + '_' + (Math.floor(this.animT / 7) % 2);
@@ -1617,35 +1611,28 @@ export class Player extends Entity {
     else if (this.inDeep) cropH = 11;
     else if (this.inShallow && this.z <= 1) cropH = 13;
 
-    // The held-blade frames are the source game's own and are NOT 16x16 — the
-    // blade runs past the edge of Link's cell in whichever direction he faces.
-    // They are drawn at native size with an anchor that puts his BODY on the
-    // pixel a 16x16 frame would have put it on. The offset is derived from the
-    // sprite's own dimensions rather than written down, so art and anchor
-    // cannot drift apart: whatever the blade overhangs by, the anchor undoes.
-    //
-    // Facing left, the engine mirrors the side frame inside its own 28px
-    // canvas, which carries the body to the far end — so the offset moves with
-    // the flip, not with the direction.
     let ax = 0, ay = 0;
-    if (name.startsWith('link_hold_')) {
-      const s = sprites.size(name);
-      if (this.dir === 'up') ay = -(s.h - 16);
-      else if (this.flipX) ax = -(s.w - 16);
-    }
     const dy = oy + this.y - this.z;
 
     // THE SWORD, drawn first because Seasons draws it behind him (see
     // SWORD_PIC): the picture for this phase of the swing or this position of
-    // the spin, centred where the cartridge stands the sword object. In his
-    // own colours, not his hurt flash — it is its own object on hardware.
+    // the spin, centred where the cartridge stands the sword object — or,
+    // held, the swing's last phase (HELD_PHASE). In his own colours, not his
+    // hurt flash — it is its own object on hardware. CHARGED, IT FLASHES:
+    // Seasons' palette 5 on alternate CHARGE_FLASH_BEAT-frame beats from the
+    // frame it charges (sword.s @state3).
     const phase = this.bladePhase();
-    let pic = -1, arc = null;
+    let pic = -1, arc = null, swordPal = bodyPal;
     if (this.spinning > 0) { pic = this.spinPos(); arc = SPIN_ARC[pic]; }
     else if (phase >= 0) { pic = SWORD_PIC[this.dir][phase]; arc = SWORD_ARC[this.dir][phase]; }
+    else if (this.holding) {
+      pic = SWORD_PIC[this.dir][HELD_PHASE]; arc = SWORD_ARC[this.dir][HELD_PHASE];
+      if (this.charge >= CHARGE_FRAMES
+        && Math.floor((this.charge - CHARGE_FRAMES) / CHARGE_FLASH_BEAT) % 2 === 0) swordPal = 'swordflash';
+    }
     if (pic >= 0) {
       sprites.draw(ctx, 'fx_sword_' + pic, ox + this.x + 8 + arc[3] - 16,
-        dy + 8 + arc[2] - SWORD_Z - 16, { pal: bodyPal });
+        dy + 8 + arc[2] - SWORD_Z - 16, { pal: swordPal });
     }
     // The full-reach lunge: the swing's third phase and the poke's first.
     const lunge = this.spinning > 0 ? SWING_LUNGE[SPIN_FACING[pic >> 1]]
@@ -1657,14 +1644,6 @@ export class Player extends Entity {
     sprites.draw(ctx, name, ox + this.x + ax, dy + ay,
       { pal, flipX: this.flipX, h: cropH == null ? null : cropH - ay });
 
-    // CHARGED, THE BLADE FLASHES: its own sprite laid back over the held
-    // frame in Seasons' flash palette, on alternate CHARGE_FLASH_BEAT-frame
-    // beats starting on the frame it charges (sword.s @state3).
-    if (this.charge >= CHARGE_FRAMES && name.startsWith('link_hold_')
-      && Math.floor((this.charge - CHARGE_FRAMES) / CHARGE_FLASH_BEAT) % 2 === 0) {
-      sprites.draw(ctx, heldBlade(name), ox + this.x + ax, dy + ay,
-        { pal: 'swordflash', flipX: this.flipX, h: cropH == null ? null : cropH - ay });
-    }
     if (this.shielding) {
       const side = this.dir === 'left' || this.dir === 'right';
       const key = side ? 'side' : this.dir;

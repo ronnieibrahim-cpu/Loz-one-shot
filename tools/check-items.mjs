@@ -391,13 +391,15 @@ r = await page.evaluate(() => {
   const g = window.__game;
   const p = g.player;
   p.underwater = true; p.breath = 100000;
+  // Squarely against what he shoves: since S174 nothing counts otherwise.
+  p.againstWall = true;
   g.progress.items.cleats = 1;
   p.syncCaps(g);
   const l1 = (() => { p._pushT = 0; const before = p._pushT; p.tryPush(g, 1, 0); return p._pushT; })();
   g.progress.items.cleats = 2;
   p.syncCaps(g);
   const l2 = (() => { p._pushT = 0; p.tryPush(g, 1, 0); return p._pushT; })();
-  p.underwater = false;
+  p.underwater = false; p.againstWall = false;
   return { l1, l2 };
 });
 check('L1 cannot push a block on the seafloor', r.l1 === 0, `pushT=${r.l1}`);

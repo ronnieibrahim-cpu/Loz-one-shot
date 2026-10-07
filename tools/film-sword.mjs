@@ -31,6 +31,7 @@ await page.waitForFunction(() => !!window.__game && !!window.__harness);
 const data = await page.evaluate(async (scale) => {
   window.__harness.takeOver();
   const prog = await import('/src/game/progress.js');
+  const feel = await import('/src/data/feel.js');
   const g = window.__game;
   const hold = (keys, tap, let_go) => {
     const set = new Set(keys); let fired = false, gone = false;
@@ -70,6 +71,20 @@ const data = await page.evaluate(async (scale) => {
   hold(['a'], 'a'); window.__harness.step(60); hold([], null, 'a');
   for (let i = 0; i < 24; i++) { window.__harness.step(1); spin.push(grab()); }
   rows.push(spin);
+  // The held blade, each way: standing, walking two steps' worth, then
+  // charged (two frames a flash beat apart), then struck while holding it.
+  // Walking is toward a free side so he really walks rather than poking.
+  const walkTo = { down: 'left', up: 'right', right: 'down', left: 'up' };
+  for (const dir of ['down', 'up', 'right', 'left']) {
+    park(dir, 4, 3); const row = [];
+    hold(['a'], 'a'); window.__harness.step(20); row.push(grab());
+    hold(['a', walkTo[dir]]);
+    for (let i = 0; i < 4; i++) { window.__harness.step(4); row.push(grab()); }
+    hold(['a']); window.__harness.step(40); row.push(grab());
+    window.__harness.step(4); row.push(grab());
+    g.player.flicker = feel.PLAYER_FLICKER_FRAMES; g.player.invuln = 1e6; row.push(grab());
+    rows.push(row);
+  }
   const cols = Math.max(...rows.map(r => r.length));
   const o = document.createElement('canvas'); o.width = cols * (W + 2) * scale; o.height = rows.length * (W + 2) * scale;
   const x = o.getContext('2d'); x.imageSmoothingEnabled = false; x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height);

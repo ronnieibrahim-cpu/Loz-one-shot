@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A counter that never resets is a rule nobody wrote (S174).** The block
+  shove counted `_pushT` up on every blocked step and never set it back, so
+  separate leans added up — and the robot's D5 keyhole had quietly relied on
+  it for the whole life of the route (a wisp knocked it off mid-lean; the
+  carried count opened the lock anyway). Seasons resets the count every frame
+  Link is not squarely pushing. When a timing counter is made faithful,
+  re-run the playthrough before believing the replays: replays are short.
+
 - **A sheet's frame list is not the cartridge's animation (S173).** The Ages
   sheet's Slash band gave one body per direction, so the swing drew one body
   for seventeen frames, with a hand-placed blade and a hand-drawn arc. The

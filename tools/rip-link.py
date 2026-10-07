@@ -97,7 +97,8 @@ def band_tops(x0=888):
 IDLE_Y, ACT_Y = 38, 69
 
 # A frame is (x, y, flip) for a 16x16 cell, or (x, y, flip, w, h) for one that
-# is not 16x16. Only the held-blade poses need the second form — see HOLD below.
+# is not 16x16. Nothing uses the second form since S174, when the held-blade
+# poses went; it is kept for the next frame that runs past its cell.
 
 FRAMES = {
     'link_walk_down_0': (895, IDLE_Y, False),
@@ -170,33 +171,12 @@ FRAMES = {
 
     # ---- walking with the blade held out -----------------------------------
     #
-    # The sheet's "Charge" band. In the Oracles, holding the button IS the
-    # charge, and these are the frames it draws: Link with the blade extended,
-    # walking. Four frames per direction — the last two are the charged flash,
-    # with the blade tinted; the first is the plain held pose and the one the
-    # engine wants.
-    #
-    # THESE ARE NOT 16x16 AND MUST NOT BE CROPPED TO IT. The blade runs 13px
-    # past Link's feet facing the viewer, 11px past his head facing away, and
-    # 12px past his shoulder in profile. A 16x16 window keeps the body and
-    # throws the sword away, which is the one thing the pose exists to show.
-    # They are emitted at their native size; the engine derives the draw anchor
-    # from the sprite's own dimensions so the BODY lands on the same pixel a
-    # 16x16 frame would put it on. See Player.draw.
-    'link_hold_down':   (895, 362, False, 16, 30),
-    'link_hold_up':     (967, 362, False, 16, 28),
-    'link_hold_side':   (895, 397, True, 28, 16),
-
-    # ---- the held blade's outline ---------------------------------------------
-    #
-    # The swing and the spin draw the cartridge's own sword (fx_sword_*, cut by
-    # cartridge()). These three blade cells off the sheet's Spin Attack band
-    # are kept for one job: Player's heldBlade() lays one over the matching
-    # held frame to find which of its pixels are blade, so the charged blade
-    # can flash in its own palette. Side faces RIGHT.
-    'fx_blade_up':      (895, 428, False),
-    'fx_blade_down':    (1008, 460, False),
-    'fx_blade_side':    (961, 444, False),
+    # The sheet's "Charge" band (link_hold_*, cut at native size past the
+    # cell) was drawn here until S174, with three blade cells off the Spin
+    # Attack band (fx_blade_*) to find its blade for the charged flash. Seasons
+    # draws neither: holding the sword, Link is in his own walking frames and
+    # the sword is fx_sword_* at the swing's last phase (Player.draw,
+    # HELD_PHASE).
 }
 
 
@@ -327,8 +307,7 @@ def emit(path):
         # trailing rows that are WHITESPACE-only, and a row of '.' is not
         # whitespace — so a fully transparent row survives the parse and counts
         # toward the sprite's height. Trimming them here would silently shrink
-        # every frame and move the held-blade anchor, which is derived from the
-        # sprite's height at draw time.
+        # every frame.
         art[name] = cell(ox, oy, w, h, flip)
     base = cell(895, IDLE_Y)
     art['link_fall_0'] = shrink(base, 13)

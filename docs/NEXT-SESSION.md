@@ -1,3 +1,58 @@
+## S174 — the held sword as Seasons draws it; blocks shove only squarely
+
+Branch claude/oracle-tides-s174-h5o4tb, off main at d81b3e0 (S173 fully
+merged by the human). The prompt left the task blank again; this session took
+S173's three leftovers, read out of oracles-disasm (cloned to the scratchpad).
+
+### What landed
+- THE HELD SWORD. Seasons' swing animation (animationData19d1e) ends on
+  parameter $86 — the swing's LAST phase — and the sword object stays there
+  while the button is held. Link goes back to his own walking frames: in the
+  hold (swordParent.s @state6) the parent item's frame priority var3f is 0,
+  which ties Link's, and a tie is his (specialObjectAnimationsAndDamage.s
+  func_4553). So: body = `link_walk_*` (two steps when moving, no push pose —
+  getLinkWalkingAnimation skips it while turning is disabled), sword =
+  `fx_sword_` SWORD_PIC[dir][HELD_PHASE=3] at SWORD_ARC[dir][3], behind him,
+  2 px up — exactly where swordBox already put the held hit area. The charged
+  flash is now that sword drawn in 'swordflash'; heldBlade/HELD_BLADE_AT gone.
+  The sheet composites `link_hold_*` and the `fx_blade_*` cells are out of
+  rip-link.py and its output (and sprite-manifest).
+- THE SWORD KEEPS ITS COLOURS WHEN HE IS HIT, held too: it is its own object.
+  Seen in the TAS (frames ~2756-2800): Link red, sword white.
+- HE CANNOT TURN WHILE HOLDING IT. parentItemLoadAnimationAndIncState calls
+  itemDisableLinkTurning, cleared only by clearParentItem — the whole life of
+  the sword, hold included. Ours turned him toward any new direction; now he
+  strafes with the blade pointing the same way (Player.updateMovement skips the
+  facing update while `holding`).
+- BLOCKS SHOVE ONLY SQUARELY. Seasons' nextToPushableBlock counts only while
+  specialObjectCheckPushingAgainstTile holds: wLinkPushingDirection set (the
+  push pose's both-corners rule) and no diagonal; anything else resets the
+  count (resetPushingAgainstTileCounter). Ours counted any blocked step and
+  NEVER reset `_pushT`, so pushes added up across separate leans. tryPush now
+  wants `againstWall` and a straight push, and the count resets when he stops
+  pushing. Not modelled: func_433f's corner test on Link's own position.
+- The robot: the D5 keyhole lean was knocked off by a wisp and used to open
+  anyway on the carried-over count. `dKeyhole` now steps back onto the spot
+  when displaced. Nothing else in the route changed; replays unchanged.
+- check-sword 68 -> 87 (held body, facing lock, sword picture/place/behind,
+  sword not red with him — 16 red on the old code; a block squarely moves, one
+  corner with his middle on it does not, two short leans do not — 2 red on the
+  old rule). check-items: the Mermaid Suit push test states he is against it.
+  film-sword.mjs films the held pose (four rows: standing, walking, charged,
+  struck).
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died. Sent the
+human Seasons' footage (Link struck with his sword out) beside ours before
+and now.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: func_433f (Link must not be
+in the corner band of his tile to push) is not modelled. SWORD_HOLD_SPEED
+(walking with the sword held) has not been checked against the cartridge.
+From S171: a fast fade (speed 3) ends at offset 30; the menu page labels are
+ours; START on the CARD goes to the file select.
+
 ## S173 — the swing, the spin and the poke drawn as Seasons draws them; the wall rule
 
 Branch claude/oracle-tides-s173-5oydo3, off main at 3ac36e6 (S172 fully
