@@ -1897,14 +1897,6 @@ export const CHARM_HIGH_ESSENCES = 4;
 /** essences before every case takes two charms. derived, as above. */
 export const CHARM_CASE_ESSENCES = 6;
 
-/** px — how far out from Link the sword sprite is drawn during a swing.
- *  guessed. The blade is its own 16x16 sprite (see `fx_blade_*` in
- *  tools/rip-link.py — on real hardware the sword is a separate sprite from
- *  Link, which is why the sheet's slash poses have no blade in them), so this
- *  is the gap between his cell and the blade's. 11 leaves a few pixels of
- *  overlap at the hilt so the sword reads as HELD rather than as floating
- *  alongside him; the arc effect is drawn a pixel further out again. */
-export const BLADE_REACH_PX = 11;
 
 // ---------------------------------------------------------------------------
 // Pause menu
@@ -1924,11 +1916,6 @@ export const MENU_DESC_DWELL = 96;
  *  as a jitter rather than as a sentence starting again. */
 export const MENU_DESC_HOLD = 48;
 
-/** px — how far out from Link the blade is drawn on the swing's last phase,
- *  when it is drawn back from full reach. derived: BLADE_REACH_PX less the 7
- *  px the cartridge's own hit area steps back between those two phases
- *  (SWORD_ARC, e.g. right: 19 -> 12). */
-export const BLADE_TUCK_PX = 4;
 
 // ---------------------------------------------------------------------------
 // Cutscenes — the `show` step (S10)

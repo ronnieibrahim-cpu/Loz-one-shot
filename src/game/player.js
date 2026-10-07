@@ -3,14 +3,14 @@
 //
 // SPRITE NAMING CONTRACT (art data must provide these names):
 //   link_walk_down_0/1     link_walk_up_0/1     link_walk_side_0/1   (side faces RIGHT)
-//   link_sword_down        link_sword_up        link_sword_side
+//   link_swing0_down/up/side  link_swing1_down/up/side   (the swing's two bodies)
 //   link_swim_down_0/1     link_swim_up_0/1     link_swim_side_0/1
 //   link_carry_down        link_carry_up        link_carry_side
 //   link_push_down         link_push_up         link_push_side
 //   link_hurt              link_fall_0/1/2
-//   link_dive              link_spin_0..7
+//   link_dive
 //   link_hold_down/up/side (blade held out, walking with it)
-//   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
+//   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
 import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS,
@@ -28,7 +28,7 @@ import {
   WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
-  BLADE_REACH_PX, BLADE_TUCK_PX, CHARGE_FRAMES, CHARGE_FLASH_BEAT,
+  CHARGE_FRAMES, CHARGE_FLASH_BEAT,
   SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES,
   SWORD_HOLD_DELAY, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
@@ -53,31 +53,29 @@ import {
   HITSTOP_HURT_FRAMES,
 } from '../data/feel.js';
 
-// Which way the blade points on the swing's first phase: out to one side.
-// Facing down it starts on Link's left, facing up on his right, and facing
-// either side it starts overhead — the cartridge's own arc (SWORD_ARC) puts
-// its first hit area there, and the side swing is the same chop either way
-// because the engine draws left by mirroring right. A direction, not a timing.
-const SWING_START_DIR = { down: 'left', up: 'right', right: 'up', left: 'up' };
+// THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
+// (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
+// [.., .., dy, dx] of SWORD_ARC for a swing, SPIN_ARC for a spin
+// (postUpdate.s itemSetPositionInSwordArc) — SWORD_Z px above him (its z is
+// his less 2), behind him (its draw priority is 2 to his 1), as one of eight
+// pictures, `fx_sword_0..7`: up, up-right, right, down-right, down,
+// down-left, left, up-left (rip-link.py cuts them from spr_swords). Which
+// picture each phase of each swing shows is updateSwingableItemAnimation's own
+// table (@data, low three bits); a spin's position k shows picture k.
+const SWORD_PIC = { up: [2, 1, 0, 0], right: [0, 1, 2, 2], down: [6, 5, 4, 4], left: [0, 7, 6, 6] };
+const SWORD_Z = 2;
 
-// The swing's diagonal phase is drawn with the sheet's own diagonal blade
-// cells, which carry their swoosh. Each is placed where the sheet's spin band
-// places it against Link's cell: [sprite, x, y, flipX].
-const SWING_DIAG = {
-  up:    ['fx_blade_ur', 16, -13, false],
-  right: ['fx_blade_ur', 16, -13, false],
-  left:  ['fx_blade_ur', -16, -13, true],
-  down:  ['fx_blade_dl', -13, 12, false],
-};
+// Link's body on the swing's full-reach phase, and on the poke's first: the
+// rest of the swing's own picture ($b0+direction) moved 3 px toward his
+// facing — the cartridge's $b4+direction, which is the same graphic through
+// oam layouts $08-$0b (specialObjectOamData.s oamData48040..4805b). [x, y].
+const SWING_LUNGE = { up: [0, -3], right: [3, 0], down: [0, 3], left: [-3, 0] };
+const SPIN_FACING = ['up', 'right', 'down', 'left'];
 
-// The spin's blade, placed against Link's cell exactly as the sheet's Spin
-// Attack band places it (tools/rip-link.py): [x, y] for position 0..7,
-// clockwise from up, even = cardinal, odd = the diagonal after it.
 // The swing's sound table, in the cartridge's own order: SND_SWORDSLASH,
 // SND_UNKNOWN5, SND_BOOMERANG, then the rest (object_code/common/items/sword.s).
 const SWORD_SOUNDS = ['sword1', 'sword2', 'sword3', 'sword1', 'sword1', 'sword2', 'sword1', 'sword1'];
 
-const SPIN_BLADE = [[0, -16], [16, -13], [16, 0], [13, 16], [0, 16], [-13, 12], [-16, 0], [-10, -13]];
 const SPIN_START = { up: 0, right: 2, down: 4, left: 6 };
 
 // Where the separate blade sprite (`fx_blade_*`) lies inside each held-sword
@@ -586,6 +584,10 @@ export class Player extends Entity {
       this.animT++;
       // Pushing against a wall: show the push pose and try to shove blocks.
       this.pushing = (res.hitX && dx !== 0) || (res.hitY && dy !== 0);
+      // The push POSE (and the poke) wants more than a blocked step: Seasons'
+      // checkLinkPushingAgainstWall — the way he faces held, and both front
+      // corners against something. See facingWall.
+      this.againstWall = game.input.down(this.dir) && this.facingWall(game);
       if (this.pushing) this.tryPush(game, dx, dy);
       // WALKING INTO THE WALL BESIDE A DOOR TAKES YOU IN. The rule lives in
       // `Game.doorwayPull`, beside `checkWarpTile`, so the tile the player is
@@ -596,6 +598,7 @@ export class Player extends Entity {
       if (this.pushing) game.doorwayPull(this, dx, dy, res);
     } else {
       this.pushing = false;
+      this.againstWall = false;
       if (this.inDeep) this.animT++;      // treading water keeps animating
     }
   }
@@ -827,7 +830,29 @@ export class Player extends Entity {
       this.startPoke(game, false);
       return;
     }
-    if (this.pushing && game.input.down(this.dir)) this.startPoke(game, true);
+    if (game.input.down(this.dir) && this.facingWall(game)) this.startPoke(game, true);
+  }
+
+  /**
+   * Is he squarely against something in the way he faces? Seasons asks two
+   * points, one past each front corner of his wall box, and wants BOTH blocked
+   * (bank0.s checkLinkPushingAgainstWall: adjacentWallsBitset AND the
+   * direction's two bits, from link.s calculateAdjacentWallsBitset's eight
+   * points). One corner over the end of a wall is a corner he slides round:
+   * no push pose, and the held blade does not poke. Asked of canOccupy, a
+   * pixel at a time, so it is the engine's own idea of solid.
+   */
+  facingWall(game) {
+    const { x, y, w, h } = this.hb;
+    const pts = {
+      up: [[x, y - 1], [x + w - 1, y - 1]],
+      down: [[x, y + h], [x + w - 1, y + h]],
+      left: [[x - 1, y], [x - 1, y + h - 1]],
+      right: [[x + w, y], [x + w, y + h - 1]],
+    }[this.dir];
+    return pts.every(([px, py]) => !canOccupy(game,
+      { hb: { x: px, y: py, w: 1, h: 1 }, z: this.z, flying: this.flying, caps: this.caps },
+      this.x, this.y));
   }
 
   startPoke(game, keep) {
@@ -837,6 +862,7 @@ export class Player extends Entity {
     this.holdT = 0;
     this.charge = 0;
     this.pushing = false;
+    this.againstWall = false;
   }
 
   /** The poke's frames: the blade jabbed out, then drawn back, Link rooted. On
@@ -919,24 +945,14 @@ export class Player extends Entity {
   }
 
   /**
-   * How the blade is drawn, this frame of the swing: the phase it is in, and
-   * for the straight phases the direction and reach of the blade cell. The
-   * diagonal phase is drawn from SWING_DIAG instead. Null once the swing is
-   * spent.
+   * Which of the swing's four phases the blade is drawn in this frame — a
+   * poke is the swing's last two, full reach then drawn back — or -1 when no
+   * swing or poke is under way.
    */
-  bladePose() {
-    // A poke is the swing's last two poses: full reach, then drawn back.
-    if (this.poking > 0) {
-      return this.poking > SWORD_POKE_PHASES[1]
-        ? { phase: 2, dir: this.dir, reach: BLADE_REACH_PX, arc: -1 }
-        : { phase: 3, dir: this.dir, reach: BLADE_TUCK_PX, arc: -1 };
-    }
-    if (this.swinging <= 0) return null;
-    const phase = swingPhase(SWING_FRAMES - this.swinging - 1);
-    if (phase === 0) return { phase, dir: SWING_START_DIR[this.dir], reach: BLADE_REACH_PX, arc: -1 };
-    if (phase === 1) return { phase, dir: this.dir, reach: 0, arc: -1 };
-    if (phase === 2) return { phase, dir: this.dir, reach: BLADE_REACH_PX, arc: 0 };
-    return { phase, dir: this.dir, reach: BLADE_TUCK_PX, arc: -1 };
+  bladePhase() {
+    if (this.poking > 0) return this.poking > SWORD_POKE_PHASES[1] ? 2 : 3;
+    if (this.swinging <= 0) return -1;
+    return swingPhase(SWING_FRAMES - this.swinging - 1);
   }
 
   /**
@@ -982,7 +998,10 @@ export class Player extends Entity {
   /** Where the blade is on frame `t` (0-based) of the spin, 0..7 clockwise
    *  from up. It starts on the way Link faces and moves a quarter turn every
    *  SPIN_STEP_FRAMES. With no `t`, the frame just updated — the one drawn. */
-  spinPos(t = SPIN_FRAMES - this.spinning - 1) {
+  // Clamped at 0: on the frame the spin starts it has not yet stepped, and
+  // t = -1 drew the position BEFORE the first (the blade flicked to his right
+  // for a frame before a downward spin began).
+  spinPos(t = Math.max(0, SPIN_FRAMES - this.spinning - 1)) {
     const [card, diag] = SPIN_STEP_FRAMES;
     const q = Math.floor(t / (card + diag));
     const half = t % (card + diag) < card ? 0 : 1;
@@ -1537,7 +1556,15 @@ export class Player extends Entity {
       const [a, b] = FALL_ANIM_FRAMES;
       return 'link_fall_' + (t < a ? 0 : t < a + b ? 1 : 2);
     }
-    if (this.spinning > 0) { this.flipX = false; return 'link_spin_' + this.spinPos(); }
+    // Spinning, he faces each cardinal in turn for its position and the
+    // diagonal after it, in the full-reach body moved forward (see draw):
+    // Seasons' LINK_ANIM_MODE_28..2b, frames $18-$1b, which are $b0+direction
+    // through the same oam layouts as $b4.
+    if (this.spinning > 0) {
+      const d = SPIN_FACING[this.spinPos() >> 1];
+      this.flipX = d === 'left';
+      return 'link_swing1_' + (d === 'left' || d === 'right' ? 'side' : d);
+    }
     // Holding up something just got: Seasons' own pose, facing the viewer.
     const shown = game && game.itemShow;
     if (shown && shown.hands && !shown.chest) { this.flipX = false; return 'link_get_' + shown.hands; }
@@ -1557,10 +1584,15 @@ export class Player extends Entity {
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);
     }
     if (this.hurtTime > 0) return 'link_hurt_' + key;
-    if (this.swinging > 0 || this.poking > 0) return 'link_sword_' + key;
+    // Seasons' swing is two bodies: the wind-up ($ac+direction) on its first
+    // phase, then $b0+direction, which the poke is all of (LINK_ANIM_MODE_22
+    // and _1f). The lunge on full reach is a move, not a picture: see draw.
+    if (this.swinging > 0 || this.poking > 0) {
+      return (this.bladePhase() === 0 ? 'link_swing0_' : 'link_swing1_') + key;
+    }
     if (this.holding) return 'link_hold_' + key;
     if (this.carrying) return 'link_carry_' + key;
-    if (this.pushing) return 'link_push_' + key;
+    if (this.againstWall) return 'link_push_' + key;
     const moving = this._lastDx || this._lastDy;
     if (!moving) return 'link_walk_' + key + '_0';
     return 'link_walk_' + key + '_' + (Math.floor(this.animT / 7) % 2);
@@ -1568,7 +1600,8 @@ export class Player extends Entity {
 
   draw(ctx, game, ox, oy) {
     const p = game.progress;
-    let pal = (this.inDeep || this.underwater) ? 'linkswim' : (game.linkPal || 'link');
+    const bodyPal = (this.inDeep || this.underwater) ? 'linkswim' : (game.linkPal || 'link');
+    let pal = bodyPal;
     // STRUCK, HE FLASHES RED; he never leaves the screen. Seasons swaps his
     // colours for the hit palette on alternate PLAYER_HURT_FLASH_BEAT-frame
     // beats, starting red on the frame the hit lands (measured).
@@ -1601,48 +1634,29 @@ export class Player extends Entity {
       else if (this.flipX) ax = -(s.w - 16);
     }
     const dy = oy + this.y - this.z;
+
+    // THE SWORD, drawn first because Seasons draws it behind him (see
+    // SWORD_PIC): the picture for this phase of the swing or this position of
+    // the spin, centred where the cartridge stands the sword object. In his
+    // own colours, not his hurt flash — it is its own object on hardware.
+    const phase = this.bladePhase();
+    let pic = -1, arc = null;
+    if (this.spinning > 0) { pic = this.spinPos(); arc = SPIN_ARC[pic]; }
+    else if (phase >= 0) { pic = SWORD_PIC[this.dir][phase]; arc = SWORD_ARC[this.dir][phase]; }
+    if (pic >= 0) {
+      sprites.draw(ctx, 'fx_sword_' + pic, ox + this.x + 8 + arc[3] - 16,
+        dy + 8 + arc[2] - SWORD_Z - 16, { pal: bodyPal });
+    }
+    // The full-reach lunge: the swing's third phase and the poke's first.
+    const lunge = this.spinning > 0 ? SWING_LUNGE[SPIN_FACING[pic >> 1]]
+      : phase === 2 ? SWING_LUNGE[this.dir] : null;
+    if (lunge) { ax += lunge[0]; ay += lunge[1]; }
+
     // The wading crop is a water line in room space; inside a taller frame it
     // sits `ay` lower, because that is how much of the frame is above Link.
     sprites.draw(ctx, name, ox + this.x + ax, dy + ay,
       { pal, flipX: this.flipX, h: cropH == null ? null : cropH - ay });
 
-    // THE SWORD. Without this Link swings his empty hands: the sheet's
-    // "Slash/Use item" poses that `link_sword_*` comes from are BODIES ONLY,
-    // because on real hardware the blade is a separate sprite laid over him,
-    // and the sheet keeps it separate too. `fx_blade_*` is that sprite (see
-    // tools/rip-link.py). It shares Link's palette for the same reason it does
-    // on hardware — one OAM palette between them.
-    //
-    // Drawn before the arc so the white swoosh reads as coming off the edge of
-    // the blade rather than sitting under it.
-    if (this.spinning > 0) {
-      const k = this.spinPos();
-      const [bx, by] = SPIN_BLADE[k];
-      sprites.draw(ctx, 'fx_spin_' + k, ox + this.x + bx, dy + by, { pal });
-    }
-    const pose = this.swinging > 0 || this.poking > 0 ? this.bladePose() : null;
-    if (pose && pose.phase === 1) {
-      const [name, bx, by, flip] = SWING_DIAG[this.dir];
-      sprites.draw(ctx, name, ox + this.x + bx, dy + by, { pal, flipX: flip });
-    } else if (pose) {
-      const side = pose.dir === 'left' || pose.dir === 'right';
-      const key = side ? 'side' : pose.dir;
-      const [bdx, bdy] = DIR_VEC[pose.dir];
-      sprites.draw(ctx, 'fx_blade_' + key,
-        ox + this.x + bdx * pose.reach, dy + bdy * pose.reach,
-        { pal, flipX: pose.dir === 'left' });
-    }
-
-    // Sword arc: the swoosh off the blade as it arrives at full reach. The
-    // diagonal cell carries its own.
-    if (pose && pose.arc >= 0) {
-      const side = pose.dir === 'left' || pose.dir === 'right';
-      const key = side ? 'side' : pose.dir;
-      const [ddx, ddy] = DIR_VEC[pose.dir];
-      sprites.draw(ctx, 'fx_slash_' + key + '_' + pose.arc,
-        ox + this.x + ddx * (pose.reach + 1), dy + ddy * (pose.reach + 1),
-        { pal: this.swordLevel >= 3 ? 'essence' : 'spark', flipX: pose.dir === 'left' });
-    }
     // CHARGED, THE BLADE FLASHES: its own sprite laid back over the held
     // frame in Seasons' flash palette, on alternate CHARGE_FLASH_BEAT-frame
     // beats starting on the frame it charges (sword.s @state3).

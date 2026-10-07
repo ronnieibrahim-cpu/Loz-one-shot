@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Extract Link's frames from the Oracle of Ages sprite sheet into the game's
-art format.
+art format — and the swing's two bodies and the sword's eight pictures from
+Oracle of Seasons' own graphics (cartridge(), S173).
 
 The sheet's "True Colors" half uses exactly three colours plus a white
 transparent background, which maps cleanly onto the engine's 4-index format:
@@ -114,9 +115,6 @@ FRAMES = {
     'link_swim_side_1': (1052, IDLE_Y, True),
     'link_dive':        (1086, IDLE_Y, False),
 
-    'link_sword_down':  (1086, ACT_Y, False),
-    'link_sword_up':    (1103, ACT_Y, False),
-    'link_sword_side':  (1069, ACT_Y, True),
 
     # THESE TWO WERE SWAPPED, and had been since the map was written: pushing
     # while facing the viewer drew Link's BACK and pushing away drew his FACE.
@@ -160,32 +158,10 @@ FRAMES = {
 
     # ---- the spin attack -----------------------------------------------------
     #
-    # THE SPIN HAD NO SWORD IN IT (S153). It used to borrow the four slash
-    # BODIES, which on real hardware are drawn with the blade as a separate
-    # sprite on top, so Link twirled with his hands empty. The sheet's Spin
-    # Attack band is the whole thing: eight positions clockwise from up, each a
-    # Link cell and a blade cell laid out exactly as they sit against each
-    # other. Both are taken as their own cells here, and Player.draw puts the
-    # blade back at the offset the band itself puts it (SPIN_BLADE there).
-    # Cardinal positions are the even numbers; the diagonal after each is odd.
-    # The left-hand ones are the sheet's own and are NOT mirrors of the right:
-    # a clockwise swoosh mirrored runs anticlockwise.
-    'link_spin_0':      (895, 444, False),   # up
-    'link_spin_1':      (912, 444, False),   # up, blade up-right
-    'link_spin_2':      (945, 444, False),   # right
-    'link_spin_3':      (978, 444, False),   # right, blade down-right
-    'link_spin_4':      (1008, 444, False),  # down
-    'link_spin_5':      (1038, 444, False),  # down, blade down-left
-    'link_spin_6':      (1071, 444, False),  # left
-    'link_spin_7':      (1098, 444, False),  # left, blade up-left
-    'fx_spin_0':        (895, 428, False),
-    'fx_spin_1':        (928, 431, False),
-    'fx_spin_2':        (961, 444, False),
-    'fx_spin_3':        (991, 460, False),
-    'fx_spin_4':        (1008, 460, False),
-    'fx_spin_5':        (1025, 456, False),
-    'fx_spin_6':        (1055, 444, False),
-    'fx_spin_7':        (1088, 431, False),
+    # The sheet's Spin Attack band was cut here until S173 (eight bodies and
+    # eight blades). Seasons' spin draws neither: its body is the swing's own
+    # full-reach body facing each cardinal in turn, and its blade the sword's
+    # own eight pictures — both cut by cartridge() below.
 
     # Sounding the conch: arms raised, same read as carrying something aloft.
     'link_conch_down':  (1370, ACT_Y, False),
@@ -211,31 +187,123 @@ FRAMES = {
     'link_hold_up':     (967, 362, False, 16, 28),
     'link_hold_side':   (895, 397, True, 28, 16),
 
-    # ---- the sword itself ---------------------------------------------------
+    # ---- the held blade's outline ---------------------------------------------
     #
-    # THE SWING HAD NO SWORD IN IT. `link_sword_*` comes from the sheet's
-    # "Slash/Use item" band, and every frame in that band is a BODY POSE with no
-    # blade — on real hardware the sword is a separate sprite laid over Link,
-    # and the sheet keeps it separate too. So the game drew Link swinging his
-    # empty hands, with only a white arc for company.
-    #
-    # These are that missing sprite. They come from the Spin Attack band, where
-    # each cardinal thrust is drawn as a two-cell composite: one 16x16 cell of
-    # Link and one 16x16 cell of blade. The blade cell is taken ALONE — this is
-    # extraction, not compositing, and there is nothing to align because the
-    # source already drew them as separate cells.
-    #
-    # Side faces RIGHT, like every other `_side` frame; the engine mirrors it.
+    # The swing and the spin draw the cartridge's own sword (fx_sword_*, cut by
+    # cartridge()). These three blade cells off the sheet's Spin Attack band
+    # are kept for one job: Player's heldBlade() lays one over the matching
+    # held frame to find which of its pixels are blade, so the charged blade
+    # can flash in its own palette. Side faces RIGHT.
     'fx_blade_up':      (895, 428, False),
     'fx_blade_down':    (1008, 460, False),
     'fx_blade_side':    (961, 444, False),
-    # The diagonal, the swing's second phase (S149). Same band, same reason:
-    # the spin draws its four diagonals as their own cells, each a blade with
-    # its swoosh already on it. Up-right serves the up and right swings (and,
-    # mirrored, the left); down-left serves the down swing.
-    'fx_blade_ur':      (928, 431, False),
-    'fx_blade_dl':      (1025, 456, False),
 }
+
+
+# ---------------------------------------------------------------------------
+# THE SWING, FROM THE CARTRIDGE (S173).
+#
+# The sheet's Slash band is one body per direction, and the swing drew that one
+# body for all of its seventeen frames with a hand-placed blade and a
+# hand-drawn white arc on top. Seasons' swing (LINK_ANIM_MODE_22,
+# data/seasons/specialObjectAnimationData.s animationData19d1e) is two bodies:
+# $ac+direction for the wind-up, $b0+direction from then on ($b4+direction is
+# the SAME graphic as $b0 through an oam layout that moves it 3 px toward the
+# facing — Player.draw applies that move, so it is not cut twice). The blade is
+# ITEM_SWORD, its own object: eight pictures (itemAnimations.s item05
+# animations through item05OamDataPointers in itemOamData.s) on spr_swords,
+# which uncmpGfxHeader1a loads at tile $52 of VRAM bank 1 — the tile base
+# itemData.s gives ITEM_SWORD — so the oam's own tile numbers index the file
+# directly. The diagonal pictures carry their own swoosh; nothing else does.
+#
+# Read from assets/link/oracles-disasm/seasons/, copied verbatim from Stewmath's
+# oracles-disasm (commit 21c924a). Drawn in Link's palette (sprite palette 0:
+# 1 black, 2 green, 3 skin), so the digits are this file's own.
+# ---------------------------------------------------------------------------
+
+DISASM = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      'assets', 'link', 'oracles-disasm', 'seasons')
+GB_TO_ART = {1: '3', 2: '1', 3: '0'}
+DIRS = ['up', 'right', 'down', 'left']
+
+
+def _lines(name):
+    with open(os.path.join(DISASM, name)) as f:
+        return [l.split(';')[0].rstrip() for l in f.read().split('\n')]
+
+
+def _after(ls, label):
+    k = next(i for i, l in enumerate(ls) if l.startswith(label + ':'))
+    return ls[k + 1:]
+
+
+def _list(ls, label, kind):
+    """The `kind` ('.dw' or a macro name) rows after `label`, past shared labels."""
+    out = []
+    for l in _after(ls, label):
+        s = l.strip()
+        if s.startswith(kind):
+            out.append(s[len(kind):].replace(',', ' ').split())
+        elif out:
+            break
+    return out
+
+
+def _oam(ls, label):
+    rows = [l for l in _after(ls, label) if l.strip()]
+    n = int(rows[0].split()[1][1:], 16)
+    return [[int(v[1:], 16) for v in rows[1 + i].split()[1:]] for i in range(n)]
+
+
+def _place(png, tile0, entries, size, at):
+    """Hardware sprites (8x16) placed as @drawObject places them, the object's
+    position at `at` inside a size x size cell: y + oam y - 16, x + oam x - 8."""
+    im = Image.open(os.path.join(DISASM, png))
+    per_row = im.size[0] // 8
+    grid = [['.'] * size for _ in range(size)]
+    for y, x, t, f in reversed(entries):
+        spr = (tile0 + t) // 2
+        col, row = spr % per_row, spr // per_row
+        top = at[1] + ((y - 16 + 128) & 0xff) - 128
+        left = at[0] + ((x - 8 + 128) & 0xff) - 128
+        for yy in range(16):
+            for xx in range(8):
+                v = im.getpixel((col * 8 + (7 - xx if f & 0x20 else xx),
+                                 row * 16 + (15 - yy if f & 0x40 else yy)))
+                if v:
+                    assert 0 <= top + yy < size and 0 <= left + xx < size, png + ' outside its cell'
+                    grid[top + yy][left + xx] = GB_TO_ART[v]
+    return [''.join(r) for r in grid]
+
+
+def cartridge():
+    art = {}
+    an = _lines('specialObjectAnimationData.s')
+    gfx = _list(an, 'specialObject00GfxPointers', 'm_SpecialObjectGfxPointer')
+    lay = [r[0] for r in _list(an, 'specialObject00OamDataPointers', '.dw')]
+    so = _lines('specialObjectOamData.s')
+    # The swing's own animation names its two bodies; read them, do not trust
+    # the numbers in the comment above.
+    modes = [r[0] for r in _list(an, 'specialObject00AnimationDataPointers', '.dw')]
+    seq = [l.split()[1:] for l in _after(an, modes[0x22]) if l.strip().startswith('.db')]
+    wind, body = int(seq[0][1][1:], 16), int(seq[1][1][1:], 16)
+    for name, base in (('link_swing0_', wind), ('link_swing1_', body)):
+        # Side frames face RIGHT here (direction 1), as every _side frame does.
+        for d in (0, 1, 2):
+            layout, png, off, _ = gfx[base + d]
+            ents = _oam(so, lay[int(layout[1:], 16)])
+            art[name + ('side' if d == 1 else DIRS[d])] = _place(
+                png + '.png', int(off[1:], 16) // 16, ents, 16, (8, 8))
+    ia = _lines('itemAnimations.s')
+    io = _lines('itemOamData.s')
+    ptrs = [r[0] for r in _list(ia, 'item05OamDataPointers', '.dw')]
+    # itemData row 5 is ITEM_SWORD: gfx index, oamTileIndexBase, oamFlags.
+    base = int(_list(_lines('itemData.s'), 'itemData', '.db')[0x05][1][1:], 16)
+    hdr = [l for l in _after(_lines('uncmpGfxHeaders.s'), 'uncmpGfxHeader1a') if 'spr_swords' in l][0]
+    loaded = ((int(hdr.split(',')[1].strip()[1:], 16) & 0xfff0) - 0x8000) // 16
+    for k, p in enumerate(ptrs):
+        art[f'fx_sword_{k}'] = _place('spr_swords.png', base - loaded, _oam(io, p), 32, (16, 16))
+    return art
 
 
 def shrink(rows, size):
@@ -266,6 +334,8 @@ def emit(path):
     art['link_fall_0'] = shrink(base, 13)
     art['link_fall_1'] = shrink(base, 9)
     art['link_fall_2'] = shrink(base, 5)
+    carts = cartridge()
+    art.update(carts)
 
     lines = []
     lines.append('// Link, extracted from the Oracle of Ages sprite sheet.')
@@ -278,6 +348,13 @@ def emit(path):
     lines.append('// exactly onto the engine\'s indices: 0 skin/hair, 1 tunic, 3 outline.')
     lines.append('// Sheet art faces LEFT; side frames are mirrored here because the engine')
     lines.append('// draws side art facing RIGHT and flips it for left.')
+    lines.append('//')
+    lines.append('// The swing\'s two bodies (link_swing0_*, link_swing1_*) and the sword\'s')
+    lines.append('// eight pictures (fx_sword_*, 32x32 with the sword object\'s position at')
+    lines.append('// 16,16) are cut from Oracle of Seasons\' own graphics and tables instead,')
+    lines.append('// copied from Stewmath\'s oracles-disasm (github.com/Stewmath/oracles-disasm,')
+    lines.append('// commit 21c924a) into assets/link/oracles-disasm/seasons/. Credit: the')
+    lines.append('// oracles-disasm project and its contributors.')
     lines.append('')
     lines.append("import { sprites } from '../gfx/art.js';")
     lines.append('')
@@ -290,7 +367,10 @@ def emit(path):
     # derived.
     fall_frames = {'link_fall_0', 'link_fall_1', 'link_fall_2'}
     for name in sorted(art):
-        if name in fall_frames:
+        if name in carts:
+            lines.append("  // extracted — cut from the cartridge's own graphics by this "
+                          "file's cartridge() (see the header).")
+        elif name in fall_frames:
             lines.append("  // derived — a nearest-neighbour shrink() of this file's own "
                           "idle crop, not a fresh cut from the sheet.")
         else:

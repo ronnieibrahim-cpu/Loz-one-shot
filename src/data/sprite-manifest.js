@@ -11,7 +11,8 @@ export const REQUIRED_SPRITES = {
   // ---- pack: sprites-link.js --------------------------------------------
   link: [
     ...seq('link_walk_down_', 2), ...seq('link_walk_up_', 2), ...seq('link_walk_side_', 2),
-    'link_sword_down', 'link_sword_up', 'link_sword_side',
+    'link_swing0_down', 'link_swing0_up', 'link_swing0_side',
+    'link_swing1_down', 'link_swing1_up', 'link_swing1_side',
     'link_hold_down', 'link_hold_up', 'link_hold_side',
     ...seq('link_swim_down_', 2), ...seq('link_swim_up_', 2), ...seq('link_swim_side_', 2),
     'link_carry_down', 'link_carry_up', 'link_carry_side',
@@ -25,7 +26,7 @@ export const REQUIRED_SPRITES = {
     // required because they are SOURCE-GAME art already cut from the sheet,
     // and re-cutting is the expensive half; deleting them would mean editing
     // tools/rip-link.py to lose art we may well want back.
-    ...seq('link_fall_', 3), ...seq('link_dig_', 2), 'link_dive', 'link_lie', ...seq('link_spin_', 8),
+    ...seq('link_fall_', 3), ...seq('link_dig_', 2), 'link_dive', 'link_lie',
   ],
 
   fx: [
@@ -33,13 +34,14 @@ export const REQUIRED_SPRITES = {
     ...seq('fx_ripple', 2), ...seq('fx_dust', 3), ...seq('fx_cut', 3),
     ...seq('fx_sparkle', 3), ...seq('fx_flame', 3), ...seq('fx_bubble', 2),
     ...seq('fx_foam', 3), ...seq('fx_shine', 3),
-    ...seq('fx_slash_down_', 2), ...seq('fx_slash_up_', 2), ...seq('fx_slash_side_', 2),
     'shadow',
   ],
 
   // 32x32 cells cut from Seasons' common sprites (tools/rip-effects.py): the
   // puff, the kill puff in both its palettes, and the bomb's blast.
-  fxBig: [...seq('fx_puff', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
+  // fx_sword_*: the sword's eight pictures, cut from Seasons' spr_swords by
+  // tools/rip-link.py, the sword object's position at (16, 16).
+  fxBig: [...seq('fx_sword_', 8), ...seq('fx_puff', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
     ...seq('fx_boom', 5)],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud

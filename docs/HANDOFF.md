@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A sheet's frame list is not the cartridge's animation (S173).** The Ages
+  sheet's Slash band gave one body per direction, so the swing drew one body
+  for seventeen frames, with a hand-placed blade and a hand-drawn arc. The
+  cartridge's animation table (specialObjectAnimationData.s) said two bodies
+  and a 3 px lunge, and the sword is a separate object whose position IS the
+  hit-area table already in feel.js. Before trusting a sheet for anything
+  that moves, read the object's animation and oam tables — and a frame
+  number that repeats with a different first byte ($b0 vs $b4) is the same
+  picture through a different oam layout, i.e. an offset, not new art.
+
 - **A hit area is not a cut area (S172).** The sword's hit boxes were taken
   from the cartridge at S149, and the grass-cutting was left reading the same
   box — so one swing mowed four tufts and reached grass 28 px off, where the

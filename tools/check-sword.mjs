@@ -376,6 +376,25 @@ section('the poke');
   check('once he stops pushing, the blade is held out again', r.heldAfter, JSON.stringify(r));
   check('leaning on a wall never charges a spin: each poke starts the charge over', !r.charged, JSON.stringify(r));
 
+  // Seasons pokes (and draws the push pose) only with BOTH front corners
+  // against the wall (checkLinkPushingAgainstWall). Half a step to the side,
+  // one corner over the end of a single wall tile, he is blocked and does
+  // not poke. Then the same wall squarely: he does, in the push pose's rule.
+  for (const [shift, want] of [[8, false], [0, true]]) {
+    await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'up', items: { sword: 1 } });
+    r = await holdInto(`
+      const { g, p } = ctx; p.x += ${shift}; p.lastSafe.x = p.x;
+      const ty = Math.floor(p.cy / 16);
+      for (let x = -2; x <= 2; x++) g.room.setTile(4 + x, ty - 1, x === 0 ? 'cliff' : 'grass');
+      let blocked = 0, against = 0;
+      const step = window.__harness.step;
+      window.__harness.step = (n) => { const f = step(n); if (p.pushing) blocked++; if (p.againstWall || p.facingWall(g)) against++; return f; };
+      return { after: () => { window.__harness.step = step; return { blocked, against }; } };`, ['a', 'up'], 120);
+    check(shift ? 'one front corner on the end of a wall: blocked, but no poke and not against it'
+      : 'both front corners on that same wall: he pokes',
+    shift ? (r.pokes === 0 && r.blocked > 0 && r.against === 0) : r.pokes > 0, JSON.stringify(r));
+  }
+
   await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'up', items: { sword: 1 } });
   r = await holdInto(`
     const { g, p } = ctx; const tx = Math.floor(p.cx / 16), ty = Math.floor(p.cy / 16);
@@ -422,6 +441,59 @@ section('a spin hits twice as hard as a swing');
     return { lost: 100 - e.hp, swing: p.swordHit(g) };
   });
   check('the spin lands double the swing\'s damage', r.lost === r.swing * 2, JSON.stringify(r));
+}
+
+// S173: the swing is DRAWN as Seasons draws it. Two bodies (the wind-up, then
+// the rest), the body moved 3 px forward on full reach, the sword its own
+// object behind him at his position plus the hit area's offset, 2 px up, in
+// the picture updateSwingableItemAnimation names — and no swoosh of ours.
+section('the swing as Seasons draws it');
+{
+  const PIC = { up: [2, 1, 0, 0], right: [0, 1, 2, 2], down: [6, 5, 4, 4], left: [0, 7, 6, 6] };
+  const LUNGE = { up: [0, -3], right: [3, 0], down: [0, 3], left: [-3, 0] };
+  for (const dir of ['down', 'up', 'right', 'left']) {
+    await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir, items: { sword: 1 } });
+    const r = await page.evaluate(async (dir) => {
+      const g = window.__game, p = g.player;
+      const { sprites } = await import('/src/gfx/art.js');
+      const { SWORD_ARC } = await import('/src/data/feel.js');
+      const draw = sprites.draw.bind(sprites);
+      const frames = [];
+      let log = null;
+      sprites.draw = (ctx, name, x, y, o) => { if (log) log.push([name, x, y]); return draw(ctx, name, x, y, o); };
+      window.__tap('a'); window.__harness.step(1); window.__hold([]);
+      for (let i = 0; i < 17; i++) {
+        log = []; g.draw();
+        const phase = p.bladePhase();
+        const sx = Math.round(p.x - g.camera.x), sy = Math.round(p.y - g.camera.y);
+        const body = log.findIndex(l => l[0].startsWith('link_'));
+        const blade = log.findIndex(l => l[0].startsWith('fx_sword_'));
+        frames.push({ phase, body: log[body], blade: log[blade], bodyAt: body, bladeAt: blade,
+          slash: log.some(l => l[0].startsWith('fx_slash')), arc: SWORD_ARC[dir][phase], sx, sy });
+        window.__harness.step(1);
+      }
+      sprites.draw = draw;
+      return frames;
+    }, dir);
+    const key = dir === 'left' || dir === 'right' ? 'side' : dir;
+    const bodies = r.every(f => f.body && f.body[0] === (f.phase === 0 ? 'link_swing0_' : 'link_swing1_') + key);
+    const pics = r.every(f => f.blade && f.blade[0] === 'fx_sword_' + PIC[dir][f.phase]);
+    const behind = r.every(f => f.bladeAt >= 0 && f.bladeAt < f.bodyAt);
+    // Link is rooted, so the first frame's body is where he stands.
+    const [bx0, by0] = [r[0].body[1], r[0].body[2]];
+    const lunge = r.every(f => {
+      const [lx, ly] = f.phase === 2 ? LUNGE[dir] : [0, 0];
+      return f.body[1] - bx0 === lx && f.body[2] - by0 === ly;
+    });
+    const placed = r.every(f => f.blade[1] - bx0 === 8 + f.arc[3] - 16
+      && f.blade[2] - by0 === 8 + f.arc[2] - 2 - 16);
+    check(`facing ${dir}: the wind-up body, then the swing body`, bodies, JSON.stringify(r.map(f => f.body && f.body[0])));
+    check(`facing ${dir}: the sword's own picture for each phase, drawn behind him`, pics && behind,
+      JSON.stringify(r.map(f => [f.blade && f.blade[0], f.bladeAt, f.bodyAt])));
+    check(`facing ${dir}: the body moves 3 px forward on full reach, the blade where the cartridge stands it`,
+      lunge && placed, JSON.stringify(r.map(f => [f.phase, f.body[1] - bx0, f.body[2] - by0, f.blade[1] - bx0, f.blade[2] - by0])));
+    check(`facing ${dir}: no white arc of ours`, r.every(f => !f.slash));
+  }
 }
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

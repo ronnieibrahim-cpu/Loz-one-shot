@@ -1,3 +1,66 @@
+## S173 — the swing, the spin and the poke drawn as Seasons draws them; the wall rule
+
+Branch claude/oracle-tides-s173-5oydo3, off main at 3ac36e6 (S172 fully
+merged by the human). The prompt left the task blank again; this session took
+S172's two sword leftovers, read out of oracles-disasm (cloned to the
+scratchpad), and found the swing's whole picture was still ours.
+
+### What landed
+- THE SWING'S BODY. Seasons' swing (LINK_ANIM_MODE_22, animationData19d1e:
+  $ac 3f, $b0 3f, $b4 8f, $b0 3f) is TWO bodies: a side-on wind-up ($ac+dir)
+  and the attack body ($b0+dir); $b4 is $b0 through oam layouts $08-$0b,
+  i.e. the same picture 3 px toward the facing, on the full-reach phase. Ours
+  drew one sheet body for the whole swing and never moved it. New frames
+  `link_swing0_*` / `link_swing1_*`, cut from Seasons' own spr_link by
+  rip-link.py's new `cartridge()` (sources copied to assets/link/, with a
+  README); `link_sword_*` removed (swing1 is pixel-identical to it). Lunge
+  table SWING_LUNGE in player.js.
+- THE SWORD IS ITS OWN OBJECT. `fx_sword_0..7` (32x32, object at 16,16): the
+  eight ITEM_SWORD pictures from spr_swords through item05OamDataPointers.
+  Drawn at Link's centre + the hit area's own offset (SWORD_ARC / SPIN_ARC
+  [.., .., dy, dx], itemSetPositionInSwordArc), 2 px up (z = Link's - 2), in
+  the picture updateSwingableItemAnimation's @data names per phase
+  (SWORD_PIC), and BEHIND Link (draw priority 2 vs his 1). Only the diagonal
+  pictures carry a swoosh — the hand-drawn white arc at full reach
+  (`fx_slash_*`, sprites-link.js) is gone, and with it the L3 sword's
+  essence-coloured arc. BLADE_REACH_PX, BLADE_TUCK_PX (guessed) removed from
+  feel.js; SWING_DIAG, SWING_START_DIR, bladePose -> bladePhase.
+- THE POKE: $b4 then $b0 (animationData19d0c) — the swing body lunged 6
+  frames, then back, with the blade at full reach then drawn back.
+- THE SPIN: Seasons' spin body is $18-$1b — the attack body lunged, facing
+  each cardinal for its position and the diagonal after it (LINK_ANIM_MODE_28
+  .. 2b). The sheet's eight spin bodies and blades (`link_spin_*`,
+  `fx_spin_*`, SPIN_BLADE) removed. Also fixed: the spin's first frame drew
+  the position BEFORE the first (spinPos at t = -1), so a downward spin
+  flicked the blade to the right for a frame.
+- THE WALL RULE. Seasons' checkLinkPushingAgainstWall wants the direction
+  held and BOTH of the two points past his front corners blocked
+  (calculateAdjacentWallsBitset). `Player.facingWall` asks canOccupy a pixel
+  at a time; it now decides the push POSE (`againstWall`) and the poke. One
+  corner over the end of a wall is blocked but neither pokes nor shows the
+  push pose. Block shoving (`tryPush`) still uses the blocked step — Seasons
+  also gates it on this rule (wLinkPushingDirection), left alone because the
+  robot's block pushes would want re-routing.
+- check-sword: 50 -> 68 assertions (bodies per phase, picture per phase,
+  blade behind, lunge and placement, no arc, both-corners poke; the corner
+  case goes red with the old rule). New `tools/film-sword.mjs` (asserts
+  nothing): every frame of the swing each way and the spin, as a strip.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died (replays
+unchanged — all of this is drawing, plus a poke rule the robot never meets).
+Sent the human Seasons footage (TAS frames ~1960-1970, a down swing) beside
+the swing before and now.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: block shoving should use the
+both-corners rule too (re-route the robot's pushes if any change). The held
+pose (`link_hold_*`) is still the sheet's composite; Seasons draws it as the
+$b0 body with the blade at the drawn-back position — compare before changing.
+The sword flashes red with Link when he is hurt; on hardware it keeps its own
+palette. From S171: a fast fade (speed 3) ends at offset 30; the menu page
+labels are ours; START on the CARD goes to the file select.
+
 ## S172 — the spin, the cut, the charged blade and the poke, as Seasons does them
 
 Branch claude/oracle-tides-s172-9zxlib, off main at 2d71369 (S171 fully
