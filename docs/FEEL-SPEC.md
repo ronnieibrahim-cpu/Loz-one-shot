@@ -248,7 +248,8 @@ Link is hit.** The whole-frame shift is 0 on every frame of all three hits.
 
 Derived from those in the same change, to keep what they preserve:
 `SWIM_SPEED`/`SHIELD_SPEED`/`SWORD_HOLD_SPEED` 288 (three quarters of the
-walk), `BOOST_SPEED` 768, `DOORWAY_PULL_SPEED` 192, `ROOM_EXIT_MARGIN` 2,
+walk; the last two removed at S175 — Seasons walks Link at full speed with
+either), `BOOST_SPEED` 768, `DOORWAY_PULL_SPEED` 192, `ROOM_EXIT_MARGIN` 2,
 `JUMP_POWER` 768 and `JUMP_GRAVITY` 63 (the gap-hop's 2.3-tile reach and its
 18.3 px apex unchanged), `TORRENT_PUSH` 1.35 (still 1.2x the swimmer, so
 `check-cleats` still finds every torrent unswimmable). `CAM_DEADZONE_W` went
@@ -323,7 +324,8 @@ button is still down, and it gives:
   one thing the pose exists to show. `Player.draw` derives the anchor from the
   sprite's own dimensions so the body lands on the pixel a 16x16 frame would
   have put it on, and so art and anchor cannot drift apart.
-- `SWORD_HOLD_SPEED`, three quarters of walking, the same as the raised shield
+- full walking speed (S175: swordParent.s @state6 gives movement back with
+  itemEnableLinkMovement; it was a guessed three quarters), but no turning
 - contact damage in the swing's own box, at `SWORD_HOLD_DAMAGE` and
   `KNOCK_HOLD`. It is deliberately **not** rate-limited here: the enemy's own
   invulnerability window after a hit is what spaces the hits out, which is how

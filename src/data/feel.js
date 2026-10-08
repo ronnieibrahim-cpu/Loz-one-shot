@@ -111,14 +111,13 @@ export const SWIM_SPEED = 192;
  *  "P. Normal" column of Seasons' own speed table (link.s @speedTable). */
 export const BOOST_SPEED = 384;
 
-/** sp/f — walking with the shield raised. derived: three quarters of
- *  WALK_SPEED. */
-export const SHIELD_SPEED = 192;
-
-/** sp/f — walking with the sword held out. derived: kept equal to
- *  SHIELD_SPEED, because both are "you are committed to something and cannot
- *  move at full pace". guessed insofar as its ancestor is. */
-export const SWORD_HOLD_SPEED = 192;
+// No SHIELD_SPEED or SWORD_HOLD_SPEED (S175): both were a guessed three
+// quarters of WALK_SPEED. Seasons walks Link at his full speed with the shield
+// raised (itemParents/shieldParent.s only sets wUsingShield) and with the
+// sword held (swordParent.s @state6 -> itemEnableLinkMovement, then link.s
+// @normalMovement -> updateLinkSpeed_standard's ordinary @speedTable row, the
+// Pegasus Seed column included). Only the turning is taken while the sword is
+// held (itemDisableLinkTurning); the shield takes neither.
 
 /** x — multiplier on F.SLOW terrain (sand, deep grass). derived: Seasons'
  *  own speed table (object_code/common/specialObjects/link.s,
@@ -668,7 +667,10 @@ export const DOOR_FADE = [0, 16, 0];
  *  the item page fades in. measured: out 10 (1744-1754), white 20
  *  (1754-1774), in 8 (1774-1782). reference:
  *  assets/footage/seasons-tas-rooster-adventure.mp4, mean screen brightness.
- *  The HUD fades with the field. */
+ *  The HUD fades with the field. The hold is PURE white (255 on every pixel
+ *  of 1754-1773) even though openMenu_body's fastFadeoutToWhite (speed 3)
+ *  stops its offset at 30, one step short: the menu load blanks the screen.
+ *  So the fade rests fully white, as ours does (S175 tried 30 and undid it). */
 export const MENU_FADE_OPEN = [10, 20, 8];
 
 /** [f, f, f] — closing the item menu: the page fades to white, holds, and the

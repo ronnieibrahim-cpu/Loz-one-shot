@@ -574,6 +574,10 @@ section('the held sword as Seasons draws it');
       && new Set(r.walking.map(f => f.body[0])).size === 2, JSON.stringify(all.map(f => f.body && f.body[0])));
     check(`held facing ${dir}: walking ${SIDE[dir]} he keeps facing the blade's way`,
       r.moved > 4 && all.every(f => f.dir === dir), JSON.stringify({ moved: r.moved, dirs: all.map(f => f.dir) }));
+    // S175: and at his full walking pace — swordParent.s @state6 gives his
+    // movement back (itemEnableLinkMovement), and link.s @normalMovement then
+    // takes the ordinary @speedTable row. It was a guessed three quarters.
+    check(`held facing ${dir}: he walks at his full speed, 1 px a frame`, r.moved === 16, JSON.stringify({ moved: r.moved }));
     const placed = all.every(f => f.blade && f.blade[0] === 'fx_sword_' + PIC[dir][3] && f.behind
       && f.blade[1] - f.body[1] === 8 + r.arc[3] - 16 && f.blade[2] - f.body[2] === 8 + r.arc[2] - 2 - 16);
     check(`held facing ${dir}: the sword's own picture, drawn back, behind him`, placed,
@@ -581,6 +585,25 @@ section('the held sword as Seasons draws it');
     check(`held facing ${dir}: struck, he flashes red and the sword does not`,
       r.hurt.body[3] === 'linkhurt' && r.hurt.blade && r.hurt.blade[3] !== 'linkhurt', JSON.stringify(r.hurt));
   }
+}
+
+// S175: the raised shield costs Link nothing on the cartridge — shieldParent.s
+// sets wUsingShield and nothing else: no speed, and no turning taken.
+section('the raised shield');
+{
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1, shield: 1 }, equipB: 'shield' });
+  const r = await page.evaluate(() => {
+    const g = window.__game, p = g.player;
+    window.__hold(['b']); window.__harness.step(2);
+    const up = p.shielding;
+    const x0 = p.x;
+    window.__hold(['b', 'right']);
+    let shielded = true;
+    for (let i = 0; i < 16; i++) { window.__harness.step(1); shielded = shielded && p.shielding; }
+    return { up, shielded, moved: p.x - x0, dir: p.dir };
+  });
+  check('with the shield raised he walks at his full speed, 1 px a frame', r.up && r.shielded && r.moved === 16, JSON.stringify(r));
+  check('with the shield raised he still turns', r.dir === 'right', JSON.stringify(r));
 }
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

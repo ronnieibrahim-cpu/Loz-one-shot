@@ -24,8 +24,8 @@ import { noise1 } from '../core/rng.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
-  WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
-  SHALLOW_FACTOR, CARRY_FACTOR, SWORD_HOLD_SPEED,
+  WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR,
+  SHALLOW_FACTOR, CARRY_FACTOR,
   SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
   CHARGE_FRAMES, CHARGE_FLASH_BEAT,
   SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES,
@@ -523,8 +523,7 @@ export class Player extends Entity {
     let speed = this.speedBoost > 0 ? BOOST_SPEED : WALK_SPEED;
     if (this.underwater) speed = SINK_SPEED;
     else if (this.inDeep) speed = SWIM_SPEED;
-    else if (this.shielding) speed = SHIELD_SPEED;
-    else if (this.holding) speed = SWORD_HOLD_SPEED;
+    // The raised shield and the held sword cost no speed (see feel.js, S175).
     const f = groundFlags(game, this);
     let mult = 1;
     // Charms are multipliers on the same dimensionless product the terrain

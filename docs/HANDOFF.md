@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The disassembly says what a routine does, not what reaches the screen
+  (S175).** fastFadeoutToWhite really does stop one step short of white, and
+  the item menu really does use it — and the footage's menu hold is pure
+  white on every pixel, because the menu load blanks the screen around it.
+  Built from the code alone, the change would have made the menu less
+  faithful with every test green. When the code and the footage can both be
+  read, read both before committing; the footage wins on what is drawn.
+
 - **A counter that never resets is a rule nobody wrote (S174).** The block
   shove counted `_pushT` up on every blocked step and never set it back, so
   separate leans added up — and the robot's D5 keyhole had quietly relied on

@@ -1,3 +1,51 @@
+## S175 — full speed with the sword held or the shield raised
+
+Branch claude/oracle-tides-s175-zkipk2, off main at 737fb33 (S174 fully
+merged by the human). The prompt left the task blank again; this session took
+S174's leftovers, read out of oracles-disasm (cloned to the scratchpad).
+
+### What landed
+- WALKING WITH THE SWORD HELD OR THE SHIELD RAISED IS FULL SPEED. Both were a
+  guessed three quarters (SWORD_HOLD_SPEED, SHIELD_SPEED = 192). Seasons:
+  swordParent.s @state6 (the hold) ends `jp itemEnableLinkMovement`, and
+  link.s @normalMovement then calls updateLinkSpeed_standard — the ordinary
+  @speedTable row, grass and the Pegasus Seed included; the only thing the
+  sword takes is turning (itemDisableLinkTurning, S174). shieldParent.s only
+  sets wUsingShield: no speed, no turning taken. Both constants removed from
+  feel.js; Player.updateMovement no longer overrides the speed, so a Pegasus
+  boost now survives a raised shield or held sword too. FEEL-SPEC updated.
+- check-sword 87 -> 93: walking 16 frames with the sword held covers 16 px
+  each way (4 red on the old code, 12 px), and with the shield raised 16 px
+  and he still turns (1 red on the old code).
+- The robot needed no re-routing: check-playthrough 44/44 unchanged, replays
+  unchanged.
+
+### Looked at and left alone (findings)
+- func_433f (interactableTiles.s), the "corner band" test on Link's position
+  before a block counts as pushed: it fails only when BOTH his yh and xh low
+  nibbles are in 0-2 or 14-15. Pressed flat against a tile, Link's push-axis
+  coordinate is fixed by calculateAdjacentWallsBitset's offsets (link.s:
+  up y-3, down y+7, left x-5, right x+4), giving nibbles 3, 8, 5 or 11 — all
+  inside 3-13. So against a grid tile it can never refuse a push. Not
+  modelled, on purpose.
+- THE FAST FADE'S "OFFSET 30". fastFadeoutToWhite (speed 3) does stop its
+  offset at 30, one step short of white (paletteFadeHandler01 stops at $20),
+  and the item menu opens and closes by it (openMenu_body, closeMenu). But
+  the footage's menu hold (video 1754-1773) is 255 on every pixel: the menu
+  load blanks the screen. Built it, measured the footage, undid it; the note
+  is on MENU_FADE_OPEN in feel.js. Don't retry it for the menu.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test
+108/108; replay 51/51.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: the menu page labels (ITEMS
+etc.) are ours; START on the CARD goes to the file select rather than the
+logo (kept for the harnesses — nine tools and dNewGame would need
+re-teaching). Other fast fades (cutscenes) could rest at 30 where nothing
+blanks the screen — check footage before touching any.
+
 ## S174 — the held sword as Seasons draws it; blocks shove only squarely
 
 Branch claude/oracle-tides-s174-h5o4tb, off main at d81b3e0 (S173 fully
