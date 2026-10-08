@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A tile number in a Seasons display table is not always a tile (S176).**
+  The heart box's quarter-fills are listed as tiles $78-$7b, and read as
+  tiles they came out as stripes from an unrelated sprite sheet. The routine
+  that draws them (bank2.s drawTreasureDisplayDataToBg @writeTile) doubles
+  the number and writes an 8x16 COLUMN — tiles 2n and 2n+1 — in palette
+  attribute+2. Before ripping from a data table, read the routine that
+  consumes it; the table's own comment does not say.
+- **A footage frame is colour-corrected; the cartridge is not (S176).** The
+  TAS's olive menu frame is a lifted version of the cartridge's raw RGB555
+  palette (navy text reads as #275184 there). Every cartridge rip in this
+  repo uses the raw palette; a check that compares a rip to a footage frame
+  must compare shapes and indices, not colours.
+
 - **The disassembly says what a routine does, not what reaches the screen
   (S175).** fastFadeoutToWhite really does stop one step short of white, and
   the item menu really does use it — and the footage's menu hold is pure

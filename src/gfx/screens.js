@@ -8,8 +8,9 @@
 import { SEASONS_SCREENS } from '../data/screens-seasons.js';
 import { INTRO_SCREENS } from '../data/screens-intro.js';
 import { SAVE_SCREENS } from '../data/screens-save.js';
+import { MENU_SCREENS } from '../data/screens-menu.js';
 
-const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS, ...SAVE_SCREENS };
+const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS, ...SAVE_SCREENS, ...MENU_SCREENS };
 
 const KEYS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const cache = new Map();

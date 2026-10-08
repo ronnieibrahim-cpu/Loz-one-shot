@@ -88,6 +88,9 @@ SFX = [
     ('lightning', 'ROM_SEASONS'), ('wave', 'ROM_SEASONS'), ('wind', 'ROM_SEASONS'),
     # Link's death spin (S169): SND_LINK_DEAD, played as he starts to spin.
     ('linkDead', 'ROM_SEASONS'),
+    # The menu closing (S176): closeMenu plays SND_CLOSEMENU, except out of
+    # the save screen.
+    ('closeMenu', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

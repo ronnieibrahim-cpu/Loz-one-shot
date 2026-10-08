@@ -1,3 +1,64 @@
+## S176 — the pause menu laid out and reached the way Seasons does it
+
+Branch claude/oracle-tides-s176-tefnx4, off main at 83d7619 (S175 fully
+merged by the human). The prompt left the task blank; this session showed the
+human Seasons' menu beside ours and asked, and the human chose "Seasons' way".
+Read out of oracles-disasm (cloned to the scratchpad) and checked against the
+footage.
+
+### What landed
+- THREE PAGES, NO TITLES, TURNED BY SELECT (bank2.s inventoryMenuState1/3).
+  Page 1 the items (unchanged); page 2 Seasons' treasures and ring-box row —
+  here the six dungeon keys held, the Coastwise Chain's object, the scrimshaw
+  (charms owned x/31, blanks as a count), and the three charm cases along the
+  bottom row (HIGH, MID, LOW; a shut case and a cell the case is too small for
+  are blocked over, and with none open the row is blocked as Seasons blocks it
+  before the ring box); page 3 the six Essences on the left (at Seasons' four
+  corner places and halfway down each side), the season's place blocked over
+  (as Seasons does in a dungeon; we have no season), the heart box filled a
+  quarter per piece with the count, and SAVE. The old tab strip, the
+  "SELECT: page START: close" hint and the QUEST page's Hearts/Rupees/Deaths
+  lines are gone (the status bar has hearts and rupees; Deaths is nowhere now).
+- THE PAGE TURN: the frame SELECT is pressed is still, then the new page comes
+  in from the right over the old, both 12 px a frame, 13 frames, the last 8
+  (MENU_PAGE_SLIDE measured, footage 8239-8251 and 8254-8266; the code agrees,
+  inventoryMenuState3). SND_OPENMENU plays on the turn.
+- THE CHARM CHOOSER: A on a case opens a box of the page's blocks over the
+  treasures (Seasons' satchel-submenu grammar), two rows of eight, the choice
+  marked with the submenu's own arrow (sprite tile $0e). A puts a charm in (or
+  takes out one already there, as before), B or START puts the box away. The
+  box appears at once — Seasons' satchel box grows; not modelled.
+- SELECT IN THE FIELD OPENS THE MAP; B or SELECT puts it away (runMapMenu);
+  it opens on the floor Link is on. START and SELECT held together when the
+  white is reached open the save screen (menuStateFadeIntoMenu). SAVE on page
+  3 goes to the save screen through white (MENU_SAVE_FADE, derived). On the
+  save screen B goes straight back to the game and START chooses like A.
+- SOUNDS: the menu opening sound now plays when the page arrives, not on the
+  press, and not for the save screen; closing plays Seasons' own closeMenu
+  (newly ripped), except out of the save screen.
+- ART: tools/rip-menu.py renders all three pages from the cartridge's own
+  maps, tiles and PALH_0a (assets/menu/), plus the fill block, the page's
+  digits, the heart's three quarter-fills (drawTreasureDisplayDataToBg writes
+  8x16 COLUMNS: $78 is tiles $f0/$f1) and the submenu arrow. The footage-cut
+  item page is out of rip-screens.py. check-rippers covers rip-menu.
+- Harnesses: test.mjs re-taught (116: page names, the slide frame by frame,
+  SAVE from page 3, SELECT map, START+SELECT save, B out of both); the
+  robot's charm directive turns to page 2, walks to the case, opens the
+  chooser; shoot-map opens the map directly. The player's guide text updated.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test
+116/116. The robot needed no re-routing.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: the MAP still draws on page
+1's frame — Seasons' own overworld and dungeon map screens (GFXH_OVERWORLD_MAP,
+GFXH_DUNGEON_MAP, runMapMenu) are not ripped; the charm chooser appears at once
+where Seasons' satchel box grows (inventoryMenuState2 @func_02_57f3); the
+guide's menu picture (menu-anchor) still shows the old titled page — re-shoot
+with tools/guide; Deaths is no longer shown anywhere (Seasons shows it on the
+file select); START on the CARD still goes to the file select.
+
 ## S175 — full speed with the sword held or the shield raised
 
 Branch claude/oracle-tides-s175-zkipk2, off main at 737fb33 (S174 fully

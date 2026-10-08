@@ -678,6 +678,26 @@ export const MENU_FADE_OPEN = [10, 20, 8];
  *  in 9 (1813-1822). reference: assets/footage/seasons-tas-rooster-adventure.mp4. */
 export const MENU_FADE_CLOSE = [9, 13, 9];
 
+/** px/f — SELECT turns the item menu's page: the new page slides in from the
+ *  right over the old one, both at this speed, until it stands at the left
+ *  edge (MENU_PAGE_SLIDE_W). measured: 12 px a frame for twelve frames and 8
+ *  on the thirteenth, both turns (8239-8251, 8254-8266). reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-page shift. The
+ *  code agrees: bank2.s inventoryMenuState3 @subState1, WINX -12 and SCX +12
+ *  a frame, the window stopping at 7 (x 0) from $9f. */
+export const MENU_PAGE_SLIDE = 12;
+
+/** px — how far the incoming page travels: WINX $9f to 7, i.e. 152. derived:
+ *  bank2.s inventoryMenuState3 (12 px x 12 frames + 8). */
+export const MENU_PAGE_SLIDE_W = 152;
+
+/** [f, f, f] — page 3's SAVE goes to the save screen: no fade out (the save
+ *  screen's state 0 turns the LCD off, which is white), the one frame it
+ *  loads in, and the save screen's own fastFadeinFromWhite, the same speed
+ *  the item page comes in at. derived: bank2.s inventoryMenuState1
+ *  @subscreen2 -> saveQuitMenu_state0; in = MENU_FADE_OPEN's 8. */
+export const MENU_SAVE_FADE = [0, 1, 8];
+
 /** f — through any door (into a dungeon, out of one, into a cave): after
  *  DOOR_FADE's white, the HUD comes back over a blank field for this long
  *  before the room starts to open. measured: 6 (3676-3681), 5 (8615-8619),

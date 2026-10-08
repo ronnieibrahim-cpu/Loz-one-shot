@@ -2488,9 +2488,9 @@ export async function installRuntime() {
    * and keys and hearts and never the cases.
    *
    * It is the same shape as `dEquip` below it and for the same reason: press
-   * the buttons a player presses. START opens the menu, SELECT walks the tab
-   * strip to the charm page, up/down pick which CASE (low/mid/high), left and
-   * right walk the pool of charms that fit it, and A slots the one under the
+   * the buttons a player presses. START opens the menu, SELECT turns to page
+   * 2, the cursor walks to the CASE (high/mid/low), A opens its chooser, left
+   * and right walk the charms that fit it, and A slots the one under the
    * cursor. Nothing here reaches into `progress` and writes a case — a run
    * that slots itself a charm is a run that was handed one.
    *
@@ -2502,14 +2502,13 @@ export async function installRuntime() {
   function* dCharm(id, slot, maxF, mode) {
     const g = window.__game;
     const want = (slot || 'mid').toLowerCase();
-    // TAKING ONE OFF IS THE SAME BUTTON. `Menu.updateCharms` treats A on a
+    // TAKING ONE OFF IS THE SAME BUTTON. `Menu.updatePopup` treats A on a
     // charm already in the case as "take it out" — "at 160x144 a second one
     // would need a legend nobody reads" — so `['charm', id, slot, maxF,
     // 'off']` is the same walk to the same cursor and the same press, with
     // the goal inverted. The route needs it because the Barnacle Skin is worn
     // for the walking and must not be worn into a fight.
     const off = mode === 'off';
-    const TAB = 2;
     const inCase = () => {
       const c = g.progress.charmSlots && g.progress.charmSlots[want];
       return !!(c && c.indexOf(id) >= 0);
@@ -2522,20 +2521,26 @@ export async function installRuntime() {
     if (g.mode !== 'menu') throw new Error('charm: the menu would not open');
     for (let i = 0; i < 120 && g.veiled(); i++) yield 0;   // see dEquip
     const m = g.menu;
-    // SELECT walks the tab strip one step at a time and wraps, so this is a
-    // press-and-release per step rather than a hold.
-    for (let i = 0; i < 12 && m.tab !== TAB; i++) { yield BIT.select; yield 0; }
-    if (m.tab !== TAB) throw new Error('charm: could not reach the charm page');
-    // The case row. `caseRow` indexes CHARM_SLOTS, and down steps it forward.
-    const rowOf = { low: 0, mid: 1, high: 2 };
-    for (let i = 0; i < 6 && m.caseSlot !== want; i++) { yield BIT.down; yield 0; }
+    // SEASONS' PAGES (S176): the cases are on page 2, where Seasons keeps its
+    // ring box. One SELECT turns to it, and the page slides in and answers
+    // nothing until it has arrived.
+    for (let i = 0; i < 6 && m.pageName !== 'treasures'; i++) {
+      yield BIT.select; yield 0;
+      for (let f = 0; f < 40 && m.slide; f++) yield 0;
+    }
+    if (m.pageName !== 'treasures') throw new Error('charm: could not reach the charm page');
+    // The cursor runs on round the treasures and the open cases with
+    // right, so walk it until it is on the case.
+    for (let i = 0; i < 40 && m.caseSlot !== want; i++) { yield BIT.right; yield 0; }
     if (m.caseSlot !== want) throw new Error(`charm: could not reach the ${want} case`);
-    // And the charm inside the pool that case offers.
+    // A opens the case's chooser; walk it to the charm and press A.
+    yield BIT.a; yield 0;
+    if (!m.popup) throw new Error(`charm: the ${want} case would not open`);
     for (let f = 0; f < (maxF || 600); f++) {
       const pool = m.pool || [];
       const t = pool.indexOf(id);
       if (t < 0) throw new Error(`charm: ${id} does not fit the ${want} case`);
-      if (m.poolCursor === t) { yield BIT.a; yield 0; break; }
+      if (m.popup.at === t) { yield BIT.a; yield 0; break; }
       yield BIT.right; yield 0;
     }
     for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
@@ -2544,7 +2549,6 @@ export async function installRuntime() {
     if (inCase() === off) {
       throw new Error(`charm: ${id} is still ${off ? 'in' : 'not in'} the ${want} case`);
     }
-    void rowOf;
   }
 
   /**

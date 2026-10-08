@@ -124,7 +124,7 @@ ripper credit in the header. The current set:
 | `src/data/sprites-fairies.js` | `tools/rip-fairies.py` |
 | `src/data/tiles-dungeon-themes.js` | `tools/rip-dungeon-themes.py` |
 | `src/data/tiles-maku.js` | `tools/rip-maku.py` |
-| `src/data/screens-seasons.js` | `tools/rip-screens.py` (title sheet + still screens cut from the footage by `tools/grab-footage-frames.py`) |
+| `src/data/screens-seasons.js` | `tools/rip-screens.py` (title sheet + the file select cut from the footage by `tools/grab-footage-frames.py`) |
 | `src/data/sprites-keys.js` | `tools/rip-keys.py` (the six dungeon keys, from the Oracles' key-item graphics in `assets/keys/`) |
 | `src/data/sprites-treasures.js` | `tools/rip-treasures.py` (the rupees, hearts, Piece of Heart, Heart Container, keys, bomb drop and dungeon map as Seasons draws them in the world, from its own graphics and tables in `assets/treasures/`) |
 | `src/data/sprites-effects.js` | `tools/rip-effects.py` (the puff things vanish in, the puff an enemy dies in and the bomb's blast, from Seasons' common sprites and its INTERAC_PUFF, PART_ENEMY_DESTROYED and ITEM_BOMB tables in `assets/effects/`, S165) |
@@ -133,6 +133,7 @@ ripper credit in the header. The current set:
 | `src/data/sprites-bosses-seasons.js` | `tools/rip-bosses.py` (the cartridge's own boss graphics, frame layouts and palettes, from `assets/bosses/oracles-disasm/`) |
 | `src/data/screens-intro.js` | `tools/rip-intro.py` (the opening's pictures: the sea and sky behind Seasons' linked ending, its ship and gull (INTERAC_LINK_SHIP) and its lightning (PART_LIGHTNING), from Seasons' own graphics and tables in `assets/intro/` and `assets/effects/`, S168) |
 | `src/data/screens-save.js` | `tools/rip-save.py` (Seasons' save screen — CONTINUE, SAVE & CONT., SAVE & QUIT — and the same screen as its GAME OVER, with the acorn cursor, from Seasons' own graphics, maps and palettes in `assets/save/`, S169) |
+| `src/data/screens-menu.js` | `tools/rip-menu.py` (Seasons' three inventory pages — items, treasures and ring box, Essences/heart pieces/SAVE — with the block that fills an empty part, the page's digits, the heart's quarters and the submenu arrow, from Seasons' own graphics, maps and palettes in `assets/menu/`, S176) |
 | `src/data/music-seasons.js` | `tools/rip-music.py` (Seasons' own channel scripts and, since S163, both cartridges' sound effects with their channel priorities, from oracles-disasm copied into `assets/music/`; played by `src/core/gbsound.js`) |
 
 This cuts both ways: **removing** an extracted icon means removing its entry

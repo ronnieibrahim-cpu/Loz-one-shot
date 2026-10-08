@@ -161,6 +161,7 @@ const SFX = {
   confirm: { seasons: 'selectItem' },
   deny: { seasons: 'error' },
   pause: { seasons: 'openMenu' },
+  unpause: { seasons: 'closeMenu' },
 };
 
 // --------------------------------------------------------------------------

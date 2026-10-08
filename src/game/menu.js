@@ -1,37 +1,46 @@
-// Pause menu: item grid with A/B assignment, dungeon or overworld map, quest
-// status, and save. Opened with START, closed with START or B on the first tab.
+// The pause menus, as Seasons has them (S176). START opens the item menu:
+// three pages, turned with SELECT, sliding in from the right — the items; the
+// treasures and the charm cases (where Seasons keeps its ring box); the
+// Essences, the heart pieces and SAVE. SELECT out in the field opens the map
+// instead, and START and SELECT together go straight to the save screen
+// (bank2.s b2_updateMenus, menuStateFadeIntoMenu). No page has a title.
 
 import { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H } from '../core/screen.js';
 import { drawText, drawTextCentered, textWidth, wrapText } from '../gfx/font.js';
 import { sprites, tiles } from '../gfx/art.js';
 import { getPalette } from '../gfx/palettes.js';
 import { tileArt } from '../world/tileset.js';
-import { drawPanel, drawBox } from './dialogue.js';
 import { ITEMS, itemIcon, itemName, inventorySlots, INVENTORY_SLOTS } from './items.js';
 import { drawItemExtra } from './hud.js';
 import {
   CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm,
   caseSize, slotOpen, equippedIn,
 } from './scrimshaw.js';
-import { HEART_UNITS, flag, itemLevel } from './progress.js';
+import { flag, itemLevel } from './progress.js';
 import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
 import { DUNGEON_KEYS } from '../data/keys.js';
-import { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE, GAMEOVER_PICK_FRAMES } from '../data/feel.js';
+import {
+  MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE, MENU_SAVE_FADE, GAMEOVER_PICK_FRAMES,
+  MENU_PAGE_SLIDE, MENU_PAGE_SLIDE_W,
+} from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 
-// THE SEASONS INVENTORY PAGE (tools/rip-screens.py, off the footage): a white
-// page in a frame of olive blocks, a divider, and a strip under it where the
-// source names the item under the cursor. Everything below draws dark on
-// that white, in the page's own ink.
+// THE SEASONS INVENTORY PAGES (tools/rip-menu.py, off the cartridge): a white
+// page in a frame of olive blocks, dividers, and a strip under it where the
+// source names the thing under the cursor. Everything below draws dark on
+// that white, in the page's own ink. The map screen still draws on page 1's
+// frame: Seasons' own map screens are not ripped yet.
+
 const PAGE = { x: 8, y: 24, w: 144, h: 88 };   // the white page
 const STRIP_Y = 126;                             // the line in the strip
 const INK = '#202020';                           // body text
 const BLUE = '#285088';                          // the strip's ink, off the page
 const DIM = '#98a0a0';                           // what is not there yet
 const CURSOR = '#285088';
+const PAPER = '#ffffff';                         // the page's white (rip-menu.py)
 
 /**
  * The pixel width a description is wrapped to, per panel. Exported because
@@ -207,21 +216,50 @@ function worldCanvas(game, m) {
 /** Dropped when a new game or a load resets the world under us. */
 export function invalidateWorldMap() { WORLD_CANVAS = null; WORLD_KEY = ''; MAP_COLOUR.clear(); }
 
-const TABS = ['ITEMS', 'MAP', 'CHARM', 'QUEST', 'SAVE'];
 
-// The three cases are drawn HIGH at the top and LOW at the bottom, because
-// that is where the water is. Reading the screen top to bottom is reading the
-// tide falling, and the highlighted row is where it is right now.
+/** The three pages of the item menu, in the order SELECT turns them. */
+export const PAGES = ['items', 'treasures', 'quest'];
+
+// The charm cases on page 2's ring-box row, in tide order HIGH -> LOW, left
+// to right; each case is two cells wide (CHARM_CASE_MAX), at these columns.
 const CASE_ROWS = ['high', 'mid', 'low'];
-const COLS = 5;
+const CASE_COL = [4, 9, 14];
+const CASE_ROW = 12;
+
+// Page 2's treasures: Seasons' fifteen places (subscreen1TreasureData), five
+// across at columns 3, 6, 9, 12, 15 and three down at rows 3, 6, 9, a
+// treasure's 8x16 picture in the left one of its two cells.
+const TREASURE_SLOTS = 15;
+const treasureAt = i => ({ x: (3 + 3 * (i % 5)) * 8, y: (3 + 3 * Math.floor(i / 5)) * 8 });
+
+// Page 3's Essences. Seasons rings its eight round the left of the page
+// (itemSubmenu2EssencePositions); this game has six, so they stand at
+// Seasons' four corner places — top pair, bottom pair — and halfway down
+// either side, where its two side pairs would meet.
+const ESSENCE_AT = [[32, 32], [56, 32], [72, 60], [56, 88], [32, 88], [16, 60]];
+// What each Essence is called on its title card (src/data/story.js).
+const ESSENCE_NAMES = ['the Shallow Bell', 'the Coral Bell', 'the Bog Bell', 'the Cliff Bell',
+  'the Drowned Bell', "the Drowned King's Bell"];
+// Page 3's right column, below the season's place: the heart box and SAVE
+// (inventorySubmenu2_drawCursor @offsets 9 and 10).
+const RIGHT_AT = [[112, 72], [112, 96]];
+
+// The charm chooser: a box of the page's own blocks over page 2's treasures,
+// columns 1-18 and rows 4-9, holding two rows of eight.
+const POP = { c0: 1, c1: 18, r0: 4, r1: 9, per: 8 };
 
 export class Menu {
   constructor(game) {
     this.game = game;
-    this.tab = 0;
-    this.cursor = 0;
-    this.caseRow = 1;        // index into CASE_ROWS; starts on MID, the one you own
-    this.poolCursor = 0;
+    this.kind = 'inventory';   // 'inventory' | 'map' | 'save'
+    this.page = 0;
+    this.slide = 0;            // frames into a page turn; 0 when still
+    this.slideFrom = 0;
+    this.cursor = 0;           // page 1: the sixteen places
+    this.cursor2 = 0;          // page 2: 0-14 treasures, 15-17 the cases
+    this.cursor3 = 0;          // page 3: 0-5 Essences, 6 hearts, 7 SAVE
+    this.popup = null;         // page 2's charm chooser: { row, at }
+    this.mapFloor = 0;
     this.saveCursor = 0;
     this.savePicked = -1;
     this.savePickT = 0;
@@ -231,15 +269,37 @@ export class Menu {
     this.descT = 0;
   }
 
-  // The item cursor stays where it was left, page to page and opening to
-  // opening, as Seasons' wInventorySubmenu0CursorPos does.
-  open() { this.game.mode = 'menu'; this.tab = 0; }
-  close() {
-    // Through white again, the way it came (MENU_FADE_CLOSE).
+  /**
+   * Bring a menu up; the fade to white in front of it is the caller's. The
+   * item menu always opens on page 1 (inventoryMenuState0 zeroes
+   * wInventorySubmenu), and each page's cursor stays where it was left, as
+   * Seasons' wInventorySubmenu0CursorPos does.
+   */
+  open(kind = 'inventory') {
     const g = this.game;
-    g.audio.sfx('pause');
+    g.mode = 'menu';
+    this.kind = kind;
+    this.page = 0;
+    this.slide = 0;
+    this.popup = null;
+    this.saveCursor = 0;          // Seasons' save screen opens on CONTINUE
+    this.savePicked = -1;
+    if (g.map && g.room && g.room.mapId === g.map.id) this.mapFloor = g.room.floor || 0;
+    // SND_OPENMENU comes with the page, after the fade (menuStateFadeIntoMenu
+    // @openMenu), and not for the save screen.
+    if (kind !== 'save') g.audio.sfx('pause');
+  }
+
+  /** Through white again, the way it came (MENU_FADE_CLOSE); closeMenu plays
+   *  SND_CLOSEMENU except out of the save screen. */
+  close() {
+    const g = this.game;
+    if (this.kind !== 'save') g.audio.sfx('unpause');
     g.fadeOut(() => { g.mode = 'play'; }, true, MENU_FADE_CLOSE);
   }
+
+  /** Which page the item menu is showing ('items', 'treasures', 'quest'). */
+  get pageName() { return PAGES[this.page]; }
 
   /** The inventory's sixteen places, each `{ id, level, def }` or null. */
   get items() {
@@ -252,26 +312,42 @@ export class Menu {
     const i = g.input;
     if (this.messageTime > 0) this.messageTime--;
     this.tickDesc();
-    // Nothing on the page answers while it is fading in or out.
+    // Nothing answers while it is fading in or out.
     if (g.fadeDir || g.fadeHold > 0) return;
 
-    if (i.pressed('start')) { this.close(); return; }
+    if (this.kind === 'save') { this.updateSave(); return; }
+    if (this.kind === 'map') { this.updateMap(); return; }
 
-    // Tab switching with SELECT, or left/right at the row edges.
+    if (this.slide) { this.updateSlide(); return; }
+    if (this.popup) { this.updatePopup(); return; }
+    if (i.pressed('start')) { this.close(); return; }
     if (i.pressed('select')) {
-      this.tab = (this.tab + 1) % TABS.length;
-      this.saveCursor = 0;          // Seasons' save screen opens on CONTINUE
-      this.savePicked = -1;
-      g.audio.sfx('cursor');
+      // inventoryMenuState3: the next page comes in from the right, and the
+      // turn plays SND_OPENMENU.
+      this.slideFrom = this.page;
+      this.page = (this.page + 1) % PAGES.length;
+      this.slide = 1;
+      g.audio.sfx('pause');
       return;
     }
-
-    if (this.tab === 0) this.updateItems();
-    else if (this.tab === 1) this.updateMap();
-    else if (this.tab === 2) this.updateCharms();
-    else if (this.tab === 3) this.updateQuest();
-    else this.updateSave();
+    if (this.page === 0) this.updateItems();
+    else if (this.page === 1) this.updateTreasures();
+    else this.updateQuest();
   }
+
+  /**
+   * The page turn: the frame SELECT is pressed shows the old page still (the
+   * window is only set up then, inventoryMenuState3 @subState0), then the new
+   * page comes in MENU_PAGE_SLIDE a frame, and the frame it reaches 0 is the
+   * page standing still again (@subState2), answering from the next.
+   */
+  updateSlide() {
+    this.slide++;
+    if (this.slideX() <= 0) this.slide = 0;
+  }
+
+  /** Where the incoming page stands this frame (0 once it has arrived). */
+  slideX() { return Math.max(0, MENU_PAGE_SLIDE_W - MENU_PAGE_SLIDE * (this.slide - 1)); }
 
   /**
    * SEASONS' ITEM PAGE (S169; code/bank2.s inventoryMenuState1 @subscreen0):
@@ -306,28 +382,183 @@ export class Menu {
     this.game.audio.sfx('confirm');
   }
 
+  // ------------------------------------------------------------ page 2
+
+  /**
+   * Page 2's treasures, by place: the six dungeon keys held (the first five
+   * across the top row, the sixth starting the second), the Coastwise Chain's
+   * object in hand, and the scrimshaw — the charms owned and the blanks
+   * carried. Each `{ icon, pal?, count?, name, desc }`, or null where there
+   * is nothing. Seasons gives every treasure a fixed place; so does this.
+   */
+  get treasures() {
+    const p = this.game.progress;
+    const out = new Array(TREASURE_SLOTS).fill(null);
+    DUNGEON_KEYS.forEach((k, n) => {
+      if (flag(p, k.flag)) out[n] = { icon: k.icon, name: k.name, desc: k.desc };
+    });
+    if (p.trade && p.trade.item) {
+      out[6] = { icon: tradeIcon(p.trade.item), name: tradeName(p.trade.item), desc: '' };
+    }
+    const owned = ownedCharms(p).length;
+    if (owned || p.blanks || p.carve) {
+      const carving = p.carve ? ` One is being carved: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'} to go.` : '';
+      out[7] = {
+        icon: 'i_charm', pal: 'i_charm', count: p.blanks || 0,
+        name: `Scrimshaw ${owned}/${CHARM_COUNT}`,
+        desc: `Blanks carried: ${p.blanks || 0}.${carving}`,
+      };
+    }
+    return out;
+  }
+
+  /** The cases that can be chosen on page 2's bottom row: the open ones. */
+  get openCases() { return CASE_ROWS.filter(s => slotOpen(this.game.progress, s)); }
+
+  /** The case the page 2 cursor is on, or null on a treasure. */
+  get caseSlot() {
+    return this.cursor2 >= TREASURE_SLOTS ? CASE_ROWS[this.cursor2 - TREASURE_SLOTS] : null;
+  }
+
+  /** The charms that fit the case the chooser is open on. */
+  get pool() {
+    return this.popup ? charmsForSlot(this.game.progress, CASE_ROWS[this.popup.row]) : [];
+  }
+
+  /**
+   * The cursor runs round all fifteen treasure places and on to the open
+   * cases, left and right; up and down step a row of five, and the bottom
+   * row of treasures steps down onto the case under it and back
+   * (inventorySubmenu1CheckDirectionButtons, @ringBoxRowPositionMappings).
+   * A on a case opens its chooser.
+   */
+  updateTreasures() {
+    const g = this.game, i = g.input;
+    const open = CASE_ROWS.map(s => slotOpen(g.progress, s));
+    const stops = [];
+    for (let k = 0; k < TREASURE_SLOTS; k++) stops.push(k);
+    open.forEach((o, k) => { if (o) stops.push(TREASURE_SLOTS + k); });
+    const caseUnder = col => [0, 0, 1, 2, 2][col];
+    const colOver = k => [0, 2, 4][k];
+    let c = this.cursor2;
+    if (!stops.includes(c)) c = 0;
+    const was = c;
+    const nearestCase = k => {
+      // A shut case passes the cursor to the nearest open one, or back up.
+      for (const d of [0, 1, -1, 2, -2]) if (open[k + d]) return TREASURE_SLOTS + k + d;
+      return -1;
+    };
+    if (i.pressed('right') || i.pressed('left')) {
+      const at = stops.indexOf(c) + (i.pressed('right') ? 1 : -1);
+      c = stops[(at + stops.length) % stops.length];
+    } else if (i.pressed('down')) {
+      if (c >= TREASURE_SLOTS) c = colOver(c - TREASURE_SLOTS);
+      else if (c >= 10) { const k = nearestCase(caseUnder(c - 10)); c = k >= 0 ? k : c - 10; }
+      else c += 5;
+    } else if (i.pressed('up')) {
+      if (c >= TREASURE_SLOTS) c = 10 + colOver(c - TREASURE_SLOTS);
+      else if (c < 5) { const k = nearestCase(caseUnder(c)); c = k >= 0 ? k : c + 10; }
+      else c -= 5;
+    }
+    if (c !== was) { this.cursor2 = c; g.audio.sfx('cursor'); }
+    else this.cursor2 = c;
+    if (i.pressed('a') && this.caseSlot) {
+      // The chooser opens on the first charm already in the case, if any.
+      const row = this.cursor2 - TREASURE_SLOTS;
+      this.popup = { row, at: 0 };
+      const inCase = equippedIn(g.progress, CASE_ROWS[row]);
+      const k = this.pool.findIndex(id => inCase.includes(id));
+      this.popup.at = Math.max(0, k);
+      g.audio.sfx('cursor');
+    }
+  }
+
+  /**
+   * THE CHARM CHOOSER, laid out the way Seasons opens a submenu off an item
+   * (the satchel's seeds, inventoryMenuState2): a box over the page, the
+   * choice marked with the submenu's own arrow. Left and right walk it, up and
+   * down step a row, A puts the charm in the case — or, pressed on one
+   * already there, takes it out — and B or START puts the box away.
+   */
+  updatePopup() {
+    const g = this.game, i = g.input, p = g.progress;
+    const pool = this.pool;
+    if (i.pressed('b') || i.pressed('start')) { this.popup = null; g.audio.sfx('cursor'); return; }
+    if (!pool.length) {
+      if (i.pressed('a')) { this.popup = null; g.audio.sfx('cursor'); }
+      return;
+    }
+    let at = Math.min(this.popup.at, pool.length - 1);
+    const was = at;
+    if (i.pressed('right')) at = (at + 1) % pool.length;
+    else if (i.pressed('left')) at = (at + pool.length - 1) % pool.length;
+    else if (i.pressed('down') || i.pressed('up')) {
+      const to = at + (i.pressed('down') ? POP.per : -POP.per);
+      if (to >= 0 && to < pool.length) at = to;
+    }
+    if (at !== was) g.audio.sfx('cursor');
+    this.popup.at = at;
+    if (!i.pressed('a')) return;
+    const slot = CASE_ROWS[this.popup.row];
+    const id = pool[at];
+    const inCase = equippedIn(p, slot);
+    if (inCase.includes(id)) {
+      slotCharm(p, slot, p.charmSlots[slot].indexOf(id), null);
+      g.audio.sfx('cursor');
+      this.flash(CHARMS[id].name + ' off');
+    } else {
+      const size = caseSize(p);
+      let k = p.charmSlots[slot].slice(0, size).indexOf(null);
+      if (k < 0) k = size - 1;              // full: the newest replaces the last
+      slotCharm(p, slot, k, id);
+      g.audio.sfx('confirm');
+      this.flash(CHARMS[id].name + ' on ' + slot.toUpperCase());
+    }
+    this.popup = null;
+  }
+
+  // ------------------------------------------------------------ page 3
+
+  /**
+   * Page 3: the cursor goes round the six Essences on the left, and left or
+   * right crosses to the column on the right, where up and down step between
+   * the heart box and SAVE — the season's place above them is never a stop
+   * here, as it is not in Seasons' dungeons (inventorySubmenu2CheckDirection-
+   * Buttons). A on SAVE goes to the save screen.
+   */
+  updateQuest() {
+    const g = this.game, i = g.input;
+    let c = this.cursor3;
+    const n = essenceCount();
+    if (i.pressed('left') || i.pressed('right')) c = c < n ? n : 0;
+    else if (i.pressed('up') || i.pressed('down')) {
+      const d = i.pressed('down') ? 1 : -1;
+      if (c < n) c = (c + d + n) % n;
+      else c = c === n ? n + 1 : n;
+    }
+    if (c !== this.cursor3) { this.cursor3 = c; g.audio.sfx('cursor'); }
+    if (i.pressed('a') && this.cursor3 === n + 1) {
+      g.audio.sfx('confirm');
+      g.fadeOut(() => { this.kind = 'save'; this.saveCursor = 0; this.savePicked = -1; },
+        true, MENU_SAVE_FADE);
+    }
+  }
+
+  /** The dungeon map changes floor with up and down; B or SELECT puts the
+   *  map away (bank2.s runMapMenu @checkInput). START does nothing there. */
   updateMap() {
     const g = this.game, i = g.input;
-    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); }
-    if (this.game.map && this.game.map.floors > 1) {
-      if (i.pressed('up')) this.mapFloor = Math.min(this.game.map.floors - 1, (this.mapFloor || 0) + 1);
+    if (i.pressed('b') || i.pressed('select')) { this.close(); return; }
+    if (g.map && g.map.floors > 1) {
+      if (i.pressed('up')) this.mapFloor = Math.min(g.map.floors - 1, (this.mapFloor || 0) + 1);
       if (i.pressed('down')) this.mapFloor = Math.max(0, (this.mapFloor || 0) - 1);
     }
   }
 
-  updateQuest() {
-    const g = this.game, i = g.input;
-    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); }
-  }
-
-  /** The case currently highlighted, and the charms that could go in it. */
-  get caseSlot() { return CASE_ROWS[this.caseRow]; }
-  get pool() { return charmsForSlot(this.game.progress, this.caseSlot); }
-
   // ------------------------------------------------- scrolling descriptions
   //
   // The description panel is ONE line of this font tall — the item grid is
-  // above it and the button hint below, and neither has a row to give — while
+  // above it and the page's frame below, and neither has a row to give — while
   // several item descriptions wrap to three lines at that width. They used to
   // be cut with `.slice(0, 33) + '…'`, which is not a summary: "Throw it to
   // hold the tide where it lands. Press again to recall it." became "Throw it
@@ -343,12 +574,16 @@ export class Menu {
 
   /** Identifies what the cursor is on, so moving it restarts the scroll. */
   descId() {
-    if (this.tab === 0) {
+    if (this.kind !== 'inventory' || this.slide) return '';
+    if (this.page === 0) {
       const it = this.items[this.cursor];
       return it ? 'item:' + it.id + ':' + it.level : 'item:';
     }
-    if (this.tab === 2) return 'charm:' + (this.pool[this.poolCursor] || '');
-    return '';
+    if (this.page === 1) {
+      if (this.popup) return 'charm:' + (this.pool[this.popup.at] || '');
+      return 'treasure:' + this.cursor2;
+    }
+    return 'quest:' + this.cursor3;
   }
 
   tickDesc() {
@@ -392,48 +627,13 @@ export class Menu {
     }
   }
 
-  updateCharms() {
-    const g = this.game, i = g.input, p = g.progress;
-    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
-    if (i.pressed('up')) { this.caseRow = (this.caseRow + 2) % 3; this.poolCursor = 0; g.audio.sfx('cursor'); }
-    if (i.pressed('down')) { this.caseRow = (this.caseRow + 1) % 3; this.poolCursor = 0; g.audio.sfx('cursor'); }
-
-    const pool = this.pool;
-    if (!pool.length) { this.poolCursor = 0; return; }
-    if (i.pressed('left')) { this.poolCursor = (this.poolCursor + pool.length - 1) % pool.length; g.audio.sfx('cursor'); }
-    if (i.pressed('right')) { this.poolCursor = (this.poolCursor + 1) % pool.length; g.audio.sfx('cursor'); }
-    this.poolCursor = Math.min(this.poolCursor, pool.length - 1);
-
-    if (!i.pressed('a')) return;
-    const slot = this.caseSlot;
-    const id = pool[this.poolCursor];
-    if (!slotOpen(p, slot)) {
-      g.audio.sfx('deny');
-      this.flash('That case is still shut.');
-      return;
-    }
-    const inCase = equippedIn(p, slot);
-    if (inCase.includes(id)) {
-      // A press on something already in the case takes it out. One button does
-      // both, because at 160x144 a second one would need a legend nobody reads.
-      slotCharm(p, slot, p.charmSlots[slot].indexOf(id), null);
-      g.audio.sfx('cursor');
-      this.flash(CHARMS[id].name + ' off');
-      return;
-    }
-    const size = caseSize(p);
-    let at = p.charmSlots[slot].slice(0, size).indexOf(null);
-    if (at < 0) at = size - 1;              // full: the newest replaces the last
-    slotCharm(p, slot, at, id);
-    g.audio.sfx('confirm');
-    this.flash(CHARMS[id].name + ' on ' + slot.toUpperCase());
-  }
 
   /**
    * SEASONS' SAVE SCREEN (runSaveAndQuitMenu, S169): CONTINUE, SAVE & CONT.,
-   * SAVE & QUIT. The cursor stops at either end, and a choice flickers the
-   * acorn for GAMEOVER_PICK_FRAMES before it takes effect — the same screen
-   * and the same rules as the game over (Game.updateGameOver).
+   * SAVE & QUIT. The cursor stops at either end, A or START chooses, and a
+   * choice flickers the acorn for GAMEOVER_PICK_FRAMES before it takes effect
+   * — the same screen and the same rules as the game over
+   * (Game.updateGameOver). B goes straight back to the game (@bPressed).
    */
   updateSave() {
     const g = this.game, i = g.input;
@@ -441,10 +641,10 @@ export class Menu {
       if (--this.savePickT <= 0) this.saveChoose(this.savePicked);
       return;
     }
-    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
+    if (i.pressed('b')) { this.close(); return; }
     if (i.pressed('up') && this.saveCursor > 0) { this.saveCursor--; g.audio.sfx('cursor'); }
     if (i.pressed('down') && this.saveCursor < 2) { this.saveCursor++; g.audio.sfx('cursor'); }
-    if (i.pressed('a')) {
+    if (i.pressed('a') || i.pressed('start')) {
       this.savePicked = this.saveCursor;
       this.savePickT = GAMEOVER_PICK_FRAMES;
       g.audio.sfx('confirm');
@@ -465,46 +665,66 @@ export class Menu {
 
   flash(msg) { this.message = msg; this.messageTime = 90; }
 
+
   // ------------------------------------------------------------------- draw
 
   draw(ctx) {
-    if (this.tab === 4) { this.drawSave(ctx); return; }
-    // The page, from under the HUD down: the HUD above it is the game's own.
-    const inv = screenImage('inventory');
-    ctx.drawImage(inv.canvas, 0, HUD_H, SCREEN_W, SCREEN_H - HUD_H, 0, HUD_H, SCREEN_W, SCREEN_H - HUD_H);
-
-    // Which page this is, on a white plate let into the top of the frame.
-    // Seasons turns its pages with SELECT and names none of them; this game
-    // has five, and a page nobody can name is a page nobody finds again.
-    const label = TABS[this.tab];
-    const lw = textWidth(label) + 8;
-    ctx.fillStyle = '#f8f8f8';
-    ctx.fillRect(Math.round(SCREEN_W / 2 - lw / 2), HUD_H, lw, 8);
-    drawTextCentered(ctx, label, SCREEN_W / 2, HUD_H, BLUE);
-
-    let strip = null;
-    if (this.tab === 0) strip = this.drawItems(ctx);
-    else if (this.tab === 1) strip = this.drawMap(ctx);
-    else if (this.tab === 2) strip = this.drawCharms(ctx);
-    else strip = this.drawQuest(ctx);
-
-    // The item page hands back its strip with the scroll it is part of.
-    if (strip && typeof strip === 'object') {
-      if (strip.w.more) this.drawScrollMark(ctx, SCREEN_W - 12, STRIP_Y, strip.w);
-      strip = strip.text;
+    if (this.kind === 'save') { this.drawSave(ctx); return; }
+    if (this.kind === 'map') {
+      drawScreen(ctx, 'invPage1', 0, HUD_H);
+      const strip = this.drawMap(ctx);
+      const line = this.messageTime > 0 ? this.message : strip;
+      if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
+      return;
     }
-    const line = this.messageTime > 0 ? this.message : strip;
-    if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
-    else drawTextCentered(ctx, 'SELECT: page  START: close', SCREEN_W / 2, STRIP_Y, DIM);
+    // The pages, under the status bar, which is the game's own and holds
+    // still while they turn.
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H); ctx.clip();
+    if (this.slide === 1) {
+      this.drawPage(ctx, this.slideFrom, 0, false);
+    } else if (this.slide) {
+      this.drawPage(ctx, this.slideFrom, -(MENU_PAGE_SLIDE * (this.slide - 1)), false);
+      this.drawPage(ctx, this.page, this.slideX(), false);
+    } else {
+      this.drawPage(ctx, this.page, 0, true);
+    }
+    ctx.restore();
   }
 
-  /** A bracket at each corner of a cell, the way Seasons marks its cursor. */
-  drawCursor(ctx, x, y, w, h) {
-    ctx.fillStyle = CURSOR;
-    for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + w - 1, y, -1, 1], [x, y + h - 1, 1, -1], [x + w - 1, y + h - 1, -1, -1]]) {
-      ctx.fillRect(Math.min(cx, cx + dx * 2), cy, 3, 1);
-      ctx.fillRect(cx, Math.min(cy, cy + dy * 2), 1, 3);
+  /**
+   * One page at `ox` across. While a page turns, the new page's strip is
+   * empty (func_02_55b2 clears the text) and nothing is under a cursor.
+   */
+  drawPage(ctx, page, ox, live) {
+    ctx.save();
+    ctx.translate(Math.round(ox), 0);
+    drawScreen(ctx, ['invPage1', 'invPage2', 'invPage3'][page], 0, HUD_H);
+    let strip = null;
+    if (page === 0) strip = this.drawItems(ctx, live);
+    else if (page === 1) strip = this.drawTreasures(ctx, live);
+    else strip = this.drawQuest(ctx, live);
+    if (live) {
+      // The item page hands back its strip with the scroll it is part of.
+      if (strip && typeof strip === 'object') {
+        if (strip.w.more) this.drawScrollMark(ctx, SCREEN_W - 12, STRIP_Y, strip.w);
+        strip = strip.text;
+      }
+      const line = this.messageTime > 0 ? this.message : strip;
+      if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
     }
+    ctx.restore();
+  }
+
+  /** The page's two brackets either side of a cell `w` wide at (x, y). */
+  drawBrackets(ctx, x, y, w = 16) {
+    sprites.draw(ctx, 'menu_cursor_l', x - 8, y);
+    sprites.draw(ctx, 'menu_cursor_r', x + w, y);
+  }
+
+  /** Fill tile columns c0..c1, rows r0..r1 with the page's block. */
+  fillBlocks(ctx, c0, r0, c1, r1) {
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) drawScreen(ctx, 'invBlock', c * 8, r * 8);
   }
 
   /**
@@ -514,15 +734,12 @@ export class Menu {
    * cursor's two brackets a tile either side (inventorySubscreen0_drawCursor).
    * The name and then the description run in the strip below the page.
    */
-  drawItems(ctx) {
+  drawItems(ctx, live = true) {
     const p = this.game.progress;
     const list = this.items;
     list.forEach((it, i) => {
       const x = 24 + (i & 3) * 32, y = 24 + (i >> 2) * 24;
-      if (i === this.cursor) {
-        sprites.draw(ctx, 'menu_cursor_l', x - 8, y);
-        sprites.draw(ctx, 'menu_cursor_r', x + 24, y);
-      }
+      if (live && i === this.cursor) this.drawBrackets(ctx, x, y, 24);
       if (!it) return;
       // The icon is an 8px picture centred in a 16px cell.
       sprites.draw(ctx, itemIcon(it.id, it.level), x - 4, y, { pal: it.def.pal });
@@ -535,7 +752,125 @@ export class Menu {
     return { text: w.lines[0] || '', w };
   }
 
-  /** Two different screens that used to be one loop. See each one's own note. */
+  /**
+   * Page 2 (inventorySubscreen1_drawTreasures): the treasures in their
+   * places, then the ring box's row — here the three charm cases. With no
+   * case open the row is filled with the page's block, as Seasons fills it
+   * before Link has a ring box (@ringBoxClearTiles, level 0), and a shut case
+   * or a cell the case is not yet big enough for is blocked over the same way.
+   */
+  drawTreasures(ctx, live = true) {
+    const g = this.game, p = g.progress;
+    const list = this.treasures;
+    list.forEach((t, k) => {
+      const { x, y } = treasureAt(k);
+      if (live && !this.popup && this.cursor2 === k) this.drawBrackets(ctx, x, y);
+      if (!t) return;
+      sprites.draw(ctx, t.icon, x - 4, y, t.pal ? { pal: t.pal } : undefined);
+      if (t.count != null) {
+        const n = Math.max(0, Math.min(99, t.count));
+        sprites.draw(ctx, 'hud_d' + Math.floor(n / 10), x + 8, y + 8);
+        sprites.draw(ctx, 'hud_d' + (n % 10), x + 16, y + 8);
+      }
+    });
+
+    const open = this.openCases;
+    if (!open.length) {
+      this.fillBlocks(ctx, 1, CASE_ROW, 18, CASE_ROW + 2);
+    } else {
+      const size = caseSize(p);
+      const live2 = g.scrim.liveSlots;
+      CASE_ROWS.forEach((slot, k) => {
+        const c = CASE_COL[k], x = c * 8, y = CASE_ROW * 8;
+        if (!slotOpen(p, slot)) { this.fillBlocks(ctx, c, CASE_ROW, c + 1, CASE_ROW + 1); return; }
+        for (let n = 0; n < 2; n++) {
+          if (n >= size) { this.fillBlocks(ctx, c + n, CASE_ROW, c + n, CASE_ROW + 1); continue; }
+          const id = p.charmSlots[slot][n];
+          if (id) sprites.draw(ctx, 'i_charm', x + n * 8 - 4, y, { pal: CHARMS[id].color });
+        }
+        // The case's tide, in the three tones the water is drawn in: filled
+        // for the case the sea is at now, hollow for the other two.
+        const lv = CHARM_SLOTS.indexOf(slot);
+        ctx.fillStyle = TIDE_PIP[lv];
+        if (live2.has(slot)) ctx.fillRect(x + 18, y + 10, 4, 4);
+        else { ctx.fillRect(x + 18, y + 10, 4, 1); ctx.fillRect(x + 18, y + 13, 4, 1);
+               ctx.fillRect(x + 18, y + 10, 1, 4); ctx.fillRect(x + 21, y + 10, 1, 4); }
+        if (live && !this.popup && this.caseSlot === slot) this.drawBrackets(ctx, x, y);
+      });
+    }
+
+    if (this.popup && live) return this.drawPopup(ctx);
+    const c = this.caseSlot;
+    if (c) {
+      const ids = (p.charmSlots[c] || []).filter(Boolean);
+      return c.toUpperCase() + ' case: ' + (ids.length ? ids.map(id => CHARMS[id].name).join(', ') : 'empty');
+    }
+    const t = list[this.cursor2];
+    if (!t) return null;
+    const w = this.descWindow(t.desc ? t.name + '\n' + t.desc : t.name, DESC_WRAP_W.item);
+    return { text: w.lines[0] || '', w };
+  }
+
+  /** The charm chooser over page 2 (see updatePopup). */
+  drawPopup(ctx) {
+    const p = this.game.progress;
+    const slot = CASE_ROWS[this.popup.row];
+    this.fillBlocks(ctx, POP.c0, POP.r0, POP.c1, POP.r0);
+    this.fillBlocks(ctx, POP.c0, POP.r1, POP.c1, POP.r1);
+    this.fillBlocks(ctx, POP.c0, POP.r0, POP.c0, POP.r1);
+    this.fillBlocks(ctx, POP.c1, POP.r0, POP.c1, POP.r1);
+    ctx.fillStyle = PAPER;
+    ctx.fillRect((POP.c0 + 1) * 8, (POP.r0 + 1) * 8, (POP.c1 - POP.c0 - 1) * 8, (POP.r1 - POP.r0 - 1) * 8);
+    const pool = this.pool;
+    if (!pool.length) return 'Nothing carved fits the ' + slot.toUpperCase() + ' case.';
+    const inCase = equippedIn(p, slot);
+    pool.forEach((id, k) => {
+      const x = (POP.c0 + 1) * 8 + (k % POP.per) * 16 + 4, y = (POP.r0 + 1) * 8 + Math.floor(k / POP.per) * 16;
+      sprites.draw(ctx, 'i_charm', x - 4, y, { pal: CHARMS[id].color });
+      if (inCase.includes(id)) { ctx.fillStyle = '#28a048'; ctx.fillRect(x, y, 8, 1); }
+      if (k === this.popup.at) drawScreen(ctx, 'invSubCursor', x, y + 10);
+    });
+    const sel = CHARMS[pool[this.popup.at]];
+    if (!sel) return null;
+    const w = this.descWindow(sel.name + '\n' + sel.desc, DESC_WRAP_W.charm);
+    return { text: w.lines[0] || '', w };
+  }
+
+  /**
+   * Page 3 (inventorySubscreen2_drawTreasures): the Essences held — an
+   * Essence not yet found is simply not there, as the cartridge clears it —
+   * the season's place blocked over as Seasons blocks it in a dungeon (this
+   * game has no season to show there), the heart box filled a quarter for
+   * each piece held with the count beside it, and SAVE.
+   */
+  drawQuest(ctx, live = true) {
+    const p = this.game.progress;
+    const n = essenceCount();
+    this.fillBlocks(ctx, 13, 2, 18, 5);
+    for (let k = 0; k < n; k++) {
+      const [x, y] = ESSENCE_AT[k];
+      if (p.essences.includes(k + 1)) sprites.draw(ctx, 'p_essence' + (k + 1) + '_0', x, y, { pal: 'essence' + (k + 1) });
+      if (live && this.cursor3 === k) this.drawBrackets(ctx, x, y);
+    }
+    const pieces = Math.max(0, Math.min(3, p.heartPieces | 0));
+    if (pieces) {
+      const h = screenImage('invHeart' + pieces);
+      drawScreen(ctx, 'invHeart' + pieces, h.ax, HUD_H + h.ay);
+    }
+    // The count, in the page's own digit (w4TileMap+$14f: row 10, column 15).
+    const dg = screenImage('invDigits');
+    ctx.drawImage(dg.canvas, pieces * 8, 0, 8, 8, 15 * 8, 10 * 8, 8, 8);
+    if (live && this.cursor3 >= n) {
+      const [x, y] = RIGHT_AT[this.cursor3 - n];
+      this.drawBrackets(ctx, x, y, 32);
+    }
+    if (this.cursor3 < n) {
+      return p.essences.includes(this.cursor3 + 1) ? 'Essence: ' + ESSENCE_NAMES[this.cursor3] : null;
+    }
+    if (this.cursor3 === n) return `Pieces of Heart: ${pieces} of 4`;
+    return 'Save your progress';
+  }
+
   drawMap(ctx) {
     const g = this.game;
     const m = g.map;
@@ -708,122 +1043,6 @@ export class Menu {
     }
   }
 
-  drawQuest(ctx) {
-    const g = this.game, p = g.progress;
-    const x = PAGE.x + 4;
-    let y = PAGE.y + 3;
-    drawText(ctx, 'ESSENCES OF THE TIDE', x, y, BLUE); y += 10;
-    for (let i = 1; i <= essenceCount(); i++) {
-      const got = p.essences.includes(i);
-      sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), x + (i - 1) * 18, y, { pal: got ? 'essence' + i : 'uidark' });
-    }
-    y += 19;
-    // THE SIX DUNGEON KEYS (S154), beside the Essences they open the way to.
-    // Only the keys held are drawn, in the order of the dungeons.
-    let kx = x;
-    for (const k of DUNGEON_KEYS) {
-      if (!flag(p, k.flag)) continue;
-      sprites.draw(ctx, k.icon, kx, y - 4);
-      kx += 12;
-    }
-    if (kx > x) y += 12;
-    drawText(ctx, `Hearts ${Math.ceil(p.hearts / HEART_UNITS)}/${Math.ceil(p.maxHearts / HEART_UNITS)}`
-      + `   Pieces ${p.heartPieces}/4`, x, y, INK);
-    y += 10;
-    drawText(ctx, `Rupees ${p.rupees}   Deaths ${p.deaths}`, x, y, INK);
-    y += 12;
-    drawText(ctx, 'SCRIMSHAW ' + ownedCharms(p).length + '/' + CHARM_COUNT, x, y, BLUE);
-    y += 10;
-    drawText(ctx, `Blanks ${p.blanks || 0}`
-      + (p.carve ? `   Carving: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'}` : ''),
-      x, y, INK);
-    y += 11;
-
-    // The Coastwise Chain. This screen is the ONLY place the player can look up
-    // what they are carrying — a trade item is not in the item grid, because it
-    // is not an item and putting it there would offer to equip it to a button.
-    // The line is drawn only once the chain has started, so a new game's quest
-    // screen does not advertise a quest nobody has met yet.
-    if (p.trade && p.trade.stage) {
-      if (p.trade.item) {
-        sprites.draw(ctx, tradeIcon(p.trade.item), x, y - 4);
-        drawText(ctx, tradeName(p.trade.item), x + 18, y, INK);
-      } else {
-        drawText(ctx, 'Nothing left to carry.', x, y, DIM);
-      }
-      return 'COASTWISE CHAIN';
-    }
-    return null;
-  }
-
-  // ------------------------------------------------------------ scrimshaw
-
-  /**
-   * Three cases stacked as tide levels, HIGH at the top. The live one is
-   * highlighted, which is the entire teaching job this screen has: a charm in
-   * a case that is not lit is a charm doing nothing, and that has to be
-   * obvious at a glance and at 160x144.
-   */
-  drawCharms(ctx) {
-    const g = this.game, p = g.progress;
-    const live = g.scrim.liveSlots;
-    const size = caseSize(p);
-    const x = PAGE.x + 2;
-    let y = PAGE.y + 4;
-
-    for (let r = 0; r < CASE_ROWS.length; r++) {
-      const slot = CASE_ROWS[r];
-      const lv = CHARM_SLOTS.indexOf(slot);
-      const on = live.has(slot) && slotOpen(p, slot);
-      const here = r === this.caseRow;
-
-      if (on) { ctx.fillStyle = '#d8e8f0'; ctx.fillRect(x, y - 2, PAGE.w - 4, 12); }
-      if (here) { ctx.fillStyle = CURSOR; ctx.fillRect(x, y - 2, 1, 12); }
-
-      // The tide pip, the same three tones the water itself is drawn in, so
-      // the row needs no key to read as a tide level.
-      ctx.fillStyle = TIDE_PIP[lv];
-      ctx.fillRect(x + 4, y + 1, 5, 5);
-      drawText(ctx, TIDE_NAMES[lv], x + 12, y, on ? INK : DIM);
-
-      if (!slotOpen(p, slot)) {
-        drawText(ctx, 'shut', x + 46, y, DIM);
-      } else {
-        for (let i = 0; i < size; i++) {
-          const id = p.charmSlots[slot][i];
-          const cx = x + 46 + i * 13;
-          if (id) sprites.draw(ctx, 'i_charm', cx, y - 1, { pal: CHARMS[id].color });
-          else { ctx.strokeStyle = DIM; ctx.strokeRect(cx + 0.5, y - 0.5, 9, 9); }
-        }
-      }
-      y += 12;
-    }
-
-    // The pool: everything owned that fits the highlighted case.
-    const pool = this.pool;
-    y += 2;
-    drawText(ctx, this.caseSlot.toUpperCase() + ' CASE  ' + pool.length + ' fit', x + 2, y, BLUE);
-    y += 10;
-    if (!pool.length) {
-      drawText(ctx, 'Nothing carved yet.', x + 2, y, DIM);
-      return null;
-    }
-    const inCase = equippedIn(p, this.caseSlot);
-    pool.forEach((id, i) => {
-      const cx = x + 2 + i * 12;
-      if (cx > PAGE.x + PAGE.w - 12) return;
-      sprites.draw(ctx, 'i_charm', cx, y, { pal: CHARMS[id].color });
-      if (inCase.includes(id)) { ctx.fillStyle = '#28a048'; ctx.fillRect(cx, y - 2, 9, 1); }
-      if (i === this.poolCursor) { ctx.fillStyle = CURSOR; ctx.fillRect(cx, y + 10, 9, 1); }
-    });
-    y += 13;
-    const sel = CHARMS[pool[this.poolCursor]];
-    if (!sel) return null;
-    const w = this.descWindow(sel.desc, DESC_WRAP_W.charm);
-    drawText(ctx, w.lines[0] || '', x + 2, y, INK);
-    if (w.more) this.drawScrollMark(ctx, PAGE.x + PAGE.w - 6, y, w);
-    return sel.name;
-  }
 
   /** Seasons' save screen, off the cartridge (tools/rip-save.py). */
   drawSave(ctx) {
@@ -834,6 +1053,4 @@ export class Menu {
     }
     if (this.messageTime > 0) drawTextCentered(ctx, this.message, SCREEN_W / 2, 130, '#f8f8f8');
   }
-
-
 }

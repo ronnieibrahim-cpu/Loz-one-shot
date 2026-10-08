@@ -1961,10 +1961,16 @@ export class Game {
 
     if (this.dialogue.active) { this.dialogue.update(); this.flushPending(); return; }
 
-    if (this.input.pressed('start') && !this.veiled() && !this.transition) {
-      // Seasons goes to white before the item page comes up (MENU_FADE_OPEN).
-      this.audio.sfx('pause');
-      this.fadeOut(() => this.menu.open(), true, MENU_FADE_OPEN);
+    if ((this.input.pressed('start') || this.input.pressed('select')) && !this.veiled() && !this.transition) {
+      // START is the item menu and SELECT the map; Seasons goes to white
+      // before either comes up (MENU_FADE_OPEN), and if both are held when
+      // the white is reached it is the save screen instead (bank2.s
+      // b2_updateMenus, menuStateFadeIntoMenu).
+      const kind = this.input.pressed('start') ? 'inventory' : 'map';
+      this.fadeOut(() => {
+        const both = this.input.down('start') && this.input.down('select');
+        this.menu.open(both ? 'save' : kind);
+      }, true, MENU_FADE_OPEN);
       return;
     }
 

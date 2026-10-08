@@ -1,4 +1,4 @@
-// Screenshot the MAP SCREEN — the pause menu's MAP tab — in a named state.
+// Screenshot the MAP SCREEN — SELECT in the field — in a named state.
 //
 // Every other shot tool in here points at the world. Nothing pointed at the
 // menu, so the one screen a player opens most had no way of being looked at,
@@ -144,21 +144,20 @@ for (const spec of SHOTS) {
   if (got && got.err) { console.log(`  MISS ${spec.padEnd(18)} ${got.err}`); misses.push(spec); continue; }
   await frames(20);
 
-  // Open the menu and land on MAP. `open()` always resets to tab 0, so the tab
-  // is set after it, not before.
+  // Open the map (SELECT in the field, S176). `open()` sets the floor to the
+  // room's own, so the floor asked for is set after it.
   await page.evaluate((floor) => {
     const g = window.__game;
     if (g.dialogue) g.dialogue.active = false;
     g.bannerTime = 0;
-    g.menu.open();
-    g.menu.tab = 1;
+    g.menu.open('map');
     g.menu.mapFloor = floor;
   }, floor);
   await frames(4);
 
-  const mode = await page.evaluate(() => window.__game.mode + ':' + window.__game.menu.tab);
-  if (mode !== 'menu:1') {
-    console.log(`  MISS ${spec.padEnd(18)} menu did not open on the map tab (got ${mode})`);
+  const mode = await page.evaluate(() => window.__game.mode + ':' + window.__game.menu.kind);
+  if (mode !== 'menu:map') {
+    console.log(`  MISS ${spec.padEnd(18)} the map did not open (got ${mode})`);
     misses.push(spec);
     continue;
   }

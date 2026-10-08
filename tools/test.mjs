@@ -953,14 +953,37 @@ const main = async () => {
   // _CLOSE), and the page does not answer until it has faded in.
   const settle = async () => { for (let i = 0; i < 40 && await G(() => window.__game.veiled()); i++) await frames(2); };
   await tap('Enter'); await settle();
-  check('menu opens', await G(() => window.__game.mode === 'menu'));
+  check('menu opens', await G(() => window.__game.mode === 'menu' && window.__game.menu.kind === 'inventory'));
+  check('the item menu opens on its first page', await G(() => window.__game.menu.pageName === 'items'));
   await shot('11-menu-items');
-  await tap('Tab'); await shot('12-menu-map');
-  await tap('Tab'); await shot('13-menu-charm');
-  check('reached the charm tab', await G(() => window.__game.menu.tab === 2));
-  await tap('Tab'); await shot('14-menu-quest');
+  // SELECT turns the page (S176): it slides in from the right at Seasons'
+  // MENU_PAGE_SLIDE and the page answers nothing until it has arrived.
+  const turned = async () => { for (let i = 0; i < 40 && await G(() => window.__game.menu.slide > 0); i++) await frames(1); };
   await tap('Tab');
-  check('reached the save tab', await G(() => window.__game.menu.tab === 4));
+  check('SELECT starts a page turn', await G(() => window.__game.menu.slide > 0 || window.__game.menu.pageName === 'treasures'));
+  await turned();
+  check('the second page is the treasures and the charm cases', await G(() => window.__game.menu.pageName === 'treasures'));
+  await shot('13-menu-treasures');
+  // The turn itself, frame by frame after the press: 140, 128 ... 8, then 0
+  // on the thirteenth (footage 8239-8251), through the menu's own update.
+  const slideXs = await G(() => {
+    const m = window.__game.menu, xs = [];
+    const was = [m.page, m.slide, m.slideFrom];
+    m.slide = 1;                     // the frame SELECT is pressed: still
+    for (let k = 0; k < 20 && m.slide; k++) { m.updateSlide(); xs.push(m.slide ? m.slideX() : 0); }
+    [m.page, m.slide, m.slideFrom] = was;
+    return xs;
+  });
+  check('a page turn is 13 frames at 12 px, the last one 8',
+    JSON.stringify(slideXs) === JSON.stringify([140, 128, 116, 104, 92, 80, 68, 56, 44, 32, 20, 8, 0]), JSON.stringify(slideXs));
+  await tap('Tab'); await turned();
+  check('the third page is the Essences, the heart pieces and SAVE', await G(() => window.__game.menu.pageName === 'quest'));
+  await shot('14-menu-quest');
+  // SAVE is page 3's bottom right: across to the right column, down to SAVE.
+  await tap('ArrowRight'); await tap('ArrowDown');
+  await tap('x');
+  await frames(4); await settle();
+  check('SAVE on page 3 goes to the save screen', await G(() => window.__game.menu.kind === 'save'));
   // Seasons' save screen opens on CONTINUE; SAVE & CONT. saves and closes.
   check('the save screen opens on CONTINUE', await G(() => window.__game.menu.saveCursor === 0));
   await tap('ArrowDown');
@@ -969,6 +992,19 @@ const main = async () => {
   await frames(40); await settle();
   check('save wrote to localStorage', await G(() => !!localStorage.getItem('oracleOfTides.save.v1')));
   check('SAVE & CONT. closes the menu', await G(() => window.__game.mode === 'play'));
+  // SELECT in the field is the map, and B puts it away (bank2.s runMapMenu).
+  await tap('Tab'); await settle();
+  check('SELECT in the field opens the map', await G(() => window.__game.mode === 'menu' && window.__game.menu.kind === 'map'));
+  await shot('12-menu-map');
+  await tap('z'); await frames(4); await settle();
+  check('B puts the map away', await G(() => window.__game.mode === 'play'));
+  // START and SELECT together are the save screen, and B goes back to play.
+  await page.keyboard.down('Enter'); await page.keyboard.down('Tab'); await frames(4);
+  await settle();
+  await page.keyboard.up('Enter'); await page.keyboard.up('Tab');
+  check('START and SELECT together open the save screen', await G(() => window.__game.mode === 'menu' && window.__game.menu.kind === 'save'));
+  await tap('z'); await frames(4); await settle();
+  check('B on the save screen goes back to play', await G(() => window.__game.mode === 'play'));
 
   // The status bar holds every heart count the game can reach (S167): the
   // cap is 16 and the bar used to wrap hearts 15-16 onto a third row drawn
