@@ -38,3 +38,16 @@ the Maku Tree's key), each road chapter names who gives the next dungeon's
 key (S154), and the edits that had only ever been made to the published
 artifact (the side-content hearts, the Side quests table, chapter 12 in
 plain words) are in `guide.html` now.
+
+## S178: re-shot on the current game
+
+Every picture was re-captured on the game as of S178 (the last capture was
+S161). The route had changed in 17 directives since (boss re-timings, the
+D5 keyhole, Farore's desk), so every `after`/`by` in `shots.mjs` and every
+trail `from`/`to` in `figures.mjs` was moved with the same longest-common-
+subsequence match as S159 (a changed directive maps to the slot it replaced).
+Fights are shorter since the sword changes (S172-S175), so three fight shots
+were re-timed by a scan (`plus` at 20-frame steps, looked at side by side).
+`capture.mjs` now photographs a text box with its page typed out (the run is
+not advanced for it) and the title shot starts the card and skips the
+opening, so it shows the logo. The HUD figure's numbers follow S167's bar.

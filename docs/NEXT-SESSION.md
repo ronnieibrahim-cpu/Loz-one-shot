@@ -51,6 +51,28 @@ card now deaf at power-on that press would have held it for ever, so a press
 the sound does not answer now starts the card running instead (caught by the
 robot sitting on frame 0 for 3000 frames).
 
+### Part two: the guide re-shot (the human: "push to main, then update the guide")
+S178's game work was fast-forwarded onto main (0906344). Then the player's
+guide (docs/guide/) was re-shot on the current game, last captured at S161:
+- The route had changed in 17 directives (boss re-timings, D5's keyhole,
+  Farore's desk); every shot's `after`/`by` and every trail's `from`/`to` moved
+  by an LCS match of the S161 ROUTE against today's (tools/guide/shots.mjs,
+  figures.mjs). Every route shot was checked to land in the room its id
+  names; all 697 shots captured.
+- Fights are shorter since the sword work: the Clawcrab and Thornvine fight
+  shots re-timed by a scan. NOTE: a shot's `plus` counts from wherever the
+  run already is, so successive shots on one `after` are CUMULATIVE.
+- capture.mjs: a text box is photographed with its page typed out (purely
+  visual), and the title shot shows the logo, not the press-a-button card.
+- HUD figure's numbers re-placed for S167's bar (and its stale "Room name"
+  label dropped); menu figure re-shot (part one).
+- Text: the held sword (full speed, facing locked, the jab and the hollow
+  clink), the HUD key line, the GAME OVER screen's three choices (only the
+  SAVE ones write the file; the file select counts falls), Farore behind her
+  desk, the Keyvault key caption.
+- The guide describes the route check-playthrough proves (44/44 this
+  session), and check-side covers the side content it lists.
+
 ### FUTURE ACTION ITEMS
 Item 5 (fight tuning) is the human's. Leftovers: the human has seen the map
 recolour only as one picture — ask; the woods read as bright grass (Seasons'

@@ -55,8 +55,12 @@ const browser = await chromium.launch().catch(() =>
 // game.draw() paints it. `noPlayer` leaves Link out of a whole-room picture.
 function snapInPage({ whole, noPlayer, noBanner, noDialogue }) {
   const g = window.__game;
-  const saved = { banner: g.bannerTime, dlg: g.dialogue && g.dialogue.active, player: g.player };
+  const saved = { banner: g.bannerTime, dlg: g.dialogue && g.dialogue.active, player: g.player,
+    chars: g.dialogue && g.dialogue.chars };
   if (noBanner) g.bannerTime = 0;
+  // A text box still typing is photographed with its page typed out: the
+  // picture is of what the box says, not of the moment it was caught at.
+  if (g.dialogue && g.dialogue.active) g.dialogue.chars = g.dialogue.pageLen;
   if (noDialogue && g.dialogue) g.dialogue.active = false;
   let url, w, h;
   if (whole && g.room) {
@@ -75,7 +79,7 @@ function snapInPage({ whole, noPlayer, noBanner, noDialogue }) {
     url = cv.toDataURL('image/png'); w = cv.width; h = cv.height;
   }
   g.bannerTime = saved.banner;
-  if (g.dialogue) g.dialogue.active = saved.dlg;
+  if (g.dialogue) { g.dialogue.active = saved.dlg; g.dialogue.chars = saved.chars; }
   g.draw();
   const p = g.player;
   const meta = {
@@ -181,7 +185,13 @@ if (stat2.length) {
   await page.evaluate(installRuntime);
   // The title screen, before anything is pressed.
   for (const s of stat2.filter(s => s.title)) {
-    await page.evaluate((n) => { window.__harness.takeOver(); window.__harness.step(n); }, s.frames || 120);
+    // The logo, not the card: the card waits for a press to start the sound
+    // (S169), so start it running and skip the opening, then let the logo in.
+    await page.evaluate((n) => {
+      const t = window.__game.title;
+      t.waitSound = false; t.opening = null;
+      window.__harness.takeOver(); window.__harness.step(n);
+    }, s.frames || 120);
     const got = await page.evaluate(snapInPage, { whole: false });
     await save(s.id, got, { kind: 'static' });
     console.log(`  ok   ${s.id.padEnd(28)} title`);
