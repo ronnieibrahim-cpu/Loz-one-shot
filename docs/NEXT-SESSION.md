@@ -1,3 +1,93 @@
+## S177 — Seasons' own map screens
+
+Branch claude/oracle-tides-s177-wnevbl, built ON S176's branch
+(claude/oracle-tides-s176-tefnx4 at 896fb9a), because S176 was NOT merged
+into main when this session started (main was 83d7619). Merging this branch
+brings S176 with it. The prompt left the task blank; the human picked
+"Seasons' map screens" (S176's biggest leftover), then chose, from a picture
+of Seasons' and Ages' maps beside ours and a rough mock: Seasons-style
+squares made from our own screens, with Seasons' cursor and place names.
+Read out of oracles-disasm (cloned to the scratchpad), bank2.s runMapMenu.
+
+### What landed
+- THE OVERWORLD MAP, full screen (no status bar, no item-page frame). The
+  sky row off Seasons' map on top, Ages' open sea (white flecks on blue) all
+  round, and the 17x10 world as a grid of 8x8 squares, black lines top-left
+  of each and down the grid's right and bottom. Seasons' squares are a
+  hand-drawn picture of each Holodrum screen, so ours are DRAWN AT RUN TIME
+  from each screen's own tiles (src/game/mapscreen.js `paintSquare`): each of
+  7x7 pixels is the material covering most of its share of the screen —
+  sea, woods, cliff, earth, coral, grass, sand, from tile flags and name
+  families (`material`) — in MAP_INK, colours read from PALH_07. Walls count
+  0.6 (`WALL`) so every square is not a boxed frame (four weights shot side by
+  side; 0.6 read most like Holodrum). Sea is flecked from the ripped sea
+  tile's own pattern; woods are green dotted dark. Cached on the tide stamp.
+  Unvisited screens are covered with Seasons' unvisited tile ($04/$0a).
+- THE CURSOR AND NAMES (mapMenu_state1 @overworld): the cursor (tile $88,
+  palette 6) starts on Link's screen (in a house or cave, the screen whose
+  door leads in: `homeOf`), arrows move it a square with SND_MENU_MOVE and
+  it WRAPS at every edge; the arrow over Link's screen blinks every 32 frames
+  (MAP_ARROW_BLINK). A on a visited square shows its name in a text box (top
+  half when the cursor is low, bottom when high — Dialogue now takes
+  `{ y }` / `{ bottom }`); a dungeon's door screen says the dungeon's name
+  once it has been entered (@specialCode1). A on an unvisited square: nothing.
+  B or SELECT closes.
+- THE CORNER POPUP (maupMenu_drawPopup): over a visited screen with a door
+  into a house, shop, the Maku Tree or (once entered) a cave, a red frame
+  grows in a corner, a size every 2 frames to four (MAP_POPUP_STEP), then
+  shows the cartridge's picture — house, shop, Maku Tree, cave — and with two
+  doors alternates them every 24 frames (MAP_POPUP_SWAP); shrinks away when
+  the cursor leaves; restarts when its corner changes (top right; lower when
+  the cursor is in the lower half, left when in the right half).
+- THE DUNGEON MAP, Seasons' own screen (map_dungeon_minimap, PALH_09, BG
+  palette 0 = PALH_0f's): the dungeon's NAME BOX top left, the floor list
+  ("1F" "2F" with their boxes, from row 9, only floors visited unless the Map
+  is held), Link's head on his floor and the floor cursor, the floor shown in
+  the right-hand window as Seasons' room tiles ($b0 + exits: up 1, right 2,
+  down 4, left 8 — a side is open if any tile along it is not wall, a seam in
+  a multi-cell room is always open: `cellExits`), $af for a room the Map
+  shows but nobody walked into, Link's head and the cursor round his room
+  taking turns every 32 frames (DMAP_FLICKER), up/down arrows, up and down
+  scrolling to the next viewable floor one tile row a frame, ten a floor
+  (DMAP_SCROLL_ROWS), with Seasons' autofire (MENU_AUTOFIRE_DELAY 40,
+  _EVERY 4). Bottom left: the Map, the Chartstone (in the compass's place —
+  it replaced the compass), the Boss Key, the small key and "x n". The
+  Chartstone's tide pips still mark rooms (ours). No boss/chest marks: those
+  are the compass's, and the Chartstone does not do them.
+- THE NAME BOX: Seasons draws each dungeon's name by hand in its box. Ours
+  are lettered from letters CUT OFF the boxes of both cartridges (16 boxes,
+  each line split on blank columns, the commonest cut of each letter; T cut
+  from Ages' "Turret" by taking the u off it, and it lets a small letter in
+  under its bar, as there). K and V are on no box: drawn to match in
+  src/data/sprites-map-drawn.js. "L - n" lines off Seasons' D1-D6 boxes for
+  the six main dungeons; optional dungeons have none, like the Hero's Cave.
+  Lines wrap greedily at 50 px, laid out as the boxes lay them
+  (BLURB_LAYOUT, measured).
+- tools/rip-map.py -> src/data/screens-map.js (96 pictures + MAP_INK,
+  DMAP_BLACK, BLURB_CHARS, BLURB_LAYOUT); sources in assets/map/ with a
+  README; check-rippers covers it; CLAUDE.md's table has the row.
+- The old map code (one pixel per tile on page 1's frame, `tideMarks`,
+  `tileMapColour`, `drawWorldMap`, `drawDungeonMap`) is gone from menu.js.
+- test.mjs 116 -> 128 (cursor on Link's screen, moves, wraps, A names,
+  nothing for unseen, popup grows/alternates/shrinks, every dungeon name
+  letterable in <= 3 lines, dungeon map on Link's floor, a floor scroll is
+  ten rows a frame each). shoot-map takes `overworld:full@x,y` (cursor there,
+  popup grown). The player's guide's SELECT line updated.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test
+128/128. The robot needed no re-routing (it never opens the map).
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: the squares are a first
+pass the human has seen only as a mock and two screenshots — ask whether any
+region reads wrong (the salt pan reads as sand, the grey stone as earth);
+Seasons' map has no popup for a dungeon door and neither does ours; the
+popup's frame picture at sizes 1-2 is tiny (Seasons' own); the charm chooser
+still appears at once where Seasons' satchel box grows; the guide's menu
+picture (menu-anchor) is still the old titled page; Deaths shows nowhere;
+START on the CARD still goes to the file select.
+
 ## S176 — the pause menu laid out and reached the way Seasons does it
 
 Branch claude/oracle-tides-s176-tefnx4, off main at 83d7619 (S175 fully

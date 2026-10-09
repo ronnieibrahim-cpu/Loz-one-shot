@@ -996,8 +996,102 @@ const main = async () => {
   await tap('Tab'); await settle();
   check('SELECT in the field opens the map', await G(() => window.__game.mode === 'menu' && window.__game.menu.kind === 'map'));
   await shot('12-menu-map');
+  // Seasons' overworld map (S177, runMapMenu @overworld): the cursor starts
+  // on Link's own screen, the arrows move it a square and it wraps at the
+  // edges, and A on a square he has been to names it in a text box.
+  const ow = await G(() => {
+    const ms = window.__game.menu.mapScreen, r = window.__game.room;
+    return { mode: ms.mode, cursor: ms.cursor, here: [r.rx, r.ry], w: ms.m.w };
+  });
+  check('the map out of doors is the overworld map, its cursor on Link\'s screen',
+    ow.mode === 'overworld' && JSON.stringify(ow.cursor) === JSON.stringify(ow.here), JSON.stringify(ow));
+  await tap('ArrowRight');
+  check('right moves the cursor one square', await G(() => window.__game.menu.mapScreen.cursor[0]) === (ow.here[0] + 1) % ow.w);
+  await tap('ArrowLeft');
+  for (let k = 0; k <= ow.here[0]; k++) await tap('ArrowLeft');
+  check('the cursor wraps round at the edge', await G(() => window.__game.menu.mapScreen.cursor[0]) === ow.w - 1);
+  for (let k = 0; k < ow.w - 1 - ow.here[0]; k++) await tap('ArrowLeft');
+  await tap('x'); await frames(2);
+  const named = await G(() => ({ on: window.__game.dialogue.active, text: window.__game.dialogue.pages.flat().join(' '),
+    want: window.__game.menu.mapScreen.placeName(...window.__game.menu.mapScreen.cursor) }));
+  check('A names a square Link has been to', named.on && named.want && named.text.includes(named.want), JSON.stringify(named));
+  await shot('12b-menu-map-name');
+  for (let k = 0; k < 6 && await G(() => window.__game.dialogue.active); k++) { await tap('x'); await frames(2); }
+  check('the name box goes away, and the map stays', await G(() => !window.__game.dialogue.active && window.__game.mode === 'menu'));
+  const unseen = await G(() => {
+    const ms = window.__game.menu.mapScreen, m = ms.m;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (!ms.seen(m.id, '0,' + x + ',' + y)) return [x, y];
+    return null;
+  });
+  const quiet = await G((u) => { const ms = window.__game.menu.mapScreen; ms.cursor = u; ms.sayName(); return window.__game.dialogue.active; }, unseen);
+  check('A on a square nobody has been to says nothing', !quiet);
+  // The corner popup (maupMenu_drawPopup): over a screen with doors in it,
+  // it grows a size every MAP_POPUP_STEP frames to four, then shows its two
+  // pictures in turn; over the village, the Maku Tree and a house.
+  const pop = await G(async () => {
+    const g = window.__game, ms = g.menu.mapScreen;
+    const feel = await import('/src/data/feel.js');
+    const key = 'seen:overworld:0,4,7', had = g.progress.secrets[key];
+    g.progress.secrets[key] = true;
+    ms.cursor = [4, 7];
+    const sizes = [];
+    for (let k = 0; k < 8 * feel.MAP_POPUP_STEP; k++) { ms.updatePopup(); sizes.push(ms.pop.size); }
+    const icons = ms.popupIcons(4, 7), i0 = ms.pop.index;
+    for (let k = 0; k < feel.MAP_POPUP_SWAP; k++) ms.updatePopup();
+    const swapped = ms.pop.index !== i0;
+    ms.cursor = [0, 9];
+    for (let k = 0; k < 20; k++) ms.updatePopup();
+    const gone = ms.pop.size;
+    if (!had) delete g.progress.secrets[key];
+    return { sizes, icons, swapped, gone, step: feel.MAP_POPUP_STEP };
+  });
+  check('over the village the popup grows to its full size two frames a size',
+    pop.sizes.indexOf(4) === 3 * pop.step && pop.sizes[0] === 1, JSON.stringify(pop));
+  check('and holds the Maku Tree and a house in turn',
+    JSON.stringify([...pop.icons].sort()) === JSON.stringify(['mapIconHouse', 'mapIconMaku']) && pop.swapped, JSON.stringify(pop));
+  check('and shrinks away over a screen with no door', pop.gone === 0, JSON.stringify(pop));
   await tap('z'); await frames(4); await settle();
   check('B puts the map away', await G(() => window.__game.mode === 'play'));
+  // The dungeon map (mapMenu_state0 @dungeon): opened on the floor Link is
+  // on, its name lettered in the box, floors scrolled ten rows a floor.
+  const dmap = await G(async () => {
+    const g = window.__game;
+    const { MAPS } = await import('/src/world/maps.js');
+    const { blurbLines } = await import('/src/game/mapscreen.js');
+    const { hasScreen } = await import('/src/gfx/screens.js');
+    const out = { names: [], missing: [] };
+    for (const m of MAPS.values()) {
+      if (m.kind !== 'dungeon') continue;
+      const lines = blurbLines(m.name);
+      out.names.push(m.name + ':' + lines.length);
+      for (const ch of m.name) if (ch !== ' ' && !hasScreen('bl_' + ch.charCodeAt(0))) out.missing.push(m.name + ':' + ch);
+      if (lines.length > 3) out.missing.push(m.name + ': ' + lines.length + ' lines');
+    }
+    const save = JSON.stringify(g.progress);
+    const back = [g.mapId, g.room.floor || 0, g.room.rx, g.room.ry, g.player.x, g.player.y, g.player.dir];
+    g.enterMap('d2', 0, 3, 7, 112, 88, 'up', { instant: true });
+    g.progress.dungeonMaps.d2 = true;
+    g.menu.open('map');
+    const ms = g.menu.mapScreen;
+    out.mode = ms.mode; out.fi = ms.floorIndex; out.floors = ms.m.floors;
+    out.canUp = ms.canScroll(-1);
+    // Press up as the input would: one frame of 'up' pressed.
+    const i = g.input, was = i.pressed;
+    i.pressed = (b) => b === 'up';
+    ms.updateDungeon();
+    i.pressed = was;
+    out.after = ms.floorIndex; out.left = ms.scrollLeft; out.y0 = ms.scrollY;
+    while (ms.scrollLeft) ms.updateDungeon();
+    out.y1 = ms.scrollY;
+    g.mode = 'play';
+    g.enterMap(...back, { instant: true });
+    Object.assign(g.progress, JSON.parse(save));
+    return out;
+  });
+  check('every dungeon\'s name can be lettered in its box in three lines', dmap.missing.length === 0, dmap.missing.join(', '));
+  check('in a dungeon the map is the dungeon map, on Link\'s floor', dmap.mode === 'dungeon' && dmap.fi === dmap.floors - 1, JSON.stringify(dmap));
+  check('with the Map, up scrolls a floor: ten rows, one a frame',
+    dmap.canUp === 1 && dmap.after === dmap.fi - 1 && dmap.left === 10 && dmap.y1 === dmap.y0 - 10, JSON.stringify(dmap));
   // START and SELECT together are the save screen, and B goes back to play.
   await page.keyboard.down('Enter'); await page.keyboard.down('Tab'); await frames(4);
   await settle();

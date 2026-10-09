@@ -9,6 +9,7 @@
 //   node tools/shoot-map.mjs                        # the default set
 //   node tools/shoot-map.mjs --shot-dir=tools/shots-map-before
 //   node tools/shoot-map.mjs overworld:full d1:0:chart
+//   node tools/shoot-map.mjs overworld:full@6,8      # cursor on 6,8, popup open
 //
 // A spec is `mapId:state` for the overworld or `mapId:floor:state` for a
 // dungeon. States:
@@ -89,7 +90,11 @@ for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cut
 }
 
 for (const spec of SHOTS) {
-  const parts = spec.split(':');
+  // `overworld:full@6,8` puts the overworld map's cursor on screen 6,8 and
+  // lets the corner popup grow (S177).
+  const [base, at] = spec.split('@');
+  const cursorAt = at ? at.split(',').map(Number) : null;
+  const parts = base.split(':');
   const [mapId, floor, state] = parts.length === 3
     ? [parts[0], +parts[1], parts[2]]
     : [parts[0], 0, parts[1]];
@@ -144,16 +149,19 @@ for (const spec of SHOTS) {
   if (got && got.err) { console.log(`  MISS ${spec.padEnd(18)} ${got.err}`); misses.push(spec); continue; }
   await frames(20);
 
-  // Open the map (SELECT in the field, S176). `open()` sets the floor to the
-  // room's own, so the floor asked for is set after it.
+  // Open the map (SELECT in the field, S176). It opens on the floor Link is
+  // on, which is the floor asked for: he was put there above.
   await page.evaluate((floor) => {
     const g = window.__game;
     if (g.dialogue) g.dialogue.active = false;
     g.bannerTime = 0;
     g.menu.open('map');
-    g.menu.mapFloor = floor;
   }, floor);
   await frames(4);
+  if (cursorAt) {
+    await page.evaluate((c) => { window.__game.menu.mapScreen.cursor = c; }, cursorAt);
+    await frames(30);
+  }
 
   const mode = await page.evaluate(() => window.__game.mode + ':' + window.__game.menu.kind);
   if (mode !== 'menu:map') {

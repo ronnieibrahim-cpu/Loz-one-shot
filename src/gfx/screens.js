@@ -9,8 +9,10 @@ import { SEASONS_SCREENS } from '../data/screens-seasons.js';
 import { INTRO_SCREENS } from '../data/screens-intro.js';
 import { SAVE_SCREENS } from '../data/screens-save.js';
 import { MENU_SCREENS } from '../data/screens-menu.js';
+import { MAP_SCREENS } from '../data/screens-map.js';
+import { MAP_DRAWN } from '../data/sprites-map-drawn.js';
 
-const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS, ...SAVE_SCREENS, ...MENU_SCREENS };
+const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS, ...SAVE_SCREENS, ...MENU_SCREENS, ...MAP_SCREENS, ...MAP_DRAWN };
 
 const KEYS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const cache = new Map();
@@ -49,6 +51,9 @@ function bake(name, tint = null) {
 
 /** The baked image, for its size, its own `y` if the ripper gave one, and
  *  `ax`/`ay`, where an object's position falls in it. */
+/** Whether a screen image of this name exists. */
+export function hasScreen(name) { return !!ALL[name]; }
+
 export function screenImage(name, tint = null) {
   return cache.get(tint ? name + '|' + tint.key : name) || bake(name, tint);
 }

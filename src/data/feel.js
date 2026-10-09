@@ -691,6 +691,42 @@ export const MENU_PAGE_SLIDE = 12;
  *  bank2.s inventoryMenuState3 (12 px x 12 frames + 8). */
 export const MENU_PAGE_SLIDE_W = 152;
 
+/** f — a held direction on a menu that repeats (the dungeon map's floors)
+ *  first repeats this many frames after the press. derived: bank0.s
+ *  getInputWithAutofire, the counter reaching $28 before it answers a held
+ *  button. */
+export const MENU_AUTOFIRE_DELAY = 40;
+
+/** f — ...and then once every this many frames while it is held. derived:
+ *  getInputWithAutofire answers when the counter's low two bits are 0. */
+export const MENU_AUTOFIRE_EVERY = 4;
+
+/** f — on the overworld map, the arrow over Link's own screen is shown for
+ *  this many frames and hidden for as many. derived: bank2.s
+ *  mapMenu_drawArrow, drawn while (wFrameCounter & $20) is 0. */
+export const MAP_ARROW_BLINK = 32;
+
+/** f — on the dungeon map, Link's head on his room and the cursor round it
+ *  take turns, each this long. derived: bank2.s
+ *  dungeonMap_updateCursorFlickerCounter, toggled when (wFrameCounter & $1f)
+ *  is 0. */
+export const DMAP_FLICKER = 32;
+
+/** rows (8 px) per frame — the dungeon map scrolls to another floor one tile
+ *  row a frame, ten rows a floor. derived: bank2.s dungeonMap_scrollingState1
+ *  (dungeonScrollY +-1 a frame for floors x 10 frames). */
+export const DMAP_SCROLL_ROWS = 1;
+
+/** f — the overworld map's popup (the picture in a corner over a screen with
+ *  a door in it) grows a size every this many frames, four sizes, and shrinks
+ *  the same way. derived: bank2.s maupMenu_drawPopup @state1/@state3, wTmpcbba
+ *  reloaded with 2. */
+export const MAP_POPUP_STEP = 2;
+
+/** f — a popup over a screen with two doors shows each picture this long in
+ *  turn. derived: maupMenu_drawPopup @state2, wTmpcbba reloaded with $18. */
+export const MAP_POPUP_SWAP = 24;
+
 /** [f, f, f] — page 3's SAVE goes to the save screen: no fade out (the save
  *  screen's state 0 turns the LCD off, which is white), the one frame it
  *  loads in, and the save screen's own fastFadeinFromWhite, the same speed

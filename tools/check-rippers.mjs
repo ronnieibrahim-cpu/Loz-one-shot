@@ -62,6 +62,7 @@ const RIPPERS = [
   ['rip-intro.py',           'src/data/screens-intro.js'],      // S168: the opening's sea, ship, gull and lightning, from Seasons' own graphics
   ['rip-save.py',            'src/data/screens-save.js'],       // S169: the save screen and the game over, from Seasons' own graphics
   ['rip-menu.py',            'src/data/screens-menu.js'],       // S176: the three inventory pages, from Seasons' own graphics and maps
+  ['rip-map.py',             'src/data/screens-map.js'],        // S177: the overworld and dungeon map screens and the dungeon name box, from both cartridges' graphics and maps
   ['rip-objects.py',         'src/data/sprites-objects.js'],    // S156: chests, sign, torches, push blocks, floor buttons, from Seasons' own room tiles
 ];
 // Verified by check-tilesets.mjs through its own --verify flag, and it emits a

@@ -447,6 +447,26 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A cartridge picture of a PLACE is not the cartridge's grammar (S177).**
+  Seasons' overworld map looks like a tile set, and it is not: almost every
+  square is its own hand-drawn tile of one Holodrum screen. Reusing them on
+  Thalassia would have been a collage of the wrong country. What carries is
+  everything AROUND the place — the frame, the sky, the sea, the cursor, the
+  popup, the palette — and the place itself is drawn from our own data in
+  that palette. Check whether the art you want to rip names a place before
+  ripping it.
+- **A palette slot a screen does not load is the previous screen's (S177).**
+  PALH_09 sets the dungeon map's palettes 2-5 only; 0 and 1 stay what the
+  tileset loaded. It looked dungeon-specific until rip-objects' Tileset showed
+  every tileset's palette 0 is PALH_0f's common one. Ask the loader, not the
+  header, what a slot holds.
+- **A name box is hand-lettered, so cut letters, not boxes (S177).** Seasons'
+  dungeon names are drawn per box, kerned by hand (a T tucks the next letter
+  under its bar). Splitting each box's lines on blank columns and keeping the
+  commonest cut per letter gave a font across 16 boxes of both cartridges;
+  letters that touch ("To", "t'") are skipped or taken apart by subtracting
+  the known neighbour.
+
 - **A tile number in a Seasons display table is not always a tile (S176).**
   The heart box's quarter-fills are listed as tiles $78-$7b, and read as
   tiles they came out as stripes from an unrelated sprite sheet. The routine

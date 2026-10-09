@@ -61,6 +61,9 @@ export class Dialogue {
     // Where he is ON SCREEN, which is where the text box has to avoid being.
     const cam = this.game.camera;
     this.top = !!(p && p.y - (cam ? cam.y : 0) > VIEW_H - 60);
+    // A screen that is not the field says where its box goes: a number is
+    // the box's top, `bottom` the bottom of the screen (the map screen).
+    this.place = opts.y != null ? opts.y : opts.bottom ? 'bottom' : null;
     this.holdFrames = 0;
   }
 
@@ -75,6 +78,7 @@ export class Dialogue {
    */
   reset() {
     this.active = false;
+    this.place = null;
     this.choices = null;
     this.onClose = null;
     this.queue.length = 0;
@@ -170,7 +174,8 @@ export class Dialogue {
     const extra = this.choices && this.page >= this.pages.length - 1
       ? this.choices.options.length * LINE_H + 2 : 0;
     const h = BOX_H + extra;
-    const y = this.top ? HUD_H + 4 : SCREEN_H - h - 5;
+    const y = typeof this.place === 'number' ? this.place
+      : this.place === 'bottom' || !this.top ? SCREEN_H - h - 5 : HUD_H + 4;
     drawTextBox(ctx, BOX_X, y, BOX_W, h);
 
     const shown = this.currentText.slice(0, Math.floor(this.chars));

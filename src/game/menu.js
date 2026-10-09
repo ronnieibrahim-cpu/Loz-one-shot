@@ -5,11 +5,9 @@
 // instead, and START and SELECT together go straight to the save screen
 // (bank2.s b2_updateMenus, menuStateFadeIntoMenu). No page has a title.
 
-import { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H } from '../core/screen.js';
-import { drawText, drawTextCentered, textWidth, wrapText } from '../gfx/font.js';
-import { sprites, tiles } from '../gfx/art.js';
-import { getPalette } from '../gfx/palettes.js';
-import { tileArt } from '../world/tileset.js';
+import { SCREEN_W, SCREEN_H, HUD_H } from '../core/screen.js';
+import { drawText, drawTextCentered, wrapText } from '../gfx/font.js';
+import { sprites } from '../gfx/art.js';
 import { ITEMS, itemIcon, itemName, inventorySlots, INVENTORY_SLOTS } from './items.js';
 import { drawItemExtra } from './hud.js';
 import {
@@ -18,8 +16,6 @@ import {
 } from './scrimshaw.js';
 import { flag, itemLevel } from './progress.js';
 import { essenceCount } from '../world/maps.js';
-import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
-import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
 import { DUNGEON_KEYS } from '../data/keys.js';
 import {
@@ -27,19 +23,16 @@ import {
   MENU_PAGE_SLIDE, MENU_PAGE_SLIDE_W,
 } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
+import { MapScreen, invalidateMapScreens } from './mapscreen.js';
 
 // THE SEASONS INVENTORY PAGES (tools/rip-menu.py, off the cartridge): a white
 // page in a frame of olive blocks, dividers, and a strip under it where the
 // source names the thing under the cursor. Everything below draws dark on
-// that white, in the page's own ink. The map screen still draws on page 1's
-// frame: Seasons' own map screens are not ripped yet.
+// that white, in the page's own ink. The map screens are their own
+// (src/game/mapscreen.js).
 
-const PAGE = { x: 8, y: 24, w: 144, h: 88 };   // the white page
 const STRIP_Y = 126;                             // the line in the strip
-const INK = '#202020';                           // body text
 const BLUE = '#285088';                          // the strip's ink, off the page
-const DIM = '#98a0a0';                           // what is not there yet
-const CURSOR = '#285088';
 const PAPER = '#ffffff';                         // the page's white (rip-menu.py)
 
 /**
@@ -56,165 +49,8 @@ export const DESC_WRAP_W = { item: SCREEN_W - 28, charm: SCREEN_W - 28 };
 // tones the water itself is drawn in, so the mark needs no key to read.
 const TIDE_PIP = ['#e0c078', '#58b0e0', '#1848a0'];
 
-/**
- * Which tide levels CHANGE a room, as a 3-bit mask. This is the Chartstone,
- * and it is information the game already computes on every room load and then
- * throws away.
- *
- * Level n is marked when the room's grid at n differs from the grid at the
- * level below it — that is, when ARRIVING at n is an event. LOW is compared
- * against HIGH, because the conch cycles round rather than sliding up and down.
- *
- * Cached per room: it is a pure function of authored data and never changes
- * during a run, and the map screen would otherwise do eighty tile lookups per
- * room per frame.
- */
-const CHART_CACHE = new Map();
-function tideMarks(mapId, floor, rx, ry) {
-  const key = mapId + ':' + floor + ',' + rx + ',' + ry;
-  if (CHART_CACHE.has(key)) return CHART_CACHE.get(key);
-  let mask = 0;
-  const room = getRoom(mapId, floor, rx, ry);
-  if (room) {
-    for (let lv = 0; lv < TIDE_COUNT; lv++) {
-      const prev = (lv + TIDE_COUNT - 1) % TIDE_COUNT;
-      let differs = false;
-      for (let y = 0; y < room.th && !differs; y++) {
-        for (let x = 0; x < room.tw; x++) {
-          if (room.tile(x, y, lv).name !== room.tile(x, y, prev).name) { differs = true; break; }
-        }
-      }
-      if (differs) mask |= 1 << lv;
-    }
-  }
-  CHART_CACHE.set(key, mask);
-  return mask;
-}
-
-// --------------------------------------------------------------------------
-// The overworld map is a PICTURE, drawn one pixel per tile
-// --------------------------------------------------------------------------
-//
-// Thalassia is 12x10 screens and every screen is 10x8 tiles, so the whole
-// world is 120x80 tiles — and the space under the map title is 160x88 px.
-// That is the whole idea: the map is the world at 1:1 tile-to-pixel, not a
-// diagram of it. A coastline drawn this way is the actual coastline, because
-// it IS the tiles; nothing here decides what the land looks like.
-//
-// This is also why the region `legend` is NOT what gets drawn. The legends are
-// blocked out in straight 4x2 and 4x4 rectangles (verified: the 12x10 legend
-// grid is nine rectangular blocks), so colouring by region would produce a
-// patchwork quilt with ruler-straight borders — a diagram of the authoring,
-// not a picture of the place.
-//
-// COLOURS ARE DERIVED FROM THE TERRAIN ART, never hand-picked. A tile's map
-// pixel is the most common colour in that tile's own 16x16 art, resolved
-// through that art's own palette. Hand-authoring a name->colour table would
-// be a second source of truth that silently drifts the first time a terrain
-// tile is re-extracted; this cannot drift, because it is reading the same
-// pixels the room draws.
-const MAP_COLOUR = new Map();
-function tileMapColour(def) {
-  const name = def.name;
-  let c = MAP_COLOUR.get(name);
-  if (c !== undefined) return c;
-  const art = tiles.defs.get(tileArt(def, 0));
-  if (!art) { MAP_COLOUR.set(name, null); return null; }
-  // ONE PIXEL PER TILE IS A DOWNSAMPLE, so the pixel wants the tile's MEAN
-  // tone — not its most common colour. The modal index was tried first and is
-  // wrong: terrain art carries a lot of dark detail (tufts, rock speckle,
-  // outlines), so the mode lands on the detail colour often enough that the
-  // whole map reads as stipple instead of as land and water.
-  //
-  // But a raw mean would put colours on screen that are in no palette in the
-  // game, which is how a GBC-shaped picture starts looking like a JPEG. So the
-  // mean is SNAPPED BACK to the nearest of that tile's own four colours: every
-  // map pixel is a colour the tile itself is actually drawn in, chosen for
-  // being the closest thing to how the tile reads from a distance.
-  //
-  // The palette is on the tile DEFINITION, not on the art entry — `Room.render`
-  // draws every tile with `{ pal: d.pal }`, and the art's own `pal` is only the
-  // registration-time default. Reading the wrong one produced a map of the
-  // whole world in the grey 'stone' fallback, which looked like plausible
-  // terrain noise rather than like a bug.
-  const pal = getPalette(def.pal || art.pal);
-  const rgb = pal.map(hx => [
-    parseInt(hx.slice(1, 3), 16), parseInt(hx.slice(3, 5), 16), parseInt(hx.slice(5, 7), 16),
-  ]);
-  let r = 0, gg = 0, b = 0, n = 0;
-  for (let i = 0; i < art.art.px.length; i++) {
-    const v = art.art.px[i];
-    if (v >= 4) continue;
-    r += rgb[v][0]; gg += rgb[v][1]; b += rgb[v][2]; n++;
-  }
-  if (!n) { MAP_COLOUR.set(name, null); return null; }
-  r /= n; gg /= n; b /= n;
-  let best = 0, bestD = Infinity;
-  for (let i = 0; i < 4; i++) {
-    const d = (rgb[i][0] - r) ** 2 + (rgb[i][1] - gg) ** 2 + (rgb[i][2] - b) ** 2;
-    if (d < bestD) { bestD = d; best = i; }
-  }
-  c = pal[best];
-  MAP_COLOUR.set(name, c);
-  return c;
-}
-
-// The rendered world, cached. Rebuilding it walks 120 rooms x 80 tiles, which
-// is far too much to do per frame, and the tide changes what it looks like —
-// so it is keyed on the tide field's STAMP, exactly as Room's own render cache
-// is, and for exactly the reason in CLAUDE.md: a key made from the LEVEL alone
-// would not notice an anchor moving the field under one screen.
-let WORLD_CANVAS = null;
-let WORLD_KEY = '';
-
-/**
- * Paint the whole overworld into an offscreen canvas at one pixel per tile.
- *
- * This DOES instantiate every room on the map, via `getRoom`, and that is a
- * deliberate decision rather than an oversight — see `T75`. The caution at the
- * old `drawMap` said an instantiated room "is one `liveRooms` will then save
- * and restore the state of"; `liveRooms` has no callers, nothing saves or
- * restores from the room cache, and `resetRooms()` clears it on new game and
- * load. The alternative — decoding each room's legend characters here — would
- * mean re-deriving `expandBlocks`, tide-tile resolution and overrides outside
- * the engine, which is the mistake `R4` exists to prevent. So it asks Room
- * what tile is there, and pays for it once per tide change rather than once
- * per frame.
- */
-function buildWorldCanvas(game, m) {
-  const tw = 10, th = 8;                       // tiles per screen
-  const W = m.w * tw, H = m.h * th;
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  const g = c.getContext('2d');
-  g.imageSmoothingEnabled = false;
-  for (let sy = 0; sy < m.h; sy++) {
-    for (let sx = 0; sx < m.w; sx++) {
-      const room = getRoom(m.id, 0, sx, sy);
-      if (!room) continue;
-      for (let ty = 0; ty < th; ty++) {
-        for (let tx = 0; tx < tw; tx++) {
-          const col = tileMapColour(room.tile(tx, ty, game.tide));
-          if (!col) continue;
-          g.fillStyle = col;
-          g.fillRect(sx * tw + tx, sy * th + ty, 1, 1);
-        }
-      }
-    }
-  }
-  return c;
-}
-
-function worldCanvas(game, m) {
-  const key = m.id + '|' + (game.tide ? game.tide.stamp : 0) + '|' + m.w + 'x' + m.h;
-  if (WORLD_CANVAS && WORLD_KEY === key) return WORLD_CANVAS;
-  WORLD_CANVAS = buildWorldCanvas(game, m);
-  WORLD_KEY = key;
-  return WORLD_CANVAS;
-}
-
 /** Dropped when a new game or a load resets the world under us. */
-export function invalidateWorldMap() { WORLD_CANVAS = null; WORLD_KEY = ''; MAP_COLOUR.clear(); }
+export function invalidateWorldMap() { invalidateMapScreens(); }
 
 
 /** The three pages of the item menu, in the order SELECT turns them. */
@@ -259,7 +95,7 @@ export class Menu {
     this.cursor2 = 0;          // page 2: 0-14 treasures, 15-17 the cases
     this.cursor3 = 0;          // page 3: 0-5 Essences, 6 hearts, 7 SAVE
     this.popup = null;         // page 2's charm chooser: { row, at }
-    this.mapFloor = 0;
+    this.mapScreen = new MapScreen(game);
     this.saveCursor = 0;
     this.savePicked = -1;
     this.savePickT = 0;
@@ -284,7 +120,7 @@ export class Menu {
     this.popup = null;
     this.saveCursor = 0;          // Seasons' save screen opens on CONTINUE
     this.savePicked = -1;
-    if (g.map && g.room && g.room.mapId === g.map.id) this.mapFloor = g.room.floor || 0;
+    if (kind === 'map') this.mapScreen.open();
     // SND_OPENMENU comes with the page, after the fade (menuStateFadeIntoMenu
     // @openMenu), and not for the save screen.
     if (kind !== 'save') g.audio.sfx('pause');
@@ -316,7 +152,7 @@ export class Menu {
     if (g.fadeDir || g.fadeHold > 0) return;
 
     if (this.kind === 'save') { this.updateSave(); return; }
-    if (this.kind === 'map') { this.updateMap(); return; }
+    if (this.kind === 'map') { this.mapScreen.update(); return; }
 
     if (this.slide) { this.updateSlide(); return; }
     if (this.popup) { this.updatePopup(); return; }
@@ -544,17 +380,6 @@ export class Menu {
     }
   }
 
-  /** The dungeon map changes floor with up and down; B or SELECT puts the
-   *  map away (bank2.s runMapMenu @checkInput). START does nothing there. */
-  updateMap() {
-    const g = this.game, i = g.input;
-    if (i.pressed('b') || i.pressed('select')) { this.close(); return; }
-    if (g.map && g.map.floors > 1) {
-      if (i.pressed('up')) this.mapFloor = Math.min(g.map.floors - 1, (this.mapFloor || 0) + 1);
-      if (i.pressed('down')) this.mapFloor = Math.max(0, (this.mapFloor || 0) - 1);
-    }
-  }
-
   // ------------------------------------------------- scrolling descriptions
   //
   // The description panel is ONE line of this font tall — the item grid is
@@ -670,13 +495,7 @@ export class Menu {
 
   draw(ctx) {
     if (this.kind === 'save') { this.drawSave(ctx); return; }
-    if (this.kind === 'map') {
-      drawScreen(ctx, 'invPage1', 0, HUD_H);
-      const strip = this.drawMap(ctx);
-      const line = this.messageTime > 0 ? this.message : strip;
-      if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
-      return;
-    }
+    if (this.kind === 'map') { this.mapScreen.draw(ctx); return; }
     // The pages, under the status bar, which is the game's own and holds
     // still while they turn.
     ctx.save();
@@ -870,179 +689,6 @@ export class Menu {
     if (this.cursor3 === n) return `Pieces of Heart: ${pieces} of 4`;
     return 'Save your progress';
   }
-
-  drawMap(ctx) {
-    const g = this.game;
-    const m = g.map;
-    if (!m) return null;
-    if (m.kind === 'dungeon') this.drawDungeonMap(ctx, m);
-    else this.drawWorldMap(ctx, m);
-    return m.name;
-  }
-
-  /**
-   * A picture of Thalassia at one pixel per tile — see the note above
-   * `tileMapColour`. What it says is exactly what the grid of rectangles it
-   * replaces said (which screens have been seen, and where you are), drawn as
-   * a place instead of as a table.
-   */
-  drawWorldMap(ctx, m) {
-    const g = this.game;
-    const tw = 10, th = 8;
-    const W = m.w * tw, H = m.h * th;
-    // THE WORLD IS WIDER THAN THE PAGE (S157). Seventeen screens at one pixel
-    // a tile is 170 pixels and the page is 144, so the picture is a window
-    // that slides to keep Link's screen in the middle, stopping at the world's
-    // edges, with an arrow on a side where there is more. Nothing is shrunk:
-    // a squeezed picture would no longer be one pixel per tile.
-    const VW = Math.min(W, PAGE.w - 8);
-    const here = g.room && g.room.mapId === m.id ? g.room.rx * tw + (tw >> 1) : W >> 1;
-    const left = W > VW ? Math.max(0, Math.min(W - VW, here - (VW >> 1))) : 0;
-    const vx = Math.round((SCREEN_W - VW) / 2);
-    const ox = vx - left, oy = PAGE.y + Math.max(2, Math.round((PAGE.h - H) / 2));
-
-    // A frame, so the sea reads as ending at a coast rather than at the edge
-    // of the drawing.
-    ctx.fillStyle = '#101820';
-    ctx.fillRect(vx - 1, oy - 1, VW + 2, H + 2);
-    ctx.save();
-    ctx.beginPath(); ctx.rect(vx, oy, VW, H); ctx.clip();
-    ctx.drawImage(worldCanvas(g, m), ox, oy);
-
-    // Unexplored screens are painted back out. Doing it this way — cached
-    // terrain underneath, the mask on top — is what keeps the expensive part
-    // keyed on the tide alone: walking into a new screen changes the mask, and
-    // the mask is at most 120 rectangles.
-    for (let sy = 0; sy < m.h; sy++) {
-      for (let sx = 0; sx < m.w; sx++) {
-        if (g.progress.secrets['seen:' + m.id + ':0,' + sx + ',' + sy]) continue;
-        ctx.fillStyle = '#0c1218';
-        ctx.fillRect(ox + sx * tw, oy + sy * th, tw, th);
-      }
-    }
-
-    // Landmarks, read off each room DEFINITION's own warps — a warp into a map
-    // whose kind is 'dungeon' is a dungeon door, and it is drawn at the tile it
-    // actually stands on. Nothing here is a hand-kept list that could fall out
-    // of step with the world; move a dungeon entrance and the mark moves.
-    for (let sy = 0; sy < m.h; sy++) {
-      for (let sx = 0; sx < m.w; sx++) {
-        if (!g.progress.secrets['seen:' + m.id + ':0,' + sx + ',' + sy]) continue;
-        const def = m.roomDefs['0,' + sx + ',' + sy];
-        if (!def || !def.warps) continue;
-        for (const w of def.warps) {
-          const to = w.to && getMap(w.to.map);
-          if (!to || to.kind !== 'dungeon') continue;
-          const px = ox + sx * tw + (w.x | 0), py = oy + sy * th + (w.y | 0);
-          ctx.fillStyle = '#101820';
-          ctx.fillRect(px - 1, py - 1, 3, 3);
-          ctx.fillStyle = '#f0c048';
-          ctx.fillRect(px, py, 1, 1);
-        }
-      }
-    }
-
-    // YOU ARE HERE. It alternates between two high-contrast colours rather
-    // than blinking on and off: the source games blink this because the marker
-    // has to be findable over any terrain, and a marker that spends half its
-    // time absent is not findable at all — it is just harder to see.
-    if (g.room && g.room.mapId === m.id) {
-      const cx = ox + g.room.rx * tw + Math.floor(tw / 2);
-      const cy = oy + g.room.ry * th + Math.floor(th / 2);
-      ctx.fillStyle = '#101820';
-      ctx.fillRect(cx - 2, cy - 2, 5, 5);
-      ctx.fillStyle = ((g.frame >> 4) & 1) ? '#f8f8e8' : '#e04858';
-      ctx.fillRect(cx - 1, cy - 1, 3, 3);
-    }
-
-    ctx.restore();
-    // More world past the page's edge: a small arrow in the margin that side.
-    ctx.fillStyle = '#101820';
-    const my = oy + (H >> 1);
-    if (left > 0) for (let i = 0; i < 3; i++) ctx.fillRect(vx - 5 + i, my - i, 1, 2 * i + 1);
-    if (left < W - VW) for (let i = 0; i < 3; i++) ctx.fillRect(vx + VW + 4 - i, my - i, 1, 2 * i + 1);
-
-    // The key, only once there is something on the map to key.
-    if (Object.keys(g.progress.secrets).some(k => k.startsWith('seen:' + m.id + ':'))) {
-      // In the strip's right-hand end, under the page: the map fills the page.
-      ctx.fillStyle = '#101820';
-      ctx.fillRect(PAGE.x + PAGE.w - 32, STRIP_Y + 2, 3, 3);
-      ctx.fillStyle = '#f0c048';
-      ctx.fillRect(PAGE.x + PAGE.w - 31, STRIP_Y + 3, 1, 1);
-      drawText(ctx, 'RUIN', PAGE.x + PAGE.w - 26, STRIP_Y, DIM);
-    }
-  }
-
-  /** Dungeon floor grid. Unchanged: `A3` says why it is already right. */
-  drawDungeonMap(ctx, m) {
-    const g = this.game;
-    const isDungeon = true;
-    const haveMap = !!g.progress.dungeonMaps[m.id];
-    const haveChart = !!g.progress.charts[m.id];
-
-    const floor = this.mapFloor || 0;
-    const cell = 10;
-    const gw = m.w * cell, gh = m.h * cell;
-    const ox = Math.round((SCREEN_W - gw) / 2), oy = PAGE.y + 11;
-
-    // A MULTI-SCREEN ROOM IS ONE CELL SPANNING SEVERAL, as the source's dungeon
-    // maps draw them. The grid is walked cell by cell, but a cell that is
-    // COVERED by a room keyed further up or left is skipped: only the room's
-    // own top-left cell draws, and it draws sw x sh cells wide. Drawing every
-    // covered cell instead would paint a 2x1 room as two rooms with a seam
-    // between them, which is exactly the lie the whole feature is against.
-    for (let y = 0; y < m.h; y++) {
-      for (let x = 0; x < m.w; x++) {
-        if (!hasRoom(m.id, floor, x, y)) continue;
-        // Read from the DEFINITION, not from a Room: opening the map screen
-        // must not instantiate every room on the floor, because an instantiated
-        // room is one `liveRooms` will then save and restore the state of.
-        const key = floor + ',' + x + ',' + y;
-        if (roomKeyAt(m.id, floor, x, y) !== key) continue;      // a covered cell
-        const sz = m.roomDefs[key].size || [1, 1];
-        const sw = sz[0] | 0, sh = sz[1] | 0;
-        const seen = g.progress.secrets['seen:' + m.id + ':' + floor + ',' + x + ',' + y];
-        if (!seen && !haveMap) continue;
-        const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
-        ctx.fillStyle = here ? '#e04858' : (seen ? '#58b0e0' : '#b8c8d0');
-        ctx.fillRect(ox + x * cell, oy + y * cell, sw * cell - 1, sh * cell - 1);
-
-        // THE CHARTSTONE. A room is marked with one pip per tide level that
-        // CHANGES it — which is information the game already computes on every
-        // room load and then throws away. The pips are stacked LOW at the
-        // bottom and HIGH at the top, matching how water is drawn everywhere
-        // else in this game, so the mark is readable without a key.
-        if (!haveChart || !isDungeon) continue;
-        const marks = tideMarks(m.id, floor, x, y);
-        if (!marks) continue;
-        for (let lv = 0; lv < 3; lv++) {
-          if (!(marks & (1 << lv))) continue;
-          ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(ox + x * cell + sw * cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
-        }
-      }
-    }
-    if (isDungeon) {
-      const fl = 'FLOOR ' + (floor + 1) + '/' + m.floors;
-      drawText(ctx, fl, PAGE.x + 2, PAGE.y + 1, INK);
-      // The Boss Key, once held, in the page's corner — on the map screen, where
-      // Seasons shows it. It used to be a mark on the status bar, which now
-      // carries Seasons' key x count in that place and has no room for two keys.
-      if (g.progress.bossKeys[m.id]) sprites.draw(ctx, 'p_bosskey', PAGE.x + PAGE.w - 18, PAGE.y + PAGE.h - 17);
-      if (!haveMap) drawText(ctx, 'NO MAP', PAGE.x + 2, PAGE.y + PAGE.h - 9, '#c01830');
-      if (haveChart) {
-        // The key, in the same stacking order as the pips.
-        let kx = PAGE.x + PAGE.w - 40;
-        for (let lv = 2; lv >= 0; lv--) {
-          ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(kx, PAGE.y + 3, 2, 2);
-          drawText(ctx, TIDE_NAMES[lv][0], kx + 4, PAGE.y + 1, INK);
-          kx += 13;
-        }
-      }
-    }
-  }
-
 
   /** Seasons' save screen, off the cartridge (tools/rip-save.py). */
   drawSave(ctx) {
