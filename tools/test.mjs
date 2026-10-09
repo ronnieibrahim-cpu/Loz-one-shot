@@ -366,11 +366,13 @@ const main = async () => {
   await shot('01-title');
 
   console.log('\n--- file select and new game ---');
-  // The first real key also wakes the sound, and that press is spent on it
-  // (S169) — unless this browser could not start audio, when it goes on to
-  // the file select as it always did. So START until the file select shows.
+  // The first real key may only wake the sound (S169), and the card takes no
+  // press at power-on (S178, as Seasons' does not). START on, as a player
+  // would, until the file select shows.
   await tap('Enter');
-  if (await G(() => window.__game.title.stage !== 'files')) await tap('Enter');
+  check('START on the card at power-on does not leave it',
+    await G(() => window.__game.title.stage === 'logo' && window.__game.title.t < 229));
+  for (let k = 0; k < 200 && await G(() => window.__game.title.stage !== 'files'); k++) await tap('Enter');
   check('file select shown', await G(() => window.__game.title.stage === 'files'));
   await shot('02-files');
   await tap('Enter');           // pick slot 1 -> new game
@@ -964,6 +966,27 @@ const main = async () => {
   await turned();
   check('the second page is the treasures and the charm cases', await G(() => window.__game.menu.pageName === 'treasures'));
   await shot('13-menu-treasures');
+  // The charm chooser grows open as Seasons' satchel box does (S178,
+  // inventoryMenuState2 @func_02_57f3): two columns a step every two frames
+  // from the middle, then a row a step, and ignores buttons until whole.
+  const grows = await G(() => {
+    const m = window.__game.menu, out = [];
+    m.popup = { row: 0, at: 0, t: 0 };
+    for (let f = 0; f < 32; f++) {
+      const gr = m.popupGrowing;
+      out.push(gr ? (gr.c1 - gr.c0 + 1) + 'x' + (gr.r1 - 3) : 'whole');
+      m.popup.t++;
+    }
+    m.popup = null;
+    return out;
+  });
+  const growWant = [];
+  for (let st = 1; st <= 16; st++) {
+    const sz = st <= 9 ? (2 * st) + 'x1' : st <= 14 ? '18x' + (st - 8) : 'whole';
+    growWant.push(sz, sz);
+  }
+  check('the charm box grows from the middle, then down, two frames a step',
+    JSON.stringify(grows) === JSON.stringify(growWant), JSON.stringify(grows));
   // The turn itself, frame by frame after the press: 140, 128 ... 8, then 0
   // on the thirteenth (footage 8239-8251), through the menu's own update.
   const slideXs = await G(() => {
@@ -1300,6 +1323,30 @@ const main = async () => {
       fadeMask: feel.TITLE_MUSIC_FADE_MASK, cardIn: feel.TITLE_CARD_FADE_IN_FRAMES };
   });
   check('the card fades in from white', toFiles.cardInAt === toFiles.cardIn - 1, JSON.stringify(toFiles));
+  // START on the card (S178, runIntro / intro_gotoTitlescreen): nothing at
+  // power-on; once the card has run its course once, straight to the logo.
+  const cardPress = await G(async () => {
+    const { Title } = await import('/src/game/title.js');
+    const feel = await import('/src/data/feel.js');
+    let press = false;
+    const audio = { ok: true, sfx() {}, play() {}, stop() {}, fadeOut() {} };
+    const fake = { audio, frame: 0, input: { pressed: b => press && b === 'start' } };
+    const card = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES;
+    const t = new Title(fake);
+    for (let f = 0; f < 30; f++) t.update();
+    press = true; t.update(); press = false;
+    const first = { stage: t.stage, t: t.t, opening: !!t.opening };
+    for (let f = 0; f < card; f++) t.update();
+    const enabled = !!fake.introInputs;
+    t.reset();                               // the card again, as after a game
+    for (let f = 0; f < 30; f++) t.update();
+    press = true; t.update(); press = false;
+    return { first, enabled, again: { stage: t.stage, t: t.t }, card };
+  });
+  check('START on the card at power-on is ignored, as in Seasons',
+    cardPress.first.stage === 'logo' && cardPress.first.t === 31 && cardPress.first.opening, JSON.stringify(cardPress));
+  check('once the card has run, START on it goes straight to the logo',
+    cardPress.enabled && cardPress.again.stage === 'logo' && cardPress.again.t === cardPress.card, JSON.stringify(cardPress));
   check('START on the logo fades to white before the file select cuts in',
     toFiles.filesAt === toFiles.want && toFiles.swallowed
       && toFiles.log === `sfx:confirm,fade:${toFiles.fadeMask},play:fileSelect`, JSON.stringify(toFiles));

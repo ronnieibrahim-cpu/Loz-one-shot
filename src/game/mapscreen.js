@@ -43,9 +43,15 @@ function material(d) {
   if ((d.flags | 0) & (F.WATER | F.DEEP) || /^(water|openSea|riptide|seaSnarl)/.test(n)) return 'sea';
   if (/^(tree|palm|bush)/.test(n)) return 'tree';
   if (/^(cliffCoral|ledgeCoral)/.test(n)) return 'coralDark';
-  if (/^(cliff|ledge|boulder|keepSeal|caveMouth)/.test(n)) return 'dark';
+  // Grey stone and the cliffs round it in slate, the salt pans in white (S178:
+  // both read as earth and sand beside the screens they stand for).
+  if (/^(saltFlat|saltCrust)/.test(n)) return 'salt';
+  if (/^(cliffMarble|ledgeSalt)/.test(n)) return 'stone';
+  if (/^(cliff|ledge)(Dk|Abyss|Rock)?([NSEW]|$)/.test(n) || /^(keepSeal|caveMouth)/.test(n)) return 'stoneDark';
+  if (/^(cliff|ledge|boulder)/.test(n)) return 'dark';
   if (/^(portal|b[A-Z])/.test(n)) return 'earth';
   if (/Coral/.test(n)) return 'coral';
+  if (/^rockFloor(Dk)?$/.test(n)) return 'stone';
   if (/^rockFloor/.test(n)) return 'earth';
   if (/^(grass|hLawn|flowers|hFlowers|hTall|hYard)/.test(n) || /Lawn/.test(n)) return 'grass';
   if (/^(mud|chasm)/.test(n)) return 'dark';
@@ -57,9 +63,9 @@ function material(d) {
 // for a little over half what ground does: it shows where it is thick, and
 // the way through it shows as the ground it is. (S177, four weights shot side
 // by side; 0.6 read most like Holodrum's squares.)
-const WALL = { tree: 0.6, dark: 0.6, coralDark: 0.6 };
+const WALL = { tree: 0.6, dark: 0.6, coralDark: 0.6, stoneDark: 0.6 };
 // When two materials cover a pixel equally, the first of these wins.
-const ORDER = ['sea', 'tree', 'dark', 'coralDark', 'earth', 'coral', 'grass', 'sand'];
+const ORDER = ['sea', 'tree', 'dark', 'stoneDark', 'coralDark', 'earth', 'stone', 'coral', 'grass', 'salt', 'sand'];
 
 /** The flecks of the sea (mapSea, Ages' own open sea), as a mask. */
 let FOAM = null;

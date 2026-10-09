@@ -723,6 +723,14 @@ export const DMAP_SCROLL_ROWS = 1;
  *  reloaded with 2. */
 export const MAP_POPUP_STEP = 2;
 
+/** f — page 2's charm chooser grows open as Seasons' satchel box does: one
+ *  step every this many frames, the first on the frame A is pressed — two
+ *  columns wider (one each side) a step, one row high, until it is full width,
+ *  then a row deeper a step; what it holds appears, and it answers buttons,
+ *  only on the step after it is whole. derived: bank2.s inventoryMenuState2
+ *  @subState1, itemSubmenuCounter reloaded with 2; @func_02_57f3. */
+export const MENU_SUBMENU_GROW = 2;
+
 /** f — a popup over a screen with two doors shows each picture this long in
  *  turn. derived: maupMenu_drawPopup @state2, wTmpcbba reloaded with $18. */
 export const MAP_POPUP_SWAP = 24;

@@ -20,7 +20,7 @@ import { tradeName, tradeIcon } from '../data/trade.js';
 import { DUNGEON_KEYS } from '../data/keys.js';
 import {
   MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE, MENU_SAVE_FADE, GAMEOVER_PICK_FRAMES,
-  MENU_PAGE_SLIDE, MENU_PAGE_SLIDE_W,
+  MENU_PAGE_SLIDE, MENU_PAGE_SLIDE_W, MENU_SUBMENU_GROW,
 } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 import { MapScreen, invalidateMapScreens } from './mapscreen.js';
@@ -83,6 +83,19 @@ const RIGHT_AT = [[112, 72], [112, 96]];
 // The charm chooser: a box of the page's own blocks over page 2's treasures,
 // columns 1-18 and rows 4-9, holding two rows of eight.
 const POP = { c0: 1, c1: 18, r0: 4, r1: 9, per: 8 };
+// How far the chooser has grown after `step` steps (inventoryMenuState2
+// @func_02_57f3): two columns a step from the middle at one row high, then a
+// row a step; null once it is whole and the step after has come (its
+// contents are drawn then).
+function popupGrowth(step) {
+  const full = POP.c1 - POP.c0 + 1, deep = POP.r1 - POP.r0 + 1;
+  const across = Math.ceil(full / 2);
+  if (step > across + deep - 1) return null;
+  const w = Math.min(full, 2 * Math.min(step, across));
+  const h = step <= across ? 1 : 1 + step - across;
+  const mid = POP.c0 + full / 2;
+  return { c0: mid - w / 2, c1: mid + w / 2 - 1, r1: POP.r0 + h - 1 };
+}
 
 export class Menu {
   constructor(game) {
@@ -256,6 +269,12 @@ export class Menu {
     return this.cursor2 >= TREASURE_SLOTS ? CASE_ROWS[this.cursor2 - TREASURE_SLOTS] : null;
   }
 
+  /** The chooser's growth this frame, or null once it is whole. The first
+   *  step is taken on the frame it opens. */
+  get popupGrowing() {
+    return this.popup ? popupGrowth(Math.floor(this.popup.t / MENU_SUBMENU_GROW) + 1) : null;
+  }
+
   /** The charms that fit the case the chooser is open on. */
   get pool() {
     return this.popup ? charmsForSlot(this.game.progress, CASE_ROWS[this.popup.row]) : [];
@@ -301,7 +320,7 @@ export class Menu {
     if (i.pressed('a') && this.caseSlot) {
       // The chooser opens on the first charm already in the case, if any.
       const row = this.cursor2 - TREASURE_SLOTS;
-      this.popup = { row, at: 0 };
+      this.popup = { row, at: 0, t: 0 };
       const inCase = equippedIn(g.progress, CASE_ROWS[row]);
       const k = this.pool.findIndex(id => inCase.includes(id));
       this.popup.at = Math.max(0, k);
@@ -318,6 +337,8 @@ export class Menu {
    */
   updatePopup() {
     const g = this.game, i = g.input, p = g.progress;
+    // Growing open: nothing answers until it is whole (@subState1).
+    if (this.popupGrowing) { this.popup.t++; return; }
     const pool = this.pool;
     if (i.pressed('b') || i.pressed('start')) { this.popup = null; g.audio.sfx('cursor'); return; }
     if (!pool.length) {
@@ -634,6 +655,11 @@ export class Menu {
   drawPopup(ctx) {
     const p = this.game.progress;
     const slot = CASE_ROWS[this.popup.row];
+    const grow = this.popupGrowing;
+    if (grow) {
+      if (grow.c1 >= grow.c0) this.fillBlocks(ctx, grow.c0, POP.r0, grow.c1, grow.r1);
+      return null;
+    }
     this.fillBlocks(ctx, POP.c0, POP.r0, POP.c1, POP.r0);
     this.fillBlocks(ctx, POP.c0, POP.r1, POP.c1, POP.r1);
     this.fillBlocks(ctx, POP.c0, POP.r0, POP.c0, POP.r1);

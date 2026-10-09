@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **"What happens on a press" can depend on what has already happened
+  (S178).** Seasons' card ignores START at power-on and honours it every time
+  after, because one flag (hIntroInputsEnabled) is set at the end of the card
+  and never cleared. Reading the card's own routine shows neither half; the
+  check lives in runIntro, which every stage passes through. Read the caller,
+  not just the state. And when a harness's start-up is nine copies of the
+  same three presses, change all nine to "press until the screen you want is
+  up" — a loop that asks the game, not a count that assumes it.
 - **A cartridge picture of a PLACE is not the cartridge's grammar (S177).**
   Seasons' overworld map looks like a tile set, and it is not: almost every
   square is its own hand-drawn tile of one Holodrum screen. Reusing them on

@@ -36,7 +36,7 @@ export class Title {
     // is not up the card holds, asking for a press, and the press that wakes
     // the sound (`soundStarted`, from main.js) does nothing else. A press the
     // sound did not answer — a gamepad, a harness, a browser with no audio —
-    // still goes to the file select, as it always has.
+    // starts the card running and does nothing else (S178).
     this.waitSound = !(this.game.audio && this.game.audio.ok);
     this.swallow = false;
     this.waitT = 0;
@@ -61,6 +61,10 @@ export class Title {
     if (this.stage === 'logo' && this.t < TITLE_CARD_FRAMES && this.cardIn < TITLE_CARD_FADE_IN_FRAMES) this.cardIn++;
     if (waiting) this.waitT++;
     else this.t++;
+    // A press the sound did not answer (no audio, a gamepad, a harness)
+    // starts the card running all the same, and is spent on that: at
+    // power-on the card would ignore it anyway (S178).
+    if (waiting && (i.pressed('start') || i.pressed('a'))) { this.waitSound = false; return; }
 
     // START ON THE LOGO (S170): Seasons' intro_titlescreen_state1 plays the
     // select sound, fades the music out fast and the screen to white, and only
@@ -76,6 +80,8 @@ export class Title {
     }
 
     const fadeEnd = TITLE_CARD_FRAMES + TITLE_FADE_FRAMES;
+    // The card has run its course: from here on START on it is read (below).
+    if (this.stage === 'logo' && this.t >= fadeEnd) g.introInputs = true;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
     if (this.stage === 'intro') {
       // Any press, or the end of it, cuts to the white beat before the logo —
@@ -103,18 +109,21 @@ export class Title {
       return;
     }
 
+    // THE CARD TAKES NO PRESS AT POWER-ON (S178). Seasons' runIntro reads
+    // START only once hIntroInputsEnabled is set, and nothing sets it until
+    // the card has faded out (intro_capcomScreen @state2 enableIntroInputs).
+    // From then on — the card coming round again from idle, or after a game
+    // — START on the card goes straight to the logo (intro_gotoTitlescreen).
     if (this.stage === 'logo') {
       if (i.pressed('start') || i.pressed('a')) {
-        g.audio.sfx('confirm');
-        // The card and its white beat are not the logo: a press there goes
-        // straight on, as it always has. On the logo itself, Seasons' fade.
         if (this.t >= fadeEnd + TITLE_WHITE_FRAMES) {
+          // On the logo itself, Seasons' fade to the file select.
+          g.audio.sfx('confirm');
           this.toFilesT = 0;
           g.audio.fadeOut(TITLE_MUSIC_FADE_MASK);
-        } else {
-          this.stage = 'files';
-          this.saves = listSaves();
-          g.audio.play('fileSelect');
+        } else if (this.t < fadeEnd && g.introInputs) {
+          this.opening = null;
+          this.t = fadeEnd;
         }
       }
       return;
@@ -181,9 +190,8 @@ export class Title {
   /**
    * THE OPENING, as Seasons plays it (assets/footage, video frames 6744-6848):
    * a pale card with the credits in blue, a fade to white, a beat of white,
-   * and the logo cut in over the sky. Any press on the card or the logo goes
-   * to the file select — the same one press it always took, so the
-   * playthrough's run from the title is not a frame longer.
+   * and the logo cut in over the sky. A press on the logo fades to the file
+   * select; on the card, nothing at power-on and the logo after (S178).
    */
   drawOpening(ctx) {
     const t = this.t;
@@ -244,16 +252,21 @@ export class Title {
       drawText(ctx, s ? s.name : '- - -', 25, 56 + i * 24, '#f8f8f8');
       if (this.cursor === i) drawScreen(ctx, 'seedCursor', 7, 53 + i * 24);
     }
-    // The panel shows the file under the cursor, as Seasons' does.
+    // The panel shows the file under the cursor as Seasons' does
+    // (fileSelectDrawHeartsAndDeathCounter): Link, the death count in the
+    // status bar's bold digits, three of them, at row 9 columns 14-16, and
+    // the hearts from row 10 column 10, seven a row (eight from 15 hearts
+    // up, drawHeartDisplay).
     const s = this.cursor < 3 ? this.saves[this.cursor] : null;
     if (s) {
       sprites.draw(ctx, 'link_walk_down_0', 82, 62, { pal: 'link' });
-      drawText(ctx, '\x06' + s.essences + '/' + essenceCount(), 104, 62, '#000000');
-      drawText(ctx, '\x03' + s.rupees, 104, 72, '#000000');
+      const deaths = String(Math.min(999, s.deaths | 0)).padStart(3, '0');
+      for (let k = 0; k < 3; k++) sprites.draw(ctx, 'hud_d' + deaths[k], 112 + k * 8, 72);
       const total = Math.ceil(s.maxHearts / HEART_UNITS);
+      const per = total >= 15 ? 8 : 7;
       for (let h = 0; h < Math.min(total, 16); h++) {
         const filled = Math.max(0, Math.min(HEART_UNITS, s.hearts - h * HEART_UNITS));
-        sprites.draw(ctx, 'hud_heart' + filled, 80 + (h % 8) * 8, 84 + Math.floor(h / 8) * 8);
+        sprites.draw(ctx, 'hud_heart' + filled, 80 + (h % per) * 8, 80 + Math.floor(h / per) * 8);
       }
     } else if (this.cursor < 3) {
       drawTextCentered(ctx, 'NEW GAME', 113, 76, '#000000');

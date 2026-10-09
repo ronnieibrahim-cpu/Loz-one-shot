@@ -29,9 +29,9 @@ export const FIGURES = [
     { text: 'Room name (shown as you arrive)', atpx: [80, 44], anchor: 's', size: 12 },
   ] },
   { out: 'menu', src: 'menu-anchor', scale: 3, marks: [
-    { ringpx: [48, 35], r: 11 }, { ringpx: [71, 35], r: 11 },
-    { text: 'on B', atpx: [48, 58], anchor: 's', size: 12 }, { text: 'on A', atpx: [71, 58], anchor: 's', size: 12 },
-    { text: 'the item under the cursor', atpx: [80, 118], anchor: 's', size: 12 },
+    { ringpx: [11, 8], r: 9 }, { ringpx: [43, 8], r: 9 }, { ringpx: [125, 32], r: 10 },
+    { text: 'on B', atpx: [16, 66], anchor: 's', size: 12 }, { text: 'on A', atpx: [44, 66], anchor: 's', size: 12 },
+    { text: 'the item under the cursor', atpx: [80, 110], anchor: 's', size: 12 },
   ] },
   { out: 'conch-wave', src: 'd1-mouth-conch', scale: 3, marks: [
     { pathpx: [[66, 34], [66, 17]], w: 3 }, { text: 'the tide gauge: H', atpx: [66, 34], anchor: 's', size: 12 },

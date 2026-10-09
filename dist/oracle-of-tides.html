@@ -2088,6 +2088,14 @@ const DMAP_SCROLL_ROWS = 1;
  *  reloaded with 2. */
 const MAP_POPUP_STEP = 2;
 
+/** f — page 2's charm chooser grows open as Seasons' satchel box does: one
+ *  step every this many frames, the first on the frame A is pressed — two
+ *  columns wider (one each side) a step, one row high, until it is full width,
+ *  then a row deeper a step; what it holds appears, and it answers buttons,
+ *  only on the step after it is whole. derived: bank2.s inventoryMenuState2
+ *  @subState1, itemSubmenuCounter reloaded with 2; @func_02_57f3. */
+const MENU_SUBMENU_GROW = 2;
+
 /** f — a popup over a screen with two doors shows each picture this long in
  *  turn. derived: maupMenu_drawPopup @state2, wTmpcbba reloaded with $18. */
 const MAP_POPUP_SWAP = 24;
@@ -3941,6 +3949,7 @@ __exports["MAP_ARROW_BLINK"] = MAP_ARROW_BLINK;
 __exports["DMAP_FLICKER"] = DMAP_FLICKER;
 __exports["DMAP_SCROLL_ROWS"] = DMAP_SCROLL_ROWS;
 __exports["MAP_POPUP_STEP"] = MAP_POPUP_STEP;
+__exports["MENU_SUBMENU_GROW"] = MENU_SUBMENU_GROW;
 __exports["MAP_POPUP_SWAP"] = MAP_POPUP_SWAP;
 __exports["MENU_SAVE_FADE"] = MENU_SAVE_FADE;
 __exports["DOOR_REVEAL_BLANK"] = DOOR_REVEAL_BLANK;
@@ -8605,7 +8614,7 @@ __define("data/screens-map.js", function (__exports, __require) {
 // cartridges' boxes. tools/rip-map.py's header says what each one is.
 
 // The colours a screen's square on the overworld map is drawn in (PALH_07).
-const MAP_INK = { grid: '#000000', grass: '#73ef00', sand: '#ffff6b', sea: '#0094ff', foam: '#ffffff', earth: '#ce8c00', dark: '#635200', coral: '#bd21de', coralDark: '#5a006b' };
+const MAP_INK = { grid: '#000000', grass: '#73ef00', sand: '#ffff6b', sea: '#0094ff', foam: '#ffffff', earth: '#ce8c00', dark: '#635200', coral: '#bd21de', coralDark: '#5a006b', stone: '#525273', stoneDark: '#212142', salt: '#ffffff' };
 
 // The dungeon map's background (tile $ad in PALH_0f's palette 0).
 const DMAP_BLACK = '#000000';
@@ -24224,9 +24233,15 @@ function material(d) {
   if ((d.flags | 0) & (F.WATER | F.DEEP) || /^(water|openSea|riptide|seaSnarl)/.test(n)) return 'sea';
   if (/^(tree|palm|bush)/.test(n)) return 'tree';
   if (/^(cliffCoral|ledgeCoral)/.test(n)) return 'coralDark';
-  if (/^(cliff|ledge|boulder|keepSeal|caveMouth)/.test(n)) return 'dark';
+  // Grey stone and the cliffs round it in slate, the salt pans in white (S178:
+  // both read as earth and sand beside the screens they stand for).
+  if (/^(saltFlat|saltCrust)/.test(n)) return 'salt';
+  if (/^(cliffMarble|ledgeSalt)/.test(n)) return 'stone';
+  if (/^(cliff|ledge)(Dk|Abyss|Rock)?([NSEW]|$)/.test(n) || /^(keepSeal|caveMouth)/.test(n)) return 'stoneDark';
+  if (/^(cliff|ledge|boulder)/.test(n)) return 'dark';
   if (/^(portal|b[A-Z])/.test(n)) return 'earth';
   if (/Coral/.test(n)) return 'coral';
+  if (/^rockFloor(Dk)?$/.test(n)) return 'stone';
   if (/^rockFloor/.test(n)) return 'earth';
   if (/^(grass|hLawn|flowers|hFlowers|hTall|hYard)/.test(n) || /Lawn/.test(n)) return 'grass';
   if (/^(mud|chasm)/.test(n)) return 'dark';
@@ -24238,9 +24253,9 @@ function material(d) {
 // for a little over half what ground does: it shows where it is thick, and
 // the way through it shows as the ground it is. (S177, four weights shot side
 // by side; 0.6 read most like Holodrum's squares.)
-const WALL = { tree: 0.6, dark: 0.6, coralDark: 0.6 };
+const WALL = { tree: 0.6, dark: 0.6, coralDark: 0.6, stoneDark: 0.6 };
 // When two materials cover a pixel equally, the first of these wins.
-const ORDER = ['sea', 'tree', 'dark', 'coralDark', 'earth', 'coral', 'grass', 'sand'];
+const ORDER = ['sea', 'tree', 'dark', 'stoneDark', 'coralDark', 'earth', 'stone', 'coral', 'grass', 'salt', 'sand'];
 
 /** The flecks of the sea (mapSea, Ages' own open sea), as a mask. */
 let FOAM = null;
@@ -24799,7 +24814,7 @@ const { flag, itemLevel } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
 const { tradeName, tradeIcon } = __require("data/trade.js");
 const { DUNGEON_KEYS } = __require("data/keys.js");
-const { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE, MENU_SAVE_FADE, GAMEOVER_PICK_FRAMES, MENU_PAGE_SLIDE, MENU_PAGE_SLIDE_W } = __require("data/feel.js");
+const { MENU_DESC_DWELL, MENU_DESC_HOLD, MENU_FADE_CLOSE, MENU_SAVE_FADE, GAMEOVER_PICK_FRAMES, MENU_PAGE_SLIDE, MENU_PAGE_SLIDE_W, MENU_SUBMENU_GROW } = __require("data/feel.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 const { MapScreen, invalidateMapScreens } = __require("game/mapscreen.js");
 
@@ -24861,6 +24876,19 @@ const RIGHT_AT = [[112, 72], [112, 96]];
 // The charm chooser: a box of the page's own blocks over page 2's treasures,
 // columns 1-18 and rows 4-9, holding two rows of eight.
 const POP = { c0: 1, c1: 18, r0: 4, r1: 9, per: 8 };
+// How far the chooser has grown after `step` steps (inventoryMenuState2
+// @func_02_57f3): two columns a step from the middle at one row high, then a
+// row a step; null once it is whole and the step after has come (its
+// contents are drawn then).
+function popupGrowth(step) {
+  const full = POP.c1 - POP.c0 + 1, deep = POP.r1 - POP.r0 + 1;
+  const across = Math.ceil(full / 2);
+  if (step > across + deep - 1) return null;
+  const w = Math.min(full, 2 * Math.min(step, across));
+  const h = step <= across ? 1 : 1 + step - across;
+  const mid = POP.c0 + full / 2;
+  return { c0: mid - w / 2, c1: mid + w / 2 - 1, r1: POP.r0 + h - 1 };
+}
 
 class Menu {
   constructor(game) {
@@ -25034,6 +25062,12 @@ class Menu {
     return this.cursor2 >= TREASURE_SLOTS ? CASE_ROWS[this.cursor2 - TREASURE_SLOTS] : null;
   }
 
+  /** The chooser's growth this frame, or null once it is whole. The first
+   *  step is taken on the frame it opens. */
+  get popupGrowing() {
+    return this.popup ? popupGrowth(Math.floor(this.popup.t / MENU_SUBMENU_GROW) + 1) : null;
+  }
+
   /** The charms that fit the case the chooser is open on. */
   get pool() {
     return this.popup ? charmsForSlot(this.game.progress, CASE_ROWS[this.popup.row]) : [];
@@ -25079,7 +25113,7 @@ class Menu {
     if (i.pressed('a') && this.caseSlot) {
       // The chooser opens on the first charm already in the case, if any.
       const row = this.cursor2 - TREASURE_SLOTS;
-      this.popup = { row, at: 0 };
+      this.popup = { row, at: 0, t: 0 };
       const inCase = equippedIn(g.progress, CASE_ROWS[row]);
       const k = this.pool.findIndex(id => inCase.includes(id));
       this.popup.at = Math.max(0, k);
@@ -25096,6 +25130,8 @@ class Menu {
    */
   updatePopup() {
     const g = this.game, i = g.input, p = g.progress;
+    // Growing open: nothing answers until it is whole (@subState1).
+    if (this.popupGrowing) { this.popup.t++; return; }
     const pool = this.pool;
     if (i.pressed('b') || i.pressed('start')) { this.popup = null; g.audio.sfx('cursor'); return; }
     if (!pool.length) {
@@ -25412,6 +25448,11 @@ class Menu {
   drawPopup(ctx) {
     const p = this.game.progress;
     const slot = CASE_ROWS[this.popup.row];
+    const grow = this.popupGrowing;
+    if (grow) {
+      if (grow.c1 >= grow.c0) this.fillBlocks(ctx, grow.c0, POP.r0, grow.c1, grow.r1);
+      return null;
+    }
     this.fillBlocks(ctx, POP.c0, POP.r0, POP.c1, POP.r0);
     this.fillBlocks(ctx, POP.c0, POP.r1, POP.c1, POP.r1);
     this.fillBlocks(ctx, POP.c0, POP.r0, POP.c0, POP.r1);
@@ -26493,7 +26534,7 @@ class Title {
     // is not up the card holds, asking for a press, and the press that wakes
     // the sound (`soundStarted`, from main.js) does nothing else. A press the
     // sound did not answer — a gamepad, a harness, a browser with no audio —
-    // still goes to the file select, as it always has.
+    // starts the card running and does nothing else (S178).
     this.waitSound = !(this.game.audio && this.game.audio.ok);
     this.swallow = false;
     this.waitT = 0;
@@ -26518,6 +26559,10 @@ class Title {
     if (this.stage === 'logo' && this.t < TITLE_CARD_FRAMES && this.cardIn < TITLE_CARD_FADE_IN_FRAMES) this.cardIn++;
     if (waiting) this.waitT++;
     else this.t++;
+    // A press the sound did not answer (no audio, a gamepad, a harness)
+    // starts the card running all the same, and is spent on that: at
+    // power-on the card would ignore it anyway (S178).
+    if (waiting && (i.pressed('start') || i.pressed('a'))) { this.waitSound = false; return; }
 
     // START ON THE LOGO (S170): Seasons' intro_titlescreen_state1 plays the
     // select sound, fades the music out fast and the screen to white, and only
@@ -26533,6 +26578,8 @@ class Title {
     }
 
     const fadeEnd = TITLE_CARD_FRAMES + TITLE_FADE_FRAMES;
+    // The card has run its course: from here on START on it is read (below).
+    if (this.stage === 'logo' && this.t >= fadeEnd) g.introInputs = true;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
     if (this.stage === 'intro') {
       // Any press, or the end of it, cuts to the white beat before the logo —
@@ -26560,18 +26607,21 @@ class Title {
       return;
     }
 
+    // THE CARD TAKES NO PRESS AT POWER-ON (S178). Seasons' runIntro reads
+    // START only once hIntroInputsEnabled is set, and nothing sets it until
+    // the card has faded out (intro_capcomScreen @state2 enableIntroInputs).
+    // From then on — the card coming round again from idle, or after a game
+    // — START on the card goes straight to the logo (intro_gotoTitlescreen).
     if (this.stage === 'logo') {
       if (i.pressed('start') || i.pressed('a')) {
-        g.audio.sfx('confirm');
-        // The card and its white beat are not the logo: a press there goes
-        // straight on, as it always has. On the logo itself, Seasons' fade.
         if (this.t >= fadeEnd + TITLE_WHITE_FRAMES) {
+          // On the logo itself, Seasons' fade to the file select.
+          g.audio.sfx('confirm');
           this.toFilesT = 0;
           g.audio.fadeOut(TITLE_MUSIC_FADE_MASK);
-        } else {
-          this.stage = 'files';
-          this.saves = listSaves();
-          g.audio.play('fileSelect');
+        } else if (this.t < fadeEnd && g.introInputs) {
+          this.opening = null;
+          this.t = fadeEnd;
         }
       }
       return;
@@ -26638,9 +26688,8 @@ class Title {
   /**
    * THE OPENING, as Seasons plays it (assets/footage, video frames 6744-6848):
    * a pale card with the credits in blue, a fade to white, a beat of white,
-   * and the logo cut in over the sky. Any press on the card or the logo goes
-   * to the file select — the same one press it always took, so the
-   * playthrough's run from the title is not a frame longer.
+   * and the logo cut in over the sky. A press on the logo fades to the file
+   * select; on the card, nothing at power-on and the logo after (S178).
    */
   drawOpening(ctx) {
     const t = this.t;
@@ -26701,16 +26750,21 @@ class Title {
       drawText(ctx, s ? s.name : '- - -', 25, 56 + i * 24, '#f8f8f8');
       if (this.cursor === i) drawScreen(ctx, 'seedCursor', 7, 53 + i * 24);
     }
-    // The panel shows the file under the cursor, as Seasons' does.
+    // The panel shows the file under the cursor as Seasons' does
+    // (fileSelectDrawHeartsAndDeathCounter): Link, the death count in the
+    // status bar's bold digits, three of them, at row 9 columns 14-16, and
+    // the hearts from row 10 column 10, seven a row (eight from 15 hearts
+    // up, drawHeartDisplay).
     const s = this.cursor < 3 ? this.saves[this.cursor] : null;
     if (s) {
       sprites.draw(ctx, 'link_walk_down_0', 82, 62, { pal: 'link' });
-      drawText(ctx, '\x06' + s.essences + '/' + essenceCount(), 104, 62, '#000000');
-      drawText(ctx, '\x03' + s.rupees, 104, 72, '#000000');
+      const deaths = String(Math.min(999, s.deaths | 0)).padStart(3, '0');
+      for (let k = 0; k < 3; k++) sprites.draw(ctx, 'hud_d' + deaths[k], 112 + k * 8, 72);
       const total = Math.ceil(s.maxHearts / HEART_UNITS);
+      const per = total >= 15 ? 8 : 7;
       for (let h = 0; h < Math.min(total, 16); h++) {
         const filled = Math.max(0, Math.min(HEART_UNITS, s.hearts - h * HEART_UNITS));
-        sprites.draw(ctx, 'hud_heart' + filled, 80 + (h % 8) * 8, 84 + Math.floor(h / 8) * 8);
+        sprites.draw(ctx, 'hud_heart' + filled, 80 + (h % per) * 8, 80 + Math.floor(h / per) * 8);
       }
     } else if (this.cursor < 3) {
       drawTextCentered(ctx, 'NEW GAME', 113, 76, '#000000');

@@ -1,3 +1,65 @@
+## S178 — the map's grey stone and salt; Seasons' charm box, death count and title card
+
+Branch claude/oracle-tides-s178-olx4mf, off main at fc236d2 (S176 and S177
+merged by the human). The prompt left the task blank; the human picked "both,
+map first": check the map's look, then the small menu leftovers. Read out of
+oracles-disasm (cloned to the scratchpad).
+
+### What landed
+- THE MAP'S SQUARES. Shown beside Seasons' Holodrum map and the real screens,
+  two kinds of ground read wrong. The salt pans (saltFlat, saltCrust) were
+  sand-yellow; they are now WHITE (PALH_07 bg 4 colour 0), their marble
+  cliffs and salt ledges slate. Grey stone ground (rockFloor, rockFloorDk)
+  was earth-brown in the west cliffs and sand in the rocky reef; it is now
+  SLATE (#525273, PALH_07 bg 2 colour 1), and the grey cliffs round it
+  (cliff, cliffDk, cliffAbyss, the plain/Dk/Abyss/Rock ledges, keepSeal,
+  caveMouth) its dark (#212142, bg 2 colour 2), weighted 0.6 like the other
+  walls. Both greys and the white are colours Seasons' own map has; MAP_INK
+  gained `stone`, `stoneDark`, `salt` in tools/rip-map.py (re-emitted).
+  Sent the human: Seasons | ours before | ours now, with the real screens.
+- THE CHARM BOX GROWS OPEN as Seasons' satchel box does (inventoryMenuState2
+  @subState1 / @func_02_57f3): one step every MENU_SUBMENU_GROW = 2 frames
+  (derived), the first on the frame A is pressed; two columns wider a step
+  from the middle at one row high until full width (18), then a row deeper a
+  step (to 6); the charms and the arrow appear, and buttons are read, only on
+  the step after it is whole (frame 28). `Menu.popupGrowing`; the robot's
+  charm directive waits it out.
+- THE FILE SELECT SHOWS THE DEATH COUNT, as Seasons' does
+  (fileSelectDrawHeartsAndDeathCounter): three of the status bar's bold
+  digits at row 9 columns 14-16 beside Link (capped 999), the hearts from row
+  10 column 10, seven a row (eight from 15 hearts up). The Essence count and
+  rupees that were there (ours) are gone; Seasons shows neither. Matches the
+  footage's file select to the pixel.
+- START ON THE CARD AS SEASONS HAS IT (runIntro, hIntroInputsEnabled): at
+  power-on the card ignores START — inputs are only enabled once the card has
+  faded out (`game.introInputs`, set when the card's fade ends). From then on
+  (the card coming round from idle, or after a game) START on it cuts to the
+  white beat before the logo (intro_gotoTitlescreen). The nine tools that
+  start a game with real keys now press on until the file select is up
+  (one shared loop, the same in each), and test.mjs asserts both cases.
+- THE GUIDE'S MENU PICTURE re-shot on Seasons' item page (the Anchor in the
+  grid under the cursor, shield and sword in the status bar), marks moved;
+  docs/guide rebuilt.
+- test.mjs 128 -> 132.
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died (the robot
+needed no re-routing: its new game now spends ~360 frames on the title, and
+the run is the same run); test 132/132; check-build OK. A no-audio power-on
+used to hold the card until a press and then go to the file select; with the
+card now deaf at power-on that press would have held it for ever, so a press
+the sound does not answer now starts the card running instead (caught by the
+robot sitting on frame 0 for 3000 frames).
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Leftovers: the human has seen the map
+recolour only as one picture — ask; the woods read as bright grass (Seasons'
+own woods are the same green, kept); Seasons' map has no popup for a dungeon
+door and neither does ours; Seasons' satchel box also closes by being
+redrawn at once, as ours does; the intro's cinematic is skipped by A as well
+as START in ours (Seasons: START only); "on B"/"on A" labels in the guide's
+menu picture sit low, away from the slots, to keep clear of the grid.
+
 ## S177 — Seasons' own map screens
 
 Branch claude/oracle-tides-s177-wnevbl, built ON S176's branch

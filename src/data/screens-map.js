@@ -10,7 +10,7 @@
 // cartridges' boxes. tools/rip-map.py's header says what each one is.
 
 // The colours a screen's square on the overworld map is drawn in (PALH_07).
-export const MAP_INK = { grid: '#000000', grass: '#73ef00', sand: '#ffff6b', sea: '#0094ff', foam: '#ffffff', earth: '#ce8c00', dark: '#635200', coral: '#bd21de', coralDark: '#5a006b' };
+export const MAP_INK = { grid: '#000000', grass: '#73ef00', sand: '#ffff6b', sea: '#0094ff', foam: '#ffffff', earth: '#ce8c00', dark: '#635200', coral: '#bd21de', coralDark: '#5a006b', stone: '#525273', stoneDark: '#212142', salt: '#ffffff' };
 
 // The dungeon map's background (tile $ad in PALH_0f's palette 0).
 export const DMAP_BLACK = '#000000';

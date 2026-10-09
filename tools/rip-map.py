@@ -33,8 +33,9 @@ and over the grid:
     shows (mapIconOamTable 01, 04, 08, 0E).
   * `MAP_INK`: the colours a square is drawn in, read from paletteData4098
     (PALH_07's background palettes) — grass, sand, sea, earth, dark earth,
-    coral and the black of the grid — so nothing on the grid is a colour the
-    cartridge's map does not have.
+    coral, slate stone and its dark, white salt (S178) and the black of the
+    grid — so nothing on the grid is a colour the cartridge's map does not
+    have.
 
 THE DUNGEON MAP (mapMenu_state0 @dungeon, GFXH_DUNGEON_MAP, PALH_09; BG
 palette 0 is the common one every tileset loads, PALH_0f). Everything here is
@@ -274,12 +275,15 @@ def overworld(out):
     out['mapSea'] = indexed(sea)
 
     # paletteData4098 (PALH_07's eight background palettes), by what the
-    # Holodrum squares use each colour for.
+    # Holodrum squares use each colour for (stone and salt by what ours do).
     ink = {
         'grid': bg[0][3],
         'grass': bg[4][2], 'sand': bg[2][0], 'sea': bg[4][1], 'foam': bg[4][0],
         'earth': bg[3][1], 'dark': bg[3][2],
         'coral': bg[1][1], 'coralDark': bg[1][2],
+        # S178: palette 2's slate and its dark, for grey stone ground and the
+        # cliffs round it; palette 4's white, for the salt pans.
+        'stone': bg[2][1], 'stoneDark': bg[2][2], 'salt': bg[4][0],
     }
     return {k: hexc(c) for k, c in ink.items()}
 

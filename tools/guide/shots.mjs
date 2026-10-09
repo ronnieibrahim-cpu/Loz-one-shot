@@ -306,7 +306,9 @@ const D1 = ['3,7','3,6','2,6','3,5','2,5','4,5','3,4','2,4','4,4','3,3','2,3','3
 export const STATIC_SHOTS = [
   { id: 'title', title: true, frames: 400 },
   { id: 'menu-anchor', room: ['d1', 0, 3, 2], tide: 0, whole: false, player: true, keepDialogue: true,
-    prep: { script: "g.progress.items.anchor = 1; g.progress.equipA = 'anchor'; g.menu.open(); H.step(3);" } },
+    // Seasons' item page (S176): what is on B and A is up in the status bar,
+    // the rest in the grid; the cursor on the Anchor, its name below.
+    prep: { script: "Object.assign(g.progress.items, { sword: 1, shield: 1, conch: 1, anchor: 1, cleats: 1, lens: 1 }); g.progress.equipB = 'shield'; g.progress.equipA = 'sword'; g.menu.open(); H.step(60); g.menu.cursor = g.menu.items.findIndex(t => t && t.id === 'anchor'); H.step(30);" } },
 ];
 // The overworld is OVERWORLD_W screens across since S157 (CLAUDE.md: never
 // write the width down).

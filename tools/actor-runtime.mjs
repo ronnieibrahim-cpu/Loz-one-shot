@@ -2536,6 +2536,8 @@ export async function installRuntime() {
     // A opens the case's chooser; walk it to the charm and press A.
     yield BIT.a; yield 0;
     if (!m.popup) throw new Error(`charm: the ${want} case would not open`);
+    // The box grows open first and answers nothing until it is whole (S178).
+    for (let f = 0; f < 60 && m.popupGrowing; f++) yield 0;
     for (let f = 0; f < (maxF || 600); f++) {
       const pool = m.pool || [];
       const t = pool.indexOf(id);

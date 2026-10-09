@@ -131,10 +131,12 @@ const tap = async (code) => {
 };
 
 // New game, skip the intro.
-// The first real key only wakes the sound while the title card waits for
-// it (S169); that press is spent, so make it before the two that count.
-if (await page.evaluate(() => window.__game.title.waitSound)) { await tap('Enter'); await frames(6); }
-await tap('Enter'); await frames(6);
+// The card takes no press at power-on (S178, as Seasons' does not), and
+// the first may only wake the sound (S169): press on until the file
+// select is up, then once more for slot 1.
+for (let k = 0; k < 200 && await page.evaluate(() => window.__game.title.stage !== 'files'); k++) {
+  await tap('Enter'); await frames(6);
+}
 await tap('Enter'); await frames(20);
 for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cutscene'); i++) {
   await tap('Enter'); await frames(4);
