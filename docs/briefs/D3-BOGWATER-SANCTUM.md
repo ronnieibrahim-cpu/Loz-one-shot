@@ -1,4 +1,28 @@
-# D3 — the Bogwater Sanctum, grown to two floors (S180 design; P1-P4 BUILT S181)
+# D3 — the Bogwater Sanctum, grown to two floors (S180 design; P1-P4 BUILT S181; P5-P6 BUILT S182 — DONE)
+
+**Status (S182): FINISHED (`6cf000d`), 42 screens on two floors. Pictures:
+`d3-mock/s182-built.png` (the Sump beside Ages' Jabu-Jabu, the Reliquary
+beside Seasons' Dancing Dragon room $61). The human chose, before building:
+(1) Link LETS GO of what he holds as he falls, as in Seasons (link.s
+linkState02 -> linkCancelAllItemUsage -> dropLinkHeldItem), and a Kilnshell
+that goes down a drop hole lands in the room below still lit (ours) — so the
+fire is dropped or carried in and falls with him; (2) the west wing is
+REQUIRED: a new key door in the Bogwater Drain's east wall (the Eel Hall's
+west door) takes the Drain Gallery's chest key, so five keys, five locks.
+As built, differences from the text below: the well is a 3x1 shaft in a
+sluice basin north of the Cistern Floor's island (a pit fall at LOW, the
+Sump's floor being dry pits there); the Sump's plate is in a basin deep at
+every sea in its east half; the plate opens the Undertow's west door through
+a new reward `openDoorsIn` (a door in another room); the Root Cellar got a
+north door to the Undertow Cellar, so its Chartstone moved onto a raised
+corner left by a ledge, which only P4's crack reaches; the Reliquary's chest
+is a room entity with `needFlag` (remembered opened), its torches two tiles
+either side of it; the Reed Undercroft (optional) is under a crack in the
+Reed Cell's north-east corner, with a fight, a chest of 100 rupees and a
+stair back up onto a fenced step left by its ledge. Key economy as built:
+Pens -> Hub east; Drain Weir -> Weir north; Vestry -> Drain Gallery; Drain
+Gallery -> Eel Hall west (NEW); Two Weights -> Eel Hall north; Boss Key in
+the Reliquary.**
 
 **Status (S181): the human answered the three questions — (1) holes open at
 LOW ONLY, (2) a crack shows only while it is dry, (3) P1-P4 first. P1-P4, the

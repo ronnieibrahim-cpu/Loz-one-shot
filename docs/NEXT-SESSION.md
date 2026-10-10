@@ -1,3 +1,90 @@
+## S182 — the Bogwater Sanctum finished: P5 the Sump, P6 the Reliquary, 42 screens
+
+Branch claude/s182-bogwater-sump, off main at f84b1d9 with S181's branch
+(claude/s181-bogwater-sanctum) merged in. NOT merged to main: ask the human
+(S181 is not on main either; this branch carries both).
+
+### The human's two answers (asked before building)
+1. FIDELITY: in Seasons Link lets go of what he holds when he falls down a hole
+   (link.s linkState02 @substate0 -> linkCancelAllItemUsage -> dropLinkHeldItem).
+   So "carry the shell down" became: he drops it as he falls, and OURS adds
+   that a Kilnshell going down a drop hole lands in the room below, still lit.
+2. The west wing is REQUIRED: a new key door between the Bogwater Drain and
+   the Eel Hall, opened by a Small Key in the Drain Gallery's chest (where the
+   Boss Key was). Five keys, five locks.
+
+### What landed (`6cf000d`, plus the guide/notes commit after it)
+- ENGINE: `reward.openDoorsIn: [[roomKey, x, y]]` (a puzzle opens a door in
+  another room; persisted, seam partner too; Game.openDoorAt takes a room).
+  Player.beginFall lets go of the carried thing (dropped at the hole's tile);
+  Game.dropObjectThrough queues an object with `fallsThrough` (the Kilnshell
+  only) into `game.fallen` for the room below if the cell there is not
+  solid/pit/void; Game.spawnFallen brings it in on room entry, dropping in
+  from above (Kilnshell.fallIn, DROP_IN_MAX_HEIGHT, the throw's gravity). A
+  Kilnshell landing on or resting on a PIT goes down a DROP hole or is lost
+  (it used to sit on a pit). Pressing the Kilnshell's button takes back a
+  shell that fell to another room (one shell in the world). checkPuzzle
+  calls spawnFlagged(pz.flag) when it solves, so a `needFlag` chest rises
+  and is remembered opened; `reward.reveal` plays the secret jingle.
+- ROOMS: Cistern Floor (1,3,3) gets a sluice basin and a 3x1 shaft north of
+  the island (shaftRoom lands [24,5]); the Sump (0,3,3, 2x1): dSump `0` pits
+  at LOW, deep above, a W basin with the sunk plate at 24,5 (sunkPlates),
+  shutter west; plate opens its shutter AND the Undertow's west door (now
+  `D`, the Vestry's east `D` its partner). Undertow Cellar (0,2,3): fight,
+  shutter east, door south to the Root Cellar (which got a north door; its
+  Chartstone moved onto a raised NW corner left by ledges — P4's claim held).
+  The Weir (1,3,4): crack `8` at 7,7 in its pool, walled NE alcove with a
+  stair `/` (13,1) and ledges `_` out (shaftRoom lands [7,7]). The Reliquary
+  (0,3,4): damp, torches 5,3 and 9,3, Boss Key chest 7,3 needFlag
+  d3_reliquary, stair `S` 13,1 up to the alcove; kilnRoom { descend, torches }.
+  Reed Cell (1,4,4): crack `K` at 12,2 and a fenced SW step with a stair down;
+  the Reed Undercroft (0,4,4, optional): fight, chest (rupee100) needFlag.
+  Keys: Drain Gallery chest is a Small Key; Bogwater Drain east / Eel Hall
+  west is `L`. cleatRoom targets moved off the new doors (Undertow to 1,5;
+  Drain 13,5; Eel Hall from 1,5).
+- TOOLS: dungeon-flood knows openDoorsIn (owner = the solving room).
+  check-kiln: `descend` claims (only the hole reaches the room; at LOW a lit
+  shell carried in falls with him and lands lit; at MID/HIGH none gets down;
+  thrown into the hole it goes down; beside each torch in turn the puzzle
+  pays and the chest is the Boss Key) — goes red with dropObjectThrough off.
+  check-side: "the whole dungeon in one run, door to boss" (tools/
+  playthroughs/d3-run.mjs, replacing the S181 Undercroft run) and the Reed
+  Undercroft. actor-runtime: `['lift', maxF]` picks up a lying Kilnshell;
+  setup `doors`. check-playthrough +2: the Sump's plate, the Reliquary lit
+  (47/47). shoot-dungeon freezes Link while a room settles (he used to fall
+  down a hole and the next photo showed the room below).
+- ROUTE: the Kilnshell's chest is opened on the FIRST Reef Hollow visit (it
+  was fetched after D5); the later detour is gone. D3: P4 chest from its
+  left; P6 after the Reed Cell; the Cleats; P5 at MID; out by the Undertow
+  Cellar and the Silt Stair; the conch to LOW in the Weir; the west wing;
+  the Drain's new key door. Bogmaw re-swept: waits 44-50 win (on 1-6 quarter
+  hearts, a fairy refills after), 46 chosen; thin, as it has been since S179.
+- GUIDE: chapter 7 rewritten (stops 1-29; new sections for the Reliquary and
+  the Cleats-and-well), 11 new pictures, the Kilnshell note moved to the
+  Reef Hollow ("open it now"). shots.mjs remapped by LCS from 6cf000d^;
+  figures.mjs trails remapped from e14777d — S181 had NOT moved them (the
+  Drain, Kelp Locks and every road map after D3 were drawn from the wrong
+  steps). Comparison picture docs/briefs/d3-mock/s182-built.png.
+- REPLAY: d3-undertow re-recorded with its west door open in setup; it ends
+  on the same pixel.
+
+### Verified
+Whole table green (49 tools); check-playthrough 47/47, THE END, never died;
+check-side incl. the whole-Sanctum run; check-kiln 25; check-shafts 186.
+
+### Leftovers
+- A thing falling into a hole just vanishes (the shell, a pot): Seasons plays
+  INTERAC_FALLDOWNHOLE (a shrinking sprite). Rip it into rip-effects.py.
+- Bogmaw is a thin win for the robot (see the route comment).
+- S181's: Link's fall-in pose is his standing frame (LINK_ANIM_MODE_FALL not
+  ripped); the guide's Sluice Cell LOW picture lacks the Anchor's sprite.
+
+### NEXT (S183): D4, the Cliffside Cistern, grown per DUNGEON-STATUS "S179"
+Read docs/briefs/DUNGEON-DESIGN-LANGUAGE.md, design D4 to ~43 screens on 2-3
+floors (spikes drowned at HIGH, moving platforms; "a wheel on one floor
+drains the shaft of the floor below"), write a brief with a mock beside
+Seasons/Ages and SHOW THE HUMAN before building.
+
 ## S181 — the Bogwater Sanctum's cellar: drop holes, cracked floor, P1-P4 built
 
 Branch claude/s181-bogwater-sanctum, off main at f84b1d9 with S180's branch

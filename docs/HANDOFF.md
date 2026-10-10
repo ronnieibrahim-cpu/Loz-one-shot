@@ -447,6 +447,25 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Ask what the cartridge does to a held object when Link's state changes
+  (S182).** The D3 brief said "carry a lit shell down the hole"; Seasons'
+  falling state calls linkCancelAllItemUsage, which drops whatever is held.
+  The fix kept the design AND the fidelity: he lets go, and what falls down a
+  hole lands below (ours). Before a puzzle leans on carrying across a fall, a
+  warp, a ledge hop or a hit, read that state's entry in link.s.
+- **A guide re-shoot moves BOTH number lists (S182).** S181 remapped
+  shots.mjs and not figures.mjs, so every route trail after D3 was drawn from
+  the wrong directives for a session and nothing failed. Remap each from the
+  commit it was last right at (git log -- the file), not from HEAD~1.
+- **A reward-spawned chest forgets it was opened (S182).** `reward.spawn`
+  has no saveKey, so re-entering a solved room spawns it shut again. A prize
+  that appears on a solve is a room entity with `needFlag: <puzzle flag>`;
+  checkPuzzle now spawns it the moment the flag is set.
+- **A photographing tool can fall down a hole (S182).** shoot-dungeon left
+  Link standing on the same tile in every room; in a room with a hole there
+  he fell, and the next room's picture was the room below. Freeze the player
+  in any tool that only wants the room.
+
 - **A flood that walks through a puzzle door from either side is wrong the
   first time a door opens from one side only (S181).** The Drain Weir's
   shutter opens when its key is taken, from inside; the dungeon flood treated

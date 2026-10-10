@@ -60,7 +60,7 @@ ours are compared by SCREENS.
 |---|---|---|---|
 | D1 | 20 screens, 1F | 22, 1F | 25, 1F |
 | D2 | 29, 1F | 34, 2F | 27, 2F |
-| D3 | 32, 2F | 30, 2F | **32, 1F** |
+| D3 | 32, 2F | 30, 2F | **42, 2F (S182)** |
 | D4 | 40, 3F | 43, 2F | **36, 1F** |
 | D5 | 38, 1F | 45, 2F | **40, 1F** |
 | D6 | 45, 5F | 25+16 (two eras) | **47, 2F** |
@@ -103,7 +103,7 @@ sheet has it, extract it"), its timings read from the disassembly.
 
 | D | Now | Target | New terrain (and its tide twist) | Puzzle depth to add |
 |---|---|---|---|---|
-| 3 Bogwater Sanctum | 32 screens, 1F | ~40, **2F** (a cellar under the bog) | **drop-through holes** (TILETYPE_WARPHOLE: fall to the same spot one floor down) — and at HIGH the hole is a flooded shaft you swim straight down, at LOW you fall; **cracked floors** that give way after you stand on them | a cellar half reached only by dropping; a key upstairs that needs a switch downstairs |
+| 3 Bogwater Sanctum | **DONE S182: 42 screens, 2F** | ~40, **2F** (a cellar under the bog) | **drop-through holes** (TILETYPE_WARPHOLE: fall to the same spot one floor down) — and at HIGH the hole is a flooded shaft you swim straight down, at LOW you fall; **cracked floors** that give way after you stand on them | a cellar half reached only by dropping; a key upstairs that needs a switch downstairs |
 | 4 Cliffside Cistern | 36, 1F | ~43, **2-3F** | **spikes** (TILETYPE_SPIKE, its damage and knockback) — drowned and harmless at HIGH; **moving platforms** over pits (INTERAC_MOVING_PLATFORM's paths and speed) | a wheel on one floor drains the shaft of the floor below |
 | 5 Drowned Wood Shrine | 40, 1F | ~44, **2F** | **conveyors** (the four TILETYPE_*CONVEYOR) as root-sluices that stop when the tide drops; **cracked floors** | Reefseed pillars grown on one floor reached from the one above |
 | 6 Abyssal Keep | 47, 2F | ~52, **3F** | everything before it combined, plus **colour/toggle floor** (INTERAC_TOGGLE_FLOOR) or **trampolines** | 4-5 keys, three floors that interlock; enemy density toward Seasons' D8 |
@@ -125,7 +125,7 @@ every later one reads it first. See docs/prompts/NEXT-PROMPT.md.
 |---|---|---|---|---|---|
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE; ORACLE SIZE** | `d655d1f`; rebuilt at 15x11 S137 (`91cc5c7`) |
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE, AND PLAYED; ORACLE SIZE** | authored `0a3776f`; played end to end S41; rebuilt at 15x11 S138 |
-| 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE, AND PLAYED; ORACLE SIZE; GROWING (S181)** | `a9eb63e`; rebuilt at 15x11 S139 (`08a4e74`); grown to 32 screens S143; **two floors S181 (`1e10fcf`): the Undercroft's 5 screens and P1-P4 of docs/briefs/D3-BOGWATER-SANCTUM.md (37 screens). P5-P6 and 5 more cellar screens are next** |
+| 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE, AND PLAYED; ORACLE SIZE; GROWN TO TWO FLOORS (S182)** | `a9eb63e`; rebuilt at 15x11 S139 (`08a4e74`); grown to 32 screens S143; two floors S181 (`1e10fcf`: P1-P4); **finished S182 (`6cf000d`): P5 the Sump under the Cistern Floor's well, P6 the Reliquary under the Weir's crack, the Undertow Cellar and the optional Reed Undercroft — 42 screens on 2 floors, 5 keys, the whole of docs/briefs/D3-BOGWATER-SANCTUM.md built and played by the robot** |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE, AND PLAYED; ORACLE SIZE** | `5fd7301`; rebuilt at 15x11 S140 (`4d61f0e`); grown to 36 screens S143 |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE, AND PLAYED; ORACLE SIZE** | `0db0eab`; rebuilt at 15x11 S141 (`ef1b1ea`); grown to 40 screens S142 |
 | 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END; ORACLE SIZE** | authored `84d14e5`; played to the end S121; rebuilt at 15x11 and grown to 47 screens S142 |
