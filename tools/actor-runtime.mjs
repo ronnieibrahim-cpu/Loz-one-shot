@@ -537,10 +537,12 @@ export async function installRuntime() {
     const g = window.__game;
     for (let f = 0; f < (maxF || 3000); f++) {
       if (g.mode === 'title') {
-        // Logo -> file select -> slot 0. Both stages take `a`, and the cursor
-        // starts on slot 0, so one button clears the whole screen. Tapped with
-        // gaps because `pressed` is edge-triggered.
-        yield (f % 12 === 0) ? BIT.a : 0;
+        // Logo -> file select -> slot 0. Both stages take START (the card,
+        // the opening and the logo take nothing else, as Seasons' runIntro
+        // reads BTN_START alone — S179), and the cursor starts on slot 0, so
+        // one button clears the whole screen. Tapped with gaps because
+        // `pressed` is edge-triggered.
+        yield (f % 12 === 0) ? BIT.start : 0;
         continue;
       }
       if (g.mode === 'cutscene') { yield (f % 8 === 0) ? BIT.a : 0; continue; }

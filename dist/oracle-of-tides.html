@@ -8614,7 +8614,7 @@ __define("data/screens-map.js", function (__exports, __require) {
 // cartridges' boxes. tools/rip-map.py's header says what each one is.
 
 // The colours a screen's square on the overworld map is drawn in (PALH_07).
-const MAP_INK = { grid: '#000000', grass: '#73ef00', sand: '#ffff6b', sea: '#0094ff', foam: '#ffffff', earth: '#ce8c00', dark: '#635200', coral: '#bd21de', coralDark: '#5a006b', stone: '#525273', stoneDark: '#212142', salt: '#ffffff' };
+const MAP_INK = { grid: '#000000', grass: '#73ef00', sand: '#ffff6b', sea: '#0094ff', foam: '#ffffff', earth: '#ce8c00', dark: '#635200', coral: '#bd21de', coralDark: '#5a006b', stone: '#7b7b9c', stoneDark: '#39425a', salt: '#ffffff' };
 
 // The dungeon map's background (tile $ad in PALH_0f's palette 0).
 const DMAP_BLACK = '#000000';
@@ -24233,7 +24233,7 @@ function material(d) {
   if ((d.flags | 0) & (F.WATER | F.DEEP) || /^(water|openSea|riptide|seaSnarl)/.test(n)) return 'sea';
   if (/^(tree|palm|bush)/.test(n)) return 'tree';
   if (/^(cliffCoral|ledgeCoral)/.test(n)) return 'coralDark';
-  // Grey stone and the cliffs round it in slate, the salt pans in white (S178:
+  // Grey stone and the cliffs round it in grey (S178, Ages' grey since S179), the salt pans in white (S178:
   // both read as earth and sand beside the screens they stand for).
   if (/^(saltFlat|saltCrust)/.test(n)) return 'salt';
   if (/^(cliffMarble|ledgeSalt)/.test(n)) return 'stone';
@@ -26582,9 +26582,10 @@ class Title {
     if (this.stage === 'logo' && this.t >= fadeEnd) g.introInputs = true;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
     if (this.stage === 'intro') {
-      // Any press, or the end of it, cuts to the white beat before the logo —
-      // Seasons' START in its intro goes to the title, not past it.
-      if (this.opening.update() || i.pressed('start') || i.pressed('a')) {
+      // START, or the end of it, cuts to the white beat before the logo —
+      // Seasons' START in its intro goes to the title, not past it. Only
+      // START: runIntro reads BTN_START alone, so A does nothing here (S179).
+      if (this.opening.update() || i.pressed('start')) {
         this.opening = null;
         this.stage = 'logo';
         this.t = fadeEnd;
@@ -26612,8 +26613,10 @@ class Title {
     // the card has faded out (intro_capcomScreen @state2 enableIntroInputs).
     // From then on — the card coming round again from idle, or after a game
     // — START on the card goes straight to the logo (intro_gotoTitlescreen).
+    // START alone, on the card and on the logo alike: runIntro and
+    // intro_titlescreen_state1 both read BTN_START and nothing else (S179).
     if (this.stage === 'logo') {
-      if (i.pressed('start') || i.pressed('a')) {
+      if (i.pressed('start')) {
         if (this.t >= fadeEnd + TITLE_WHITE_FRAMES) {
           // On the logo itself, Seasons' fade to the file select.
           g.audio.sfx('confirm');

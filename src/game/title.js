@@ -84,9 +84,10 @@ export class Title {
     if (this.stage === 'logo' && this.t >= fadeEnd) g.introInputs = true;
     if (this.stage === 'logo' && this.opening && this.t === fadeEnd) this.stage = 'intro';
     if (this.stage === 'intro') {
-      // Any press, or the end of it, cuts to the white beat before the logo —
-      // Seasons' START in its intro goes to the title, not past it.
-      if (this.opening.update() || i.pressed('start') || i.pressed('a')) {
+      // START, or the end of it, cuts to the white beat before the logo —
+      // Seasons' START in its intro goes to the title, not past it. Only
+      // START: runIntro reads BTN_START alone, so A does nothing here (S179).
+      if (this.opening.update() || i.pressed('start')) {
         this.opening = null;
         this.stage = 'logo';
         this.t = fadeEnd;
@@ -114,8 +115,10 @@ export class Title {
     // the card has faded out (intro_capcomScreen @state2 enableIntroInputs).
     // From then on — the card coming round again from idle, or after a game
     // — START on the card goes straight to the logo (intro_gotoTitlescreen).
+    // START alone, on the card and on the logo alike: runIntro and
+    // intro_titlescreen_state1 both read BTN_START and nothing else (S179).
     if (this.stage === 'logo') {
-      if (i.pressed('start') || i.pressed('a')) {
+      if (i.pressed('start')) {
         if (this.t >= fadeEnd + TITLE_WHITE_FRAMES) {
           // On the logo itself, Seasons' fade to the file select.
           g.audio.sfx('confirm');

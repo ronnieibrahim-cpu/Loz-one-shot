@@ -43,7 +43,7 @@ function material(d) {
   if ((d.flags | 0) & (F.WATER | F.DEEP) || /^(water|openSea|riptide|seaSnarl)/.test(n)) return 'sea';
   if (/^(tree|palm|bush)/.test(n)) return 'tree';
   if (/^(cliffCoral|ledgeCoral)/.test(n)) return 'coralDark';
-  // Grey stone and the cliffs round it in slate, the salt pans in white (S178:
+  // Grey stone and the cliffs round it in grey (S178, Ages' grey since S179), the salt pans in white (S178:
   // both read as earth and sand beside the screens they stand for).
   if (/^(saltFlat|saltCrust)/.test(n)) return 'salt';
   if (/^(cliffMarble|ledgeSalt)/.test(n)) return 'stone';

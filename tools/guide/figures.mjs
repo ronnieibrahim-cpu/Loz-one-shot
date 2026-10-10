@@ -31,7 +31,7 @@ export const FIGURES = [
   ] },
   { out: 'menu', src: 'menu-anchor', scale: 3, marks: [
     { ringpx: [11, 8], r: 9 }, { ringpx: [43, 8], r: 9 }, { ringpx: [125, 32], r: 10 },
-    { text: 'on B', atpx: [16, 66], anchor: 's', size: 12 }, { text: 'on A', atpx: [44, 66], anchor: 's', size: 12 },
+    { text: 'on B', atpx: [12, 18], anchor: 's', size: 12 }, { text: 'on A', atpx: [43, 18], anchor: 's', size: 12 },
     { text: 'the item under the cursor', atpx: [80, 110], anchor: 's', size: 12 },
   ] },
   { out: 'conch-wave', src: 'd1-mouth-conch', scale: 3, marks: [

@@ -1235,12 +1235,13 @@ const main = async () => {
     const { Title } = await import('/src/game/title.js');
     const { INTRO_FRAMES } = await import('/src/game/intro.js');
     const feel = await import('/src/data/feel.js');
-    let press = false;
+    let press = false, key = 'start';
     const up = { ok: true, sfx() {}, play() {} };
-    const fake = { audio: up, frame: 0, input: { pressed: b => press && b === 'a' } };
+    const fake = { audio: up, frame: 0, input: { pressed: b => press && b === key } };
     const c = document.createElement('canvas'); c.width = 160; c.height = 144;
     const ctx = c.getContext('2d');
-    const run = (skipAt, wakeAt = -1) => {
+    const run = (skipAt, wakeAt = -1, k = 'start') => {
+      key = k;
       fake.audio = wakeAt < 0 ? up : { ok: false, sfx() {}, play() {} };
       const t = new Title(fake);
       const seen = []; let back = -1;
@@ -1258,15 +1259,19 @@ const main = async () => {
     const card = feel.TITLE_CARD_FRAMES + feel.TITLE_FADE_FRAMES;
     // Silent at power-on: the card holds 500 frames for a press, the press
     // that wakes the sound is spent on it, and the opening then plays whole.
-    return { whole: run(-1), skipped: run(card + 300), woke: run(-1, 500), frames: INTRO_FRAMES, card };
+    return { whole: run(-1), skipped: run(card + 300), byA: run(card + 300, -1, 'a'),
+      woke: run(-1, 500), wokeA: run(-1, 500, 'a'), frames: INTRO_FRAMES, card };
   });
   // The card's last frame (the update that makes t reach it, f = card - 1) is
   // the opening's first, so its last is INTRO_FRAMES - 1 updates after that.
   check('the opening plays between the card and the logo, to its end',
     opening.whole === `logo>intro>logo@${opening.card + opening.frames - 2}`, opening.whole);
-  check('a press in the opening cuts to the logo', opening.skipped === `logo>intro>logo@${opening.card + 300}`, opening.skipped);
+  check('START in the opening cuts to the logo', opening.skipped === `logo>intro>logo@${opening.card + 300}`, opening.skipped);
+  // Seasons' runIntro reads BTN_START alone: A in the opening does nothing.
+  check('A in the opening does not skip it', opening.byA === opening.whole, opening.byA);
   check('with no sound yet the card waits, and the press that wakes it skips nothing',
     opening.woke === `logo>intro>logo@${501 + opening.card + opening.frames - 2}`, opening.woke);
+  check('A still wakes the sound on a silent card', opening.wokeA === opening.woke, opening.wokeA);
   // Left alone on the logo, Seasons stops its music, fades to white and plays
   // the card and the intro again (S169; TITLE_IDLE_FRAMES, derived).
   const idle = await G(async () => {

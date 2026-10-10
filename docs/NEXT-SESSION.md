@@ -1,3 +1,41 @@
+## S179 — START alone skips the opening; the map's grey stone lightened; the guide republished
+
+Branch claude/ecstatic-thompson-p9mc72, off main at dd3cd33 (S178 merged).
+The human's prompt named four items (item 5, fight tuning, is theirs).
+
+### What landed
+- START ALONE ON THE TITLE (runIntro reads BTN_START only, and
+  intro_titlescreen_state1 the same): A no longer skips the opening, cuts
+  the card short, or leaves the logo. A still wakes the sound on a silent
+  card (a browser needs a gesture; that press is spent and skips nothing).
+  The robot's new-game directive taps START on the title (actor-runtime
+  dNewGame); the run is otherwise unchanged. test.mjs 132 -> 134 (A in the
+  opening does not skip it; A still wakes a silent card).
+- THE MAP'S GREY STONE (shown beside Seasons' Holodrum map, rendered from
+  map_holodrum_minimap, and the real screens): the Cliffs of Kell and the
+  north-east rocky reef were a dark navy slate (Seasons PALH_07 bg2 1-2,
+  S178) and read as night beside the pale stone the screens are. Now Ages'
+  own map grey (its PALH_07 bg2 colours 0-1, #7b7b9c / #39425a, the Black
+  Tower's), set in tools/rip-map.py MAP_INK and re-emitted. Nothing else on
+  the map changed: salt white, coral Seasons' magenta, woods green dotted
+  brown (Seasons' tree colours) all kept.
+- THE GUIDE'S MENU PICTURE: "on B" / "on A" now sit right under the two
+  status-bar slots (figures.mjs atpx y 66 -> 18), clear of the item row;
+  docs/guide rebuilt.
+- THE ONLINE GUIDE republished from docs/guide/index.html:
+  https://claude.ai/artifact/NoB5f92jjjavWAoZgykKeN (version 4).
+
+### Verified
+Whole table green; check-playthrough 44/44, THE END, never died; test
+134/134.
+
+### FUTURE ACTION ITEMS
+Item 5 (fight tuning) is the human's. Map leftovers to ask about: coral is
+Seasons' magenta where the screens are pink (Ages' lighter #d642f7 is the
+nearest cartridge map colour); the woods read as bright grass with brown
+dots where the screens are dense dark trees (Seasons draws its woods the
+same green). Seasons' map has no popup for a dungeon door, nor does ours.
+
 ## S178 — the map's grey stone and salt; Seasons' charm box, death count and title card
 
 Branch claude/oracle-tides-s178-olx4mf, off main at fc236d2 (S176 and S177

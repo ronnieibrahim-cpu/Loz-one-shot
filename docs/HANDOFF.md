@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A map colour is judged beside the place, not beside the other map
+  (S179).** S178 took Seasons' slate for grey stone because Seasons' map has
+  it, and on its own the map looked plausible; beside a stitched shot of the
+  real screens the Cliffs of Kell read as night. Both cartridges' map
+  palettes are fair game; pick the one nearest the screens it stands for.
+  And when a button stops doing something (A on the title), grep the robot
+  for that button in that mode first: dNewGame had tapped A there for the
+  life of the project.
+
 - **"What happens on a press" can depend on what has already happened
   (S178).** Seasons' card ignores START at power-on and honours it every time
   after, because one flag (hIntroInputsEnabled) is set at the end of the card
