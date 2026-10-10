@@ -50,6 +50,36 @@ dungeon maps, chartstones and compasses to be held in chests like the source")
   step numbers moved by an LCS match, all 698 shots re-captured (rooms
   checked), text says the maps are in chests; online copy republished.
 
+### Part three: the sword swings as fast as it is tapped, and its blade
+picks up drops (the human: "in the source games the sword could be spammed
+... and you could hit pickups with the sword to pick them up")
+- RE-SWING (SWORD_RESWING_PHASE = 1, derived): a fresh press mid-swing
+  throws the swing away and starts another, from the swing's second phase on
+  (code/parentItemUsage.s chooseParentItemSlot @thing3 replaces the sword's
+  parent item at >= priority; a swing starts with Item.enabled bit 7 set,
+  which outranks it, until swordParent.s @state1 clears it the first frame
+  animationData19d21's parameter is non-zero). The 3-frame wind-up cannot be
+  cut; a spin cannot. Player.startSwing / swingWouldRestart.
+- THE BLADE TAKES DROPS (PICKUP_BLADE_RADIUS = 4, derived from partData.s
+  PART_ITEM_DROP radii $44): swing, spin and held blade collect any
+  non-persistent pickup (hearts, rupees, bombs, seeds, blanks, fairies,
+  bottles) whose 8x8 middle the hit area meets, once it could be taken by
+  hand (Pickup.bladeTakes; Player.bladeCollect). Treasures — keys, Boss Keys,
+  maps, Piece of Heart — are not (partActiveCollisions.s row $01: every
+  sword type and both boomerangs; ours have no boomerang).
+- THE ROBOT: dFight/dBoss press the sword every other frame while closing;
+  under the new rule that cut every swing short. swordBit now withholds a
+  press that WOULD restart the swing NEXT frame (Player.swingWouldRestartNext
+  — the pad is decided a frame before it is read; checking this frame's
+  state was off by one and lost D4's Cracked Basin), unless the button is
+  already down. That keeps its fights what they were; the blade's pickups
+  moved the RNG history: Bogmaw re-swept (62: 60/62/63 win untouched),
+  Brinehulk re-swept (40: 30 and 38-44 win). d1-descent re-recorded.
+- check-sword 93 -> 99 (wind-up presses ignored, every later frame
+  restarts; taps four frames apart are a swing each; a spin is not cut; the
+  blade takes a heart, leaves a key, does not reach a rupee 40 px off).
+- Guide re-shot; its controls paragraph says it.
+
 ### FUTURE ACTION ITEMS
 Item 5 (fight tuning) is the human's. Map leftovers to ask about: coral is
 Seasons' magenta where the screens are pink (Ages' lighter #d642f7 is the

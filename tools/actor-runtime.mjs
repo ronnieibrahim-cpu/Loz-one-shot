@@ -111,7 +111,17 @@ export async function installRuntime() {
    */
   const swordBit = (why) => {
     const b = slotBit('sword');
-    if (b) return b;
+    // A FRESH PRESS MID-SWING STARTS ANOTHER SWING (S179, Seasons' rule), and
+    // this actor presses on every other frame while it closes: left alone it
+    // would restart each swing before the blade reached full length. It lets
+    // the swing run out instead — exactly what it did before, when those
+    // presses were ignored — and a button already held (a hold or a charge)
+    // is no new press, so it passes.
+    if (b) {
+      const g = window.__game, p = g.player;
+      if (p && p.swingWouldRestartNext && p.swingWouldRestartNext() && !g.input.down(b === BIT.a ? 'a' : 'b')) return 0;
+      return b;
+    }
     const g = window.__game;
     throw new Error(`${why || 'fight'}: THE SWORD IS ON NEITHER BUTTON in `
       + `${g.mapId} ${g.room && g.room.key} (A=${g.progress.equipA}, `

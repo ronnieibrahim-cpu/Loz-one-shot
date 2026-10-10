@@ -174,6 +174,18 @@ export const SWING_PHASE_FRAMES = [3, 3, 8, 3];
  *  (object_code/common/itemParents/swordParent.s). */
 export const SWING_FRAMES = SWING_PHASE_FRAMES.reduce((a, b) => a + b, 0);
 
+/** phase — the first phase of a swing on which a fresh press of the sword's
+ *  button throws the swing away and starts a new one, so the sword swings as
+ *  fast as it is tapped. derived from the cartridge: a new press replaces the
+ *  sword's parent item when its priority is >= the one running
+ *  (code/parentItemUsage.s chooseParentItemSlot @thing3; the sword's own $63
+ *  in itemUsageParameterTable), and a swing starts with bit 7 of its
+ *  Item.enabled set, which outranks it, until swordParent.s @state1 clears
+ *  that bit the first frame the animation's parameter is non-zero — the
+ *  swing's second phase (animationData19d21, parameter 2). The wind-up
+ *  phase cannot be cut short; everything after it can. */
+export const SWORD_RESWING_PHASE = 1;
+
 /** px — where the blade can hit on each phase of a swing, per facing:
  *  [radiusY, radiusX, offsetY, offsetX] from Link's centre, one row per
  *  SWING_PHASE_FRAMES entry. The blade can hit on EVERY frame of the swing,
@@ -1514,6 +1526,17 @@ export const PICKUP_GRAVITY = 32;
  *  code/bank0.s objectNegateAndHalveSpeedZ ("Once it reaches a speed of less
  *  than 1 pixel per frame downwards, it stops"). A drop bounces once. */
 export const PICKUP_BOUNCE_MIN = 256;
+
+/** px — half the size of the box the SWORD collects a dropped pickup with:
+ *  a blade that touches a 8x8 box on the drop's middle takes it, as if Link
+ *  had walked onto it. derived from the cartridge: data/seasons/partData.s
+ *  PART_ITEM_DROP ($01), collision radii $44 (4 and 4), and its collision
+ *  mode $01 in partActiveCollisions.s answers every sword collision type —
+ *  swing, spin and held blade — and the boomerangs; a hit kills the part,
+ *  and itemDrop.s gives a dead drop to Link (@linkCollectedItem). Only drops
+ *  (PART_ITEM_DROP): a key, a Piece of Heart or a map is a treasure, which a
+ *  blade does not touch. */
+export const PICKUP_BLADE_RADIUS = 4;
 
 /** f — frames per wing frame. The healing fairy's two EXTRACTED frames
  *  (tools/rip-fairies.py) alternate every this many. guessed: nothing was

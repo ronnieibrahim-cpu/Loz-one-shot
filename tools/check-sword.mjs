@@ -443,6 +443,76 @@ section('a spin hits twice as hard as a swing');
   check('the spin lands double the swing\'s damage', r.lost === r.swing * 2, JSON.stringify(r));
 }
 
+// S179: THE SWORD SWINGS AS FAST AS IT IS TAPPED. A fresh press mid-swing
+// throws the swing away and starts another (parentItemUsage.s @thing3) once
+// the wind-up is over (swordParent.s @state1 clears Item.enabled bit 7 when
+// the animation's parameter turns non-zero: the swing's second phase,
+// SWORD_RESWING_PHASE). On the wind-up's frames, and in a spin, it does not.
+section('a press mid-swing starts a new swing, after the wind-up');
+{
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  const r = await page.evaluate(async () => {
+    const g = window.__game, p = g.player;
+    const feel = await import('/src/data/feel.js');
+    const out = [];
+    for (let n = 0; n < feel.SWING_FRAMES - 1; n++) {
+      p.swinging = 0; p.spinning = 0; p.charge = 0;
+      window.__tap('a'); window.__harness.step(1);          // the swing starts
+      window.__hold([]); if (n) window.__harness.step(n);   // n frames of it
+      window.__tap('a'); window.__harness.step(1);          // press again
+      out.push(p.swinging === feel.SWING_FRAMES ? 1 : 0);
+      window.__hold([]); window.__harness.step(30);
+    }
+    // Five taps four frames apart are five swings.
+    p.swinging = 0; let starts = 0, last = 0;
+    for (let f = 0; f < 22; f++) {
+      if (f % 4 === 0) window.__tap('a'); else window.__hold([]);
+      window.__harness.step(1);
+      if (p.swinging === feel.SWING_FRAMES && last !== feel.SWING_FRAMES) starts++;
+      last = p.swinging;
+    }
+    window.__hold([]); window.__harness.step(30);
+    p.startSpin(g); window.__hold([]); window.__harness.step(3);
+    window.__tap('a'); window.__harness.step(1);
+    const spinKept = p.spinning > 0 && p.swinging === 0;
+    window.__hold([]); window.__harness.step(40);
+    const phase0 = feel.SWING_PHASE_FRAMES.slice(0, feel.SWORD_RESWING_PHASE).reduce((a, b) => a + b, 0);
+    return { out: out.join(''), phase0, starts, spinKept };
+  });
+  const want = r.out.split('').map((_, n) => n >= r.phase0 ? '1' : '0').join('');
+  check('a press on the wind-up\'s frames is ignored, and on every frame after it starts a new swing', r.out === want, r.out + ' want ' + want);
+  check('tapped every four frames, the sword swings on every tap', r.starts === 6, JSON.stringify(r));
+  check('a press during a spin does not cut it short', r.spinKept, JSON.stringify(r));
+}
+
+// S179: THE BLADE TAKES WHAT IT TOUCHES. A drop the sword's hit area meets is
+// collected as if walked onto (PART_ITEM_DROP answers every sword collision,
+// partActiveCollisions.s row $01); a treasure — a key — is not.
+section('the blade picks up drops, not treasures');
+{
+  await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 1, dir: 'down', items: { sword: 1 } });
+  const r = await page.evaluate(async () => {
+    const g = window.__game, p = g.player;
+    g.progress.hearts = 20;
+    const heart = g.spawnPickup(p.x, p.y + 20, 'heart', {});
+    const rupee = g.spawnPickup(p.x + 40, p.y, 'rupee5', {});
+    const key = g.spawnPickup(p.x - 20, p.y, 'key', {});
+    g.flushPending();
+    const r0 = g.progress.rupees;
+    window.__tap('a'); window.__harness.step(1); window.__hold([]); window.__harness.step(20);
+    const heartTaken = heart.remove && g.progress.hearts > 20 && p.x === p.lastSafe.x;
+    p.dir = 'left';
+    window.__tap('a'); window.__harness.step(1); window.__hold([]); window.__harness.step(20);
+    const keyLeft = !key.remove;
+    p.dir = 'right';
+    window.__tap('a'); window.__harness.step(1); window.__hold([]); window.__harness.step(20);
+    return { heartTaken, keyLeft, rupeeLeft: !rupee.remove, rupees: g.progress.rupees - r0 };
+  });
+  check('a heart the swing touches is collected, Link standing still', r.heartTaken, JSON.stringify(r));
+  check('a key the swing touches is left where it lies', r.keyLeft, JSON.stringify(r));
+  check('a rupee out of the blade\'s reach is not taken', r.rupeeLeft && r.rupees === 0, JSON.stringify(r));
+}
+
 // S173: the swing is DRAWN as Seasons draws it. Two bodies (the wind-up, then
 // the rest), the body moved 3 px forward on full reach, the sword its own
 // object behind him at his position plus the hit area's offset, 2 px up, in

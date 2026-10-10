@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A scripted pad decides its buttons a frame before the game reads them
+  (S179).** The robot's mask asked "would a press restart the swing?" of
+  the player as it stood, and the game answered the question a frame later,
+  after updateSwing had moved the swing on: one frame early at the wind-up's
+  edge, enough to turn a won room into a lost one. Ask the game about the
+  frame the input will land in (swingWouldRestartNext). And a room whose
+  fight does not change with an entry wait has a per-room RNG: the
+  difference is behaviour, so isolate it with try-room against a worktree of
+  the previous commit rather than sweeping waits.
+
 - **A map colour is judged beside the place, not beside the other map
   (S179).** S178 took Seasons' slate for grey stone because Seasons' map has
   it, and on its own the map looked plausible; beside a stitched shot of the

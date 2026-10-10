@@ -276,6 +276,17 @@ export class Pickup extends Entity {
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
   }
 
+  /** Can a blade take this one (S179)? Only a DROP — Seasons' PART_ITEM_DROP;
+   *  a key, a Piece of Heart, a map or anything else that waits for you is a
+   *  treasure the sword passes over — and only once it can be taken at all,
+   *  by the same gates the hand has (armed, not on the way up, not in the
+   *  seafloor). */
+  bladeTakes(game) {
+    if (this.remove || this.attached || this.spec.persistent || this.grabDelay > 0) return false;
+    if (this.spec.floor && !(game.player && game.player.underwater)) return false;
+    return !(this.settle > 0 && this.vz < 0);
+  }
+
   collect(game) {
     this.remove = true;
     if (this.saveKey && !this.spec.fleeting) game.progress.secrets[this.saveKey] = true;

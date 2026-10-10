@@ -1075,7 +1075,10 @@ export const ROUTE = [
   // quarter), loses at 42-44 and 50-120. 34 is the middle of the band.
   // S179 (the maps came out of chests, so the run reaches here later): wins
   // untouched at waits 36-39, loses at 34 and 40; 37 is the middle.
-  ['wait', 37],
+  // S179 again (the blade takes drops, so the run arrives with a different
+  // history): thin — 38, 39, 41, 46 win hurt; 60, 62, 63 win untouched, and
+  // 58, 61, 64, 66 lose. 62.
+  ['wait', 62],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
@@ -2976,7 +2979,9 @@ export const ROUTE = [
   ['wait', 60],
   ['tide', 0, 140, 900],
   ['dredge', 16, 6, 'right', [19, 6], 2400],
-  ['wait', 60],
+  // S179 (the blade takes drops; the run arrives with a different history):
+  // wins at waits 30 and 38-44, loses at 34-36 and 50; 40 leaves the most.
+  ['wait', 40],
 
   // THE BRINEHULK, AND THE JOKE THE ROOM IS BUILT ON. Brine dissolves salt:
   // the colossus is armoured at LOW and comes apart at HIGH — and LOW is the

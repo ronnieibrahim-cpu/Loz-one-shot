@@ -26,7 +26,7 @@ import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR,
-  SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS,
+  SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS,
   CHARGE_FRAMES, CHARGE_FLASH_BEAT,
   SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES,
   SWORD_HOLD_DELAY, KNOCK_HOLD,
@@ -815,6 +815,7 @@ export class Player extends Entity {
     this.holdT++;
 
     const box = this.swordBox(game);
+    this.bladeCollect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden || e.invuln > 0) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
@@ -883,7 +884,11 @@ export class Player extends Entity {
   swordLocked() { return this.swordLock > 0 || !!this.clungBy; }
 
   startSwing(game, level) {
-    if (this.swinging > 0 || this.spinning > 0 || this.carrying) return true;
+    // A press mid-swing starts a fresh swing once the wind-up is over, as
+    // Seasons' does (SWORD_RESWING_PHASE): the sword goes as fast as it is
+    // tapped. Before that, and during a spin, the press is ignored.
+    if (this.swinging > 0 && !this.swingWouldRestart()) return true;
+    if (this.spinning > 0 || this.carrying) return true;
     if (this.swordLocked()) return true;
     // Deep water keeps the blade sheathed — unless you are WALKING down there
     // with a Ballast Lung, which is the whole of what that charm buys. Note it
@@ -903,6 +908,18 @@ export class Player extends Entity {
     return true;
   }
 
+  /** Would a press of the sword's button now throw this swing away and
+   *  start another (SWORD_RESWING_PHASE)? */
+  swingWouldRestart() { return this.swinging > 0 && this.bladePhase() >= SWORD_RESWING_PHASE; }
+
+  /** The same question for a press read NEXT frame — after that frame's
+   *  updateSwing has moved the swing on one (a scripted pad decides its
+   *  buttons before the frame it is read in). */
+  swingWouldRestartNext() {
+    const s = this.swinging - 1;
+    return s > 0 && swingPhase(SWING_FRAMES - s - 1) >= SWORD_RESWING_PHASE;
+  }
+
   updateSwing(game) {
     const t = SWING_FRAMES - this.swinging;
     this.swinging--;
@@ -912,6 +929,7 @@ export class Player extends Entity {
     // beside him is struck by a swing he aimed past it.
     const phase = swingPhase(t);
     const box = this.swordBox(game, phase);
+    this.bladeCollect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
@@ -926,6 +944,19 @@ export class Player extends Entity {
     // area touches (SWORD_CUT_POINTS).
     if (phase === 2 && t === SWING_PHASE_FRAMES[0] + SWING_PHASE_FRAMES[1]) {
       this.cutAt(game, SPIN_START[this.dir]);
+    }
+  }
+
+  /** THE BLADE PICKS UP WHAT IT TOUCHES (S179). A dropped heart, rupee or
+   *  bomb the sword's hit area meets is collected, as if walked onto — swing,
+   *  spin or held blade — which is how Seasons takes a drop across a gap or
+   *  off a ledge (PICKUP_BLADE_RADIUS). */
+  bladeCollect(game, box) {
+    const r = PICKUP_BLADE_RADIUS;
+    for (const e of game.entities) {
+      if (!e.isDrop || !e.bladeTakes || !e.bladeTakes(game)) continue;
+      const c = { x: e.cx - r, y: e.cy - r, w: r * 2, h: r * 2 };
+      if (rectOverlap(box, c)) e.collect(game);
     }
   }
 
@@ -1012,6 +1043,7 @@ export class Player extends Entity {
     const k = this.spinPos(t);
     const [ry, rx, oy, ox] = SPIN_ARC[k];
     const box = { x: this.cx + ox - rx, y: this.cy + oy - ry, w: rx * 2, h: ry * 2 };
+    this.bladeCollect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
