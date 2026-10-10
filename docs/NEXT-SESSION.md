@@ -1,3 +1,48 @@
+## S180 — Ages' dungeon language studied; D3's two floors designed and mocked (NOT built)
+
+Branch claude/tides-dungeon-design-language-k6kssf, off main at f84b1d9 (S179
+notes already on main). Nothing in src/ changed; dist/ is unchanged.
+
+### What landed
+- PHASE 1, THE STUDY: all eight Oracle of Ages dungeons (and Mermaid's
+  Cave's past) and all eight of Seasons' rendered floor by floor from the
+  cartridges' own layouts and tilesets, every room's objects, chests and
+  terrain listed, and the puzzle pieces' code read (colour cube, toggle
+  floor, floor colour changer, push-block synchroniser, minecart gate, lever
+  and lava filler, tile filler, extendable bridge, trigger translator,
+  dungeon events, misc puzzles, cross-room tile changes, warp holes and
+  cracked floors). Written up as docs/briefs/DUNGEON-DESIGN-LANGUAGE.md,
+  naming the rooms that show each idea. The renderer is
+  tools/oneshot/oracle-study/run.sh (ORACLE_STUDY=<scratch dir>; clones
+  oracles-disasm, needs pillow; asserts nothing). LOOK at its PNGs before
+  designing the next dungeon.
+- PHASE 2, THE DESIGN: docs/briefs/D3-BOGWATER-SANCTUM.md — the Sanctum grown
+  to 42 screens on 2 floors (the Bog over a 10-screen Undercroft), its
+  machine in one sentence, two new terrains (the shaft: a hole at LOW,
+  flooded at MID/HIGH and sunk down with the Cleats; the cracked floor:
+  32 frames standing, from the cartridge), six puzzles P1-P6 with their
+  ahas, the key table and the checker list. Mock pictures in
+  docs/briefs/d3-mock/ (drop holes beside Seasons' Moth's Lair 1F $53/B1 $43
+  and Ages' Moonlit Grotto $5f/$51; the crack beside Moth's Lair B1 $4c; a
+  plan of both floors), drawn by the new tools/shoot-mock.mjs.
+- Found on the way, and central to the design: the Anchor STAYS in the room
+  you leave (its override is keyed to map and room) and is recalled from
+  anywhere — our answer to Ages' "state set in one room, read in another".
+- Found on the way: Seasons' Poison Moth's Lair (our D3's own kit, tileset
+  $39) has both warp holes ($48-$4b) and a cracked floor ($4d), so both new
+  terrains extract from the tileset the Sanctum already wears.
+
+### Verified
+No game change. test.mjs green (exit 0) and check-drift OK on the branch.
+
+### NEXT
+The human was shown the mock and asked three questions (the brief's "Open
+questions"). Build what they chose: the two tiles (ripped, rip-dungeon-
+themes or rip-objects), the shaft/crack engine verbs, the dungeon flood
+taught both in the same commit, check-shafts.mjs, the room claims, the
+Undercroft rooms, the re-keyed 1F, a check-side whole-dungeon scenario, the
+robot re-routed (44/44, THE END, never died), the guide re-shot.
+
 ## S179 — START alone skips the opening; the map's grey stone lightened; the guide republished
 
 Branch claude/ecstatic-thompson-p9mc72, off main at dd3cd33 (S178 merged).
