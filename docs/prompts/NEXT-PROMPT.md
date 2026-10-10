@@ -1,4 +1,4 @@
-# Next session (S180) — the human's call
+# Next session (S180) — grow D3, the Bogwater Sanctum
 
 ## Read first
 - CLAUDE.md, all of it. Oracle of Ages is a full reference alongside
@@ -18,10 +18,14 @@
   rules); the online guide republished. Leftovers in NEXT-SESSION.md S179.
 
 ## The task
-The human's S180 prompt names it. Leftovers worth offering: the map's coral
-(magenta vs the screens' pink) and woods (bright vs dark trees) — show the
-human and ask. Item 5 (fight tuning) is the human's. Ask before anything
-large.
+Grow D3, the Bogwater Sanctum, per docs/DUNGEON-STATUS.md "S179" (read it
+whole): from 32 screens on 1 floor toward ~40 on 2 (a cellar under the bog),
+with drop-through holes (Seasons' warp holes: fall to the same spot a floor
+down; at HIGH a flooded shaft you swim down) and cracked floors that give
+way, art and timings from the cartridges, each with its checker/flood verb in
+the same commit; a cellar half reached only by dropping, and a cross-floor
+key. SHOW THE HUMAN A MOCK (Seasons' room beside ours) BEFORE building. Then
+re-route the robot, re-shoot the guide. D4, D5, D6 follow, one a session.
 
 ## Done means
 - Whatever the human chose, with the whole table green and check-playthrough

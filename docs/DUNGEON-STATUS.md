@@ -41,6 +41,76 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S179: MEASURED AGAINST SEASONS AND AGES — AND THE PLAN TO GROW D3-D6
+
+The human asked for the dungeons' complexity to be reassessed against both
+Oracles and the later ones scaled to match, "both in terms of environment and
+puzzle complexity". Chosen (S179): **all of D3-D6, one per session, D3
+first**, and **yes to the classic terrain** — drop-through holes, spikes,
+cracked floors, moving platforms and the like, from the cartridges' own art
+and timings, each given a tide twist so the mechanic stays ours.
+
+Measured with `tools/oneshot/oracle-dungeon-stats.py` (an oracles-disasm
+clone: dungeonLayouts.s, the large room files through tileTypeMappings.s
+@dungeons, objects/*/mainData.s, chestData.s) and
+`tools/oneshot/our-dungeon-stats.mjs`. An Oracle "room" is one screen, so
+ours are compared by SCREENS.
+
+| | Seasons | Ages | Ours |
+|---|---|---|---|
+| D1 | 20 screens, 1F | 22, 1F | 25, 1F |
+| D2 | 29, 1F | 34, 2F | 27, 2F |
+| D3 | 32, 2F | 30, 2F | **32, 1F** |
+| D4 | 40, 3F | 43, 2F | **36, 1F** |
+| D5 | 38, 1F | 45, 2F | **40, 1F** |
+| D6 | 45, 5F | 25+16 (two eras) | **47, 2F** |
+| D7 | 39, 3F | 44, 3F | — |
+| D8 | 51, 2F | 56, 4F | — |
+
+Our six span their eight, so D3 sits at their D4, D4 at their D5-6, D5 at
+their D6-7 and D6 at their D8. Read that way:
+
+- **SIZE is close; FLOORS are not.** By screens D3-D6 run 0-15% short of the
+  slot they stand in (targets: D3 ~40, D4 ~43, D5 ~43, D6 ~52). By floors
+  they are flat: three of the four are one floor where the slot is 2-5.
+- **ENEMIES are thin.** Seasons places 87-130 enemies in its D5-D8 (Ages
+  45-78); ours 33-55. Raising density costs hearts: re-check
+  check-hearts' ladder and the robot's health on every one.
+- **TERRAIN is where the gap is widest.** Our rooms use water (shallow and
+  deep, by the tide), pits/drains, a few ledges and stairs — and nothing
+  else. Their D4-D8 use, per dungeon, three to six of: holes that drop to the
+  floor below (WARPHOLE), spikes, conveyors, cracked floors, ice, lava,
+  puddles, and objects — moving platforms, trampolines, rollers, spinners,
+  magnet balls, colour cubes, toggling floors, minecarts, side-view
+  passages. Seasons D6 alone: holes in 11 rooms, warpholes in 8, spikes in 4,
+  conveyors in 7, two moving platforms, four trampolines.
+- **PUZZLE DEPTH is closer than it looks.** Every one of ours has a dungeon
+  item with its own room-claims and checker, a miniboss, 3-4 keys and 9-24
+  puzzle rooms (D6: 24 of 38). What theirs add at the end is CROSS-FLOOR
+  puzzles (drop through to reach a floor's other half; a switch upstairs
+  that drains a room downstairs) and the earlier items used together. Ours
+  reuse earlier items (D5: Bellows, Lens; D6: Bellows, Reefseed, Lens,
+  Kilnshell) but almost never across floors.
+
+### The growth plan — one dungeon a session, in order
+
+Each one: show the human a mock or a picture BEFORE building (Seasons' room
+beside ours), then build, then the whole table, check-playthrough re-routed
+44/44 to THE END, the guide re-shot. New terrain lands with its OWN checker
+or flood verb in the same commit (CLAUDE.md: "a checker's flood only knows
+the movement verbs somebody taught it"), its art ripped (CLAUDE.md "if a
+sheet has it, extract it"), its timings read from the disassembly.
+
+| D | Now | Target | New terrain (and its tide twist) | Puzzle depth to add |
+|---|---|---|---|---|
+| 3 Bogwater Sanctum | 32 screens, 1F | ~40, **2F** (a cellar under the bog) | **drop-through holes** (TILETYPE_WARPHOLE: fall to the same spot one floor down) — and at HIGH the hole is a flooded shaft you swim straight down, at LOW you fall; **cracked floors** that give way after you stand on them | a cellar half reached only by dropping; a key upstairs that needs a switch downstairs |
+| 4 Cliffside Cistern | 36, 1F | ~43, **2-3F** | **spikes** (TILETYPE_SPIKE, its damage and knockback) — drowned and harmless at HIGH; **moving platforms** over pits (INTERAC_MOVING_PLATFORM's paths and speed) | a wheel on one floor drains the shaft of the floor below |
+| 5 Drowned Wood Shrine | 40, 1F | ~44, **2F** | **conveyors** (the four TILETYPE_*CONVEYOR) as root-sluices that stop when the tide drops; **cracked floors** | Reefseed pillars grown on one floor reached from the one above |
+| 6 Abyssal Keep | 47, 2F | ~52, **3F** | everything before it combined, plus **colour/toggle floor** (INTERAC_TOGGLE_FLOOR) or **trampolines** | 4-5 keys, three floors that interlock; enemy density toward Seasons' D8 |
+
+These are proposals: each session confirms its own dungeon's terrain with the
+human before writing any of it.
+
 ## The board
 
 | D | Map | Name | Item | Status | Where it landed |

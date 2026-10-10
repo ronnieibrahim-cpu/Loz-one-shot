@@ -80,6 +80,21 @@ picks up drops (the human: "in the source games the sword could be spammed
   blade takes a heart, leaves a key, does not reach a rupee 40 px off).
 - Guide re-shot; its controls paragraph says it.
 
+### Part four: the dungeons measured against both Oracles, and the plan
+S179's three game changes were merged into main (b778ef9) at the human's
+word. Then the human asked for the dungeons' complexity to be reassessed
+against Seasons and Ages and the later ones scaled to match. Measured
+(tools/oneshot/oracle-dungeon-stats.py on an oracles-disasm clone;
+tools/oneshot/our-dungeon-stats.mjs on ours) and written up in
+docs/DUNGEON-STATUS.md "S179": size by screens is close, floors are not
+(D3-D5 are one floor where the slot is 2-5), enemies are thin (33-55 vs
+Seasons' 87-130 late), and terrain is the widest gap (ours: water, pits,
+ledges, stairs; theirs adds drop-through holes, spikes, conveyors, cracked
+floors, moving platforms and more). The human chose: all of D3-D6, one per
+session, D3 first; and yes to the classic terrain with a tide twist each.
+NEXT: D3, the Bogwater Sanctum — a second floor (a cellar) and drop-through
+holes / cracked floors, per the plan table. Show the human a mock first.
+
 ### FUTURE ACTION ITEMS
 Item 5 (fight tuning) is the human's. Map leftovers to ask about: coral is
 Seasons' magenta where the screens are pink (Ages' lighter #d642f7 is the
