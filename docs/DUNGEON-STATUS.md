@@ -111,6 +111,14 @@ sheet has it, extract it"), its timings read from the disassembly.
 These are proposals: each session confirms its own dungeon's terrain with the
 human before writing any of it.
 
+**PUZZLE DEPTH IS THE POINT (the human, S179):** "study the Oracle of Ages
+dungeons especially, as that was a puzzle-focused entry, until you have a
+good understanding of the dungeon design language", and develop "complex
+novel puzzles in each of these dungeons akin to those seen in the original
+Capcom games". So the first of these sessions studies Ages (then Seasons)
+and writes docs/briefs/DUNGEON-DESIGN-LANGUAGE.md before designing anything;
+every later one reads it first. See docs/prompts/NEXT-PROMPT.md.
+
 ## The board
 
 | D | Map | Name | Item | Status | Where it landed |
