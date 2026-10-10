@@ -37,6 +37,7 @@ import {
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   GAP_HOP_MAX_SPAN,
   FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
+  CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES,
   LENS_FADE_FRAMES,
   BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
   BELLOWS_RAFT_SCALE,
@@ -144,6 +145,11 @@ export class Player extends Entity {
     this.speedBoost = 0;
     this.hurtTime = 0;
     this.falling = 0;
+    this.fallDrop = false;        // this fall is through a drop hole
+    this.droppingIn = false;      // falling into the room under a hole
+    this.collapsed = 0;           // lying where he landed, counts down
+    this.crackT = 0;              // frames stood on one cracked tile
+    this.crackAt = -1;            // which tile (ty * tw + tx)
     this.washing = 0;
     this.conchTime = 0;
     this.hookPulling = false;
@@ -195,6 +201,8 @@ export class Player extends Entity {
       || !game.entities.includes(this.clungBy))) this.clungBy = null;
 
     if (this.falling > 0) { this.updateFalling(game); return; }
+    if (this.droppingIn) { this.updateDropIn(game); return; }
+    if (this.collapsed > 0) { this.collapsed--; this.animT++; return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
     if (this.sinkT > 0) { this.updateSinkTransition(game); return; }
     if (this.frozen > 0) { this.frozen--; this.animT++; this.placeCarried(); return; }
@@ -360,7 +368,13 @@ export class Player extends Entity {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
     if ((f & F.WHIRL) && game.enterWhirlpool()) return;
-    if (f & F.PIT) { this.beginFall(game); return; }
+    this.updateCrack(game);
+    // A DROP HOLE (S181) is a pit with a room under it: the same fall, and at
+    // its end the floor below rather than the edge of this one. Walking the
+    // bottom with the Cleats over a flooded one goes down it too (Jabu-Jabu's
+    // rule, link.s "Move down instead of up when over a warp hole").
+    if ((f & F.DROP) && this.underwater) { game.dropThroughHole({ sunk: true }); return; }
+    if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
     if ((f & F.HAZARD) && this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true })) {
       // Spikes, Seasons' way (dealSpikeDamageToLink): longer safety, and a
       // short shove straight back the way he was facing.
@@ -744,7 +758,7 @@ export class Player extends Entity {
     this.fz = 0; this.vz = 0; this.jumping = false; this.lockDir = false;
     const f = groundFlags(game, this);
     if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
-    if (f & F.PIT) { this.beginFall(game); return; }
+    if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
     game.audio.sfx('land');
     game.spawnEffect((f & F.WET) ? 'splash' : 'dust', this.x, this.y + 4, { life: 12 });
   }
@@ -1089,7 +1103,7 @@ export class Player extends Entity {
       const f = groundFlags(game, this);
       // Landing in water you can't swim in throws you back.
       if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
-      if (f & F.PIT) { this.beginFall(game); return; }
+      if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
       game.audio.sfx('land');
       if (!(f & F.WET)) game.spawnEffect('dust', this.x, this.y + 4, { life: 12 });
       else game.spawnEffect('splash', this.x, this.y + 2);
@@ -1416,7 +1430,7 @@ export class Player extends Entity {
 
   /** Charm and shield modifiers applied here so every damage source respects them. */
   takeDamage(game, amount, source, o = {}) {
-    if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0) return false;
+    if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn) return false;
     const p = game.progress;
 
     // Shield blocks damage from the facing direction (projectiles and contact).
@@ -1501,9 +1515,10 @@ export class Player extends Entity {
 
   // ------------------------------------------------------------ pits/water
 
-  beginFall(game) {
+  beginFall(game, drop = false) {
     if (this.falling > 0) return;
     this.falling = FALL_FRAMES;
+    this.fallDrop = drop;
     this.jumping = false;
     this.ledgeHop = null;
     this.z = 0;
@@ -1512,6 +1527,22 @@ export class Player extends Entity {
 
   updateFalling(game) {
     this.falling--;
+    // Through a drop hole, the cartridge asks at the END of the animation
+    // whether the tile is still a warp hole (link.s linkState03 @substate1),
+    // and so does this: a hole whose landing is no landing is a pit.
+    if (this.falling === 0 && this.fallDrop) {
+      this.fallDrop = false;
+      // He goes down the middle of the hole, not its edge: the cartridge
+      // centres Link on the tile as the fall begins (link.s warpTransition9
+      // @substate0, objectCenterOnTile), so he lands in the middle of the
+      // same tile below, clear of whatever stands beside it.
+      const { tx, ty } = groundTile(game, this);
+      const ox = this.x, oy = this.y;
+      this.x = tx * TILE + 8 - (this.hb.x + this.hb.w / 2);
+      this.y = ty * TILE + 8 - (this.hb.y + this.hb.h - 2);
+      if (game.dropThroughHole()) return;
+      this.x = ox; this.y = oy;
+    }
     if (this.falling === 0) {
       const safe = findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
@@ -1519,6 +1550,57 @@ export class Player extends Entity {
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
       this.hurtTime = RESPAWN_HOLD_FRAMES;
     }
+  }
+
+  /**
+   * THE CRACKED FLOOR (S181). Stand on one tile of it for CRACK_BREAK_FRAMES
+   * and it gives way (Game.breakCrack). Any frame on another tile starts the
+   * count again, which is what makes walking across one safe: the cartridge
+   * counts wStandingOnTileCounter the same way.
+   */
+  updateCrack(game) {
+    const { tx, ty } = groundTile(game, this);
+    const def = game.room.inBounds(tx, ty) ? game.room.tile(tx, ty, game.tide) : null;
+    const at = ty * game.room.tw + tx;
+    if (!def || !def.crack || this.underwater || this.inDeep) { this.crackT = 0; this.crackAt = -1; return; }
+    if (at !== this.crackAt) { this.crackAt = at; this.crackT = 0; }
+    if (++this.crackT >= CRACK_BREAK_FRAMES) {
+      this.crackT = 0;
+      game.breakCrack(tx, ty);
+    }
+  }
+
+  /**
+   * Into the room under a drop hole, falling in from above the top of the
+   * screen, then a moment lying where he landed: Seasons' TRANSITION_DEST_FALL
+   * (link.s warpTransition5) and its @linkCollapsed. Called by
+   * Game.dropThroughHole once the new room is in.
+   */
+  beginDropIn(game) {
+    const camY = game.camera ? game.camera.y : 0;
+    const h = Math.max(0, Math.min(DROP_IN_MAX_HEIGHT, this.y - camY + TILE));
+    this.fz = sp(h);
+    this.vz = -DROP_IN_SPEED;
+    this.droppingIn = true;
+    this.dir = 'down';
+  }
+
+  updateDropIn(game) {
+    this.animT++;
+    this.fz += this.vz;
+    this.vz -= DROP_IN_GRAVITY;
+    if (this.fz > 0) return;
+    this.fz = 0; this.vz = 0;
+    this.droppingIn = false;
+    game.audio.sfx('land');
+    const f = groundFlags(game, this);
+    // A hazard under him and he does not lie down (the cartridge checks
+    // hazardCollisionTable): the water or the pit takes it from here.
+    if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
+    if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
+    if (f & F.WET) { game.spawnEffect('splash', this.x, this.y + 2); return; }
+    game.spawnEffect('dust', this.x, this.y + 4, { life: 12 });
+    this.collapsed = DROP_IN_COLLAPSE_FRAMES;
   }
 
   /** Swept back to shore by water you cannot swim in. */
@@ -1575,6 +1657,7 @@ export class Player extends Entity {
       this.flipX = pose === 'left';
       return 'link_walk_' + (pose === 'left' || pose === 'right' ? 'side' : pose) + '_0';
     }
+    if (this.collapsed > 0) { this.flipX = false; return 'link_lie'; }
     if (this.falling > 0) {
       const t = FALL_FRAMES - this.falling;
       const [a, b] = FALL_ANIM_FRAMES;

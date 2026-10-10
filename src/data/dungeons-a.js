@@ -1466,11 +1466,14 @@ export function installDungeonsA() {
     },
   });
 
+  // A stair in the Sanctum (S181): standing on (x, y) takes you to `to`.
+  const P3 = (floor, rx, ry, px, py, dir) => ({ map: 'd3', floor, rx, ry, px: px * 16, py: py * 16, dir });
+  const stair3 = (x, y, to) => ({ x, y, to });
   registerMap({
     id: 'd3',
     kind: 'dungeon',
     name: 'Bogwater Sanctum',
-    w: 8, h: 8, floors: 1,
+    w: 8, h: 8, floors: 2,
     // AN ORACLE DUNGEON (S139), built like the Grotto and the Spire: 15x11
     // rooms with a wall ring, a scrolling camera, one-tile doors, and key,
     // shutter and boss doors in the ring between two rooms. The kit is the
@@ -1512,12 +1515,12 @@ export function installDungeonsA() {
       item: 'cleats', itemLevel: 1,
       essence: 3,
       boss: 'gloomtide',
-      bossRoom: '0,3,1',
-      startRoom: '3,7',
+      bossRoom: '1,3,1',
+      startRoom: '1,3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32 },
     },
     rooms: {
-      '0,3,7': {
+      '1,3,7': {
         name: 'Sanctum Mouth',
         // The Lair's own entrance hall: gold eye statues down both sides and
         // the lit step between two green pillars in the south wall.
@@ -1541,25 +1544,35 @@ export function installDungeonsA() {
           [2, 7, 'Bog script: "The water has two floors.\nOnly one of them drowns you."'],
         ],
       },
-      '0,3,6': {
+      '1,3,6': {
         name: 'Drowned Nave',
+        // P1 (S181): THE FIRST HOLE. The pool in the middle is a shaft — an
+        // open hole at LOW, the sea's above it — and the room under it, the
+        // Undercroft Landing, leads to the Three Pens' corridor. A hole is a
+        // door, and you land where you fell. The fenced stair in the north-west
+        // corner is where the Landing's stair comes back up: the dais is
+        // left by its ledge, so it is never a way down.
         map: [
           '#######.#######',
+          '#/=...........#',
+          '#.=..=.....=..#',
+          '#_=...........#',
+          '#.....555.....#',
+          '#.....555......',
+          '#.....555.....#',
           '#.............#',
-          '#.............#',
-          '#...1111111...#',
-          '#...1111111...#',
-          '#...1111111....',
-          '#...1111111...#',
-          '#...1111111...#',
-          '#.............#',
+          '#....=.....=..#',
           '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['jellyfish', 7, 5],
+          ['keese', 10, 3],
           ['crab', 3, 8],
         ],
+        warps: [stair3(1, 1, P3(0, 3, 6, 1, 2, 'down'))],
+        // Not the only way down (the Hub's pens are left into the same
+        // corridor), and not meant to be: the first hole is the safe one.
+        shaftRoom: {},
         puzzle: {
           enemies: true,
           flag: 'd3_nave',
@@ -1569,7 +1582,7 @@ export function installDungeonsA() {
           },
         },
       },
-      '0,4,6': {
+      '1,4,6': {
         name: 'Bell Cell',
         map: [
           '###############',
@@ -1595,28 +1608,38 @@ export function installDungeonsA() {
           ['keese', 10, 3],
         ],
       },
-      '0,3,5': {
+      '1,3,5': {
         name: 'Bog Hub',
+        // P2 (S181): FOUR HOLES, AND WHICH ONE. Each shaft is the roof of
+        // whatever stands under it in the Three Pens: three walled pens and a
+        // pit. The key is in one pen, seen from the Pens' corridor; the answer
+        // is counting the position. The east door is the first key door, into
+        // the Sluice Cell.
         map: [
           '#######.#######',
           '#.............#',
-          '#.111.....111.#',
-          '#.111.....111.#',
-          '#.111.....111.#',
-          '...............',
-          '#.111.....111.#',
-          '#.111.....111.#',
-          '#.111.....111.#',
+          '#..55.....55..#',
+          '#..55.....55..#',
+          '#.............#',
+          '..............L',
+          '#.............#',
+          '#..55.....55..#',
+          '#..55.....55..#',
           '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['jellyfish', 3, 3],
+          ['keese', 7, 8],
           ['urchin', 7, 2],
         ],
+        // The key pen is under the south-east hole and is reached by nothing
+        // else; the south-west hole is over the Pens' pit, so it is a pit.
+        shaftRoom: { lands: [[11, 8]], decoy: [[3, 7], [4, 7], [3, 8], [4, 8]] },
       },
-      '0,2,5': {
+      '1,2,5': {
         name: 'Map Cell',
+        // The Silt Stair's way back up (S181) arrives on the dais in the
+        // south-east corner, which is left by its ledge: never a way down.
         map: [
           '###############',
           '#.............#',
@@ -1625,48 +1648,44 @@ export function installDungeonsA() {
           '#.............#',
           '...............',
           '#.............#',
-          '#.............#',
-          '#.p.........p.#',
-          '#.............#',
+          '#..........=="#',
+          '#.p........=/.#',
+          '#..........=..#',
           '###############',
         ],
         entities: [
           ['chest', 7, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
         ],
+        warps: [stair3(12, 8, P3(0, 2, 5, 12, 9, 'down'))],
       },
-      '0,4,5': {
+      '1,4,5': {
         name: 'Sluice Cell',
+        // P3 (S181): TWO SEAS AT ONCE. The shaft in the middle of the pool
+        // lands in the Drain Weir's drain: a dry pit at LOW (no landing), wading
+        // at MID (but the shaft is flooded shut), deep at HIGH. Drop the Anchor
+        // by the shaft at LOW and sound the conch to MID: the held patch keeps
+        // the hole open while the cellar fills, and the drop lands in water you
+        // can wade. The Anchor stays where it bit when you leave the room.
         map: [
           '###############',
           '#.............#',
+          '#.U.........U.#',
+          '#....==1==....#',
+          '#....=111=....#',
+          'L....=151=....#',
+          '#....=111=....#',
+          '#....==1==....#',
           '#.............#',
-          '#.............#',
-          '#.............#',
-          '..............#',
-          '#.............#',
-          '#.............#',
-          '#....,,,,,....#',
-          '#.............#',
+          '#.U.........U.#',
           '###############',
         ],
         entities: [
-          ['switch', 3, 2],
-          ['switch', 11, 2],
-          ['block', 3, 3],
-          ['block', 11, 3],
-          ['keese', 7, 6],
+          ['keese', 3, 6],
         ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd3_sluice',
-          reward: {
-            spawn: [['pickup', 7, 2, { kind: 'key' }]],
-            say: 'A grate lifts somewhere below the floor.',
-          },
-        },
+        shaftRoom: { anchor: { from: [7, 7], at: 0, then: 1 }, lands: [[7, 5]] },
       },
-      '0,3,4': {
+      '1,3,4': {
         name: 'The Weir',
         // Its key door is in the north wall and gates the Cistern Floor, not
         // the room: the Chartstone and the Piece of Heart either side of it
@@ -1689,14 +1708,17 @@ export function installDungeonsA() {
           ['urchin', 11, 4],
         ],
       },
-      '0,2,4': {
+      '1,2,4': {
         name: 'Silt Cell',
+        // P4 (S181): THE FIRST CRACK, in the alcove beside the well. Stand on it
+        // and it gives way into the Root Cellar, where the Chartstone is;
+        // walking across it never does.
         map: [
           '###############',
-          '#.............#',
-          '#.U.........U.#',
-          '#.............#',
-          '#.............#',
+          '#...#.........#',
+          '#.K.#.......U.#',
+          '#...#.........#',
+          '##.##.........#',
           '#..............',
           '#....3333.....#',
           '#....3333.....#',
@@ -1705,11 +1727,11 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['chest', 7, 3, { pickup: 'chartstone' }],
           ['urchin', 11, 6],
         ],
+        shaftRoom: { lands: [[2, 2]] },
       },
-      '0,4,4': {
+      '1,4,4': {
         name: 'Reed Cell',
         map: [
           '###############',
@@ -1737,7 +1759,7 @@ export function installDungeonsA() {
           },
         },
       },
-      '0,5,4': {
+      '1,5,4': {
         name: 'Eel Vault',
         map: [
           '#######.#######',
@@ -1779,7 +1801,7 @@ export function installDungeonsA() {
           },
         },
       },
-      '0,3,3': {
+      '1,3,3': {
         name: 'The Cistern Floor',
         // The item room. The chest stands on the only dry island in it, so the
         // first thing the Cleats are used for is getting off the rock you
@@ -1812,7 +1834,7 @@ export function installDungeonsA() {
           ['chest', 7, 4, { big: true, item: 'cleats', level: 1 }],
         ],
       },
-      '0,2,3': {
+      '1,2,3': {
         name: 'The Undertow',
         // Torrent room 1. The whole floor of the room runs east, back toward
         // the island you came from; a bank down each side is where the doors
@@ -1834,7 +1856,7 @@ export function installDungeonsA() {
         cleatRoom: { from: [14, 5], to: [0, 5] },
         readable: [],
       },
-      '0,1,3': {
+      '1,1,3': {
         name: 'Sunken Vestry',
         // Two blocks, two plates, and each block is pushed sideways toward the
         // middle of the room rather than up, the way the Sluice Cell's are.
@@ -1867,7 +1889,7 @@ export function installDungeonsA() {
           },
         },
       },
-      '0,1,4': {
+      '1,1,4': {
         name: 'Silt Vault',
         map: [
           '#######.#######',
@@ -1887,7 +1909,7 @@ export function installDungeonsA() {
           ['keese', 10, 2],
         ],
       },
-      '0,2,2': {
+      '1,2,2': {
         name: 'Bogmaw Hall',
         // The east door is a shutter, and it is the Lock Gallery's to open:
         // the plate beside it on the far side lets a player who came the long
@@ -1916,7 +1938,7 @@ export function installDungeonsA() {
           reward: { say: 'The bogmaw sinks back into the silt.' },
         },
       },
-      '0,1,2': {
+      '1,1,2': {
         name: 'Drain Gallery',
         // The Boss Key stands inside a ring of wells — wading water at LOW and
         // over your head above it. The ring is open to the south.
@@ -1941,7 +1963,7 @@ export function installDungeonsA() {
           ['keese', 2, 8],
         ],
       },
-      '0,2,1': {
+      '1,2,1': {
         name: 'Vestry Roof',
         map: [
           '###############',
@@ -1961,7 +1983,7 @@ export function installDungeonsA() {
           ['keese', 10, 3],
         ],
       },
-      '0,4,3': {
+      '1,4,3': {
         name: 'The Bogwater Drain',
         // Torrent room 2, and the current runs the other way — a player who
         // learned "swim east" in the Undertow learns nothing here. Two shelves
@@ -1985,7 +2007,7 @@ export function installDungeonsA() {
           ['pickup', 7, 8, { kind: 'fairy' }],
         ],
       },
-      '0,5,3': {
+      '1,5,3': {
         name: 'Eel Hall',
         // 3x1, AND D3'S SET PIECE — the room the dungeon's whole idea is said
         // in one sight line. Its western screen is a plain hall with three
@@ -2033,7 +2055,7 @@ export function installDungeonsA() {
           [10, 2, 'Scratched into the statue: "The eels swim\nhome with the current. The eel-catcher walks\nout under it."'],
         ],
       },
-      '0,4,2': {
+      '1,4,2': {
         name: 'The Kelp Locks',
         // 2x1, AND THE ONE ROOM IN THE SANCTUM THAT WANTS BOTH LAYERS IN ONE
         // CROSSING. The south door lets you into a flume that runs north up
@@ -2074,7 +2096,7 @@ export function installDungeonsA() {
           [20, 8, 'A plate on the lock wall: "The lock carries a\nswimmer round to its last gate, and no further.\nThe floor goes on where the water will not."'],
         ],
       },
-      '0,3,2': {
+      '1,3,2': {
         name: 'The Lock Gallery',
         // The boss door is in the north wall. The west door is the shortcut:
         // shut until the plate beside it is stood on, and only this side of
@@ -2115,7 +2137,7 @@ export function installDungeonsA() {
       // (`FloorSwitch.sunk`). A swimmer floats over it and nothing happens;
       // only a body walking the seafloor presses it. The water has two floors,
       // and this is the first thing that cares which one you are on.
-      '0,6,4': {
+      '1,6,4': {
         name: 'The Sounding Pool',
         // The rule, taught alone: one plate in the middle of a deep pool. It
         // stays down once pressed and opens the way on.
@@ -2148,7 +2170,7 @@ export function installDungeonsA() {
           [3, 2, 'Bog script on the statue: "The plate is on the\nbottom. The swimmer floats over it and the\nwater keeps its secret."'],
         ],
       },
-      '0,6,5': {
+      '1,6,5': {
         name: 'The Two Weights',
         // Two plates that must be held at once. The west one is a single well
         // square — shallow at LOW, deep above — and a block will not go into
@@ -2190,7 +2212,7 @@ export function installDungeonsA() {
       },
 
       // ---------------------------------------------- optional rooms (S143)
-      '0,1,5': {
+      '1,1,5': {
         name: 'Sluice Bed',
         // Optional, off the Map Cell's west wall, and it wants the Cleats the
         // first time it is seen. A plate at the head of a channel that runs
@@ -2222,7 +2244,7 @@ export function installDungeonsA() {
           reward: { openDoors: [[2, 4]], say: 'A grate lifts in the west wall.' },
         },
       },
-      '0,5,6': {
+      '1,5,6': {
         name: 'Current Garden',
         // Optional, off the Bell Cell's east wall. The whole floor runs west,
         // back at the door, and the chest is on an island two screens out:
@@ -2247,7 +2269,7 @@ export function installDungeonsA() {
           ['keese', 2, 3],
         ],
       },
-      '0,3,1': {
+      '1,3,1': {
         name: 'Gloomtide, the Bogwater Maw',
         // The boss keeps the mechanic: `noTide` pins the arena at whatever
         // level was brought in, and the floor is basin, which is walkable at
@@ -2274,6 +2296,126 @@ export function installDungeonsA() {
             if (name === 'bossDead') game.spawnPickup(112, 56, 'heartContainer', { grabDelay: 30 });
           },
         },
+      },
+      // ---- floor 0: the Undercroft (S181) -------------------------------
+      //
+      // Ten screens under the middle of the Bog in the D3 brief; P1-P4's five
+      // are built (S181), the Reliquary, the Sump, the Undertow Cellar and the
+      // Reed Undercroft come with P5 and P6. Every hole upstairs lands on the
+      // same spot of the room directly below (`Game.dropThroughHole`).
+      '0,3,6': {
+        name: 'Undercroft Landing',
+        // P1 lands here: lit, empty, and its stair straight back up to the
+        // Nave's dais. The north door is the Three Pens' corridor.
+        map: [
+          '#######.#######',
+          '#S............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair3(1, 1, P3(1, 3, 6, 1, 2, 'down'))],
+      },
+      '0,3,5': {
+        name: 'The Three Pens',
+        // P2: under the Bog Hub's four shafts, three raised pens and a pit.
+        // A pen has no door: it is a raised floor left by its ledge (the Lair's
+        // wall face along its front) into the corridor. The
+        // Small Key is in the south-east pen, under the Hub's south-east hole.
+        // The east door is the Drain Weir's shutter, opened from that side.
+        map: [
+          '###############',
+          '#....=...=....#',
+          '#....=...=..p.#',
+          '#....=...=....#',
+          '#____=...=____#',
+          '#.............D',
+          '#=====...=""""#',
+          '#OOOO=...=....#',
+          '#OOOO=...=....#',
+          '#OOOO=...=....#',
+          '#######.#######',
+        ],
+        entities: [
+          ['chest', 12, 8, { pickup: 'key' }],
+          ['keese', 3, 2],
+        ],
+      },
+      '0,4,5': {
+        name: 'The Drain Weir',
+        // P3 lands here, in the drain under the Sluice Cell's shaft: a pit at
+        // LOW, wading at MID, over your head at HIGH. The Small Key is on the
+        // dry floor; taking it opens the shutter west into the Pens.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U...444...U.#',
+          '#..444444444..#',
+          '#..444444444..#',
+          'D..444444444..#',
+          '#..444444444..#',
+          '#.....444.....#',
+          '#.....444.....#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['chest', 12, 8, { pickup: 'key' }],
+        ],
+        puzzle: {
+          flag: 'd3_drainweir',
+          condition: (g, r) => !!g.progress.chests[`d3:${r.key}:0`],
+          reward: { openDoors: [[0, 5]] },
+        },
+      },
+      '0,2,4': {
+        name: 'The Root Cellar',
+        // P4 lands here, under the Silt Cell's crack: the Chartstone, and the
+        // way on through the Silt Stair.
+        map: [
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...=.....=...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#...=.....=...#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['chest', 7, 5, { pickup: 'chartstone' }],
+        ],
+      },
+      '0,2,5': {
+        name: 'The Silt Stair',
+        // A fight, and the stair up to the Map Cell's dais.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#..=.......=..#',
+          '#.............#',
+          '#.....===.....#',
+          '#.............#',
+          '#.....===.....#',
+          '#.............#',
+          '#..=........S.#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['crab', 4, 6],
+          ['keese', 10, 3],
+        ],
+        warps: [stair3(12, 8, P3(1, 2, 5, 12, 9, 'down'))],
       },
     },
   });

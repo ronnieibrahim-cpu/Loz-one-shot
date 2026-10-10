@@ -1001,6 +1001,32 @@ export const FALL_ANIM_FRAMES = [16, 10, 10];
  *  invisible frames (counter1 $02). Was a guessed 34. */
 export const FALL_FRAMES = FALL_ANIM_FRAMES.reduce((a, b) => a + b, 0) + 2;
 
+// ---- the drop hole and the cracked floor (S181, the Bogwater Sanctum) -------
+
+/** f — how long Link must stand on one tile of cracked floor before it gives
+ *  way. derived from the cartridge: oracles-disasm
+ *  object_code/common/specialObjects/commonCode.s @tileType_crackedFloor
+ *  (wStandingOnTileCounter must reach 32; any frame on another tile resets
+ *  it, so walking across at 1 px/f — 16 frames a tile — never breaks one). */
+export const CRACK_BREAK_FRAMES = 32;
+
+/** sp/f — Link's downward speed on the first frame of falling into the room
+ *  under a drop hole. derived from the cartridge: link.s warpTransition5_00
+ *  (TRANSITION_DEST_FALL), objectSetSpeedZ $0020 — 8.8, the same grid as ours. */
+export const DROP_IN_SPEED = 32;
+
+/** sp/f² — gravity on that fall. derived: warpTransition5_01,
+ *  objectUpdateSpeedZ_paramC with c = $20. */
+export const DROP_IN_GRAVITY = 32;
+
+/** px — the most height he falls in from. derived: objectGetZAboveScreen
+ *  (bank0.s) puts him just above the top of the screen, and caps it at $80. */
+export const DROP_IN_MAX_HEIGHT = 128;
+
+/** f — how long he lies where he landed before he can move. derived:
+ *  warpTransition7 @linkCollapsed, warpVar2 = $1e, LINK_ANIM_MODE_COLLAPSED. */
+export const DROP_IN_COLLAPSE_FRAMES = 30;
+
 /** f — length of being washed back to shore by water: Seasons' drowning.
  *  derived from the cartridge: animationData19c40 (LINK_ANIM_MODE_DROWN,
  *  6 + 16 frames to its end marker) and the same two invisible frames as a

@@ -360,6 +360,54 @@ const SCENARIOS = [
   // whirlpool, and walk-dungeons that the rooms join up), and each is refused
   // at the sea that should refuse it.
   {
+    // THE SANCTUM'S UNDERCROFT IN ONE RUN (S181), from the Sanctum's mouth to
+    // the Weir's key door: P1 down the Nave's hole into the Landing; P2 down
+    // the Hub's south-east hole into the key pen; up the Landing's stair onto
+    // the Nave's dais and off its ledge; the first key in the Hub's east door;
+    // P3 the Anchor bitten beside the Sluice Cell's shaft at LOW and the conch
+    // to MID, down into the Drain Weir for the second key, whose shutter lets
+    // you out; the second key in the Weir's north door; P4 the Silt Cell's
+    // crack stood on until it gives way, the Chartstone in the Root Cellar,
+    // and up the Silt Stair onto the Map Cell's dais. S162's rule: a dungeon
+    // proved room by room was never proved.
+    name: "The Bogwater Sanctum: one run through the Undercroft — both keys, the Chartstone, the Weir's door",
+    setup: setup({ items: { sword: 2, conch: 1, anchor: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 200, hearts: 200, tide: 0, enter: ['d3', 1, 3, 7, 112, 144, 'up'] }),
+    steps: [
+      // P1: the Nave's hole at LOW
+      ['travel', 3, 6, 2000], ['goto', 7, 3, 600], ['hold', ['down'], 30], ['wait', 150],
+      // the Landing -> the Pens' corridor and back -> the stair up, off the dais
+      ['travel', 3, 5, 2000], ['travel', 3, 6, 2000],
+      ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
+      // P2: the Hub's south-east hole, the key pen, off its ledge
+      ['travel', 3, 5, 2000], ['goto', 11, 6, 900], ['hold', ['down'], 30], ['wait', 150],
+      ['goto', 11, 8, 600], ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
+      ['goto', 11, 7, 600], ['hold', ['up'], 40],
+      ['travel', 3, 6, 2000], ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
+      // the first key, the Hub's east door
+      ['travel', 3, 5, 2000], ['goto', 13, 5, 900], ['hold', ['right'], 20], ['tap', 'a', 30],
+      // P3: the Anchor at LOW beside the shaft, MID, in
+      ['travel', 4, 5, 2000], ['equip', 'anchor', 'A', 400], ['anchor', 7, 6, 1600],
+      ['tide', 1, 140, 900], ['goto', 7, 7, 400], ['hold', ['up'], 60], ['wait', 150],
+      // the Drain Weir: the second key; the shutter opens west
+      ['goto', 11, 8, 900], ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
+      ['wait', 60], ['unanchor', 120], ['tide', 0, 140, 900],
+      ['travel', 3, 5, 2000], ['travel', 3, 6, 2000],
+      ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
+      // the second key, the Weir's north door
+      ['travel', 3, 5, 2000], ['travel', 3, 4, 2000], ['goto', 7, 1, 900], ['hold', ['up'], 20], ['tap', 'a', 30],
+      // P4: the Silt Cell's crack, the Root Cellar's Chartstone, the Silt Stair
+      ['travel', 2, 4, 2000], ['goto', 2, 2, 900], ['wait', 220],
+      ['goto', 7, 6, 600], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
+      ['travel', 2, 5, 2000], ['goto', 12, 9, 900], ['hold', ['up'], 30], ['wait', 90],
+      ['goto', 13, 8, 300], ['hold', ['up'], 40], ['wait', 30],
+    ],
+    expect: `(g.progress.doors['d3:1,3,5:14,5'] === 'dDoorOpen' && g.progress.doors['d3:1,3,4:7,0'] === 'dDoorOpen'
+      && g.progress.charts.d3 && g.progress.flags.d3_drainweir && g.room.key === '1,2,5' && g.player.y < 7 * 16)
+      || ('hub door ' + g.progress.doors['d3:1,3,5:14,5'] + ', weir door ' + g.progress.doors['d3:1,3,4:7,0']
+        + ', chart ' + !!g.progress.charts.d3 + ', drain weir ' + !!g.progress.flags.d3_drainweir + ' in ' + g.room.key + ' at ' + g.player.x + ',' + g.player.y)`,
+  },
+  {
     // THE WHOLE PALACE IN ONE RUN (S162), from the Porch's door to the eel:
     // both Small Keys, the Boss Key from the cellar only the Weir's whirlpool
     // reaches, the boss door, the Throne Pool's drop at HIGH and Thalassor at

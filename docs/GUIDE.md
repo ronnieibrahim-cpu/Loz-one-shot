@@ -770,40 +770,71 @@ yet.
 
 **Entrance:** `overworld/0,1,8`, tile (4,1).
 **Item:** Kelp-Soled Cleats (`cleats`).
-**Small Keys:** 3. **Boss:** `gloomtide`, in `d3/0,3,1`.
-**Tide theme:** surface route versus seafloor route.
+**Small Keys:** 4. **Boss:** `gloomtide`, in `d3/1,3,1`.
+**Tide theme:** surface route versus seafloor route — and since S181, a bog
+that is a sieve over a cellar.
 
 The Grotto held the water still; the Spire made you bet on it. The Sanctum
 floods and **stays** flooded. What you choose here is not a tide level but which
 **layer** of the water you travel in.
 
+**Two floors.** The Bog (floor 1, every room below unless it says otherwise) sits
+over **the Undercroft** (floor 0). Some of the Bog's pools are **shafts**: at
+LOW an open hole (the Poison Moth's Lair's own), at MID and HIGH deep water.
+Step into an open hole and you fall to **the same spot of the room directly
+below** — unless what is below is a pit, which makes the hole a pit. A
+**cracked floor** gives way if you **stand** on it (walking across is safe) and
+becomes a shaft for good.
+
 ### Before the Cleats
 
-**Sanctum Mouth** (`d3/0,3,7`). *"The water has two floors. Only one of them
+**Sanctum Mouth** (`d3/1,3,7`). *"The water has two floors. Only one of them
 drowns you."*
 
-**Drowned Nave** (`d3/0,3,6`). A `jellyfish` and a `crab`; clear them for a
-fairy.
+**Drowned Nave** (`d3/1,3,6`). A `keese` and a `crab`; clear them for a
+fairy. The pool in the middle is a shaft — fight at MID if you would rather not
+fall in. At LOW it is **the first hole**: drop in and you land in the
+**Undercroft Landing** (`d3/0,3,6`), whose stair comes back up onto the fenced
+dais in the Nave's north-west corner (left by its ledge).
 
-**Bell Cell** (`d3/0,4,6`), east. A chest at (4,2) with **Wrecker's Eye**
+**Bell Cell** (`d3/1,4,6`), east. A chest at (4,2) with **Wrecker's Eye**
 (`wreckersEye`) — chests and buried secrets glimmer through the terrain — and a
 **blank** at (6,4). Wrecker's Eye is a **LOW** charm, and the LOW case opened on
 the essence you carried out of the Spire, so this is the first thing you can put
 in it. Slot it and leave it there; it makes every buried cache in the back half
 of the game visible.
 
-**Bog Hub** (`d3/0,3,5`) → **Map Cell** (`d3/0,2,5`) west for the **Dungeon
-Map** → **Sluice Cell** (`d3/0,4,5`) east: switches at (2,2) and (7,2), blocks
-at (2,3) and (7,3), push both up, **Small Key 1**.
+**Bog Hub** (`d3/1,3,5`) → **Map Cell** (`d3/1,2,5`) west for the **Dungeon
+Map**.
 
-**The Weir** (`d3/0,3,4`). Locked; spend Small Key 1.
+**The four holes.** The Hub's four shafts are the roofs of **the Three Pens**
+(`d3/0,3,5`) below: three raised pens and a pit. From the Pens' corridor (in by
+the Landing) you can see **Small Key 1** in the **south-east** pen — so at LOW,
+step into the Hub's **south-east** hole. The pens are left by their ledges into
+the corridor; the south-west hole is over the pit. Back up by the Landing's
+stair, and the key opens the **Hub's east door**.
 
-**Silt Cell** (`d3/0,2,4`), west — a chest with the **Chartstone**.
+**Sluice Cell** (`d3/1,4,5`). **Two seas at once.** The shaft in the middle of
+the pool lands in the **Drain Weir** (`d3/0,4,5`) below, in its drain — a dry
+pit at LOW (no landing), wading at MID, over your head at HIGH. But at MID the
+shaft is flooded shut. Bite the **Anchor** beside the shaft at LOW (it holds
+the 5x5 around it at LOW), sound the conch to **MID**, and walk in: the held
+patch keeps the hole open while the cellar fills. The Anchor stays where it bit
+when you leave the room — recall it from anywhere. **Small Key 2** is on the
+Drain Weir's dry floor (chest at 12,8), and taking it opens the shutter west
+into the Pens.
 
-**Reed Cell** (`d3/0,4,4`), east. Clear the `jellyfish` and the `crab` and
+**The Weir** (`d3/1,3,4`). Locked north door; spend Small Key 2.
+
+**Silt Cell** (`d3/1,2,4`), west. A **crack** in the alcove at (2,2): stand on
+it and it gives way into **the Root Cellar** (`d3/0,2,4`) — the
+**Chartstone** — and the **Silt Stair** (`d3/0,2,5`) south of it goes up onto the
+Map Cell's dais.
+
+**Reed Cell** (`d3/1,4,4`), east. Clear the `jellyfish` and the `crab` and
 **Heart Piece 9** rises out of the reeds at (4,6).
 
-**The Cistern Floor** (`d3/0,3,3`). The item room, and the chest stands on the
+**The Cistern Floor** (`d3/1,3,3`). The item room, and the chest stands on the
 only dry island in it — the first thing the Cleats are used for is getting off
 the rock you opened them on. The big chest holds the **Kelp-Soled Cleats**.
 
@@ -835,16 +866,16 @@ On the floor, nothing pushes you. A tile's current is only applied while you are
 in deep water and **not** underwater, and weighted soles are exactly what the
 Cleats are. **Sink and walk.**
 
-**The Undertow** (`d3/0,2,3`). West of the item room. Enter at (9,3), sink, walk
+**The Undertow** (`d3/1,2,3`). West of the item room. Enter at (9,3), sink, walk
 the floor west to (0,3). Bare on purpose — there is nowhere to stand in a
 torrent room, which is the point.
 
-**Sunken Vestry** (`d3/0,1,3`). Switches at (2,2) and (7,2), blocks below them.
-**Small Key 2**.
+**Sunken Vestry** (`d3/1,1,3`). Switches at (2,2) and (7,2), blocks below them.
+**Small Key 3**.
 
-**Silt Vault** (`d3/0,1,4`), south — a `rupee20`.
+**Silt Vault** (`d3/1,1,4`), south — a `rupee20`.
 
-**Bogmaw Hall** (`d3/0,2,2`), north. No lock on this one.
+**Bogmaw Hall** (`d3/1,2,2`), north. No lock on this one.
 
 > **Miniboss: Bogmaw** (15 HP). A mouth in the floor. It **submerges and
 > resurfaces beside you**, chasing while it is up and spitting three ink shots
@@ -853,46 +884,46 @@ torrent room, which is the point.
 > wallows. Below half health it stops hiding entirely and fires six-shot rings;
 > that is the phase to burn it down in, since it is permanently on the surface.
 
-**Drain Gallery** (`d3/0,1,2`), west of Bogmaw Hall. The chest at (7,3) with the
+**Drain Gallery** (`d3/1,1,2`), west of Bogmaw Hall. The chest at (7,3) with the
 **Boss Key** is on the side you arrive on — take it before you do anything else.
 The room's **locked door at (5,4)** is the one that separates the chest's half
 from the western half and the way back down to the Sunken Vestry; spend **Small
-Key 2** on it, or walk back the way you came.
+Key 3** on it, or walk back the way you came.
 
-**Vestry Roof** (`d3/0,2,1`), north of Bogmaw Hall. **Heart Piece 10** at (4,4).
+**Vestry Roof** (`d3/1,2,1`), north of Bogmaw Hall. **Heart Piece 10** at (4,4).
 
 ### The east wing
 
 Back to The Cistern Floor and east.
 
-**The Bogwater Drain** (`d3/0,4,3`). Torrent room 2, and **the current runs the
+**The Bogwater Drain** (`d3/1,4,3`). Torrent room 2, and **the current runs the
 other way** — a player who learned "swim east" in the Undertow learns nothing
 here. Enter at (0,3), sink, walk east to (9,3). There is an alcove under the
 channel that only opens off the **seafloor**; the surface route never sees it,
 and there is a fairy in it at (4,6). Nothing in it is required. That is the
 trade the whole dungeon is about: the slow layer is the one that finds things.
 
-**Eel Hall** (`d3/0,5,3`) — an `urchin` and a `crab`, and a **locked door at
+**Eel Hall** (`d3/1,5,3`) — an `urchin` and a `crab`, and a **locked door at
 (4,2)** across the middle of the room. Behind it is the north exit, and the north
-exit is the Kelp Locks. You need the third key first, and it is one room south.
+exit is the Kelp Locks. You need the fourth key first, and it is one room south.
 
-**Eel Vault** (`d3/0,5,4`), south. A `barnacle` at (4,4) and a `keese`. Clear
-them for **Small Key 3**, then go back up to Eel Hall and spend it.
+**Eel Vault** (`d3/1,5,4`), south. A `barnacle` at (4,4) and a `keese`. Clear
+them for **Small Key 4**, then go back up to Eel Hall and spend it.
 
-**The Kelp Locks** (`d3/0,4,2`). Two screens wide, and the only room in the
+**The Kelp Locks** (`d3/1,4,2`). Two screens wide, and the only room in the
 dungeon where your breath is not decorative: **eighteen tiles of seafloor in one
 dive**, with no shelf in the middle to surface on. Enter at (14,7), sink
 immediately, and walk west to (0,3) without stopping. If you have carved the
 **Gillcarve** charm (`gillcarve`, HIGH case, unlimited seafloor breath) this room
 is free — but you cannot have it yet; it is in Dungeon 5. Go straight across.
 
-**The Lock Gallery** (`d3/0,3,2`), at the western end of the Kelp Locks. No lock
+**The Lock Gallery** (`d3/1,3,2`), at the western end of the Kelp Locks. No lock
 on this one despite the name — the boss door is here, and the Boss Key is
 already in your pocket.
 
 ### Boss: Gloomtide, the Bogwater Maw
 
-**36 HP. Arena `d3/0,3,1`. The conch works in here — and this fight is a tug of
+**36 HP. Arena `d3/1,3,1`. The conch works in here — and this fight is a tug of
 war over it.**
 
 A dripping mass with two lantern eyes that sinks into the bog to close distance
@@ -1854,9 +1885,9 @@ Numbered in the order this walkthrough passes them.
    are phased; hold the **Lens** to see and hit them.
 8. **Heart Piece 8** — `d2/1,5,4`, Whelk Cell, tile (4,4). Behind Fork 1, east
    branch off the Bomb Vault.
-9. **Heart Piece 9** — `d3/0,4,4`, Reed Cell, tile (4,6). Puzzle reward — clear
+9. **Heart Piece 9** — `d3/1,4,4`, Reed Cell, tile (4,6). Puzzle reward — clear
    the room.
-10. **Heart Piece 10** — `d3/0,2,1`, Vestry Roof, tile (4,4). North of Bogmaw
+10. **Heart Piece 10** — `d3/1,2,1`, Vestry Roof, tile (4,4). North of Bogmaw
     Hall.
 11. **Heart Piece 11** — `houseHearth/0,0,0`, the village child's thanks for
     their **Kite**, stuck up a tree in Bluff Hollow (`overworld/0,3,6`, the
@@ -1926,7 +1957,7 @@ Numbered in the order this walkthrough passes them.
     optional boss pays a piece, not a container.
 
 **Heart Containers**, one from each boss: `gohmaraq` in `d1/0,3,1`, `anemos` in
-`d2/1,3,1`, `gloomtide` in `d3/0,3,1`, `wyverna` in `d4/0,3,1`, `rootmaw` in
+`d2/1,3,1`, `gloomtide` in `d3/1,3,1`, `wyverna` in `d4/0,3,1`, `rootmaw` in
 `d5/0,3,1`, `nereth` in `d6/1,3,1`.
 
 ## The Coastwise Chain
@@ -1985,7 +2016,7 @@ numbered in the heart list above); they are all optional.
 | Brineglass Lens | `lens` | `d2/1,4,4`, big chest | *(deliberately absent)* | Phased enemies become hittable while held | Preview the next tide level before committing |
 | Bombs | `bombs` | `d2/1,5,3`, big chest | Blasts the Marsh and Cliffs gates open | Radius damage | Opens cracked walls |
 | Kilnshell | `kilnshell` | `cave2/0,0,0`, big chest | Burns drift-tangle — the one obstacle nothing else touches | Sets a doorway alight; a little damage per tick to anything standing on it | Lights torches; deep water puts it out, so route around it |
-| Kelp-Soled Cleats / Mermaid Suit | `cleats` | L1: `d3/0,3,3`. L2: `d6/1,4,4` | Swim the surface, or sink and walk the floor | Sink mode takes no knockback and ignores currents | Carry heavy things under surface-only barriers; L2 pushes blocks underwater |
+| Kelp-Soled Cleats / Mermaid Suit | `cleats` | L1: `d3/1,3,3`. L2: `d6/1,4,4` | Swim the surface, or sink and walk the floor | Sink mode takes no knockback and ignores currents | Carry heavy things under surface-only barriers; L2 pushes blocks underwater |
 | Squall Bellows | `bellows` | `d4/0,1,4`, big chest | Drives rafts and floating platforms | Shoves light enemies into pits and hazards | Spins wheels; holds the tide back one level in a held cone |
 | Reefseed | `reefseed` | `d5/0,1,4`, big chest | A LOW pillar is a step | Wall off a charging enemy; grow one under a flier | What it becomes depends on the tide when it *finishes growing* |
 | Dredge Line / Deepline | `dredge` | `d6/0,4,3`, big chest | A fixed snag hauls you across a pit | Drags an aquatic enemy onto land, helpless | The seafloor — and buried land — is searchable |
@@ -1995,9 +2026,9 @@ numbered in the heart list above); they are all optional.
 | Chartstone | `chartstone` | One per dungeon | — | — | Marks which rooms change, and at which level |
 | Dungeon Map | `map` | One per dungeon | — | — | Reveals the layout |
 
-**Chartstone locations:** `d1/0,4,5`, `d2/0,4,4`, `d3/0,2,4`, `d4/0,2,5`,
+**Chartstone locations:** `d1/0,4,5`, `d2/0,4,4`, `d3/1,2,4`, `d4/0,2,5`,
 `d5/0,2,5`, `d6/0,2,5`.
-**Dungeon Map locations:** `d1/0,2,5`, `d2/0,2,5`, `d3/0,2,5`, `d4/0,2,6`,
+**Dungeon Map locations:** `d1/0,2,5`, `d2/0,2,5`, `d3/1,2,5`, `d4/0,2,6`,
 `d5/0,2,6`, `d6/0,2,6`.
 
 ## Charms and the scrimshander
@@ -2010,7 +2041,7 @@ sea has finished with — and 60 rupees. She chooses what it becomes. It is read
 after **three turns of the tide**: sound the conch three times and come back.
 
 **Where blanks come from.** Three are placed in the world, in `d1/0,2,6`,
-`d2/0,2,6` and `d3/0,4,6`. After that they are a rare drop from tougher enemies —
+`d2/0,2,6` and `d3/1,4,6`. After that they are a rare drop from tougher enemies —
 and a **common** one in dredged loot, which is what the Dredge Line is really for
 if you want all thirty-one charms.
 
@@ -2020,7 +2051,7 @@ if you want all thirty-one charms.
 |---|---|---|
 | `splitFang` — a wider sword arc | MID | `d1/0,2,3` Weeping Wall |
 | `barnacleSkin` — one free hit per room | MID | `d2/0,3,3` Cistern Cell |
-| `wreckersEye` — chests and buried things glimmer | LOW | `d3/0,4,6` Bell Cell |
+| `wreckersEye` — chests and buried things glimmer | LOW | `d3/1,4,6` Bell Cell |
 | `bosunsWhistle` — the conch sounds faster | MID | `d4/0,5,5` Cliffside Cell |
 | `gillcarve` — unlimited seafloor breath | HIGH | `d5/0,4,5` Thicket Cell |
 | `coilrope` — the Dredge Line reaches one tile further | MID | `d6/1,2,4` Colonnade of the Drowned |

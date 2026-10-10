@@ -381,8 +381,8 @@ check('all five bosses were beaten in real combat, with nothing granted',
 // issued from inside it plans into the room it is already in. The Sanctum is
 // left the way it was entered, through its own mouth.
 check('the run walked out of the Bogwater Sanctum on its own feet',
-  a.rooms.includes('d3/0,3,7') && a.rooms.includes('overworld/0,1,7'),
-  `rooms ${['d3/0,3,7', 'overworld/0,1,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+  a.rooms.includes('d3/1,3,7') && a.rooms.includes('overworld/0,1,7'),
+  `rooms ${['d3/1,3,7', 'overworld/0,1,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 // THE CLIFFS OF KELL COST A SECOND BOMB. The Deep Cut's east bank is a
 // rockfall with a one-tile pocket behind it, and the Cistern's door is on the
 // far side of it — so the fourth dungeon, like the third, is reached by
@@ -411,14 +411,22 @@ check('the run bombed its way into the Sunken Marsh',
 // stand between the Sanctum's item room and its boss, and every one of them
 // is a wall on the surface: a run that reached the arena went under them.
 check('the run walked the seafloor under D3\'s three torrents',
-  ['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].every(r => a.rooms.includes(r)),
-  `rooms ${['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+  ['d3/1,2,3', 'd3/1,4,3', 'd3/1,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d3/1,2,3', 'd3/1,4,3', 'd3/1,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 // AND IT PRESSED WHAT LIES ON THE BOTTOM (S143). The Kelp Locks' key is in the
 // Two Weights, behind the Sounding Pool: two plates under deep water that only
 // a floor-walker presses. A run that reached the Locks walked both rooms.
 check('the run pressed the Sounding wing\'s sunken plates',
-  ['d3/0,6,4', 'd3/0,6,5', 'd3/0,4,2'].every(r => a.rooms.includes(r)),
-  `rooms ${['d3/0,6,4', 'd3/0,6,5'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+  ['d3/1,6,4', 'd3/1,6,5', 'd3/1,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d3/1,6,4', 'd3/1,6,5'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// AND IT WENT DOWN THROUGH THE BOG (S181). The Sanctum's first two keys are
+// in its Undercroft: one in the pen under the Bog Hub's south-east hole, one
+// in the Drain Weir, which only the Sluice Cell's shaft reaches, held open by
+// the Anchor at LOW while the cellar fills at MID; and the Chartstone is in
+// the Root Cellar, under the Silt Cell's crack.
+check('the run dropped through the Sanctum\'s holes and its crack into the Undercroft',
+  ['d3/0,3,5', 'd3/0,4,5', 'd3/0,2,4'].every(r => a.rooms.includes(r)),
+  `rooms ${['d3/0,3,5', 'd3/0,4,5', 'd3/0,2,4'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 check('the run completed a second Heart Container mid-D2, on top of D1\'s own',
   s.maxHearts >= 20, `maxHearts ${s.maxHearts}`);
 // ---- what the Drowned Wood Shrine leg added -------------------------------

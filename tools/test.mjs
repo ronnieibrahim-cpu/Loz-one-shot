@@ -100,6 +100,30 @@ async function loadPlaywright() {
   check('and a save already on it is left alone', again.pos.rx === 12 && again.coin.rx === 15);
 }
 
+// --- a save from before the Sanctum had a cellar loads where it was ---------
+//
+// S181 put the Undercroft under the Bogwater Sanctum as floor 0, so the Bog it
+// had been is floor 1. A save written before that names the Bog as floor 0.
+{
+  const { newProgress, exportCode, importCode } = await import('../src/game/progress.js');
+  const old = newProgress('LINK', 1);
+  delete old.d3Floors;
+  old.pos = { map: 'd3', floor: 0, rx: 3, ry: 4, px: 112, py: 80, dir: 'up' };
+  old.respawn = { map: 'd3', floor: 0, rx: 3, ry: 7, px: 112, py: 144 };
+  old.doors['d3:0,3,4:7,0'] = 'dDoorOpen';
+  old.chests['d3:0,2,5:0'] = true;
+  old.secrets['seen:d3:0,3,7'] = true;
+  old.doors['d4:0,3,4:7,0'] = 'dDoorOpen';
+  const got = importCode(exportCode(old));
+  check('an old save inside the Sanctum is moved up onto the Bog',
+    got.pos.floor === 1 && got.respawn.floor === 1 && got.doors['d3:1,3,4:7,0'] === 'dDoorOpen'
+      && !got.doors['d3:0,3,4:7,0'] && got.chests['d3:1,2,5:0'] && got.secrets['seen:d3:1,3,7']
+      && got.doors['d4:0,3,4:7,0'] === 'dDoorOpen' && got.d3Floors === 2,
+    JSON.stringify({ pos: got.pos, doors: got.doors, chests: got.chests }));
+  const again = importCode(exportCode(got));
+  check('and a save already on two floors is left alone', again.pos.floor === 1 && again.doors['d3:1,3,4:7,0']);
+}
+
 // --- determinism: nothing under src/ may call Math.random -------------------
 //
 // One global stream seeded from the save plus a per-room derived stream is the

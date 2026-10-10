@@ -148,7 +148,7 @@ const MINIS = {
   // ROUTE FIGHTS BOGMAW FOR THE FIRST TIME — the Kelp Locks are one way now
   // and the walk home comes back through this hall, so it is fought on the
   // way east from the Boss Key rather than skipped.
-  bogmaw: { dungeon: 'd3', room: '0,2,2', flag: 'd3_bogmaw', tide: LOW, qh: 21,
+  bogmaw: { dungeon: 'd3', room: '1,2,2', flag: 'd3_bogmaw', tide: LOW, qh: 21,
             items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 },
             opts: { openRetreat: true },
             at: [7, 79], facing: 'right', maxQh: 28, settle: 0, frame: 72075 },

@@ -82,12 +82,14 @@ export const F = {
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
   VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
-  // 1 << 25 was MAGNETIC — "iron plug: the Dredge Line hauls it out of the
-  // way". The Keep's seal is the only thing that ever carried it, and the seal
-  // is now opened by the story rather than by an item (see `openFlag` below),
-  // so nothing carries it and the bit is free. A flag whose comment names a
-  // gate the world no longer has is the same drift as a tiledef field the
-  // registrar drops: it reads as true and is not.
+  // A DROP HOLE (S181, the Bogwater Sanctum): a hole with a room under it.
+  // Dry, it also carries PIT and is fallen into the way a pit is, but the fall
+  // ends on the floor below, at the same place (`Game.dropThroughHole`);
+  // flooded, it carries DEEP and a player walking the bottom with the Cleats
+  // goes down it. A drop whose landing is no landing is a pit fall. The bit
+  // was MAGNETIC once, which nothing carried after the Keep's seal became a
+  // story gate. tools/check-shafts.mjs proves every one in the engine.
+  DROP:      1 << 25,
   // Region-gate markers. These do NOT drive traversal — the engine already
   // knows how to cross each of these tiles, because each one also carries the
   // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
@@ -197,6 +199,14 @@ export function registerTiles(defs) {
       variantOdds: def.variantOdds || 8,
       push: def.push || null,
       ledge: def.ledge || null,
+      // THE CRACKED FLOOR (S181): the tile it gives way into, after Link has
+      // stood on it CRACK_BREAK_FRAMES (Player.updateCrack, Game.breakCrack).
+      crack: def.crack || null,
+      // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
+      // (n), below (s) or both is not of this tile's `family` — Seasons' drop
+      // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
+      // edges, where the floor's edge shows. See `Room.artAt`.
+      lip: def.lip || null,
       depth: def.depth || 0,
       // How strong you have to be to pick this up, against LIFT_STRENGTH and
       // any item that raises it, and what it looks like once lifted.

@@ -34,6 +34,9 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // How many screens across the overworld was when this save was written;
     // `migrate` moves every remembered screen when it has changed (S157).
     worldW: OVERWORLD_W,
+    // The Bogwater Sanctum's floors (S181): 2 since the Undercroft went in
+    // under it. See `migrate`.
+    d3Floors: 2,
     name,
     seed: seed >>> 0,
     // health
@@ -366,5 +369,18 @@ function migrate(p) {
     }
   }
   out.worldW = OVERWORLD_W;
+  // A save from before the Bogwater Sanctum grew its Undercroft (S181) names
+  // the Bog as floor 0; it is floor 1 now, with the cellar under it. Move every
+  // place, chest, door, kill and seen room the save keeps there up a floor.
+  if (!p.d3Floors) {
+    const up = (o) => (o && o.map === 'd3' && (o.floor | 0) === 0 ? { ...o, floor: 1 } : o);
+    out.pos = up(out.pos); out.respawn = up(out.respawn); out.coin = up(out.coin);
+    for (const k of ['chests', 'doors', 'secrets', 'slain']) {
+      const moved = {};
+      for (const [key, v] of Object.entries(out[k])) moved[key.replace(/^(seen:)?d3:0,(?=\d+,\d+(:|$))/, '$1d3:1,')] = v;
+      out[k] = moved;
+    }
+  }
+  out.d3Floors = 2;
   return out;
 }

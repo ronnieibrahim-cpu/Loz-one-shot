@@ -367,7 +367,7 @@ export const PLANS = {
       tide: 1,
       // S139: the Undertow is an Oracle room, 15x11, and its east bank is
       // column 13 with the door at row 5.
-      enter: ['d3', 0, 2, 3, 208, 80, 'left'],
+      enter: ['d3', 1, 2, 3, 208, 80, 'left'],
     },
     steps: [
       ['wait', 30],

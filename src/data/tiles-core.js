@@ -2832,6 +2832,45 @@ export function installCoreTiles() {
       ['dStairsDown' + T, { art: ART[P + 'StairsDown'], pal: P + 'StairsDown', flags: F.WARP | F.STAIRS }],
     ])),
 
+    // THE BOGWATER SANCTUM'S DROP HOLE AND CRACKED FLOOR (S181), the Poison
+    // Moth's Lair's own (`bHole*`, `bCrack` picks in rip-dungeon-themes.py).
+    //
+    // `dShaftBog` is the SHAFT, a tide tile: at LOW the cartridge's warp hole,
+    // which drops you to the same place one floor down (F.DROP with F.PIT, so
+    // everything that already knows a pit — an enemy's feet, a pushed block,
+    // the flood's walls — still does); at MID and HIGH the sea fills it, deep
+    // water a swimmer floats across and a player sinking with the Cleats goes
+    // down (F.DROP with F.DEEP). The hole draws its floor's lip where the run
+    // of hole ends above or below, as the cartridge picks $48-$4b (`lip`).
+    dHoleBog: {
+      art: ART.bHole, pal: 'bHole', flags: F.PIT | F.DROP, family: 'shaft',
+      lip: { n: 'dHoleBogN', s: 'dHoleBogS', ns: 'dHoleBogNS' },
+    },
+    dHoleBogN: { art: ART.bHoleN, pal: 'bHoleN', flags: F.PIT | F.DROP, family: 'shaft' },
+    dHoleBogS: { art: ART.bHoleS, pal: 'bHoleS', flags: F.PIT | F.DROP, family: 'shaft' },
+    dHoleBogNS: { art: ART.bHoleNS, pal: 'bHoleNS', flags: F.PIT | F.DROP, family: 'shaft' },
+    dShaftWaterBog: {
+      art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.DROP,
+      anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
+    },
+    dShaftBog: { tide: ['dHoleBog', 'dShaftWaterBog', 'dShaftWaterBog'] },
+    // THE SANCTUM'S ONE-WAY LEDGES (S181). A Seasons dungeon has no ledge
+    // tile of its own: it jumps Link off the edge of a raised floor drawn with
+    // its WALL RING's own runs — $b0 (the north run) down, $b1 (east) left,
+    // $b2 (south) up, $b3 (west) right (oracles-disasm data/seasons/
+    // tile_properties/cliffTiles.s, @dungeons). The shared `dLedge` is a grey
+    // outdoor lip over a borrowed floor; these are the Lair's own masonry.
+    dLedgeBogS: { art: ART.bRingN, pal: 'bRingN', flags: F.LEDGE, ledge: 'down' },
+    dLedgeBogE: { art: ART.bRingW, pal: 'bRingW', flags: F.LEDGE, ledge: 'right' },
+    dLedgeBogW: { art: ART.bRingE, pal: 'bRingE', flags: F.LEDGE, ledge: 'left' },
+    dLedgeBogN: { art: ART.bRingS, pal: 'bRingS', flags: F.LEDGE, ledge: 'up' },
+    // The cracked floor: dry floor that gives way into a shaft once Link has
+    // stood on it long enough (`crack`). `dCrackPoolBog` is one in the bottom
+    // of a sluice pool — shown and breakable only while the pool is dry, the
+    // human's choice (S181); above LOW the pool's water hides it.
+    dCrackBog: { art: ART.bCrack, pal: 'bCrack', crack: 'dShaftBog' },
+    dCrackPoolBog: { tide: ['dCrackBog', 'dWaterS', 'dWaterD'] },
+
     // THE THREE OPTIONAL DUNGEONS (S160), each in the kit of a Seasons dungeon
     // no main dungeon had taken, read out of the cartridge's own tilesets
     // (`h*`, `n*` and `u*` picks in rip-dungeon-themes.py; the push block

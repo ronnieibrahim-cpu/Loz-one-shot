@@ -202,6 +202,9 @@ for (const [name, d] of TILES) {
     if (d.ring) for (const t of Object.values(d.ring)) reachable.add(t);
     // And an edge piece by `Room.artAt`'s edge pass (S160, the Eyrie's chasm).
     if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
+    // A drop hole's lips (S181) by its `lip` pass, and a crack's broken tile.
+    if (d.lip) for (const t of Object.values(d.lip)) reachable.add(t);
+    if (d.crack) reachable.add(d.crack);
   }
   for (const [, rules] of TRANSFORMS) {
     for (const [k, v] of Object.entries(rules)) {
@@ -233,9 +236,15 @@ for (const [name, d] of TILES) {
   for (const [, d] of TILES) {
     if (d.variants) for (const t of d.variants) reachable.add(t);
     if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
+    // A drop hole's lips (S181) by its `lip` pass, and a crack's broken tile.
+    if (d.lip) for (const t of Object.values(d.lip)) reachable.add(t);
+    if (d.crack) reachable.add(d.crack);
     if (d.ring) for (const t of Object.values(d.ring)) reachable.add(t);
     // And an edge piece by `Room.artAt`'s edge pass (S160, the Eyrie's chasm).
     if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
+    // A drop hole's lips (S181) by its `lip` pass, and a crack's broken tile.
+    if (d.lip) for (const t of Object.values(d.lip)) reachable.add(t);
+    if (d.crack) reachable.add(d.crack);
     // A story gate or keyhole becomes its `openTo` in play (Game.applyStoryGates).
     if (d.openTo) reachable.add(d.openTo);
     // A ground fringe is reached through `edgePairs` — a map of a neighbour's

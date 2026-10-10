@@ -37,7 +37,7 @@ import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
-import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } from './entity.js';
+import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } from './entity.js';
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
 import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
@@ -926,6 +926,71 @@ export class Game {
   }
 
   /**
+   * THE ROOM UNDER A DROP HOLE (S181, the Bogwater Sanctum), and whether the
+   * player standing where he is now could land in it: the room directly
+   * beneath this one, one floor down at the same room coordinates, with the
+   * player's own box free there (the engine's own `canOccupy`, asked of that
+   * room at this sea) and no pit under his feet. Null when there is no room
+   * or no landing — which is what makes a hole over a dry pit a pit.
+   */
+  holeLanding(x, y) {
+    const room = this.room, p = this.player;
+    if (!room || !p || !this.map) return null;
+    const below = room.floor - 1;
+    if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return null;
+    const r = getRoom(this.mapId, below, room.rx, room.ry);
+    if (!r) return null;
+    const px = x == null ? p.x : x, py = y == null ? p.y : y;
+    const view = { room: r, tide: this.tide, entities: [] };
+    if (!canOccupy(view, p, px, py, p.caps)) return null;
+    const fx = Math.floor((px + p.hb.x + p.hb.w / 2) / TILE);
+    const fy = Math.floor((py + p.hb.y + p.hb.h - 2) / TILE);
+    if (r.flagsAt(fx, fy, this.tide) & F.PIT) return null;
+    return { floor: below, room: r };
+  }
+
+  /**
+   * DOWN A DROP HOLE (S181). At the end of the fall (Player.updateFalling) or
+   * the moment a player walking the bottom with the Cleats meets a flooded
+   * one, take him to the same place one floor down — Seasons' warp hole, which
+   * the Sanctum's shaft is at LOW. He falls into the new room from above the
+   * top of the screen (Player.beginDropIn); sunk, he arrives on the bottom.
+   * Returns false, and does nothing, when there is no landing: the caller's
+   * fall then ends as a pit fall, and a sunk player simply stays where he is.
+   */
+  dropThroughHole(o = {}) {
+    const room = this.room, p = this.player;
+    if (!room || !p || this.transition || this.veiled()) return false;
+    const land = this.holeLanding();
+    if (!land) return false;
+    const sunk = !!o.sunk;
+    this.fadeOut(() => {
+      this.enterMap(this.mapId, land.floor, room.rx, room.ry, p.x, p.y, sunk ? p.dir : 'down', {});
+      if (!sunk) p.beginDropIn(this);
+    }, true, STAIRS_FADE);
+    if (sunk) this.audio.sfx('dive');
+    return true;
+  }
+
+  /**
+   * A CRACKED FLOOR GIVES WAY (S181): the tile becomes what its `crack` names,
+   * for good (persisted, like a bombed wall), with Seasons' SND_RUMBLE
+   * (bank0.s breakCrackedFloor). The player standing on it is then standing
+   * on a hole, and Player.updateHazards takes it from there.
+   */
+  breakCrack(tx, ty) {
+    const room = this.room;
+    const def = room.tile(tx, ty, this.tide);
+    if (!def || !def.crack) return false;
+    room.setTile(tx, ty, def.crack);
+    this.persistTile(tx, ty, def.crack);
+    // The cartridge's own SND_RUMBLE, as the keyhole's door uses it.
+    this.audio.sfx('doorRumble');
+    this.roomEvent('tile', { tx, ty, action: 'crack' });
+    return true;
+  }
+
+  /**
    * THE DOORWAY PULL — walking into the wall beside a door slides you into it.
    *
    * A person got stuck inside Tidewash Grotto and could not find the way out.
@@ -1700,7 +1765,7 @@ export class Game {
       // The optional dungeons (S160) are not on the list: they are reached
       // through a cave or a cliff, and the gale's list is the route's.
       if (m.kind === 'dungeon' && m.dungeon && m.dungeon.entrance && !m.dungeon.optional
-        && this.progress.secrets['seen:' + m.id + ':' + '0,' + m.dungeon.startRoom]) {
+        && this.progress.secrets['seen:' + m.id + ':' + (m.dungeon.startRoom.split(',').length === 3 ? '' : '0,') + m.dungeon.startRoom]) {
         spots.push({ name: m.name, ...m.dungeon.entrance });
       }
     }

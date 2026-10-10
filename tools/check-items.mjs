@@ -408,7 +408,7 @@ check('the Mermaid Suit can', r.l2 > 0, `pushT=${r.l2}`);
 // A PLATE UNDER DEEP WATER IS ON THE BOTTOM (S143): the Sounding Pool's plate
 // stands in the middle of a pool deep at every sea. Floating over it does
 // nothing; walking the floor onto it presses it.
-await park({ map: 'd3', rx: 6, ry: 4, tx: 14, ty: 5, dir: 'down', tide: 1, items: { cleats: 1 }, equipB: 'cleats' });
+await park({ map: 'd3', floor: 1, rx: 6, ry: 4, tx: 14, ty: 5, dir: 'down', tide: 1, items: { cleats: 1 }, equipB: 'cleats' });
 r = await page.evaluate(async () => {
   const g = window.__game;
   const p = g.player;
@@ -424,7 +424,7 @@ r = await page.evaluate(async () => {
     for (let i = 0; i < 20; i++) g.update();
     return plate.pressed;
   };
-  return { there: room === 'd3 0,6,4' && plate.sunk(g), room, swim: run('swim'), sink: run('sink') };
+  return { there: room === 'd3 1,6,4' && plate.sunk(g), room, swim: run('swim'), sink: run('sink') };
 });
 check('the Sounding Pool\'s plate is on the bottom', r.there, 'not sunk, in ' + r.room);
 check('a swimmer floating over a sunken plate does not press it', r.swim === false, 'pressed from the surface');

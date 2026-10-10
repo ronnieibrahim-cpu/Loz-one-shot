@@ -357,6 +357,12 @@ export class Room {
         }
       }
     }
+    if (d.lip) {
+      const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
+      const n = other(y - 1), s = other(y + 1);
+      const art = n && s ? d.lip.ns : n ? d.lip.n : s ? d.lip.s : null;
+      if (art) return art;
+    }
     if (d.edgeArt || d.edgePairs) {
       const edge = tileEdgeArt(d, (dir) => {
         const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);

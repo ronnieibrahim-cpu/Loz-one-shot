@@ -921,19 +921,23 @@ export const ROUTE = [
   ['goto', 4, 2, 800],
   ['wait', 90],
 
-  // ---------------------------------------------------------------- d3 0,3,6
+  // ---------------------------------------------------------------- d3 1,3,6
   // THE SANCTUM IS AN ORACLE DUNGEON (S139): every room is 15x11, doors are
   // one tile in the middle of each wall, and a key door is in the wall
   // between two rooms. The Drowned Nave's `puzzle.enemies: true` pays out a
-  // FAIRY, and it is the heal the whole crossing west was spent on.
+  // FAIRY, and it is the heal the whole crossing west was spent on. Since
+  // S181 the Sanctum is two floors: the Bog (floor 1) over the Undercroft
+  // (floor 0), and every hole lands on the same spot of the room below.
+  // The Nave's pool is a hole at LOW, so it is fought at MID, flooded.
   ['travel', 3, 6, 4000],
+  ['tide', 1, 140, 900],
   ['fight', 8000, 8000],
   ['wait', 120],
   ['dialogue', 400],
   ['wait', 120],
   ['loot', 1500],
 
-  // ---------------------------------------------------------------- d3 0,2,5
+  // ---------------------------------------------------------------- d3 1,2,5
   // Bog Hub, then the Map Cell for the Dungeon Map's chest (opened from the
   // south).
   ['travel', 3, 5, 4000],
@@ -944,38 +948,106 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 400],
 
-  // ---------------------------------------------------------------- d3 0,4,5
-  // The Sluice Cell. Two blocks, each one tile under its plate: stand under
-  // each block and hold up. The key drops at the north wall between them.
-  ['travel', 4, 5, 4000],
-  ['goto', 3, 4, 900],
-  ['hold', ['up'], 40],
-  ['goto', 11, 4, 900],
-  ['hold', ['up'], 40],
-  ['dialogue', 300],
-  ['goto', 7, 3, 600],
-  ['hold', ['up'], 30],
-  ['loot', 900],
+  // ---------------------------------------------------------------- d3 1,3,5
+  // P2 (S181): the Hub's four holes are the roofs of the Three Pens below,
+  // and the Small Key is in the south-east pen. Sound the sea to LOW and the
+  // holes are open: step into the south-east one from the floor above it.
+  ['travel', 3, 5, 4000],
+  ['tide', 0, 140, 900],
+  ['goto', 11, 6, 900],
+  ['hold', ['down'], 30],
+  ['wait', 150],
 
-  // ---------------------------------------------------------------- d3 0,3,4
+  // ---------------------------------------------------------------- d3 0,3,5
+  // The south-east pen: the key's chest, then off the pen's ledge into the
+  // corridor, and south to the Undercroft Landing.
+  ['goto', 11, 8, 600],
+  ['hold', ['right'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 900],
+  ['goto', 11, 7, 600],
+  ['hold', ['up'], 40],
+
+  // ---------------------------------------------------------------- d3 0,3,6
+  // The Landing's stair goes up onto the Nave's dais, which is left by its
+  // ledge. Then the Hub's east door, the first key door.
+  ['travel', 3, 6, 4000],
+  ['goto', 1, 2, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  ['hold', ['down'], 40],
+  ['travel', 3, 5, 4000],
+  ['goto', 13, 5, 900],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 30],
+
+  // ---------------------------------------------------------------- d3 1,4,5
+  // P3 (S181): TWO SEAS AT ONCE. The shaft lands in the Drain Weir's drain,
+  // which is a pit at LOW; at MID it is wading, but the shaft is flooded.
+  // Bite the Anchor beside the shaft at LOW, sound MID, and walk in: the held
+  // patch keeps the hole open while the cellar fills.
+  ['travel', 4, 5, 4000],
+  ['equip', 'anchor', 'A', 400],
+  ['anchor', 7, 6, 1600],
+  ['tide', 1, 140, 900],
+  ['goto', 7, 7, 400],
+  ['hold', ['up'], 60],
+  ['wait', 150],
+
+  // ---------------------------------------------------------------- d3 0,4,5
+  // The Drain Weir: the second Small Key on the dry floor, which opens the
+  // shutter west into the Pens. Take the Anchor back, put the sea back to
+  // LOW, and go round by the Landing's stair to the Weir.
+  ['goto', 11, 8, 900],
+  ['hold', ['right'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 900],
+  ['wait', 60],
+  ['unanchor', 120],
+  ['equip', 'sword', 'A', 400],
+  ['tide', 0, 140, 900],
+  ['travel', 3, 5, 4000],
+  ['travel', 3, 6, 4000],
+  ['goto', 1, 2, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  ['hold', ['down'], 40],
+
+  // ---------------------------------------------------------------- d3 1,3,4
   // The Weir. Its key door is in its north wall and gates the Cistern Floor,
-  // not the room — the key is spent here and the two side cells either side
-  // of it are walked afterwards.
+  // not the room — the key is spent here and the cells either side of it are
+  // walked afterwards.
+  ['travel', 3, 5, 4000],
   ['travel', 3, 4, 4000],
   ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
 
-  // ---------------------------------------------------------------- d3 0,2,4
-  // Silt Cell: the Chartstone.
+  // ---------------------------------------------------------------- d3 1,2,4
+  // P4 (S181): the Silt Cell's crack, in the alcove beside the well. Stand on
+  // it and it gives way into the Root Cellar.
   ['travel', 2, 4, 4000],
-  ['goto', 7, 4, 600],
+  ['goto', 2, 2, 900],
+  ['wait', 220],
+
+  // ---------------------------------------------------------------- d3 0,2,4
+  // The Root Cellar: the Chartstone. Then the Silt Stair, and its stair up
+  // onto the Map Cell's dais, left by the dais's ledge.
+  ['goto', 7, 6, 600],
   ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
+  ['travel', 2, 5, 4000],
+  ['goto', 12, 9, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  ['goto', 13, 8, 300],
+  ['hold', ['up'], 40],
 
-  // ---------------------------------------------------------------- d3 0,4,4
+  // ---------------------------------------------------------------- d3 1,4,4
   // Reed Cell: clear it for a Piece of Heart.
   ['travel', 4, 4, 4000],
   ['fight', 8000, 8000],
@@ -984,7 +1056,7 @@ export const ROUTE = [
   ['wait', 120],
   ['loot', 1500],
 
-  // ---------------------------------------------------------------- d3 0,3,3
+  // ---------------------------------------------------------------- d3 1,3,3
   // THE CISTERN FLOOR, AND THE KELP-SOLED CLEATS. The island is ringed by
   // flat deep water at every tide; the causeway from the key door is the only
   // dry way onto it, and the way off it is the item in the chest.
@@ -998,7 +1070,7 @@ export const ROUTE = [
   ['dialogue', 600],
   ['loot', 900],
 
-  // ---------------------------------------------------------------- d3 0,2,3
+  // ---------------------------------------------------------------- d3 1,2,3
   // WEST, ON THE SEAFLOOR. The soles go on B — the conch comes back to it
   // before the boss — and are pressed once on dry land, which arms them: the
   // next water the player steps into is entered by sinking rather than by
@@ -1015,7 +1087,7 @@ export const ROUTE = [
   ['hold', ['left'], 420],
   ['wait', 90],
 
-  // ---------------------------------------------------------------- d3 0,1,3
+  // ---------------------------------------------------------------- d3 1,1,3
   // The Sunken Vestry, and the second Small Key: each block goes one tile
   // sideways toward the middle, onto its plate.
   ['goto', 12, 2, 900],
@@ -1027,7 +1099,7 @@ export const ROUTE = [
   ['hold', ['up'], 30],
   ['loot', 900],
 
-  // ---------------------------------------------------------------- d3 0,1,2
+  // ---------------------------------------------------------------- d3 1,1,2
   // The Drain Gallery, through the key door in the Vestry's north wall. The
   // Boss Key stands in a ring of drains, open to the south.
   ['goto', 7, 1, 900],
@@ -1041,7 +1113,7 @@ export const ROUTE = [
   ['dialogue', 400],
   ['loot', 900],
 
-  // ---------------------------------------------------------------- d3 0,2,2
+  // ---------------------------------------------------------------- d3 1,2,2
   // BOGMAW HALL, east of the Boss Key, and the miniboss is fought now, on
   // the health the west wing leaves, rather than on the way out after
   // Gloomtide: the Kelp Locks are one way, so the walk home comes back
@@ -1088,7 +1160,7 @@ export const ROUTE = [
   ['travel', 2, 2, 4000],
   ['travel', 1, 2, 4000],
 
-  // ---------------------------------------------------------------- d3 0,2,3
+  // ---------------------------------------------------------------- d3 1,2,3
   // BACK EAST ALONG THE UNDERTOW, ON THE SURFACE, AND IT IS FREE. The soles
   // came up on the Vestry's bank, so the player swims: step off the bank into
   // the current and it carries you the whole length back to the island. A
@@ -1098,7 +1170,7 @@ export const ROUTE = [
   ['hold', ['right'], 300],
   ['wait', 60],
 
-  // ---------------------------------------------------------------- d3 0,3,3
+  // ---------------------------------------------------------------- d3 1,3,3
   // Across the Cistern's west water to the island, and off its east side on
   // the floor: the Bogwater Drain runs west, so the crossing east is another
   // walk along the bottom.
@@ -1108,7 +1180,7 @@ export const ROUTE = [
   ['hold', ['right'], 200],
   ['wait', 60],
 
-  // ---------------------------------------------------------------- d3 0,4,3
+  // ---------------------------------------------------------------- d3 1,4,3
   // Along the Drain's floor by way of its bottom shelf, which holds a fairy:
   // the west wing and Bogmaw are paid for here, before the Eel Vault and the
   // boss. Coming up on the shelf surfaces the soles, so they are armed again
@@ -1124,7 +1196,7 @@ export const ROUTE = [
   ['exit', 'right', 200],
   ['wait', 60],
 
-  // ---------------------------------------------------------------- d3 0,5,4
+  // ---------------------------------------------------------------- d3 1,5,4
   // Eel Hall's west screen, and straight through its south door to the Eel
   // Vault. NOTHING IS FOUGHT IN THE HALL: it fields two barnacles, which are
   // `hp: 999` turrets bolted to the wall, and a `fight` directive in a room
@@ -1163,7 +1235,7 @@ export const ROUTE = [
   ['wait', 120],
   ['loot', 1500],
 
-  // ------------------------------------------- d3 0,6,4 and 0,6,5 (S143)
+  // ------------------------------------------- d3 1,6,4 and 0,6,5 (S143)
   // THE SOUNDING WING. Clearing the Vault opens its east wall, and the third
   // key is two rooms in. A PLATE UNDER DEEP WATER IS ON THE BOTTOM: floating
   // over it does nothing, and the soles are armed on the bank so the pool is
@@ -1203,7 +1275,7 @@ export const ROUTE = [
   ['exit', 'left', 300],
   ['wait', 60],
 
-  // ---------------------------------------------------------------- d3 0,5,3
+  // ---------------------------------------------------------------- d3 1,5,3
   // Back up into the Hall and through the key door in its north wall — the
   // third key, and the way into the Kelp Locks.
   ['goto', 7, 1, 900],
@@ -1215,7 +1287,7 @@ export const ROUTE = [
   ['hold', ['up'], 60],
   ['wait', 90],
 
-  // ---------------------------------------------------------------- d3 0,4,2
+  // ---------------------------------------------------------------- d3 1,4,2
   // THE KELP LOCKS, AND BOTH LAYERS IN ONE CROSSING. On the surface: into the
   // east lane, up it on the current, left into the top lane and west on the
   // current to the last gate, which runs against you. There, sink — in the
@@ -1231,7 +1303,7 @@ export const ROUTE = [
   ['exit', 'left', 300],
   ['wait', 90],
 
-  // ---------------------------------------------------------------- d3 0,3,2
+  // ---------------------------------------------------------------- d3 1,3,2
   // The Lock Gallery. The plate beside its west door opens the shortcut back
   // to Bogmaw Hall, and the boss door is in its north wall. THE SEA GOES TO
   // LOW BEFORE THE DOOR IS OPENED, NOT AFTER: the arena is `noTide`, so it
@@ -1253,7 +1325,7 @@ export const ROUTE = [
   // 66-68 (17/28 at 52, the S166 margin) and loses between. Thin; item 5.
   ['wait', 52],     // S166: 58-70 win (waitInvuln, below), was 165
 
-  // ---------------------------------------------------------------- d3 0,3,1
+  // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
   // not general: the boss sheds gels, and read hit by hit, ten of the
   // fourteen hits that used to kill the actor came from the swarm and exactly

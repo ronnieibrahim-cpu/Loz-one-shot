@@ -37,7 +37,9 @@ function sillsOf(def) {
 
 /**
  * Flood one dungeon map from its start room. `opts.whirl: false` floods as
- * if no whirlpool took anyone anywhere (tools/check-whirlpool.mjs asks it).
+ * if no whirlpool took anyone anywhere (tools/check-whirlpool.mjs asks it);
+ * `opts.drop: false` as if no drop hole or cracked floor did, and
+ * `opts.dropSkip: rk` as if room rk's did not (tools/check-shafts.mjs).
  *
  * Returns:
  *   seen         Set<'rk:x,y'>  every cell the flood actually stood on
@@ -158,23 +160,43 @@ export function floodDungeon(mapId, opts = {}) {
   // opens is not a wall — the flood cannot solve a puzzle, turn a wheel, or
   // grow a pillar; asserting each is actually achievable is solve-switches.mjs
   // / check-bellows.mjs / check-reefseed.mjs's job, not this flood's.
-  const puzzleDoors = new Set();
+  //
+  // A PUZZLE IS SOLVED IN ITS OWN ROOM (S181). Each door remembers the room
+  // whose puzzle opens it, and is only a way through once the flood has stood
+  // in that room: the Drain Weir's shutter opens from the Drain Weir, and
+  // before this the flood walked in through it from the Pens. A door that is
+  // met before its room is reached waits in `puzzleWait` and is released by
+  // the same outer loop that spends keys.
+  const puzzleOwner = new Map();   // 'rk:x,y' -> the room whose puzzle opens it
   for (const [rk, def] of Object.entries(m.roomDefs)) {
-    for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
+    for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleOwner.set(`${rk}:${dx0},${dy0}`, rk);
     for (const B of sillsOf(def)) {
-      for (const [dx0, dy0] of B.opens || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
+      for (const [dx0, dy0] of B.opens || []) puzzleOwner.set(`${rk}:${dx0},${dy0}`, rk);
     }
     if (def.reefseedRoom && def.reefseedRoom.snarl) {
       const [sx0, sy0] = def.reefseedRoom.snarl;
-      puzzleDoors.add(`${rk}:${sx0},${sy0}`);
+      puzzleOwner.set(`${rk}:${sx0},${sy0}`, rk);
     }
   }
-  for (const k of [...puzzleDoors]) {
+  for (const [k, own] of [...puzzleOwner]) {
     const [rk0, xy0] = k.split(':');
     const [x0, y0] = xy0.split(',').map(Number);
     const p0 = partnerOf(rk0, x0, y0);
-    if (p0) puzzleDoors.add(`${p0[0]}:${p0[1]},${p0[2]}`);
+    if (p0) puzzleOwner.set(`${p0[0]}:${p0[1]},${p0[2]}`, own);
   }
+  const puzzleDoors = new Set(puzzleOwner.keys());
+  const roomsStood = new Set();
+  const puzzleWait = new Set();
+  // Is this puzzle door open to a flood that has stood in `roomsStood`? A door
+  // that is not, but will be, is remembered for the outer loop.
+  const puzzleOpen = (rk, x, y) => {
+    const k = `${rk}:${x},${y}`;
+    const own = puzzleOwner.get(k);
+    if (own == null) return false;
+    if (roomsStood.has(own)) return true;
+    puzzleWait.add(k);
+    return false;
+  };
   // FIRE IS TRAVERSAL TOO (S160). Drift-tangle and the Salt Pan's dry kelp
   // burn, and burnt they are floor — the Kilnshell's movement verb. The shell
   // comes out of the Reef Hollow on foot with nothing but the conch, so every
@@ -187,6 +209,30 @@ export function floodDungeon(mapId, opts = {}) {
     const d = room.tile(x, y, t);
     return !!(transformFor(room.baseName(x, y), 'fire') || (d && transformFor(d.name, 'fire')));
   });
+  // A DROP HOLE IS TRAVERSAL, AND SO IS A CRACKED FLOOR (S181, the Bogwater
+  // Sanctum). A cell that is a drop hole at some sea (F.DROP: open at LOW,
+  // sunk down with the Cleats when flooded) or a cracked floor (which becomes
+  // one when stood on) takes the player to the same cell of the room directly
+  // beneath, one floor down (`Game.dropThroughHole`) — if that cell is
+  // somewhere he can land at some sea, and not a pit. Only down. The flood
+  // steps INTO a hole from beside it, since at LOW the hole itself is not
+  // standable. Which sea makes which hole land is tools/check-shafts.mjs's to
+  // prove in the engine; this, like every clause here, asks only whether a
+  // way exists at some sea — the Anchor is held from D1, so two floors at two
+  // seas is always on the table.
+  const dropAt = (room, x, y) => [0, 1, 2].some(t => {
+    const d = room.tile(x, y, t);
+    return !!((d.flags & F.DROP) || d.crack);
+  });
+  const landAt = (room, x, y) => x >= 0 && y >= 0 && x < room.tw && y < room.th
+    && [0, 1, 2].some(t => !(room.flagsAt(x, y, t) & F.PIT) && walkableAt(room, x, y, t));
+  const tryDrop = (rk, x, y) => {
+    if (opts.drop === false || opts.dropSkip === rk) return;
+    const D = dims.get(rk);
+    if (!dropAt(ROOMS.get(rk), x, y)) return;
+    const below = `${D.f - 1},${D.rx},${D.ry}`;
+    if (m.roomDefs[below] && landAt(ROOMS.get(below), x, y)) push(below, x, y);
+  };
   const isLock = (room, x, y) => room.baseName(x, y) === 'dDoorLocked';
   const isBossDoor = (room, x, y) => room.baseName(x, y) === 'dDoorBoss';
 
@@ -242,6 +288,7 @@ export function floodDungeon(mapId, opts = {}) {
     const k = rk + ':' + x + ',' + y;
     if (seen.has(k)) return;
     seen.add(k); q.push([rk, x, y]);
+    roomsStood.add(rk);
   };
   const sdD = dims.get(seedRoom);
   const sdRoom = ROOMS.get(seedRoom);
@@ -265,6 +312,7 @@ export function floodDungeon(mapId, opts = {}) {
         const below = `${D.f - 1},${D.rx},${D.ry}`;
         if (m.roomDefs[below]) push(below, x, y);
       }
+      tryDrop(rk, x, y);
       if (canCoin) {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const lx = x + dx * COIN_TILES, ly = y + dy * COIN_TILES;
@@ -293,7 +341,8 @@ export function floodDungeon(mapId, opts = {}) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = x + dx, ny = y + dy;
         if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
-          if (passable(room, nx, ny) || puzzleDoors.has(`${rk}:${nx},${ny}`) || burnable(room, nx, ny)) push(rk, nx, ny);
+          tryDrop(rk, nx, ny);
+          if (passable(room, nx, ny) || puzzleOpen(rk, nx, ny) || burnable(room, nx, ny)) push(rk, nx, ny);
           else if (ledgeDir(room, nx, ny) === DIR_OF[dx + ',' + dy]) {
             let n = 1;
             while (n < 3) {
@@ -311,9 +360,19 @@ export function floodDungeon(mapId, opts = {}) {
         const out = stepOut(rk, nx, ny);
         if (!out) continue;
         const [nk, tx, ty] = out;
-        if (passable(ROOMS.get(nk), tx, ty) || puzzleDoors.has(`${nk}:${tx},${ty}`) || burnable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty);
+        if (passable(ROOMS.get(nk), tx, ty) || puzzleOpen(nk, tx, ty) || burnable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty);
       }
     }
+    // A puzzle door whose room the flood has now stood in is open: step
+    // through it from whichever side met it.
+    for (const k of [...puzzleWait]) {
+      const [rk0, xy0] = k.split(':');
+      if (!roomsStood.has(puzzleOwner.get(k))) continue;
+      puzzleWait.delete(k);
+      const [x0, y0] = xy0.split(',').map(Number);
+      if (!seen.has(k)) { push(rk0, x0, y0); progress = true; }
+    }
+    if (progress) continue;
     for (const l of lockedSeen) {
       const parts = l.split(':');
       const isBoss = parts[2] === 'boss';

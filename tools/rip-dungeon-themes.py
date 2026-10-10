@@ -687,6 +687,17 @@ PICKS = [
     meta('cStairsDown', 0x45, 'the stair down, the Explorer\'s Crypt', 'cryptMeta'),
     meta('bStairsUp', 0x44, 'the stair up, the Poison Moth\'s Lair', 'mothMeta'),
     meta('bStairsDown', 0x45, 'the stair down, the Poison Moth\'s Lair', 'mothMeta'),
+    # THE SANCTUM'S DROP HOLE AND CRACKED FLOOR (S181), from the same tileset.
+    # TILEINDEX_WARP_HOLE $48 and its three neighbours: the cartridge lays a
+    # run of hole with $49 where floor is above it (a lip on its top two rows),
+    # $4a where floor is below (a lip on its bottom row) and $4b where both are
+    # (room $553, the Moth's Lair 1F ring of holes). TILEINDEX_CRACKED_FLOOR
+    # $4d is the floor that gives way (room $54c).
+    meta('bHole', 0x48, 'the drop hole, inside a run, the Poison Moth\'s Lair', 'mothMeta'),
+    meta('bHoleN', 0x49, 'the drop hole, floor above it, the Poison Moth\'s Lair', 'mothMeta'),
+    meta('bHoleS', 0x4a, 'the drop hole, floor below it, the Poison Moth\'s Lair', 'mothMeta'),
+    meta('bHoleNS', 0x4b, 'the drop hole, floor above and below, the Poison Moth\'s Lair', 'mothMeta'),
+    meta('bCrack', 0x4d, 'the cracked floor, the Poison Moth\'s Lair', 'mothMeta'),
     meta('xStairsUp', 0x44, 'the stair up, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('xStairsDown', 0x45, 'the stair down, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('rStairsUp', 0x44, 'the stair up, the Ancient Ruins', 'ruinsMeta'),

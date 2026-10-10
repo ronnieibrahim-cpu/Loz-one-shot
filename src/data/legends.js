@@ -295,6 +295,16 @@ export function installLegends() {
   // The Sanctum is built at Oracle size (S139): its way out is the Moth's
   // Lair's lit step between two green pillars in the south wall, `(C)`.
   registerLegend('dungeonBog', { 'C': 'dExitBog', '(': 'dPillarBogW', ')': 'dPillarBogE' }, 'dungeonBog');
+  // Its drop hole and cracked floor (S181). `5` is the SHAFT — a hole at LOW,
+  // flooded above it — and a digit because it is a tide tile; `5` is the
+  // outdoor `channel`, which no indoor room places (the Spire's and the
+  // Shrine's argument). `K` is the cracked floor on dry ground and `8` the
+  // cracked floor in the bottom of a sluice pool; `8` is the outdoor
+  // `tideRock`, which no Sanctum room places, and `K` is free in the shared
+  // legend.
+  registerLegend('dungeonBog', { '5': 'dShaftBog', 'K': 'dCrackBog', '8': 'dCrackPoolBog' }, 'dungeonBog');
+  // Its ledges are the Lair's own wall runs (S181; see `dLedgeBogS`).
+  registerLegend('dungeonBog', { '_': 'dLedgeBogS', '>': 'dLedgeBogE', '<': 'dLedgeBogW', '"': 'dLedgeBogN' }, 'dungeonBog');
   // The Coral Spire needs two tiles no other dungeon has, for the Reefseed
   // grove in the Whelk Hollow, and every digit in the shared vocabulary is
   // already spoken for. `5` (`channel`) is an OUTDOOR tile that no indoor room
