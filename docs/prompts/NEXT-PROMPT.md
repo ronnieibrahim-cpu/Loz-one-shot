@@ -1,34 +1,31 @@
-# Next session (S181) — build D3's two floors
+# Next session (S182) — finish D3: P5 and P6
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/briefs/DUNGEON-DESIGN-LANGUAGE.md (S180: how Ages builds a dungeon).
-- docs/briefs/D3-BOGWATER-SANCTUM.md and its pictures in docs/briefs/d3-mock/.
-- docs/NEXT-SESSION.md S180, then S179; docs/HANDOFF.md lessons.
+- docs/briefs/D3-BOGWATER-SANCTUM.md (its S181 status block first) and
+  d3-mock/s181-built.png; docs/briefs/DUNGEON-DESIGN-LANGUAGE.md.
+- docs/NEXT-SESSION.md S181, then S180; docs/HANDOFF.md lessons (top four).
 
 ## State
-- S180 is on claude/tides-dungeon-design-language-k6kssf (merge into main
-  only at the human's word). No game change in S180; the table was green
-  at S179 (check-playthrough 44/44, THE END, never died).
-- The human has seen the D3 mock and answered (or will answer) the brief's
-  three open questions. BUILD WHAT THEY CHOSE; ask before anything bigger.
+- S181 is on claude/s181-bogwater-sanctum (merge into main only at the
+  human's word). The Sanctum has two floors; P1-P4 built; the table is green
+  (check-playthrough 45/45, THE END, never died).
+- The human chose: holes open at LOW only; a crack shows only while dry.
 
 ## The task
-Build the Bogwater Sanctum's Undercroft and the six puzzles per the brief:
-1. Rip the shaft (Moth's Lair warp hole $48-$4b) and cracked floor ($4d)
-   from tileset $39; never hand-draw them.
-2. Engine: the shaft (LOW drop to the same spot one floor down, a drop onto
-   a pit is a pit fall upstairs; sinking at MID/HIGH goes down it), the crack
-   (32 frames standing -> shaft, persisted, SND_RUMBLE), timings in feel.js
-   with provenance.
-3. Teach tools/lib/dungeon-flood.mjs both verbs IN THE SAME COMMIT; write
-   check-shafts.mjs; room claims for P2-P6 proved both ways.
-4. Renumber d3 to two floors (Bog = 1, Undercroft = 0); rooms per the plan,
-   each with interior geometry; keys per the brief's table.
-5. check-side whole-dungeon scenario; re-route the robot; re-shoot the guide.
+1. P5: the Sump (B1, under the Cistern Floor's well) — sink down the well,
+   the plate on its bottom opens the Undertow's west door and the Sump's
+   shutter; the Undertow Cellar back to the Root Cellar. Gate the west wing
+   (Small Key 3) behind it.
+2. P6: the Weir's pool crack (`8`) over the Reliquary — damp, two torches
+   lit by a Kilnshell carried down the hole at LOW, the Boss Key; its stair
+   up to a Weir alcove left by a ledge. Move the Boss Key out of the Drain
+   Gallery. Claims: shaftRoom + check-kiln.
+3. The Reed Undercroft (optional), the brief's key table, a check-side run
+   of the whole dungeon door to boss, the robot re-routed, the guide re-shot.
 
 ## Done means
-- Whole table green; check-playthrough 44/44 or more, THE END, never died.
+- Whole table green; check-playthrough 45/45 or more, THE END, never died.
 - npm run build, dist/ committed, NEXT-SESSION.md and this file updated,
   pushed; ask before moving main.
 

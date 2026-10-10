@@ -1,7 +1,18 @@
-# D3 — the Bogwater Sanctum, grown to two floors (S180 design, NOT YET BUILT)
+# D3 — the Bogwater Sanctum, grown to two floors (S180 design; P1-P4 BUILT S181)
 
-**Status: a proposal shown to the human as a mock (S180). Nothing in `src/`
-has changed. Build only what the human approved — see "Open questions".**
+**Status (S181): the human answered the three questions — (1) holes open at
+LOW ONLY, (2) a crack shows only while it is dry, (3) P1-P4 first. P1-P4, the
+Undercroft Landing, the Three Pens, the Drain Weir, the Root Cellar and the
+Silt Stair are built (`1e10fcf`); what it looks like beside Seasons is
+`d3-mock/s181-built.png`. P5 (the Sump), P6 (the Weir's crack and the
+Reliquary) and the Undertow Cellar and Reed Undercroft are NEXT. Differences
+from the text below, as built: the key pen is the Pens' SOUTH-EAST one; the
+Hub's fourth (south-west) hole is a declared decoy over the Pens' pit; P1 is
+not the only way down (the Hub's pens are left into the same corridor), and is
+the safe first hole; the Nave's and Map Cell's stairs up arrive on a fenced
+dais left by a ledge; the pens' ledges are the Lair's wall runs ($b0-$b3, as
+Seasons draws a raised floor's edge); Key 3 is still the Vestry's and the Boss
+Key is still in the Drain Gallery until P5/P6 move them.**
 
 Written against docs/briefs/DUNGEON-DESIGN-LANGUAGE.md; read that first.
 Pictures: `d3-mock/d3-plan.png` (both floors), `d3-mock/mock-holes.png`

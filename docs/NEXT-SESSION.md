@@ -1,3 +1,76 @@
+## S181 — the Bogwater Sanctum's cellar: drop holes, cracked floor, P1-P4 built
+
+Branch claude/s181-bogwater-sanctum, off main at f84b1d9 with S180's branch
+(claude/tides-dungeon-design-language-k6kssf) merged in. NOT merged to main:
+ask the human.
+
+### The human's answers to the D3 brief's three questions
+1. The shaft is an open hole at LOW ONLY; flooded (deep) at MID and HIGH.
+2. A cracked floor in a pool shows and breaks only while dry (LOW).
+3. P1-P4 this session; P5-P6 next.
+
+### What landed
+- RIPPED (rip-dungeon-themes.py, mothMeta = Seasons tileset $39): the warp
+  hole $48 and its lip variants $49/$4a/$4b (the cartridge picks by whether
+  floor is above/below: room $553), and the cracked floor $4d (room $54c).
+  Tiles: `dHoleBog` (+N/S/NS, chosen by a new tiledef `lip` field in
+  Room.artAt), `dShaftWaterBog`, the tide tile `dShaftBog` (Bog legend `5`),
+  `dCrackBog` (`K`), `dCrackPoolBog` (`8`: a crack only at LOW, water above).
+- THE SANCTUM'S OWN LEDGES: Seasons dungeons have no ledge tile; cliffTiles.s
+  @dungeons jumps Link off the wall runs $b0-$b3. `dLedgeBogS/E/W/N` draw
+  bRingN/W/E/S with the ledge flags; the Bog legend points `_ > < "` at them.
+- ENGINE: F.DROP (bit 25, was MAGNETIC). A hole carries PIT|DROP; the fall is
+  the pit fall (FALL_FRAMES), centred on the tile (warpTransition9), and at its
+  end Game.dropThroughHole asks Game.holeLanding (the room below, canOccupy
+  there at this sea, no pit underfoot): yes -> warp down, Link falls in from
+  above the screen (DROP_IN_SPEED/GRAVITY/MAX_HEIGHT, TRANSITION_DEST_FALL)
+  and lies flat DROP_IN_COLLAPSE_FRAMES (link_lie); no -> an ordinary pit
+  fall upstairs. Sunk with the Cleats over a flooded shaft -> straight down.
+  Player.updateCrack: CRACK_BREAK_FRAMES (32) on one tile -> Game.breakCrack
+  (tile -> its `crack`, persisted, the cartridge's SND_RUMBLE = doorRumble).
+  All constants in feel.js, derived, with their cartridge routines.
+- D3 RENUMBERED: the Bog is floor 1 (`1,x,y`), the Undercroft floor 0.
+  startRoom '1,3,7', bossRoom '1,3,1', overworld door floor 1, every tool
+  reference moved; old saves move up a floor (progress.migrate, d3Floors: 2;
+  test.mjs proves it). Game.startGaleWarp accepts a 3-part startRoom.
+- ROOMS (P1-P4): Drowned Nave (3x3 shaft; stair dais NW), Bog Hub (four 2x2
+  shafts; east door locked), Sluice Cell (shaft in a block-ringed pool; its
+  old switch puzzle is gone), Silt Cell (crack in an alcove; the Chartstone
+  moved down), Map Cell (stair dais SE). Undercroft: Landing 0,3,6, Three
+  Pens 0,3,5 (key 1 in the SE pen; SW hole is a declared decoy over a pit),
+  Drain Weir 0,4,5 (key 2; shutter west opens when its chest is opened),
+  Root Cellar 0,2,4 (Chartstone), Silt Stair 0,2,5. Keys: 4 now (Pens ->
+  Hub east door; Drain Weir -> Weir north door; Vestry -> Drain Gallery;
+  Two Weights -> Eel Hall north). Boss Key still in the Drain Gallery.
+- TOOLS: dungeon-flood learned drops and cracks (opts.drop / dropSkip) AND
+  that a puzzle door opens only once its puzzle's room is reached. New
+  tools/check-shafts.mjs (152 assertions; in CLAUDE.md's table). check-side:
+  a one-run Undercroft scenario (door to the Weir's door). Route re-routed
+  (Nave fought at MID; Hub dropped at LOW; Anchor at 7,6 then MID; crack
+  stood on). check-playthrough gained "dropped into the Undercroft": 45/45.
+- GUIDE: chapter 7 rewritten, Undercroft map, stops renumbered, every shot
+  after D3 remapped by an LCS of old vs new route and re-captured.
+  Comparison picture: docs/briefs/d3-mock/s181-built.png.
+
+### Verified
+Whole table green: test 136/136, check-shafts 152, check-side 37/37,
+walk-dungeons, dungeon-strands, replay 51/51 (d3-undertow re-recorded for its
+new room key), check-playthrough 45/45, THE END, never died. Build committed.
+
+### NEXT (S182): P5 and P6 per the brief
+- P5 the Sump (B1 3-4,3, two screens wide) under the Cistern Floor's well:
+  sink down the well with the Cleats (the engine already does it), plate on
+  the bottom opens the Undertow's west door upstairs and the Sump's shutter;
+  the Undertow Cellar (0,2,3) back to the Root Cellar. Small Key 3 moves to
+  the Sunken Vestry behind that door (it is there already; gate it).
+- P6 the Weir's crack (`8` in its pool) over the Reliquary (0,3,4, damp, two
+  torches, the Boss Key; stair up to a Weir alcove left by a ledge). The Boss
+  Key moves out of the Drain Gallery. Claims via check-kiln (kilnRoom) and a
+  shaftRoom claim; the Reed Undercroft (0,4,4) optional.
+- Leftovers: Link's fall-in pose uses his standing frame (the cartridge's
+  LINK_ANIM_MODE_FALL is not ripped); the guide's Sluice Cell LOW picture
+  does not show the Anchor's sprite at the frame it bites (the MID one does).
+
 ## S180 — Ages' dungeon language studied; D3's two floors designed and mocked (NOT built)
 
 Branch claude/tides-dungeon-design-language-k6kssf, off main at f84b1d9 (S179

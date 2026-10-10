@@ -447,6 +447,27 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A flood that walks through a puzzle door from either side is wrong the
+  first time a door opens from one side only (S181).** The Drain Weir's
+  shutter opens when its key is taken, from inside; the dungeon flood treated
+  every puzzle door as open from the start, so the Weir looked reachable from
+  the Pens and the claim "only the shaft reaches it" failed. A puzzle door now
+  opens only once the flood has stood in the room whose puzzle opens it. Ask
+  of any "this door is open" shortcut: open from WHERE?
+- **Centre the faller on the hole (S181).** Link stepping into a hole's edge
+  had his box half over the wall beside the landing cell below, so a good
+  landing read as no landing and he took a pit fall. The cartridge centres
+  him on the tile as the fall begins (warpTransition9, objectCenterOnTile).
+  Read what the cartridge does to the position before a warp, not only after.
+- **Seasons has no indoor ledge tile (S181).** cliffTiles.s @dungeons lists
+  only the wall runs $b0-$b3: a raised floor's edge IS the wall's face, and
+  Link hops off it. The shared grey `dLedge` over a borrowed floor was never
+  the source; the Sanctum's ledges are its own wall runs now (`dLedgeBog*`).
+  D4-D6's ledges, if they get any, want the same.
+- **The robot walks into holes (S181).** `loot` and `fight` path straight at
+  things, and a fairy over a hole is a fall. Fight a hole room at a sea that
+  floods it, and sound the low sea only when the hole is the point.
+
 - **A scripted pad decides its buttons a frame before the game reads them
   (S179).** The robot's mask asked "would a press restart the swing?" of
   the player as it stood, and the game answered the question a frame later,
