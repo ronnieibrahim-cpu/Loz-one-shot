@@ -1690,19 +1690,29 @@ export function installDungeonsA() {
         // Its key door is in the north wall and gates the Cistern Floor, not
         // the room: the Chartstone and the Piece of Heart either side of it
         // are walked with the key still in hand.
+        //
+        // P6 (S182): THE CRACK IN THE POOL. At LOW the sluice pool is dry, and
+        // a crack in its middle shows (above LOW the water hides it). It is on
+        // the line from the south door to the north one, so it is walked over
+        // on the way to the Cleats and never breaks; stood on, it gives way
+        // into the Reliquary, which no water may touch. The alcove in the
+        // north-east corner is where the Reliquary's stair comes up: walled in
+        // and left by its ledge, so it is never a way down.
         map: [
           '#######L#######',
-          '#.............#',
-          '#..U.......U..#',
-          '#.............#',
+          '#..........#./#',
+          '#..U.......#..#',
+          '#..........#__#',
           '#.............#',
           '...............',
           '#.............#',
-          '#.11111111111.#',
+          '#.11111811111.#',
           '#.............#',
           '#.............#',
           '#######.#######',
         ],
+        warps: [stair3(13, 1, P3(0, 3, 4, 13, 2, 'down'))],
+        shaftRoom: { lands: [[7, 7]] },
         entities: [
           ['crab', 3, 6],
           ['urchin', 11, 4],
@@ -1733,19 +1743,24 @@ export function installDungeonsA() {
       },
       '1,4,4': {
         name: 'Reed Cell',
+        // A crack in the dry north-east corner (S182) lets down into the Reed
+        // Undercroft, which is optional; its stair comes back up onto the
+        // fenced step in the south-west corner, left by its ledge.
         map: [
           '###############',
           '#.............#',
-          '#...3333333...#',
+          '#...3333333.K.#',
           '#...3333333...#',
           '#...3333333...#',
           '....3333333...#',
           '#...3333333...#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
+          '#"=...........#',
+          '#.=...........#',
+          '#/=...........#',
           '###############',
         ],
+        warps: [stair3(1, 9, P3(0, 4, 4, 2, 8, 'down'))],
+        shaftRoom: { lands: [[12, 2]] },
         entities: [
           ['jellyfish', 7, 4],
           ['crab', 11, 8],
@@ -1817,10 +1832,16 @@ export function installDungeonsA() {
         // sea arrives. It reaches only the door you came in by: both ways
         // ONWARD — west to the Undertow, east to the Bogwater Drain — are deep
         // water.
+        //
+        // P5 (S182): THE WELL. North of the island a sluice basin — dry at LOW,
+        // shallow at MID, deep at HIGH — holds a shaft over the Sump. At LOW it
+        // is a hole over the Sump's dry pits, and a fall is only a fall; above
+        // LOW it is flooded, and a player walking the bottom with the Cleats he
+        // has just opened goes down it to the Sump's floor.
         map: [
           '###############',
-          '#WWWWWWWWWWWWW#',
-          '#WWWWWWWWWWWWW#',
+          '#WWWW11111WWWW#',
+          '#WWWW15551WWWW#',
           '#WWWW.....WWWW#',
           '#WWWW.....WWWW#',
           '.WWWW.....WWWW.',
@@ -1833,9 +1854,14 @@ export function installDungeonsA() {
         entities: [
           ['chest', 7, 4, { big: true, item: 'cleats', level: 1 }],
         ],
+        // The Sump's plate is reached by nothing but this well.
+        shaftRoom: { lands: [[24, 5]] },
+        readable: [],
       },
       '1,2,3': {
         name: 'The Undertow',
+        // The west door is shut until the plate on the Sump's floor is pressed
+        // (P5, S182): the west wing — the Vestry, Bogmaw — is behind it.
         // Torrent room 1. The whole floor of the room runs east, back toward
         // the island you came from; a bank down each side is where the doors
         // are. On the surface the current carries you home. Out, it is a
@@ -1846,14 +1872,14 @@ export function installDungeonsA() {
           '#.TTTTTTTTTTT.#',
           '#.TTTTTTTTTTT.#',
           '#.TTTTTTTTTTT.#',
-          '..TTTTTTTTTTT..',
+          'D.TTTTTTTTTTT..',
           '#.TTTTTTTTTTT.#',
           '#.TTTTTTTTTTT.#',
           '#.TTTTTTTTTTT.#',
           '#.TTTTTTTTTTT.#',
           '###############',
         ],
-        cleatRoom: { from: [14, 5], to: [0, 5] },
+        cleatRoom: { from: [14, 5], to: [1, 5] },
         readable: [],
       },
       '1,1,3': {
@@ -1866,7 +1892,7 @@ export function installDungeonsA() {
           '#.............#',
           '#.............#',
           '#....11111....#',
-          '#....11111.....',
+          '#....11111....D',
           '#....11111....#',
           '#.............#',
           '#.............#',
@@ -1940,8 +1966,10 @@ export function installDungeonsA() {
       },
       '1,1,2': {
         name: 'Drain Gallery',
-        // The Boss Key stands inside a ring of wells — wading water at LOW and
-        // over your head above it. The ring is open to the south.
+        // Small Key 4 stands inside a ring of wells — wading water at LOW and
+        // over your head above it. The ring is open to the south. It was the
+        // Boss Key until S182 (now the Reliquary's); this key opens the Eel
+        // Hall's west door, so the west wing is the way to the east.
         map: [
           '###############',
           '#.............#',
@@ -1956,7 +1984,7 @@ export function installDungeonsA() {
           '#######L#######',
         ],
         entities: [
-          ['chest', 7, 4, { pickup: 'bossKey' }],
+          ['chest', 7, 4, { pickup: 'key' }],
           // A KEESE, NOT A JELLYFISH. A jellyfish is kept on wet tiles by
           // `terrainOk`, and at LOW there are none here to be on: it was
           // scenery with a hitbox. See tools/check-placement.mjs.
@@ -1995,14 +2023,14 @@ export function installDungeonsA() {
           '#.ttt..p..ttt.#',
           '#.ttttttttttt.#',
           '#.ttttttttttt.#',
-          '..ttttttttttt..',
+          '..ttttttttttt.L',
           '#.ttttttttttt.#',
           '#.ttttttttttt.#',
           '#.ttt.....ttt.#',
           '#.ttt..U..ttt.#',
           '###############',
         ],
-        cleatRoom: { from: [0, 5], to: [14, 5] },
+        cleatRoom: { from: [0, 5], to: [13, 5] },
         entities: [
           ['pickup', 7, 8, { kind: 'fairy' }],
         ],
@@ -2034,7 +2062,7 @@ export function installDungeonsA() {
           '#.U.......U.........###........###..........#',
           '#...................###........###..........#',
           '#............ttttttttttttttttttttttttttttt..#',
-          '.............ttttttttttttttttttttttttttttt..#',
+          'L............ttttttttttttttttttttttttttttt..#',
           '#............ttttttttttttttttttttttttttttt..#',
           '#...................###........###..........#',
           '#.U.......U.........###........###..........#',
@@ -2050,7 +2078,7 @@ export function installDungeonsA() {
           ['barnacle', 37, 1],
           ['chest', 43, 5, { pickup: 'rupee100' }],
         ],
-        cleatRoom: { from: [0, 5], to: [43, 5] },
+        cleatRoom: { from: [1, 5], to: [43, 5] },
         readable: [
           [10, 2, 'Scratched into the statue: "The eels swim\nhome with the current. The eel-catcher walks\nout under it."'],
         ],
@@ -2377,13 +2405,16 @@ export function installDungeonsA() {
       '0,2,4': {
         name: 'The Root Cellar',
         // P4 lands here, under the Silt Cell's crack: the Chartstone, and the
-        // way on through the Silt Stair.
+        // way on through the Silt Stair. North is the Undertow Cellar (S182),
+        // so the cellar is also walked into from the Sump's side — which is why
+        // the crack lands on a raised corner, left by its ledge, with the
+        // Chartstone on it: the floor is a loop, the corner is the crack's.
         map: [
-          '###############',
-          '#.............#',
-          '#.............#',
-          '#...=.....=...#',
-          '#.............#',
+          '#######.#######',
+          '#...>.........#',
+          '#...>.........#',
+          '#...>.....=...#',
+          '#___=.........#',
           '#.............#',
           '#.............#',
           '#...=.....=...#',
@@ -2392,8 +2423,140 @@ export function installDungeonsA() {
           '#######.#######',
         ],
         entities: [
-          ['chest', 7, 5, { pickup: 'chartstone' }],
+          ['chest', 3, 2, { pickup: 'chartstone' }],
         ],
+      },
+      // ---- P5 and P6 (S182) ------------------------------------------------
+      '0,3,3': {
+        name: 'The Sump',
+        // P5: UNDER THE CISTERN FLOOR'S WELL, two screens wide. At LOW its floor
+        // is a field of dry pits and the well above is a hole into one of them;
+        // above LOW it is over your head, and a player who sinks down the well
+        // with the Cleats lands on the bottom. The plate is on that bottom, in a
+        // basin deep at every sea, and only a body walking the floor presses it
+        // (`FloorSwitch.sunk`). It opens two doors: the Undertow's west door
+        // upstairs, the way to the west wing, and this room's own shutter, the
+        // way out through the Undertow Cellar. A switch here, a gate there.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#0000000000000==0000000000000#',
+          '#0000000000000==0000=00000000#',
+          '#..00000000000==000000WWWWW00#',
+          '#..0000000000000000000WWWWW00#',
+          'D..0000000000000000000WWWWW00#',
+          '#..0000000000000000000WWWWW00#',
+          '#..00000000000==000000WWWWW00#',
+          '#00000=000=000==0000=00000000#',
+          '#0000000000000==0000000000000#',
+          '##############################',
+        ],
+        sunkPlates: [[24, 5]],
+        entities: [
+          ['switch', 24, 5, { hold: false }],
+          ['jellyfish', 23, 3],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_sump',
+          reward: {
+            openDoors: [[0, 5]],
+            openDoorsIn: [['1,2,3', 0, 5]],
+            say: 'Far above, a gate grinds open.',
+          },
+        },
+      },
+      '0,2,3': {
+        name: 'The Undertow Cellar',
+        // Under the Undertow. Met early, from the Root Cellar, as a fight and a
+        // shut door east; the Sump opens it from the other side.
+        map: [
+          '###############',
+          '#.U.........U.#',
+          '#.............#',
+          '#...=.....=...#',
+          '#.....222.....#',
+          '#.....222.....D',
+          '#.....222.....#',
+          '#...=.....=...#',
+          '#.............#',
+          '#.U.........U.#',
+          '#######.#######',
+        ],
+        entities: [
+          ['crab', 4, 5],
+          ['keese', 10, 2],
+        ],
+      },
+      '0,3,4': {
+        name: 'The Reliquary',
+        // P6: UNDER THE WEIR'S CRACK, and the room no water may touch: DAMP, so
+        // the Kilnshell will not strike here, and sealed — the only way in is
+        // the hole. Two torches stand either side of the Boss Key's dais. The
+        // fire has to come down from the Weir, dry, at LOW: Link lets go of
+        // what he holds as he falls (as in Seasons), and a lit shell that goes
+        // down a hole lands here still burning (Game.dropObjectThrough). The
+        // stair goes up into the Weir's walled alcove, left by its ledge.
+        damp: true,
+        map: [
+          '###############',
+          '#.U..........S#',
+          '#...,,,,,,,...#',
+          '#...,,,,,,,...#',
+          '#...,,,,,,,...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '###############',
+        ],
+        warps: [stair3(13, 1, P3(1, 3, 4, 13, 2, 'down'))],
+        entities: [
+          ['torch', 5, 3],
+          ['torch', 9, 3],
+          ['chest', 7, 3, { pickup: 'bossKey', needFlag: 'd3_reliquary' }],
+        ],
+        kilnRoom: { descend: { from: '1,3,4', hole: [7, 7] }, torches: [[5, 3], [9, 3]] },
+        puzzle: {
+          torches: 'all',
+          flag: 'd3_reliquary',
+          reward: { reveal: true, say: 'The two flames answer each other.\nSomething rises between them.' },
+        },
+        readable: [
+          [2, 1, 'Cut in the urn: "No water comes here.\nWhat burns here came down dry."'],
+        ],
+      },
+      '0,4,4': {
+        name: 'The Reed Undercroft',
+        // Optional, under the Reed Cell's crack: a fight round the reed wells,
+        // and a chest for the player who stood still where nothing told him to.
+        // The stair goes back up onto the Reed Cell's fenced step.
+        map: [
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...33333.....#',
+          '#...33333..U..#',
+          '#...33333.....#',
+          '#.............#',
+          '#.U...........#',
+          '#.............#',
+          '#.S...........#',
+          '###############',
+        ],
+        warps: [stair3(2, 9, P3(1, 4, 4, 1, 8, 'up'))],
+        entities: [
+          ['jellyfish', 6, 4],
+          ['crab', 10, 7],
+          ['keese', 12, 6],
+          ['chest', 7, 8, { pickup: 'rupee100', needFlag: 'd3_reedunder' }],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd3_reedunder',
+          reward: { reveal: true, say: 'The reeds go still.' },
+        },
       },
       '0,2,5': {
         name: 'The Silt Stair',

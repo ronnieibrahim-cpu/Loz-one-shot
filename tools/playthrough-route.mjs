@@ -128,6 +128,14 @@ export const ROUTE = [
   ['use', 'conch', 2, 140],
   ['loot', 1500],
   ['dialogue', 400],
+  // THE KILNSHELL, opened on this first visit since S182: the Bogwater
+  // Sanctum's Boss Key is lit down a hole with it, so it is needed by D3, not
+  // by the Keep. (It used to be fetched on the trade-chain tour after D5.)
+  ['goto', 7, 6, 1200],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['wait', 240],
   ['goto', 5, 6, 400],
   // S150: no standing about at the door. The crab on the flats walks into a
   // player who waits here, and since contact is the cartridge's 12x12 on
@@ -1033,13 +1041,15 @@ export const ROUTE = [
   ['wait', 220],
 
   // ---------------------------------------------------------------- d3 0,2,4
-  // The Root Cellar: the Chartstone. Then the Silt Stair, and its stair up
-  // onto the Map Cell's dais, left by the dais's ledge.
-  ['goto', 7, 6, 600],
-  ['hold', ['up'], 6],
+  // The Root Cellar: the Chartstone, on the raised corner the crack lands on
+  // (S182), and off its ledge. Then the Silt Stair, and its stair up onto the
+  // Map Cell's dais, left by the dais's ledge.
+  ['hold', ['right'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
+  ['goto', 2, 3, 300],
+  ['hold', ['down'], 40],
   ['travel', 2, 5, 4000],
   ['goto', 12, 9, 900],
   ['hold', ['up'], 30],
@@ -1056,11 +1066,53 @@ export const ROUTE = [
   ['wait', 120],
   ['loot', 1500],
 
+  // ---------------------------------------------------------------- d3 1,3,4
+  // P6 (S182): THE WEIR'S CRACK, AND THE BOSS KEY. At LOW the crack in the
+  // dry pool gives way into the Reliquary, which is damp and sealed: nothing
+  // to light its torches with. Up its stair into the Weir's alcove, off the
+  // ledge; strike a Kilnshell facing the open hole and it falls down it, and
+  // Link after it. Lift it and throw it beside each torch; the Boss Key's
+  // chest rises between them.
+  ['travel', 3, 4, 4000],
+  ['goto', 7, 7, 600],
+  ['wait', 220],
+  ['goto', 13, 2, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  ['hold', ['down'], 40],
+  ['equip', 'kilnshell', 'B', 400],
+  ['goto', 7, 6, 600],
+  ['hold', ['down'], 2],
+  ['use', 'kilnshell', 1, 40],
+  ['hold', ['down'], 30],
+  ['wait', 150],
+
+  // ---------------------------------------------------------------- d3 0,3,4
+  ['lift', 600],
+  ['goto', 6, 6, 600],
+  ['hold', ['up'], 2],
+  ['tap', 'a', 60],
+  ['lift', 600],
+  ['goto', 8, 6, 600],
+  ['hold', ['up'], 2],
+  ['tap', 'a', 60],
+  ['dialogue', 400],
+  ['wait', 30],
+  ['goto', 7, 4, 600],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 900],
+  ['goto', 13, 2, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  ['hold', ['down'], 40],
+  ['equip', 'conch', 'B', 400],
+
   // ---------------------------------------------------------------- d3 1,3,3
   // THE CISTERN FLOOR, AND THE KELP-SOLED CLEATS. The island is ringed by
   // flat deep water at every tide; the causeway from the key door is the only
   // dry way onto it, and the way off it is the item in the chest.
-  ['travel', 3, 4, 4000],
   ['goto', 7, 1, 900],
   ['hold', ['up'], 40],
   ['wait', 60],
@@ -1069,6 +1121,41 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 600],
   ['loot', 900],
+
+  // ---------------------------------------------------------------- d3 0,3,3
+  // P5 (S182): THE WELL. At MID, sink into the well north of the island and
+  // land on the Sump's bottom; walk it to the plate, which opens the
+  // Undertow's west door upstairs and the Sump's own shutter. Up, across on
+  // the surface, out by the shutter, through the Undertow Cellar and the Root
+  // Cellar, up the Silt Stair, and back round to the Cistern at LOW.
+  ['tide', 1, 140, 900],
+  ['equip', 'cleats', 'B', 400],
+  ['goto', 7, 3, 600],
+  ['soles', 'sink', 240],
+  ['hold', ['up'], 60],
+  ['wait', 120],
+  ['goto', 24, 5, 1500],
+  ['wait', 20],
+  ['dialogue', 300],
+  ['soles', 'swim', 240],
+  ['goto', 2, 5, 1500],
+  ['exit', 'left', 300],
+  ['wait', 60],
+  ['fight', 3000, 1200],
+  ['travel', 2, 4, 4000],
+  ['travel', 2, 5, 4000],
+  ['goto', 12, 9, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  ['goto', 13, 8, 300],
+  ['hold', ['up'], 40],
+  ['travel', 3, 5, 4000],
+  ['travel', 3, 4, 4000],
+  ['equip', 'conch', 'B', 400],
+  ['tide', 0, 140, 900],
+  ['goto', 7, 1, 900],
+  ['hold', ['up'], 40],
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d3 1,2,3
   // WEST, ON THE SEAFLOOR. The soles go on B — the conch comes back to it
@@ -1101,7 +1188,8 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d3 1,1,2
   // The Drain Gallery, through the key door in the Vestry's north wall. The
-  // Boss Key stands in a ring of drains, open to the south.
+  // fourth Small Key (the Boss Key until S182) stands in a ring of drains,
+  // open to the south; it opens the Eel Hall's west door.
   ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
@@ -1150,7 +1238,10 @@ export const ROUTE = [
   // S179 again (the blade takes drops, so the run arrives with a different
   // history): thin — 38, 39, 41, 46 win hurt; 60, 62, 63 win untouched, and
   // 58, 61, 64, 66 lose. 62.
-  ['wait', 62],
+  // S182 (the Sanctum's cellar: the run arrives through the Sump, P6 and the
+  // Undertow Cellar on 21/28): 44-50 all win (44 and 46 on 27/28, the rest
+  // hurt), 20-43 and 56-120 lose. 46.
+  ['wait', 46],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
@@ -1193,6 +1284,9 @@ export const ROUTE = [
   ['hold', ['up', 'right'], 80],
   ['hold', ['right'], 300],
   ['goto', 13, 5, 200],
+  // The Eel Hall's west door is the fourth key's (S182).
+  ['hold', ['right'], 20],
+  ['tap', 'a', 30],
   ['exit', 'right', 200],
   ['wait', 60],
 
@@ -2348,27 +2442,9 @@ export const ROUTE = [
   ['trade', 4, 1200],
   ['travel', 9, 7, 4000], ['loot', 600],
   ['goto', 1, 4, 1500],
-  // THE KILNSHELL, AND IT IS FETCHED HERE BECAUSE THE RUN IS ALREADY STANDING
-  // ON THE DOORSTEP. Sunken Reef's cave mouth at 4,2 is the tile this leg has
-  // always had to steer AROUND — it sits in the middle of the row every
-  // westward path picks — so the one thing the route did with this cave was
-  // avoid walking into it by accident. What is inside it is the game's only
-  // fire: a cockle you set down alight, and the only way anything in the world
-  // lights a torch. Nothing before the Abyssal Keep needed one, which is why
-  // no run had ever opened this chest; the Keep's Black Kiln is four torches
-  // round a Small Key, and without the shell that key does not exist and the
-  // dungeon's fourth lock never opens.
-  ['goto', 4, 4, 1500],
-  ['goto', 4, 3, 900],
-  ['hold', ['up'], 60],
-  ['wait', 120],
-  ['goto', 7, 6, 1200],
-  ['hold', ['up'], 24],
-  ['tap', 'a', 30],
-  ['dialogue', 600],
-  ['wait', 240],
-  ['goto', 5, 6, 900],
-  ['wait', 120],
+  // Sunken Reef's cave mouth at 4,2 sits in the middle of the row every
+  // westward path picks, so the crossing is steered down onto row 4 first.
+  // (Its Kilnshell is opened on the first visit, before the Grotto, S182.)
   ['goto', 4, 4, 1500],
   ['goto', 8, 4, 1500],
   ['travel', 10, 7, 4000], ['loot', 600],

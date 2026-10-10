@@ -33,6 +33,8 @@ const setup = (o) => ({ ...BASE, ...o });
 
 // `expect` is evaluated in the page with the game as `g`; it returns true or
 // a string saying what was wrong.
+import { D3_RUN } from './playthroughs/d3-run.mjs';
+
 const SCENARIOS = [
   {
     name: 'Hollow Den: a bomb opens the cracked wall and the Piece of Heart is inside',
@@ -360,52 +362,43 @@ const SCENARIOS = [
   // whirlpool, and walk-dungeons that the rooms join up), and each is refused
   // at the sea that should refuse it.
   {
-    // THE SANCTUM'S UNDERCROFT IN ONE RUN (S181), from the Sanctum's mouth to
-    // the Weir's key door: P1 down the Nave's hole into the Landing; P2 down
-    // the Hub's south-east hole into the key pen; up the Landing's stair onto
-    // the Nave's dais and off its ledge; the first key in the Hub's east door;
-    // P3 the Anchor bitten beside the Sluice Cell's shaft at LOW and the conch
-    // to MID, down into the Drain Weir for the second key, whose shutter lets
-    // you out; the second key in the Weir's north door; P4 the Silt Cell's
-    // crack stood on until it gives way, the Chartstone in the Root Cellar,
-    // and up the Silt Stair onto the Map Cell's dais. S162's rule: a dungeon
-    // proved room by room was never proved.
-    name: "The Bogwater Sanctum: one run through the Undercroft — both keys, the Chartstone, the Weir's door",
-    setup: setup({ items: { sword: 2, conch: 1, anchor: 1 }, equipA: 'sword', equipB: 'conch',
+    // THE REED UNDERCROFT (S182), optional: the Reed Cell's crack stood on,
+    // the fight round the reed wells, the chest that rises, and the stair back
+    // up onto the Reed Cell's fenced step, off its ledge.
+    name: 'The Reed Undercroft: the crack, the fight, the chest, and the stair back up',
+    setup: setup({ items: { sword: 2, conch: 1 }, equipA: 'sword', equipB: 'conch',
+      maxHearts: 40, hearts: 40, tide: 0, enter: ['d3', 1, 4, 4, 160, 48, 'right'] }),
+    steps: [['goto', 12, 2, 600], ['wait', 220], ['fight', 6000, 6000], ['wait', 60], ['dialogue', 400],
+      ['goto', 7, 9, 600], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 600],
+      ['goto', 2, 8, 900], ['hold', ['down'], 30], ['wait', 90], ['hold', ['up'], 40], ['wait', 30]],
+    expect: `(g.room.key === '1,4,4' && g.progress.flags.d3_reedunder && g.progress.rupees >= 100 && g.player.y < 7 * 16)
+      || ('in ' + g.room.key + ', cleared ' + !!g.progress.flags.d3_reedunder + ', rupees ' + g.progress.rupees + ' at ' + g.player.x + ',' + g.player.y)`,
+  },
+  {
+    // THE WHOLE SANCTUM IN ONE RUN, DOOR TO BOSS (S182; S162's rule: a
+    // dungeon proved room by room was never proved). P1 the Nave's hole at
+    // LOW; P2 the Hub's south-east hole into the key pen; the first key in the
+    // Hub's east door; P3 the Anchor beside the Sluice Cell's shaft at LOW and
+    // the conch to MID, down into the Drain Weir for the second key; the
+    // second key in the Weir's north door; P4 the Silt Cell's crack, the
+    // Chartstone on the Root Cellar's raised corner. P6 the Weir's crack at
+    // LOW, into the Reliquary with nothing to light; up its stair, off the
+    // alcove's ledge; a Kilnshell struck facing the open hole falls down it,
+    // and Link after it; thrown beside each torch, the Boss Key's chest rises.
+    // The Cleats; P5 at MID down the Cistern Floor's well on the bottom, the
+    // Sump's plate, out by its shutter and the Undertow Cellar; the west wing
+    // (the third key in the Drain Gallery's door, the fourth key in its
+    // chest), back east on the Undertow's current, the fourth key in the Eel
+    // Hall's west door, the Sounding wing's fifth key in its north door, the
+    // Kelp Locks, the Lock Gallery, and the Boss Key in the boss door.
+    name: "The Bogwater Sanctum: the whole dungeon in one run, door to boss",
+    setup: setup({ items: { sword: 2, conch: 1, anchor: 1, kilnshell: 1 }, equipA: 'sword', equipB: 'conch',
       maxHearts: 200, hearts: 200, tide: 0, enter: ['d3', 1, 3, 7, 112, 144, 'up'] }),
-    steps: [
-      // P1: the Nave's hole at LOW
-      ['travel', 3, 6, 2000], ['goto', 7, 3, 600], ['hold', ['down'], 30], ['wait', 150],
-      // the Landing -> the Pens' corridor and back -> the stair up, off the dais
-      ['travel', 3, 5, 2000], ['travel', 3, 6, 2000],
-      ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
-      // P2: the Hub's south-east hole, the key pen, off its ledge
-      ['travel', 3, 5, 2000], ['goto', 11, 6, 900], ['hold', ['down'], 30], ['wait', 150],
-      ['goto', 11, 8, 600], ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
-      ['goto', 11, 7, 600], ['hold', ['up'], 40],
-      ['travel', 3, 6, 2000], ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
-      // the first key, the Hub's east door
-      ['travel', 3, 5, 2000], ['goto', 13, 5, 900], ['hold', ['right'], 20], ['tap', 'a', 30],
-      // P3: the Anchor at LOW beside the shaft, MID, in
-      ['travel', 4, 5, 2000], ['equip', 'anchor', 'A', 400], ['anchor', 7, 6, 1600],
-      ['tide', 1, 140, 900], ['goto', 7, 7, 400], ['hold', ['up'], 60], ['wait', 150],
-      // the Drain Weir: the second key; the shutter opens west
-      ['goto', 11, 8, 900], ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
-      ['wait', 60], ['unanchor', 120], ['tide', 0, 140, 900],
-      ['travel', 3, 5, 2000], ['travel', 3, 6, 2000],
-      ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
-      // the second key, the Weir's north door
-      ['travel', 3, 5, 2000], ['travel', 3, 4, 2000], ['goto', 7, 1, 900], ['hold', ['up'], 20], ['tap', 'a', 30],
-      // P4: the Silt Cell's crack, the Root Cellar's Chartstone, the Silt Stair
-      ['travel', 2, 4, 2000], ['goto', 2, 2, 900], ['wait', 220],
-      ['goto', 7, 6, 600], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
-      ['travel', 2, 5, 2000], ['goto', 12, 9, 900], ['hold', ['up'], 30], ['wait', 90],
-      ['goto', 13, 8, 300], ['hold', ['up'], 40], ['wait', 30],
-    ],
-    expect: `(g.progress.doors['d3:1,3,5:14,5'] === 'dDoorOpen' && g.progress.doors['d3:1,3,4:7,0'] === 'dDoorOpen'
-      && g.progress.charts.d3 && g.progress.flags.d3_drainweir && g.room.key === '1,2,5' && g.player.y < 7 * 16)
-      || ('hub door ' + g.progress.doors['d3:1,3,5:14,5'] + ', weir door ' + g.progress.doors['d3:1,3,4:7,0']
-        + ', chart ' + !!g.progress.charts.d3 + ', drain weir ' + !!g.progress.flags.d3_drainweir + ' in ' + g.room.key + ' at ' + g.player.x + ',' + g.player.y)`,
+    steps: D3_RUN,
+    expect: `(g.room.key === '1,3,1' && g.progress.flags.d3_sump && g.progress.flags.d3_reliquary
+      && g.progress.doors['d3:1,3,2:7,0'] === 'dDoorOpen')
+      || ('in ' + g.room.key + ', sump ' + !!g.progress.flags.d3_sump + ', reliquary ' + !!g.progress.flags.d3_reliquary
+        + ', boss door ' + g.progress.doors['d3:1,3,2:7,0'])`,
   },
   {
     // THE WHOLE PALACE IN ONE RUN (S162), from the Porch's door to the eel:
@@ -590,7 +583,11 @@ for (const sc of SCENARIOS) {
     verdict = v === true ? null : String(v);
   }
   if (!verdict && errs.length) verdict = 'page error: ' + errs[0];
-  if (verdict) { fail++; console.log(`  FAIL ${sc.name}\n       ${verdict}`); }
+  if (verdict) {
+    fail++; console.log(`  FAIL ${sc.name}\n       ${verdict}`);
+    if (process.env.TRACE) console.log((await page.evaluate(() => window.__rp._trace.slice(-12)))
+      .map(t => `       step ${t.step} ${t.kind} ${t.room} ${t.x},${t.y} hp ${t.hp} tide ${t.tide}`).join('\n'));
+  }
   else { pass++; console.log(`  ok   ${sc.name}`); }
   await page.close();
 }

@@ -170,6 +170,9 @@ export function floodDungeon(mapId, opts = {}) {
   const puzzleOwner = new Map();   // 'rk:x,y' -> the room whose puzzle opens it
   for (const [rk, def] of Object.entries(m.roomDefs)) {
     for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleOwner.set(`${rk}:${dx0},${dy0}`, rk);
+    // A door in ANOTHER room (S182, the Sump's plate and the Undertow's west
+    // door): still opened by standing in THIS room.
+    for (const [ork, dx0, dy0] of def.puzzle?.reward?.openDoorsIn || []) puzzleOwner.set(`${ork}:${dx0},${dy0}`, rk);
     for (const B of sillsOf(def)) {
       for (const [dx0, dy0] of B.opens || []) puzzleOwner.set(`${rk}:${dx0},${dy0}`, rk);
     }

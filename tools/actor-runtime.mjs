@@ -3167,6 +3167,31 @@ export async function installRuntime() {
     if (!g.progress.flags[flagName]) throw new Error(`keyhole: '${flagName}' never opened from ${tx},${ty}`);
   }
 
+  /**
+   * PICK UP THE KILNSHELL LYING IN THIS ROOM (S182, the Bogwater Sanctum's
+   * Reliquary, where it has come down a hole and cannot be struck again):
+   *
+   *   ['lift', 600]
+   *
+   * walk to a tile beside it, below it first, face it and press A, which is
+   * the context button's lift. Throws if no shell is lying here, or if every
+   * side was tried and he is still empty-handed.
+   */
+  function* dLift(maxF) {
+    const g = window.__game;
+    const shell = () => g.entities.find(e => e.fallsThrough && e.liftable && !e.remove && !e.flight && !e.carried);
+    const sides = [[0, 1, 'up'], [0, -1, 'down'], [-1, 0, 'right'], [1, 0, 'left']];
+    for (let i = 0; i < sides.length && !g.player.carrying; i++) {
+      const s = shell();
+      if (!s) throw new Error(`lift: no shell lying in ${g.mapId} ${g.room && g.room.key}`);
+      const [dx, dy, dir] = sides[i];
+      yield* dGoto(Math.floor(s.cx / TILE) + dx, Math.floor(s.cy / TILE) + dy, maxF || 600);
+      yield* dHold([dir], 2);
+      yield* dTap('a', 24);
+    }
+    if (!g.player.carrying) throw new Error(`lift: could not pick the shell up in ${g.room && g.room.key}`);
+  }
+
   function* dTrade(stage, maxF) {
     const g = window.__game;
     const at = () => g.progress.trade.stage || 0;
@@ -3219,6 +3244,7 @@ export async function installRuntime() {
       else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
+      else if (kind === 'lift') yield* dLift(a[0]);
       else if (kind === 'beat') yield* dBeat(a[0], a[1]);
       else if (kind === 'errand') yield* dErrand(a[0], a[1]);
       else if (kind === 'race') yield* dRace(a[0]);
@@ -3286,6 +3312,8 @@ export async function installRuntime() {
     if (setup.keys) g.progress.keys[setup.keys[0]] = setup.keys[1];
     if (setup.bossKey) g.progress.bossKeys[setup.bossKey] = true;
     if (setup.flags) for (const k of setup.flags) g.progress.flags[k] = true;
+    // Doors already opened, as the save names them ('map:room:x,y' -> tile).
+    if (setup.doors) Object.assign(g.progress.doors, setup.doors);
     if (setup.tide != null) g.tide.setLevel(setup.tide, { instant: true });
     window.__rp.probes = setup.probes || [];
     window.__rp._god = !!setup.godMode;

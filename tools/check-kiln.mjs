@@ -20,6 +20,22 @@
 //      target at exactly the sea levels in `levels`, and at every other level
 //      the target is still unlit/unburnt when the shell has come to rest.
 //
+// A room whose fire has to come DOWN instead (S182, the Bogwater Sanctum's
+// Reliquary) says so with
+//
+//   kilnRoom: { descend: { from: '1,3,4', hole: [x, y] }, torches: [[x, y], ...] }
+//
+// and this proves, in place of 2 and 3:
+//
+//   4. the room is reached by nothing but the hole in room `from` above it
+//      (the dungeon flood with that room's drops taken out of the world);
+//   5. Link stepping into the open hole at LOW holding a lit shell lets go of
+//      it as he falls (as in Seasons) and it lands below still burning; at
+//      MID and HIGH, where the hole is flooded, no lit shell arrives at all;
+//   6. a lit shell THROWN into the hole at LOW arrives below, burning;
+//   7. set down beside each torch in turn it lights them all, and only then
+//      does the room's puzzle pay out.
+//
 // A target is a torch entity at that tile (lit or not) or a burnable tile
 // there (burnt when its base tile has changed). Every `kilnRoom` is found by
 // reading the maps, so a new one is checked the day it is written.
@@ -34,6 +50,7 @@ import { installRuntime } from './actor-runtime.mjs';
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { tileWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
+import { floodDungeon } from './lib/dungeon-flood.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 installData();
@@ -60,7 +77,7 @@ check('at least one room claims the Kilnshell', CLAIMS.length > 0);
 // cannot stand beside is a target nobody can.
 const FOOT = capsForMode('foot');
 for (const c of CLAIMS) {
-  if (c.k.reach) continue;
+  if (c.k.reach || c.k.descend) continue;
   const room = getRoom(c.mapId, ...c.key.split(',').map(Number));
   const W = room.tw, H = room.th;
   const ok = (x, y) => room.inBounds(x, y) && [0, 1, 2].some(t => tileWalkable(room, x, y, t, FOOT, ROUTE_AVOID));
@@ -123,7 +140,8 @@ const strike = () => page.evaluate(async () => {
   return !!items.placedKilnshell(g);
 });
 for (const c of CLAIMS) {
-  await enter(c.mapId, c.key, 0, c.k.from[0] * 16, c.k.from[1] * 16, c.k.dir);
+  const at = c.k.from || c.k.descend.hole;
+  await enter(c.mapId, c.key, 0, at[0] * 16, at[1] * 16, c.k.dir || 'down');
   check(`${c.mapId} ${c.key} (${c.def.name}): the room is damp and the shell will not strike`,
     c.def.damp && !(await strike()));
 }
@@ -134,7 +152,7 @@ for (const [mapId, key] of DRY) {
 }
 
 // --- 3. the throw, at every sea ---------------------------------------------
-for (const c of CLAIMS) {
+for (const c of CLAIMS.filter(x => !x.k.descend)) {
   const got = [];
   for (const level of [0, 1, 2]) {
     await enter(c.mapId, c.key, level, c.k.from[0] * 16, c.k.from[1] * 16 + 1, c.k.dir);
@@ -165,7 +183,7 @@ for (const c of CLAIMS) {
 // the same tile does. A throw that came down in a hole used to light the brazier
 // it flew past, which no player expects.
 {
-  const c = CLAIMS.find(x => x.key === '0,1,1') || CLAIMS[0];
+  const c = CLAIMS.find(x => x.key === '0,1,1') || CLAIMS.find(x => !x.k.descend);
   const [tx, ty] = c.k.target;
   const run = async (mode) => {
     await enter(c.mapId, c.key, 0, c.k.from[0] * 16, c.k.from[1] * 16 + 1, c.k.dir);
@@ -188,6 +206,82 @@ for (const c of CLAIMS) {
   check(`${c.mapId} ${c.key}: a lit shell in the AIR beside the brazier does not light it`, !(await run('air')));
   check(`${c.mapId} ${c.key}: a lit shell HELD beside the brazier does not light it`, !(await run('held')));
   check(`${c.mapId} ${c.key}: the same shell RESTING beside the brazier lights it`, await run('rest'));
+}
+
+// --- 4-7. fire that has to come DOWN (S182) -----------------------------------
+for (const c of CLAIMS.filter(x => x.k.descend)) {
+  const where = `${c.mapId} ${c.key} (${c.def.name})`;
+  const { from, hole: [hx, hy] } = c.k.descend;
+  const without = floodDungeon(c.mapId, { dropSkip: from });
+  check(`${where}: reached by nothing but the hole in ${from}`, !without.reachedRooms.has(c.key));
+  const [ff, frx, fry] = from.split(',').map(Number);
+
+  // Stand above the hole (opened) holding a lit shell, or throw it in.
+  const descend = (level, how) => page.evaluate(async ([setup, how, hx, hy, below]) => {
+    window.__rp.beginRecord(setup, [['wait', 2], ...(how === 'carry' ? [['hold', ['down'], 40]] : []), ['wait', 400]]);
+    const g = window.__game, p = g.player;
+    const items = await import('/src/game/items.js');
+    window.__rp.pump(2);
+    g.room.setTile(hx, hy, 'dShaftBog');
+    const shell = new items.Kilnshell(p.x, p.y, { lit: true });
+    g.addEntity(shell); g.flushPending();
+    p.carrying = shell; shell.carried = true; p.liftT = 0; p.placeCarried();
+    if (how === 'throw') p.throwCarried(g);
+    for (let i = 0; i < 500; i++) {
+      for (const e of g.entities) if (e.isEnemy) e.remove = true;
+      if (g.dialogue) g.dialogue.active = false;
+      if (window.__rp.pump(1).done) break;
+    }
+    const lit = g.entities.filter(e => e instanceof items.Kilnshell && !e.remove && e.lit && !e.flight && !e.carried);
+    const fell = (g.fallen || []).filter(f => f.spec.type === 'kilnshell' && f.spec.opts.lit
+      && `${f.floor},${f.rx},${f.ry}` === below);
+    return { room: g.room.key, lit: lit.length, fell: fell.length };
+  }, [{
+    seed: 20260930, items: { sword: 1, conch: 1, kilnshell: 1, cleats: 1 }, equipA: 'sword', equipB: 'kilnshell',
+    maxHearts: 12, hearts: 12, tide: level,
+    enter: [c.mapId, ff, frx, fry, hx * 16, (how === 'carry' ? hy - 1 : hy - 3) * 16, 'down'],
+  }, how, hx, hy, c.key]);
+
+  for (const level of [0, 1, 2]) {
+    const r = await descend(level, 'carry');
+    if (level === 0) {
+      check(`${where}: at LOW, holding a lit shell, Link falls through and the shell comes down with him, burning`,
+        r.room === c.key && r.lit === 1, JSON.stringify(r));
+    } else {
+      check(`${where}: at sea ${level} the hole is flooded and no lit shell gets down`,
+        r.fell === 0 && !(r.room === c.key && r.lit > 0), JSON.stringify(r));
+    }
+  }
+  {
+    const r = await descend(0, 'throw');
+    check(`${where}: at LOW a lit shell thrown into the hole goes down it, still burning`, r.fell === 1, JSON.stringify(r));
+  }
+
+  // 7. set beside each torch in turn
+  await enter(c.mapId, c.key, 0, hx * 16, hy * 16, 'down');
+  const r = await page.evaluate(async ([torches, flag]) => {
+    const g = window.__game;
+    const items = await import('/src/game/items.js');
+    const torchAt = ([tx, ty]) => g.entities.find(e => e.flammable && Math.floor((e.x + 8) / 16) === tx && Math.floor((e.y + 8) / 16) === ty);
+    const shell = new items.Kilnshell(0, 0, { lit: true });
+    g.addEntity(shell); g.flushPending();
+    const steps = [];
+    for (const [tx, ty] of torches) {
+      const before = !!g.progress.flags?.[flag] || (g.progress.flagsSet || []).includes?.(flag);
+      shell.x = tx * 16 + (tx < 7 ? 16 : -16); shell.y = (ty + 1) * 16;
+      for (let i = 0; i < 40; i++) { if (g.dialogue) g.dialogue.active = false; window.__harness.step(1); }
+      steps.push({ lit: torches.map(t => !!(torchAt(t) && torchAt(t).lit)), solved: !!g.room._puzzleDone });
+    }
+    for (let i = 0; i < 4; i++) window.__harness.step(1);
+    const chest = g.entities.find(e => e.constructor.name === 'Chest' && !e.remove);
+    return { steps, chest: chest ? (chest.pickup || chest.item || null) : null };
+  }, [c.k.torches, c.def.puzzle && c.def.puzzle.flag]);
+  const n = c.k.torches.length;
+  check(`${where}: a shell set beside one torch lights that one and not the rest`,
+    r.steps[0].lit.filter(Boolean).length === 1 && !r.steps[0].solved, JSON.stringify(r.steps[0]));
+  check(`${where}: beside each in turn, all ${n} are lit and the puzzle pays out`,
+    r.steps[n - 1].lit.every(Boolean) && r.steps[n - 1].solved, JSON.stringify(r.steps[n - 1]));
+  check(`${where}: what rises is the Boss Key's chest`, /bossKey/i.test(String(r.chest)), String(r.chest));
 }
 
 await browser.close(); server.close();

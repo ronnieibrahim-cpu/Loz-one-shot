@@ -367,6 +367,9 @@ export const PLANS = {
       tide: 1,
       // S139: the Undertow is an Oracle room, 15x11, and its east bank is
       // column 13 with the door at row 5.
+      // S182: the west door is shut until the Sump's plate; this run is
+      // about the channel, so it starts with that door open.
+      doors: { 'd3:1,2,3:0,5': 'dDoorOpen', 'd3:1,1,3:14,5': 'dDoorOpen' },
       enter: ['d3', 1, 2, 3, 208, 80, 'left'],
     },
     steps: [

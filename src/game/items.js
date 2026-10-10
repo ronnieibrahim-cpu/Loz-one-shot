@@ -24,7 +24,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   KNOCK_TOOL, KNOCK_THROWN,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN,
-  LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS,
+  LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, DROP_IN_MAX_HEIGHT,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE,
@@ -141,6 +141,32 @@ export class Kilnshell extends Entity {
     this.burn = 0;
     this.depth = -1;
     this.flight = null;
+    // Down a drop hole it lands in the room below, still burning (S182;
+    // Game.dropObjectThrough).
+    this.fallsThrough = true;
+  }
+
+  fallSpec() { return { type: 'kilnshell', opts: { lit: this.lit } }; }
+
+  /**
+   * Coming down from the floor above (Game.spawnFallen): it drops in from
+   * over the top of the screen as Link does (DROP_IN_MAX_HEIGHT, the
+   * cartridge's cap) and lands by the same rule a thrown shell does.
+   */
+  fallIn(game) {
+    const camY = game && game.camera ? game.camera.y : 0;
+    const h = Math.max(0, Math.min(DROP_IN_MAX_HEIGHT, this.y - camY + TILE));
+    this.flight = { vx: 0, vy: 0 };
+    this.fz = sp(h); this.vz = 0;
+    this.shadow = true;
+  }
+
+  /** On a hole, resting or landing: down it if there is a room below, else lost. */
+  intoHole(game, f) {
+    if ((f & F.DROP) && game.dropObjectThrough(this)) { game.audio.sfx('fall'); return; }
+    this.remove = true;
+    game.spawnEffect(f & F.DEEP ? 'splash' : 'puff', this.cx - 8, this.cy - 8);
+    game.audio.sfx(f & F.DEEP ? 'splash' : 'fall');
   }
 
   /** The flags under the shell — or under the player, while being carried. */
@@ -186,10 +212,9 @@ export class Kilnshell extends Entity {
     this.fz = 0; this.vz = 0; this.flight = null; this.shadow = false;
     const f = this.groundFlags(game);
     if (f & (F.PIT | F.VOID | F.DEEP)) {
-      // Into the sump or the sea: the shell is lost, and a new one strikes.
-      this.remove = true;
-      game.spawnEffect(f & F.DEEP ? 'splash' : 'puff', this.cx - 8, this.cy - 8);
-      game.audio.sfx(f & F.DEEP ? 'splash' : 'fall');
+      // Into the sump or the sea: the shell is lost, and a new one strikes —
+      // unless it came down in a drop hole, which hands it to the floor below.
+      this.intoHole(game, f);
       return;
     }
     game.audio.sfx('place');
@@ -200,6 +225,9 @@ export class Kilnshell extends Entity {
     if (this.flight) this.fly(game);
     if (this.remove) return;
     const f = this.groundFlags(game);
+    // Resting on a hole — set down at its edge, or the sea gone out from
+    // under it — it falls in, as anything on a hole does in Seasons.
+    if (!this.flight && !this.carried && (f & F.PIT)) { this.intoHole(game, f); return; }
 
     // The one thing the sea still decides. A shell carried into deep water
     // gutters out and has to be set down and struck again — the tide taking
@@ -1201,6 +1229,14 @@ export const ITEMS = {
       // Being carried: the throw button already owns it, and a second verb on
       // a held object is how you get a player who cannot put a thing down.
       if (p.carrying instanceof Kilnshell) return false;
+      // One shell in the world: one that fell to the floor below (S182) is
+      // still the player's, and pressing takes it back like any other.
+      const fell = (game.fallen || []).findIndex(f => f.spec && f.spec.type === 'kilnshell');
+      if (fell >= 0 && !placedKilnshell(game)) {
+        game.fallen.splice(fell, 1);
+        game.audio.sfx('place');
+        return true;
+      }
       const placed = placedKilnshell(game);
       if (placed) {
         // Take it back, from anywhere in the world — the same courtesy the

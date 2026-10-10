@@ -16,6 +16,10 @@
   "maxHearts": 12,
   "hearts": 12,
   "tide": 1,
+  "doors": {
+   "d3:1,2,3:0,5": "dDoorOpen",
+   "d3:1,1,3:14,5": "dDoorOpen"
+  },
   "enter": [
    "d3",
    1,
@@ -262,7 +266,7 @@
   "dungeonMaps": {},
   "charts": {},
   "flags": [],
-  "doorsChanged": 0,
+  "doorsChanged": 2,
   "secretsSeen": 3,
   "chestsOpened": 0,
   "tide": 1,

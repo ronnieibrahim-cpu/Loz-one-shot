@@ -155,6 +155,7 @@ export class Game {
     this.progress = useSeed != null ? newProgress(name, useSeed) : newProgress(name);
     seedGlobal(this.progress.seed);
     resetRooms();
+    this.fallen = [];
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
@@ -178,6 +179,7 @@ export class Game {
     migrateKeys(p);
     seedGlobal(p.seed);
     resetRooms();
+    this.fallen = [];
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
@@ -319,7 +321,45 @@ export class Game {
     if (!room) return;
     const list = room.def.entities || [];
     list.forEach((spec, i) => this.spawnSpec(room, spec, i));
+    this.spawnFallen();
     this.flushPending();
+  }
+
+  /**
+   * WHAT GOES DOWN A HOLE COMES OUT BELOW (S182, the Bogwater Sanctum). The
+   * cartridge takes anything that lands on a hole — a thrown pot, or what
+   * Link was holding when he fell, which he lets go of as the fall begins
+   * (link.s linkState02 @substate0, linkCancelAllItemUsage -> dropLinkHeldItem)
+   * — and it is gone. Ours keeps the one thing worth keeping: a Kilnshell
+   * over a drop hole falls to the same place one floor down, still burning,
+   * and is there when the player comes down after it. Anything else is lost
+   * as in Seasons. Returns true when the object went down.
+   */
+  dropObjectThrough(obj) {
+    const room = this.room;
+    if (!room || !this.map || !obj || !obj.fallsThrough) return false;
+    const tx = Math.floor(obj.cx / TILE), ty = Math.floor(obj.cy / TILE);
+    if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, this.tide) & F.DROP)) return false;
+    const below = room.floor - 1;
+    if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
+    const r = getRoom(this.mapId, below, room.rx, room.ry);
+    if (!r || !r.inBounds(tx, ty) || (r.flagsAt(tx, ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
+    if (!this.fallen) this.fallen = [];
+    this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
+    obj.remove = true;
+    return true;
+  }
+
+  /** Bring in whatever fell into this room from the floor above. */
+  spawnFallen() {
+    const room = this.room;
+    if (!room || !this.fallen || !this.fallen.length) return;
+    const here = (f) => f.map === this.mapId && f.floor === room.floor && f.rx === room.rx && f.ry === room.ry;
+    for (const f of this.fallen.filter(here)) {
+      const e = spawnEntity(this, f.spec.type, f.tx, f.ty, f.spec.opts);
+      if (e && e.fallIn) e.fallIn(this);
+    }
+    this.fallen = this.fallen.filter(f => !here(f));
   }
 
   /**
@@ -434,10 +474,10 @@ export class Game {
    * and would charge a second key for the same door from the far side.
    * `seamPartner` finds that tile from the map's own cell arithmetic.
    */
-  openDoorAt(tx, ty) {
-    this.room.setTile(tx, ty, 'dDoorOpen');
-    this.persistTile(tx, ty, 'dDoorOpen');
-    const q = this.seamPartner(this.room, tx, ty);
+  openDoorAt(tx, ty, room = this.room) {
+    room.setTile(tx, ty, 'dDoorOpen');
+    this.progress.doors[`${this.mapId}:${room.key}:${tx},${ty}`] = 'dDoorOpen';
+    const q = this.seamPartner(room, tx, ty);
     if (!q) return;
     const t = q.room.baseName(q.x, q.y);
     if (!getTileDef(t) || !(getTileDef(t).flags & F.DOOR)) return;
@@ -1264,7 +1304,10 @@ export class Game {
     if (pz.condition && !pz.condition(this, room)) return;
 
     room._puzzleDone = true;
-    if (pz.flag) setFlag(this.progress, pz.flag);
+    // Anything in the room waiting on this puzzle's flag (`needFlag`) comes
+    // out now, as a chest rises in Seasons when the last torch is lit — and,
+    // being one of the room's own entities, it is remembered opened.
+    if (pz.flag) { setFlag(this.progress, pz.flag); this.spawnFlagged(pz.flag); }
     this.applyReward(pz.reward, false);
     this.roomEvent('puzzle', pz);
   }
@@ -1274,6 +1317,17 @@ export class Game {
     const room = this.room;
     if (reward.openDoors) {
       for (const [tx, ty] of reward.openDoors) this.openDoorAt(tx, ty);
+    }
+    // A DOOR IN ANOTHER ROOM (S182, the Bogwater Sanctum's Sump): a plate on
+    // the cellar's bottom opens a door upstairs — Ages' switch here, gate
+    // there. Named by room key on this map; persisted like any opened door,
+    // so the far room is open when the player walks in.
+    if (reward.openDoorsIn) {
+      for (const [rk, tx, ty] of reward.openDoorsIn) {
+        const [f, rx, ry] = rk.split(',').map(Number);
+        const other = getRoom(this.mapId, f, rx, ry);
+        if (other) this.openDoorAt(tx, ty, other);
+      }
     }
     if (reward.tiles) {
       for (const [tx, ty, name] of reward.tiles) {
@@ -1289,6 +1343,7 @@ export class Game {
       // released — is the discovery moment `secret` was written for. A reward
       // that only talks keeps the short sfx, and one that names its own wins.
       const opened = (reward.openDoors && reward.openDoors.length)
+        || (reward.openDoorsIn && reward.openDoorsIn.length) || reward.reveal
         || (reward.tiles && reward.tiles.length)
         || (reward.spawn && reward.spawn.length);
       if (reward.sfx) this.audio.sfx(reward.sfx);

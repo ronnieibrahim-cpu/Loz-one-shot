@@ -427,6 +427,16 @@ check('the run pressed the Sounding wing\'s sunken plates',
 check('the run dropped through the Sanctum\'s holes and its crack into the Undercroft',
   ['d3/0,3,5', 'd3/0,4,5', 'd3/0,2,4'].every(r => a.rooms.includes(r)),
   `rooms ${['d3/0,3,5', 'd3/0,4,5', 'd3/0,2,4'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// AND IT SOLVED THE SANCTUM'S LAST TWO (S182): P5, sunk down the Cistern
+// Floor's well onto the Sump's plate, which opens the west wing; P6, a lit
+// Kilnshell down the Weir's crack into the damp Reliquary, both torches lit,
+// and the Boss Key that has lived there since.
+check('the run pressed the plate on the Sump\'s bottom, down the Cistern Floor\'s well',
+  a.rooms.includes('d3/0,3,3') && (s.flags || []).includes('d3_sump'),
+  `sump ${a.rooms.includes('d3/0,3,3')}, flag ${(s.flags || []).includes('d3_sump')}`);
+check('the run brought fire down the Weir\'s crack and lit the Reliquary for the Boss Key',
+  a.rooms.includes('d3/0,3,4') && (s.flags || []).includes('d3_reliquary'),
+  `reliquary ${a.rooms.includes('d3/0,3,4')}, flag ${(s.flags || []).includes('d3_reliquary')}`);
 check('the run completed a second Heart Container mid-D2, on top of D1\'s own',
   s.maxHearts >= 20, `maxHearts ${s.maxHearts}`);
 // ---- what the Drowned Wood Shrine leg added -------------------------------

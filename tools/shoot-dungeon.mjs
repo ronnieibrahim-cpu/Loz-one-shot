@@ -61,7 +61,13 @@ const url = await page.evaluate(async ([mapId, floor, tide, scale]) => {
     g.tide.setLevel(tide, { instant: true });
     g.enterMap(mapId, f, rx, ry, 7 * 16, 5 * 16, 'down', { instant: true });
     g.dialogue.active = false; g.bannerTime = 0;
+    // Link stands still while the room settles: dropped at the same tile in
+    // every room, he once stood on a Sanctum hole and fell, and the room below
+    // came out in the next room's place (S182).
+    g.fadeDir = 0; g.fadeThen = null;
+    const pu = g.player.update; g.player.update = () => {};
     for (let i = 0; i < 20; i++) window.__harness.step(1);
+    g.player.update = pu;
     g.dialogue.active = false;
     const r = g.room;
     const c = document.createElement('canvas'); c.width = r.pw; c.height = r.ph;

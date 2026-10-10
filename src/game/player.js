@@ -1517,6 +1517,17 @@ export class Player extends Entity {
 
   beginFall(game, drop = false) {
     if (this.falling > 0) return;
+    // HE LETS GO OF WHAT HE IS HOLDING (S182), as the fall begins: link.s
+    // linkState02 @substate0 calls linkCancelAllItemUsage, which drops the
+    // held object. It lands on the same hole — gone into a pit, and down a
+    // drop hole to the floor below if it is a Kilnshell (Game.dropObjectThrough).
+    if (this.carrying) {
+      const c = this.carrying;
+      this.carrying = null; this.liftT = 0; c.carried = false;
+      const { tx, ty } = groundTile(game, this);
+      c.x = tx * TILE + 8 - c.w / 2; c.y = ty * TILE + 8 - c.h / 2;
+      if (!game.dropObjectThrough(c)) { c.remove = true; game.spawnEffect('puff', c.x, c.y); }
+    }
     this.falling = FALL_FRAMES;
     this.fallDrop = drop;
     this.jumping = false;
