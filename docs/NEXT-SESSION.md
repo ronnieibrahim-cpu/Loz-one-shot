@@ -29,6 +29,27 @@ The human's prompt named four items (item 5, fight tuning, is theirs).
 Whole table green; check-playthrough 44/44, THE END, never died; test
 134/134.
 
+### Part two: the maps and Chartstones in chests (the human: "fix all
+dungeon maps, chartstones and compasses to be held in chests like the source")
+- Seasons keeps the map and compass in small chests (treasureObjectData.s:
+  TREASURE_MAP/TREASURE_COMPASS spawn mode 1, the chest's own treasure;
+  treasureCollectionBehaviours.s: SND_GETITEM). Ours had all six Dungeon
+  Maps loose on the floor, and the six Chartstone chests (the Chartstone
+  stands in for the compass) popped a pickup out above themselves.
+- All six maps now stand in chests where they lay (D1 Map Alcove 7,5 inside
+  its three blocks, opened from the east; D2 6,5; D3 7,5; D4 7,2; D5 7,2;
+  D6 9,4). A chest holding `dungeonMap` or `chartstone` now hands it over as
+  it opens: the prize rises out of the chest with SND_GETITEM and its line,
+  Seasons' chest beat (PICKUPS[kind].grant/line, Game.openChest). Keys and
+  Boss Keys in chests still pop out as before (the human asked about maps
+  and compasses; ask whether keys should follow — Seasons' rise too).
+- check-placement skips the chests that hand over directly (their prize
+  never lands). The robot opens the D1/D3/D5 map chests (D2/D4/D6 map rooms
+  are off its route); Bogmaw re-swept: wins untouched at waits 36-39, 37 set.
+  d1-descent re-recorded (it walked into the map's square). Guide: route
+  step numbers moved by an LCS match, all 698 shots re-captured (rooms
+  checked), text says the maps are in chests; online copy republished.
+
 ### FUTURE ACTION ITEMS
 Item 5 (fight tuning) is the human's. Map leftovers to ask about: coral is
 Seasons' magenta where the screens are pink (Ages' lighter #d642f7 is the

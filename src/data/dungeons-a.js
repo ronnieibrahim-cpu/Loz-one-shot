@@ -242,7 +242,7 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['chest', 7, 5, { pickup: 'dungeonMap' }],
           ['keese', 4, 3],
         ],
       },
@@ -888,7 +888,7 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 6, 5, { kind: 'dungeonMap' }],
+          ['chest', 6, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
         ],
       },
@@ -1631,7 +1631,7 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['chest', 7, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
         ],
       },
@@ -2430,7 +2430,7 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 2, { kind: 'dungeonMap' }],
+          ['chest', 7, 2, { pickup: 'dungeonMap' }],
           ['keese', 11, 7],
         ],
       },

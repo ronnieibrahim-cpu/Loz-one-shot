@@ -172,7 +172,7 @@ export function installDungeonsB() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 2, { kind: 'dungeonMap' }],
+          ['chest', 7, 2, { pickup: 'dungeonMap' }],
           ['keese', 11, 7],
         ],
       },
@@ -1392,7 +1392,7 @@ export function installDungeonsB() {
           '###############',
         ],
         entities: [
-          ['pickup', 9, 4, { kind: 'dungeonMap' }],
+          ['chest', 9, 4, { pickup: 'dungeonMap' }],
           ['stalfos', 10, 7],
         ],
       },

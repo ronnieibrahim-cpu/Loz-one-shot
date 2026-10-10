@@ -22019,15 +22019,20 @@ const PICKUPS = {
     // the colour of a dialogue box and the route drawn across it, the one thing
     // that says "map" rather than "card", came out grey on grey.
     sprite: 'i_map', pal: null, persistent: true,
-    get(g) { g.progress.dungeonMaps[g.mapId] = true; g.audio.sfx('key'); g.say('You found the Dungeon Map!'); },
+    // In a chest, as Seasons keeps its map (TREASURE_MAP, spawn mode 1: the
+    // chest's own treasure, SND_GETITEM). `grant` and `line` are what
+    // Game.openChest hands over; `get` is the same thing picked up loose.
+    grant(g) { g.progress.dungeonMaps[g.mapId] = true; },
+    line: 'You found the Dungeon Map!',
+    get(g) { this.grant(g); g.audio.sfx('key'); g.say(this.line); },
   },
   chartstone: {
     sprite: 'i_chart', pal: null, persistent: true,
-    get(g) {
-      g.progress.charts[g.mapId] = true;
-      g.audio.sfx('key');
-      g.say('You found the Chartstone!\nThe map will show what the tide moves.');
-    },
+    // In a chest, where Seasons keeps the compass it stands in for
+    // (TREASURE_COMPASS, spawn mode 1, SND_GETITEM).
+    grant(g) { g.progress.charts[g.mapId] = true; },
+    line: 'You found the Chartstone!\nThe map will show what the tide moves.',
+    get(g) { this.grant(g); g.audio.sfx('key'); g.say(this.line); },
   },
   heartPiece: {
     sprite: 'p_heartpiece', pal: null, persistent: true, hold: 2,
@@ -35052,6 +35057,15 @@ class Game {
       this.audio.jingle('fanfareShort');
       this.chestShow(chest, { sprite: 'i_charm', pal: (CHARMS[chest.charm] || {}).color },
         'A carved charm! Slot it on the CHARM screen.');
+    } else if (chest.pickup && PICKUPS[chest.pickup] && PICKUPS[chest.pickup].grant) {
+      // THE MAP AND THE CHARTSTONE COME UP OUT OF THEIR CHEST (S179), as
+      // Seasons' map and compass do: given the moment the lid opens, rising
+      // out of the chest with the item jingle (SND_GETITEM), not popped out
+      // onto the floor to be walked over.
+      const spec = PICKUPS[chest.pickup];
+      spec.grant(this);
+      this.audio.jingle('itemGet');
+      this.chestShow(chest, { sprite: spec.sprite, pal: spec.pal }, spec.line);
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else if (chest.rupees) {
@@ -54379,7 +54393,7 @@ function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['chest', 7, 5, { pickup: 'dungeonMap' }],
           ['keese', 4, 3],
         ],
       },
@@ -55025,7 +55039,7 @@ function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 6, 5, { kind: 'dungeonMap' }],
+          ['chest', 6, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
         ],
       },
@@ -55768,7 +55782,7 @@ function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['chest', 7, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
         ],
       },
@@ -56567,7 +56581,7 @@ function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 2, { kind: 'dungeonMap' }],
+          ['chest', 7, 2, { pickup: 'dungeonMap' }],
           ['keese', 11, 7],
         ],
       },
@@ -57626,7 +57640,7 @@ function installDungeonsB() {
           '###############',
         ],
         entities: [
-          ['pickup', 7, 2, { kind: 'dungeonMap' }],
+          ['chest', 7, 2, { pickup: 'dungeonMap' }],
           ['keese', 11, 7],
         ],
       },
@@ -58846,7 +58860,7 @@ function installDungeonsB() {
           '###############',
         ],
         entities: [
-          ['pickup', 9, 4, { kind: 'dungeonMap' }],
+          ['chest', 9, 4, { pickup: 'dungeonMap' }],
           ['stalfos', 10, 7],
         ],
       },

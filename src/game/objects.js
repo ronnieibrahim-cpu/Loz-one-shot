@@ -106,15 +106,20 @@ export const PICKUPS = {
     // the colour of a dialogue box and the route drawn across it, the one thing
     // that says "map" rather than "card", came out grey on grey.
     sprite: 'i_map', pal: null, persistent: true,
-    get(g) { g.progress.dungeonMaps[g.mapId] = true; g.audio.sfx('key'); g.say('You found the Dungeon Map!'); },
+    // In a chest, as Seasons keeps its map (TREASURE_MAP, spawn mode 1: the
+    // chest's own treasure, SND_GETITEM). `grant` and `line` are what
+    // Game.openChest hands over; `get` is the same thing picked up loose.
+    grant(g) { g.progress.dungeonMaps[g.mapId] = true; },
+    line: 'You found the Dungeon Map!',
+    get(g) { this.grant(g); g.audio.sfx('key'); g.say(this.line); },
   },
   chartstone: {
     sprite: 'i_chart', pal: null, persistent: true,
-    get(g) {
-      g.progress.charts[g.mapId] = true;
-      g.audio.sfx('key');
-      g.say('You found the Chartstone!\nThe map will show what the tide moves.');
-    },
+    // In a chest, where Seasons keeps the compass it stands in for
+    // (TREASURE_COMPASS, spawn mode 1, SND_GETITEM).
+    grant(g) { g.progress.charts[g.mapId] = true; },
+    line: 'You found the Chartstone!\nThe map will show what the tide moves.',
+    get(g) { this.grant(g); g.audio.sfx('key'); g.say(this.line); },
   },
   heartPiece: {
     sprite: 'p_heartpiece', pal: null, persistent: true, hold: 2,

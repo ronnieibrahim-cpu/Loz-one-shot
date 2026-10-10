@@ -12,8 +12,9 @@
 - Whole table green; check-playthrough 44/44, THE END, never died.
 - New in S179: START alone skips the opening, the card and the logo (A does
   not, as in Seasons); the map's grey stone is Ages' lighter map grey; the
-  guide's menu labels sit under their slots; the online guide republished
-  (version 4). Leftovers in NEXT-SESSION.md S179.
+  guide's menu labels sit under their slots; every Dungeon Map and
+  Chartstone is in a chest and rises out of it as in Seasons; the online
+  guide republished. Leftovers in NEXT-SESSION.md S179.
 
 ## The task
 The human's S180 prompt names it. Leftovers worth offering: the map's coral

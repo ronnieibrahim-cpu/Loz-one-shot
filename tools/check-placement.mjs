@@ -230,7 +230,7 @@ check('no wandering townsperson walks into a tree', wander.walked > 0 && wander.
   wander.out.length ? `${wander.out.length} did` : `${wander.walked} walked, ${wander.moved} moved`);
 
 // WHAT A CHEST HANDS OUT LANDS WHERE IT CAN BE PICKED UP (S162). A chest
-// holding a key, a Boss Key or a chartstone does not give it: it pops a pickup
+// holding a key or a Boss Key does not give it: it pops a pickup
 // out above itself (`Game.openChest`), which settles a tile up and has to be
 // walked into. The Sunken Palace's Boss Key chest stood against the cellar's
 // north wall, so the key came to rest INSIDE the wall — the chest opened, the
@@ -238,19 +238,23 @@ check('no wandering townsperson walks into a tree', wander.walked > 0 && wander.
 // so the dungeon could not be finished. Every tool here was green: the flood
 // asks whether the CHEST is reachable, and it is. This opens every such chest
 // in the real engine, lets the pickup settle as it does in play, and asks
-// `canOccupy` whether the pickup can be where it came to rest.
+// `canOccupy` whether the pickup can be where it came to rest. (Since S179 a
+// map or a Chartstone is handed over by its chest, Seasons' way, and pops
+// nothing — those chests are skipped: `PICKUPS[kind].grant`.)
 const chests = await page.evaluate(async () => {
   const g = window.__game;
   const ent = await import('/src/game/entity.js');
   const maps = await import('/src/world/maps.js');
+  const { PICKUPS } = await import('/src/game/objects.js');
+  const pops = s => s[0] === 'chest' && s[3] && s[3].pickup && !(PICKUPS[s[3].pickup] || {}).grant;
   const out = []; let opened = 0;
   for (const map of maps.MAPS.values()) {
     for (const key of Object.keys(map.roomDefs || {})) {
       const def = map.roomDefs[key];
-      if (!(def.entities || []).some(s => s[0] === 'chest' && s[3] && s[3].pickup)) continue;
+      if (!(def.entities || []).some(pops)) continue;
       const [f, rx, ry] = key.split(',').map(Number);
       g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
-      for (const chest of g.entities.filter(e => e.constructor.name === 'Chest' && e.pickup)) {
+      for (const chest of g.entities.filter(e => e.constructor.name === 'Chest' && e.pickup && !(PICKUPS[e.pickup] || {}).grant)) {
         const before = new Set(g.entities.concat(g.pendingAdd));
         g.openChest(chest);
         g.flushPending();

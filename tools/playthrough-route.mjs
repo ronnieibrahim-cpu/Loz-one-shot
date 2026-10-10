@@ -217,10 +217,15 @@ export const ROUTE = [
   ['dialogue', 300],
   ['loot', 600],
 
-  // West wing: the Dungeon Map, loose on the floor behind three blocks.
+  // West wing: the Dungeon Map, in a chest behind three blocks (S179: in a
+  // chest, as Seasons keeps its map), opened from the open east side.
   ['travel', 2, 5, 2000],
   ['fight', 1200],
   ['loot', 500],
+  ['goto', 8, 5, 500],
+  ['hold', ['left'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
 
   // East wing: the Chartstone, in a chest, opened from the south.
   ['travel', 4, 5, 2000],
@@ -929,10 +934,15 @@ export const ROUTE = [
   ['loot', 1500],
 
   // ---------------------------------------------------------------- d3 0,2,5
-  // Bog Hub, then the Map Cell for the Dungeon Map.
+  // Bog Hub, then the Map Cell for the Dungeon Map's chest (opened from the
+  // south).
   ['travel', 3, 5, 4000],
   ['travel', 2, 5, 4000],
   ['loot', 1200],
+  ['goto', 7, 6, 600],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
 
   // ---------------------------------------------------------------- d3 0,4,5
   // The Sluice Cell. Two blocks, each one tile under its plate: stand under
@@ -1063,7 +1073,9 @@ export const ROUTE = [
   // S167 (no bomb drops before the bag: the run arrives with different
   // pickups behind it): wins untouched at every wait 30-40 (38 costs one
   // quarter), loses at 42-44 and 50-120. 34 is the middle of the band.
-  ['wait', 34],
+  // S179 (the maps came out of chests, so the run reaches here later): wins
+  // untouched at waits 36-39, loses at 34 and 40; 37 is the middle.
+  ['wait', 37],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
@@ -1762,10 +1774,13 @@ export const ROUTE = [
   ['loot', 600],
 
   // ---------------------------------------------------------------- d5 0,2,6
-  // The Silt Gallery, and the Dungeon Map.
+  // The Silt Gallery, and the Dungeon Map's chest (opened from the south).
   ['travel', 2, 6, 6000],
   ['fight', 3000, 1200],
-  ['goto', 7, 2, 1500],
+  ['goto', 7, 3, 1500],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d5 0,4,6

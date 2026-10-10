@@ -1261,6 +1261,15 @@ export class Game {
       this.audio.jingle('fanfareShort');
       this.chestShow(chest, { sprite: 'i_charm', pal: (CHARMS[chest.charm] || {}).color },
         'A carved charm! Slot it on the CHARM screen.');
+    } else if (chest.pickup && PICKUPS[chest.pickup] && PICKUPS[chest.pickup].grant) {
+      // THE MAP AND THE CHARTSTONE COME UP OUT OF THEIR CHEST (S179), as
+      // Seasons' map and compass do: given the moment the lid opens, rising
+      // out of the chest with the item jingle (SND_GETITEM), not popped out
+      // onto the floor to be walked over.
+      const spec = PICKUPS[chest.pickup];
+      spec.grant(this);
+      this.audio.jingle('itemGet');
+      this.chestShow(chest, { sprite: spec.sprite, pal: spec.pal }, spec.line);
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else if (chest.rupees) {
