@@ -148,6 +148,12 @@ for (const r of rooms) {
       if (bl) { bl.x = tx0 * 16; bl.y = ty0 * 16; bl.ferried = true; }
       await new Promise(r2 => { const s = g.frame; const t = () => (g.frame - s >= 10 ? r2() : requestAnimationFrame(t)); t(); });
     }
+    // A STAKE PLATE UNDER A KNOT-HOLE (S186-S187) is held by a stake from
+    // the floor above, which no hand in this room can put there: that it
+    // gets there is tools/check-canopy.mjs's to prove, from above, in the
+    // engine. Here the stake is stood on its plate, as the ferried block is.
+    const drops = room.def.dropRoom ? [].concat(room.def.dropRoom) : [];
+    for (const D of drops) room.setTile(D.plate[0], D.plate[1], 'coralPillar');
     for (const bl of blocks) {
       if (bl.ferried) continue;
       const bx = Math.floor(bl.cx / 16), by = Math.floor(bl.cy / 16);

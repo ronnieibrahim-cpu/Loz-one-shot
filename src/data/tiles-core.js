@@ -2839,6 +2839,15 @@ export function installCoreTiles() {
       ['dBeltHigh' + d, { tide: ['rBelt' + d, 'rBelt' + d, 'dWaterD'] }],
       ['dBeltLow' + d, { tide: ['rBelt' + d, 'dWaterS', 'dWaterD'] }],
     ])),
+    // A CROSSING (S187): where a low bough's belt runs across a high
+    // bough's. At LOW both turn and the low bough's is the one on top, so the
+    // cell carries the LOW way; at MID the low bough is drowned and the cell
+    // carries the high bough's way; at HIGH it is still water like the rest.
+    // `dBeltCross` + low direction + high direction. So the sea chooses the
+    // road a seed takes.
+    // Only the two the Canopy lays are registered.
+    ...Object.fromEntries([['W', 'E'], ['S', 'N']].map(([lo, hi]) =>
+      ['dBeltCross' + lo + hi, { tide: ['rBelt' + lo, 'rBelt' + hi, 'dWaterD'] }])),
     dKnotHole: {
       art: ART.rHole, pal: 'rHole', flags: F.PIT | F.DROP, family: 'knot',
       lip: { n: 'dKnotHoleN', s: 'dKnotHoleS', ns: 'dKnotHoleNS' },

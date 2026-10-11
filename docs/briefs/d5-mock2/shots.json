@@ -1,0 +1,11 @@
+[
+ {"room":"1,4,3","tide":0,"link":[3,9],"dir":"up","out":"fc_low.png"},
+ {"room":"1,4,3","tide":1,"link":[3,9],"dir":"up","out":"fc_mid.png"},
+ {"room":"1,4,3","tide":2,"link":[3,9],"dir":"up","out":"fc_high.png"},
+ {"room":"0,4,3","tide":0,"out":"lf_before.png"},
+ {"room":"0,4,3","tide":0,"doors":["d5:0,4,3:1,7","d5:0,4,3:5,7"],"out":"lf_after.png"},
+ {"room":"1,4,2","tide":0,"link":[30,6],"dir":"up","out":"hb_low.png"},
+ {"room":"1,4,2","tide":1,"link":[37,4],"dir":"left","out":"hb_mid.png"},
+ {"room":"0,4,2","tide":0,"out":"sf_before.png"},
+ {"room":"0,4,2","tide":0,"doors":["d5:0,4,2:30,2","d5:0,4,2:35,2","d5:0,4,2:40,2"],"out":"sf_after.png"}
+]

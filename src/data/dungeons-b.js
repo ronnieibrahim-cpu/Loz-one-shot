@@ -1093,6 +1093,15 @@ export function installDungeonsB() {
         // round the water rather than by standing where you came in. The snarl
         // is in the wall across the room; the way on is the south hall and the
         // east passage up to the door.
+        //
+        // UNDER THE FORD CROWN (S187). Two notches stand in the south hall's
+        // north wall, each a single cell walled in on all four sides with a
+        // stake plate in it: no foot, no throw and no perch reaches either,
+        // and both are in plain sight from the first time the hall is walked.
+        // The Ford Crown's two knot-holes are directly over them — the west
+        // one is fed at LOW and the east one at MID — and when both plates
+        // are held a chest rises at the top of the east passage (Small Key).
+        // The stair in the hall's west end climbs to the Crown.
         map: [
           '###############',
           '#..........#..#',
@@ -1101,11 +1110,12 @@ export function installDungeonsB() {
           '#......5...#..#',
           'L....0WWW0.#..L',
           '#######k####..#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
+          '#.###.#.......#',
+          '##...#........#',
+          '#S............#',
           '###############',
         ],
+        warps: [{ x: 1, y: 9, to: { map: 'd5', floor: 1, rx: 4, ry: 3, px: 2 * 16, py: 9 * 16, dir: 'right' } }],
         reefseedRoom: {
           // The first floor inside its west door, a key door since S186.
           entry: [1, 5],
@@ -1114,10 +1124,22 @@ export function installDungeonsB() {
           ],
           snarl: [7, 6], cutFrom: [7, 5],
         },
+        dropRoom: [
+          { from: '1,4,3', hole: [1, 7], plate: [1, 7], seas: [0] },
+          { from: '1,4,3', hole: [5, 7], plate: [5, 7], seas: [1] },
+        ],
         entities: [
+          ['switch', 1, 7, { stake: true }],
+          ['switch', 5, 7, { stake: true }],
+          ['chest', 13, 2, { pickup: 'key', needFlag: 'd5_fordCrown' }],
           ['keese', 10, 2],
           ['tektite', 2, 2],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_fordCrown',
+          reward: { reveal: true, say: 'Coral holds both notches down.\nA chest rises up the east passage.' },
+        },
       },
       '0,5,3': {
         name: 'Thornvine',
@@ -1162,7 +1184,7 @@ export function installDungeonsB() {
         map: [
           '#############################################',
           '#................############################',
-          '#................############################',
+          '#................#############.####.####.####',
           '#................#000000000##################',
           '#................#0WWWW.....................#',
           '..................kWWW5..........U..........#',
@@ -1183,11 +1205,29 @@ export function installDungeonsB() {
           ],
           snarl: [18, 5], cutFrom: [19, 5],
         },
+        // UNDER THE HIGH BOUGH (S187): three notches in the wall north of the
+        // east hall, each a cell walled in on four sides with a stake plate in
+        // it, seen every time the Ford is crossed. The High Bough's three
+        // knot-holes are over them; when all three are held the Boss Key's
+        // chest rises in the west hall.
+        dropRoom: [
+          { from: '1,4,2', hole: [30, 2], plate: [30, 2], seas: [0] },
+          { from: '1,4,2', hole: [35, 2], plate: [35, 2], seas: [1] },
+          { from: '1,4,2', hole: [40, 2], plate: [40, 2], seas: [0], perch: [40, 5] },
+        ],
         entities: [
-          ['chest', 12, 4, { pickup: 'bossKey' }],
+          ['switch', 30, 2, { stake: true }],
+          ['switch', 35, 2, { stake: true }],
+          ['switch', 40, 2, { stake: true }],
+          ['chest', 12, 4, { pickup: 'bossKey', needFlag: 'd5_highBough' }],
           ['keese', 26, 7],
           ['tektite', 8, 6],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_highBough',
+          reward: { reveal: true, say: 'Three stakes hold the notches down.\nSomething rises in the west hall.' },
+        },
         readable: [
           [33, 5, 'A shrine board, barely legible: "Twice over.\nThe first while the wood is under, the second\nwhile it is not."'],
         ],
@@ -1338,6 +1378,79 @@ export function installDungeonsB() {
         entities: [
           ['tektite', 3, 9],
           ['keese', 11, 1],
+        ],
+      },
+      '1,4,3': {
+        name: 'The Ford Crown',
+        // K4, THE SEA CHOOSES THE ROAD. Up the stair from the Long Ford's
+        // south hall. A short belt in a walled strip runs between two
+        // knot-holes, over the Long Ford's two notches, and its middle cell
+        // is a CROSSING (`j`): at LOW the low bough's belt is on top and the
+        // cell carries west, into the west knot-hole; at MID the low bough is
+        // drowned and it carries east, into the east one. A seed can only be
+        // put on that one cell — thrown up over the hole from the single
+        // tile below it, a wall behind the crossing catching a long throw —
+        // so the same throw plants the west notch at LOW and the east at MID.
+        // At HIGH the strip is still water. The key door north is the way
+        // on to the High Bough (Small Key, the Long Ford's).
+        map: [
+          '#######L#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######.......#',
+          '#Kxj}K#.......#',
+          '###O###.......#',
+          '#/.........U..#',
+          '###############',
+        ],
+        warps: [{ x: 1, y: 9, to: { map: 'd5', floor: 0, rx: 4, ry: 3, px: 2 * 16, py: 9 * 16, dir: 'right' } }],
+        entities: [
+          // A seed sprig (S187): the Canopy's second half spends six seeds.
+          ['pickup', 11, 5, { kind: 'seeds5', life: 1e9 }],
+          ['tektite', 10, 4],
+          ['keese', 4, 2],
+        ],
+      },
+      '1,4,2': {
+        name: 'The High Bough',
+        // K5, THE BOSS KEY: everything you plant up here is something
+        // holding down there. Three screens over the Shrine Ford, three
+        // knot-holes over its three notches, each fed its own way:
+        //   30,2 by a low bough's belt, thrown onto from 30,6 — it runs at
+        //        LOW and nowhere else;
+        //   35,2 by a crossing (`v`) thrown onto from 37,4 — at LOW the low
+        //        bough carries the seed south into a plain hole, at MID the
+        //        high bough carries it north into the knot-hole;
+        //   40,2 by a high bough's belt no bank is near: plant a stake in
+        //        the pool (40,5) from the bank, stand on it at LOW, and throw
+        //        from there — stand on what you plant, in the Canopy.
+        // In through the key door from the Ford Crown, and across a band of
+        // high bough's belts running south into a row of holes (15-17): at
+        // LOW and MID they carry you toward the holes as you cross, at HIGH
+        // you swim. Walk straight over and they cost nothing.
+        size: [3, 1],
+        map: [
+          '#############################################',
+          '#..............]]].........##################',
+          '#..U.......U...]]]U.....U..###K####K####K####',
+          '#..............]]].........###n####[####[####',
+          '#..............]]]...........#n#..#vO..#O#..#',
+          '#..............]]]...........#O#..#s#.#WWW#.#',
+          '#..............]]]................#O#.#WWW#.#',
+          '#..............]]]................###.......#',
+          '#..U.......U...]]]U.....U...................#',
+          '#..............OOO..........................#',
+          '#######L#####################################',
+        ],
+        beltRoom: { belts: 'run', cross: { from: [7, 9], to: [26, 5] } },
+        entities: [
+          ['pickup', 26, 6, { kind: 'seeds5', life: 1e9 }],
+          ['keese', 12, 3],
+          ['tektite', 20, 6],
+          ['crab', 26, 8],
         ],
       },
     },

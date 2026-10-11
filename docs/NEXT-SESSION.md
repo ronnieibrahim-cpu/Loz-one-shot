@@ -1,3 +1,64 @@
+## S187 — the Drowned Wood Shrine's Canopy, second half: K4, K5, the Boss Key moved
+
+Branch claude/drowned-wood-canopy-s187-v4hlw8, off main at cb5ce8f (S186).
+Mocked first (docs/briefs/d5-mock2/mock-k4-k5.png); the human said build as
+shown, yes to "stand on the stake you grew" for the third High Bough hole
+(the brief's "stake as a buffer" cannot work: anything carried over a hole
+falls in), and yes to belts across the High Bough's empty hall.
+
+### Built
+- TILES: crossings `dBeltCrossWE` (`j`) and `dBeltCrossSN` (`v`) in
+  tiles-core.js: tide [rBelt<low>, rBelt<high>, dWaterD], so the cell carries
+  the low bough's way at LOW and the high bough's at MID. Only the two used
+  are registered (validate warns on unreachable tiles).
+- ENGINE: `beltUnder(game, e, footDy = BELT_FOOT_DY)`; a Reefseed bud reads
+  its belt at its own middle (footDy 0), the point `intoHole` reads — read at
+  Link's foot, a bud carried SOUTH stopped 5 px short of the hole and grew on
+  the last belt cell. Horizontal and northward rides are unchanged.
+- ROOMS (src/data/dungeons-b.js): 1F 4,3 the Long Ford gains two sealed
+  notches (1,7) and (5,7) with stake plates, a stair up at 1,9, a chest at
+  13,2 (Small Key, needFlag d5_fordCrown). 2F 4,3 the Ford Crown (K4): stair
+  1,9; strip `Kxj}K` on row 7, thrown onto from 3,9 facing up over the hole
+  at 3,8 — LOW -> west knot-hole 1,7, MID -> east 5,7, HIGH grows in the
+  water; key door north; seed sprig 11,5. 2F 4,2 the High Bough (K5, 3x1):
+  belt band x15-17 rows 1-8 running south into holes on row 9 (beltRoom
+  cross claim), sprig 26,6, three bays: 30,2 low belt from 30,6 up (LOW
+  only); 35,2 crossing `v` from 37,4 facing left (MID; at LOW the low bough
+  dumps it into the hole at 35,6); 40,2 from a stake grown at 40,5 in the
+  pool (from 40,7 up), stood on at LOW. 1F 4,2 the Shrine Ford: notches
+  30,2 35,2 40,2 with stake plates; the Boss Key chest at 12,4 now has
+  needFlag d5_highBough. `dropRoom` may be a list; claims take `seas` and
+  `perch`. 40 rooms, 47 screens, 2 floors. Keys 7, locks 7 (the Ford
+  Crown's north door is the new one).
+- TOOLS: check-canopy.mjs rewritten "from above": every standing place near
+  a room's knot-holes, every other pixel, four ways, the seed FOLLOWED over
+  belts until it grows or drops; each claim's hole reached at exactly its
+  seas (perch: at none from the floor, at LOW from the stake); then every
+  claim fed for real, plates held, payout, kept after a load. Skips stair
+  cells and their neighbours (a frozen Link on a stair still took it) and
+  fails if a sweep leaves its room. 48 assertions, about a minute.
+  check-belts: every crossing carries low-then-high (15). solve-switches:
+  a dropRoom plate gets its stake (check-canopy proves it gets there).
+  dungeon-strands baseline re-recorded (+9 one-to-three-cell pockets: the
+  sealed notches and belt strips, by design).
+- ROBOT: after grove 4, up the Long Ford's stair: sprig, sow 3,9 at LOW and
+  MID, key door north, High Bough (sprig, MID 37,4 left, LOW 30,6 up, 40,7
+  up, swim to 40,5, sow up), back down, the Long Ford's chest, Thornvine.
+  A `dialogue` on entering the Long Ford and the Shrine Ford (the payout
+  speaks as you walk in).
+- GUIDE: remapped from da3e105 (remap-guide.mjs); chapter 11 gets "The
+  Canopy" (stops 11-14) and the Ford Crown / High Bough (20-26), a 2F map,
+  ten new pictures; rooms-list.mjs lists d5's 2F. tools/oneshot/
+  mock-render.mjs draws rooms as they are in the data for a mock.
+- PICTURE: docs/briefs/d5-built/s187-canopy.png (Ancient Ruins $c6 beside
+  the built rooms).
+
+### Verified
+Whole table green (50 tools); check-playthrough 47/47, THE END, never died.
+
+### NEXT
+- D5 is done to its brief. Next per docs/DUNGEON-STATUS.md: D6's growth.
+
 ## S186 — the Drowned Wood Shrine's Canopy, first half: belts, knot-holes, K1-K3
 
 Branch claude/s186-drowned-wood-growth, off main at 3f619fb with S185

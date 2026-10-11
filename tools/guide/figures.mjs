@@ -460,9 +460,15 @@ FIGURES.push(
   { out: 'd5-map', scale: 1, map: { rooms: floorRooms('d5', 0) }, marks: [
     { n: 1, at: [2, 6, 7, 3] }, { n: 2, at: [4, 6, 7, 7] }, { n: 3, at: [2, 5, 7, 3] }, { n: 4, at: [1, 5, 7, 5] },
     { n: 5, at: [4, 5, 7, 5] }, { n: 6, at: [5, 5, 4, 3] }, { n: 7, at: [3, 5, 7, 1] }, { n: 8, at: [4, 4, 7, 8] },
-    { n: 9, at: [2, 4, 1, 6] }, { n: 10, at: [1, 4, 7, 6] }, { n: 11, at: [1, 3, 11, 6] }, { n: 12, at: [2, 3, 7, 6] },
-    { n: 13, at: [2, 2, 3, 6] }, { n: 14, at: [0, 2, 7, 6] }, { n: 15, at: [0, 3, 5, 5] }, { n: 16, at: [4, 3, 7, 6] },
-    { n: 17, at: [5, 3, 7, 6] }, { n: 18, at: [4, 2, 12, 6] }, { n: 19, at: [3, 1, 7, 7] },
+    { n: 9, at: [2, 4, 1, 6] }, { n: 10, at: [1, 4, 7, 6] }, { n: 14, at: [3, 5, 12, 5] },
+    { n: 15, at: [1, 3, 11, 6] }, { n: 16, at: [2, 3, 7, 6] },
+    { n: 17, at: [2, 2, 3, 6] }, { n: 18, at: [0, 2, 7, 6] }, { n: 19, at: [0, 3, 5, 5] }, { n: 20, at: [4, 3, 7, 3] },
+    { n: 23, at: [4, 3, 13, 3] }, { n: 24, at: [5, 3, 7, 6] }, { n: 25, at: [4, 2, 12, 6] }, { n: 26, at: [3, 1, 7, 7] },
+  ] },
+  // The Canopy, 2F (S186-S187).
+  { out: 'd5-map-2f', scale: 1, map: { rooms: floorRooms('d5', 1) }, marks: [
+    { n: 11, at: [3, 4, 7, 6] }, { n: 12, at: [3, 3, 6, 5] }, { n: 13, at: [3, 5, 7, 2] },
+    { n: 21, at: [4, 3, 3, 9] }, { n: 22, at: [4, 2, 30, 7] },
   ] },
   { out: 'd5-cloister', src: 'd5-cloister-high-whole', marks: [{ ring: [7, 4] }, lbl('Piece of Heart: swim in at HIGH', [7, 5.2]), HIGH] },
   { out: 'd5-bower', src: 'd5-bower-blow-whole', marks: [
@@ -474,6 +480,15 @@ FIGURES.push(
     { ring: [7, 9] }, lbl('key', [7, 8.2], 'n'),
   ] },
   { out: 'd5-seed-get', src: 'd5-seed-get' },
+  { out: 'd5-hollow', src: 'd5-hollow-whole', marks: [lbl('belts carry you east as you cross;\nthe knot-holes drop you back down', [7, 5.6], 'c')] },
+  { out: 'd5-beltbough', src: 'd5-beltbough-ride-whole', marks: [
+    { ring: [6, 4] }, { path: [[6, 3.6], [6, 2.4]], w: 5 }, { path: [[6.6, 2], [9.6, 2]], w: 5 }, { ring: [10, 2] },
+    lbl('throw up from here: the seed rides\nthe belt and grows on the plate', [7, 6.4], 'c'),
+  ] },
+  { out: 'd5-grovecrown', src: 'd5-grovecrown-throw-whole', marks: [
+    { ring: [7, 5] }, lbl('a seed down the knot-hole grows\non the plate in the room below', [7, 7.6], 'c'),
+  ] },
+  { out: 'd5-grove-held', src: 'd5-grove-held-whole', marks: [{ ring: [7, 5] }, { ring: [12, 3] }, lbl('key', [12, 2.2], 'n')] },
   { out: 'd5-stake-high', src: 'd5-stake1-throw-whole', marks: [
     { n: 1, at: [9, 5], off: [0, -14] }, { path: [[9.6, 5], [11, 5]], w: 5 }, lbl('at HIGH the bole is gone:\nthrow the seed over it', [9, 6.6]), HIGH,
   ] },
@@ -486,6 +501,21 @@ FIGURES.push(
     { ring: [4, 5] }, { ring: [3, 6] }, lbl('block on one plate,\nyou on the other', [3.5, 7.6]), { ring: [3, 2] }, lbl('key', [3, 1.2], 'n'), LOW,
   ] },
   { out: 'd5-longford', src: 'd5-longford-low-whole', marks: [{ ring: [13, 5] }, lbl('Thornvine’s door (locked)', [12.2, 5], 'w'), LOW] },
+  { out: 'd5-fordcrown', src: 'd5-fordcrown-low-whole', marks: [
+    { n: 1, at: [3, 9], off: [14, 0] }, { path: [[3.6, 7], [1.4, 7]], w: 5 }, lbl('LOW: the crossing carries west', [5, 4.6], 'c'), LOW,
+  ] },
+  { out: 'd5-fordcrown-mid', src: 'd5-fordcrown-mid-whole', marks: [
+    { n: 2, at: [3, 9], off: [14, 0] }, { path: [[2.4, 7], [4.6, 7]], w: 5 }, lbl('MID: the same throw goes east', [5, 4.6], 'c'), MID,
+  ] },
+  { out: 'd5-highbough', src: 'd5-highbough-whole', scale: 2, marks: [
+    { n: 1, at: [37, 4], off: [14, 0] }, lbl('MID, facing left', [37, 5.6], 's', 14),
+    { n: 2, at: [30, 6], off: [14, 0] }, lbl('LOW, facing up', [30, 7.6], 's', 14),
+    { n: 3, at: [40, 7], off: [14, 0] }, lbl('plant a stake, stand on it\nat LOW, throw again', [41, 8.4], 's', 14),
+  ] },
+  { out: 'd5-highbough-perch', src: 'd5-highbough-perch-whole', scale: 2, marks: [{ ring: [40, 5] }, LOW] },
+  { out: 'd5-longford-held', src: 'd5-longford-held-whole', marks: [
+    { ring: [1, 7] }, { ring: [5, 7] }, { ring: [13, 2] }, lbl('key', [13, 1.2], 'n'), lbl('both notches held', [3, 9.4], 'c'),
+  ] },
   { out: 'd5-thornvine', src: 'd5-thornvine-fight' },
   { out: 'd5-shrineford', src: 'd5-shrineford-2-whole', scale: 2, marks: [
     { ring: [21, 5] }, lbl('1st stake (HIGH, from the bank)', [21, 3.6], 'n', 14),
@@ -498,7 +528,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1513, to: 1535, every: 8 }, w: 3 },
+    { trail: { from: 1612, to: 1634, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 

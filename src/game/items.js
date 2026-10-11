@@ -814,7 +814,10 @@ export class Reefseed extends Entity {
     // Shrine's Canopy), at the belt's own speed: the two seconds that are the
     // item's whole design become a distance. A wall or a standing pillar
     // stops it as it stops a thrown seed; a knot-hole at the end takes it.
-    const v = beltUnder(game, this);
+    // Read at the bud's own middle, the point `intoHole` reads (S187): read
+    // at Link's foot, a bud carried SOUTH stopped five pixels short of the
+    // hole at the belt's end and grew on the last belt cell.
+    const v = beltUnder(game, this, 0);
     if (v) {
       moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED, { jumping: true, swim: true });
       if (this.intoHole(game)) return;

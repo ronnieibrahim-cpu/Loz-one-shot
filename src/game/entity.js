@@ -441,10 +441,10 @@ export function touchingDeep(game, e) {
  * at the sea there. Returns the belt's direction, or null — a drowned belt
  * is water, and water has no `belt`.
  */
-export function beltUnder(game, e) {
+export function beltUnder(game, e, footDy = BELT_FOOT_DY) {
   const room = game.room;
   if (!room) return null;
-  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + BELT_FOOT_DY) / TILE);
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + footDy) / TILE);
   if (!room.inBounds(tx, ty)) return null;
   return room.tile(tx, ty, game.tide).belt || null;
 }

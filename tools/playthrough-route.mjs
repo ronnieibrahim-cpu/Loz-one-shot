@@ -2467,7 +2467,69 @@ export const ROUTE = [
   ['hold', ['down'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  // Thornvine's door is locked since S142: the Root Ford's key.
+
+  // ======================= THE CANOPY, SECOND HALF (S187) ===================
+  //
+  // Up the stair in the south hall's west end. The Ford Crown (K4): the same
+  // throw onto its crossing plants the Long Ford's west notch at LOW and its
+  // east notch at MID. Through its key door (the Root Ford's key) to the High
+  // Bough (K5): one seed at MID down the crossing, two at LOW — one on the low
+  // bough, one from a stake grown in the pool and stood on. Then down again
+  // for the Long Ford's chest, whose key opens Thornvine's door.
+  ['goto', 7, 7, 1500],
+  ['goto', 2, 9, 1500],
+  ['hold', ['left'], 40],
+
+  // ---------------------------------------------------------------- d5 1,4,3
+  ['wait', 60],
+  ['goto', 11, 5, 1500],
+  ['equip', 'reefseed', 'A', 400],
+  ['sow', 3, 9, 'up', 400],
+  ['tide', 1, 140, 600],
+  ['sow', 3, 9, 'up', 400],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 7, 1, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['hold', ['up'], 60],
+
+  // ---------------------------------------------------------------- d5 1,4,2
+  // THE HIGH BOUGH, across the belt band by its middle rows.
+  ['goto', 12, 5, 2000],
+  ['goto', 21, 5, 2000],
+  ['goto', 26, 6, 1500],
+  ['equip', 'reefseed', 'A', 400],
+  ['sow', 37, 4, 'left', 400],
+  ['tide', 0, 140, 600],
+  ['sow', 30, 6, 'up', 400],
+  ['sow', 40, 7, 'up', 400],
+  ['goto', 40, 5, 900],
+  ['sow', 40, 5, 'up', 400],
+  ['goto', 40, 7, 900],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 21, 5, 2000],
+  ['goto', 12, 5, 2000],
+  ['goto', 7, 9, 1500],
+  ['hold', ['down'], 60],
+
+  // ---------------------------------------------------------------- d5 1,4,3
+  ['goto', 2, 9, 1500],
+  ['hold', ['left'], 40],
+
+  // ---------------------------------------------------------------- d5 0,4,3
+  // The Long Ford's chest, up the east passage; the room says it has risen.
+  ['dialogue', 600],
+  ['goto', 7, 8, 1500],
+  ['goto', 13, 3, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+  // Thornvine's door is locked since S142: the Long Ford's key since S187.
   ['goto', 13, 5, 2000],
   ['hold', ['right'], 20],
   ['tap', 'a', 60],
@@ -2492,7 +2554,9 @@ export const ROUTE = [
   // thrown and will not be there if the sea is let back up.
   //
   // NOTHING IS FOUGHT IN THIS ROOM: a `fight` here walks the whole of it
-  // after a keese.
+  // after a keese. Since S187 its three notches are already held from the
+  // High Bough, and the room says so as Link walks in.
+  ['dialogue', 600],
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
   ['reefseed', 21, 5, 900],

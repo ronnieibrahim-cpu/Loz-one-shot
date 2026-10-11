@@ -39,7 +39,8 @@ const check = (n, c, d) => c ? (pass++, console.log('  ok   ' + n)) : (fail.push
 
 // --- every belt in the world, by its tile -----------------------------------
 const claims = [];
-let belts = 0;
+let belts = 0, crossings = 0;
+const badCross = [];
 const badSeas = [];
 for (const m of MAPS.values()) {
   for (const [rk, def] of Object.entries(m.roomDefs || {})) {
@@ -55,10 +56,20 @@ for (const m of MAPS.values()) {
       const want = name.startsWith('dBeltLow') ? [true, false, false] : [true, true, false];
       const wet = [0, 1, 2].every(t => runs[t] || /Water/.test(room.tile(x, y, t).name));
       if (runs.join() !== want.join() || !wet) badSeas.push(`${m.id} ${rk} ${x},${y} ${name} runs ${runs.map(Number).join('')}`);
+      // A crossing (S187) carries the low bough's way at LOW and the high
+      // bough's at MID: dBeltCross + low + high.
+      const cm = /^dBeltCross([NESW])([NESW])$/.exec(name);
+      if (cm) {
+        crossings++;
+        const V = { N: '0,-1', E: '1,0', S: '0,1', W: '-1,0' };
+        const at = [0, 1].map(t => String(room.tile(x, y, t).belt));
+        if (at[0] !== V[cm[1]] || at[1] !== V[cm[2]]) badCross.push(`${m.id} ${rk} ${x},${y} ${name} carries ${at.join(' then ')}`);
+      }
     }
   }
 }
 check(`every belt runs at its bough's seas and is still water at the others (${belts} belt tiles)`, belts > 0 && !badSeas.length, badSeas.slice(0, 4).join('; '));
+check(`every crossing carries the low bough's way at LOW and the high bough's at MID (${crossings} crossings)`, crossings > 0 && !badCross.length, badCross.join('; '));
 
 // The far side of a K1 crossing at every sea, by the dungeon flood.
 for (const c of claims) {

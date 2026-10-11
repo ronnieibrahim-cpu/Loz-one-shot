@@ -379,6 +379,9 @@ export function installLegends() {
     '}': 'dBeltHighE', '{': 'dBeltHighW', '[': 'dBeltHighN', ']': 'dBeltHighS',
     'e': 'dBeltLowE', 'x': 'dBeltLowW', 'n': 'dBeltLowN', 's': 'dBeltLowS',
     'K': 'dKnotHole',
+    // S187: two CROSSINGS, which carry the low bough's way at LOW and the
+    // high bough's at MID — `j` west then east, `v` south then north.
+    'j': 'dBeltCrossWE', 'v': 'dBeltCrossSN',
   }, 'dungeonWood');
   // THE THREE OPTIONAL DUNGEONS (S160), each an Oracle dungeon in the kit of
   // a Seasons dungeon no main one had taken (see `optionalKit` in
