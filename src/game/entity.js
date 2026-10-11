@@ -21,7 +21,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
-  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z,
+  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -374,6 +374,32 @@ function sampleAxis(a, b) {
 }
 
 /** Tile flags under an entity's feet (its hitbox centre-bottom). */
+/**
+ * Is this object over a hole? The cartridge's own test
+ * (objectCheckIsOverHazard): the one tile HOLE_FOOT_DY below its centre.
+ * Returns that tile, or null. Height is the caller's to ask — the cartridge's
+ * objectCheckIsOnHazard says no to anything in the air.
+ */
+export function overHole(game, e) {
+  const room = game.room;
+  if (!room) return null;
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + HOLE_FOOT_DY) / TILE);
+  if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, game.tide) & F.PIT)) return null;
+  return { tx, ty };
+}
+
+/**
+ * Gone down a hole (S185): replaced by INTERAC_FALLDOWNHOLE, Seasons' ball
+ * that shrinks as it slides to the hole's middle, with SND_FALLINHOLE
+ * (objectReplaceWithFallingDownHoleInteraction). Nothing is dropped and
+ * nothing breaks: it is simply gone.
+ */
+export function dropIntoHole(game, e) {
+  e.remove = true;
+  game.spawnEffect('hole', e.cx - 8, e.cy - 8);
+  game.audio.sfx('fallInHole');
+}
+
 export function groundFlags(game, e) {
   const room = game.room;
   if (!room) return 0;

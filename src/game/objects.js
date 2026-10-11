@@ -1,7 +1,9 @@
 // World objects: pickups, chests, NPCs, signs, pushable blocks, switches,
 // torches, rafts, essences. All are spawnable from room data via entity tuples.
 
-import { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC } from './entity.js';
+import {
+  Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC, overHole, dropIntoHole,
+} from './entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { FP_ONE, sp } from '../core/fixed.js';
@@ -268,6 +270,12 @@ export class Pickup extends Entity {
       this._leg--;
       moveEntity(game, this, this._fvx, this._fvy);
     }
+    // A DROP THAT COMES TO REST ON A HOLE GOES DOWN IT (S185), as Seasons'
+    // PART_ITEM_DROP does on landing (itemDrop_checkOnHazard). A treasure
+    // that waits for you — a key, a heart piece — is not a drop and stays.
+    if (this.isFallingDrop() && this.settle <= 0 && overHole(game, this)) {
+      dropIntoHole(game, this); return;
+    }
     if (this.grabDelay > 0) this.grabDelay--;
     // The clock starts when it has landed, as the cartridge's does.
     if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
@@ -276,6 +284,12 @@ export class Pickup extends Entity {
     // once speedZ stops being negative).
     if (this.settle > 0 && this.vz < 0) return;
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
+  }
+
+  /** A drop the floor can take: one of the fleeting PART_ITEM_DROPs, not a
+   *  treasure, not a fairy (it flies). */
+  isFallingDrop() {
+    return !this.spec.persistent && !this.spec.float && !this.attached && this.life !== Infinity;
   }
 
   /** Can a blade take this one (S179)? Only a DROP — Seasons' PART_ITEM_DROP;
@@ -1184,6 +1198,9 @@ export class PushBlock extends Entity {
     if (this.fx === this.slide.fx && this.fy === this.slide.fy) {
       this.slide = null;
       this.moved = true;
+      // Pushed onto a hole, it goes down it (pushblock.s: on arriving,
+      // objectReplaceWithAnimationIfOnHazard), and comes back with the room.
+      if (overHole(game, this)) { dropIntoHole(game, this); return; }
       game.onBlockLanded(this);
     }
   }

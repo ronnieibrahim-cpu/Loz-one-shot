@@ -9,7 +9,27 @@ import {
   EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
   DRY_KINDLING_FACTOR,
   PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER,
+  HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY,
 } from '../data/feel.js';
+
+const TILE_SP = sp(16);
+
+/**
+ * Steer a falling picture at the middle of its hole, as INTERAC_FALLDOWNHOLE's
+ * @state1 does every frame: the target is the centre of the tile under the
+ * point HOLE_FOOT_DY below its own centre, approached at HOLE_FALL_DRIFT_SPEED
+ * and never overshot. The cell is 32x32 with the object's centre at (16, 16).
+ */
+function driftIntoHole(e) {
+  const cx = e.fx + sp(16), cy = e.fy + sp(16);
+  const tx = Math.floor(cx / TILE_SP) * TILE_SP + sp(8);
+  const ty = Math.floor((cy + sp(HOLE_FOOT_DY)) / TILE_SP) * TILE_SP + sp(8);
+  const dx = tx - cx, dy = ty - cy;
+  const d = Math.hypot(dx, dy);
+  if (d <= HOLE_FALL_DRIFT_SPEED) { e.fx += dx; e.fy += dy; return; }
+  e.fx += Math.round(dx * HOLE_FALL_DRIFT_SPEED / d);
+  e.fy += Math.round(dy * HOLE_FALL_DRIFT_SPEED / d);
+}
 
 /** Which step of a held sequence frame `f` falls in (the last once past the end). */
 export function heldStep(holds, f) {
@@ -70,6 +90,13 @@ export const EFFECTS = {
   // vanishes or appears in; `kill` is PART_ENEMY_DESTROYED, what an ordinary
   // enemy dies in, flickering between two palettes.
   puff: { frames: ['fx_puff0', 'fx_puff1', 'fx_puff2'], holds: PUFF_HOLDS, own: true, w: 32, h: 32, centre: true },
+  // INTERAC_FALLDOWNHOLE (S185): what a pot, a block, an enemy or a drop
+  // becomes when it goes over a hole — a ball that shrinks as it slides to
+  // the hole's middle. Spawn it at the thing's own 16x16 spot.
+  hole: {
+    frames: ['fx_hole0', 'fx_hole1', 'fx_hole2'], holds: HOLE_FALL_HOLDS, own: true, w: 32, h: 32, centre: true,
+    depth: -4, update: driftIntoHole,
+  },
   kill: {
     frames: ['fx_kill0', 'fx_kill1', 'fx_kill0', 'fx_kill2', 'fx_kill2', 'fx_kill3', 'fx_kill4'],
     holds: KILL_PUFF_HOLDS, flicker: KILL_PUFF_FLICKER, own: true, w: 32, h: 32, centre: true,

@@ -91,6 +91,10 @@ SFX = [
     # The menu closing (S176): closeMenu plays SND_CLOSEMENU, except out of
     # the save screen.
     ('closeMenu', 'ROM_SEASONS'),
+    # Something going down a hole (S185): SND_FALLINHOLE, what
+    # INTERAC_FALLDOWNHOLE plays as a pot, a block or an enemy drops in
+    # (fallDownHole.s @fallDownHole). Link's own fall keeps linkFall.
+    ('fallInHole', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

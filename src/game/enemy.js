@@ -68,6 +68,7 @@ import {
   SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
   HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
+  HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP,
 } from '../data/feel.js';
 
 const TERRAIN_AVOID = {
@@ -246,12 +247,15 @@ export class Enemy extends Entity {
     if (this.dying) {
       if (this.knockTime > 0) {
         this.knockTime--;
-        const hit = moveEntity(game, this, this.knockX, this.knockY);
+        const hit = this.knockMove(game);
         if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
       }
       if (this.knockTime <= 0) { this.dying = false; this.vanish(game); }
       return;
     }
+
+    // GONE OVER A HOLE (S185): pulled to its middle, then down it.
+    if (this.holeFall > 0) { this.updateHoleFall(game); return; }
 
     // Tide interactions: some enemies only exist at certain tide levels — and
     // at the level where THIS enemy is standing, not the room's base. An
@@ -285,7 +289,8 @@ export class Enemy extends Entity {
     // last frame of it puts the enemy back on.
     if (this.knockTime > 0) {
       this.knockTime--;
-      const hit = moveEntity(game, this, this.knockX, this.knockY);
+      const hit = this.knockMove(game);
+      if (this.overHole(game)) { this.beginHoleFall(game); return; }
       // Stopped dead against something: the throw ends here, as the
       // cartridge's does (ecom_updateKnockback_common).
       if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
@@ -308,7 +313,89 @@ export class Enemy extends Entity {
     }
   }
 
+  /**
+   * One frame of a knock. A knock is stopped by walls and by nothing else —
+   * the cartridge's ecom_updateKnockback asks only for adjacent walls — so a
+   * ground enemy that walks round a hole can be thrown onto one (S185). Its
+   * own avoid mask is lifted of F.PIT for the frame, which is the engine's
+   * own `canOccupy` answering with the caps the knock has.
+   */
+  knockMove(game) {
+    const avoid = this.avoidFlags;
+    if (this.canFallInHole()) this.avoidFlags = avoid & ~F.PIT;
+    const hit = moveEntity(game, this, this.knockX, this.knockY);
+    this.avoidFlags = avoid;
+    return hit;
+  }
+
+  /** Whether a hole can take it: an ordinary enemy on the ground. Bosses,
+   *  minibosses, fliers and swimmers never fall. */
+  canFallInHole() {
+    return !this._bossClass && !this.isBoss && !this.flying && this.z <= 2
+      && this.terrain !== 'water' && this.terrain !== 'air';
+  }
+
+  /**
+   * Over a hole, by the cartridge's own test (ecom_checkHazards): the tile
+   * HOLE_FOOT_DY below its centre, one pixel left of it or one pixel right.
+   * Returns that tile, or null.
+   */
+  overHole(game) {
+    if (!this.canFallInHole() || !game.room) return null;
+    const ty = Math.floor((this.cy + HOLE_FOOT_DY) / TILE);
+    for (const dx of [-1, 1]) {
+      const tx = Math.floor((this.cx + dx) / TILE);
+      if (game.room.inBounds(tx, ty) && (game.room.flagsAt(tx, ty, game.tide) & F.PIT)) return { tx, ty };
+    }
+    return null;
+  }
+
+  /** ecom_checkHazards @touchedHazard: harmless, still, and counting down. */
+  beginHoleFall(game) {
+    const at = this.overHole(game);
+    this.holeAt = at;
+    this.holeFall = ENEMY_HOLE_PULL_FRAMES;
+    this.knockTime = 0; this.invuln = 0; this.flicker = 0;
+    this.harmless = true;
+    this.step = null; this.stepping = false;
+  }
+
+  /**
+   * ecom_fallingInHole: every ENEMY_HOLE_PULL_EVERY frames half a pixel
+   * toward the middle of the hole, and down it when it gets there or the
+   * count runs out.
+   */
+  updateHoleFall(game) {
+    if (--this.holeFall <= 0) { this.fallInHole(game); return; }
+    if (this.holeFall % ENEMY_HOLE_PULL_EVERY !== 0) return;
+    const tx = sp(this.holeAt.tx * TILE + TILE / 2 - this.w / 2);
+    const ty = sp(this.holeAt.ty * TILE + TILE / 2 - this.h / 2);
+    const dx = tx - this.fx, dy = ty - this.fy;
+    if (dx === 0 && dy === 0) { this.fallInHole(game); return; }
+    const d = Math.hypot(dx, dy);
+    if (d <= ENEMY_HOLE_PULL_STEP) { this.fx = tx; this.fy = ty; return; }
+    this.fx += Math.round(dx * ENEMY_HOLE_PULL_STEP / d);
+    this.fy += Math.round(dy * ENEMY_HOLE_PULL_STEP / d);
+  }
+
+  /**
+   * ecom_fallDownHoleAndDelete: replaced by INTERAC_FALLDOWNHOLE and gone —
+   * counted as beaten at once (decNumEnemies), dropping nothing and dying in
+   * no puff, and a zol that goes down whole does not split.
+   */
+  fallInHole(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    this.holeFall = 0;
+    game.spawnEffect('hole', this.cx - 8, this.cy - 8);
+    game.audio.sfx('fallInHole');
+    game.onEnemyDefeated(this, false);
+  }
+
   hurt(game, dmg, dir, knock, from) {
+    // Going down a hole, it has no collisions left (@touchedHazard).
+    if (this.holeFall > 0) return false;
     // A creature flopping on the bank cannot raise its shield and cannot take
     // a hit lightly. This is the Dredge Line's combat verb, and it is the
     // whole answer to an aquatic enemy you could otherwise never corner.

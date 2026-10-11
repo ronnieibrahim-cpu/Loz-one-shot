@@ -20,6 +20,9 @@ const SFX = {
   throw: { seasons: 'throw' },
   shatter: { seasons: 'breakRock' },
   fall: { seasons: 'linkFall' },
+  // A pot, a block, an enemy or a drop going down a hole (S185):
+  // SND_FALLINHOLE, played by INTERAC_FALLDOWNHOLE as it appears.
+  fallInHole: { seasons: 'fallInHole' },
 
   // --- items --------------------------------------------------------------
   conch: {

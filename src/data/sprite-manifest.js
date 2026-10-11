@@ -37,10 +37,10 @@ export const REQUIRED_SPRITES = {
   ],
 
   // 32x32 cells cut from Seasons' common sprites (tools/rip-effects.py): the
-  // puff, the kill puff in both its palettes, and the bomb's blast.
+  // puff, the fall into a hole (S185), the kill puff in both its palettes, and the bomb's blast.
   // fx_sword_*: the sword's eight pictures, cut from Seasons' spr_swords by
   // tools/rip-link.py, the sword object's position at (16, 16).
-  fxBig: [...seq('fx_sword_', 8), ...seq('fx_puff', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
+  fxBig: [...seq('fx_sword_', 8), ...seq('fx_puff', 3), ...seq('fx_hole', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
     ...seq('fx_boom', 5), 'o_float0'],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud

@@ -1352,6 +1352,14 @@ const SEASONS_MUSIC = {
       [4,2],[2,13],[3,1,0],[8,211],[0,43,9],[7],[4,1],[2,13],[3,1,0],[8,224],[0,43,9],[7],
     ],
   },
+  // sfx/fallInHole.s
+  fallInHole: {
+    ch: { 2: 0 },
+    prio: { 2: 1 },
+    events: [
+      [4,2],[2,9],[8,246],[0,45,20],[8,0],[2,2],[8,244],[0,45,20],[7],
+    ],
+  },
 };
 __exports["GB_FREQ"] = GB_FREQ;
 __exports["GB_ENV_WAIT"] = GB_ENV_WAIT;
@@ -2962,6 +2970,40 @@ const FAIRY_LEG_SPAN = 32;
  *  at a guessed 4 frames each. */
 const PUFF_HOLDS = [6, 8, 4];
 
+/** f[] — how long each frame of the fall into a hole is held, in the order
+ *  sprites-effects.js lists `fx_hole*` (S185). derived from the cartridge:
+ *  oracles-disasm data/seasons/interactionAnimations.s, interactionAnimation521fe
+ *  (INTERAC_FALLDOWNHOLE's animation 0): 8 12 12, then the $ff frame whose
+ *  animParameter deletes it (fallDownHole.s @state1). 32 frames. */
+const HOLE_FALL_HOLDS = [8, 12, 12];
+
+/** sp/f — how fast the falling picture slides to the middle of its hole:
+ *  0.375 px/f. derived from the cartridge: fallDownHole.s @interac0f_state0
+ *  sets Interaction.speed to SPEED_60 ($60 subpixels a frame), and @state1
+ *  steers it at the tile's centre, ((y + 5) & $f0) + 8, (x & $f0) + 8. */
+const HOLE_FALL_DRIFT_SPEED = 96;
+
+/** px — how far below an object's centre the point that decides whether it
+ *  is over a hole is. derived from the cartridge: objectCheckIsOverHazard
+ *  reads the tile at (y + 5, x) (code/bank0.s, `ld bc,$0500`); an enemy asks
+ *  the same row at x - 1 and x + 1 (enemies/commonCode.s ecom_checkHazards). */
+const HOLE_FOOT_DY = 5;
+
+/** f — how long an enemy that has gone over a hole is pulled toward its
+ *  middle before it drops in (sooner if it gets there first). derived from
+ *  the cartridge: ecom_checkHazards @touchedHazard sets Enemy.counter1 to
+ *  60; ecom_fallingInHole drops it when the count runs out. */
+const ENEMY_HOLE_PULL_FRAMES = 60;
+
+/** f — an enemy over a hole is moved toward its middle once in this many
+ *  frames. derived from the cartridge: ecom_fallingInHole moves it only when
+ *  (counter1 & 7) == 0. */
+const ENEMY_HOLE_PULL_EVERY = 8;
+
+/** sp — how far each of those pulls moves it: half a pixel. derived from the
+ *  cartridge: ecom_fallingInHole applies SPEED_80 ($80 subpixels) once. */
+const ENEMY_HOLE_PULL_STEP = 128;
+
 /** f — a bomb's fuse: still for 80 frames, then flashing on a 4-frame beat for
  *  36 more, and it goes off on the 117th. derived from the cartridge:
  *  oracles-disasm data/itemAnimations.s, itemAnimation1e777 (ITEM_BOMB's
@@ -4160,6 +4202,12 @@ __exports["FAIRY_LEG_SPEEDS"] = FAIRY_LEG_SPEEDS;
 __exports["FAIRY_LEG_MIN"] = FAIRY_LEG_MIN;
 __exports["FAIRY_LEG_SPAN"] = FAIRY_LEG_SPAN;
 __exports["PUFF_HOLDS"] = PUFF_HOLDS;
+__exports["HOLE_FALL_HOLDS"] = HOLE_FALL_HOLDS;
+__exports["HOLE_FALL_DRIFT_SPEED"] = HOLE_FALL_DRIFT_SPEED;
+__exports["HOLE_FOOT_DY"] = HOLE_FOOT_DY;
+__exports["ENEMY_HOLE_PULL_FRAMES"] = ENEMY_HOLE_PULL_FRAMES;
+__exports["ENEMY_HOLE_PULL_EVERY"] = ENEMY_HOLE_PULL_EVERY;
+__exports["ENEMY_HOLE_PULL_STEP"] = ENEMY_HOLE_PULL_STEP;
 __exports["BOMB_FUSE_FRAMES"] = BOMB_FUSE_FRAMES;
 __exports["BOMB_STILL_FRAMES"] = BOMB_STILL_FRAMES;
 __exports["BOMB_FLASH_BEAT"] = BOMB_FLASH_BEAT;
@@ -12750,7 +12798,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z } = __require("data/feel.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY } = __require("data/feel.js");
 
 const ENTITY_TYPES = new Map();
 
@@ -13102,6 +13150,32 @@ function sampleAxis(a, b) {
 }
 
 /** Tile flags under an entity's feet (its hitbox centre-bottom). */
+/**
+ * Is this object over a hole? The cartridge's own test
+ * (objectCheckIsOverHazard): the one tile HOLE_FOOT_DY below its centre.
+ * Returns that tile, or null. Height is the caller's to ask — the cartridge's
+ * objectCheckIsOnHazard says no to anything in the air.
+ */
+function overHole(game, e) {
+  const room = game.room;
+  if (!room) return null;
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + HOLE_FOOT_DY) / TILE);
+  if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, game.tide) & F.PIT)) return null;
+  return { tx, ty };
+}
+
+/**
+ * Gone down a hole (S185): replaced by INTERAC_FALLDOWNHOLE, Seasons' ball
+ * that shrinks as it slides to the hole's middle, with SND_FALLINHOLE
+ * (objectReplaceWithFallingDownHoleInteraction). Nothing is dropped and
+ * nothing breaks: it is simply gone.
+ */
+function dropIntoHole(game, e) {
+  e.remove = true;
+  game.spawnEffect('hole', e.cx - 8, e.cy - 8);
+  game.audio.sfx('fallInHole');
+}
+
 function groundFlags(game, e) {
   const room = game.room;
   if (!room) return 0;
@@ -13206,6 +13280,8 @@ __exports["knockVector"] = knockVector;
 __exports["Entity"] = Entity;
 __exports["moveEntity"] = moveEntity;
 __exports["canOccupy"] = canOccupy;
+__exports["overHole"] = overHole;
+__exports["dropIntoHole"] = dropIntoHole;
 __exports["groundFlags"] = groundFlags;
 __exports["touchingDeep"] = touchingDeep;
 __exports["groundTile"] = groundTile;
@@ -17953,7 +18029,26 @@ __define("game/effects.js", function (__exports, __require) {
 const { Entity, defineEntity } = __require("game/entity.js");
 const { sp } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
-const { EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER } = __require("data/feel.js");
+const { EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER, HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY } = __require("data/feel.js");
+
+const TILE_SP = sp(16);
+
+/**
+ * Steer a falling picture at the middle of its hole, as INTERAC_FALLDOWNHOLE's
+ * @state1 does every frame: the target is the centre of the tile under the
+ * point HOLE_FOOT_DY below its own centre, approached at HOLE_FALL_DRIFT_SPEED
+ * and never overshot. The cell is 32x32 with the object's centre at (16, 16).
+ */
+function driftIntoHole(e) {
+  const cx = e.fx + sp(16), cy = e.fy + sp(16);
+  const tx = Math.floor(cx / TILE_SP) * TILE_SP + sp(8);
+  const ty = Math.floor((cy + sp(HOLE_FOOT_DY)) / TILE_SP) * TILE_SP + sp(8);
+  const dx = tx - cx, dy = ty - cy;
+  const d = Math.hypot(dx, dy);
+  if (d <= HOLE_FALL_DRIFT_SPEED) { e.fx += dx; e.fy += dy; return; }
+  e.fx += Math.round(dx * HOLE_FALL_DRIFT_SPEED / d);
+  e.fy += Math.round(dy * HOLE_FALL_DRIFT_SPEED / d);
+}
 
 /** Which step of a held sequence frame `f` falls in (the last once past the end). */
 function heldStep(holds, f) {
@@ -18014,6 +18109,13 @@ const EFFECTS = {
   // vanishes or appears in; `kill` is PART_ENEMY_DESTROYED, what an ordinary
   // enemy dies in, flickering between two palettes.
   puff: { frames: ['fx_puff0', 'fx_puff1', 'fx_puff2'], holds: PUFF_HOLDS, own: true, w: 32, h: 32, centre: true },
+  // INTERAC_FALLDOWNHOLE (S185): what a pot, a block, an enemy or a drop
+  // becomes when it goes over a hole — a ball that shrinks as it slides to
+  // the hole's middle. Spawn it at the thing's own 16x16 spot.
+  hole: {
+    frames: ['fx_hole0', 'fx_hole1', 'fx_hole2'], holds: HOLE_FALL_HOLDS, own: true, w: 32, h: 32, centre: true,
+    depth: -4, update: driftIntoHole,
+  },
   kill: {
     frames: ['fx_kill0', 'fx_kill1', 'fx_kill0', 'fx_kill2', 'fx_kill2', 'fx_kill3', 'fx_kill4'],
     holds: KILL_PUFF_HOLDS, flicker: KILL_PUFF_FLICKER, own: true, w: 32, h: 32, centre: true,
@@ -18140,7 +18242,7 @@ __define("game/items.js", function (__exports, __require) {
 //     use(game, player, level) -> boolean   // true if the press was consumed
 //   }
 
-const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags, overHole, dropIntoHole } = __require("game/entity.js");
 const { Projectile, fire } = __require("game/projectile.js");
 const { Explosion } = __require("game/effects.js");
 const { F } = __require("world/tileset.js");
@@ -18274,9 +18376,10 @@ class Kilnshell extends Entity {
   /** On a hole, resting or landing: down it if there is a room below, else lost. */
   intoHole(game, f) {
     if ((f & F.DROP) && game.dropObjectThrough(this)) { game.audio.sfx('fall'); return; }
+    if (!(f & F.DEEP)) { dropIntoHole(game, this); return; }
     this.remove = true;
-    game.spawnEffect(f & F.DEEP ? 'splash' : 'puff', this.cx - 8, this.cy - 8);
-    game.audio.sfx(f & F.DEEP ? 'splash' : 'fall');
+    game.spawnEffect('splash', this.cx - 8, this.cy - 8);
+    game.audio.sfx('splash');
   }
 
   /** The flags under the shell — or under the player, while being carried. */
@@ -18634,7 +18737,10 @@ class ThrownObject extends Entity {
         return;
       }
     }
-    if (this.fz <= 0) this.shatter(game);
+    if (this.fz <= 0) {
+      if (overHole(game, this)) { dropIntoHole(game, this); return; }
+      this.shatter(game);
+    }
   }
 
   /** It hits with the 12x12 box Seasons gives it the frame it leaves the
@@ -22286,7 +22392,7 @@ __define("game/objects.js", function (__exports, __require) {
 // World objects: pickups, chests, NPCs, signs, pushable blocks, switches,
 // torches, rafts, essences. All are spawnable from room data via entity tuples.
 
-const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC, overHole, dropIntoHole } = __require("game/entity.js");
 const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { FP_ONE, sp } = __require("core/fixed.js");
@@ -22541,6 +22647,12 @@ class Pickup extends Entity {
       this._leg--;
       moveEntity(game, this, this._fvx, this._fvy);
     }
+    // A DROP THAT COMES TO REST ON A HOLE GOES DOWN IT (S185), as Seasons'
+    // PART_ITEM_DROP does on landing (itemDrop_checkOnHazard). A treasure
+    // that waits for you — a key, a heart piece — is not a drop and stays.
+    if (this.isFallingDrop() && this.settle <= 0 && overHole(game, this)) {
+      dropIntoHole(game, this); return;
+    }
     if (this.grabDelay > 0) this.grabDelay--;
     // The clock starts when it has landed, as the cartridge's does.
     if (this.life !== Infinity && this.settle <= 0 && --this.life <= 0) { this.remove = true; return; }
@@ -22549,6 +22661,12 @@ class Pickup extends Entity {
     // once speedZ stops being negative).
     if (this.settle > 0 && this.vz < 0) return;
     if (this.grabDelay <= 0 && game.player && this.overlaps(game.player)) this.collect(game);
+  }
+
+  /** A drop the floor can take: one of the fleeting PART_ITEM_DROPs, not a
+   *  treasure, not a fairy (it flies). */
+  isFallingDrop() {
+    return !this.spec.persistent && !this.spec.float && !this.attached && this.life !== Infinity;
   }
 
   /** Can a blade take this one (S179)? Only a DROP — Seasons' PART_ITEM_DROP;
@@ -23457,6 +23575,9 @@ class PushBlock extends Entity {
     if (this.fx === this.slide.fx && this.fy === this.slide.fy) {
       this.slide = null;
       this.moved = true;
+      // Pushed onto a hole, it goes down it (pushblock.s: on arriving,
+      // objectReplaceWithAnimationIfOnHazard), and comes back with the room.
+      if (overHole(game, this)) { dropIntoHole(game, this); return; }
       game.onBlockLanded(this);
     }
   }
@@ -32685,7 +32806,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -32863,12 +32984,15 @@ class Enemy extends Entity {
     if (this.dying) {
       if (this.knockTime > 0) {
         this.knockTime--;
-        const hit = moveEntity(game, this, this.knockX, this.knockY);
+        const hit = this.knockMove(game);
         if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
       }
       if (this.knockTime <= 0) { this.dying = false; this.vanish(game); }
       return;
     }
+
+    // GONE OVER A HOLE (S185): pulled to its middle, then down it.
+    if (this.holeFall > 0) { this.updateHoleFall(game); return; }
 
     // Tide interactions: some enemies only exist at certain tide levels — and
     // at the level where THIS enemy is standing, not the room's base. An
@@ -32902,7 +33026,8 @@ class Enemy extends Entity {
     // last frame of it puts the enemy back on.
     if (this.knockTime > 0) {
       this.knockTime--;
-      const hit = moveEntity(game, this, this.knockX, this.knockY);
+      const hit = this.knockMove(game);
+      if (this.overHole(game)) { this.beginHoleFall(game); return; }
       // Stopped dead against something: the throw ends here, as the
       // cartridge's does (ecom_updateKnockback_common).
       if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
@@ -32925,7 +33050,89 @@ class Enemy extends Entity {
     }
   }
 
+  /**
+   * One frame of a knock. A knock is stopped by walls and by nothing else —
+   * the cartridge's ecom_updateKnockback asks only for adjacent walls — so a
+   * ground enemy that walks round a hole can be thrown onto one (S185). Its
+   * own avoid mask is lifted of F.PIT for the frame, which is the engine's
+   * own `canOccupy` answering with the caps the knock has.
+   */
+  knockMove(game) {
+    const avoid = this.avoidFlags;
+    if (this.canFallInHole()) this.avoidFlags = avoid & ~F.PIT;
+    const hit = moveEntity(game, this, this.knockX, this.knockY);
+    this.avoidFlags = avoid;
+    return hit;
+  }
+
+  /** Whether a hole can take it: an ordinary enemy on the ground. Bosses,
+   *  minibosses, fliers and swimmers never fall. */
+  canFallInHole() {
+    return !this._bossClass && !this.isBoss && !this.flying && this.z <= 2
+      && this.terrain !== 'water' && this.terrain !== 'air';
+  }
+
+  /**
+   * Over a hole, by the cartridge's own test (ecom_checkHazards): the tile
+   * HOLE_FOOT_DY below its centre, one pixel left of it or one pixel right.
+   * Returns that tile, or null.
+   */
+  overHole(game) {
+    if (!this.canFallInHole() || !game.room) return null;
+    const ty = Math.floor((this.cy + HOLE_FOOT_DY) / TILE);
+    for (const dx of [-1, 1]) {
+      const tx = Math.floor((this.cx + dx) / TILE);
+      if (game.room.inBounds(tx, ty) && (game.room.flagsAt(tx, ty, game.tide) & F.PIT)) return { tx, ty };
+    }
+    return null;
+  }
+
+  /** ecom_checkHazards @touchedHazard: harmless, still, and counting down. */
+  beginHoleFall(game) {
+    const at = this.overHole(game);
+    this.holeAt = at;
+    this.holeFall = ENEMY_HOLE_PULL_FRAMES;
+    this.knockTime = 0; this.invuln = 0; this.flicker = 0;
+    this.harmless = true;
+    this.step = null; this.stepping = false;
+  }
+
+  /**
+   * ecom_fallingInHole: every ENEMY_HOLE_PULL_EVERY frames half a pixel
+   * toward the middle of the hole, and down it when it gets there or the
+   * count runs out.
+   */
+  updateHoleFall(game) {
+    if (--this.holeFall <= 0) { this.fallInHole(game); return; }
+    if (this.holeFall % ENEMY_HOLE_PULL_EVERY !== 0) return;
+    const tx = sp(this.holeAt.tx * TILE + TILE / 2 - this.w / 2);
+    const ty = sp(this.holeAt.ty * TILE + TILE / 2 - this.h / 2);
+    const dx = tx - this.fx, dy = ty - this.fy;
+    if (dx === 0 && dy === 0) { this.fallInHole(game); return; }
+    const d = Math.hypot(dx, dy);
+    if (d <= ENEMY_HOLE_PULL_STEP) { this.fx = tx; this.fy = ty; return; }
+    this.fx += Math.round(dx * ENEMY_HOLE_PULL_STEP / d);
+    this.fy += Math.round(dy * ENEMY_HOLE_PULL_STEP / d);
+  }
+
+  /**
+   * ecom_fallDownHoleAndDelete: replaced by INTERAC_FALLDOWNHOLE and gone —
+   * counted as beaten at once (decNumEnemies), dropping nothing and dying in
+   * no puff, and a zol that goes down whole does not split.
+   */
+  fallInHole(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    this.holeFall = 0;
+    game.spawnEffect('hole', this.cx - 8, this.cy - 8);
+    game.audio.sfx('fallInHole');
+    game.onEnemyDefeated(this, false);
+  }
+
   hurt(game, dmg, dir, knock, from) {
+    // Going down a hole, it has no collisions left (@touchedHazard).
+    if (this.holeFall > 0) return false;
     // A creature flopping on the bank cannot raise its shield and cannot take
     // a hit lightly. This is the Dredge Line's combat verb, and it is the
     // whole answer to an aquatic enemy you could otherwise never corner.
@@ -62779,6 +62986,9 @@ const SFX = {
   throw: { seasons: 'throw' },
   shatter: { seasons: 'breakRock' },
   fall: { seasons: 'linkFall' },
+  // A pot, a block, an enemy or a drop going down a hole (S185):
+  // SND_FALLINHOLE, played by INTERAC_FALLDOWNHOLE as it appears.
+  fallInHole: { seasons: 'fallInHole' },
 
   // --- items --------------------------------------------------------------
   conch: {
@@ -71207,7 +71417,7 @@ __exports["installTreasureSprites"] = installTreasureSprites;
 
 /* ===== src/data/sprites-effects.js ===== */
 __define("data/sprites-effects.js", function (__exports, __require) {
-// The smoke puffs, the bomb blast and the moving platform, cut from Oracle of
+// The smoke puffs, the fall into a hole, the bomb blast and the moving platform, cut from Oracle of
 // Seasons' own graphics.
 //
 // Generated by tools/rip-effects.py — edit that, not this file.
@@ -71215,18 +71425,20 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 // commit 7584d87), assets/effects/oracles-disasm/seasons/: the common sprite
 // graphics every room keeps loaded, spr_dungeon_sprites (the platform, from
 // commit 21c924a; the tables are identical there), the tables that lay out
-// INTERAC_PUFF, INTERAC_MOVING_PLATFORM,
+// INTERAC_PUFF, INTERAC_FALLDOWNHOLE, INTERAC_MOVING_PLATFORM,
 // PART_ENEMY_DESTROYED and the exploding ITEM_BOMB, and the standard sprite
 // palettes. Credit: the oracles-disasm project and its contributors; the
 // artwork is Nintendo's and Capcom's. This is fan-work art only.
 //
 // Every frame is 32x32 with the object's position at (16, 16), and carries
 // its own colours: draw sites must NOT pass a palette. How long each is held
-// is in src/data/feel.js (PUFF_HOLDS, KILL_PUFF_HOLDS, EXPLOSION_HOLDS); the
+// is in src/data/feel.js (PUFF_HOLDS, HOLE_FALL_HOLDS, KILL_PUFF_HOLDS,
+// EXPLOSION_HOLDS); the
 // frame order those holds walk is listed here.
 //
 // Built from:
 //   fx_puff*: frames 0 1 2 (held 6 8 4), tile base $16
+//   fx_hole*: frames 0 1 2 (held 8 12 12), tile base $16
 //   fx_kill*: frames 0 1 0 2 2 3 4 (held 2 2 2 4 4 4 2), tile base $0c
 //   fx_boom*: frames 0 1 0 2 3 4 (held 4 4 3 7 8 8), tile base $0c
 //   o_float*: frames 0 (held 127), tile base $08
@@ -71305,6 +71517,108 @@ const EFFECT_ART = {
     ................................` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   fx_puff2: { pal: 'fx_puff2', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ...............33...............
+    ..............3003..............
+    ..............3003..............
+    ...............33...............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_hole0: { pal: 'fx_hole0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................33..............
+    .............333113.............
+    ............31111113............
+    ...........311100113............
+    ...........311000013............
+    ............310000113...........
+    ............311001113...........
+    ............31111113............
+    .............311333.............
+    ..............33................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_hole1: { pal: 'fx_hole1', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..............3333..............
+    .............310013.............
+    .............300003.............
+    .............300003.............
+    .............310013.............
+    ..............3333..............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_hole2: { pal: 'fx_hole2', art: `
     ................................
     ................................
     ................................
@@ -71887,6 +72201,9 @@ const EFFECT_PALETTES = {
   fx_puff0: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   fx_puff1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   fx_puff2: ['#ff7b08', '#ff7b08', '#ff7b08', '#000000'],
+  fx_hole0: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_hole1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  fx_hole2: ['#ff7b08', '#ff7b08', '#ff7b08', '#000000'],
   fx_kill0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   fx_kill0b: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   fx_kill1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],

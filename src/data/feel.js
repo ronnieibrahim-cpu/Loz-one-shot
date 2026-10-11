@@ -1597,6 +1597,40 @@ export const FAIRY_LEG_SPAN = 32;
  *  at a guessed 4 frames each. */
 export const PUFF_HOLDS = [6, 8, 4];
 
+/** f[] — how long each frame of the fall into a hole is held, in the order
+ *  sprites-effects.js lists `fx_hole*` (S185). derived from the cartridge:
+ *  oracles-disasm data/seasons/interactionAnimations.s, interactionAnimation521fe
+ *  (INTERAC_FALLDOWNHOLE's animation 0): 8 12 12, then the $ff frame whose
+ *  animParameter deletes it (fallDownHole.s @state1). 32 frames. */
+export const HOLE_FALL_HOLDS = [8, 12, 12];
+
+/** sp/f — how fast the falling picture slides to the middle of its hole:
+ *  0.375 px/f. derived from the cartridge: fallDownHole.s @interac0f_state0
+ *  sets Interaction.speed to SPEED_60 ($60 subpixels a frame), and @state1
+ *  steers it at the tile's centre, ((y + 5) & $f0) + 8, (x & $f0) + 8. */
+export const HOLE_FALL_DRIFT_SPEED = 96;
+
+/** px — how far below an object's centre the point that decides whether it
+ *  is over a hole is. derived from the cartridge: objectCheckIsOverHazard
+ *  reads the tile at (y + 5, x) (code/bank0.s, `ld bc,$0500`); an enemy asks
+ *  the same row at x - 1 and x + 1 (enemies/commonCode.s ecom_checkHazards). */
+export const HOLE_FOOT_DY = 5;
+
+/** f — how long an enemy that has gone over a hole is pulled toward its
+ *  middle before it drops in (sooner if it gets there first). derived from
+ *  the cartridge: ecom_checkHazards @touchedHazard sets Enemy.counter1 to
+ *  60; ecom_fallingInHole drops it when the count runs out. */
+export const ENEMY_HOLE_PULL_FRAMES = 60;
+
+/** f — an enemy over a hole is moved toward its middle once in this many
+ *  frames. derived from the cartridge: ecom_fallingInHole moves it only when
+ *  (counter1 & 7) == 0. */
+export const ENEMY_HOLE_PULL_EVERY = 8;
+
+/** sp — how far each of those pulls moves it: half a pixel. derived from the
+ *  cartridge: ecom_fallingInHole applies SPEED_80 ($80 subpixels) once. */
+export const ENEMY_HOLE_PULL_STEP = 128;
+
 /** f — a bomb's fuse: still for 80 frames, then flashing on a 4-frame beat for
  *  36 more, and it goes off on the 117th. derived from the cartridge:
  *  oracles-disasm data/itemAnimations.s, itemAnimation1e777 (ITEM_BOMB's

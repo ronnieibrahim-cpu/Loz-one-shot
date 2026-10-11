@@ -13,6 +13,7 @@
 
 import {
   Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags,
+  overHole, dropIntoHole,
 } from './entity.js';
 import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
@@ -164,9 +165,10 @@ export class Kilnshell extends Entity {
   /** On a hole, resting or landing: down it if there is a room below, else lost. */
   intoHole(game, f) {
     if ((f & F.DROP) && game.dropObjectThrough(this)) { game.audio.sfx('fall'); return; }
+    if (!(f & F.DEEP)) { dropIntoHole(game, this); return; }
     this.remove = true;
-    game.spawnEffect(f & F.DEEP ? 'splash' : 'puff', this.cx - 8, this.cy - 8);
-    game.audio.sfx(f & F.DEEP ? 'splash' : 'fall');
+    game.spawnEffect('splash', this.cx - 8, this.cy - 8);
+    game.audio.sfx('splash');
   }
 
   /** The flags under the shell — or under the player, while being carried. */
@@ -524,7 +526,10 @@ export class ThrownObject extends Entity {
         return;
       }
     }
-    if (this.fz <= 0) this.shatter(game);
+    if (this.fz <= 0) {
+      if (overHole(game, this)) { dropIntoHole(game, this); return; }
+      this.shatter(game);
+    }
   }
 
   /** It hits with the 12x12 box Seasons gives it the frame it leaves the
