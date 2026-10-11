@@ -379,7 +379,8 @@ FIGURES.push(
     { n: 13, at: [4, 3, 6, 3] }, { n: 14, at: [5, 3, 20, 7] }, { n: 15, at: [5, 2, 1, 6] }, { n: 16, at: [4, 2, 7, 5] },
     { n: 17, at: [4, 1, 3, 3] }, { n: 18, at: [3, 2, 7, 2] }, { n: 19, at: [3, 1, 7, 7] },
   ] },
-  { out: 'd4-basin', src: 'd4-basin-whole', marks: [{ ring: [7, 8] }, lbl('key, once the room is clear', [7, 9])] },
+  { out: 'd4-basin', src: 'd4map-0-4-6', marks: [{ ring: [7, 5] }, lbl('key: swim to it at HIGH', [7, 9.2]), MID] },
+  { out: 'd4-weir-ride', src: 'd4-weir-ride-whole', marks: [{ ring: [7, 1] }, lbl('locked door', [8, 0.4], 'e'), lbl('the channel must be flowing', [10, 8.4], 's')] },
   { out: 'd4-floor', src: 'd4-floor-plate-whole', scale: 2, marks: [
     { n: 1, at: [3, 2], off: [0, -14] }, lbl('push the block left\nonto its plate', [4, 3.4], 'nw'),
     { n: 2, at: [41, 8], off: [0, -14] }, { ring: [41, 8] }, lbl('then stand on this plate', [40, 9.4], 'w'),
@@ -399,9 +400,9 @@ FIGURES.push(
   { out: 'd4-gauge', src: 'd4-gauge-blow-whole', marks: [
     { ring: [4, 5] }, { ring: [1, 5] }, { path: [[3.4, 5], [1.6, 5]], w: 5 }, lbl('the key pops out here', [4, 6.3]), MID,
   ] },
-  { out: 'd4-race', src: 'd4-race-blow2-whole', marks: [
-    { n: 1, at: [4, 1], off: [0, 14] }, { ring: [1, 1] }, lbl('first wheel at MID', [2, 2.2], 'nw'),
-    { n: 2, at: [10, 5], off: [14, 0] }, { ring: [10, 2] }, { path: [[10, 4.4], [10, 2.6]], w: 5 }, lbl('second wheel at HIGH', [11, 2], 'e'), HIGH,
+  { out: 'd4-race-brake', src: 'd4-race-brake-whole', marks: [
+    { ring: [7, 1] }, lbl('key', [8, 1], 'e'), { ring: [7, 6] }, { path: [[7, 4.6], [7, 5.6]], w: 5 },
+    lbl('blow at the pool: the platform stops', [9, 7.6], 'nw'), MID,
   ] },
   { out: 'd4-ironknight', src: 'd4-ironknight-whole', scale: 2, marks: [{ ring: [20, 5], r: 16 }, lbl('Ironknight', [20, 3.4], 'n'), HIGH] },
   { out: 'd4-crossed', src: 'd4-crossed-blow2-whole', marks: [
@@ -417,7 +418,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D5
   { out: 'ow5-noble', src: 'ow5-noble' },
   { out: 'ow-leg5', scale: 1, map: { rooms: ow(range(1, 9), range(3, 7)) }, marks: [
-    { trail: { from: 987, to: 1009, every: 8 }, w: 3 },
+    { trail: { from: 999, to: 1021, every: 8 }, w: 3 },
     { n: 1, at: [3, 7, 3, 2] }, { n: 2, at: [5, 4, 4, 3] },
   ] },
 
@@ -463,7 +464,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1428, to: 1450, every: 8 }, w: 3 },
+    { trail: { from: 1440, to: 1462, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 

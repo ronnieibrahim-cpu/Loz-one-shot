@@ -41,7 +41,7 @@ export const REQUIRED_SPRITES = {
   // fx_sword_*: the sword's eight pictures, cut from Seasons' spr_swords by
   // tools/rip-link.py, the sword object's position at (16, 16).
   fxBig: [...seq('fx_sword_', 8), ...seq('fx_puff', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
-    ...seq('fx_boom', 5)],
+    ...seq('fx_boom', 5), 'o_float0'],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud
   // (tools/rip-hud-tiles.py): the level beside a levelled item, the count

@@ -1,30 +1,73 @@
-## S183 — the Cliffside Cistern designed to three floors and mocked (NOT built)
+## S183 — the Cliffside Cistern designed to three floors; first half built (spikes, floats, N1-N3)
 
 Branch claude/s183-cistern-design-o7q0r3, off main at aae0372 (main already
-had S181 and S182). Nothing in src/ changed; dist/ unchanged.
+had S181 and S182). NOT merged to main: ask the human.
 
-### What landed
+### Part one: the design (shown to the human before building)
 - docs/briefs/D4-CLIFFSIDE-CISTERN.md: the machine ("the Sealed Cistern keeps
   the sea you climbed with; each Wind Loft wheel lifts the gate of the tank
   beneath it, which then stands one level under the sea"), 44 screens on 3
-  floors (1F as now with five rooms reworked, 2F five new rooms where the
-  conch is not heard, 3F one 3x1 room of three wheels), three pieces from the
-  cartridges (spikes and a spike pool drowned only at HIGH; floats = Seasons'
-  INTERAC_MOVING_PLATFORM that run only while their race runs and freeze
-  while the conch sounds, the cartridge's wLinkPlayingInstrument rule;
-  sluice gates), puzzles N1-N9 with their ahas, the key table, the checkers.
-- Pictures in docs/briefs/d4-mock/: d4-plan, mock-spikes (Dancing Dragon
-  $67), mock-floats ($5e), mock-machine (Ages Jabu-Jabu $6d/$5c), mock-loft.
-  gen-spec.py / compose.py / plan.py make them.
-- tools/shoot-mock.mjs learned `overrides` (cones, drained regions), `link`
-  (Link stood on a tile, pumping) and rooms wider than one screen.
-- FOUND: tide overrides do not add (newest wins), so a cone over a drained
-  tank reads one under, not two; the build must make relative overrides stack.
-  And the Cistern's pits are the shared navy dPit, not the Dragon's black hole.
+  floors (1F as now, five rooms reworked; 2F five new rooms where the conch is
+  not heard; 3F one 3x1 room of three wheels), three pieces from the
+  cartridges (spikes and a spike pool drowned only at HIGH; floats; sluice
+  gates), puzzles N1-N9 with their ahas, the key table, the checkers.
+- Pictures in docs/briefs/d4-mock/ (d4-plan, mock-spikes beside Dancing
+  Dragon $67, mock-floats beside $5e, mock-machine beside Ages Jabu-Jabu
+  $6d/$5c, mock-loft); gen-spec.py / compose.py / plan.py make them.
+  tools/shoot-mock.mjs learned `overrides`, `link` and wide rooms.
+- THE HUMAN SAID YES TO ALL FIVE: the Sealed Cistern (2F noTide); floats
+  driven by their race; the Long Race's and Crossed Sluices' wheels go and
+  the Boss Key moves up to the East Tank; the Bottled Tide may skip N9 once;
+  two building sessions.
 
-### NEXT
-The human was shown the mock and asked the brief's five open questions.
-Build what they approve (the brief's "Engine and tools the build needs").
+### Part two: what was built
+- RIPPED: rip-dungeon-themes.py `xSpike` (Dragon tileset $3a metatile $60,
+  TILETYPE_SPIKE) and `xHole` ($f4, TILETYPE_HOLE); rip-effects.py `o_float0`
+  (INTERAC_MOVING_PLATFORM subid 5, spr_dungeon_sprites copied into
+  assets/effects from oracles-disasm 21c924a, palette 0: tan frame, green
+  panels). Tiles dSpikeCistern, dHoleCistern, dSumpCistern, dDrainCistern,
+  dSpikePoolCistern (spikes, spikes, deep). Cistern legend: ^ O 0 4 now the
+  Dragon's black hole/spikes, `5` the spike pool.
+- ENGINE: Tide.resolve — relative overrides ADD down to the first absolute
+  one (the cone over an Anchor patch or a drained tank). Float (objects.js;
+  path script wait/up/right/down/left/speed/loop; FLOAT_SPEED = SPEED_80 and
+  FLOAT_FOOT_DY = 5 in feel.js, derived; runs only while its `race` tile has
+  a `push`; holds still while player.conchTime > 0; carries the player by
+  its subpixel delta). Player.onFloat: no pit fall or spike sting while on
+  one. src/game/float-path.js floatSweep (shared with the flood).
+- ROOMS: 0,4,6 Spike Basin (key chest on a dais in a spike pool; spikeRoom
+  claim), 0,3,5 the Weir (north key door across a 2-tile hole, a float that
+  waits under it; floatRoom station), 0,4,3 the Long Race (float across the
+  hole, key in a notch at 7,1 it never stops under, race pool 6..8,6;
+  floatRoom brake 1; its two wheels and the vault gone; east door now a LOCK
+  shared with the Ironknight Gallery's west door — the notch key opens it).
+  Keys 5, locks 5.
+- TOOLS: dungeon-flood knows floats (opts.float); check-floats.mjs (20) and
+  check-spikes.mjs (5), both in CLAUDE.md's table; actor-runtime `board` and
+  `alight` (with `brake: [rx, ry]`: pumps at the race WARMUP frames early,
+  stops 4 px short); dungeon-strands baseline re-recorded (the race pool is
+  a deliberate 3-cell pocket).
+- ROUTE: Spike Basin at HIGH (a LOW fight knocks the robot onto spikes); the
+  Weir boarded under the door; the Long Race braked at MID, notch, re-board,
+  east bank, HIGH for the Ironknight. The Long Race's keese replaced by a
+  stalfos (a flier the fight cannot catch knocked the robot off the float).
+- GUIDE: shots.mjs/figures.mjs remapped by LCS from HEAD; new shots
+  d4-weir-ride, d4-race-ride/brake/notch; chapter 9 stops 1-2 and 13
+  rewritten.
+
+### Verified
+Whole table green; check-playthrough 47/47, THE END, never died.
+
+### NEXT (S184): the second half — N4-N9 (see the brief)
+2F the Sealed Cistern (5 rooms over x 4-6, y 2-3, every room noTide; the
+Intake over the Ironknight Gallery's east half, its stair opened by the
+miniboss), 3F the Wind Loft (3x1 at 4-6,2, three sills), the gates
+(`reward.drains`-style flag-gated delta -1 regions, set by a wheel in
+another room; the flood taught them and the noTide floor in the same
+commit), check-sluices.mjs, the Boss Key in the East Tank, the Crossed
+Sluices' two wheels removed (keep its shortcut plate), a check-side
+whole-dungeon run, robot, guide. Leftover: the falling-into-a-hole animation
+for objects (INTERAC_FALLDOWNHOLE).
 
 ## S182 — the Bogwater Sanctum finished: P5 the Sump, P6 the Reliquary, 42 screens
 

@@ -65,7 +65,8 @@ export class Tide {
    * going through `room.tile`/`flagsAt`/`solidAt`/`render` is already correct;
    * the rule binds direct callers of this method.
    *
-   * LAST PLACED WINS. Overlapping overrides are searched newest-first, so two
+   * THE NEWEST ABSOLUTE WINS, and every relative override above it adds (see
+   * `resolve`). Overlapping overrides are searched newest-first, so two
    * anchors covering the same tile give a defined answer instead of one that
    * depends on the order the list happens to be in. (The Anchor allows only one
    * at a time, so today this never arises — it is defined so that the day a
@@ -73,30 +74,45 @@ export class Tide {
    * an accident.)
    */
   levelAt(tx, ty, room) {
+    return this.resolve(this.level, tx, ty, room);
+  }
+
+  /**
+   * The level at a tile over a given base. An override holds EITHER an
+   * absolute level or a delta.
+   *
+   * The Anchor is absolute: it froze the water at whatever it was when it
+   * bit, and the conch moving afterwards is precisely what it is holding out
+   * against. The Squall Bellows is relative: it holds the water back ONE STEP
+   * from wherever it already is, so a conch press while you are pumping moves
+   * the cone too. Collapsing the two into one number would make one of the
+   * items wrong.
+   *
+   * RELATIVE OVERRIDES ADD (S183). Until then the newest override won and
+   * the rest were ignored, so a cone over an anchored patch read one under
+   * the open sea rather than one under the patch — and the Cliffside
+   * Cistern's drained tanks (a delta that lasts) could never be worked by the
+   * wind on top of them. So the deltas covering a tile are summed, newest
+   * first, down to the first absolute override under them (or the base), and
+   * the sum is clamped once.
+   */
+  resolve(base, tx, ty, room) {
     const list = this.overrides;
-    if (list.length) {
-      const r = room !== undefined ? room : this.game.room;
-      if (r) {
-        const mapId = this.game.mapId, key = r.key;
-        for (let i = list.length - 1; i >= 0; i--) {
-          const o = list[i];
-          if (o.roomKey !== key || o.mapId !== mapId) continue;
-          if (!this.covers(o, tx, ty, r)) continue;
-          // An override holds EITHER an absolute level or a delta from the base.
-          //
-          // The Anchor is absolute: it froze the water at whatever it was when
-          // it bit, and the conch moving afterwards is precisely what it is
-          // holding out against. The Squall Bellows is relative: it holds the
-          // water back ONE STEP from wherever the conch currently has it, so a
-          // conch press while you are pumping moves the cone too. Collapsing
-          // the two into one number would make one of the items wrong.
-          if (o.delta == null) return o.level;
-          const lv = this.level + o.delta;
-          return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);
-        }
-      }
+    if (!list.length) return base;
+    const r = room !== undefined ? room : this.game.room;
+    if (!r) return base;
+    const mapId = this.game.mapId, key = r.key;
+    let delta = 0, under = base;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const o = list[i];
+      if (o.roomKey !== key || o.mapId !== mapId) continue;
+      if (!this.covers(o, tx, ty, r)) continue;
+      if (o.delta == null) { under = o.level; break; }
+      delta += o.delta;
     }
-    return this.level;
+    if (!delta) return under;
+    const lv = under + delta;
+    return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);
   }
 
   /**
@@ -180,24 +196,7 @@ export class Tide {
     return {
       level: base,
       stamp: this.stamp + ':' + base,
-      levelAt(tx, ty, room) {
-        const list = self.overrides;
-        if (list.length) {
-          const r = room !== undefined ? room : self.game.room;
-          if (r) {
-            const mapId = self.game.mapId, key = r.key;
-            for (let i = list.length - 1; i >= 0; i--) {
-              const o = list[i];
-              if (o.roomKey !== key || o.mapId !== mapId) continue;
-              if (!self.covers(o, tx, ty, r)) continue;
-              if (o.delta == null) return o.level;
-              const lv = base + o.delta;
-              return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);
-            }
-          }
-        }
-        return base;
-      },
+      levelAt(tx, ty, room) { return self.resolve(base, tx, ty, room); },
     };
   }
 

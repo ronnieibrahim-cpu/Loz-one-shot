@@ -3142,6 +3142,19 @@ const BELLOWS_RAFT_SCALE = 0.5;
 /** f — frames a gusted wheel keeps turning after the gust stops. guessed. */
 const BELLOWS_WHEEL_COAST = 30;
 
+// --- Floats (the Cliffside Cistern's moving platforms, S183) --------------
+
+/** sp/f — how fast a float travels: 0.5 px/f. derived from the cartridge:
+ *  INTERAC_MOVING_PLATFORM's @state0 sets Interaction.speed to SPEED_80, the
+ *  speed table's $80 subpixels a frame (constants/common/objectSpeeds.s;
+ *  SPEED_100 is Link's 1 px/f walk). */
+const FLOAT_SPEED = 128;
+
+/** px — how far below Link's centre the point a float must be under him is.
+ *  derived from the cartridge: movingPlatform.s @checkLinkTouching tests
+ *  w1Link.yh + 5, w1Link.xh against the platform's collision box. */
+const FLOAT_FOOT_DY = 5;
+
 // --- Reefseed --------------------------------------------------------------
 
 /** f — how long a thrown Reefseed takes to become a coral pillar. guessed;
@@ -4179,6 +4192,8 @@ __exports["BELLOWS_PUSH"] = BELLOWS_PUSH;
 __exports["BELLOWS_PUFF_EVERY"] = BELLOWS_PUFF_EVERY;
 __exports["BELLOWS_RAFT_SCALE"] = BELLOWS_RAFT_SCALE;
 __exports["BELLOWS_WHEEL_COAST"] = BELLOWS_WHEEL_COAST;
+__exports["FLOAT_SPEED"] = FLOAT_SPEED;
+__exports["FLOAT_FOOT_DY"] = FLOAT_FOOT_DY;
 __exports["REEFSEED_GROW_FRAMES"] = REEFSEED_GROW_FRAMES;
 __exports["REEFSEED_SETTLE_FRAMES"] = REEFSEED_SETTLE_FRAMES;
 __exports["REEFSEED_THROW_SPEED"] = REEFSEED_THROW_SPEED;
@@ -12270,7 +12285,8 @@ class Tide {
    * going through `room.tile`/`flagsAt`/`solidAt`/`render` is already correct;
    * the rule binds direct callers of this method.
    *
-   * LAST PLACED WINS. Overlapping overrides are searched newest-first, so two
+   * THE NEWEST ABSOLUTE WINS, and every relative override above it adds (see
+   * `resolve`). Overlapping overrides are searched newest-first, so two
    * anchors covering the same tile give a defined answer instead of one that
    * depends on the order the list happens to be in. (The Anchor allows only one
    * at a time, so today this never arises — it is defined so that the day a
@@ -12278,30 +12294,45 @@ class Tide {
    * an accident.)
    */
   levelAt(tx, ty, room) {
+    return this.resolve(this.level, tx, ty, room);
+  }
+
+  /**
+   * The level at a tile over a given base. An override holds EITHER an
+   * absolute level or a delta.
+   *
+   * The Anchor is absolute: it froze the water at whatever it was when it
+   * bit, and the conch moving afterwards is precisely what it is holding out
+   * against. The Squall Bellows is relative: it holds the water back ONE STEP
+   * from wherever it already is, so a conch press while you are pumping moves
+   * the cone too. Collapsing the two into one number would make one of the
+   * items wrong.
+   *
+   * RELATIVE OVERRIDES ADD (S183). Until then the newest override won and
+   * the rest were ignored, so a cone over an anchored patch read one under
+   * the open sea rather than one under the patch — and the Cliffside
+   * Cistern's drained tanks (a delta that lasts) could never be worked by the
+   * wind on top of them. So the deltas covering a tile are summed, newest
+   * first, down to the first absolute override under them (or the base), and
+   * the sum is clamped once.
+   */
+  resolve(base, tx, ty, room) {
     const list = this.overrides;
-    if (list.length) {
-      const r = room !== undefined ? room : this.game.room;
-      if (r) {
-        const mapId = this.game.mapId, key = r.key;
-        for (let i = list.length - 1; i >= 0; i--) {
-          const o = list[i];
-          if (o.roomKey !== key || o.mapId !== mapId) continue;
-          if (!this.covers(o, tx, ty, r)) continue;
-          // An override holds EITHER an absolute level or a delta from the base.
-          //
-          // The Anchor is absolute: it froze the water at whatever it was when
-          // it bit, and the conch moving afterwards is precisely what it is
-          // holding out against. The Squall Bellows is relative: it holds the
-          // water back ONE STEP from wherever the conch currently has it, so a
-          // conch press while you are pumping moves the cone too. Collapsing
-          // the two into one number would make one of the items wrong.
-          if (o.delta == null) return o.level;
-          const lv = this.level + o.delta;
-          return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);
-        }
-      }
+    if (!list.length) return base;
+    const r = room !== undefined ? room : this.game.room;
+    if (!r) return base;
+    const mapId = this.game.mapId, key = r.key;
+    let delta = 0, under = base;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const o = list[i];
+      if (o.roomKey !== key || o.mapId !== mapId) continue;
+      if (!this.covers(o, tx, ty, r)) continue;
+      if (o.delta == null) { under = o.level; break; }
+      delta += o.delta;
     }
-    return this.level;
+    if (!delta) return under;
+    const lv = under + delta;
+    return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);
   }
 
   /**
@@ -12385,24 +12416,7 @@ class Tide {
     return {
       level: base,
       stamp: this.stamp + ':' + base,
-      levelAt(tx, ty, room) {
-        const list = self.overrides;
-        if (list.length) {
-          const r = room !== undefined ? room : self.game.room;
-          if (r) {
-            const mapId = self.game.mapId, key = r.key;
-            for (let i = list.length - 1; i >= 0; i--) {
-              const o = list[i];
-              if (o.roomKey !== key || o.mapId !== mapId) continue;
-              if (!self.covers(o, tx, ty, r)) continue;
-              if (o.delta == null) return o.level;
-              const lv = base + o.delta;
-              return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);
-            }
-          }
-        }
-        return base;
-      },
+      levelAt(tx, ty, room) { return self.resolve(base, tx, ty, room); },
     };
   }
 
@@ -19829,9 +19843,17 @@ class Player extends Entity {
     }
   }
 
+  /** Is he standing on a float (the Cistern's moving platform)? Then the
+   *  hole or the spikes under it are not under him. */
+  onFloat(game) {
+    for (const e of game.entities) if (e.isFloat && !e.dead && e.carries(this)) return true;
+    return false;
+  }
+
   updateHazards(game) {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
+    if (this.onFloat(game)) return;
     if ((f & F.WHIRL) && game.enterWhirlpool()) return;
     this.updateCrack(game);
     // A DROP HOLE (S181) is a pit with a room under it: the same fall, and at
@@ -20982,6 +21004,7 @@ class Player extends Entity {
 
   beginFall(game, drop = false) {
     if (this.falling > 0) return;
+    if (this.onFloat(game)) return;
     // HE LETS GO OF WHAT HE IS HOLDING (S182), as the fall begins: link.s
     // linkState02 @substate0 calls linkCancelAllItemUsage, which drops the
     // held object. It lands on the same hole — gone into a pit, and down a
@@ -21341,6 +21364,41 @@ const ERRANDS = {
   },
 };
 __exports["ERRANDS"] = ERRANDS;
+});
+
+/* ===== src/game/float-path.js ===== */
+__define("game/float-path.js", function (__exports, __require) {
+// Where a float (the Cliffside Cistern's moving platform, src/game/objects.js
+// Float) can ever be: the tiles its 32x32 slab covers anywhere along its path.
+// Pure, with no game or browser in it, so the dungeon flood (tools/lib/
+// dungeon-flood.mjs) asks the same question of the same script the engine runs
+// rather than keeping a private model of it.
+const { FLOAT_SPEED } = __require("data/feel.js");
+
+const FLOAT_DIRS = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
+
+/** Set of 'x,y' tiles the float placed at tile (tx, ty) ever overlaps. */
+function floatSweep(tx, ty, path) {
+  const cells = new Set();
+  let x = tx * 16 * 256, y = ty * 16 * 256, speed = FLOAT_SPEED;
+  const cover = () => {
+    const px = Math.floor(x / 256), py = Math.floor(y / 256);
+    for (let cy = Math.floor(py / 16); cy <= Math.floor((py + 31) / 16); cy++) {
+      for (let cx = Math.floor(px / 16); cx <= Math.floor((px + 31) / 16); cx++) cells.add(cx + ',' + cy);
+    }
+  };
+  cover();
+  // One pass of the script: a `loop` only repeats what was already swept.
+  for (const [op, arg] of path || []) {
+    if (op === 'speed') { speed = arg; continue; }
+    const d = FLOAT_DIRS[op];
+    if (!d) continue;
+    for (let i = 0; i < arg; i++) { x += d[0] * speed; y += d[1] * speed; cover(); }
+  }
+  return cells;
+}
+__exports["FLOAT_DIRS"] = FLOAT_DIRS;
+__exports["floatSweep"] = floatSweep;
 });
 
 /* ===== src/data/sprites-objects.js ===== */
@@ -22184,7 +22242,8 @@ const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, a
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES } = __require("data/feel.js");
+const { FLOAT_DIRS } = __require("game/float-path.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
@@ -23569,6 +23628,100 @@ class Raft extends Entity {
 }
 defineEntity('raft', (x, y, o) => new Raft(x, y, o));
 
+// --------------------------------------------------------------------------
+// Float: the Cliffside Cistern's moving platform (S183)
+// --------------------------------------------------------------------------
+
+/**
+ * Oracle of Seasons' INTERAC_MOVING_PLATFORM (movingPlatform.s), at its
+ * largest size: a 32x32 slab that walks a little path script over holes and
+ * carries Link while he stands on it. The picture, the speed (FLOAT_SPEED,
+ * SPEED_80), the point it must be under Link (FLOAT_FOOT_DY), the script's
+ * verbs (movingPlatformScriptTable.s: wait, up/right/down/left for so many
+ * frames, setspeed, jump back) and the rule that it does not move while Link
+ * plays an instrument (@substate1: wLinkPlayingInstrument -> ret nz; the conch
+ * is ours) are all the cartridge's.
+ *
+ * OURS: A FLOAT RUNS ONLY WHILE ITS RACE RUNS. `race: [tx, ty]` names a tile of
+ * the room; while the water there carries a current (a tile with `push`, read
+ * through the live field) the script advances, and while it does not — LOW, or
+ * the Squall Bellows' cone holding it one level down, or a drained tank — the
+ * float stops wherever it is, waits and all. A float with no race always runs.
+ *
+ * `path` is a list of steps: ['wait', f], ['up'|'right'|'down'|'left', f],
+ * ['speed', sp], ['loop', i] (jump back to step i). Moves are exact: f frames
+ * at the speed, along one axis.
+ */
+class Float extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 32; this.h = 32;
+    this.hb = { x: 0, y: 0, w: 32, h: 32 };
+    this.sprite = 'o_float0';
+    this.isFloat = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.depth = -9;
+    this.caps = { jumping: true, swim: true, cutting: false };
+    this.path = o.path || [];
+    this.race = o.race || null;
+    this.speed = FLOAT_SPEED;
+    this.step = 0;
+    this.left = 0;              // frames left in the current step
+    this.dir = null;            // [dx, dy] while moving
+    this.moved = false;         // did it move this frame (for a passenger)
+    this.next();
+  }
+
+  /** Load the next step of the script, following speed and loop steps. */
+  next() {
+    for (let guard = 0; guard < 64 && this.path.length; guard++) {
+      if (this.step >= this.path.length) this.step = 0;
+      const [op, arg] = this.path[this.step++];
+      if (op === 'speed') { this.speed = arg; continue; }
+      if (op === 'loop') { this.step = arg; continue; }
+      this.left = arg;
+      this.dir = op === 'wait' ? null : FLOAT_DIRS[op];
+      return;
+    }
+    this.left = 0; this.dir = null;
+  }
+
+  /** Is the water at its race running? */
+  driven(game) {
+    if (!this.race || !game.room) return true;
+    return !!game.room.tile(this.race[0], this.race[1], game.tide).push;
+  }
+
+  /** Is this point (Link's feet, per the cartridge) on the float? */
+  under(px, py) {
+    return px >= this.x && px < this.x + this.w && py >= this.y && py < this.y + this.h;
+  }
+
+  /** Is the player standing on it? */
+  carries(p) {
+    return !!p && !p.dead && p.z <= 2 && !p.jumping && this.under(p.cx, p.cy + FLOAT_FOOT_DY);
+  }
+
+  update(game) {
+    this.frame++;
+    if (!this.driven(game)) return;
+    if (this.left <= 0) this.next();
+    if (!this.dir) { this.left--; return; }
+    const p = game.player;
+    if (p && p.conchTime > 0) return;
+    const dx = this.dir[0] * this.speed, dy = this.dir[1] * this.speed;
+    if (this.carries(p)) { p.fx += dx; p.fy += dy; }
+    this.fx += dx; this.fy += dy;
+    this.left--;
+  }
+
+  draw(ctx, game, ox, oy) {
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y);
+  }
+}
+defineEntity('float', (x, y, o) => new Float(x, y, o));
+
 
 // --------------------------------------------------------------------------
 // Tide valve: a dungeon fixture that unlocks or pins the tide
@@ -23799,6 +23952,7 @@ __exports["FloorSwitch"] = FloorSwitch;
 __exports["Torch"] = Torch;
 __exports["Essence"] = Essence;
 __exports["Raft"] = Raft;
+__exports["Float"] = Float;
 __exports["TideValve"] = TideValve;
 __exports["GustWheel"] = GustWheel;
 __exports["SunkenBell"] = SunkenBell;
@@ -45432,6 +45586,44 @@ const DUNGEON_THEME_ART = {
     0010020000200100
     1001020000210001`,
 
+  // the spike floor, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $60
+  xSpike: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1222221112222211
+    1220221112202211
+    1220221112202211
+    1222221112222211
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1222221112222211
+    1220221112202211
+    1220221112202211
+    1222221112222211
+    1111111111111111`,
+
+  // the hole, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $f4
+  xHole: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
   // the stair up, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $44
   xStairsUp: `
     2222222222333333
@@ -46197,6 +46389,8 @@ const DUNGEON_THEME_PALETTES = {
   bHoleS: ['#7b8c08', '#425218', '#000000', '#000000'],
   bHoleNS: ['#7b8c08', '#425218', '#000000', '#000000'],
   bCrack: ['#b5c652', '#7b8c08', '#425218', '#425218'],
+  xSpike: ['#ffff8c', '#d684bd', '#000000', '#000000'],
+  xHole: ['#000000', '#000000', '#000000', '#000000'],
   xStairsUp: ['#949494', '#636363', '#424242', '#000000'],
   xStairsDown: ['#949494', '#636363', '#424242', '#000000'],
   rStairsUp: ['#b58c42', '#8c5a00', '#4a2100', '#000000'],
@@ -50886,6 +51080,17 @@ function installCoreTiles() {
     dExitCistern: { art: ART.xArch2, pal: 'xArch2', flags: F.WARP },
     dPillarCisternW: { art: ART.xArch1, pal: 'xArch1', flags: F.SOLID, ringWall: true },
     dPillarCisternE: { art: ART.xArch3, pal: 'xArch3', flags: F.SOLID, ringWall: true },
+    // S183: the Dragon's own spikes and holes. Its hole is black where the
+    // shared `dPit` is navy, and the Cistern's sump and drain are the same
+    // hole at LOW — still one tile there, which is D2's rule for them.
+    // `dSpikePoolCistern` is the SPIKE POOL, a tide tile: bare spikes at LOW
+    // and MID, deep water over them at HIGH, so the top of the tide is the
+    // only sea they are safe at (docs/briefs/D4-CLIFFSIDE-CISTERN.md).
+    dSpikeCistern: { art: ART.xSpike, pal: 'xSpike', flags: F.HAZARD },
+    dHoleCistern: { art: ART.xHole, pal: 'xHole', flags: F.PIT },
+    dSumpCistern: { tide: ['dHoleCistern', 'dWaterD', 'dWaterD'] },
+    dDrainCistern: { tide: ['dHoleCistern', 'dWaterS', 'dWaterD'] },
+    dSpikePoolCistern: { tide: ['dSpikeCistern', 'dSpikeCistern', 'dWaterD'] },
     xRingTL: { art: ART.xRingTL, pal: 'xRingTL', flags: F.SOLID },
     xRingTR: { art: ART.xRingTR, pal: 'xRingTR', flags: F.SOLID },
     xRingBL: { art: ART.xRingBL, pal: 'xRingBL', flags: F.SOLID },
@@ -51761,6 +51966,14 @@ function installLegends() {
   // Dragon's lit step between two green pillars in the south wall, `(C)`.
   registerLegend('dungeonCistern', {
     'C': 'dExitCistern', '(': 'dPillarCisternW', ')': 'dPillarCisternE', '9': 'dDrownCistern',
+  }, 'dungeonCistern');
+  // S183: the Dragon's spikes and black holes (and its sump and drain, which
+  // are that hole at LOW). `5` is the spike pool — a tide tile, so a digit;
+  // `5` is the outdoor `channel`, which no indoor room places (the Spire's,
+  // the Sanctum's and the Shrine's argument).
+  registerLegend('dungeonCistern', {
+    '^': 'dSpikeCistern', 'O': 'dHoleCistern', '0': 'dSumpCistern', '4': 'dDrainCistern',
+    '5': 'dSpikePoolCistern',
   }, 'dungeonCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
   // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every
@@ -57420,58 +57633,63 @@ function installDungeonsA() {
         ],
       },
       '0,4,6': {
-        name: 'Cracked Basin',
+        name: 'Spike Basin',
+        // N1, SPIKES ALONE (S183; docs/briefs/D4-CLIFFSIDE-CISTERN.md). The
+        // first Small Key on a dais in a spike pool (`5`): the Dragon's own
+        // spike floor at LOW and MID, deep water over it at HIGH. The top of
+        // the tide is the only sea it is safe at, and the Cleats swim it.
         map: [
           '#######.#######',
           '#.............#',
-          '#.............#',
-          '#...2222222...#',
-          '#...2222222...#',
-          '....2222222...#',
-          '#...2222222...#',
-          '#...2222222...#',
-          '#.............#',
+          '#..555555555..#',
+          '#..555555555..#',
+          '#..555...555..#',
+          '...555...555..#',
+          '#..555...555..#',
+          '#..555555555..#',
+          '#..555555555..#',
           '#.............#',
           '###############',
         ],
+        spikeRoom: { from: [1, 5], target: [7, 6], sea: 2 },
         entities: [
-          ['stalfos', 3, 2],
-          ['tektite', 11, 5],
-          ['keese', 10, 1],
+          ['chest', 7, 5, { pickup: 'key' }],
+          ['stalfos', 1, 1],
+          ['tektite', 12, 5],
+          ['keese', 10, 9],
         ],
-        puzzle: {
-          enemies: true,
-          flag: 'd4_basin',
-          reward: {
-            spawn: [['pickup', 7, 8, { kind: 'key' }]],
-            say: 'Something falls out of the cracked basin.',
-          },
-        },
+        readable: [
+          [1, 9, 'Scratched in the basin wall: "The spikes are\nsafe only under the top of the tide."'],
+        ],
       },
       '0,3,5': {
         name: 'The Weir',
-        // The sump, taught before it is ever load-bearing: at LOW these squares
-        // have no floor at all, and at MID they are over your head. Its key
-        // door north is the short way back into the Barnacle Cell.
+        // N2, A FLOAT ALONE (S183). The key door north is across a two-tile
+        // hole, and a float (Seasons' moving platform) shuttles along it,
+        // waiting under the door's notch and at its west end. It runs only
+        // while its race does — the channel along the south wall, wading
+        // water at LOW and a current above — so at LOW it stops where it is.
         map: [
           '#######L#######',
+          '#######.#######',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
           '#.............#',
-          '#.............#',
-          '#..00.....00..#',
-          '#..00.....00..#',
           '...............',
-          '#..00.....00..#',
-          '#..00.....00..#',
-          '#.U...........#',
           '#.............#',
+          '#.............#',
+          '#.U...........#',
+          '#........7777.#',
           '#######.#######',
         ],
+        floatRoom: { stop: [7, 1], race: [10, 9], board: [7, 4], station: true },
         entities: [
+          ['float', 7, 2, { race: [10, 9], path: [['wait', 64], ['left', 160], ['wait', 64], ['right', 160], ['loop', 0]] }],
           ['tektite', 7, 7],
-          ['keese', 3, 1],
+          ['keese', 3, 6],
         ],
         readable: [
-          [2, 8, 'Cut into the weir: "At low water the sumps\nhave no floor. Mind your feet."'],
+          [2, 8, 'Cut into the weir: "The float runs on the race,\nand the race runs on the sea."'],
         ],
       },
       '0,2,5': {
@@ -57812,53 +58030,41 @@ function installDungeonsA() {
       },
       '0,4,3': {
         name: 'The Long Race',
-        // SILLS 4a AND 4b, AND THE SECOND ONE IS BEHIND THE FIRST. The west
-        // wheel is a sump shelf worked at MID, and what it opens is not the way
-        // on: it is the shutter into the east vault, where the second wheel
-        // stands at the top of a shaft behind drown-wall and wants HIGH. So the
-        // room is worked twice, in order, at two seas — the dungeon's whole
-        // idea said twice in a row, and the plate by the door says so.
+        // N3, THE FLOAT AND THE WIND (S183). The only way from the Winding
+        // Stair to the Ironknight is a float across a long hole, and halfway
+        // it passes under a notch in the north wall with a Small Key in it —
+        // and never stops there. Its race is a pool in the hole below the
+        // notch. Ride it at MID, and as he comes under the notch, face the
+        // race and pump: the cone takes the race down to LOW, the current
+        // stops, and the float stops under him. (At HIGH the cone leaves a
+        // current, but the conch does it instead: HIGH -> LOW stops it dead.)
+        // The key opens the east door, which is the way on.
         //
-        // The east wheel's stand cannot be reached at any sea while the vault
-        // is shut (`after`), which check-bellows.mjs proves along with every
-        // other sill clause, for each wheel.
+        // Until S183 this room held sills 4a and 4b, the second behind the
+        // first; the Squall Loft and the Drowned Sill already teach both.
         map: [
           '###############',
-          '#3OO.##########',
-          '####.#####1####',
-          '####0#####O####',
-          '#...0..#.#O#..#',
-          'L......#.#.#..D',
-          '#......#..9...#',
-          '#......D......#',
-          '#......#......#',
-          '#.U....#......#',
+          '#######.#######',
+          '#######.#######',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          'L..OOOOOOOOO..L',
+          '#..OOO777OOO..#',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          '#U.OOOOOOOOO.U#',
           '###############',
         ],
-        bellowsRoom: [
-          { wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, opens: [[7, 7]] },
-          { wheel: [10, 2], stand: [10, 5], face: 'up', at: 2, opens: [[14, 5]], after: [[7, 7]] },
-        ],
+        floatRoom: { stop: [7, 2], race: [7, 6], board: [2, 4], brake: 1 },
         entities: [
-          ['wheel', 1, 1, { needTurns: 40 }],
-          ['wheel', 10, 2, { needTurns: 50 }],
-          // The darknut guards the vault, not the hall: at HIGH its stand is
-          // behind deep water a darknut cannot cross, so the second wheel is
-          // pumped from a square it cannot reach — the old room's premise.
-          ['darknut', 12, 8],
-          ['keese', 3, 7],
+          ['float', 3, 3, { race: [7, 6], path: [['wait', 32], ['right', 224], ['wait', 32], ['left', 224], ['loop', 0]] }],
+          ['pickup', 7, 1, { kind: 'key' }],
+          ['stalfos', 1, 7],
+          ['keese', 2, 8],
         ],
         readable: [
-          [2, 9, 'A plate by the race: "Two wheels, and the second\nis behind the first. They will not turn at the\nsame sea."'],
+          [1, 9, 'A plate by the race: "Where the float will not\nstop, the wind will stop it."'],
         ],
-        script: {
-          onEvent(game, name, data) {
-            if (name !== 'valve' || !data || !data.open) return;
-            // Each wheel opens its own door: the west one the vault, the east
-            // one the way on.
-            game.applyReward({ openDoors: [data.x >= 16 * 8 ? [14, 5] : [7, 7]] });
-          },
-        },
       },
       '0,5,3': {
         name: 'Ironknight Gallery',
@@ -57874,7 +58080,7 @@ function installDungeonsA() {
           '#.U........................U.#',
           '#............................#',
           '#.............99.............#',
-          'D.............99.............#',
+          'L.............99.............#',
           '#.............99.............#',
           '#............................#',
           '#.U........................U.#',
@@ -70695,12 +70901,15 @@ __exports["installTreasureSprites"] = installTreasureSprites;
 
 /* ===== src/data/sprites-effects.js ===== */
 __define("data/sprites-effects.js", function (__exports, __require) {
-// The smoke puffs and the bomb blast, cut from Oracle of Seasons' own graphics.
+// The smoke puffs, the bomb blast and the moving platform, cut from Oracle of
+// Seasons' own graphics.
 //
 // Generated by tools/rip-effects.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
 // commit 7584d87), assets/effects/oracles-disasm/seasons/: the common sprite
-// graphics every room keeps loaded, the tables that lay out INTERAC_PUFF,
+// graphics every room keeps loaded, spr_dungeon_sprites (the platform, from
+// commit 21c924a; the tables are identical there), the tables that lay out
+// INTERAC_PUFF, INTERAC_MOVING_PLATFORM,
 // PART_ENEMY_DESTROYED and the exploding ITEM_BOMB, and the standard sprite
 // palettes. Credit: the oracles-disasm project and its contributors; the
 // artwork is Nintendo's and Capcom's. This is fan-work art only.
@@ -70714,6 +70923,7 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 //   fx_puff*: frames 0 1 2 (held 6 8 4), tile base $16
 //   fx_kill*: frames 0 1 0 2 2 3 4 (held 2 2 2 4 4 4 2), tile base $0c
 //   fx_boom*: frames 0 1 0 2 3 4 (held 4 4 3 7 8 8), tile base $0c
+//   o_float*: frames 0 (held 127), tile base $08
 
 const { sprites } = __require("gfx/art.js");
 const { registerPalettes } = __require("gfx/palettes.js");
@@ -71331,6 +71541,40 @@ const EFFECT_ART = {
     3113........31133113........3113
     3003........30033003........3003
     .33..........33..33..........33.` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_float0: { pal: 'o_float0', art: `
+    00000000000000000000000000000000
+    00333333333333000033333333333300
+    03000000000000300300000000000030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03000000000000300300000000000030
+    00333333333333000033333333333300
+    00000000000000000000000000000000
+    00000000000000000000000000000000
+    00333333333333000033333333333300
+    03000000000000300300000000000030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03033333333330300303333333333030
+    03000000000000300300000000000030
+    00333333333333000033333333333300
+    00000000000000000000000000000000` },
 };
 
 const EFFECT_PALETTES = {
@@ -71352,6 +71596,7 @@ const EFFECT_PALETTES = {
   fx_boom2: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   fx_boom3: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   fx_boom4: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  o_float0: ['#ffd68c', '#ffd68c', '#ffd68c', '#10ad42'],
 };
 
 function installEffectSprites() {

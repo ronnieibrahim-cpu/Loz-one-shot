@@ -447,6 +447,25 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Two relative tide overrides used to ignore each other (S183).** The field
+  returned the newest override and stopped, so the Bellows' cone over an
+  anchored patch read one level under the OPEN SEA, not under the patch, and
+  a drained tank could never be worked by the wind on top of it. Relative
+  overrides now add (`Tide.resolve`), down to the first absolute one. It was
+  found by drawing a mock, not by any checker: when a new mechanic composes
+  two existing ones, picture the composition before designing on it.
+- **A rider standing on a platform's rim is a rider it moves out from under
+  (S183).** The robot boarded the Long Race's float with its foot two pixels
+  inside the edge; braked, it stepped up into the notch while the float moved
+  on, and fell. Board to the middle of the slab, and stop a little short of
+  the exit (the float moves on the moment the Bellows are let go). And keep
+  fliers out of a float room's line, or kill them first: a keese's knock-back
+  on a slab over a hole is a pit fall.
+- **A one-room try is not the run (S183).** try-room boarded the float every
+  time; the full run failed it, because a keese that the earlier fight could
+  not catch was still in the room. `route-prefix.mjs <from> <to>` with
+  `HITS=<map>` is how to see the real room as the real run meets it.
+
 - **Ask what the cartridge does to a held object when Link's state changes
   (S182).** The D3 brief said "carry a lit shell down the hole"; Seasons'
   falling state calls linkCancelAllItemUsage, which drops whatever is held.

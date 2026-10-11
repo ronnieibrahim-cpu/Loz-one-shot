@@ -17,6 +17,7 @@ reproduces byte for byte.
 |---|---|---|
 | `spr_common_sprites.png` | `gfx_compressible/common/` | the common sprites every room keeps loaded in VRAM bank 1 (2 bits a pixel, 8x16 sprites) |
 | `interactionData.s`, `interactionAnimations.s`, `interactionOamData.s` | `data/seasons/` | INTERAC_PUFF ($05): tile base, palette, frames and their holds |
+| `spr_dungeon_sprites.png` | `gfx/seasons/` (commit 21c924a; the interaction tables are byte-identical there) | INTERAC_MOVING_PLATFORM ($79), the Cliffside Cistern's floats (S183) |
 | `partData.s`, `partAnimations.s`, `partOamData.s` | `data/seasons/` | PART_ENEMY_DESTROYED ($02): tile base, oam flags, frames and their holds |
 | `itemAnimations.s`, `itemOamData.s` | `data/` | ITEM_BOMB's fuse (animation 0) and blast (animation 1) |
 | `paletteData.s` | `data/seasons/` | the standard sprite palettes |

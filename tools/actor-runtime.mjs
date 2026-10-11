@@ -2800,6 +2800,110 @@ export async function installRuntime() {
     yield* dDialogueClear(60);
   }
 
+  /**
+   * THE CLIFFSIDE CISTERN'S FLOATS (S183): Seasons' moving platforms, which
+   * run only while their race runs (src/game/objects.js Float).
+   *
+   *   ['board', tx, ty, maxF]                  wait for a float to cover tile
+   *       (tx, ty) — it may be moving or paused — and step onto it there
+   *   ['alight', tx, ty, maxF, brake?]          ride until the player is level
+   *       with tile (tx, ty) along the float's travel, then step onto it.
+   *       `brake: [rx, ry]` is the float's race: start pumping the Bellows at
+   *       it BELLOWS_WARMUP_FRAMES early, so the cone opens and the race goes
+   *       down to LOW just as he comes level, and the float stops under him
+   *
+   * Both read the float and the player out of the live game each frame — a
+   * float's position is the route's state, and predicting it from a script
+   * would be a private model of the engine.
+   */
+  const floatAt = (tx, ty) => window.__game.entities.find(e => e.isFloat && !e.dead
+    && e.x <= tx * TILE && e.x + e.w >= tx * TILE + TILE && e.y <= ty * TILE && e.y + e.h >= ty * TILE + TILE);
+  const riding = () => window.__game.entities.find(e => e.isFloat && !e.dead && e.carries(window.__game.player));
+  function dirMask(fromX, fromY, toX, toY) {
+    if (Math.abs(toX - fromX) >= Math.abs(toY - fromY)) return toX > fromX ? BIT.right : BIT.left;
+    return toY > fromY ? BIT.down : BIT.up;
+  }
+  function* dBoard(tx, ty, maxF) {
+    const g = window.__game;
+    const budget = maxF || 1800;
+    // Parked there, with long enough left at the stop to walk on: a float
+    // that is moving or about to leave takes the floor from under a step.
+    // Or moving, with long enough before its trailing edge leaves the tile to
+    // walk onto it (a step down off a ledge onto a passing float, the Long
+    // Race's notch): the walk at 1 px/f, and twelve frames to spare.
+    const parked = () => {
+      const fl = floatAt(tx, ty);
+      if (!fl || !fl.driven(g)) return null;
+      if (!fl.dir) return fl.left >= 20 ? fl : null;
+      const [ax, ay] = fl.dir;
+      const room = ax > 0 ? tx * TILE - fl.x : ax < 0 ? fl.x + fl.w - (tx + 1) * TILE
+        : ay > 0 ? ty * TILE - fl.y : fl.y + fl.h - (ty + 1) * TILE;
+      const p = g.player, walk = Math.abs(p.cx - cx) + Math.abs(p.cy - cy) + 12;
+      return room * 256 / fl.speed >= walk ? fl : null;
+    };
+    const cx = tx * TILE + 8, cy = ty * TILE + 8;
+    for (let f = 0; f < budget; f++) {
+      const p = g.player;
+      const fl = riding();
+      // Aboard and clear of its edges — a float carries the point under him,
+      // and a foot on its rim is a foot it moves out from under.
+      if (fl) {
+        const fx0 = p.cx - fl.x, fy0 = p.cy + feel.FLOAT_FOOT_DY - fl.y;
+        if (fx0 >= 12 && fx0 <= fl.w - 12 && fy0 >= 12 && fy0 <= fl.h - 4) return;
+        yield dirMask(p.cx, p.cy + feel.FLOAT_FOOT_DY, fl.x + fl.w / 2, fl.y + fl.h / 2);
+        continue;
+      }
+      if (!parked()) { yield 0; continue; }
+      yield dirMask(p.cx, p.cy, cx, cy);
+    }
+    const fs = g.entities.filter(e => e.isFloat).map(e => `${e.x},${e.y} dir ${e.dir} left ${e.left} driven ${e.driven(g)}`).join('; ');
+    throw new Error(`board: could not get onto the float at ${tx},${ty} (player ${g.player.x},${g.player.y}; floats ${fs || 'none'})`);
+  }
+  function* dAlight(tx, ty, maxF, brake) {
+    const g = window.__game;
+    const budget = maxF || 2400;
+    const cx = tx * TILE + 8, cy = ty * TILE + 8;
+    const warm = feel.BELLOWS_WARMUP_FRAMES;
+    const b = brake ? slotBit('bellows') : 0;
+    if (brake && !b) throw new Error('alight: the Squall Bellows are on no button');
+    let f = 0, pumping = false;
+    for (; f < budget; f++) {
+      const p = g.player, fl = riding();
+      if (!fl) throw new Error(`alight: fell off the float before ${tx},${ty}`);
+      // How far along the float's travel he still has to go, in frames.
+      const ax = fl.dir ? fl.dir[0] : 0, ay = fl.dir ? fl.dir[1] : 0;
+      // Stop him a little short: the float moves on the moment the Bellows
+      // are let go, and carries him the rest of the way as he steps off.
+      const lead = 4;
+      const along = (ax ? (ax > 0 ? cx - p.cx : p.cx - cx) : (ay ? (ay > 0 ? cy - p.cy : p.cy - cy) : 0)) - lead;
+      if (brake) {
+        if (!pumping && fl.dir && along > 0 && along * 256 <= fl.speed * (warm + 2)) pumping = true;
+        if (pumping) {
+          yield b | dirMask(p.cx, p.cy, brake[0] * TILE + 8, brake[1] * TILE + 8);
+          if (p.bellowsOpen && !fl.driven(g)) break;
+          continue;
+        }
+        yield 0;
+        continue;
+      }
+      // At a stop beside the tile: walk off it there, across the float if he
+      // is on its far half.
+      const beside = fl.x - TILE <= tx * TILE && tx * TILE <= fl.x + fl.w
+        && fl.y - TILE <= ty * TILE && ty * TILE <= fl.y + fl.h;
+      if (beside && fl.dir == null && fl.left > 24) break;
+      yield 0;
+    }
+    if (f >= budget) throw new Error(`alight: never came level with ${tx},${ty}`);
+    for (; f < budget; f++) {
+      const p = g.player;
+      const fl = riding();
+      if (Math.floor(p.cx / TILE) === tx && Math.floor(p.cy / TILE) === ty && !fl) return;
+      const m = dirMask(p.cx, p.cy, cx, cy);
+      yield m;
+    }
+    throw new Error(`alight: could not step off onto ${tx},${ty}`);
+  }
+
   function* dBellows(tx, ty, maxF) {
     const g = window.__game;
     const budget = maxF || 1800;
@@ -3241,6 +3345,8 @@ export async function installRuntime() {
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
+      else if (kind === 'board') yield* dBoard(a[0], a[1], a[2]);
+      else if (kind === 'alight') yield* dAlight(a[0], a[1], a[2], a[3]);
       else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);

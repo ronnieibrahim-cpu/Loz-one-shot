@@ -1555,20 +1555,32 @@ export const ROUTE = [
   ['fight', 3000, 1200],
 
   // ---------------------------------------------------------------- d4 0,4,6
-  // The Cracked Basin. Clear it and it drops the first Small Key.
+  // THE SPIKE BASIN (S183): the first Small Key is in a chest on a dais in a
+  // spike pool, bare spikes at LOW and MID and deep water at HIGH. The flood
+  // first: a fight at LOW knocks the swordsman onto the spikes, and at HIGH
+  // they are under water and the stalfos cannot follow him into it. Then a
+  // swim to the dais, and the chest.
   ['travel', 4, 6, 4000],
+  ['tide', 2, 140, 600],
   ['fight', 5000, 1500],
-  ['dialogue', 400],
+  ['goto', 7, 6, 1500],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 600],
+  ['wait', 30],
   ['loot', 1200],
 
   // ---------------------------------------------------------------- d4 0,3,5
-  // The Weir, and the first lock. The sump squares in it are the dungeon
-  // teaching its own vocabulary before anything is riding on it: no floor at
-  // LOW and over your head at MID. Its key door is in the north wall and is
-  // the short way into the Barnacle Cell and on to the Cistern Floor.
+  // The Weir, and the first lock. Its key door is in the north wall across a
+  // two-tile hole, and the float that crosses it waits under the door's notch
+  // and at the hole's west end; it runs while its race does, which is at MID
+  // and HIGH (the run is at HIGH, from the Spike Basin). Board it when it is
+  // parked under the notch and walk straight across it to the door.
   ['travel', 3, 5, 4000],
   ['fight', 3000, 1200],
-  ['goto', 7, 1, 900],
+  ['goto', 7, 4, 900],
+  ['board', 7, 3, 1500],
+  ['alight', 7, 1, 1500],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
   ['hold', ['up'], 40],
@@ -1725,29 +1737,31 @@ export const ROUTE = [
   ['wait', 60],
 
   // ---------------------------------------------------------------- d4 0,4,3
-  // SILLS 4a AND 4b — THE LONG RACE, and the second wheel is behind the
-  // first. The west wheel is a sump shelf worked at MID; it opens the shutter
-  // into the east vault, where the second wheel is at the top of a shaft
-  // behind drown-wall and wants HIGH. So the room is worked twice, in order,
-  // and the conch is sounded between.
-  //
-  // THE DARKNUT IN THE VAULT IS NOT FOUGHT, and that is a measurement rather
-  // than a preference: `dFight` lines up on one axis and closes, and the
-  // darknut's shield covers exactly that. At HIGH the east stand is behind
-  // deep water a darknut does not swim, so the cone is pumped from a square
-  // it cannot reach.
+  // THE LONG RACE (S183): a float across a long hole is the only way east,
+  // and halfway it passes under a notch with a Small Key in it without ever
+  // stopping. At MID, ride it from the west bank and, as he comes under the
+  // notch, pump the Bellows at its race (a pool in the hole below him): the
+  // race goes down to LOW, its current stops, and the float stops under him.
+  // Up into the notch for the key, back down onto the float as it next
+  // passes, off at the east bank, and the key opens the east door.
   ['fight', 3000, 1200],
   ['tide', 1, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 4, 1, 1200],
-  ['bellows', 1, 1, 3000],
-  ['tide', 2, 140, 600],
-  ['goto', 10, 5, 2000],
-  ['bellows', 10, 2, 3000],
+  ['goto', 2, 4, 900],
+  ['board', 3, 4, 1500],
+  ['alight', 7, 2, 1500, [7, 6]],
+  ['goto', 7, 1, 300],
+  ['goto', 7, 2, 300],
+  ['board', 7, 3, 2000],
+  ['alight', 12, 3, 2000],
   ['equip', 'sword', 'A', 400],
+  // The Ironknight is fought at HIGH (below).
+  ['tide', 2, 140, 600],
   ['goto', 13, 5, 1200],
-  ['exit', 'right', 300],
-  ['wait', 120],     // S166
+  ['hold', ['right'], 20],
+  ['tap', 'a', 30],
+  ['hold', ['right'], 40],
+  ['wait', 120],
 
   // ---------------------------------------------------------------- d4 0,5,3
   // THE IRONKNIGHT GALLERY. The miniboss is not `g.boss` — a miniboss clears

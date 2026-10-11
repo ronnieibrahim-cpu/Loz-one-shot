@@ -14,6 +14,7 @@ import {
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import { ERRANDS } from '../data/errands.js';
+import { FLOAT_DIRS } from './float-path.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN,
   PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES,
@@ -22,6 +23,7 @@ import {
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES,
+  FLOAT_SPEED, FLOAT_FOOT_DY,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
 
@@ -1406,6 +1408,100 @@ export class Raft extends Entity {
   }
 }
 defineEntity('raft', (x, y, o) => new Raft(x, y, o));
+
+// --------------------------------------------------------------------------
+// Float: the Cliffside Cistern's moving platform (S183)
+// --------------------------------------------------------------------------
+
+/**
+ * Oracle of Seasons' INTERAC_MOVING_PLATFORM (movingPlatform.s), at its
+ * largest size: a 32x32 slab that walks a little path script over holes and
+ * carries Link while he stands on it. The picture, the speed (FLOAT_SPEED,
+ * SPEED_80), the point it must be under Link (FLOAT_FOOT_DY), the script's
+ * verbs (movingPlatformScriptTable.s: wait, up/right/down/left for so many
+ * frames, setspeed, jump back) and the rule that it does not move while Link
+ * plays an instrument (@substate1: wLinkPlayingInstrument -> ret nz; the conch
+ * is ours) are all the cartridge's.
+ *
+ * OURS: A FLOAT RUNS ONLY WHILE ITS RACE RUNS. `race: [tx, ty]` names a tile of
+ * the room; while the water there carries a current (a tile with `push`, read
+ * through the live field) the script advances, and while it does not — LOW, or
+ * the Squall Bellows' cone holding it one level down, or a drained tank — the
+ * float stops wherever it is, waits and all. A float with no race always runs.
+ *
+ * `path` is a list of steps: ['wait', f], ['up'|'right'|'down'|'left', f],
+ * ['speed', sp], ['loop', i] (jump back to step i). Moves are exact: f frames
+ * at the speed, along one axis.
+ */
+export class Float extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 32; this.h = 32;
+    this.hb = { x: 0, y: 0, w: 32, h: 32 };
+    this.sprite = 'o_float0';
+    this.isFloat = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.depth = -9;
+    this.caps = { jumping: true, swim: true, cutting: false };
+    this.path = o.path || [];
+    this.race = o.race || null;
+    this.speed = FLOAT_SPEED;
+    this.step = 0;
+    this.left = 0;              // frames left in the current step
+    this.dir = null;            // [dx, dy] while moving
+    this.moved = false;         // did it move this frame (for a passenger)
+    this.next();
+  }
+
+  /** Load the next step of the script, following speed and loop steps. */
+  next() {
+    for (let guard = 0; guard < 64 && this.path.length; guard++) {
+      if (this.step >= this.path.length) this.step = 0;
+      const [op, arg] = this.path[this.step++];
+      if (op === 'speed') { this.speed = arg; continue; }
+      if (op === 'loop') { this.step = arg; continue; }
+      this.left = arg;
+      this.dir = op === 'wait' ? null : FLOAT_DIRS[op];
+      return;
+    }
+    this.left = 0; this.dir = null;
+  }
+
+  /** Is the water at its race running? */
+  driven(game) {
+    if (!this.race || !game.room) return true;
+    return !!game.room.tile(this.race[0], this.race[1], game.tide).push;
+  }
+
+  /** Is this point (Link's feet, per the cartridge) on the float? */
+  under(px, py) {
+    return px >= this.x && px < this.x + this.w && py >= this.y && py < this.y + this.h;
+  }
+
+  /** Is the player standing on it? */
+  carries(p) {
+    return !!p && !p.dead && p.z <= 2 && !p.jumping && this.under(p.cx, p.cy + FLOAT_FOOT_DY);
+  }
+
+  update(game) {
+    this.frame++;
+    if (!this.driven(game)) return;
+    if (this.left <= 0) this.next();
+    if (!this.dir) { this.left--; return; }
+    const p = game.player;
+    if (p && p.conchTime > 0) return;
+    const dx = this.dir[0] * this.speed, dy = this.dir[1] * this.speed;
+    if (this.carries(p)) { p.fx += dx; p.fy += dy; }
+    this.fx += dx; this.fy += dy;
+    this.left--;
+  }
+
+  draw(ctx, game, ox, oy) {
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y);
+  }
+}
+defineEntity('float', (x, y, o) => new Float(x, y, o));
 
 
 // --------------------------------------------------------------------------

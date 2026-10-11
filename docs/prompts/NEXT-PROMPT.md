@@ -1,31 +1,24 @@
-# Next session (S183) — grow D4, the Cliffside Cistern
+# Next session (S184) — the Cliffside Cistern's upper floors
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/briefs/DUNGEON-DESIGN-LANGUAGE.md; docs/DUNGEON-STATUS.md "S179" (D4's
-  row: ~43 screens, 2-3 floors, spikes drowned at HIGH, moving platforms, "a
-  wheel on one floor drains the shaft of the floor below").
-- docs/briefs/D3-BOGWATER-SANCTUM.md (how D3 was designed, mocked and built)
-  and d3-mock/s182-built.png.
-- docs/NEXT-SESSION.md S182, then S181; docs/HANDOFF.md lessons (top five).
+- docs/briefs/D4-CLIFFSIDE-CISTERN.md (approved S183; its status block says
+  what is built) and its pictures in docs/briefs/d4-mock/.
+- docs/NEXT-SESSION.md S183; docs/HANDOFF.md lessons (top three).
+- docs/briefs/DUNGEON-DESIGN-LANGUAGE.md for the checklist.
 
 ## State
-- S182 is on claude/s182-bogwater-sump, which carries S181 too (neither is
-  on main unless the human said so). D3 is finished: 42 screens, 2 floors.
-- Whole table green; check-playthrough 47/47, THE END, never died.
+- S183 is on claude/s183-cistern-design-o7q0r3 (not on main unless the human
+  said so): spikes, floats and N1-N3 built. Whole table green;
+  check-playthrough 47/47, THE END, never died.
 
 ## The task
-1. Design D4 as an Ages-calibre dungeon of OUR mechanics, leaning on the
-   Squall Bellows (held-back tide in a cone) and a different consequence of
-   the tide from D1-D3. Write docs/briefs/D4-CLIFFSIDE-CISTERN.md with a map
-   and each puzzle's "aha", and SHOW THE HUMAN A MOCK beside Seasons'/Ages'
-   comparable rooms (tools/shoot-mock.mjs; tools/oneshot/oracle-study for
-   the cartridge rooms) BEFORE building. Ask about anything that changes the
-   design.
-2. Then build what the human approves: new terrain ripped from the
-   cartridges, its flood verb in the same commit, a checker per puzzle that
-   proves it cannot be skipped and can be solved, a check-side whole-dungeon
-   run, the robot re-routed, the guide re-shot.
+Build N4-N9 per the brief: 2F the Sealed Cistern (noTide), 3F the Wind Loft
+(three wheels), the gates that drain the tanks below, the Boss Key moved to
+the East Tank, the Crossed Sluices' wheels removed. A checker per puzzle
+(check-sluices.mjs), the flood taught the gates and the sealed floor in the
+same commit, a check-side whole-dungeon run, the robot re-routed, the guide
+re-shot. Leftover if time: the falling-into-a-hole animation for objects.
 
 ## Done means
 - Whole table green; check-playthrough 47/47 or more, THE END, never died.

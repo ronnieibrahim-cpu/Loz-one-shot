@@ -364,9 +364,17 @@ export class Player extends Entity {
     }
   }
 
+  /** Is he standing on a float (the Cistern's moving platform)? Then the
+   *  hole or the spikes under it are not under him. */
+  onFloat(game) {
+    for (const e of game.entities) if (e.isFloat && !e.dead && e.carries(this)) return true;
+    return false;
+  }
+
   updateHazards(game) {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
+    if (this.onFloat(game)) return;
     if ((f & F.WHIRL) && game.enterWhirlpool()) return;
     this.updateCrack(game);
     // A DROP HOLE (S181) is a pit with a room under it: the same fall, and at
@@ -1517,6 +1525,7 @@ export class Player extends Entity {
 
   beginFall(game, drop = false) {
     if (this.falling > 0) return;
+    if (this.onFloat(game)) return;
     // HE LETS GO OF WHAT HE IS HOLDING (S182), as the fall begins: link.s
     // linkState02 @substate0 calls linkCancelAllItemUsage, which drops the
     // held object. It lands on the same hole — gone into a pit, and down a

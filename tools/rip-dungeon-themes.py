@@ -698,6 +698,13 @@ PICKS = [
     meta('bHoleS', 0x4a, 'the drop hole, floor below it, the Poison Moth\'s Lair', 'mothMeta'),
     meta('bHoleNS', 0x4b, 'the drop hole, floor above and below, the Poison Moth\'s Lair', 'mothMeta'),
     meta('bCrack', 0x4d, 'the cracked floor, the Poison Moth\'s Lair', 'mothMeta'),
+    # THE CISTERN'S SPIKES AND HOLES (S183), from the Dragon's own tileset:
+    # tileTypeMappings.s @dungeons lists $60 as TILETYPE_SPIKE (room $567, the
+    # spike floor of 1F) and $f4 as TILETYPE_HOLE (room $55e, the pit the
+    # moving platform crosses before Gohma). The Cistern drew the shared navy
+    # `dPit` until now; the Dragon's hole is plain black.
+    meta('xSpike', 0x60, 'the spike floor, the Dancing Dragon Dungeon', 'dragonMeta'),
+    meta('xHole', 0xf4, 'the hole, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('xStairsUp', 0x44, 'the stair up, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('xStairsDown', 0x45, 'the stair down, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('rStairsUp', 0x44, 'the stair up, the Ancient Ruins', 'ruinsMeta'),

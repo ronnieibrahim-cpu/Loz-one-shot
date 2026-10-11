@@ -23,6 +23,7 @@ import { cellTiles } from '../../src/world/room.js';
 import { F, transformFor } from '../../src/world/tileset.js';
 import { DREDGE_RANGE, COIN_THROW_SPEED, COIN_SETTLE_FRAMES } from '../../src/data/feel.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
+import { floatSweep } from '../../src/game/float-path.js';
 
 const DREDGE_TILES = Math.floor(DREDGE_RANGE / 16);
 // Where a thrown Ferryman's Coin comes down: its flight (speed x settle
@@ -38,7 +39,8 @@ function sillsOf(def) {
 /**
  * Flood one dungeon map from its start room. `opts.whirl: false` floods as
  * if no whirlpool took anyone anywhere (tools/check-whirlpool.mjs asks it);
- * `opts.drop: false` as if no drop hole or cracked floor did, and
+ * `opts.drop: false` as if no drop hole or cracked floor did, `opts.float:
+ * false` as if no float ran (tools/check-floats.mjs), and
  * `opts.dropSkip: rk` as if room rk's did not (tools/check-shafts.mjs).
  *
  * Returns:
@@ -236,6 +238,41 @@ export function floodDungeon(mapId, opts = {}) {
     const below = `${D.f - 1},${D.rx},${D.ry}`;
     if (m.roomDefs[below] && landAt(ROOMS.get(below), x, y)) push(below, x, y);
   };
+  // A FLOAT IS TRAVERSAL (S183, the Cliffside Cistern). Seasons' moving
+  // platform: board it from any cell beside the tiles it ever covers, and get
+  // off onto any cell beside them — at its stops, or anywhere it can be
+  // stopped (the conch from HIGH, the Bellows' cone on its race at MID). It
+  // runs only while its race carries a current, so a float whose race never
+  // does at any sea is no way across. Where it can actually be stopped, and
+  // that a notch it passes needs stopping, is tools/check-floats.mjs's to prove.
+  const floatsIn = new Map();   // rk -> [{ cells, edge }]
+  for (const [rk, def] of Object.entries(m.roomDefs)) {
+    const room = ROOMS.get(rk);
+    for (const e of def.entities || []) {
+      if (e[0] !== 'float') continue;
+      const o = e[3] || {};
+      if (o.race && ![0, 1, 2].some(t => room.tile(o.race[0], o.race[1], t).push)) continue;
+      const cells = floatSweep(e[1], e[2], o.path);
+      const edge = [];
+      for (const c of cells) {
+        const [cx, cy] = c.split(',').map(Number);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const k = (cx + dx) + ',' + (cy + dy);
+          if (!cells.has(k)) edge.push([cx + dx, cy + dy]);
+        }
+      }
+      if (!floatsIn.has(rk)) floatsIn.set(rk, []);
+      floatsIn.get(rk).push({ cells, edge });
+    }
+  }
+  const tryFloat = (rk, x, y) => {
+    if (opts.float === false) return;
+    for (const fl of floatsIn.get(rk) || []) {
+      if (!fl.edge.some(([ex, ey]) => ex === x && ey === y)) continue;
+      const room = ROOMS.get(rk);
+      for (const [ex, ey] of fl.edge) if (ex >= 0 && ey >= 0 && ex < room.tw && ey < room.th && passable(room, ex, ey)) push(rk, ex, ey);
+    }
+  };
   const isLock = (room, x, y) => room.baseName(x, y) === 'dDoorLocked';
   const isBossDoor = (room, x, y) => room.baseName(x, y) === 'dDoorBoss';
 
@@ -316,6 +353,7 @@ export function floodDungeon(mapId, opts = {}) {
         if (m.roomDefs[below]) push(below, x, y);
       }
       tryDrop(rk, x, y);
+      tryFloat(rk, x, y);
       if (canCoin) {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const lx = x + dx * COIN_TILES, ly = y + dy * COIN_TILES;

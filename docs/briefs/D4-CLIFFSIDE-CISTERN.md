@@ -1,7 +1,20 @@
-# D4 — the Cliffside Cistern, grown to three floors (S183 design; NOT BUILT)
+# D4 — the Cliffside Cistern, grown to three floors (S183 design; FIRST HALF BUILT)
 
-**Status (S183): designed and mocked, shown to the human, awaiting approval.
-Nothing in `src/` has changed.** Written against
+**Status (S183, later): the human said yes to all five open questions — the
+Sealed Cistern, floats driven by their race, the four wheels going and the
+Boss Key moving up, the Bottled Tide allowed to skip N9 once, and two building
+sessions. Built this session: the Dragon's spikes ($60) and black hole ($f4)
+ripped, the spike pool (`5` in the Cistern legend), the float (Seasons'
+platform from spr_dungeon_sprites, cut by rip-effects.py), relative tide
+overrides that add, N1 the Spike Basin, N2 the Weir, N3 the Long Race (its
+two wheels gone; its notch key opens its east door, now a lock shared with
+the Ironknight Gallery), check-floats.mjs and check-spikes.mjs, the robot
+re-routed. As built: the Weir's float waits under the north door and at the
+hole's west end; the Long Race's race is a pool at (6..8, 6), its float rows
+3-4 x 3..11, its notch (7,1)-(7,2). NEXT (S184): N4-N9 — 2F, 3F, the gates,
+the Boss Key, the Crossed Sluices' wheels, the whole-dungeon check-side run.**
+
+**Status (S183, first): designed and mocked, shown to the human.** Written against
 docs/briefs/DUNGEON-DESIGN-LANGUAGE.md; read that first.
 
 Pictures, all in `d4-mock/`:
@@ -265,7 +278,7 @@ the Boss Key moves upstairs. Wheels on the main path: 8 before, 8 after
   one; the claims say "without the bottle", and a bottle spent there is a
   bottle spent. Flagged for the human below.
 
-## Open questions for the human
+## Open questions for the human (all answered YES, S183)
 
 1. **The Sealed Cistern.** 2F is a floor the conch cannot reach: the water is
    whatever sea you climbed with. Yes? (Without it a gate never really

@@ -1777,6 +1777,19 @@ export const BELLOWS_RAFT_SCALE = 0.5;
 /** f — frames a gusted wheel keeps turning after the gust stops. guessed. */
 export const BELLOWS_WHEEL_COAST = 30;
 
+// --- Floats (the Cliffside Cistern's moving platforms, S183) --------------
+
+/** sp/f — how fast a float travels: 0.5 px/f. derived from the cartridge:
+ *  INTERAC_MOVING_PLATFORM's @state0 sets Interaction.speed to SPEED_80, the
+ *  speed table's $80 subpixels a frame (constants/common/objectSpeeds.s;
+ *  SPEED_100 is Link's 1 px/f walk). */
+export const FLOAT_SPEED = 128;
+
+/** px — how far below Link's centre the point a float must be under him is.
+ *  derived from the cartridge: movingPlatform.s @checkLinkTouching tests
+ *  w1Link.yh + 5, w1Link.xh against the platform's collision box. */
+export const FLOAT_FOOT_DY = 5;
+
 // --- Reefseed --------------------------------------------------------------
 
 /** f — how long a thrown Reefseed takes to become a coral pillar. guessed;

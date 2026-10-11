@@ -2740,58 +2740,63 @@ export function installDungeonsA() {
         ],
       },
       '0,4,6': {
-        name: 'Cracked Basin',
+        name: 'Spike Basin',
+        // N1, SPIKES ALONE (S183; docs/briefs/D4-CLIFFSIDE-CISTERN.md). The
+        // first Small Key on a dais in a spike pool (`5`): the Dragon's own
+        // spike floor at LOW and MID, deep water over it at HIGH. The top of
+        // the tide is the only sea it is safe at, and the Cleats swim it.
         map: [
           '#######.#######',
           '#.............#',
-          '#.............#',
-          '#...2222222...#',
-          '#...2222222...#',
-          '....2222222...#',
-          '#...2222222...#',
-          '#...2222222...#',
-          '#.............#',
+          '#..555555555..#',
+          '#..555555555..#',
+          '#..555...555..#',
+          '...555...555..#',
+          '#..555...555..#',
+          '#..555555555..#',
+          '#..555555555..#',
           '#.............#',
           '###############',
         ],
+        spikeRoom: { from: [1, 5], target: [7, 6], sea: 2 },
         entities: [
-          ['stalfos', 3, 2],
-          ['tektite', 11, 5],
-          ['keese', 10, 1],
+          ['chest', 7, 5, { pickup: 'key' }],
+          ['stalfos', 1, 1],
+          ['tektite', 12, 5],
+          ['keese', 10, 9],
         ],
-        puzzle: {
-          enemies: true,
-          flag: 'd4_basin',
-          reward: {
-            spawn: [['pickup', 7, 8, { kind: 'key' }]],
-            say: 'Something falls out of the cracked basin.',
-          },
-        },
+        readable: [
+          [1, 9, 'Scratched in the basin wall: "The spikes are\nsafe only under the top of the tide."'],
+        ],
       },
       '0,3,5': {
         name: 'The Weir',
-        // The sump, taught before it is ever load-bearing: at LOW these squares
-        // have no floor at all, and at MID they are over your head. Its key
-        // door north is the short way back into the Barnacle Cell.
+        // N2, A FLOAT ALONE (S183). The key door north is across a two-tile
+        // hole, and a float (Seasons' moving platform) shuttles along it,
+        // waiting under the door's notch and at its west end. It runs only
+        // while its race does — the channel along the south wall, wading
+        // water at LOW and a current above — so at LOW it stops where it is.
         map: [
           '#######L#######',
+          '#######.#######',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
           '#.............#',
-          '#.............#',
-          '#..00.....00..#',
-          '#..00.....00..#',
           '...............',
-          '#..00.....00..#',
-          '#..00.....00..#',
-          '#.U...........#',
           '#.............#',
+          '#.............#',
+          '#.U...........#',
+          '#........7777.#',
           '#######.#######',
         ],
+        floatRoom: { stop: [7, 1], race: [10, 9], board: [7, 4], station: true },
         entities: [
+          ['float', 7, 2, { race: [10, 9], path: [['wait', 64], ['left', 160], ['wait', 64], ['right', 160], ['loop', 0]] }],
           ['tektite', 7, 7],
-          ['keese', 3, 1],
+          ['keese', 3, 6],
         ],
         readable: [
-          [2, 8, 'Cut into the weir: "At low water the sumps\nhave no floor. Mind your feet."'],
+          [2, 8, 'Cut into the weir: "The float runs on the race,\nand the race runs on the sea."'],
         ],
       },
       '0,2,5': {
@@ -3132,53 +3137,41 @@ export function installDungeonsA() {
       },
       '0,4,3': {
         name: 'The Long Race',
-        // SILLS 4a AND 4b, AND THE SECOND ONE IS BEHIND THE FIRST. The west
-        // wheel is a sump shelf worked at MID, and what it opens is not the way
-        // on: it is the shutter into the east vault, where the second wheel
-        // stands at the top of a shaft behind drown-wall and wants HIGH. So the
-        // room is worked twice, in order, at two seas — the dungeon's whole
-        // idea said twice in a row, and the plate by the door says so.
+        // N3, THE FLOAT AND THE WIND (S183). The only way from the Winding
+        // Stair to the Ironknight is a float across a long hole, and halfway
+        // it passes under a notch in the north wall with a Small Key in it —
+        // and never stops there. Its race is a pool in the hole below the
+        // notch. Ride it at MID, and as he comes under the notch, face the
+        // race and pump: the cone takes the race down to LOW, the current
+        // stops, and the float stops under him. (At HIGH the cone leaves a
+        // current, but the conch does it instead: HIGH -> LOW stops it dead.)
+        // The key opens the east door, which is the way on.
         //
-        // The east wheel's stand cannot be reached at any sea while the vault
-        // is shut (`after`), which check-bellows.mjs proves along with every
-        // other sill clause, for each wheel.
+        // Until S183 this room held sills 4a and 4b, the second behind the
+        // first; the Squall Loft and the Drowned Sill already teach both.
         map: [
           '###############',
-          '#3OO.##########',
-          '####.#####1####',
-          '####0#####O####',
-          '#...0..#.#O#..#',
-          'L......#.#.#..D',
-          '#......#..9...#',
-          '#......D......#',
-          '#......#......#',
-          '#.U....#......#',
+          '#######.#######',
+          '#######.#######',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          'L..OOOOOOOOO..L',
+          '#..OOO777OOO..#',
+          '#..OOOOOOOOO..#',
+          '#..OOOOOOOOO..#',
+          '#U.OOOOOOOOO.U#',
           '###############',
         ],
-        bellowsRoom: [
-          { wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, opens: [[7, 7]] },
-          { wheel: [10, 2], stand: [10, 5], face: 'up', at: 2, opens: [[14, 5]], after: [[7, 7]] },
-        ],
+        floatRoom: { stop: [7, 2], race: [7, 6], board: [2, 4], brake: 1 },
         entities: [
-          ['wheel', 1, 1, { needTurns: 40 }],
-          ['wheel', 10, 2, { needTurns: 50 }],
-          // The darknut guards the vault, not the hall: at HIGH its stand is
-          // behind deep water a darknut cannot cross, so the second wheel is
-          // pumped from a square it cannot reach — the old room's premise.
-          ['darknut', 12, 8],
-          ['keese', 3, 7],
+          ['float', 3, 3, { race: [7, 6], path: [['wait', 32], ['right', 224], ['wait', 32], ['left', 224], ['loop', 0]] }],
+          ['pickup', 7, 1, { kind: 'key' }],
+          ['stalfos', 1, 7],
+          ['keese', 2, 8],
         ],
         readable: [
-          [2, 9, 'A plate by the race: "Two wheels, and the second\nis behind the first. They will not turn at the\nsame sea."'],
+          [1, 9, 'A plate by the race: "Where the float will not\nstop, the wind will stop it."'],
         ],
-        script: {
-          onEvent(game, name, data) {
-            if (name !== 'valve' || !data || !data.open) return;
-            // Each wheel opens its own door: the west one the vault, the east
-            // one the way on.
-            game.applyReward({ openDoors: [data.x >= 16 * 8 ? [14, 5] : [7, 7]] });
-          },
-        },
       },
       '0,5,3': {
         name: 'Ironknight Gallery',
@@ -3194,7 +3187,7 @@ export function installDungeonsA() {
           '#.U........................U.#',
           '#............................#',
           '#.............99.............#',
-          'D.............99.............#',
+          'L.............99.............#',
           '#.............99.............#',
           '#............................#',
           '#.U........................U.#',

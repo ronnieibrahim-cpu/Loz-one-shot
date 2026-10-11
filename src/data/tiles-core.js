@@ -2748,6 +2748,17 @@ export function installCoreTiles() {
     dExitCistern: { art: ART.xArch2, pal: 'xArch2', flags: F.WARP },
     dPillarCisternW: { art: ART.xArch1, pal: 'xArch1', flags: F.SOLID, ringWall: true },
     dPillarCisternE: { art: ART.xArch3, pal: 'xArch3', flags: F.SOLID, ringWall: true },
+    // S183: the Dragon's own spikes and holes. Its hole is black where the
+    // shared `dPit` is navy, and the Cistern's sump and drain are the same
+    // hole at LOW — still one tile there, which is D2's rule for them.
+    // `dSpikePoolCistern` is the SPIKE POOL, a tide tile: bare spikes at LOW
+    // and MID, deep water over them at HIGH, so the top of the tide is the
+    // only sea they are safe at (docs/briefs/D4-CLIFFSIDE-CISTERN.md).
+    dSpikeCistern: { art: ART.xSpike, pal: 'xSpike', flags: F.HAZARD },
+    dHoleCistern: { art: ART.xHole, pal: 'xHole', flags: F.PIT },
+    dSumpCistern: { tide: ['dHoleCistern', 'dWaterD', 'dWaterD'] },
+    dDrainCistern: { tide: ['dHoleCistern', 'dWaterS', 'dWaterD'] },
+    dSpikePoolCistern: { tide: ['dSpikeCistern', 'dSpikeCistern', 'dWaterD'] },
     xRingTL: { art: ART.xRingTL, pal: 'xRingTL', flags: F.SOLID },
     xRingTR: { art: ART.xRingTR, pal: 'xRingTR', flags: F.SOLID },
     xRingBL: { art: ART.xRingBL, pal: 'xRingBL', flags: F.SOLID },

@@ -326,6 +326,14 @@ export function installLegends() {
   registerLegend('dungeonCistern', {
     'C': 'dExitCistern', '(': 'dPillarCisternW', ')': 'dPillarCisternE', '9': 'dDrownCistern',
   }, 'dungeonCistern');
+  // S183: the Dragon's spikes and black holes (and its sump and drain, which
+  // are that hole at LOW). `5` is the spike pool — a tide tile, so a digit;
+  // `5` is the outdoor `channel`, which no indoor room places (the Spire's,
+  // the Sanctum's and the Shrine's argument).
+  registerLegend('dungeonCistern', {
+    '^': 'dSpikeCistern', 'O': 'dHoleCistern', '0': 'dSumpCistern', '4': 'dDrainCistern',
+    '5': 'dSpikePoolCistern',
+  }, 'dungeonCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
   // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every
   // digit in the shared vocabulary is already spoken for. `5` (`channel`) is an
