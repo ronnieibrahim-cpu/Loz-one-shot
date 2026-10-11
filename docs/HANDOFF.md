@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A sweep that stands Link on every cell stands him on the stair (S187).**
+  check-canopy's new sweep put a frozen Link on the Ford Crown's stair; he
+  took it, and every throw after that was made in the room below and "never
+  reached" anything. A sweep skips warp cells and their neighbours, and
+  asserts it is still in its room at the end.
+- **What carries a thing and what drops it must read the same point (S187).**
+  A belt was read at Link's foot (y+5) and a seed's hole at its middle, so a
+  seed carried SOUTH stopped five pixels short of the hole, on the last belt
+  cell. Eastward and northward rides hid it; the first southward one found it.
+- **A thing carried over a hole always falls in (S187).** So no puzzle can
+  stop a seed "over" its hole; the brief's "stake as a buffer" was dropped.
+  A crossing tile (low way at LOW, high way at MID) is how the sea chooses.
+
 - **A belt never gates Link (S186).** He walks 1 px/f and a belt carries
   0.5, so he can always walk up one; the D5 mock's "a swing on a running belt
   is carried into the hole" did not hold. A belt gates only what cannot walk:

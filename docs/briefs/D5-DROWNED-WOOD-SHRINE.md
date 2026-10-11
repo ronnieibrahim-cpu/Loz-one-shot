@@ -1,6 +1,7 @@
 # D5 — the Drowned Wood Shrine, grown to two floors (S185 design; S186 first half BUILT)
 
-**Status (S186): the human answered yes to all five questions (below). The
+**Status (S187): BUILT, all of it — see "As built (S187)" at the end and
+`d5-built/s187-canopy.png`.** Earlier status (S186): the human answered yes to all five questions (below). The
 first half is built: belts, knot-holes, stakes from above, K1-K3, with
 check-belts.mjs and check-canopy.mjs; picture in `d5-built/s186-canopy.png`.
 Two changes to the mock, both asked and approved in S186: K2 and K3 (see
@@ -243,3 +244,30 @@ stay: yes. 4. No cracked floors: yes. 5. Two sessions: yes.
   east key door (new) into the Long Ford. 38 rooms, 43 screens, 2 floors.
 - The stair: Rootbound Hall (12,9) up to the Hollow Crown (12,9); the Crown's
   four knot-holes (12-13, 3-4) drop into the Hall's north-east corner.
+
+## As built (S187) — K4, K5, and what changed from the brief
+
+Mocked first (`d5-mock2/mock-k4-k5.png`) and approved as shown.
+
+- **K4 the Ford Crown (2F 4,3)**: reached by a new stair in the Long Ford's
+  south hall (1,9 on both floors), not from the Belt Bough. A walled strip
+  `Kxj}K` (row 7): its middle cell is a CROSSING (`dBeltCrossWE`) that
+  carries west at LOW and east at MID. The only throw onto it is from 3,9
+  facing up over a one-tile hole, a wall behind it catching a long throw, so
+  the SAME throw plants the west knot-hole (1,7) at LOW and the east (5,7) at
+  MID. Below, the Long Ford's two notches are single cells walled in on four
+  sides (no ring of holes needed: walls stop a seed). Both held: Small Key
+  chest at 13,2. The brief's "a step at LOW / a wall at MID the block is
+  pushed against" became two plates: simpler, and the sea choosing the road
+  is upstairs where it is seen.
+- **K5 the High Bough (2F 4,2, 3x1)**: through K4's key door north. A band of
+  high belts (x15-17) runs south into holes across the middle (the human
+  asked for it: the hall was empty). Three bays: a low bough's belt (LOW
+  only), a crossing `dBeltCrossSN` (MID; at LOW it dumps the seed in a plain
+  hole), and a pool where a stake grown from the bank is stood on at LOW to
+  throw from. **The brief's "stake as a buffer" was dropped** (approved): a
+  seed can never be stopped OVER a hole, anything carried over one falls in.
+  Below, the Shrine Ford's three notches (30,2 35,2 40,2); the Boss Key's
+  chest at 12,4 rises when all three are held.
+- Keys 7, locks 7 (the Ford Crown's north door is the seventh). Seed sprigs
+  in both new rooms. 40 rooms, 47 screens.
