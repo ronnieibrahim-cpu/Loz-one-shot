@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Seasons draws the smash puff and the fall-into-a-hole ball in the same
+  orange (S185).** Both are interactions on the common sprites with palette
+  3; a pot that shattered on the floor next to a hole looked, in a strip of
+  stills, exactly like one that fell in. Log what the engine spawned (the
+  effect's first frame name) before believing a picture of an effect.
+- **A puzzle's "nothing reaches it" has to be checked against EVERY way a
+  thing gets there, the player himself included (S185).** The first D5 mock
+  had a stake spot "no throw reaches" that Link could simply ride the belt to
+  and plant under his own boots (a seed thrown at a wall plants at its
+  foot), and a plate in a pool he could reach by planting perches across the
+  water. The Shrine's sump `0` (neither standable nor plantable at any sea)
+  is the material for "only from above"; every claim gets a flood over the
+  plantable graph, perches included, not an argument.
+
 - **Making a ledge easier for the robot can make it free for the player
   (S184).** The robot fell off the Float Tank's one-tile ledge (a braked
   rider is set down a few pixels past level, over the hole), so the ledge was

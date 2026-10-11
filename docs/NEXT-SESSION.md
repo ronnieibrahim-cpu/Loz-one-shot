@@ -1,3 +1,67 @@
+## S185 — Seasons' falling-into-a-hole; D5 designed to two floors (NOT built)
+
+Branch claude/s185-oracle-tides-vj56fe, off main at 3f619fb (main already
+had S184). NOT merged to main: ask the human.
+
+### Part one: things that go over a hole go down it (built)
+- Read from oracles-disasm (cloned at 21c924a): INTERAC_FALLDOWNHOLE
+  (object_code/common/interactions/fallDownHole.s: animation 0 is three
+  pictures held 8 12 12, then deleted; SPEED_60 toward ((y+5)&$f0)+8,
+  (x&$f0)+8; SND_FALLINHOLE), its spawners (bank0.s
+  objectCreateFallingDownHoleInteraction / objectReplaceWithAnimationIfOnHazard,
+  objectCheckIsOverHazard reads the tile at y+5), the bracelet's thrown object
+  (bracelet.s @state3: a pot landing on a hole is REPLACED, it does not
+  break), the push block (pushblock.s @func_449d; checkTileAfterNext lets a
+  block onto any tile with no collision, holes included), the enemy
+  (enemies/commonCode.s ecom_checkHazards: y+5 at x-1 and x+1; counter1 60;
+  every 8 frames SPEED_80 once toward the middle; then the interaction and
+  decNumEnemies, no drop) and the item drop (itemDrop.s itemDrop_checkOnHazard).
+- RIPPED: rip-effects.py `fx_hole0..2` (interaction $0f, generalised the
+  puff's reader into `interaction(iid)`); rip-music.py `fallInHole`.
+- ENGINE: effects.js `hole` (drifts at HOLE_FALL_DRIFT_SPEED to the tile's
+  middle); entity.js `overHole`/`dropIntoHole` (HOLE_FOOT_DY); ThrownObject
+  landing on a hole drops in (no shatter, no drop); the Kilnshell resting on a
+  non-drop hole drops in (was a puff); PushBlock arriving on a hole drops in;
+  a fleeting Pickup at rest on a hole drops in (keys, heart pieces and fairies
+  do not); Enemy: a knock lifts F.PIT from the avoid mask for that frame
+  (`knockMove`), and a knocked enemy over a hole (`overHole`) is harmless and
+  unhittable, pulled ENEMY_HOLE_PULL_STEP every ENEMY_HOLE_PULL_EVERY for up
+  to ENEMY_HOLE_PULL_FRAMES, then `fallInHole` (counted, no puff, no drop, a
+  zol does not split). Bosses, fliers and swimmers never fall. feel.js: six
+  new constants, all derived. sprite-manifest fxBig gets fx_hole*.
+- TOOLS: check-holes.mjs (20, in CLAUDE.md's table). shoot-mock.mjs learned
+  `tiles`.
+- PICTURES: docs/briefs/hole-fall/s185-beside.png (the cartridge's ball and
+  timing rebuilt from its code — the TAS never puts anything in a hole —
+  beside ours: a pot, a block, an enemy) and s185-ours.gif (real speed);
+  film-holes.mjs and compose.py beside them.
+
+### Part two: D5 designed (shown to the human; NOT built)
+- Studied: tools/oneshot/oracle-study/run.sh renders (Ancient Ruins — the
+  kit D5 is already built in — has the belts: 2F $c6 and the boss room $d5);
+  Seasons' conveyor code (Link at SPEED_80, enemies via
+  enemyConveyorTilesTable).
+- docs/briefs/D5-DROWNED-WOOD-SHRINE.md: "the Canopy plants the Shrine" —
+  2F, 7 screens over the middle of 1F; belts (Seasons', plus: a seed rides a
+  belt while it grows; a drowned belt does not turn, high boughs at HIGH, low
+  boughs at MID and HIGH); knot-holes drop a seed to the cell beneath, where
+  it takes root and is remembered; K1 Hollow Crown (belts alone), K2 Belt
+  Bough (a seed on a belt; the stake as a buffer at MID), K3 Grove Crown over
+  the Standing Grove (a hold plate in a ring of sump), K4 Ford Crown (the sea
+  chooses which belt carries), K5 the High Bough over the Shrine Ford (three
+  plates; the Boss Key). 47 screens. No cracked floors (D3 has them).
+- Pictures: docs/briefs/d5-mock/mock-belts.png (Ancient Ruins $c6 beside
+  the Hollow Crown at three seas), mock-drop.png (K2, K3); gen-spec.py,
+  compose.py, mock-spec.json beside them.
+- FIVE OPEN QUESTIONS for the human at the end of the brief.
+
+### Verified
+Whole table green (52 tools with check-holes); check-playthrough 47/47, THE
+END, never died (low-water mark 3).
+
+### NEXT
+- The human's answers, then build D5's first half (docs/prompts/NEXT-PROMPT.md).
+
 ## S184 — the Cliffside Cistern's upper floors built (N4-N9): 44 screens on 3 floors
 
 Branch claude/s184-cistern-second-half-bjqsdv, off main at e6159ed (main

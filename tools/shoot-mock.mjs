@@ -8,7 +8,7 @@
 // spec: { legend, rooms: { name: [15 rows] }, shots: [ { room, tide,
 //         anchor?: [tx, ty, level], entities?: [[kind, tx, ty, opts]], out,
 //         overrides?: [{ tx, ty, r, delta, shape, dx, dy }],
-//         link?: { tx, ty, dir, bellows } } ] }
+//         link?: { tx, ty, dir, bellows }, tiles?: [[tx, ty, name]] } ] }
 // A room grid wider or taller than 15x11 is drawn as a room of that many
 // screens (a 45-wide grid is a 3x1 room). `overrides` lays tide overrides
 // after the sea is set: a Bellows cone is { shape: 'cone', delta: -1, r: 3,
@@ -73,6 +73,9 @@ for (const shot of spec.shots) {
       g.tide.setLevel(shot.tide, { instant: true });
       g.room.invalidate && g.room.invalidate();
     }
+    // `tiles: [[tx, ty, name]]` lays a tile over the grid after entering — a
+    // grown coral pillar (`coralPillar`) in S185's D5 mock.
+    for (const [tx, ty, name] of shot.tiles || []) g.room.setTile(tx, ty, name);
     for (const o of shot.overrides || []) {
       g.tide.addOverride({ mapId: id, roomKey: g.room.key, shape: 'square', ...o, src: 'mock' });
     }
