@@ -376,8 +376,16 @@ FIGURES.push(
     { n: 1, at: [4, 6, 7, 7] }, { n: 2, at: [3, 5, 7, 1] }, { n: 3, at: [4, 4, 22, 5] }, { n: 4, at: [2, 4, 1, 5] },
     { n: 5, at: [1, 4, 7, 6] }, { n: 6, at: [1, 3, 4, 2] }, { n: 7, at: [0, 4, 10, 18] }, { n: 8, at: [1, 5, 7, 6] },
     { n: 9, at: [2, 3, 10, 8] }, { n: 10, at: [2, 2, 4, 6] }, { n: 11, at: [2, 1, 7, 3] }, { n: 12, at: [3, 3, 13, 6] },
-    { n: 13, at: [4, 3, 6, 3] }, { n: 14, at: [5, 3, 20, 7] }, { n: 15, at: [5, 2, 1, 6] }, { n: 16, at: [4, 2, 7, 5] },
-    { n: 17, at: [4, 1, 3, 3] }, { n: 18, at: [3, 2, 7, 2] }, { n: 19, at: [3, 1, 7, 7] },
+    { n: 13, at: [4, 3, 6, 3] }, { n: 14, at: [5, 3, 24, 8] }, { n: 23, at: [5, 2, 1, 6] }, { n: 24, at: [4, 2, 7, 5] },
+    { n: 25, at: [4, 1, 3, 3] }, { n: 26, at: [3, 2, 7, 2] }, { n: 27, at: [3, 1, 7, 7] },
+  ] },
+  // S184: the Sealed Cistern (2F) and the Wind Loft (3F).
+  { out: 'd4-map-2f', scale: 1, map: { rooms: floorRooms('d4', 1) }, marks: [
+    { n: 15, at: [6, 3, 9, 8] }, { n: 16, at: [5, 3, 7, 5] }, { n: 17, at: [5, 2, 7, 9] }, { n: 18, at: [4, 2, 12, 2] },
+    { n: 20, at: [4, 2, 5, 5] }, { n: 21, at: [5, 2, 9, 5] }, { n: 22, at: [6, 2, 7, 7] },
+  ] },
+  { out: 'd4-map-3f', scale: 1, map: { rooms: floorRooms('d4', 2) }, marks: [
+    { n: 19, at: [4, 2, 12, 3] }, { ring: [4, 2, 1, 1] }, { ring: [4, 2, 20, 1] }, { ring: [4, 2, 43, 1] },
   ] },
   { out: 'd4-basin', src: 'd4map-0-4-6', marks: [{ ring: [7, 5] }, lbl('key: swim to it at HIGH', [7, 9.2]), MID] },
   { out: 'd4-weir-ride', src: 'd4-weir-ride-whole', marks: [{ ring: [7, 1] }, lbl('locked door', [8, 0.4], 'e'), lbl('the channel must be flowing', [10, 8.4], 's')] },
@@ -405,10 +413,36 @@ FIGURES.push(
     lbl('blow at the pool: the platform stops', [9, 7.6], 'nw'), MID,
   ] },
   { out: 'd4-ironknight', src: 'd4-ironknight-whole', scale: 2, marks: [{ ring: [20, 5], r: 16 }, lbl('Ironknight', [20, 3.4], 'n'), HIGH] },
-  { out: 'd4-crossed', src: 'd4-crossed-blow2-whole', marks: [
-    { n: 1, at: [3, 4], off: [-14, 0] }, { ring: [3, 1] }, lbl('west wheel: MID', [3, 2.4], 'n'),
-    { n: 2, at: [11, 4], off: [14, 0] }, { ring: [11, 1] }, lbl('east wheel: HIGH', [11, 2.4], 'n'),
-    { n: 3, at: [1, 6], off: [0, 14] }, { ring: [1, 6] }, lbl('plate: shortcut to the boss', [2, 7.2], 'nw'), HIGH,
+  { out: 'd4-ironknight-stair', src: 'd4-ironknight-stair-whole', scale: 2, marks: [{ ring: [24, 8] }, lbl('the stair up', [24, 9.3], 'n'), HIGH] },
+  { out: 'd4-intake', src: 'd4-intake-whole', marks: [
+    { ring: [9, 8] }, lbl('you come up here', [9, 9.3], 'n'), { path: [[8, 7], [3, 2.6]], w: 5 }, lbl('swim it at HIGH', [7, 5], 'c'), HIGH,
+  ] },
+  { out: 'd4-floattank', src: 'd4-floattank-whole', marks: [
+    { ring: [9, 5] }, lbl('a ledge — the wind\ncannot stop it here yet', [10, 6.6], 'nw'), { ring: [5, 5] }, lbl('its race', [4.5, 7.4], 'n'), HIGH,
+  ] },
+  { out: 'd4-windloft', src: 'd4-windloft-whole', scale: 1, marks: [
+    { n: 1, at: [20, 4], off: [-14, 0] }, { ring: [20, 1] }, lbl('swim the spikes at HIGH', [20, 7.2], 'n'),
+    { n: 2, at: [40, 1], off: [-14, 0] }, { ring: [43, 1] }, lbl('ride the float at MID', [35, 6.2], 'n'),
+    { n: 3, at: [4, 1], off: [14, 0] }, { ring: [1, 1] }, lbl('the shelf at MID', [5, 5.6], 'n'),
+  ] },
+  { out: 'd4-loft-mid', src: 'd4-loft-mid-blow-whole', marks: [
+    { ring: [20, 4] }, { ring: [20, 1] }, { path: [[20, 3.4], [20, 1.6]], w: 5 }, lbl('one wheel over each tank below', [21, 6.4], 'nw'), HIGH,
+  ] },
+  { out: 'd4-westtank', src: 'd4-westtank-done-whole', marks: [
+    { n: 1, at: [2, 1], off: [0, -14] }, lbl('push down', [3, 1], 'w'), { n: 2, at: [7, 7], off: [0, -14] }, lbl('push right', [7, 8.4], 'n'),
+    { ring: [13, 3] }, lbl('key', [13, 4.2], 'n'), HIGH,
+  ] },
+  { out: 'd4-floattank-brake', src: 'd4-floattank-brake-whole', marks: [
+    { ring: [9, 5] }, { ring: [5, 5] }, { path: [[7, 5], [5.6, 5]], w: 5 }, lbl('blow at the race as you reach the ledge', [8, 8.6], 'n'),
+    { path: [[9.6, 5], [13, 5]], w: 4, dash: true }, HIGH,
+  ] },
+  { out: 'd4-easttank', src: 'd4-easttank-blow-whole', marks: [
+    { ring: [7, 7] }, { ring: [7, 4] }, { path: [[7, 6.4], [7, 4.6]], w: 5 }, lbl('swim in at HIGH and blow', [9, 8.2], 'nw'),
+    { ring: [5, 9] }, lbl('plate: the way home', [5.8, 9], 'e'), HIGH,
+  ] },
+  { out: 'd4-easttank-key', src: 'd4-easttank-key-whole' },
+  { out: 'd4-crossed', src: 'd4-crossed-whole', marks: [
+    { ring: [1, 6] }, lbl('plate: shortcut to the boss', [2, 7.2], 'nw'),
   ] },
   { out: 'd4-eastlook', src: 'd4-eastlook-whole', marks: [{ ring: [1, 3] }, lbl('Piece of Heart', [1.8, 3], 'e')] },
   { out: 'd4-gate', src: 'd4-gate-whole', marks: [{ ring: [7, 0] }, lbl('boss door: go in at LOW', [8, 0.3], 'e')] },
@@ -418,7 +452,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D5
   { out: 'ow5-noble', src: 'ow5-noble' },
   { out: 'ow-leg5', scale: 1, map: { rooms: ow(range(1, 9), range(3, 7)) }, marks: [
-    { trail: { from: 999, to: 1021, every: 8 }, w: 3 },
+    { trail: { from: 1072, to: 1094, every: 8 }, w: 3 },
     { n: 1, at: [3, 7, 3, 2] }, { n: 2, at: [5, 4, 4, 3] },
   ] },
 
@@ -464,7 +498,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1440, to: 1462, every: 8 }, w: 3 },
+    { trail: { from: 1513, to: 1535, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 
