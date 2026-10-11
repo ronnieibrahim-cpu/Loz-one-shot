@@ -1,3 +1,31 @@
+## S183 — the Cliffside Cistern designed to three floors and mocked (NOT built)
+
+Branch claude/s183-cistern-design-o7q0r3, off main at aae0372 (main already
+had S181 and S182). Nothing in src/ changed; dist/ unchanged.
+
+### What landed
+- docs/briefs/D4-CLIFFSIDE-CISTERN.md: the machine ("the Sealed Cistern keeps
+  the sea you climbed with; each Wind Loft wheel lifts the gate of the tank
+  beneath it, which then stands one level under the sea"), 44 screens on 3
+  floors (1F as now with five rooms reworked, 2F five new rooms where the
+  conch is not heard, 3F one 3x1 room of three wheels), three pieces from the
+  cartridges (spikes and a spike pool drowned only at HIGH; floats = Seasons'
+  INTERAC_MOVING_PLATFORM that run only while their race runs and freeze
+  while the conch sounds, the cartridge's wLinkPlayingInstrument rule;
+  sluice gates), puzzles N1-N9 with their ahas, the key table, the checkers.
+- Pictures in docs/briefs/d4-mock/: d4-plan, mock-spikes (Dancing Dragon
+  $67), mock-floats ($5e), mock-machine (Ages Jabu-Jabu $6d/$5c), mock-loft.
+  gen-spec.py / compose.py / plan.py make them.
+- tools/shoot-mock.mjs learned `overrides` (cones, drained regions), `link`
+  (Link stood on a tile, pumping) and rooms wider than one screen.
+- FOUND: tide overrides do not add (newest wins), so a cone over a drained
+  tank reads one under, not two; the build must make relative overrides stack.
+  And the Cistern's pits are the shared navy dPit, not the Dragon's black hole.
+
+### NEXT
+The human was shown the mock and asked the brief's five open questions.
+Build what they approve (the brief's "Engine and tools the build needs").
+
 ## S182 — the Bogwater Sanctum finished: P5 the Sump, P6 the Reliquary, 42 screens
 
 Branch claude/s182-bogwater-sump, off main at f84b1d9 with S181's branch

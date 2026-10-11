@@ -104,7 +104,7 @@ sheet has it, extract it"), its timings read from the disassembly.
 | D | Now | Target | New terrain (and its tide twist) | Puzzle depth to add |
 |---|---|---|---|---|
 | 3 Bogwater Sanctum | **DONE S182: 42 screens, 2F** | ~40, **2F** (a cellar under the bog) | **drop-through holes** (TILETYPE_WARPHOLE: fall to the same spot one floor down) — and at HIGH the hole is a flooded shaft you swim straight down, at LOW you fall; **cracked floors** that give way after you stand on them | a cellar half reached only by dropping; a key upstairs that needs a switch downstairs |
-| 4 Cliffside Cistern | 36, 1F | ~43, **2-3F** | **spikes** (TILETYPE_SPIKE, its damage and knockback) — drowned and harmless at HIGH; **moving platforms** over pits (INTERAC_MOVING_PLATFORM's paths and speed) | a wheel on one floor drains the shaft of the floor below |
+| 4 Cliffside Cistern | 36, 1F; **S183: designed to 44 on 3F, docs/briefs/D4-CLIFFSIDE-CISTERN.md, awaiting approval** | ~43, **2-3F** | **spikes** (TILETYPE_SPIKE, its damage and knockback) — drowned and harmless at HIGH; **moving platforms** over pits (INTERAC_MOVING_PLATFORM's paths and speed) | a wheel on one floor drains the shaft of the floor below |
 | 5 Drowned Wood Shrine | 40, 1F | ~44, **2F** | **conveyors** (the four TILETYPE_*CONVEYOR) as root-sluices that stop when the tide drops; **cracked floors** | Reefseed pillars grown on one floor reached from the one above |
 | 6 Abyssal Keep | 47, 2F | ~52, **3F** | everything before it combined, plus **colour/toggle floor** (INTERAC_TOGGLE_FLOOR) or **trampolines** | 4-5 keys, three floors that interlock; enemy density toward Seasons' D8 |
 

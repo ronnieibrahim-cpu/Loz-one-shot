@@ -6,7 +6,14 @@
 //   node tools/shoot-mock.mjs <spec.json> <outDir>
 //
 // spec: { legend, rooms: { name: [15 rows] }, shots: [ { room, tide,
-//         anchor?: [tx, ty, level], entities?: [[kind, tx, ty, opts]], out } ] }
+//         anchor?: [tx, ty, level], entities?: [[kind, tx, ty, opts]], out,
+//         overrides?: [{ tx, ty, r, delta, shape, dx, dy }],
+//         link?: { tx, ty, dir, bellows } } ] }
+// A room grid wider or taller than 15x11 is drawn as a room of that many
+// screens (a 45-wide grid is a 3x1 room). `overrides` lays tide overrides
+// after the sea is set: a Bellows cone is { shape: 'cone', delta: -1, r: 3,
+// dx, dy } from Link's tile, and a drained basin (S183's D4 mock) is a
+// square of delta -1 over it.
 // Each room is registered as a one-room map of its own, entered at the stated
 // sea, optionally with an Anchor held at [tx, ty] at `level`, and drawn whole
 // through Game.drawScene with Link left out — tools/shoot-dungeon.mjs's way.
@@ -47,9 +54,13 @@ for (const shot of spec.shots) {
     const id = 'mock_' + shot.room + '_' + shot.out.replace(/\W/g, '');
     if (!MAPS.get(id)) {
       registerMap({
-        id, kind: 'dungeon', name: 'Mock', w: 1, h: 1, floors: 1, cell: [15, 11],
+        id, kind: 'dungeon', name: 'Mock', w: 3, h: 3, floors: 1, cell: [15, 11],
         legend: spec.legend, tint: 'cave', music: 'dungeon3',
-        rooms: { '0,0,0': { name: shot.room, map: spec.rooms[shot.room], entities: shot.entities || [] } },
+        rooms: { '0,0,0': {
+          name: shot.room, map: spec.rooms[shot.room], entities: shot.entities || [],
+          ...(spec.rooms[shot.room][0].length > 15 || spec.rooms[shot.room].length > 11
+            ? { size: [spec.rooms[shot.room][0].length / 15, spec.rooms[shot.room].length / 11] } : {}),
+        } },
       });
     }
     g.tide.clearOverrides();
@@ -62,13 +73,23 @@ for (const shot of spec.shots) {
       g.tide.setLevel(shot.tide, { instant: true });
       g.room.invalidate && g.room.invalidate();
     }
+    for (const o of shot.overrides || []) {
+      g.tide.addOverride({ mapId: id, roomKey: g.room.key, shape: 'square', ...o, src: 'mock' });
+    }
+    g.tide.touch();
     g.dialogue.active = false; g.bannerTime = 0;
     for (let i = 0; i < 20; i++) window.__harness.step(1);
     g.dialogue.active = false; g.bannerTime = 0;
     const r = g.room;
     const c = document.createElement('canvas'); c.width = r.pw; c.height = r.ph;
     const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = false;
-    const p = g.player; g.player = null;
+    // `link: { tx, ty, dir, bellows }` stands Link on a tile for the picture,
+    // planted and pumping if `bellows` (the pose only: the cone is an override).
+    const p = g.player;
+    if (shot.link) {
+      p.x = shot.link.tx * 16; p.y = shot.link.ty * 16; p.dir = shot.link.dir || 'down';
+      p.bellowsT = shot.link.bellows ? 20 : 0;
+    } else g.player = null;
     g.drawScene(ctx, 0, 0);
     g.player = p;
     return c.toDataURL('image/png');
