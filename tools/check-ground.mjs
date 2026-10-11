@@ -131,6 +131,11 @@ for (const [mapId, m] of MAPS) {
     const room = getRoom(mapId, floor, rx, ry);
     if (!room) continue;
     for (const w of def.warps) {
+      // A warp that waits on a flag, on a tile the same puzzle lays a stair
+      // on (S184, the Ironknight Gallery's stair up): until then it does not
+      // warp, and once it does its tile carries F.WARP like any other.
+      const laid = w.needFlag && (def.puzzle?.reward?.tiles || []).find(([x, y]) => x === w.x && y === w.y);
+      if (laid && def.puzzle.flag === w.needFlag && (getTileDef(laid[2])?.flags & F.WARP)) continue;
       for (const tide of [0, 1, 2]) {
         // `q` is the quad set asking to cover; any name that is not this
         // cell's own asks the general question, which is the one that matters.

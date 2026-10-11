@@ -34,6 +34,7 @@ const setup = (o) => ({ ...BASE, ...o });
 // `expect` is evaluated in the page with the game as `g`; it returns true or
 // a string saying what was wrong.
 import { D3_RUN } from './playthroughs/d3-run.mjs';
+import { D4_RUN } from './playthroughs/d4-run.mjs';
 
 const SCENARIOS = [
   {
@@ -399,6 +400,28 @@ const SCENARIOS = [
       && g.progress.doors['d3:1,3,2:7,0'] === 'dDoorOpen')
       || ('in ' + g.room.key + ', sump ' + !!g.progress.flags.d3_sump + ', reliquary ' + !!g.progress.flags.d3_reliquary
         + ', boss door ' + g.progress.doors['d3:1,3,2:7,0'])`,
+  },
+  {
+    // THE WHOLE CISTERN IN ONE RUN (S184), door to the fourth Essence, on all
+    // three floors: N1 the Spike Basin at HIGH, N2 the Weir's float, N3 the
+    // Long Race braked by the wind, the Bellows and the old sills, the
+    // Ironknight and the stair it leaves; N4 up at HIGH over the Intake's
+    // spike pool, the Spike Gallery's fight, N5 the Float Tank's float past
+    // its ledge; N6 the Wind Loft's three wheels (HIGH, MID off a float, MID
+    // off a sump shelf) and back down at HIGH; N7 the drained West Tank's
+    // blocks for the sixth key; N8 the Float Tank's float braked at its ledge
+    // now its race is drained; N9 the East Tank's wheel two levels under for
+    // the Boss Key; home by the Intake, the Cliff Walk, the Crossed Sluices'
+    // plate and the Cistern Gate, and Wyverna.
+    name: 'The Cliffside Cistern: the whole dungeon in one run, door to Essence',
+    setup: setup({ items: { sword: 1, conch: 1, anchor: 1, kilnshell: 1, lens: 1, bombs: 1, cleats: 1 },
+      equipA: 'sword', equipB: 'conch', maxHearts: 200, hearts: 200, tide: 1,
+      enter: ['d4', 0, 3, 7, 112, 144, 'up'] }),
+    steps: D4_RUN,
+    expect: `(g.progress.flags.d4GateW && g.progress.flags.d4GateF && g.progress.flags.d4GateE
+      && g.progress.flags.d4_westTank && g.progress.bossKeys.d4 && g.progress.beaten.d4)
+      || ('in ' + g.room.key + ', gates ' + [g.progress.flags.d4GateW, g.progress.flags.d4GateF, g.progress.flags.d4GateE]
+        + ', boss key ' + !!g.progress.bossKeys.d4 + ', beaten ' + !!g.progress.beaten.d4)`,
   },
   {
     // THE WHOLE PALACE IN ONE RUN (S162), from the Porch's door to the eel:

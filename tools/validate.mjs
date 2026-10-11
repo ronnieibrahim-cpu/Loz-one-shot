@@ -205,6 +205,9 @@ for (const [name, d] of TILES) {
     // A drop hole's lips (S181) by its `lip` pass, and a crack's broken tile.
     if (d.lip) for (const t of Object.values(d.lip)) reachable.add(t);
     if (d.crack) reachable.add(d.crack);
+    // A story gate becomes its `openTo` when its flag is set (S184, the
+    // Cistern's sluice gates: `Game.applyStoryGates`).
+    if (d.openTo) reachable.add(d.openTo);
   }
   for (const [, rules] of TRANSFORMS) {
     for (const [k, v] of Object.entries(rules)) {

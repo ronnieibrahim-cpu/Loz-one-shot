@@ -334,6 +334,12 @@ export function installLegends() {
     '^': 'dSpikeCistern', 'O': 'dHoleCistern', '0': 'dSumpCistern', '4': 'dDrainCistern',
     '5': 'dSpikePoolCistern',
   }, 'dungeonCistern');
+  // S184: the three sluice gates in the Sealed Cistern's tank walls, one per
+  // tank (`H` west, `J` float, `Q` east), each opened by its own wheel on 3F.
+  // None of the three is in the shared legend.
+  registerLegend('dungeonCistern', {
+    'H': 'dGateCisternW', 'J': 'dGateCisternF', 'Q': 'dGateCisternE',
+  }, 'dungeonCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
   // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every
   // digit in the shared vocabulary is already spoken for. `5` (`channel`) is an

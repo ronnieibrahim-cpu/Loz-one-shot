@@ -23,7 +23,8 @@ import { cellTiles } from '../../src/world/room.js';
 import { F, transformFor } from '../../src/world/tileset.js';
 import { DREDGE_RANGE, COIN_THROW_SPEED, COIN_SETTLE_FRAMES } from '../../src/data/feel.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
-import { floatSweep } from '../../src/game/float-path.js';
+import { floatSweep, floatStations } from '../../src/game/float-path.js';
+import { drainedBase } from '../../src/game/tide.js';
 
 const DREDGE_TILES = Math.floor(DREDGE_RANGE / 16);
 // Where a thrown Ferryman's Coin comes down: its flight (speed x settle
@@ -41,7 +42,23 @@ function sillsOf(def) {
  * if no whirlpool took anyone anywhere (tools/check-whirlpool.mjs asks it);
  * `opts.drop: false` as if no drop hole or cracked floor did, `opts.float:
  * false` as if no float ran (tools/check-floats.mjs), and
- * `opts.dropSkip: rk` as if room rk's did not (tools/check-shafts.mjs).
+ * `opts.dropSkip: rk` as if room rk's did not (tools/check-shafts.mjs),
+ * and `opts.gates: false` as if no sluice gate ever opened
+ * (tools/check-sluices.mjs).
+ *
+ * A SEALED FLOOR (S184, the Cliffside Cistern's 2F) is flooded per sea. In
+ * a `noTide` room the conch is refused, so the player is held at whatever
+ * sea he walked in with: a cell there is a cell AT a sea, reached from the
+ * cell beside it at the same sea, and the sea only changes back in a room
+ * the conch is heard in. Every other room keeps the old rule, that a cell is
+ * passable if it is at any sea. `seen` still holds 'rk:x,y' for every cell
+ * reached at any sea; `seenSea` holds 'rk:x,y@t' for the sealed ones.
+ *
+ * A SLUICE GATE (S184) opens once the flood has stood in the room holding the
+ * wheel whose sill `drains` its flag, the way a puzzle door opens once its
+ * room is stood in; from then on its tank reads one under the sea
+ * (`drainedBase`, the engine's own rule), and every sealed state is walked
+ * again under the new water.
  *
  * Returns:
  *   seen         Set<'rk:x,y'>  every cell the flood actually stood on
@@ -123,6 +140,16 @@ export function floodDungeon(mapId, opts = {}) {
   };
   const passable = (room, x, y) => [0, 1, 2].some(t => walkableAt(room, x, y, t));
 
+  // The sealed floor and its gates.
+  const sealed = (rk) => !!m.roomDefs[rk].noTide;
+  const gateRoom = new Map();          // flag -> the room whose wheel drains it
+  for (const [rk, def] of Object.entries(m.roomDefs)) {
+    for (const B of sillsOf(def)) if (B.drains) gateRoom.set(B.drains, rk);
+  }
+  const gateFlags = {};                // the flags of every gate opened so far
+  const levelOf = (rk, x, y, t) => drainedBase(m.roomDefs[rk], t, x, y, { flags: gateFlags });
+  const passAt = (rk, x, y, t) => walkableAt(ROOMS.get(rk), x, y, levelOf(rk, x, y, t));
+
   // NO HOP (S162). This flood hopped a one-tile DEEP/JUMPABLE gap, a
   // Roc's-Feather move the game no longer has (nothing calls
   // `Player.startJump`): a one-wide sump in the Lower Vault, which the engine
@@ -194,12 +221,12 @@ export function floodDungeon(mapId, opts = {}) {
   const puzzleWait = new Set();
   // Is this puzzle door open to a flood that has stood in `roomsStood`? A door
   // that is not, but will be, is remembered for the outer loop.
-  const puzzleOpen = (rk, x, y) => {
+  const puzzleOpen = (rk, x, y, t) => {
     const k = `${rk}:${x},${y}`;
     const own = puzzleOwner.get(k);
     if (own == null) return false;
     if (roomsStood.has(own)) return true;
-    puzzleWait.add(k);
+    puzzleWait.add(k + '|' + (t == null ? '' : t));
     return false;
   };
   // FIRE IS TRAVERSAL TOO (S160). Drift-tangle and the Salt Pan's dry kelp
@@ -253,6 +280,7 @@ export function floodDungeon(mapId, opts = {}) {
       const o = e[3] || {};
       if (o.race && ![0, 1, 2].some(t => room.tile(o.race[0], o.race[1], t).push)) continue;
       const cells = floatSweep(e[1], e[2], o.path);
+      const stations = floatStations(e[1], e[2], o.path);
       const edge = [];
       for (const c of cells) {
         const [cx, cy] = c.split(',').map(Number);
@@ -262,15 +290,31 @@ export function floodDungeon(mapId, opts = {}) {
         }
       }
       if (!floatsIn.has(rk)) floatsIn.set(rk, []);
-      floatsIn.get(rk).push({ cells, edge });
+      const near = (set, [ex, ey]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => set.has((ex + dx) + ',' + (ey + dy)));
+      floatsIn.get(rk).push({ cells, edge, race: o.race, station: edge.filter(c => stations.some(st => near(st, c))) });
     }
   }
-  const tryFloat = (rk, x, y) => {
+  // ON A SEALED FLOOR a float is a way across only at a sea its race runs
+  // at, and a rider gets off where it waits — or anywhere along it if the
+  // Bellows' cone on its race (one level under, on top of any gate) stops
+  // it there. The conch cannot brake it up here; that is the Float Tank.
+  const raceRuns = (rk, race, t) => race == null
+    || !!ROOMS.get(rk).tile(race[0], race[1], t < 0 ? 0 : t).push;
+  const tryFloat = (rk, x, y, t) => {
     if (opts.float === false) return;
     for (const fl of floatsIn.get(rk) || []) {
       if (!fl.edge.some(([ex, ey]) => ex === x && ey === y)) continue;
       const room = ROOMS.get(rk);
-      for (const [ex, ey] of fl.edge) if (ex >= 0 && ey >= 0 && ex < room.tw && ey < room.th && passable(room, ex, ey)) push(rk, ex, ey);
+      if (t == null) {
+        for (const [ex, ey] of fl.edge) if (ex >= 0 && ey >= 0 && ex < room.tw && ey < room.th && passable(room, ex, ey)) push(rk, ex, ey);
+        continue;
+      }
+      const lv = fl.race ? levelOf(rk, fl.race[0], fl.race[1], t) : t;
+      if (!raceRuns(rk, fl.race, lv)) continue;
+      const brakes = !raceRuns(rk, fl.race, lv - 1);
+      for (const [ex, ey] of brakes ? fl.edge : fl.station) {
+        if (ex >= 0 && ey >= 0 && ex < room.tw && ey < room.th && passAt(rk, ex, ey, t)) push(rk, ex, ey, t);
+      }
     }
   };
   const isLock = (room, x, y) => room.baseName(x, y) === 'dDoorLocked';
@@ -320,15 +364,40 @@ export function floodDungeon(mapId, opts = {}) {
   const seedRoom = m.roomDefs[startKey] ? startKey : Object.keys(m.roomDefs)[0];
 
   // Flood tile-by-tile across rooms: a seam is crossed when both sides have a
-  // passable tile in the matching row/column.
+  // passable tile in the matching row/column. A queued state is [rk, x, y, t]:
+  // t is the sea in a sealed room and null everywhere else.
   const seen = new Set();
-  const lockedSeen = new Set();
+  const seenSea = new Set();
+  const lockedSeen = new Set();        // 'rk:x,y|t' or 'rk:x,y|t|boss'
+  const opened = new Set();            // locks a key has been spent on
   const q = [];
-  const push = (rk, x, y) => {
+  let regate = false;
+  const stand = (rk) => {
+    if (roomsStood.has(rk)) return;
+    roomsStood.add(rk);
+    if (opts.gates === false) return;
+    for (const [fl, wr] of gateRoom) if (wr === rk && !gateFlags[fl]) { gateFlags[fl] = true; regate = true; }
+  };
+  const push = (rk, x, y, t) => {
+    if (sealed(rk)) {
+      if (t == null) {
+        // Into the sealed floor from a room the conch is heard in: at any sea
+        // the cell can be stood at (a doorway, at all three).
+        let ts = [0, 1, 2].filter(s => passAt(rk, x, y, s));
+        if (!ts.length) ts = [0, 1, 2];
+        for (const s of ts) push(rk, x, y, s);
+        return;
+      }
+      const ks = rk + ':' + x + ',' + y + '@' + t;
+      if (seenSea.has(ks)) return;
+      seenSea.add(ks); seen.add(rk + ':' + x + ',' + y); q.push([rk, x, y, t]);
+      stand(rk);
+      return;
+    }
     const k = rk + ':' + x + ',' + y;
     if (seen.has(k)) return;
-    seen.add(k); q.push([rk, x, y]);
-    roomsStood.add(rk);
+    seen.add(k); q.push([rk, x, y, null]);
+    stand(rk);
   };
   const sdD = dims.get(seedRoom);
   const sdRoom = ROOMS.get(seedRoom);
@@ -338,30 +407,35 @@ export function floodDungeon(mapId, opts = {}) {
   while (progress) {
     progress = false;
     while (q.length) {
-      const [rk, x, y] = q.pop();
+      const [rk, x, y, t] = q.pop();
       const room = ROOMS.get(rk);
+      // The sea carried into the next cell: kept between two sealed rooms,
+      // let go of anywhere the conch is heard.
+      const seaTo = (rk2) => (t != null && sealed(rk2) ? t : null);
+      const pass = (rk2, nx, ny) => (t != null && sealed(rk2)
+        ? passAt(rk2, nx, ny, t) : passable(ROOMS.get(rk2), nx, ny));
       const w = warpsOut.get(rk + ':' + x + ',' + y);
-      if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy); }
+      if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy, seaTo(wrk)); }
       const D = dims.get(rk);
       const W = D.W, H = D.H;
       // A WHIRLPOOL IS TRAVERSAL (S161, the Sunken Palace): a cell that is a
       // whirlpool at some sea takes the player to the same cell of the room
       // directly beneath, one floor down (`Game.enterWhirlpool`). Only down:
       // the way back up is a stair. tools/check-whirlpool.mjs proves each one.
-      if (opts.whirl !== false && [0, 1, 2].some(t => room.flagsAt(x, y, t) & F.WHIRL)) {
+      if (opts.whirl !== false && [0, 1, 2].some(s => room.flagsAt(x, y, s) & F.WHIRL)) {
         const below = `${D.f - 1},${D.rx},${D.ry}`;
         if (m.roomDefs[below]) push(below, x, y);
       }
       tryDrop(rk, x, y);
-      tryFloat(rk, x, y);
+      tryFloat(rk, x, y, t);
       if (canCoin) {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const lx = x + dx * COIN_TILES, ly = y + dy * COIN_TILES;
           if (lx < 0 || ly < 0 || lx >= W || ly >= H) continue;
-          for (const t of [0, 1, 2]) {
+          for (const s of [0, 1, 2]) {
             let clear = true;
-            for (let n = 1; n < COIN_TILES && clear; n++) if (flierBlocked(room, x + dx * n, y + dy * n, t)) clear = false;
-            if (clear && walkableAt(room, lx, ly, t) && walkableAt(room, lx, ly, (t + 1) % 3)) { push(rk, lx, ly); break; }
+            for (let n = 1; n < COIN_TILES && clear; n++) if (flierBlocked(room, x + dx * n, y + dy * n, s)) clear = false;
+            if (clear && walkableAt(room, lx, ly, s) && walkableAt(room, lx, ly, (s + 1) % 3)) { push(rk, lx, ly); break; }
           }
         }
       }
@@ -372,7 +446,7 @@ export function floodDungeon(mapId, opts = {}) {
             if (cx < 0 || cy < 0 || cx >= W || cy >= H) break;
             if (snagAt(room, cx, cy)) {
               const lx = cx - dx, ly = cy - dy;
-              if (lx !== x || ly !== y) push(rk, lx, ly);
+              if (lx !== x || ly !== y) push(rk, lx, ly, t);
               break;
             }
             if (castStops(room, cx, cy)) break;
@@ -383,7 +457,7 @@ export function floodDungeon(mapId, opts = {}) {
         const nx = x + dx, ny = y + dy;
         if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
           tryDrop(rk, nx, ny);
-          if (passable(room, nx, ny) || puzzleOpen(rk, nx, ny) || burnable(room, nx, ny)) push(rk, nx, ny);
+          if (pass(rk, nx, ny) || puzzleOpen(rk, nx, ny, t) || burnable(room, nx, ny)) push(rk, nx, ny, t);
           else if (ledgeDir(room, nx, ny) === DIR_OF[dx + ',' + dy]) {
             let n = 1;
             while (n < 3) {
@@ -392,39 +466,67 @@ export function floodDungeon(mapId, opts = {}) {
               n++;
             }
             const lx = nx + dx * n, ly = ny + dy * n;
-            if (lx >= 0 && ly >= 0 && lx < W && ly < H && passable(room, lx, ly)) push(rk, lx, ly);
+            if (lx >= 0 && ly >= 0 && lx < W && ly < H && pass(rk, lx, ly)) push(rk, lx, ly, t);
           }
-          else if (isLock(room, nx, ny)) lockedSeen.add(rk + ':' + nx + ',' + ny);
-          else if (isBossDoor(room, nx, ny) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + ':boss');
+          else if (isLock(room, nx, ny)) lockedSeen.add(rk + ':' + nx + ',' + ny + '|' + (t == null ? '' : t));
+          else if (isBossDoor(room, nx, ny) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + '|' + (t == null ? '' : t) + '|boss');
           continue;
         }
         const out = stepOut(rk, nx, ny);
         if (!out) continue;
         const [nk, tx, ty] = out;
-        if (passable(ROOMS.get(nk), tx, ty) || puzzleOpen(nk, tx, ty) || burnable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty);
+        if (pass(nk, tx, ty) || puzzleOpen(nk, tx, ty, seaTo(nk)) || burnable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty, seaTo(nk));
       }
+    }
+    // A gate that has just opened changes the water under every sealed
+    // state already walked: walk them all again.
+    if (regate) {
+      regate = false;
+      for (const ks of seenSea) {
+        const [rk0, rest] = ks.split(':');
+        const [xy0, t0] = rest.split('@');
+        const [x0, y0] = xy0.split(',').map(Number);
+        q.push([rk0, x0, y0, Number(t0)]);
+      }
+      progress = true;
+      continue;
     }
     // A puzzle door whose room the flood has now stood in is open: step
     // through it from whichever side met it.
-    for (const k of [...puzzleWait]) {
+    for (const kw of [...puzzleWait]) {
+      const [k, ts] = kw.split('|');
       const [rk0, xy0] = k.split(':');
       if (!roomsStood.has(puzzleOwner.get(k))) continue;
-      puzzleWait.delete(k);
+      puzzleWait.delete(kw);
       const [x0, y0] = xy0.split(',').map(Number);
-      if (!seen.has(k)) { push(rk0, x0, y0); progress = true; }
+      const t0 = ts === '' ? null : Number(ts);
+      const was = t0 == null || !sealed(rk0) ? seen.has(k) : seenSea.has(k + '@' + t0);
+      if (!was) { push(rk0, x0, y0, sealed(rk0) ? t0 : null); progress = true; }
     }
     if (progress) continue;
     for (const l of lockedSeen) {
-      const parts = l.split(':');
-      const isBoss = parts[2] === 'boss';
-      if (!isBoss && keys <= 0) continue;
-      const [rk, xy] = parts;
+      const [k, ts, boss] = l.split('|');
+      const isBoss = boss === 'boss';
+      const [rk, xy] = k.split(':');
       const [x, y] = xy.split(',').map(Number);
-      if (seen.has(rk + ':' + x + ',' + y)) continue;
-      if (!isBoss) keys--;
-      push(rk, x, y);
+      const t0 = ts === '' ? null : Number(ts);
+      const was = t0 == null || !sealed(rk) ? seen.has(k) : seenSea.has(k + '@' + t0);
+      if (was) { lockedSeen.delete(l); continue; }
+      if (!isBoss && !opened.has(k)) {
+        if (keys <= 0) continue;
+        keys--;
+        opened.add(k);
+        const pr0 = partnerOf(rk, x, y);
+        if (pr0) opened.add(`${pr0[0]}:${pr0[1]},${pr0[2]}`);
+      }
+      push(rk, x, y, sealed(rk) ? t0 : null);
       const pr = partnerOf(rk, x, y);
-      if (pr) { const pd = ROOMS.get(pr[0]); if (isLock(pd, pr[1], pr[2]) || isBossDoor(pd, pr[1], pr[2])) push(pr[0], pr[1], pr[2]); }
+      if (pr) {
+        const pd = ROOMS.get(pr[0]);
+        if (isLock(pd, pr[1], pr[2]) || isBossDoor(pd, pr[1], pr[2])) {
+          push(pr[0], pr[1], pr[2], t0 != null && sealed(pr[0]) ? t0 : null);
+        }
+      }
       lockedSeen.delete(l);
       progress = true;
       break;
@@ -448,7 +550,7 @@ export function floodDungeon(mapId, opts = {}) {
   };
 
   return {
-    seen, dims, ROOMS, stepOut, warpsOut, floorAt,
+    seen, seenSea, dims, ROOMS, stepOut, warpsOut, floorAt, gateFlags,
     reachedRooms, missed, bossRoom: m.dungeon.bossRoom,
     bossReached: reachedRooms.has(m.dungeon.bossRoom), total: all.length,
   };

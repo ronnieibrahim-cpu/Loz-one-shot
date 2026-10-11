@@ -165,7 +165,7 @@ for (const f of floats) {
       out[tide] = { moved: fl.x - x0 + (fl.y - 0), dx: fl.x - x0, pdx: p.x - px0, fell, hurt: g.progress.hearts < hp0, fx: fl.x, fy: fl.y };
       if (tide === 1) {
         // The conch: the float holds still for as long as it sounds.
-        for (let i = 0; i < 600 && !(fl.dir && fl.left > 120); i++) window.__harness.step(1);
+        for (let i = 0; i < 600 && !(fl.dir && fl.left > 80); i++) window.__harness.step(1);
         const y1 = fl.y, x1 = fl.x;
         p.playConch(g);
         let still = !!fl.dir, frames = 0;
@@ -184,7 +184,12 @@ for (const f of floats) {
   ok(res[0].dx === 0, `${tag}: at LOW it does not move (${res[0].dx} px)`);
   ok(res[1].dx !== 0 || res[1].fy !== fe[2] * 16, `${tag}: at MID it runs`);
   ok(!res[1].fell && Math.abs(res[1].pdx - res[1].dx) <= 1, `${tag}: it carries a rider and he does not fall (float ${res[1].dx} px, rider ${res[1].pdx} px)`);
-  ok(res.conch.frames > 0 && res.conch.still, `${tag}: it holds still while the conch sounds (${res.conch.frames} frames)`);
+  // On a sealed floor (S184) the conch is not heard at all, so there is no
+  // sounding to hold still through; that it is refused there is the room's
+  // `noTide`, which walk-dungeons and check-sluices lean on.
+  const [ff, frx, fry] = f.rk.split(',').map(Number);
+  if (getRoom(f.map, ff, frx, fry).def.noTide) ok(res.conch.frames === 0, `${tag}: on a sealed floor the conch does not sound at all`);
+  else ok(res.conch.frames > 0 && res.conch.still, `${tag}: it holds still while the conch sounds (${res.conch.frames} frames)`);
 }
 
 for (const cl of claims) {

@@ -1775,6 +1775,118 @@ export const ROUTE = [
   ['wait', 120],
   ['fight', 4000, 1500],
   ['dialogue', 600],
+
+  // ------------------------------------------ d4 2F and 3F (S184, N4-N9)
+  // UP THE STAIR THE ARMOUR LEFT, AT HIGH. The Sealed Cistern keeps the sea
+  // it was climbed with, and HIGH is the only sea that crosses the Intake's
+  // spike pool — the gallery was fought at HIGH, so the sea is already right.
+  ['goto', 24, 7, 900],
+  ['hold', ['down'], 30],
+  ['wait', 90],
+  // 1,6,3 the Intake: swim the pool, west into the Spike Gallery.
+  ['fight', 3000, 1200],
+  ['goto', 1, 2, 1200],
+  ['hold', ['left'], 40],
+  ['wait', 60],
+  // 1,5,3 the Spike Gallery: the fight opens the shutter north. The path
+  // walks round the strips (pitAt counts a hazard since S184).
+  ['fight', 4000, 1500],
+  ['dialogue', 400],
+  ['goto', 7, 1, 900],
+  ['hold', ['up'], 40],
+  ['wait', 60],
+  // 1,5,2 the Float Tank, first visit: ride the float north past the ledge
+  // (the wind could not stop it here yet) to the West Tank's door.
+  ['goto', 7, 8, 900],
+  ['board', 7, 7, 2000],
+  ['alight', 7, 2, 2000],
+  ['goto', 1, 2, 900],
+  ['hold', ['left'], 40],
+  ['wait', 60],
+  // 1,4,2 the West Tank's landing, and up its stair.
+  ['goto', 12, 2, 900],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  // 2,4,2 THE WIND LOFT. The middle wheel at HIGH (swum to over the spike
+  // pool); off the pool before the sea changes, or the pool is spikes under
+  // him; the east wheel at MID off its float; the west wheel at MID off its
+  // sump shelf; and back down at HIGH, which is the sea 2F gets.
+  ['fight', 4000, 1500],
+  ['equip', 'bellows', 'A', 400],
+  ['goto', 20, 4, 1500],
+  ['bellows', 20, 1, 3000],
+  ['goto', 20, 8, 900],
+  ['tide', 1, 140, 600],
+  ['goto', 39, 8, 1500],
+  ['board', 39, 7, 2000],
+  ['alight', 40, 2, 2000],
+  ['goto', 40, 1, 300],
+  ['bellows', 43, 1, 3000],
+  ['goto', 40, 2, 300],
+  ['board', 40, 3, 2000],
+  ['alight', 40, 8, 2000],
+  ['goto', 4, 1, 2000],
+  ['bellows', 1, 1, 3000],
+  ['goto', 4, 4, 900],
+  ['tide', 2, 140, 600],
+  ['goto', 12, 3, 1500],
+  ['hold', ['up'], 30],
+  ['wait', 90],
+  // 1,4,2 the West Tank, drained to MID: both blocks onto their plates, and
+  // the sixth Small Key's chest rises on the landing.
+  ['equip', 'sword', 'A', 400],
+  ['goto', 2, 1, 1500],
+  ['hold', ['down'], 50],
+  ['wait', 40],
+  ['goto', 7, 7, 1500],
+  ['hold', ['right'], 50],
+  ['wait', 40],
+  ['dialogue', 400],
+  ['goto', 13, 2, 1500],
+  ['hold', ['down'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 900],
+  ['goto', 13, 2, 900],
+  ['hold', ['right'], 40],
+  ['wait', 60],
+  // 1,5,2 the Float Tank, drained: board at the north end, and brake at the
+  // ledge with the wind on the race; swim the drown-wall gap and turn the
+  // key in the East Tank's door.
+  ['equip', 'bellows', 'A', 400],
+  ['goto', 7, 2, 900],
+  ['board', 7, 3, 2000],
+  ['alight', 7, 8, 2000],
+  // Braked on the way NORTH: the rider is set down a little short of level
+  // in the direction of travel, and short of the ledge going south is over
+  // the hole under it.
+  ['board', 7, 7, 2000],
+  ['alight', 9, 5, 2000, [5, 5]],
+  ['goto', 13, 5, 900],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 30],
+  ['hold', ['right'], 40],
+  ['wait', 60],
+  // 1,6,2 THE EAST TANK: the wheel two levels under, freed by the gate and
+  // the wind together; the Boss Key's chest; the plate that opens the way
+  // home; and back down the Intake's stair at HIGH.
+  ['goto', 7, 7, 1500],
+  ['bellows', 7, 4, 3000],
+  ['dialogue', 400],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 6, 2, 1500],
+  ['hold', ['right'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 600],
+  ['loot', 900],
+  ['goto', 5, 9, 900],
+  ['dialogue', 400],
+  ['goto', 7, 9, 600],
+  ['hold', ['down'], 40],
+  ['wait', 60],
+  ['goto', 9, 7, 1500],
+  ['hold', ['down'], 30],
+  ['wait', 90],
   ['travel', 5, 2, 4000],
 
   // ---------------------------------------------------------------- d4 0,5,2
@@ -1792,26 +1904,9 @@ export const ROUTE = [
   ['wait', 90],
 
   // ---------------------------------------------------------------- d4 0,4,2
-  // SILLS 5 AND 6 — THE CROSSED SLUICES, one of each shape, in one room, with
-  // the Boss Key behind both. The west wheel is a sump shelf and wants MID;
-  // the east wheel is a drown-wall shelf and wants HIGH. You cannot hold two
-  // seas, so the run works one side, swims back down to the floor, sounds the
-  // conch, and works the other. The key lands in the middle rather than on
-  // either shelf.
+  // THE CROSSED SLUICES, its wheels gone since S184 (the Boss Key is already
+  // in hand, from the East Tank). A fight, and on to the overlook.
   ['fight', 6000, 2000],
-  ['tide', 1, 140, 600],
-  ['equip', 'bellows', 'A', 400],
-  ['goto', 3, 4, 1200],
-  ['bellows', 3, 1, 3000],
-  ['goto', 5, 7, 1200],
-  ['tide', 2, 140, 600],
-  ['goto', 11, 4, 1200],
-  ['bellows', 11, 1, 3000],
-  ['goto', 9, 7, 1200],
-  ['wait', 60],
-  ['dialogue', 600],
-  ['loot', 1500],
-  ['equip', 'sword', 'A', 400],
 
   // ---------------------------------------------------------------- d4 0,4,1
   // The East Overlook: a rupee and D4's second Piece of Heart, in the corner

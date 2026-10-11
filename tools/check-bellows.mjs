@@ -103,6 +103,8 @@ import { F, getTileDef } from '../src/world/tileset.js';
 import { installData } from '../src/data/index.js';
 import { BELLOWS_RANGE, GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
 import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
+import { drainedBase } from '../src/game/tide.js';
+import { floatSweep } from '../src/game/float-path.js';
 
 installData();
 
@@ -156,6 +158,18 @@ function defAt(legend, ch, level) {
 }
 const isDeep = (d) => !!d && !!(d.flags & F.DEEP);
 
+/**
+ * The tile at one cell of a declared room at one sea. A sill that declares
+ * `gate: flag` (S184, the East Tank) is proved with that sluice gate OPEN:
+ * the room's tank reads one under the sea, the engine's own rule
+ * (`drainedBase`). That it cannot be worked with the gate shut is
+ * tools/check-sluices.mjs's claim.
+ */
+function cellDef(room, x, y, level) {
+  const lv = room.B && room.B.gate ? drainedBase(room.def, level, x, y, { flags: { [room.B.gate]: true } }) : level;
+  return defAt(room.legend, room.grid[y][x], lv);
+}
+
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
@@ -190,16 +204,37 @@ function flood(room, level, mode, open = room.open) {
   const { grid, legend, W, H } = room;
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null
     : (open && open.has(x + ',' + y)) || KEYED.has(legend[grid[y][x]]) ? getTileDef('dDoorOpen')
-      : defAt(legend, grid[y][x], level));
+      : cellDef(room, x, y, level));
   const ok = (x, y) => occupiable(at(x, y), mode);
   const seen = new Set(), q = [];
   const push = (x, y) => { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } };
+  // Every way in: the border, and (S184, the Wind Loft) a stair inside it.
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if ((x === 0 || y === 0 || x === W - 1 || y === H - 1) && ok(x, y)) push(x, y);
+    const d = at(x, y);
+    if (((x === 0 || y === 0 || x === W - 1 || y === H - 1) || (d && (d.flags & F.STAIRS))) && ok(x, y)) push(x, y);
   }
+  // A FLOAT (S183) joins the cells beside its path at a sea its race runs:
+  // the Wind Loft's east wheel is reached on one. Where it can be stopped is
+  // tools/check-floats.mjs's to prove; here it is generous, which is the
+  // direction every unreachability claim has to err in.
+  const floats = (room.def.entities || []).filter(e => e[0] === 'float').map(e => {
+    const o = e[3] || {};
+    const cells = floatSweep(e[1], e[2], o.path);
+    const edge = [];
+    for (const c of cells) {
+      const [cx, cy] = c.split(',').map(Number);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!cells.has((cx + dx) + ',' + (cy + dy))) edge.push([cx + dx, cy + dy]);
+    }
+    const race = o.race ? at(o.race[0], o.race[1]) : null;
+    return { edge, runs: !o.race || !!(race && race.push) };
+  });
   while (q.length) {
     const [x, y] = q.pop();
     const here = at(x, y);
+    for (const fl of floats) {
+      if (!fl.runs || !fl.edge.some(([ex, ey]) => ex === x && ey === y)) continue;
+      for (const [ex, ey] of fl.edge) if (ok(ex, ey)) push(ex, ey);
+    }
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = x + dx, ny = y + dy;
       if (ok(nx, ny)) { push(nx, ny); continue; }
@@ -248,14 +283,14 @@ function ringSole(room, x, y) {
   if (top || bot) { const c0 = Math.floor(x / CW) * CW; for (let i = c0; i < c0 + CW; i++) cells.push([i, y]); }
   else { const c0 = Math.floor(y / CH) * CH; for (let j = c0; j < c0 + CH; j++) cells.push([x, j]); }
   return cells.every(([cx, cy]) => (cx === x && cy === y)
-    || LEVELS.every(t => MODES.every(md => !occupiable(defAt(legend, grid[cy][cx], t), md))));
+    || LEVELS.every(t => MODES.every(md => !occupiable(cellDef(room, cx, cy, t), md))));
 }
 
 /** Does the door at (x,y) cut its two neighbours apart on some axis, at every level? */
 function doorSeparates(room, x, y) {
   const { grid, legend, W, H } = room;
   const walk = (px, py, t) => px >= 0 && py >= 0 && px < W && py < H
-    && walkableDef(defAt(legend, grid[py][px], t));
+    && walkableDef(cellDef(room, px, py, t));
   const cuts = (ax, ay, t) => {
     const a = [x - ax, y - ay], b = [x + ax, y + ay];
     if (!walk(a[0], a[1], t) || !walk(b[0], b[1], t)) return false;
@@ -266,7 +301,7 @@ function doorSeparates(room, x, y) {
         const nx = cx + dx, ny = cy + dy;
         if (nx === x && ny === y) continue;              // the door is shut
         // Deep water is floor to this player, so a moat is not a wall here.
-        const d = (nx < 0 || ny < 0 || nx >= W || ny >= H) ? null : defAt(legend, grid[ny][nx], t);
+        const d = (nx < 0 || ny < 0 || nx >= W || ny >= H) ? null : cellDef(room, nx, ny, t);
         if (!occupiable(d, 'swim')) continue;
         const k = nx + ',' + ny;
         if (seen.has(k)) continue;
@@ -353,12 +388,12 @@ for (const r of rooms) {
   const where = `${r.mapId} ${r.key} (${r.name})`;
   const { wheel, stand, face, at } = r.B;
   const W = wheel.join(','), S = stand.join(',');
-  const tileAt = (p, l) => defAt(r.legend, r.grid[p[1]][p[0]], l);
+  const tileAt = (p, l) => cellDef(r, p[0], p[1], l);
   const reach = LEVELS.map(l => reachable(r, l));
   // Solidity for the line-of-sight walk, at the level being asked about.
   const solidAtLevel = (l) => (x, y) => {
     if (x < 0 || y < 0 || x >= r.W || y >= r.H) return true;
-    const d = defAt(r.legend, r.grid[y][x], l);
+    const d = cellDef(r, x, y, l);
     return !d || !!(d.flags & (F.SOLID | F.VOID));
   };
 
@@ -412,7 +447,7 @@ for (const r of rooms) {
       if (isDeep(tileAt(wheel, l))) continue;              // drowned: safe at this level
       for (const k of reach[l]) {
         const [x, y] = k.split(',').map(Number);
-        if (!canPumpFrom(defAt(r.legend, r.grid[y][x], l))) continue;
+        if (!canPumpFrom(cellDef(r, x, y, l))) continue;
         for (const [dx, dy] of Object.values(DIR_VEC)) {
           if (coneCovers(x, y, dx, dy, wheel[0], wheel[1], solidAtLevel(l))) bad.push(`${LEVEL_NAME[l]} from ${k}`);
         }

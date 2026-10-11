@@ -31,6 +31,26 @@ import { offscreen } from '../core/screen.js';
 import { F } from '../world/tileset.js';
 import { TIDE_SWEEP_FRAMES } from '../data/feel.js';
 
+/**
+ * The base level under one tile of a room with a sluice gate (S184): a room
+ * declaring `tank: { flag, rect: [x0, y0, x1, y1] }` (or a list of them) has
+ * the tiles inside `rect` one level under `base` once `flags[flag]` is set —
+ * the gate is open and the tank has drained to one under the sea. Pure, so
+ * the dungeon flood asks the same question with its own flags.
+ */
+export function drainedBase(def, base, tx, ty, progress) {
+  const T = def && def.tank;
+  if (!T || base <= 0) return base;
+  const flags = progress && progress.flags;
+  if (!flags) return base;
+  for (const k of Array.isArray(T) ? T : [T]) {
+    if (!flags[k.flag]) continue;
+    const [x0, y0, x1, y1] = k.rect;
+    if (tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1) return base - 1;
+  }
+  return base;
+}
+
 export const TIDE_NAMES = ['LOW', 'MID', 'HIGH'];
 export const TIDE_COUNT = 3;
 
@@ -98,9 +118,16 @@ export class Tide {
    */
   resolve(base, tx, ty, room) {
     const list = this.overrides;
-    if (!list.length) return base;
     const r = room !== undefined ? room : this.game.room;
     if (!r) return base;
+    // A DRAINED TANK (S184, the Cliffside Cistern's sluice gates) stands one
+    // level under the sea for good: its gate's wheel was turned in another
+    // room, and from then on the tank's own water reads one under whatever
+    // the sea is. It is a change to the BASE under the tank, not an override,
+    // so the Anchor over it still holds what it holds and the Bellows' cone
+    // on top of it adds one more (the East Tank's whole puzzle).
+    base = drainedBase(r.def, base, tx, ty, this.game && this.game.progress);
+    if (!list.length) return base;
     const mapId = this.game.mapId, key = r.key;
     let delta = 0, under = base;
     for (let i = list.length - 1; i >= 0; i--) {

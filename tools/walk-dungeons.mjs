@@ -232,7 +232,11 @@ const locked = await page.evaluate((ids) => {
   for (const mapId of ids) {
     const m = window.__MAPS.get(mapId);
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
-      if (!def.noTide) continue;
+      // A SEALED FLOOR (S184, the Cliffside Cistern's 2F) is meant to be
+      // played at the sea it was climbed to, and its rooms are proved per
+      // sea by the dungeon flood (tools/lib/dungeon-flood.mjs) and
+      // tools/check-sluices.mjs, not required to work at all three.
+      if (!def.noTide || def.sealed) continue;
       const sz = def.size || [1, 1];
       const [CW, CH] = m.cell || [10, 8];
       const W = (sz[0] | 0) * CW, H = (sz[1] | 0) * CH;

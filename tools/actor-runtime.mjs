@@ -294,8 +294,10 @@ export async function installRuntime() {
    * over one (the Hauling Pit, S147). Asked of the engine's own `groundFlags`,
    * the point the player's fall is decided on, for a player parked on the tile.
    */
+  // A pit, or (S184) a hazard: the Spike Gallery's strips are walked round
+  // like a hole is, and crossed only when nothing else gets there.
   function pitAt(g, p, tx, ty) {
-    return !!(ent.groundFlags(g, { x: tx * TILE, y: ty * TILE, hb: p.hb }) & F.PIT);
+    return !!(ent.groundFlags(g, { x: tx * TILE, y: ty * TILE, hb: p.hb }) & (F.PIT | F.HAZARD));
   }
 
   /** Breadth-first path over tile centres. Returns a list of tiles, or null. */

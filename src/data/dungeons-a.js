@@ -2654,11 +2654,13 @@ export function installDungeonsA() {
   //   -> 5,3 Ironknight (miniboss) -> 5,2 Cliff Walk (key door west)
   //   -> 4,2 the Crossed Sluices (sills 5 and 6, Boss Key) -> 4,1 overlook
   //   -> back round by 2,2 -> 3,2 boss door north -> 3,1 Wyverna
+  const P4 = (floor, rx, ry, px, py, dir) => ({ map: 'd4', floor, rx, ry, px: px * 16, py: py * 16, dir });
+  const stair4 = (x, y, to) => ({ x, y, to });
   registerMap({
     id: 'd4',
     kind: 'dungeon',
     name: 'Cliffside Cistern',
-    w: 8, h: 8, floors: 1,
+    w: 8, h: 8, floors: 3,
     cell: [15, 11],
     legend: 'dungeonCistern',
     music: 'dungeon4',
@@ -3198,11 +3200,16 @@ export function installDungeonsA() {
           ['ironknight', 20, 5],
           ['keese', 5, 8],
         ],
+        // S184: the stair up to the Sealed Cistern comes out of the floor of
+        // the east half when the armour folds, as a Seasons stair does after
+        // a miniboss, and the warp waits on the same flag.
+        warps: [{ x: 24, y: 8, needFlag: 'd4_ironknight', to: P4(1, 6, 3, 9, 7, 'up') }],
         puzzle: {
           enemies: true,
           flag: 'd4_ironknight',
           reward: {
             openDoors: [[7, 0]],
+            tiles: [[24, 8, 'dStairsUpCistern']],
             say: 'The armour folds up. Something grinds open above.',
           },
         },
@@ -3234,38 +3241,30 @@ export function installDungeonsA() {
       },
       '0,4,2': {
         name: 'The Crossed Sluices',
-        // SILLS 5 AND 6, one of each shape, in one room, and the Boss Key is
-        // behind both. The west wheel is a sump shelf and wants MID; the east
-        // wheel is a drown-wall shelf and wants HIGH. You cannot hold two seas,
-        // so you work one side, walk out, sound the conch, and work the other —
-        // which is the dungeon's whole idea said out loud in one room.
+        // Until S184 the Boss Key was behind this room's two sills, one of
+        // each shape; the Squall Loft and the Drowned Sill teach both, and the
+        // key is upstairs in the East Tank now. What stays is the way home.
         //
         // THE WEST DOOR IS THE SHORTCUT HOME, and it is this room's to open:
         // the plate beside it on this side lets a player holding the Boss Key
         // walk straight into the Cistern Gate instead of five rooms back round
         // by the Long Race. Only this side has the plate, so it cannot be used
-        // to reach the Boss Key early — the Bogwater Sanctum's Lock Gallery
-        // precedent (S139).
+        // to reach the room early from the west — the Bogwater Sanctum's Lock
+        // Gallery precedent (S139).
         map: [
           '#######.#######',
-          '###3#.....#1###',
-          '###O#.....#O###',
-          '###O#.....#O###',
-          '###.#.....#.###',
-          'D.#0#.....#9..L',
           '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          'D....,,,,,....L',
+          '#....,,,,,....#',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
           '###############',
         ],
-        bellowsRoom: [
-          { wheel: [3, 1], stand: [3, 4], face: 'up', at: 1 },
-          { wheel: [11, 1], stand: [11, 4], face: 'up', at: 2, gives: 'bossKey' },
-        ],
         entities: [
-          ['wheel', 3, 1, { needTurns: 40 }],
-          ['wheel', 11, 1, { needTurns: 40 }],
           ['switch', 1, 6, { hold: false }],
           ['stalfos', 7, 7],
         ],
@@ -3278,29 +3277,8 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [2, 9, 'Carved over both sluices: "The west one\ndrinks at middle water. The east one only\ndrowns at the top of the tide."'],
+          [2, 9, 'Carved by the gate: "The key to the deep\ndoor is kept where the wind lifts two\nfloods."'],
         ],
-        script: {
-          // Put the Boss Key back if it was released and never collected — see
-          // the Cistern Gauge for why. This is the room where getting that
-          // wrong ends the dungeon.
-          onEnter(game) {
-            if (game.progress.flags.d4Sluices && !game.progress.secrets.d4BossKey) {
-              game.spawnPickup(112, 112, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
-            }
-          },
-          onEvent(game, name, data) {
-            if (name !== 'valve' || !data || !data.open) return;
-            // Both wheels, and the pickup lands in the middle of the room
-            // rather than on either shelf: whichever one you turned second, you
-            // have to swim out to collect it.
-            const wheels = game.entities.filter(e => e.needTurns != null);
-            if (wheels.length !== 2 || !wheels.every(w => w.open)) return;
-            game.progress.flags.d4Sluices = true;
-            if (game.progress.secrets.d4BossKey) return;
-            game.spawnPickup(112, 112, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
-          },
-        },
       },
       '0,4,1': {
         name: 'East Overlook',
@@ -3552,6 +3530,253 @@ export function installDungeonsA() {
         script: {
           onEvent(game, name, data) {
             if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[12, 6]] });
+          },
+        },
+      },
+
+      // ================================================ 2F, THE SEALED CISTERN
+      //
+      // S184 (docs/briefs/D4-CLIFFSIDE-CISTERN.md, N4-N9). Five rooms over the
+      // middle of 1F, every one `noTide`: the conch is not heard up here, and
+      // the water is whatever sea the player climbed with. Each of the three
+      // tanks has a sluice gate in its north wall (`H`, `J`, `Q`) and a `tank`
+      // declaration: once the wheel directly above it on 3F is turned, the
+      // tank's water stands one level under the sea for good (`Tide.resolve`).
+      // The sea is chosen in one place and lived with in another.
+      '1,6,3': {
+        name: 'The Intake',
+        // N4, THE SEA YOU CLIMBED WITH. The stair from the Ironknight Gallery
+        // comes up south of a spike pool the width of the room, and the doors
+        // are north of it. At HIGH the pool is deep and the Cleats swim it; at
+        // anything else it is bare spikes, and the only answer is to go back
+        // down, sound the conch, and climb again. The north door is the East
+        // Tank's shutter, opened from the other side: the way home.
+        map: [
+          '#######D#######',
+          '#.............#',
+          '..U.........U.#',
+          '#.............#',
+          '#5555555555555#',
+          '#5555555555555#',
+          '#5555555555555#',
+          '#.............#',
+          '#.U....../.U..#',
+          '#.............#',
+          '###############'
+        ],
+        noTide: true, sealed: true,
+        warps: [stair4(9, 8, P4(0, 5, 3, 24, 7, 'down'))],
+        spikeRoom: { from: [9, 7], target: [7, 2], sea: 2 },
+        entities: [
+          ['keese', 11, 2],
+        ],
+        readable: [
+          [2, 8, 'A plate by the stair: "The intake fills these\ntanks from the sea below. Nothing is heard\nabove it."'],
+        ],
+      },
+      '1,5,3': {
+        name: 'Spike Gallery',
+        // A fight among spike strips, and the shutter north into the Float
+        // Tank opens when it is won.
+        map: [
+          '#######D#######',
+          '#.............#',
+          '#..............',
+          '#..^^.....^^..#',
+          '#..^^.....^^..#',
+          '#.............#',
+          '#.....^^^.....#',
+          '#.............#',
+          '#..^^.....^^..#',
+          '#.............#',
+          '###############'
+        ],
+        noTide: true, sealed: true,
+        entities: [
+          ['stalfos', 4, 6],
+          ['stalfos', 10, 6],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd4_spikeGallery',
+          reward: { openDoors: [[7, 0]], say: 'The shutter to the north grinds open.' },
+        },
+      },
+      '1,5,2': {
+        name: 'The Float Tank',
+        // N5 and N8. A float rides north and south over the tank's pit, from
+        // the Spike Gallery's door to the West Tank's, and halfway it passes a
+        // one-tile ledge with a drown-wall gap behind it and the East Tank's
+        // locked door beyond. Its race is a pool in the pit to the west, and
+        // the gate drains only that pool. At HIGH — the only sea that crosses
+        // the Intake — the wind takes the race to MID, which still runs, so
+        // the float carries on past the ledge (N5: seen, not yet usable).
+        // With the gate open the race stands at MID, the wind takes it to LOW,
+        // and the float stops at the ledge; the drown-wall gap, which was not
+        // drained, is deep, and the Cleats swim it (N8).
+        map: [
+          '#######J#######',
+          '#.............#',
+          '..............#',
+          '#OOOOOOOOOOOOO#',
+          '#OOO77OOOO#####',
+          '#OOO77OOO.9...L',
+          '#OOO77OOOO#####',
+          '#OOOOOOOOOOOOO#',
+          '#.............#',
+          '#.U.........U.#',
+          '#######D#######'
+        ],
+        noTide: true, sealed: true,
+        tank: { flag: 'd4GateF', rect: [4, 4, 5, 6] },
+        tankRoom: { stop: [9, 5], beyond: [11, 5], race: [5, 5], board: [7, 8], sea: 2, kind: 'brake' },
+        entities: [
+          ['float', 7, 3, { race: [5, 5], path: [['wait', 64], ['down', 96], ['wait', 64], ['up', 96], ['loop', 0]] }],
+        ],
+        readable: [
+          [2, 9, 'Cut over the pit: "The wind alone will not\nstop this float. Drain its race first."'],
+        ],
+      },
+      '1,4,2': {
+        name: 'The West Tank',
+        // N7, DRAINED: THE BLOCKS MOVE. The stair from the Wind Loft comes
+        // down on a landing, and the tank is behind drown-wall: in at HIGH
+        // only, where the sluice floor is deep and no block will move. With
+        // its gate open it stands at MID, wading, and the two blocks go onto
+        // their two plates — too far apart for one Anchor's patch — and a
+        // chest with the sixth Small Key rises on the landing.
+        map: [
+          '#######H#######',
+          '#111111111#US.#',
+          '#111111111#....',
+          '#1111111119...#',
+          '#111111111#####',
+          '#111111111#####',
+          '#111111111#####',
+          '#111111111#####',
+          '#111111111#####',
+          '#111111111#####',
+          '###############'
+        ],
+        noTide: true, sealed: true,
+        tank: { flag: 'd4GateW', rect: [1, 1, 9, 9] },
+        tankRoom: { blocks: true, sea: 2 },
+        warps: [stair4(12, 1, P4(2, 4, 2, 12, 3, 'down'))],
+        entities: [
+          ['block', 2, 2, { axis: 'y' }],
+          ['block', 8, 7, { axis: 'x' }],
+          ['switch', 2, 3],
+          ['switch', 9, 7],
+          ['chest', 13, 3, { pickup: 'key', needFlag: 'd4_westTank' }],
+        ],
+        puzzle: {
+          switches: 'all',
+          blocks: [[2, 3], [9, 7]],
+          flag: 'd4_westTank',
+          reward: { say: 'A chest rises on the landing.' },
+        },
+        readable: [
+          [11, 1, 'A plate on the landing: "No block moves in\nthe deep. Lift the west gate, and the tank\nstands a level lower."'],
+        ],
+      },
+      '1,6,2': {
+        name: 'The East Tank',
+        // N9, THE BOSS KEY: TWO LEVELS UNDER. The wheel stands in a walled
+        // well across a pit, and its stand is one square ringed by drown-wall,
+        // so it is only stood on at HIGH — where the well is deep, and one
+        // level of wind leaves it deep: the wheel bubbles. With the gate open
+        // the well reads MID, the wind takes it to LOW, and the wheel turns:
+        // the Boss Key's chest rises. The plate by the south shutter opens the
+        // way home to the Intake, from this side only.
+        map: [
+          '#######Q#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#....#####....#',
+          '#....#333#....#',
+          'L....#OOO#....#',
+          '#....##9##....#',
+          '#.....9.9.....#',
+          '#......9......#',
+          '#.............#',
+          '#######D#######'
+        ],
+        noTide: true, sealed: true,
+        tank: { flag: 'd4GateE', rect: [6, 4, 8, 4] },
+        bellowsRoom: { wheel: [7, 4], stand: [7, 7], face: 'up', at: 2, gate: 'd4GateE' },
+        tankRoom: { wheel: true, sea: 2 },
+        entities: [
+          ['wheel', 7, 4, { needTurns: 40, sets: 'd4EastWheel' }],
+          ['chest', 7, 2, { pickup: 'bossKey', needFlag: 'd4EastWheel' }],
+          ['switch', 5, 9, { hold: false }],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd4_eastShutter',
+          reward: { openDoors: [[7, 10]], say: 'The south shutter grinds open.' },
+        },
+        readable: [
+          [2, 2, 'Carved over the well: "Wind lifts one flood,\nand the gate another."'],
+        ],
+        script: {
+          onEvent(game, name, data) {
+            if (name !== 'valve' || !data || !data.open) return;
+            game.spawnFlagged('d4EastWheel');
+          },
+        },
+      },
+
+      // ================================================ 3F, THE WIND LOFT
+      '2,4,2': {
+        name: 'The Wind Loft',
+        // N6. Open to the sky, so the conch is heard again. Three wheels along
+        // the north wall, each directly over a tank of the Sealed Cistern and
+        // each a sill of its own shape: the west a sump shelf worked at MID
+        // (the Squall Loft's), the middle across a spike pool, swum to at HIGH
+        // and freed by one level of wind (the Drowned Sill's, with spikes for
+        // a moat), the east beyond a pit, reached on a float, worked at MID.
+        // Turning one lifts the gate of the tank beneath it, for good. The sea
+        // the player goes back down with is the sea 2F gets, so this is the
+        // second place to choose it.
+        size: [3, 1],
+        map: [
+          '#############################################',
+          '#3OO.###############1##########.......#..OO3#',
+          '####.###..../.######O##########.......#..####',
+          '####0###......######O##########.......#OOOOO#',
+          '#...0.............55.55...............#OOOOO#',
+          '#.................55555...............#OOO7O#',
+          '#.................55555...............#OOOOO#',
+          '#..U.....................U............#OOOOO#',
+          '#...........................................#',
+          '#.............##.............##..U..........#',
+          '#############################################'
+        ],
+        warps: [stair4(12, 2, P4(1, 4, 2, 12, 2, 'down'))],
+        bellowsRoom: [
+          { wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, drains: 'd4GateW' },
+          { wheel: [20, 1], stand: [20, 4], face: 'up', at: 2, drains: 'd4GateF' },
+          { wheel: [43, 1], stand: [40, 1], face: 'right', at: 1, drains: 'd4GateE' },
+        ],
+        entities: [
+          ['wheel', 1, 1, { needTurns: 30, sets: 'd4GateW', say: 'Far below, the west tank\'s gate grinds open.' }],
+          ['wheel', 20, 1, { needTurns: 40, sets: 'd4GateF', say: 'Far below, the float tank\'s gate grinds open.' }],
+          ['wheel', 43, 1, { needTurns: 40, sets: 'd4GateE', say: 'Far below, the east tank\'s gate grinds open.' }],
+          ['float', 39, 6, { race: [42, 5], path: [['wait', 64], ['up', 96], ['wait', 64], ['down', 96], ['loop', 0]] }],
+          ['stalfos', 10, 8],
+          ['stalfos', 24, 8],
+          ['keese', 6, 6],
+        ],
+        readable: [
+          [3, 7, 'A plate under the west wheel: "The west\ntank lies below."'],
+          [25, 7, 'A plate under the middle wheel: "The float\ntank lies below."'],
+          [33, 9, 'A plate under the east wheel: "The east\ntank lies below."'],
+        ],
+        script: {
+          // A gate opened from here changes rooms nobody is standing in, and
+          // their drawn water is cached against the field's stamp: bump it.
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) game.tide.touch();
           },
         },
       },

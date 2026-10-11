@@ -2759,6 +2759,18 @@ export function installCoreTiles() {
     dSumpCistern: { tide: ['dHoleCistern', 'dWaterD', 'dWaterD'] },
     dDrainCistern: { tide: ['dHoleCistern', 'dWaterS', 'dWaterD'] },
     dSpikePoolCistern: { tide: ['dSpikeCistern', 'dSpikeCistern', 'dWaterD'] },
+    // S184: THE SLUICE GATES of the Sealed Cistern, one in the north wall of
+    // each tank on 2F: the Dragon's own shutter, shut, until the wheel over
+    // it on 3F is turned (`openFlag`, `Game.applyStoryGates`), and then the
+    // black culvert the water went down — still wall, with the jambs of an
+    // open doorway either side of it. What the open gate DOES (the tank
+    // standing one level under the sea) is the room's `tank` declaration,
+    // read by `Tide.resolve`; this is only what it looks like.
+    ...Object.fromEntries(['W', 'F', 'E'].map(k => ['dGateCistern' + k, {
+      art: ART.xShutN, pal: 'xShutN', flags: F.SOLID, ringWall: true,
+      openFlag: 'd4Gate' + k, openTo: 'dGateCisternOpen',
+    }])),
+    dGateCisternOpen: { art: ART.xHole, pal: 'xHole', flags: F.SOLID },
     xRingTL: { art: ART.xRingTL, pal: 'xRingTL', flags: F.SOLID },
     xRingTR: { art: ART.xRingTR, pal: 'xRingTR', flags: F.SOLID },
     xRingBL: { art: ART.xRingBL, pal: 'xRingBL', flags: F.SOLID },

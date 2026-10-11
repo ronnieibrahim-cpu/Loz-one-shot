@@ -1519,12 +1519,21 @@ export class TideValve extends Entity {
     this.pal = 'rust';
     this.open = !!o.open;
     this.saveKey = o.saveKey || null;
+    // What it says when it opens: a wheel on the Wind Loft (S184) opens a
+    // gate a floor below, and says so.
+    this.openSay = o.say || 'The sluice grinds open. Water can move again.';
+    // A flag of the dungeon's own that opening it sets as well (S184): the
+    // Wind Loft's wheels set the gates of the tanks below (`d4GateW` ...),
+    // which `Tide.resolve` and the gate tiles read. `saveKey` is the entity's
+    // own and is assigned by the room, so it cannot carry a name.
+    this.sets = o.sets || null;
   }
   interact(game) {
     this.open = !this.open;
     if (this.saveKey) game.progress.flags[this.saveKey] = this.open;
+    if (this.sets) game.progress.flags[this.sets] = this.open;
     game.audio.sfx('valve');
-    game.say(this.open ? 'The sluice grinds open. Water can move again.' : 'The sluice slams shut.');
+    game.say(this.open ? this.openSay : 'The sluice slams shut.');
     game.onValveToggled(this);
   }
   /**
