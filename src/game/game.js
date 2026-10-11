@@ -40,7 +40,7 @@ import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } from './entity.js';
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
 import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
-import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
+import { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
   itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag,
@@ -248,6 +248,13 @@ export class Game {
   setRoom(floor, rx, ry, o = {}) {
     const r = getRoom(this.mapId, floor, rx, ry);
     if (!r) { console.warn('[game] missing room', this.mapId, floor, rx, ry); return; }
+    // A STAKE THROWN THE ORDINARY WAY GOES WHEN YOU LEAVE THE ROOM (S186).
+    // Rooms outlive a visit, so a coral pillar grown by hand used to stand
+    // until the next load, and a stake grown in the wrong place could seal a
+    // stake room for the rest of the session. A stake dropped from the Canopy
+    // is written into the save (`plantFromAbove`) and `restoreRoomState`
+    // puts it back on the way in.
+    if (this.room && this.room !== r) this.room.clearGrown();
     this.room = r;
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
@@ -347,6 +354,37 @@ export class Game {
     if (!this.fallen) this.fallen = [];
     this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
     obj.remove = true;
+    return true;
+  }
+
+  /**
+   * A STAKE FROM ABOVE (S186, the Drowned Wood Shrine's Canopy). A Reefseed
+   * that goes down a knot-hole comes down in the room directly beneath, one
+   * floor down at the same room coordinates, and takes root on the same cell
+   * — if a pillar could grow there by the rule `Reefseed.canPlant` keeps
+   * (REEFSEED_PLANT_BLOCK at every sea, no warp, no pillar already, and
+   * nothing placed there but a plate that takes a stake). It is REMEMBERED,
+   * one per knot-hole: written into the save like an opened door, so it is
+   * standing when the player walks in and after every load. A seed thrown
+   * the ordinary way is not. Returns true when the stake took root.
+   */
+  plantFromAbove(tx, ty) {
+    const room = this.room;
+    if (!room || !this.map) return false;
+    const below = room.floor - 1;
+    const key = `${below},${room.rx},${room.ry}`;
+    const def = below >= 0 && this.map.roomDefs[key];
+    if (!def) return false;
+    const r = getRoom(this.mapId, below, room.rx, room.ry);
+    if (!r || !r.inBounds(tx, ty) || r.baseName(tx, ty) === 'coralPillar' || r.warpAt(tx, ty)) return false;
+    for (let lv = 0; lv < TIDE_COUNT; lv++) if (r.flagsAt(tx, ty, lv) & REEFSEED_PLANT_BLOCK) return false;
+    for (const e of def.entities || []) {
+      if (e[1] !== tx || e[2] !== ty) continue;
+      if (!(e[0] === 'switch' && e[3] && e[3].stake)) return false;
+    }
+    r.setTile(tx, ty, 'coralPillar');
+    this.progress.doors[`${this.mapId}:${r.key}:${tx},${ty}`] = 'coralPillar';
+    this.roomEvent('stake', { floor: below, tx, ty });
     return true;
   }
 

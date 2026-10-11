@@ -368,6 +368,18 @@ export function installLegends() {
   registerLegend('dungeonWood', {
     'C': 'dExitWood', '(': 'dPillarWoodW', ')': 'dPillarWoodE', '9': 'dDrownWood',
   }, 'dungeonWood');
+  // THE CANOPY (S186): the Ruins' belts, as tide tiles that stop when the
+  // sea drowns them, and the knot-hole a seed falls through. A HIGH bough's
+  // belt is a bracket — `}` east, `{` west, `[` north, `]` south — and runs
+  // at LOW and MID; a LOW bough's is a letter — `e` east, `x` west, `n`
+  // north, `s` south — and runs at LOW alone. `K` is the knot-hole. None of
+  // the nine is placed by any other Shrine room or named by the shared
+  // legend's indoor vocabulary.
+  registerLegend('dungeonWood', {
+    '}': 'dBeltHighE', '{': 'dBeltHighW', '[': 'dBeltHighN', ']': 'dBeltHighS',
+    'e': 'dBeltLowE', 'x': 'dBeltLowW', 'n': 'dBeltLowN', 's': 'dBeltLowS',
+    'K': 'dKnotHole',
+  }, 'dungeonWood');
   // THE THREE OPTIONAL DUNGEONS (S160), each an Oracle dungeon in the kit of
   // a Seasons dungeon no main one had taken (see `optionalKit` in
   // tiles-core.js): the Salt Pan's lower vault, the Gullwind Eyrie and the

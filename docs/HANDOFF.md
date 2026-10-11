@@ -447,6 +447,25 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A belt never gates Link (S186).** He walks 1 px/f and a belt carries
+  0.5, so he can always walk up one; the D5 mock's "a swing on a running belt
+  is carried into the hole" did not hold. A belt gates only what cannot walk:
+  a seed, an enemy. Design every belt puzzle around what it carries.
+- **A throw's reach is not a tile count (S186).** A Reefseed lands 34 px
+  from Link's centre, and his centre can sit anywhere in his tile, or five
+  pixels over the lip of a hole: so "two tiles" is two OR three. A ring of
+  holes two wide around a plate was crossed. check-canopy throws in the real
+  engine from every standing PIXEL; and its first version was vacuous —
+  `addEntity` queues, so the seed was not in `entities` yet and every throw
+  "missed". The sweep now asserts every throw was actually thrown.
+- **A chest pops its prize a tile above itself (S162, again in S186).** Two
+  new chests in the top row put their keys in the wall; the robot found it.
+- **A stair on a goto's shortest line is a trap for the robot (S186).** The
+  pathfinder walks over warps; Rootbound Hall's new stair sat on the line
+  from its south door to its east one and the run went upstairs mid-goto.
+  Making the pathfinder avoid every warp changed a D3 boss fight (paths are
+  part of the recorded fights): route round it with a waypoint instead.
+
 - **Seasons draws the smash puff and the fall-into-a-hole ball in the same
   orange (S185).** Both are interactions on the common sprites with palette
   3; a pot that shattered on the floor next to a hole looked, in a strip of

@@ -21,7 +21,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
-  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY,
+  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -433,6 +433,20 @@ export function touchingDeep(game, e) {
     }
   }
   return false;
+}
+
+/**
+ * THE BELT UNDER A BODY (S186), as Seasons asks it: the tile BELT_FOOT_DY
+ * below its centre (ecom_updateMovingPlatform's objectGetRelativeTile $05),
+ * at the sea there. Returns the belt's direction, or null — a drowned belt
+ * is water, and water has no `belt`.
+ */
+export function beltUnder(game, e) {
+  const room = game.room;
+  if (!room) return null;
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + BELT_FOOT_DY) / TILE);
+  if (!room.inBounds(tx, ty)) return null;
+  return room.tile(tx, ty, game.tide).belt || null;
 }
 
 export function groundTile(game, e) {

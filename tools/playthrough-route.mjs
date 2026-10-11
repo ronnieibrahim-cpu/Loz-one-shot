@@ -2143,6 +2143,9 @@ export const ROUTE = [
   // ROOTBOUND HALL IS CROSSED, NOT CLEARED, and that is measured. The barnacle
   // in the middle of it is what `dFight` cannot finish: the verb keeps closing
   // on a target it is not killing. Nothing in here is on the way to anything.
+  // By row 8 (S186): the straight line to the east door crosses the stair
+  // up into the Canopy in the corner.
+  ['goto', 7, 8, 1500],
   ['goto', 13, 5, 1500],
   ['hold', ['right'], 90],
 
@@ -2192,7 +2195,93 @@ export const ROUTE = [
   ['dialogue', 600],
   ['loot', 1200],
   ['dialogue', 600],
-  ['travel', 1, 3, 4000],
+
+  // ======================= THE CANOPY (S186) ================================
+  //
+  // Up the stair in Rootbound Hall's south-east corner, with the Reefseed,
+  // for the two Small Keys the Canopy plants: the Belt Bough's (a seed thrown
+  // onto a belt rides it while it grows and comes up on a plate no foot
+  // reaches) and the Standing Grove's (a seed thrown into the Grove Crown's
+  // knot-hole comes up on the plate in the grove below). The second is
+  // behind a key door the first opens, and the Grove Crossing's east door
+  // wants the second. The sea is MID from the Cloister: the belts run.
+  ['travel', 3, 4, 8000],
+  ['goto', 1, 8, 1500],
+  ['goto', 11, 9, 1500],
+  ['hold', ['right'], 40],
+
+  // ---------------------------------------------------------------- d5 1,3,4
+  // THE HOLLOW CROWN: across the belts, carried east as he goes.
+  ['goto', 7, 1, 2000],
+  ['hold', ['up'], 60],
+
+  // ---------------------------------------------------------------- d5 1,3,3
+  // THE BELT BOUGH (K2): from the bank's east tile, straight up over the
+  // holes onto the belt; it rides four tiles east while it grows and comes
+  // up on the plate against the channel's end wall. A chest rises.
+  ['fight', 3000, 1200],
+  ['equip', 'reefseed', 'A', 400],
+  ['sow', 6, 4, 'up', 400],
+  ['equip', 'sword', 'A', 400],
+  ['wait', 30],
+  ['goto', 2, 6, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+  ['goto', 7, 9, 1500],
+  ['hold', ['down'], 60],
+
+  // ---------------------------------------------------------------- d5 1,3,4
+  // Back across the belts to the Crown's key door south.
+  ['goto', 7, 9, 2000],
+  ['wait', 30],
+  ['hold', ['down'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['hold', ['down'], 60],
+
+  // ---------------------------------------------------------------- d5 1,3,5
+  // THE GROVE CROWN (K3): a seed down the knot-hole, from two tiles north.
+  ['fight', 3000, 1200],
+  ['equip', 'reefseed', 'A', 400],
+  ['sow', 7, 3, 'down', 400],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 7, 1, 1500],
+  ['hold', ['up'], 60],
+  // Down the stair from the Hollow Crown.
+  ['goto', 11, 9, 2000],
+  ['hold', ['right'], 40],
+
+  // ---------------------------------------------------------------- d5 0,3,4
+  // Rootbound Hall, along row 8 (row 9 has the stair in it), and south
+  // through the key door already opened into the Standing Grove.
+  ['goto', 7, 8, 1500],
+  ['goto', 7, 9, 1500],
+  ['hold', ['down'], 60],
+
+  // ---------------------------------------------------------------- d5 0,3,5
+  // THE STANDING GROVE: the stake from above holds the plate; its chest.
+  ['wait', 30],
+  ['goto', 12, 4, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+  ['goto', 7, 1, 1500],
+  ['hold', ['up'], 60],
+
+  // ---------------------------------------------------------------- d5 0,3,4
+  // Back west along Rootbound Hall's top row (S145's way round the barnacle)
+  // to the Warden's Sill, the Vault and grove 1.
+  ['goto', 7, 1, 1500],
+  ['goto', 1, 1, 1500],
+  ['goto', 1, 5, 1500],
+  ['travel', 1, 3, 8000],
 
   // ---------------------------------------------------------------- d5 0,1,3
   // GROVE 1, THE FIRST STAKE, and the shape all five of them are:
@@ -2353,7 +2442,12 @@ export const ROUTE = [
   // its standoff — the old fight lost 40 quarter-hearts to it and died.
   ['wait', 60],
   ['loot', 600],
+  // Its east door is a key door since S186: the Standing Grove's key.
   ['goto', 13, 5, 1500],
+  ['wait', 30],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,4,3

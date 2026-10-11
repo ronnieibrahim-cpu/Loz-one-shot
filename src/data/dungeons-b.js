@@ -96,7 +96,7 @@ export function installDungeonsB() {
     id: 'd5',
     kind: 'dungeon',
     name: 'Drowned Wood Shrine',
-    w: 8, h: 8, floors: 1,
+    w: 8, h: 8, floors: 2,
     cell: [15, 11],
     legend: 'dungeonWood',
     music: 'dungeon5',
@@ -207,29 +207,45 @@ export function installDungeonsB() {
       },
       '0,3,5': {
         name: 'The Standing Grove',
-        // The bole taught before it is ever load-bearing. Four drowned trees in
-        // the middle of the floor: timber at LOW and MID, open water at HIGH,
-        // and the walk round them is free at every level so failing costs
-        // nothing. Its key door north is the short way into Rootbound Hall.
+        // The bole taught before it is ever load-bearing — and, since S186,
+        // the first thing the Canopy plants. A hold plate stands on a one-tile
+        // dais in a ring of holes three tiles wide: no throw carries that far
+        // (a seed goes two tiles, or three from the very lip of a hole — S186
+        // found two wide was not enough), no perch can be grown in a hole, and no
+        // swimmer crosses one, at any sea. It is in plain sight from the first
+        // visit, and a knot-hole in the Grove Crown is directly over it: a
+        // seed dropped through grows on the plate and holds it for good
+        // (`dropRoom`, check-canopy.mjs), and a chest rises by the door.
+        // The four drowned trees in its corners are the bole taught as
+        // before: timber at LOW and MID, open water at HIGH, free to fail.
+        // Its key door north is the short way into Rootbound Hall.
         map: [
           '#######L#######',
           '#.............#',
-          '#.............#',
-          '#..55.....55..#',
-          '#..55.....55..#',
-          '...............',
-          '#..55.....55..#',
-          '#..55.....55..#',
+          '#5..OOOOOOO..5#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '....OOO.OOO....',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#5..OOOOOOO..5#',
           '#.U...........#',
-          '#.............#',
           '#######.#######',
         ],
+        dropRoom: { from: '1,3,5', hole: [7, 5], plate: [7, 5] },
         entities: [
-          ['tektite', 7, 7],
+          ['switch', 7, 5, { stake: true }],
+          ['chest', 12, 3, { pickup: 'key', needFlag: 'd5_standingGrove' }],
+          ['tektite', 11, 9],
           ['keese', 3, 1],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_standingGrove',
+          reward: { reveal: true, say: 'The coral holds the plate down.\nA chest rises by the east wall.' },
+        },
         readable: [
-          [2, 8, 'Scratched into the bark: "At high water the\nwood is not there. Everything else in this\nshrine follows from that."'],
+          [2, 9, 'Scratched into the bark: "At high water the\nwood is not there. Everything else in this\nshrine follows from that."'],
         ],
       },
       '0,2,5': {
@@ -468,6 +484,9 @@ export function installDungeonsB() {
       },
       '0,3,4': {
         name: 'Rootbound Hall',
+        // The hub under the Canopy (S186): the stair up in its south-east
+        // corner climbs into the Hollow Crown, and the Crown's two knot-holes
+        // drop back into its north-east corner.
         map: [
           '###############',
           '#.............#',
@@ -478,9 +497,10 @@ export function installDungeonsB() {
           '#..222222222..#',
           '#...2222222...#',
           '#.............#',
-          '#.............#',
+          '#...........S.#',
           '#######L#######',
         ],
+        warps: [{ x: 12, y: 9, to: { map: 'd5', floor: 1, rx: 3, ry: 4, px: 12 * 16, py: 8 * 16, dir: 'up' } }],
         entities: [
           ['barnacle', 7, 5],
           ['crab', 11, 8],
@@ -1053,7 +1073,7 @@ export function installDungeonsB() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          'L..............',
+          'L.............L',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
@@ -1079,7 +1099,7 @@ export function installDungeonsB() {
           '#..........#..#',
           '#..........#..#',
           '#......5...#..#',
-          '.....0WWW0.#..L',
+          'L....0WWW0.#..L',
           '#######k####..#',
           '#.............#',
           '#.............#',
@@ -1087,7 +1107,8 @@ export function installDungeonsB() {
           '###############',
         ],
         reefseedRoom: {
-          entry: [0, 5],
+          // The first floor inside its west door, a key door since S186.
+          entry: [1, 5],
           stakes: [
             { at: [7, 5], from: [7, 3], face: 'down', sea: 2 },
           ],
@@ -1217,6 +1238,107 @@ export function installDungeonsB() {
             if (name === 'bossDead') game.spawnPickup(112, 56, 'heartContainer', { grabDelay: 30 });
           },
         },
+      },
+
+      // ------------------------------------------------- 2F, the Canopy (S186)
+      //
+      // THE CANOPY PLANTS THE SHRINE. Belts in the crowns of the drowned
+      // trees (the Ancient Ruins' own conveyors) carry a seed while it grows,
+      // and a knot-hole in the boughs drops it into the room beneath, where
+      // it takes root in a place no hand below could put it — and stays
+      // (`Game.plantFromAbove`). A drowned belt does not turn: a high
+      // bough's (`}{[]`) is still water at HIGH, a low bough's (`exns`) at
+      // MID and HIGH. See docs/briefs/D5-DROWNED-WOOD-SHRINE.md.
+      '1,3,4': {
+        name: 'The Hollow Crown',
+        // K1, BELTS ALONE. Up the stair from Rootbound Hall; two rows of
+        // belt run east into two knot-holes, wall to wall between the stair
+        // and the way north. At LOW and MID you are carried as you cross;
+        // cross near the holes and you drop back into the Hall, unhurt. At
+        // HIGH the belts are under water and still: you swim across.
+        // Reachable before the Reefseed, and nothing costs anything here.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#}}}}}}}}}}}KK#',
+          '#}}}}}}}}}}}KK#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.........../.#',
+          '#######L#######',
+        ],
+        warps: [{ x: 12, y: 9, to: { map: 'd5', floor: 0, rx: 3, ry: 4, px: 12 * 16, py: 8 * 16, dir: 'up' } }],
+        beltRoom: { belts: 'run', cross: { from: [7, 9], to: [7, 1] } },
+        entities: [
+          ['tektite', 4, 6],
+          ['keese', 10, 1],
+        ],
+      },
+      '1,3,3': {
+        name: 'The Belt Bough',
+        // K2, A SEED ON A BELT. A belt runs east down a channel sealed by
+        // walls and holes — no foot reaches it, at any sea — to a hold plate
+        // against its far wall. A seed thrown over the holes from the little
+        // bank lands on the belt, rides it while it grows (two seconds is
+        // just under four tiles), and comes up on the plate if it was thrown
+        // from the right place. Nothing else reaches the plate: it is three
+        // tiles from any footing, no wall stands where a throw would stop on
+        // it, and the channel is closed at both ends. The plate raises a
+        // chest. At HIGH the belt is still water and a seed grows where it
+        // falls (K1's lesson). A stake grown in the wrong place is gone when
+        // you leave the room (`Game.setRoom`).
+        map: [
+          '###############',
+          '#...###########',
+          '#...#}}}}}}####',
+          '#...#OOOOOO#..#',
+          '#......OOOO...#',
+          '#......OOOO...#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        beltRoom: { seed: { from: [6, 4], face: 'up', lands: [10, 2] }, plate: [10, 2] },
+        entities: [
+          ['switch', 10, 2, { stake: true }],
+          ['chest', 2, 5, { pickup: 'key', needFlag: 'd5_beltBough' }],
+          ['crab', 9, 8],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_beltBough',
+          reward: { reveal: true, say: 'The coral comes up on the plate.\nA chest rises on the bank.' },
+        },
+      },
+      '1,3,5': {
+        name: 'The Grove Crown',
+        // K3, THE FIRST DROP. A knot-hole in a ring of holes, directly over
+        // the Standing Grove's plate. No foot reaches the knot-hole; a seed
+        // thrown into it from two tiles away falls through, grows on the
+        // plate below, and holds it for good. Behind a key door from the
+        // Hollow Crown, which the Belt Bough's chest opens.
+        map: [
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.....OOO.....#',
+          '#.....OKO.....#',
+          '#.....OOO.....#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['tektite', 3, 9],
+          ['keese', 11, 1],
+        ],
       },
     },
   });

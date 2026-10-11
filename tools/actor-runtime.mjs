@@ -2975,6 +2975,48 @@ export async function installRuntime() {
    * room saying the sea is wrong, and a verb that went and fetched the right
    * one would hide the whole of D5's argument.
    */
+  /**
+   * THROW A SEED FROM A PLACE, NOT AT ONE (S186, the Drowned Wood Shrine's
+   * Canopy).
+   *
+   *   ['sow', sx, sy, dir]   stand on (sx, sy), face `dir`, throw a Reefseed
+   *
+   * `reefseed` names the tile the pillar must come up on, and refuses a
+   * target no throw reaches — which is every Canopy target by design: a seed
+   * that rides a belt comes up three tiles from where it landed, and one that
+   * goes down a knot-hole comes up in another room. So this one names where
+   * the robot STANDS, walks in along the throw line so it arrives facing it
+   * (`dReefseed`'s reason), throws, and waits for the seed to be done —
+   * grown, or gone down a hole. It verifies only that a seed left the pouch;
+   * whether it did its job is the next directive's to find out (a chest
+   * rising, a plate held), as it is a player's.
+   */
+  function* dSow(sx, sy, dname, maxF) {
+    const g = window.__game;
+    const b = slotBit('reefseed');
+    if (!b) throw new Error('sow: the Reefseed is on no button');
+    if (g.progress.reefseeds <= 0) throw new Error('sow: the pouch is empty');
+    const [dx, dy] = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[dname];
+    const bx = sx - dx, by = sy - dy;
+    if (standable(g, g.player, bx, by) && findPath(g, g.player, playerTile(g.player), { tx: bx, ty: by })) {
+      yield* dGoto(bx, by, 600);
+    }
+    yield* dGoto(sx, sy, 600);
+    const at = playerTile(g.player);
+    if (at.tx !== sx || at.ty !== sy) throw new Error(`sow: the walk to ${sx},${sy} ended at ${at.tx},${at.ty}`);
+    for (let i = 0; i < 8 && g.player.dir !== dname; i++) yield BIT[dname];
+    yield* dWait(2);
+    if (g.player.dir !== dname) throw new Error(`sow: would not face ${dname} (facing ${g.player.dir})`);
+    const before = g.progress.reefseeds;
+    yield b;
+    yield 0;
+    if (g.progress.reefseeds === before) throw new Error(`sow: the button did nothing at ${sx},${sy}`);
+    const seed = () => g.entities.some(e => e instanceof items.Reefseed && !e.remove)
+      || g.pendingAdd.some(e => e instanceof items.Reefseed);
+    for (let i = 0; i < (maxF || 400) && seed(); i++) yield 0;
+    yield* dDialogueClear(30);
+  }
+
   function* dReefseed(tx, ty, maxF) {
     const g = window.__game;
     const room = () => g.room;
@@ -3351,6 +3393,7 @@ export async function installRuntime() {
       else if (kind === 'alight') yield* dAlight(a[0], a[1], a[2], a[3]);
       else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
+      else if (kind === 'sow') yield* dSow(a[0], a[1], a[2], a[3]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
       else if (kind === 'lift') yield* dLift(a[0]);
       else if (kind === 'beat') yield* dBeat(a[0], a[1]);

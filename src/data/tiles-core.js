@@ -11,7 +11,7 @@ import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, HORON_GROUND } from 
 import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } from './tiles-maku.js';
-import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE } from './feel.js';
+import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, BELT_ANIM_RATE } from './feel.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -2822,6 +2822,30 @@ export function installCoreTiles() {
     // The way out: the entrance hall's two pillars in the south wall with
     // the lit step between them, wall to the ring either side.
     dExitWood: { art: ART.rArch2, pal: 'rArch2', flags: F.WARP },
+    // THE CANOPY'S BELTS AND KNOT-HOLES (S186). The Ancient Ruins' own
+    // conveyors ($54-$57, four steps each) and warp hole ($48 and its lipped
+    // neighbours). A belt is floor that carries (`belt`, a direction at
+    // BELT_SPEED); a knot-hole is a drop hole (F.DROP) with the Shrine under
+    // it, which a seed falls through as readily as Link.
+    ...Object.fromEntries([['N', [0, -1]], ['E', [1, 0]], ['S', [0, 1]], ['W', [-1, 0]]].map(([d, v]) => ['rBelt' + d, {
+      art: ART['rBelt' + d + '0'], pal: 'rBelt' + d + '0', belt: v,
+      anim: [0, 1, 2, 3].map(k => 'rBelt' + d + k), animRate: BELT_ANIM_RATE,
+    }])),
+    // A DROWNED BELT DOES NOT TURN. A HIGH BOUGH's belt runs at LOW and MID
+    // and is deep, still water at HIGH; a LOW BOUGH's runs only at LOW, is
+    // shallow and still at MID and deep at HIGH. So the sea chooses which
+    // belts carry.
+    ...Object.fromEntries(['N', 'E', 'S', 'W'].flatMap(d => [
+      ['dBeltHigh' + d, { tide: ['rBelt' + d, 'rBelt' + d, 'dWaterD'] }],
+      ['dBeltLow' + d, { tide: ['rBelt' + d, 'dWaterS', 'dWaterD'] }],
+    ])),
+    dKnotHole: {
+      art: ART.rHole, pal: 'rHole', flags: F.PIT | F.DROP, family: 'knot',
+      lip: { n: 'dKnotHoleN', s: 'dKnotHoleS', ns: 'dKnotHoleNS' },
+    },
+    dKnotHoleN: { art: ART.rHoleN, pal: 'rHoleN', flags: F.PIT | F.DROP, family: 'knot' },
+    dKnotHoleS: { art: ART.rHoleS, pal: 'rHoleS', flags: F.PIT | F.DROP, family: 'knot' },
+    dKnotHoleNS: { art: ART.rHoleNS, pal: 'rHoleNS', flags: F.PIT | F.DROP, family: 'knot' },
     dPillarWoodW: { art: ART.rArch1, pal: 'rArch1', flags: F.SOLID, ringWall: true },
     dPillarWoodE: { art: ART.rArch3, pal: 'rArch3', flags: F.SOLID, ringWall: true },
     rRingTL: { art: ART.rRingTL, pal: 'rRingTL', flags: F.SOLID },

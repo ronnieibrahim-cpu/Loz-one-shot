@@ -99,6 +99,12 @@ SHEETS = {
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
     'whirl3': 'ages:5f@3',
+    # THE ANCIENT RUINS' BELTS (S186): tileset $3c with every animation at
+    # its k-th step, so each of the four conveyor steps is one pick.
+    'ruins0': 'meta:3c@0',
+    'ruins1': 'meta:3c@1',
+    'ruins2': 'meta:3c@2',
+    'ruins3': 'meta:3c@3',
     # FARORE'S ROOM (S168): Seasons tileset $4b, the room she sits in
     # (group 4 room $e8, laid out from layout group 5's room $e8).
     'farore': 'meta:4b',
@@ -155,7 +161,8 @@ def render_tileset(index, frame=None):
 
 def open_sheet(path):
     if path.startswith('meta:'):
-        return render_tileset(int(path[5:], 16))
+        idx, _, frame = path[5:].partition('@')
+        return render_tileset(int(idx, 16), int(frame) if frame else None)
     if path.startswith('ages:'):
         idx, _, frame = path[5:].partition('@')
         return render_tileset(('ages', int(idx, 16)), int(frame) if frame else None)
@@ -709,6 +716,19 @@ PICKS = [
     meta('xStairsDown', 0x45, 'the stair down, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('rStairsUp', 0x44, 'the stair up, the Ancient Ruins', 'ruinsMeta'),
     meta('rStairsDown', 0x45, 'the stair down, the Ancient Ruins', 'ruinsMeta'),
+    # THE DROWNED WOOD SHRINE'S CANOPY (S186). The Ruins' own conveyors:
+    # tileTypeMappings.s @dungeons maps $54-$57 to TILETYPE_UP/RIGHT/DOWN/
+    # LEFTCONVEYOR (room $c6, 2F, is their belt room), each scrolled through
+    # four steps by the tileset's animation (`.db $0f` a step). And its own
+    # warp hole TILEINDEX_WARP_HOLE $48 with the three lipped neighbours,
+    # as the Sanctum's are cut from the Moth's Lair: the knot-holes.
+    *[meta('rBelt%s%d' % (d, k), m, 'the %s conveyor, step %d of 4, the Ancient Ruins' % (n, k + 1), 'ruins%d' % k)
+      for d, m, n in (('N', 0x54, 'north'), ('E', 0x55, 'east'), ('S', 0x56, 'south'), ('W', 0x57, 'west'))
+      for k in range(4)],
+    meta('rHole', 0x48, 'the warp hole, inside a run, the Ancient Ruins', 'ruinsMeta'),
+    meta('rHoleN', 0x49, 'the warp hole, floor above it, the Ancient Ruins', 'ruinsMeta'),
+    meta('rHoleS', 0x4a, 'the warp hole, floor below it, the Ancient Ruins', 'ruinsMeta'),
+    meta('rHoleNS', 0x4b, 'the warp hole, floor above and below, the Ancient Ruins', 'ruinsMeta'),
     meta('kStairsUp', 0x44, 'the stair up, the Sword & Shield Maze (fire)', 'mazeFire'),
     meta('kStairsDown', 0x45, 'the stair down, the Sword & Shield Maze (fire)', 'mazeFire'),
     # ---- Farore's room (S168) ------------------------------------------------
@@ -977,8 +997,9 @@ def main():
     ]
     for name, note, x, y, grid, sheet in arts:
         if sheet.startswith('meta:'):
+            base = sheet.split('@')[0]
             L.append('  // %s — Seasons tileset $%s (%s), metatile $%02x'
-                     % (note, sheet[5:], META_NAMES[sheet], (y // 16) * 16 + x // 16))
+                     % (note, base[5:], META_NAMES[base], (y // 16) * 16 + x // 16))
         elif sheet.startswith('ages:'):
             base = sheet.split('@')[0]
             L.append('  // %s — Ages tileset $%s (%s), metatile $%02x'

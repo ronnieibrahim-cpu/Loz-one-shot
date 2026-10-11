@@ -12,7 +12,7 @@
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
 import {
-  Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS,
+  Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
   enemyHurtRect,
 } from './entity.js';
 export { enemyHurtRect };
@@ -50,7 +50,7 @@ import {
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
   PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
-  HITSTOP_HURT_FRAMES,
+  HITSTOP_HURT_FRAMES, BELT_SPEED,
 } from '../data/feel.js';
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
@@ -223,6 +223,7 @@ export class Player extends Entity {
     }
 
     this.updateTerrain(game);
+    this.updateBelt(game);
 
     if (this.spinning > 0) { this.updateSpin(game); return; }
     if (this.poking > 0) { this.updatePoke(game); return; }
@@ -362,6 +363,19 @@ export class Player extends Entity {
       const k = game.charm('kelpBraid') ? KELP_BRAID_FACTOR : 1;
       if (def.push) moveEntity(game, this, sp(def.push[0] * k), sp(def.push[1] * k));
     }
+  }
+
+  /**
+   * ON A BELT (S186) he is carried at BELT_SPEED in its direction on top of
+   * his own walking, swinging or charging — Seasons' @tileType_conveyor —
+   * and not while riding something, in the air or in the water. A wall stops
+   * the carry as it stops a step; a hole at the end of it is a hole.
+   */
+  updateBelt(game) {
+    if (this.ledgeHop || this.z > 2 || this.jumping || this.inDeep || this.underwater) return;
+    const v = beltUnder(game, this);
+    if (!v || this.onFloat(game)) return;
+    moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED);
   }
 
   /** Is he standing on a float (the Cistern's moving platform)? Then the

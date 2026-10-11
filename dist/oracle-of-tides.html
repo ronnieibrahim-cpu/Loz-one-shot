@@ -3197,6 +3197,28 @@ const FLOAT_SPEED = 128;
  *  w1Link.yh + 5, w1Link.xh against the platform's collision box. */
 const FLOAT_FOOT_DY = 5;
 
+// --- Belts (the Drowned Wood Shrine's Canopy, S186) -----------------------
+
+/** sp/f — how fast a belt carries Link, an enemy or a growing seed: 0.5 px/f.
+ *  derived from the cartridge: specialObjects/commonCode.s @tileType_conveyor
+ *  moves Link at SPEED_80 ($80 subpixels a frame) in the belt's direction on
+ *  top of his own walking (not while riding something), and enemies/
+ *  commonCode.s ecom_updateMovingPlatform the same, from
+ *  enemyConveyorTilesTable. */
+const BELT_SPEED = 128;
+
+/** f — how long a belt holds each of its four steps. derived: oracles-disasm
+ *  data/seasons/animationData.s, the Ancient Ruins' conveyor animation
+ *  (tileset $3c, metatiles $54-$57), `.db $0f` a step. */
+const BELT_ANIM_RATE = 15;
+
+/** px — how far below a body's centre the point a belt must be under it is.
+ *  derived from the cartridge: ecom_updateMovingPlatform asks
+ *  objectGetRelativeTile with b = $05, the tile 5 px below the enemy's
+ *  centre (the float's FLOAT_FOOT_DY and the hole's HOLE_FOOT_DY are the
+ *  same five). */
+const BELT_FOOT_DY = 5;
+
 // --- Reefseed --------------------------------------------------------------
 
 /** f — how long a thrown Reefseed takes to become a coral pillar. guessed;
@@ -4242,6 +4264,9 @@ __exports["BELLOWS_RAFT_SCALE"] = BELLOWS_RAFT_SCALE;
 __exports["BELLOWS_WHEEL_COAST"] = BELLOWS_WHEEL_COAST;
 __exports["FLOAT_SPEED"] = FLOAT_SPEED;
 __exports["FLOAT_FOOT_DY"] = FLOAT_FOOT_DY;
+__exports["BELT_SPEED"] = BELT_SPEED;
+__exports["BELT_ANIM_RATE"] = BELT_ANIM_RATE;
+__exports["BELT_FOOT_DY"] = BELT_FOOT_DY;
 __exports["REEFSEED_GROW_FRAMES"] = REEFSEED_GROW_FRAMES;
 __exports["REEFSEED_SETTLE_FRAMES"] = REEFSEED_SETTLE_FRAMES;
 __exports["REEFSEED_THROW_SPEED"] = REEFSEED_THROW_SPEED;
@@ -10324,6 +10349,7 @@ __define("world/tileset.js", function (__exports, __require) {
 //     anim: ['water0','water1','water2','water1'], animRate: 10,
 //     over: true,                          // draw above entities (treetops, arches)
 //     push: [dx, dy],                      // water current, pixels/frame
+//     belt: [dx, dy],                      // a conveyor's direction (BELT_SPEED)
 //     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
 //     openTo: 'rockFloorDk',               //   carries this flag (see below)
 //     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
@@ -10511,6 +10537,11 @@ function registerTiles(defs) {
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
       push: def.push || null,
+      // A BELT (S186, the Drowned Wood Shrine's Canopy): [dx, dy], a unit
+      // direction, Seasons' conveyor; the speed is BELT_SPEED (feel.js). Unlike `push`, which is a current in deep water,
+      // a belt carries what stands on it (Player.updateBelt, Enemy, a growing
+      // Reefseed) and never what swims or flies.
+      belt: def.belt || null,
       ledge: def.ledge || null,
       // THE CRACKED FLOOR (S181): the tile it gives way into, after Link has
       // stood on it CRACK_BREAK_FRAMES (Player.updateCrack, Game.breakCrack).
@@ -10607,7 +10638,7 @@ function blockRef(tileName) {
 
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
-  anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
+  anim: null, animRate: 10, over: false, push: null, belt: null, ledge: null, depth: 0,
 };
 
 const warned = new Set();
@@ -11252,6 +11283,15 @@ class Room {
     if (!this.inBounds(tx, ty)) return;
     this.override[ty * this.tw + tx] = name;
     this.invalidate();
+  }
+
+  /** Take away every coral pillar grown in this room (Game.setRoom). */
+  clearGrown() {
+    let any = false;
+    for (let i = 0; i < this.override.length; i++) {
+      if (this.override[i] === 'coralPillar') { this.override[i] = null; any = true; }
+    }
+    if (any) this.invalidate();
   }
 
   clearTile(tx, ty) {
@@ -12798,7 +12838,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY } = __require("data/feel.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY } = __require("data/feel.js");
 
 const ENTITY_TYPES = new Map();
 
@@ -13211,6 +13251,20 @@ function touchingDeep(game, e) {
   return false;
 }
 
+/**
+ * THE BELT UNDER A BODY (S186), as Seasons asks it: the tile BELT_FOOT_DY
+ * below its centre (ecom_updateMovingPlatform's objectGetRelativeTile $05),
+ * at the sea there. Returns the belt's direction, or null — a drowned belt
+ * is water, and water has no `belt`.
+ */
+function beltUnder(game, e) {
+  const room = game.room;
+  if (!room) return null;
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + BELT_FOOT_DY) / TILE);
+  if (!room.inBounds(tx, ty)) return null;
+  return room.tile(tx, ty, game.tide).belt || null;
+}
+
 function groundTile(game, e) {
   const room = game.room;
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
@@ -13284,6 +13338,7 @@ __exports["overHole"] = overHole;
 __exports["dropIntoHole"] = dropIntoHole;
 __exports["groundFlags"] = groundFlags;
 __exports["touchingDeep"] = touchingDeep;
+__exports["beltUnder"] = beltUnder;
 __exports["groundTile"] = groundTile;
 __exports["tideAt"] = tideAt;
 __exports["standAt"] = standAt;
@@ -18242,7 +18297,7 @@ __define("game/items.js", function (__exports, __require) {
 //     use(game, player, level) -> boolean   // true if the press was consumed
 //   }
 
-const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags, overHole, dropIntoHole } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags, overHole, dropIntoHole, beltUnder } = __require("game/entity.js");
 const { Projectile, fire } = __require("game/projectile.js");
 const { Explosion } = __require("game/effects.js");
 const { F } = __require("world/tileset.js");
@@ -18250,7 +18305,7 @@ const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, DROP_IN_MAX_HEIGHT, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES, POT_HAULER_FACTOR, BOMB_FUSE_FRAMES, BOMB_STILL_FRAMES, BOMB_FLASH_BEAT } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, DROP_IN_MAX_HEIGHT, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, BELT_SPEED, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES, POT_HAULER_FACTOR, BOMB_FUSE_FRAMES, BOMB_STILL_FRAMES, BOMB_FLASH_BEAT } = __require("data/feel.js");
 const { sprites, tiles } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -19021,6 +19076,15 @@ class Reefseed extends Entity {
       this.plant(game);
       return;
     }
+    // A BUD ON A BELT RIDES IT WHILE IT GROWS (S186, the Drowned Wood
+    // Shrine's Canopy), at the belt's own speed: the two seconds that are the
+    // item's whole design become a distance. A wall or a standing pillar
+    // stops it as it stops a thrown seed; a knot-hole at the end takes it.
+    const v = beltUnder(game, this);
+    if (v) {
+      moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED, { jumping: true, swim: true });
+      if (this.intoHole(game)) return;
+    }
     this.grow++;
     if (this.grow % REEFSEED_SHUDDER_EVERY === 0) {
       game.spawnEffect('sparkle', this.x, this.y - 4, { life: 12, pal: 'coral' });
@@ -19033,6 +19097,7 @@ class Reefseed extends Entity {
     this.planted = true;
     this.fz = 0; this.vz = 0; this.vx = 0; this.vy = 0;
     const { tx, ty } = this.tile();
+    if (this.intoHole(game)) return;
     if (!Reefseed.canPlant(game, tx, ty)) {
       this.remove = true;
       game.audio.sfx('deny');
@@ -19060,7 +19125,7 @@ class Reefseed extends Entity {
     // buried in it. A player sealed inside terrain by their own item is the
     // one outcome this must never produce.
     for (const e of game.entities) {
-      if (e.remove || e.isEffect) continue;
+      if (e.remove || e.isEffect || e.stake) continue;
       if (Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) game.shoveOffTile(e);
     }
     const p = game.player;
@@ -19069,6 +19134,24 @@ class Reefseed extends Entity {
 
   tile() {
     return { tx: Math.floor(this.cx / TILE), ty: Math.floor(this.cy / TILE) };
+  }
+
+  /**
+   * OVER A HOLE, A SEED GOES DOWN IT (S186). Seasons' ball (S185's fall) —
+   * and over a KNOT-HOLE, a drop hole with a room beneath it, it comes down
+   * in that room and takes root on the cell directly under the hole, where
+   * no hand below could have put it (`Game.plantFromAbove`), for good.
+   * Returns true when the seed is gone.
+   */
+  intoHole(game) {
+    const room = game.room;
+    const { tx, ty } = this.tile();
+    if (!room || !room.inBounds(tx, ty)) return false;
+    const f = room.flagsAt(tx, ty, game.tide);
+    if (!(f & F.PIT)) return false;
+    dropIntoHole(game, this);
+    if (f & F.DROP) game.plantFromAbove(tx, ty);
+    return true;
   }
 
   /** A tile a pillar may be grown on without ruining the room. */
@@ -19655,7 +19738,7 @@ __define("game/player.js", function (__exports, __require) {
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
-const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, enemyHurtRect } = __require("game/entity.js");
+const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect } = __require("game/entity.js");
 
 const { F, transformFor } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
@@ -19664,7 +19747,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED } = __require("data/feel.js");
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
 // (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
@@ -19836,6 +19919,7 @@ class Player extends Entity {
     }
 
     this.updateTerrain(game);
+    this.updateBelt(game);
 
     if (this.spinning > 0) { this.updateSpin(game); return; }
     if (this.poking > 0) { this.updatePoke(game); return; }
@@ -19975,6 +20059,19 @@ class Player extends Entity {
       const k = game.charm('kelpBraid') ? KELP_BRAID_FACTOR : 1;
       if (def.push) moveEntity(game, this, sp(def.push[0] * k), sp(def.push[1] * k));
     }
+  }
+
+  /**
+   * ON A BELT (S186) he is carried at BELT_SPEED in its direction on top of
+   * his own walking, swinging or charging — Seasons' @tileType_conveyor —
+   * and not while riding something, in the air or in the water. A wall stops
+   * the carry as it stops a step; a hole at the end of it is a hole.
+   */
+  updateBelt(game) {
+    if (this.ledgeHop || this.z > 2 || this.jumping || this.inDeep || this.underwater) return;
+    const v = beltUnder(game, this);
+    if (!v || this.onFloat(game)) return;
+    moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED);
   }
 
   /** Is he standing on a float (the Cistern's moving platform)? Then the
@@ -23605,7 +23702,12 @@ class FloorSwitch extends Entity {
     // landed on a switch, the pillar came up, and `bloom` SHOVED THE PLATE OFF
     // ITS OWN TILE on the way. It came back on the next room entry, which is
     // the only reason this was a nuisance rather than a dead save.
-    this.noPlant = true;
+    this.noPlant = !o.stake;
+    // A PLATE THAT TAKES A STAKE (S186, the Drowned Wood Shrine): a coral
+    // pillar grown on it holds it down for as long as the pillar stands —
+    // which, for a stake dropped from the Canopy, is for good. Only such a
+    // plate lets a seed grow on it; every other plate keeps `noPlant`.
+    this.stake = !!o.stake;
   }
 
   /**
@@ -23629,9 +23731,12 @@ class FloorSwitch extends Entity {
     for (const e of game.entities) {
       if (e === this || e.isEffect || e.isDrop) continue;
       if (sunk && e.isEnemy) continue;
+      // A stake plate is the Canopy's: nothing that wanders onto it counts.
+      if (this.stake && e.isEnemy) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }
     }
     if (!this.hold && this.pressed) on = true;
+    if (this.stake && game.room && game.room.baseName(Math.floor(this.cx / TILE), Math.floor(this.cy / TILE)) === 'coralPillar') on = true;
     if (on !== this.pressed) {
       this.pressed = on;
       game.audio.sfx(on ? 'switchOn' : 'switchOff');
@@ -32791,7 +32896,7 @@ __define("game/enemy.js", function (__exports, __require) {
 //
 // Bosses use defineBoss, which adds phase handling and a health bar.
 
-const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect, beltUnder } = __require("game/entity.js");
 const { fire } = __require("game/projectile.js");
 const { sprites } = __require("gfx/art.js");
 const { BOSS_RIG: RIPPED_RIG } = __require("data/sprites-bosses-seasons.js");
@@ -32806,7 +32911,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -33040,6 +33145,7 @@ class Enemy extends Entity {
     if (this.stun > 0) { this.stun--; return; }
 
     if (this.spec.ai) this.spec.ai(this, game);
+    if (this.updateBelt(game)) return;
 
     // Aquatic enemies that end up on dry land after the tide drops flop and die.
     if (this.terrain === 'water' && !this.terrainOk(game, this.x, this.y)) {
@@ -33063,6 +33169,28 @@ class Enemy extends Entity {
     const hit = moveEntity(game, this, this.knockX, this.knockY);
     this.avoidFlags = avoid;
     return hit;
+  }
+
+  /**
+   * ON A BELT (S186): an ordinary enemy on the ground is carried at
+   * BELT_SPEED, as Seasons' ecom_updateMovingPlatform carries one standing
+   * on a conveyor (enemyConveyorTilesTable) — with normal collisions, so a
+   * wall stops it, and a hole at the end of the belt takes it (S185's fall).
+   * A step under way rides with it: its origin moves by what the belt moved,
+   * so the step finishes where it was going relative to the floor it is on.
+   * Returns true when the belt has put it over a hole.
+   */
+  updateBelt(game) {
+    if (!this.canFallInHole() || this.dead) return false;
+    const v = beltUnder(game, this);
+    if (!v) return false;
+    const x0 = this.fx, y0 = this.fy, avoid = this.avoidFlags;
+    this.avoidFlags = avoid & ~F.PIT;
+    moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED);
+    this.avoidFlags = avoid;
+    if (this.step) { this.step.fx0 += this.fx - x0; this.step.fy0 += this.fy - y0; }
+    if (this.overHole(game)) { this.beginHoleFall(game); return true; }
+    return false;
   }
 
   /** Whether a hole can take it: an ordinary enemy on the ground. Bosses,
@@ -34541,7 +34669,7 @@ const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } = __require("game/entity.js");
 const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
 const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
-const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
+const { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } = __require("game/items.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
@@ -34728,6 +34856,13 @@ class Game {
   setRoom(floor, rx, ry, o = {}) {
     const r = getRoom(this.mapId, floor, rx, ry);
     if (!r) { console.warn('[game] missing room', this.mapId, floor, rx, ry); return; }
+    // A STAKE THROWN THE ORDINARY WAY GOES WHEN YOU LEAVE THE ROOM (S186).
+    // Rooms outlive a visit, so a coral pillar grown by hand used to stand
+    // until the next load, and a stake grown in the wrong place could seal a
+    // stake room for the rest of the session. A stake dropped from the Canopy
+    // is written into the save (`plantFromAbove`) and `restoreRoomState`
+    // puts it back on the way in.
+    if (this.room && this.room !== r) this.room.clearGrown();
     this.room = r;
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
@@ -34827,6 +34962,37 @@ class Game {
     if (!this.fallen) this.fallen = [];
     this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
     obj.remove = true;
+    return true;
+  }
+
+  /**
+   * A STAKE FROM ABOVE (S186, the Drowned Wood Shrine's Canopy). A Reefseed
+   * that goes down a knot-hole comes down in the room directly beneath, one
+   * floor down at the same room coordinates, and takes root on the same cell
+   * — if a pillar could grow there by the rule `Reefseed.canPlant` keeps
+   * (REEFSEED_PLANT_BLOCK at every sea, no warp, no pillar already, and
+   * nothing placed there but a plate that takes a stake). It is REMEMBERED,
+   * one per knot-hole: written into the save like an opened door, so it is
+   * standing when the player walks in and after every load. A seed thrown
+   * the ordinary way is not. Returns true when the stake took root.
+   */
+  plantFromAbove(tx, ty) {
+    const room = this.room;
+    if (!room || !this.map) return false;
+    const below = room.floor - 1;
+    const key = `${below},${room.rx},${room.ry}`;
+    const def = below >= 0 && this.map.roomDefs[key];
+    if (!def) return false;
+    const r = getRoom(this.mapId, below, room.rx, room.ry);
+    if (!r || !r.inBounds(tx, ty) || r.baseName(tx, ty) === 'coralPillar' || r.warpAt(tx, ty)) return false;
+    for (let lv = 0; lv < TIDE_COUNT; lv++) if (r.flagsAt(tx, ty, lv) & REEFSEED_PLANT_BLOCK) return false;
+    for (const e of def.entities || []) {
+      if (e[1] !== tx || e[2] !== ty) continue;
+      if (!(e[0] === 'switch' && e[3] && e[3].stake)) return false;
+    }
+    r.setTile(tx, ty, 'coralPillar');
+    this.progress.doors[`${this.mapId}:${r.key}:${tx},${ty}`] = 'coralPillar';
+    this.roomEvent('stake', { floor: below, tx, ty });
     return true;
   }
 
@@ -45970,6 +46136,386 @@ const DUNGEON_THEME_ART = {
     2000000000000002
     2222222222222222`,
 
+  // the north conveyor, step 1 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $54
+  rBeltN0: `
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111`,
+
+  // the north conveyor, step 2 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $54
+  rBeltN1: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000`,
+
+  // the north conveyor, step 3 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $54
+  rBeltN2: `
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the north conveyor, step 4 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $54
+  rBeltN3: `
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100
+    1111111111111111
+    1110011111100111
+    1100000111000001
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0111110001111100`,
+
+  // the east conveyor, step 1 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $55
+  rBeltE0: `
+    1100000111000001
+    1100000011000000
+    1110000011100000
+    0110000001100000
+    0110000001100000
+    1110000011100000
+    1110000111100001
+    1100000111000001
+    1100000111000001
+    1100000011000000
+    1110000011100000
+    0110000001100000
+    0110000001100000
+    1110000011100000
+    1110000111100001
+    1100000111000001`,
+
+  // the east conveyor, step 2 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $55
+  rBeltE1: `
+    0111000001110000
+    0011000000110000
+    0011100000111000
+    0001100000011000
+    0001100000011000
+    0011100000111000
+    0111100001111000
+    0111000001110000
+    0111000001110000
+    0011000000110000
+    0011100000111000
+    0001100000011000
+    0001100000011000
+    0011100000111000
+    0111100001111000
+    0111000001110000`,
+
+  // the east conveyor, step 3 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $55
+  rBeltE2: `
+    0001110000011100
+    0000110000001100
+    0000111000001110
+    0000011000000110
+    0000011000000110
+    0000111000001110
+    0001111000011110
+    0001110000011100
+    0001110000011100
+    0000110000001100
+    0000111000001110
+    0000011000000110
+    0000011000000110
+    0000111000001110
+    0001111000011110
+    0001110000011100`,
+
+  // the east conveyor, step 4 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $55
+  rBeltE3: `
+    0000011100000111
+    0000001100000011
+    1000001110000011
+    1000000110000001
+    1000000110000001
+    1000001110000011
+    1000011110000111
+    0000011100000111
+    0000011100000111
+    0000001100000011
+    1000001110000011
+    1000000110000001
+    1000000110000001
+    1000001110000011
+    1000011110000111
+    0000011100000111`,
+
+  // the south conveyor, step 1 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $56
+  rBeltS0: `
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001`,
+
+  // the south conveyor, step 2 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $56
+  rBeltS1: `
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the south conveyor, step 3 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $56
+  rBeltS2: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000`,
+
+  // the south conveyor, step 4 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $56
+  rBeltS3: `
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111
+    0111110001111100
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    1100000111000001
+    1110011111100111
+    1111111111111111`,
+
+  // the west conveyor, step 1 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $57
+  rBeltW0: `
+    1000001110000011
+    0000001100000011
+    0000011100000111
+    0000011000000110
+    0000011000000110
+    0000011100000111
+    1000011110000111
+    1000001110000011
+    1000001110000011
+    0000001100000011
+    0000011100000111
+    0000011000000110
+    0000011000000110
+    0000011100000111
+    1000011110000111
+    1000001110000011`,
+
+  // the west conveyor, step 2 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $57
+  rBeltW1: `
+    0000111000001110
+    0000110000001100
+    0001110000011100
+    0001100000011000
+    0001100000011000
+    0001110000011100
+    0001111000011110
+    0000111000001110
+    0000111000001110
+    0000110000001100
+    0001110000011100
+    0001100000011000
+    0001100000011000
+    0001110000011100
+    0001111000011110
+    0000111000001110`,
+
+  // the west conveyor, step 3 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $57
+  rBeltW2: `
+    0011100000111000
+    0011000000110000
+    0111000001110000
+    0110000001100000
+    0110000001100000
+    0111000001110000
+    0111100001111000
+    0011100000111000
+    0011100000111000
+    0011000000110000
+    0111000001110000
+    0110000001100000
+    0110000001100000
+    0111000001110000
+    0111100001111000
+    0011100000111000`,
+
+  // the west conveyor, step 4 of 4, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $57
+  rBeltW3: `
+    1110000011100000
+    1100000011000000
+    1100000111000001
+    1000000110000001
+    1000000110000001
+    1100000111000001
+    1110000111100001
+    1110000011100000
+    1110000011100000
+    1100000011000000
+    1100000111000001
+    1000000110000001
+    1000000110000001
+    1100000111000001
+    1110000111100001
+    1110000011100000`,
+
+  // the warp hole, inside a run, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $48
+  rHole: `
+    0111011101110111
+    1001100110011001
+    1011010110110101
+    1110110111101101
+    1111111111111111
+    1011101110111011
+    1001100110011001
+    1111111111111111
+    0111011101110111
+    1001100110011001
+    1011010110110101
+    1110110111101101
+    1111111111111111
+    1011101110111011
+    1001100110011001
+    1111111111111111`,
+
+  // the warp hole, floor above it, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $49
+  rHoleN: `
+    0012100000121000
+    1121211111212111
+    2222122222221222
+    2221221222212212
+    2222222222222222
+    2122212221222122
+    2112211221122112
+    2222222222222222
+    1222122212221222
+    2112211221122112
+    2122121221221212
+    2221221222212212
+    2222222222222222
+    2122212221222122
+    2112211221122112
+    2222222222222222`,
+
+  // the warp hole, floor below it, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $4a
+  rHoleS: `
+    1222122212221222
+    2112211221122112
+    2122121221221212
+    2221221222212212
+    2222222222222222
+    2122212221222122
+    2112211221122112
+    2222222222222222
+    1222122212221222
+    2112211221122112
+    2122121221221212
+    2221221222212212
+    2222222222222222
+    2122212221222122
+    2112211221122112
+    0012210000122100`,
+
+  // the warp hole, floor above and below, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $4b
+  rHoleNS: `
+    0012100000121000
+    1121211111212111
+    2222122222221222
+    2221221222212212
+    2222222222222222
+    2122212221222122
+    2112211221122112
+    2222222222222222
+    1222122212221222
+    2112211221122112
+    2122121221221212
+    2221221222212212
+    2222222222222222
+    2122212221222122
+    2112211221122112
+    0012210000122100`,
+
   // the stair up, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $44
   kStairsUp: `
     2222222222333333
@@ -46665,6 +47211,26 @@ const DUNGEON_THEME_PALETTES = {
   xStairsDown: ['#949494', '#636363', '#424242', '#000000'],
   rStairsUp: ['#b58c42', '#8c5a00', '#4a2100', '#000000'],
   rStairsDown: ['#b58c42', '#8c5a00', '#4a2100', '#000000'],
+  rBeltN0: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltN1: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltN2: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltN3: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltE0: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltE1: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltE2: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltE3: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltS0: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltS1: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltS2: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltS3: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltW0: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltW1: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltW2: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rBeltW3: ['#c6b518', '#9c7b08', '#9c7b08', '#9c7b08'],
+  rHole: ['#5a4a00', '#000000', '#000000', '#000000'],
+  rHoleN: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
+  rHoleS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
+  rHoleNS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
   kStairsUp: ['#cebd8c', '#737b39', '#633973', '#000000'],
   kStairsDown: ['#cebd8c', '#737b39', '#633973', '#000000'],
   frRingTL: ['#ffffff', '#7b9cb5', '#31527b', '#000000'],
@@ -48613,7 +49179,7 @@ const { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, HORON_GROUND } = __re
 const { registerPalettes, PALETTES } = __require("gfx/palettes.js");
 const { DUNGEON_THEME_ART, installDungeonThemePalettes } = __require("data/tiles-dungeon-themes.js");
 const { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } = __require("data/tiles-maku.js");
-const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE } = __require("data/feel.js");
+const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, BELT_ANIM_RATE } = __require("data/feel.js");
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -51424,6 +51990,30 @@ function installCoreTiles() {
     // The way out: the entrance hall's two pillars in the south wall with
     // the lit step between them, wall to the ring either side.
     dExitWood: { art: ART.rArch2, pal: 'rArch2', flags: F.WARP },
+    // THE CANOPY'S BELTS AND KNOT-HOLES (S186). The Ancient Ruins' own
+    // conveyors ($54-$57, four steps each) and warp hole ($48 and its lipped
+    // neighbours). A belt is floor that carries (`belt`, a direction at
+    // BELT_SPEED); a knot-hole is a drop hole (F.DROP) with the Shrine under
+    // it, which a seed falls through as readily as Link.
+    ...Object.fromEntries([['N', [0, -1]], ['E', [1, 0]], ['S', [0, 1]], ['W', [-1, 0]]].map(([d, v]) => ['rBelt' + d, {
+      art: ART['rBelt' + d + '0'], pal: 'rBelt' + d + '0', belt: v,
+      anim: [0, 1, 2, 3].map(k => 'rBelt' + d + k), animRate: BELT_ANIM_RATE,
+    }])),
+    // A DROWNED BELT DOES NOT TURN. A HIGH BOUGH's belt runs at LOW and MID
+    // and is deep, still water at HIGH; a LOW BOUGH's runs only at LOW, is
+    // shallow and still at MID and deep at HIGH. So the sea chooses which
+    // belts carry.
+    ...Object.fromEntries(['N', 'E', 'S', 'W'].flatMap(d => [
+      ['dBeltHigh' + d, { tide: ['rBelt' + d, 'rBelt' + d, 'dWaterD'] }],
+      ['dBeltLow' + d, { tide: ['rBelt' + d, 'dWaterS', 'dWaterD'] }],
+    ])),
+    dKnotHole: {
+      art: ART.rHole, pal: 'rHole', flags: F.PIT | F.DROP, family: 'knot',
+      lip: { n: 'dKnotHoleN', s: 'dKnotHoleS', ns: 'dKnotHoleNS' },
+    },
+    dKnotHoleN: { art: ART.rHoleN, pal: 'rHoleN', flags: F.PIT | F.DROP, family: 'knot' },
+    dKnotHoleS: { art: ART.rHoleS, pal: 'rHoleS', flags: F.PIT | F.DROP, family: 'knot' },
+    dKnotHoleNS: { art: ART.rHoleNS, pal: 'rHoleNS', flags: F.PIT | F.DROP, family: 'knot' },
     dPillarWoodW: { art: ART.rArch1, pal: 'rArch1', flags: F.SOLID, ringWall: true },
     dPillarWoodE: { art: ART.rArch3, pal: 'rArch3', flags: F.SOLID, ringWall: true },
     rRingTL: { art: ART.rRingTL, pal: 'rRingTL', flags: F.SOLID },
@@ -52290,6 +52880,18 @@ function installLegends() {
   // Ruins' lit step between two pillars in the south wall, `(C)`.
   registerLegend('dungeonWood', {
     'C': 'dExitWood', '(': 'dPillarWoodW', ')': 'dPillarWoodE', '9': 'dDrownWood',
+  }, 'dungeonWood');
+  // THE CANOPY (S186): the Ruins' belts, as tide tiles that stop when the
+  // sea drowns them, and the knot-hole a seed falls through. A HIGH bough's
+  // belt is a bracket — `}` east, `{` west, `[` north, `]` south — and runs
+  // at LOW and MID; a LOW bough's is a letter — `e` east, `x` west, `n`
+  // north, `s` south — and runs at LOW alone. `K` is the knot-hole. None of
+  // the nine is placed by any other Shrine room or named by the shared
+  // legend's indoor vocabulary.
+  registerLegend('dungeonWood', {
+    '}': 'dBeltHighE', '{': 'dBeltHighW', '[': 'dBeltHighN', ']': 'dBeltHighS',
+    'e': 'dBeltLowE', 'x': 'dBeltLowW', 'n': 'dBeltLowN', 's': 'dBeltLowS',
+    'K': 'dKnotHole',
   }, 'dungeonWood');
   // THE THREE OPTIONAL DUNGEONS (S160), each an Oracle dungeon in the kit of
   // a Seasons dungeon no main one had taken (see `optionalKit` in
@@ -59117,7 +59719,7 @@ function installDungeonsB() {
     id: 'd5',
     kind: 'dungeon',
     name: 'Drowned Wood Shrine',
-    w: 8, h: 8, floors: 1,
+    w: 8, h: 8, floors: 2,
     cell: [15, 11],
     legend: 'dungeonWood',
     music: 'dungeon5',
@@ -59228,29 +59830,45 @@ function installDungeonsB() {
       },
       '0,3,5': {
         name: 'The Standing Grove',
-        // The bole taught before it is ever load-bearing. Four drowned trees in
-        // the middle of the floor: timber at LOW and MID, open water at HIGH,
-        // and the walk round them is free at every level so failing costs
-        // nothing. Its key door north is the short way into Rootbound Hall.
+        // The bole taught before it is ever load-bearing — and, since S186,
+        // the first thing the Canopy plants. A hold plate stands on a one-tile
+        // dais in a ring of holes three tiles wide: no throw carries that far
+        // (a seed goes two tiles, or three from the very lip of a hole — S186
+        // found two wide was not enough), no perch can be grown in a hole, and no
+        // swimmer crosses one, at any sea. It is in plain sight from the first
+        // visit, and a knot-hole in the Grove Crown is directly over it: a
+        // seed dropped through grows on the plate and holds it for good
+        // (`dropRoom`, check-canopy.mjs), and a chest rises by the door.
+        // The four drowned trees in its corners are the bole taught as
+        // before: timber at LOW and MID, open water at HIGH, free to fail.
+        // Its key door north is the short way into Rootbound Hall.
         map: [
           '#######L#######',
           '#.............#',
-          '#.............#',
-          '#..55.....55..#',
-          '#..55.....55..#',
-          '...............',
-          '#..55.....55..#',
-          '#..55.....55..#',
+          '#5..OOOOOOO..5#',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '....OOO.OOO....',
+          '#...OOOOOOO...#',
+          '#...OOOOOOO...#',
+          '#5..OOOOOOO..5#',
           '#.U...........#',
-          '#.............#',
           '#######.#######',
         ],
+        dropRoom: { from: '1,3,5', hole: [7, 5], plate: [7, 5] },
         entities: [
-          ['tektite', 7, 7],
+          ['switch', 7, 5, { stake: true }],
+          ['chest', 12, 3, { pickup: 'key', needFlag: 'd5_standingGrove' }],
+          ['tektite', 11, 9],
           ['keese', 3, 1],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_standingGrove',
+          reward: { reveal: true, say: 'The coral holds the plate down.\nA chest rises by the east wall.' },
+        },
         readable: [
-          [2, 8, 'Scratched into the bark: "At high water the\nwood is not there. Everything else in this\nshrine follows from that."'],
+          [2, 9, 'Scratched into the bark: "At high water the\nwood is not there. Everything else in this\nshrine follows from that."'],
         ],
       },
       '0,2,5': {
@@ -59489,6 +60107,9 @@ function installDungeonsB() {
       },
       '0,3,4': {
         name: 'Rootbound Hall',
+        // The hub under the Canopy (S186): the stair up in its south-east
+        // corner climbs into the Hollow Crown, and the Crown's two knot-holes
+        // drop back into its north-east corner.
         map: [
           '###############',
           '#.............#',
@@ -59499,9 +60120,10 @@ function installDungeonsB() {
           '#..222222222..#',
           '#...2222222...#',
           '#.............#',
-          '#.............#',
+          '#...........S.#',
           '#######L#######',
         ],
+        warps: [{ x: 12, y: 9, to: { map: 'd5', floor: 1, rx: 3, ry: 4, px: 12 * 16, py: 8 * 16, dir: 'up' } }],
         entities: [
           ['barnacle', 7, 5],
           ['crab', 11, 8],
@@ -60074,7 +60696,7 @@ function installDungeonsB() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          'L..............',
+          'L.............L',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
@@ -60100,7 +60722,7 @@ function installDungeonsB() {
           '#..........#..#',
           '#..........#..#',
           '#......5...#..#',
-          '.....0WWW0.#..L',
+          'L....0WWW0.#..L',
           '#######k####..#',
           '#.............#',
           '#.............#',
@@ -60108,7 +60730,8 @@ function installDungeonsB() {
           '###############',
         ],
         reefseedRoom: {
-          entry: [0, 5],
+          // The first floor inside its west door, a key door since S186.
+          entry: [1, 5],
           stakes: [
             { at: [7, 5], from: [7, 3], face: 'down', sea: 2 },
           ],
@@ -60238,6 +60861,107 @@ function installDungeonsB() {
             if (name === 'bossDead') game.spawnPickup(112, 56, 'heartContainer', { grabDelay: 30 });
           },
         },
+      },
+
+      // ------------------------------------------------- 2F, the Canopy (S186)
+      //
+      // THE CANOPY PLANTS THE SHRINE. Belts in the crowns of the drowned
+      // trees (the Ancient Ruins' own conveyors) carry a seed while it grows,
+      // and a knot-hole in the boughs drops it into the room beneath, where
+      // it takes root in a place no hand below could put it — and stays
+      // (`Game.plantFromAbove`). A drowned belt does not turn: a high
+      // bough's (`}{[]`) is still water at HIGH, a low bough's (`exns`) at
+      // MID and HIGH. See docs/briefs/D5-DROWNED-WOOD-SHRINE.md.
+      '1,3,4': {
+        name: 'The Hollow Crown',
+        // K1, BELTS ALONE. Up the stair from Rootbound Hall; two rows of
+        // belt run east into two knot-holes, wall to wall between the stair
+        // and the way north. At LOW and MID you are carried as you cross;
+        // cross near the holes and you drop back into the Hall, unhurt. At
+        // HIGH the belts are under water and still: you swim across.
+        // Reachable before the Reefseed, and nothing costs anything here.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#}}}}}}}}}}}KK#',
+          '#}}}}}}}}}}}KK#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.........../.#',
+          '#######L#######',
+        ],
+        warps: [{ x: 12, y: 9, to: { map: 'd5', floor: 0, rx: 3, ry: 4, px: 12 * 16, py: 8 * 16, dir: 'up' } }],
+        beltRoom: { belts: 'run', cross: { from: [7, 9], to: [7, 1] } },
+        entities: [
+          ['tektite', 4, 6],
+          ['keese', 10, 1],
+        ],
+      },
+      '1,3,3': {
+        name: 'The Belt Bough',
+        // K2, A SEED ON A BELT. A belt runs east down a channel sealed by
+        // walls and holes — no foot reaches it, at any sea — to a hold plate
+        // against its far wall. A seed thrown over the holes from the little
+        // bank lands on the belt, rides it while it grows (two seconds is
+        // just under four tiles), and comes up on the plate if it was thrown
+        // from the right place. Nothing else reaches the plate: it is three
+        // tiles from any footing, no wall stands where a throw would stop on
+        // it, and the channel is closed at both ends. The plate raises a
+        // chest. At HIGH the belt is still water and a seed grows where it
+        // falls (K1's lesson). A stake grown in the wrong place is gone when
+        // you leave the room (`Game.setRoom`).
+        map: [
+          '###############',
+          '#...###########',
+          '#...#}}}}}}####',
+          '#...#OOOOOO#..#',
+          '#......OOOO...#',
+          '#......OOOO...#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
+        ],
+        beltRoom: { seed: { from: [6, 4], face: 'up', lands: [10, 2] }, plate: [10, 2] },
+        entities: [
+          ['switch', 10, 2, { stake: true }],
+          ['chest', 2, 5, { pickup: 'key', needFlag: 'd5_beltBough' }],
+          ['crab', 9, 8],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_beltBough',
+          reward: { reveal: true, say: 'The coral comes up on the plate.\nA chest rises on the bank.' },
+        },
+      },
+      '1,3,5': {
+        name: 'The Grove Crown',
+        // K3, THE FIRST DROP. A knot-hole in a ring of holes, directly over
+        // the Standing Grove's plate. No foot reaches the knot-hole; a seed
+        // thrown into it from two tiles away falls through, grows on the
+        // plate below, and holds it for good. Behind a key door from the
+        // Hollow Crown, which the Belt Bough's chest opens.
+        map: [
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.....OOO.....#',
+          '#.....OKO.....#',
+          '#.....OOO.....#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['tektite', 3, 9],
+          ['keese', 11, 1],
+        ],
       },
     },
   });

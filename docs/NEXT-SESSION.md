@@ -1,3 +1,66 @@
+## S186 — the Drowned Wood Shrine's Canopy, first half: belts, knot-holes, K1-K3
+
+Branch claude/s186-drowned-wood-growth, off main at 3f619fb with S185
+(claude/s185-oracle-tides-vj56fe) merged in first. The human answered yes to
+all five of the D5 brief's questions, and approved two fixes (below).
+
+### Built
+- RIPPED: rip-dungeon-themes.py `rBelt{N,E,S,W}{0-3}` (Ancient Ruins tileset
+  $3c, metatiles $54-$57 = TILETYPE_UP/RIGHT/DOWN/LEFTCONVEYOR, each animation
+  step a `meta:3c@k` sheet) and `rHole`/`rHoleN`/`rHoleS`/`rHoleNS` (warp hole
+  $48-$4b). `meta:` sheets learned `@k` like `ages:`. Byte-identical before.
+- feel.js: BELT_SPEED 128 sp/f (SPEED_80), BELT_ANIM_RATE 15, BELT_FOOT_DY 5,
+  all derived from the disassembly (commonCode.s @tileType_conveyor,
+  ecom_updateMovingPlatform, animationData.s).
+- Tiles: `rBelt*` (tiledef field `belt`, registered in tileset.js), tide
+  tiles `dBeltHigh*` [belt, belt, dWaterD] and `dBeltLow*` [belt, dWaterS,
+  dWaterD], `dKnotHole` (F.PIT|F.DROP, lipped). Legend dungeonWood: `}{[]`
+  high bough E/W/N/S, `exns` low bough, `K` knot-hole.
+- Engine: entity.js `beltUnder`; Player.updateBelt (carried on top of his
+  own walking, swinging; not in water, air, on a float); Enemy.updateBelt
+  (ordinary ground enemies, a step's origin rides with it, into a hole =
+  S185's fall); Reefseed: a bud on a belt rides it while it grows; over a hole
+  it goes down (S185 ball), and over a knot-hole `Game.plantFromAbove` grows
+  the pillar on the cell below and writes it into progress.doors (kept in the
+  save). FloorSwitch `{ stake: true }`: held by a pillar on it, plantable,
+  ignores enemies. `Game.setRoom` clears ordinary pillars from the room left
+  (`Room.clearGrown`) — before S186 they stood until the next load.
+- D5 (now floors: 2): 2F 1,3,4 the Hollow Crown (K1: belts wall to wall into
+  four knot-holes over Rootbound Hall; stair 12,9 <-> Rootbound Hall 12,9),
+  1,3,3 the Belt Bough (K2, sealed channel, plate 10,2, throw from 6,4 up;
+  chest SK5 at 2,5), 1,3,5 the Grove Crown (K3, knot-hole 7,5 ringed by
+  holes, behind the Crown's new south key door). 1F 3,5 the Standing Grove
+  reworked: stake plate 7,5 on a dais in a ring of holes THREE wide, boles in
+  the corners, chest SK6 at 12,3. New key door: Grove Crossing east / Long
+  Ford west (Long Ford's reefseedRoom entry moved to 1,5). 38 rooms, 43
+  screens.
+- TOOLS: check-belts.mjs (13), check-canopy.mjs (16; goes red on the mock's
+  two-wide ring). check-shafts skips knot-holes; check-dungeon-strands
+  baseline +2 (the sealed belt channel and the dais, by design).
+  actor-runtime `sow` directive (stand, face, throw; for targets no
+  `reefseed` aim reaches). Route: the Canopy detour after the Reefseed Vault
+  (K2 -> Grove Crown key door -> K3 -> Standing Grove chest), a waypoint in
+  Rootbound Hall round the stair, the Grove Crossing's new key door.
+- Picture: docs/briefs/d5-built/s186-canopy.png (Ancient Ruins 2F $c6 beside
+  the four new rooms and the Standing Grove).
+
+### Two design fixes the human approved
+- K2: the mock's snarl over a belt could be cut with no seed (Link outwalks
+  a belt). Now a plate at the end of a sealed channel only a riding seed reaches.
+- K3: the sump ring was swimmable (Cleats); holes instead — then three wide,
+  because a throw from the lip crosses two (check-canopy found it).
+
+### Verified
+Whole table green (54 tools with check-belts and check-canopy);
+check-playthrough 47/47, THE END, never died.
+
+### NEXT (S187)
+- K4 the Ford Crown (2F 4,3) over the Long Ford, K5 the High Bough (2F
+  4..6,2) over the Shrine Ford with the Boss Key moving there (the "stake as a
+  buffer" lesson), `dropRoom` claims for each, the robot through both, the
+  guide (shots.mjs/figures.mjs) re-shot for D5. Brief's "As built" section
+  says what changed.
+
 ## S185 — Seasons' falling-into-a-hole; D5 designed to two floors (NOT built)
 
 Branch claude/s185-oracle-tides-vj56fe, off main at 3f619fb (main already

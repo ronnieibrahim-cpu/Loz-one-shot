@@ -64,7 +64,9 @@ for (const [mapId, m] of MAPS) {
     const room = getRoom(mapId, ...key.split(',').map(Number));
     for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
       const at = (mask) => [0, 1, 2].filter(t => (room.flagsAt(x, y, t) & mask) === mask);
-      const drop = at(F.DROP);
+      // A KNOT-HOLE (S186, the Drowned Wood Shrine's Canopy) is a drop hole
+      // at every sea, not a shaft: tools/check-canopy.mjs is its checker.
+      const drop = /^dKnotHole/.test(room.baseName(x, y)) ? [] : at(F.DROP);
       if (drop.length) SHAFTS.push({ mapId, key, x, y, m, room, drop, hole: at(F.DROP | F.PIT), deep: at(F.DROP | F.DEEP) });
       const crack = [0, 1, 2].filter(t => room.tile(x, y, t).crack);
       if (crack.length) CRACKS.push({ mapId, key, x, y, m, room, levels: crack });

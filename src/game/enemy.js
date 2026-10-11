@@ -34,7 +34,7 @@
 // Bosses use defineBoss, which adds phase handling and a health bar.
 
 import {
-  Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect,
+  Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo, enemyHurtRect, beltUnder,
 } from './entity.js';
 import { fire } from './projectile.js';
 import { sprites } from '../gfx/art.js';
@@ -68,7 +68,7 @@ import {
   SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
   HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
-  HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP,
+  HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED,
 } from '../data/feel.js';
 
 const TERRAIN_AVOID = {
@@ -303,6 +303,7 @@ export class Enemy extends Entity {
     if (this.stun > 0) { this.stun--; return; }
 
     if (this.spec.ai) this.spec.ai(this, game);
+    if (this.updateBelt(game)) return;
 
     // Aquatic enemies that end up on dry land after the tide drops flop and die.
     if (this.terrain === 'water' && !this.terrainOk(game, this.x, this.y)) {
@@ -326,6 +327,28 @@ export class Enemy extends Entity {
     const hit = moveEntity(game, this, this.knockX, this.knockY);
     this.avoidFlags = avoid;
     return hit;
+  }
+
+  /**
+   * ON A BELT (S186): an ordinary enemy on the ground is carried at
+   * BELT_SPEED, as Seasons' ecom_updateMovingPlatform carries one standing
+   * on a conveyor (enemyConveyorTilesTable) — with normal collisions, so a
+   * wall stops it, and a hole at the end of the belt takes it (S185's fall).
+   * A step under way rides with it: its origin moves by what the belt moved,
+   * so the step finishes where it was going relative to the floor it is on.
+   * Returns true when the belt has put it over a hole.
+   */
+  updateBelt(game) {
+    if (!this.canFallInHole() || this.dead) return false;
+    const v = beltUnder(game, this);
+    if (!v) return false;
+    const x0 = this.fx, y0 = this.fy, avoid = this.avoidFlags;
+    this.avoidFlags = avoid & ~F.PIT;
+    moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED);
+    this.avoidFlags = avoid;
+    if (this.step) { this.step.fx0 += this.fx - x0; this.step.fy0 += this.fy - y0; }
+    if (this.overHole(game)) { this.beginHoleFall(game); return true; }
+    return false;
   }
 
   /** Whether a hole can take it: an ordinary enemy on the ground. Bosses,

@@ -271,6 +271,15 @@ export class Room {
     this.invalidate();
   }
 
+  /** Take away every coral pillar grown in this room (Game.setRoom). */
+  clearGrown() {
+    let any = false;
+    for (let i = 0; i < this.override.length; i++) {
+      if (this.override[i] === 'coralPillar') { this.override[i] = null; any = true; }
+    }
+    if (any) this.invalidate();
+  }
+
   clearTile(tx, ty) {
     if (!this.inBounds(tx, ty)) return;
     this.override[ty * this.tw + tx] = null;

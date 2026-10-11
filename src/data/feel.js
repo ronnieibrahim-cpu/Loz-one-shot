@@ -1824,6 +1824,28 @@ export const FLOAT_SPEED = 128;
  *  w1Link.yh + 5, w1Link.xh against the platform's collision box. */
 export const FLOAT_FOOT_DY = 5;
 
+// --- Belts (the Drowned Wood Shrine's Canopy, S186) -----------------------
+
+/** sp/f — how fast a belt carries Link, an enemy or a growing seed: 0.5 px/f.
+ *  derived from the cartridge: specialObjects/commonCode.s @tileType_conveyor
+ *  moves Link at SPEED_80 ($80 subpixels a frame) in the belt's direction on
+ *  top of his own walking (not while riding something), and enemies/
+ *  commonCode.s ecom_updateMovingPlatform the same, from
+ *  enemyConveyorTilesTable. */
+export const BELT_SPEED = 128;
+
+/** f — how long a belt holds each of its four steps. derived: oracles-disasm
+ *  data/seasons/animationData.s, the Ancient Ruins' conveyor animation
+ *  (tileset $3c, metatiles $54-$57), `.db $0f` a step. */
+export const BELT_ANIM_RATE = 15;
+
+/** px — how far below a body's centre the point a belt must be under it is.
+ *  derived from the cartridge: ecom_updateMovingPlatform asks
+ *  objectGetRelativeTile with b = $05, the tile 5 px below the enemy's
+ *  centre (the float's FLOAT_FOOT_DY and the hole's HOLE_FOOT_DY are the
+ *  same five). */
+export const BELT_FOOT_DY = 5;
+
 // --- Reefseed --------------------------------------------------------------
 
 /** f — how long a thrown Reefseed takes to become a coral pillar. guessed;

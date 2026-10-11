@@ -11,6 +11,7 @@
 //     anim: ['water0','water1','water2','water1'], animRate: 10,
 //     over: true,                          // draw above entities (treetops, arches)
 //     push: [dx, dy],                      // water current, pixels/frame
+//     belt: [dx, dy],                      // a conveyor's direction (BELT_SPEED)
 //     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
 //     openTo: 'rockFloorDk',               //   carries this flag (see below)
 //     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
@@ -198,6 +199,11 @@ export function registerTiles(defs) {
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
       push: def.push || null,
+      // A BELT (S186, the Drowned Wood Shrine's Canopy): [dx, dy], a unit
+      // direction, Seasons' conveyor; the speed is BELT_SPEED (feel.js). Unlike `push`, which is a current in deep water,
+      // a belt carries what stands on it (Player.updateBelt, Enemy, a growing
+      // Reefseed) and never what swims or flies.
+      belt: def.belt || null,
       ledge: def.ledge || null,
       // THE CRACKED FLOOR (S181): the tile it gives way into, after Link has
       // stood on it CRACK_BREAK_FRAMES (Player.updateCrack, Game.breakCrack).
@@ -294,7 +300,7 @@ export function blockRef(tileName) {
 
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
-  anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
+  anim: null, animRate: 10, over: false, push: null, belt: null, ledge: null, depth: 0,
 };
 
 const warned = new Set();

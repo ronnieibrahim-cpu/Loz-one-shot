@@ -13,7 +13,7 @@
 
 import {
   Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags,
-  overHole, dropIntoHole,
+  overHole, dropIntoHole, beltUnder,
 } from './entity.js';
 import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
@@ -27,7 +27,7 @@ import {
   THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN,
   LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, DROP_IN_MAX_HEIGHT,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
-  REEFSEED_SHUDDER_EVERY,
+  REEFSEED_SHUDDER_EVERY, BELT_SPEED,
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE,
   DREDGE_FLOP_FRAMES,
   ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES,
@@ -810,6 +810,15 @@ export class Reefseed extends Entity {
       this.plant(game);
       return;
     }
+    // A BUD ON A BELT RIDES IT WHILE IT GROWS (S186, the Drowned Wood
+    // Shrine's Canopy), at the belt's own speed: the two seconds that are the
+    // item's whole design become a distance. A wall or a standing pillar
+    // stops it as it stops a thrown seed; a knot-hole at the end takes it.
+    const v = beltUnder(game, this);
+    if (v) {
+      moveEntity(game, this, v[0] * BELT_SPEED, v[1] * BELT_SPEED, { jumping: true, swim: true });
+      if (this.intoHole(game)) return;
+    }
     this.grow++;
     if (this.grow % REEFSEED_SHUDDER_EVERY === 0) {
       game.spawnEffect('sparkle', this.x, this.y - 4, { life: 12, pal: 'coral' });
@@ -822,6 +831,7 @@ export class Reefseed extends Entity {
     this.planted = true;
     this.fz = 0; this.vz = 0; this.vx = 0; this.vy = 0;
     const { tx, ty } = this.tile();
+    if (this.intoHole(game)) return;
     if (!Reefseed.canPlant(game, tx, ty)) {
       this.remove = true;
       game.audio.sfx('deny');
@@ -849,7 +859,7 @@ export class Reefseed extends Entity {
     // buried in it. A player sealed inside terrain by their own item is the
     // one outcome this must never produce.
     for (const e of game.entities) {
-      if (e.remove || e.isEffect) continue;
+      if (e.remove || e.isEffect || e.stake) continue;
       if (Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) game.shoveOffTile(e);
     }
     const p = game.player;
@@ -858,6 +868,24 @@ export class Reefseed extends Entity {
 
   tile() {
     return { tx: Math.floor(this.cx / TILE), ty: Math.floor(this.cy / TILE) };
+  }
+
+  /**
+   * OVER A HOLE, A SEED GOES DOWN IT (S186). Seasons' ball (S185's fall) —
+   * and over a KNOT-HOLE, a drop hole with a room beneath it, it comes down
+   * in that room and takes root on the cell directly under the hole, where
+   * no hand below could have put it (`Game.plantFromAbove`), for good.
+   * Returns true when the seed is gone.
+   */
+  intoHole(game) {
+    const room = game.room;
+    const { tx, ty } = this.tile();
+    if (!room || !room.inBounds(tx, ty)) return false;
+    const f = room.flagsAt(tx, ty, game.tide);
+    if (!(f & F.PIT)) return false;
+    dropIntoHole(game, this);
+    if (f & F.DROP) game.plantFromAbove(tx, ty);
+    return true;
   }
 
   /** A tile a pillar may be grown on without ruining the room. */

@@ -1,7 +1,11 @@
-# D5 — the Drowned Wood Shrine, grown to two floors (S185 design; NOT BUILT)
+# D5 — the Drowned Wood Shrine, grown to two floors (S185 design; S186 first half BUILT)
 
-**Status (S185): designed and mocked, shown to the human, waiting on their
-answers to the open questions at the end.** Written against
+**Status (S186): the human answered yes to all five questions (below). The
+first half is built: belts, knot-holes, stakes from above, K1-K3, with
+check-belts.mjs and check-canopy.mjs; picture in `d5-built/s186-canopy.png`.
+Two changes to the mock, both asked and approved in S186: K2 and K3 (see
+"As built" at the end). K4, K5, the Boss Key's move and the guide are the
+second session's.** Written against
 docs/briefs/DUNGEON-DESIGN-LANGUAGE.md; read that first.
 
 Pictures, all in `d5-mock/`:
@@ -207,3 +211,35 @@ Every key from a puzzle; every key door a loop or a shortcut home.
 4. **No cracked floors here** (D3 has them). Agreed?
 5. **Two building sessions**: first the belts and 1F's reworks with K1-K3
    and their checkers; then K4, K5, the robot and the guide.
+
+## The human's answers (S186)
+
+1. The machine: yes. 2. Belts as described: yes. 3. Only stakes from above
+stay: yes. 4. No cracked floors: yes. 5. Two sessions: yes.
+
+## As built (S186) — and the two things the mock got wrong
+
+- **K2 as mocked was skippable.** Link walks against a belt (1 px/f against
+  0.5), so he could stand under the snarl and cut it with no seed at all. A
+  belt never gates LINK, only what cannot walk. Built instead (approved): the
+  belt runs east in a channel sealed by walls and holes (2F 3,3 rows 2-5); a
+  seed thrown from the bank's east tile (6,4) facing up lands on the belt,
+  rides it while it grows and comes up on a stake plate against the channel's
+  end wall (10,2); from (5,4) it comes up a tile short. The plate raises a
+  chest (Small Key). "The stake as a buffer at MID" moves to K5 as planned.
+- **K3's ring of sump was crossed by SWIMMING** (the Cleats are D3's), and
+  then, once made holes, a ring two wide was crossed by a THROW from the lip:
+  a seed flies 2-3 tiles depending on where in his tile Link stands
+  (REEFSEED_THROW_SPEED x the arc's 14 frames, plus the 6 px it leaves the
+  hand). Built: a ring of holes THREE wide (1F 3,5), the four boles moved to
+  the corners. The Grove Crown's knot-hole (2F 3,5, 7,5) is itself ringed by
+  holes, so Link cannot drop onto the plate himself.
+- Stake plates (`['switch', x, y, { stake: true }]`) are held by a pillar on
+  them and ignore enemies. Ordinary stakes now really do go when Link leaves
+  the room (`Game.setRoom` -> `Room.clearGrown`); before S186 they stood
+  until the next load, which the brief's question 3 had taken for granted.
+- Keys: Belt Bough chest (SK5) opens the Hollow Crown's south key door to the
+  Grove Crown; the Standing Grove's chest (SK6) opens the Grove Crossing's
+  east key door (new) into the Long Ford. 38 rooms, 43 screens, 2 floors.
+- The stair: Rootbound Hall (12,9) up to the Hollow Crown (12,9); the Crown's
+  four knot-holes (12-13, 3-4) drop into the Hall's north-east corner.

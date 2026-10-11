@@ -1228,7 +1228,12 @@ export class FloorSwitch extends Entity {
     // landed on a switch, the pillar came up, and `bloom` SHOVED THE PLATE OFF
     // ITS OWN TILE on the way. It came back on the next room entry, which is
     // the only reason this was a nuisance rather than a dead save.
-    this.noPlant = true;
+    this.noPlant = !o.stake;
+    // A PLATE THAT TAKES A STAKE (S186, the Drowned Wood Shrine): a coral
+    // pillar grown on it holds it down for as long as the pillar stands —
+    // which, for a stake dropped from the Canopy, is for good. Only such a
+    // plate lets a seed grow on it; every other plate keeps `noPlant`.
+    this.stake = !!o.stake;
   }
 
   /**
@@ -1252,9 +1257,12 @@ export class FloorSwitch extends Entity {
     for (const e of game.entities) {
       if (e === this || e.isEffect || e.isDrop) continue;
       if (sunk && e.isEnemy) continue;
+      // A stake plate is the Canopy's: nothing that wanders onto it counts.
+      if (this.stake && e.isEnemy) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }
     }
     if (!this.hold && this.pressed) on = true;
+    if (this.stake && game.room && game.room.baseName(Math.floor(this.cx / TILE), Math.floor(this.cy / TILE)) === 'coralPillar') on = true;
     if (on !== this.pressed) {
       this.pressed = on;
       game.audio.sfx(on ? 'switchOn' : 'switchOff');
