@@ -1,3 +1,72 @@
+## S184 — the Cliffside Cistern's upper floors built (N4-N9): 44 screens on 3 floors
+
+Branch claude/s184-cistern-second-half-bjqsdv, off main at e6159ed (main
+already had S183). NOT merged to main: ask the human.
+
+### What was built
+- ENGINE: `Tide.resolve` takes a DRAINED TANK into account: a room declaring
+  `tank: { flag, rect }` (or a list) reads one level under the BASE inside
+  `rect` once `progress.flags[flag]` is set (`drainedBase`, exported from
+  src/game/tide.js, pure, shared with the tools). Under the base, so an Anchor
+  over it still holds and a Bellows cone adds one more. A wheel (TideValve)
+  takes `sets: flag` (sets a dungeon flag of ours on opening; `saveKey` is
+  assigned by the room and cannot carry a name) and `say:` (its opening line).
+- TILES: `dGateCistern{W,F,E}` (legend `H J Q` in dungeonCistern) — story
+  gates (`openFlag` d4Gate*, `openTo` dGateCisternOpen): the Dragon's shutter
+  in the north ring, `ringWall` so no jambs, then the Dragon's black hole
+  with jambs. validate.mjs now counts `openTo` as reachable.
+- ROOMS (src/data/dungeons-a.js, d4 `floors: 3`): 1,6,3 the Intake (stair
+  down at 9,8; a spike pool the room's width, swum at HIGH; `spikeRoom`),
+  1,5,3 the Spike Gallery (two stalfos; fight shutter north), 1,5,2 the Float
+  Tank (float N-S at x 7-8 waiting at both banks; race pool 4..5,4..6 is the
+  tank; ledge 9,5; drown gap 10,5; alcove; LOCK east into the East Tank),
+  1,4,2 the West Tank (landing strip x 11-13 with the stair up at 12,1; basin
+  of `1` 1..9,1..9 behind drown-wall 10,3; blocks 2,2 (down) and 8,7 (right),
+  plates 2,3 and 9,7, `puzzle.blocks` too so the player cannot be the second
+  plate; key chest rises at 13,3), 1,6,2 the East Tank (wheel 7,4 in `3` over
+  a row of pits, stand 7,7 ringed by drown-wall, `bellowsRoom ... gate:`;
+  Boss Key chest at 7,2 with needFlag d4EastWheel; a latch plate 5,9 opens
+  the south shutter into the Intake), 2,4,2 the Wind Loft (3x1; stair down
+  at 12,2; wheels 1,1 sump shelf MID, 20,1 behind a pit shaft over spike
+  pool HIGH, 43,1 off a float MID; each `drains:` its tank). The Ironknight
+  Gallery lays a stair up at 24,8 when it falls (`reward.tiles`, warp
+  `needFlag`). The Crossed Sluices lost both wheels and the Boss Key script.
+  Keys 6, locks 6.
+- TOOLS: tools/lib/dungeon-flood.mjs floods a SEALED floor (`noTide` rooms)
+  per sea — queue states carry t, `seenSea` returned — and opens a gate once
+  the room whose sill `drains` it is stood in, re-walking every sealed state
+  under the new water (`opts.gates: false` floods without them); a float on a
+  sealed floor joins only its waits unless the cone on its race brakes it
+  (`floatStations` in src/game/float-path.js). check-sluices.mjs (39, new, in
+  CLAUDE.md's table). check-bellows: a sill's `gate:` (claims with the gate
+  open), stairs inside a room as ways in, floats as traversal. check-floats:
+  no conch claim on a sealed floor; a 96-frame leg is long enough to test
+  the conch freeze on. walk-dungeons: `sealed` rooms skip the all-three-seas
+  claim. check-ground: a flag-laid stair's warp is not an overhang target.
+  check-side: the whole Cistern door to Essence (tools/playthroughs/d4-run.mjs,
+  CUT FROM the robot's own ROUTE, so it cannot drift). dungeon-strands baseline
+  re-recorded (the tanks' wells and race pools are deliberate pockets).
+- ROBOT: tools/playthrough-route.mjs climbs at HIGH after the Ironknight,
+  does the Loft (middle at HIGH, off the pool BEFORE the conch, east and
+  west at MID), back down at HIGH, West Tank, Float Tank (rides south, brakes
+  NORTHBOUND at the ledge), East Tank, home by the Intake. actor-runtime's
+  path planner walks round F.HAZARD like a pit (falls back across it only if
+  nothing else gets there) — the whole run still finishes.
+- GUIDE: tools/oneshot/remap-guide.mjs <rev> moves shots/figures numbers by
+  LCS (from e6159ed this time); chapter 9 rewritten (stops 12-27, maps of
+  2F and 3F, eleven new pictures); all re-captured.
+- PICTURE for the human: docs/briefs/d4-mock/s184-built-beside.png.
+
+### Verified
+Whole table green (51 tools); check-sluices 39/39; check-side's Cistern run;
+check-playthrough 47/47, THE END, never died (low-water mark 3).
+
+### NEXT
+- Leftover not done: the original's falling-into-a-hole animation for
+  objects (Seasons' INTERAC_FALLDOWNHOLE: a pot, block or enemy over a hole
+  shrinks into it). Read the interaction's code in oracles-disasm first.
+- Then: D5 per docs/DUNGEON-STATUS.md (the next dungeon to grow).
+
 ## S183 — the Cliffside Cistern designed to three floors; first half built (spikes, floats, N1-N3)
 
 Branch claude/s183-cistern-design-o7q0r3, off main at aae0372 (main already

@@ -447,6 +447,26 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Making a ledge easier for the robot can make it free for the player
+  (S184).** The robot fell off the Float Tank's one-tile ledge (a braked
+  rider is set down a few pixels past level, over the hole), so the ledge was
+  made two tiles tall — and the second tile sat beside the float's own wait
+  at the south bank, so the float set you down on it with no braking at all,
+  and the drained-tank puzzle was skippable. check-sluices caught it on the
+  next table run. Fix the route (brake on the leg where "short" is over the
+  ledge), not the room; and re-run the "cannot be skipped" checker after any
+  edit made for the robot's sake.
+- **A sealed floor needs the flood to remember the sea (S184).** A cell-is-
+  passable-at-any-sea flood says every room upstairs is reachable at every
+  sea, which is exactly the claim the Sealed Cistern exists to deny. The
+  dungeon flood now carries the sea through `noTide` rooms, and a gate that
+  opens re-walks every sealed state under the new water: a monotone flood
+  that only expands NEW cells never looks at an old one again.
+- **An entity's `saveKey` is the room's, not yours (S184).** `spawnSpec`
+  overwrites it with map:room:index, so a wheel told `saveKey: 'd4GateW'`
+  set `d4:2,4,2:0` and nothing downstairs ever drained. A flag of the
+  dungeon's own goes on its own option (`sets:`).
+
 - **Two relative tide overrides used to ignore each other (S183).** The field
   returned the newest override and stopped, so the Bellows' cone over an
   anchored patch read one level under the OPEN SEA, not under the patch, and

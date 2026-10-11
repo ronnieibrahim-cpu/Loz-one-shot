@@ -1,4 +1,22 @@
-# D4 — the Cliffside Cistern, grown to three floors (S183 design; FIRST HALF BUILT)
+# D4 — the Cliffside Cistern, grown to three floors (S183 design; BUILT S183-S184)
+
+**Status (S184): BUILT, ALL OF IT.** 2F the Sealed Cistern (1,6,3 the
+Intake, 1,5,3 the Spike Gallery, 1,5,2 the Float Tank, 1,4,2 the West Tank,
+1,6,2 the East Tank — `noTide` and `sealed` on every one) and 3F the Wind
+Loft (2,4,2, 3x1). The sluice gates are `tank: { flag, rect }` on a room,
+read by `Tide.resolve` (`drainedBase`: one under the BASE, so the Anchor
+still holds and the cone adds) and drawn by `dGateCistern{W,F,E}` (`H J Q`,
+story gates: the Dragon's shutter, then its black hole); the Loft's wheels
+set `d4GateW/F/E` (`sets:` on a wheel — `saveKey` is the room's, not ours).
+As built, differing from the text below: the Boss Key's lock is unchanged,
+Small Key 6 (West Tank) opens the Float Tank's east door into the East Tank
+(so N7 is required), the Spike Gallery's north door is a fight shutter, the
+Ironknight's stair comes out of the gallery floor at 24,8 when it falls
+(`reward.tiles` + a warp with `needFlag`), the East Tank's well is one row
+of `3` over a row of pits (so no hand reaches the wheel), the Wind Loft's
+east wheel stands in `3` (worked at MID off its float) and its middle wheel
+in `1` behind a pit shaft, swum to over spike pool at HIGH. The Crossed
+Sluices keep only their plate. Pictures as built: `s184-built-beside.png`.
 
 **Status (S183, later): the human said yes to all five open questions — the
 Sealed Cistern, floats driven by their race, the four wheels going and the
