@@ -1942,18 +1942,26 @@ export function installDungeonsB() {
         // the ring. Drag the line over it on the dry crust and the weight comes
         // home with nothing. Sound the conch one step and drag the same line
         // over the same tile and a Piece of Heart comes up out of it.
-        // `teaches: true`: nothing here is needed and nothing can be lost.
+        //
+        // K1, THE FIRST SOUNDING (S189): no longer a dead end. Its east door
+        // into the Draw is a shutter, and south of the pan two of the Keep's
+        // shafts go down into the Hold's Sounding Floor. At MID they are
+        // flooded wells: cast across the west one (3,8) and the line comes
+        // back with the ice chunk lying on the floor beneath. The plate (13,8)
+        // stands in a nook past a pit no foot crosses: throw the chunk onto it
+        // and the shutter opens. K3 takes it back off with the line and, at
+        // LOW, throws it down the east well (9,8) onto the islet below.
         map: [
           '###############',
           '###############',
           '####........###',
           '####.111111.###',
           '####.111111.###',
-          '.....116111....',
+          '.....116111...D',
           '####.111111.###',
-          '####........###',
-          '###############',
-          '###############',
+          '#...........###',
+          '#..5.....5..O.#',
+          '#...........###',
           '###############',
         ],
         buried: [[7, 5, 'heartPiece']],
@@ -1965,11 +1973,18 @@ export function installDungeonsB() {
           ],
         },
         entities: [
-          ['bell', 11, 7, { points: [7, 5], say: 'The bell hums flat at the middle of the pan.' }],
+          ['bell', 2, 7, { points: [7, 5], say: 'The bell hums flat at the middle of the pan.' }],
           ['anglerfry', 10, 3],
+          ['switch', 13, 8, { hold: true }],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_slack',
+          reward: { openDoors: [[14, 5]], say: 'The east shutter grinds open.' },
+        },
         readable: [
           [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
+          [11, 9, 'Cut in the well\'s rim: "The Hold keeps what\nthe Keep lets fall. Sound it with the water in."'],
         ],
       },
 
@@ -1990,16 +2005,20 @@ export function installDungeonsB() {
         // post at 7,8 is the way home and stops a longer line from the bank.
         map: [
           '#######D#######',
-          '#.......#OO.6.#',
+          '#./.....#OO.6.#',
           '#.......#OO.1.#',
           '#.p.....#OO...#',
           '#.......#OO...#',
-          '........#OO....',
+          'D.......#OO....',
           '#.......#OO...#',
           '#.......#OO...#',
           '#......q3OO.q.#',
           '#........OO...#',
           '#######.#######',
+        ],
+        // The stair down into the Hold (S189), in the west half.
+        warps: [
+          { x: 2, y: 1, to: { map: 'd6', floor: 0, rx: 6, ry: 3, px: 32, py: 144, dir: 'down' } },
         ],
         buried: [[12, 1, 'rupee20']],
         dredgeRoom: {
@@ -2038,7 +2057,7 @@ export function installDungeonsB() {
           '#..........1..#',
           '#.............#',
           '..............#',
-          '#.............#',
+          '#..........5..#',
           '#.............#',
           '#........q....#',
           '#.............#',
@@ -2050,11 +2069,14 @@ export function installDungeonsB() {
           '#OOOOOOOOOOOOO#',
           '.......3......#',
           '#......q......#',
-          '#.............#',
+          '#..........5..#',
           '#.............#',
           '#.............#',
           '###############',
         ],
+        // K4 (S189): a shaft on each bank, one over each half of the Rime Hall
+        // beneath — the north one (11,6) over its plate, the south one
+        // (11,18) over its ring. The Hold has no way across; the Keep does.
         buried: [[11, 2, 'blank']],
         dredgeRoom: {
           entry: [0, 16],
@@ -2072,7 +2094,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['stalfos', 3, 19],
-          ['stalfos', 11, 18],
+          ['stalfos', 9, 19],
         ],
         readable: [
           [2, 18, 'A tally cut in the wall, three marks:\n"Slack for the shelf. Flood for the bar. Half\nwater for the floor."'],
@@ -2212,6 +2234,157 @@ export function installDungeonsB() {
           ['chest', 2, 19, { charm: 'pressureScar' }],
           ['stalfos', 5, 17],
           ['keese', 10, 4],
+        ],
+      },
+
+      // ---------------------------------------------------- THE HOLD (S189)
+      //
+      // B1, under the Keep's east wing: the Sword & Shield Maze's ICE half,
+      // Seasons' own other half of the dungeon the Keep is built in. "What
+      // the sea puts down, the line brings up": at LOW an ice chunk over a
+      // shaft upstairs falls to the same cell here; at MID the Dredge Line
+      // cast over a flooded one hauls up whatever lies on the cell beneath.
+      // To Link the shafts are pits (Seasons' rule, the human's choice): he
+      // comes down by the Draw's stair. Every cell under a shaft is marked
+      // with the darker ring (`,`), and every plate is in sight of its room.
+      // Proved by tools/check-hold.mjs.
+      '0,6,3': {
+        name: 'The Rime Landing',
+        legend: 'dungeonAbyssIce',
+        // K2: ICE, ALONE. At the foot of the Draw's stair, a band of Seasons'
+        // ice across the room to cross to anywhere, a fight on it, and three
+        // chunks on a dais the way the maze's room $84 keeps one in an alcove.
+        map: [
+          '###############',
+          '#.....=...=...#',
+          '......=...=...#',
+          '#.....==.==...#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiiii',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#.S...........#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [
+          { x: 2, y: 8, to: { map: 'd6', floor: 1, rx: 6, ry: 3, px: 32, py: 32, dir: 'down' } },
+        ],
+        entities: [
+          ['icechunk', 7, 1, { id: 'd6L1' }],
+          ['icechunk', 9, 1, { id: 'd6L2' }],
+          ['icechunk', 8, 2, { id: 'd6L3' }],
+          ['stalfos', 5, 6],
+          ['zol', 10, 5],
+          ['keese', 12, 2],
+        ],
+        readable: [
+          [12, 8, 'Scratched in the frost: "Down here the sea\nonly ever sets things down."'],
+        ],
+      },
+      '0,5,3': {
+        name: 'The Sounding Floor',
+        legend: 'dungeonAbyssIce',
+        // K3: DOWN AT LOW. A plate on an islet in a field of holes four
+        // tiles from any shore, under the Slack Water's EAST well (9,8); the
+        // ring at 3,8 under its WEST well is where K1's chunk lay. Throw the
+        // chunk down the east well at LOW and it lands on the plate.
+        map: [
+          '#######.#######',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiiii',
+          '#ii...........#',
+          '#ii..OOOOOOOOO#',
+          '#ii..OOOOOOOOO#',
+          '#ii..OOOOOOOOO#',
+          '#ii..OOOOOOOOO#',
+          '#ii,.OOOO.OOOO#',
+          '#ii..OOOOOOOOO#',
+          '###############',
+        ],
+        entities: [
+          ['icechunk', 3, 8, { id: 'd6S1' }],
+          ['switch', 9, 8, { hold: true }],
+          ['keese', 8, 2],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_sounding',
+          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Something falls onto the ice.' },
+        },
+      },
+      '0,7,2': {
+        name: 'The Rime Hall',
+        legend: 'dungeonAbyssIce',
+        // K4: OVER, NOT ACROSS. Two screens tall under the Tally Hall: chunks
+        // on the south ice, a chasm across the middle no throw crosses, and a
+        // plate (11,6) beyond it under the Tally Hall's north well. Set a chunk
+        // on the ring (11,18) under its south well; go up; at MID haul it up
+        // the south well; carry it round the Keep to the north bank; at LOW
+        // throw it down the north well onto the plate.
+        size: [1, 2],
+        map: [
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#....p...p....#',
+          '#.............#',
+          '#.............#',
+          '#..........,..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#iiiiiiiiiiiii#',
+          'iiiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#..........,..#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['switch', 11, 6, { hold: true }],
+          ['icechunk', 3, 19, { id: 'd6R1' }],
+          ['icechunk', 4, 19, { id: 'd6R2' }],
+          ['zol', 9, 16],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_rime',
+          reward: { spawn: [['pickup', 7, 19, { kind: 'key' }]], say: 'Something falls onto the ice.' },
+        },
+      },
+      '0,5,2': {
+        name: 'The Plumb\'s Foot',
+        legend: 'dungeonAbyssIce',
+        // The foot of the Plumb (S189; its well upstairs, the Weighhouse, is
+        // the second half's): the Hold keeps its chunks here, and the ring at
+        // 7,4 marks the cell under the Weighhouse's well.
+        map: [
+          '###############',
+          '#.ppp.....ppp.#',
+          '#.............#',
+          '#..iiiiiiiii..#',
+          '#..iiii,iiii..#',
+          '#..iiiiiiiii..#',
+          '#..iiiiiiiii..#',
+          '#..=.......=..#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['icechunk', 3, 8, { id: 'd6P1' }],
+          ['icechunk', 4, 8, { id: 'd6P2' }],
+          ['icechunk', 10, 8, { id: 'd6P3' }],
+          ['icechunk', 11, 8, { id: 'd6P4' }],
+          ['gel', 7, 6],
+          ['gel', 9, 2],
         ],
       },
 

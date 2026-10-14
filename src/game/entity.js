@@ -356,7 +356,10 @@ export function canOccupy(game, e, x, y, caps, terrainOnly = false) {
   }
   if (!airborne && !terrainOnly) {
     for (const o of game.entities) {
-      if (o === e || !o.solid || o.dead) continue;
+      // A solid thing in the air — held overhead, on a line, mid-throw — is
+      // not in anyone's way (S189: an ice chunk walled Link in from his own
+      // hands).
+      if (o === e || !o.solid || o.dead || o.carried || o.attached || o.flight) continue;
       const ob = o.rect();
       if (x0 <= ob.x + ob.w - 1 && ob.x <= x1 && y0 <= ob.y + ob.h - 1 && ob.y <= y1) return false;
     }

@@ -2718,6 +2718,8 @@ export async function installRuntime() {
    *                                           the drag turns something up
    *   ['dredge', 7, 6, 'up', 'haul', 1800]    ...until the line has brought a
    *                                           drop home and it has been taken
+   *   ['dredge', 3, 7, 'down', 'chunk', 1800] ...until an ice chunk is in his
+   *                                           hands (S189)
    *
    * WHY THE ROUTE NAMES THE TILE AND THE FACING RATHER THAN THE MOORING. The
    * room data declares both — `dredgeRoom.moorings[i].from` and `.face` — but
@@ -2767,7 +2769,10 @@ export async function installRuntime() {
     const land = Array.isArray(until) ? until[0] + ',' + until[1] : null;
     // `'haul'` is the Hauling Pit's: the thing was on the floor all along, so
     // the count goes DOWN when the line brings it home and it is picked up.
+    // `'chunk'` (S189) is the Abyssal Keep's: an ice chunk, hauled up a
+    // flooded shaft or caught on the line, has come home into his hands.
     const done = () => (land ? here() === land
+      : until === 'chunk' ? !!(g.player && g.player.carrying && g.player.carrying.chunkId)
       : until === 'haul' ? drops() < startDrops : drops() > startDrops);
     let f = 0;
     for (let cast = 0; cast < 12 && f < budget; cast++) {
@@ -3465,6 +3470,8 @@ export async function installRuntime() {
     if (setup.flags) for (const k of setup.flags) g.progress.flags[k] = true;
     // Doors already opened, as the save names them ('map:room:x,y' -> tile).
     if (setup.doors) Object.assign(g.progress.doors, setup.doors);
+    // Ice chunks already moved (S189), as the save names them (id -> place).
+    if (setup.chunks) Object.assign(g.progress.chunks, setup.chunks);
     if (setup.tide != null) g.tide.setLevel(setup.tide, { instant: true });
     window.__rp.probes = setup.probes || [];
     window.__rp._god = !!setup.godMode;

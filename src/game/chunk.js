@@ -51,6 +51,8 @@ export class IceChunk extends Entity {
     this.depth = -1;
     this.shadow = false;
     this.power = 3;
+    // Down a Keep shaft to the floor beneath (Game.dropObjectThrough, `downTo`).
+    this.fallsThrough = true;
   }
 
   // ---------------------------------------------------------------- where
