@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Seasons' D8 machine reads the room ABOVE (S188).** The freezing lava
+  in the fire half checks the flag of the ice room over it (a table of four
+  room ids in swordShieldMazeFreezingLavaEvent.s); nothing in the lava room
+  itself says what freezes it. When studying a cross-floor piece, grep for
+  the OTHER room's id, not just the object's own code. And the study's
+  render.py puts Seasons' dungeons 7-8 in layout group 5: room_img(4, r)
+  draws the wrong rooms without complaint.
+
 - **A sweep that stands Link on every cell stands him on the stair (S187).**
   check-canopy's new sweep put a frozen Link on the Ford Crown's stair; he
   took it, and every throw after that was made in the room below and "never

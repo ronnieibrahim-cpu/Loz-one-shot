@@ -1,33 +1,34 @@
-# Next session (S188) — design D6's growth (the Abyssal Keep)
+# Next session (S189) — build D6's first half (the Hold)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S187 and S185 (how D5 was designed); docs/HANDOFF.md
-  lessons (top five).
-- docs/briefs/DUNGEON-DESIGN-LANGUAGE.md, then docs/briefs/D5-DROWNED-WOOD-
-  SHRINE.md and D4-CLIFFSIDE-CISTERN.md as the shape a brief takes.
-- docs/DUNGEON-STATUS.md (D6's row: ~52 screens on 3 floors; the S179 board).
+- docs/briefs/D6-ABYSSAL-KEEP.md (S188's design, and the human's answers
+  to its six questions — written at its end once given); its pictures in
+  docs/briefs/d6-mock/.
+- docs/NEXT-SESSION.md S188, S181 (D3's floor move under the Bog), S185
+  (falling into a hole); docs/HANDOFF.md lessons (top five).
+- docs/DUNGEON-STATUS.md (D6's row).
 
 ## State
-- S187 is on claude/drowned-wood-canopy-s187-v4hlw8 and merged to main: D5
-  finished to its brief (K4 the Ford Crown, K5 the High Bough, the Boss Key
-  held from above, crossings, check-canopy's follow-the-seed sweep, the guide).
-  Whole table green; check-playthrough 47/47, THE END, never died.
+- S188 is on claude/d6-abyssal-keep-design-l2n7mz: the brief and mock only,
+  nothing in src/ changed. Whole table green; check-playthrough 47/47.
 
 ## The task
-1. Study the Keep against Seasons' D8 / Ages' late dungeons
-   (tools/oneshot/oracle-study/run.sh) and write
-   docs/briefs/D6-ABYSSAL-KEEP.md: one machine, one new piece of terrain
-   from the cartridges, each puzzle stated with its "aha", key economy,
-   checkers. It must not restate any earlier dungeon's tide theme.
-2. Mock the new rooms in the real engine beside the cartridge
-   (tools/shoot-mock.mjs or tools/oneshot/mock-render.mjs) and show the
-   human. Ask before building; build only what is approved.
+(First building session, if the human said yes.)
+1. Rip Seasons' ice half (tileset $41) and the grabbable ice chunk; ice
+   underfoot (link.s slippery movement, feel.js derived).
+2. The chunk entity; the Keep's shaft tile (1F [hole, water, water], 2F
+   [hole, hole, water]); DredgeLine.dragBack hauling up through a flooded
+   shaft; set down at a stair (read the cartridge first).
+3. The floor move (d6Floors migration, test.mjs proves an old save moves).
+4. The Hold (B1 5,2 5,3 6,3 7,2-3) and K1-K4 with check-hold.mjs; the robot
+   re-routed through them.
+Ask before anything the brief does not say.
 
 ## Done means
-- Brief + mock pictures committed; whole table green; check-playthrough
-  47/47 or more, THE END, never died; npm run build, dist/ committed;
-  NEXT-SESSION.md and this file updated; pushed; ask before moving main.
+- Whole table green; check-playthrough 47/47 or more, THE END, never died;
+  npm run build, dist/ committed; NEXT-SESSION.md and this file updated;
+  pushed; merged to main when done.
 
 ## Out of scope
 - Enemy damage and health (S150). A camera that frames bosses (S153).

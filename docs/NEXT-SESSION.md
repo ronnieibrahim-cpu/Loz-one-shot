@@ -1,3 +1,48 @@
+## S188 — the Abyssal Keep designed to three floors: the Hold (NOT built)
+
+Branch claude/d6-abyssal-keep-design-l2n7mz, off main at f91ae32 (S187).
+Design only; nothing in src/ changed.
+
+### Studied
+- tools/oneshot/oracle-study/run.sh (Seasons D8 = the Sword & Shield Maze,
+  our Keep's own kit; Ages D8). Seasons D8 is a fire half over an ice half;
+  its machine is INTERAC_D8_GRABBABLE_ICE (swordShieldMazeGrabbableIce.s: a
+  liftable chunk that does not break, falls down holes, splashes in water)
+  thrown down holes on the ice floor, and INTERAC_D8_FREEZING_LAVA_EVENT in
+  the room beneath reading the room flag of the room ABOVE (rooms $7e $7f
+  $88 $89). Ice underfoot is @tileType_ice (wIsTileSlippery). Seasons'
+  dungeons 7-8 are layout group 5 in the study's render.py (room_img(5, r)).
+- Trampolines and toggle floors (the S179 board's offer) both need a jump;
+  the game has none. Side-view passages ($5c-$62) noted, not designed.
+
+### Designed (docs/briefs/D6-ABYSSAL-KEEP.md)
+- The machine: "what the sea puts down, the line brings up". A new floor
+  UNDER the Keep, B1 the Hold (Seasons' ice half, tileset $41): at LOW
+  anything over a shaft falls to the cell beneath; with the sea in a shaft
+  the Dredge Line cast across it hauls up what lies beneath. The sea rises
+  through the Keep floor by floor (1F shafts flood at MID, 2F at HIGH).
+- New piece: Seasons' ice (floor, slide, the grabbable chunk).
+- K1 the Slack Water (first haul; its shutter), K2 the Rime Landing (ice
+  alone), K3 the Sounding Floor (drop onto an islet plate), K4 the Rime
+  Hall under the Tally Hall (up, round, down), K5 the Weighhouse (NEW 1F
+  5,2; the Plumb column), K6 the Crossed Shafts' Boss Key (two chunks up two
+  floors). 53 screens on 3 floors, 7 keys. check-hold.mjs proposed.
+- Floors move up one (B1 = 0) with a `d6Floors` migration like D3's.
+
+### Pictures (docs/briefs/d6-mock/)
+- mock-hold.png, mock-sounding.png, mock-over.png, mock-plumb.png.
+  gen-spec.py -> mock-spec.json -> tools/shoot-mock.mjs (upstairs, real
+  engine); hold.py (the Hold from Seasons' own $41 metatiles and chunk;
+  needs ORACLE_STUDY); compose.py lays the sheets out.
+
+### Verified
+Whole table run (see the session's reply); check-playthrough 47/47, THE
+END, never died. No src change.
+
+### NEXT
+- The human's answers to the brief's six questions, then build the first
+  half (docs/prompts/NEXT-PROMPT.md).
+
 ## S187 — the Drowned Wood Shrine's Canopy, second half: K4, K5, the Boss Key moved
 
 Branch claude/drowned-wood-canopy-s187-v4hlw8, off main at cb5ce8f (S186).
