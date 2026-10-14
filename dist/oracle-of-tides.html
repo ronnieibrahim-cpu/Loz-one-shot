@@ -3989,6 +3989,39 @@ const GB_RENDER_SLICE_GAP_MS = 12;
  *  to think does not. The clock runs through a conch sweep and stops for a
  *  screen scroll and a text box. */
 const RACE_SHORE_FRAMES = 600;
+
+// --- Ice (the Abyssal Keep's Hold, S189) ----------------------------------
+//
+// Seasons' ice is a velocity model, not a walk: linkApplyTileTypes
+// (specialObjects/commonCode.s @tileType_ice) sets wIsTileSlippery, and Link's
+// normal state then calls updateLinkSpeed_withParam with $88 (the slippery
+// row of its @speedTable, target speed only) and linkUpdateVelocity
+// (link.s func_5933). Every ICE_STEP_FRAMES it turns his heading one step of
+// 32 toward the d-pad and adds or takes ICE_ACCEL; with nothing held, or the
+// d-pad against him, it takes it away, and at zero he stops. Lifting cancels
+// it (wLinkGrabState 1-2); holding something does not.
+
+/** frames — how often the slide's speed and heading are stepped. derived from
+ *  the cartridge: @speedTable's slippery row gives var13 = $06, and func_5933
+ *  only applies its step when var12 reaches var13. */
+const ICE_STEP_FRAMES = 6;
+
+/** sp/f — what each step adds while the d-pad is with him, and takes away
+ *  while it is not. derived from the cartridge: func_5933's c = $05 / $fb,
+ *  five units of the object speed scale (SPEED_100 = $28 = 1 px/f), so
+ *  SPEED_020: 1/8 px/f, 32 subpixels. */
+const ICE_ACCEL = 32;
+
+/** headings — how many headings the slide has in a full turn; each step swings
+ *  it one of them toward the d-pad. derived from the cartridge: Link's angle is
+ *  5 bits ($00 up, $08 right, $10 down, $18 left) and func_5933's b = $01 /
+ *  $ff turns it by one; held within one heading of it, it snaps to it. */
+const ICE_TURN_STEPS = 32;
+
+/** frames — how long a floating ice chunk holds each of its two bob heights
+ *  (1 px apart). guessed: Seasons never floats one (it splashes away); ours
+ *  floats, and bobs at the pace a buoy on the overworld sea would. */
+const CHUNK_BOB_FRAMES = 24;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4447,6 +4480,10 @@ __exports["GB_RENDER_BUDGET_MS"] = GB_RENDER_BUDGET_MS;
 __exports["GB_PRERENDER_BUDGET_MS"] = GB_PRERENDER_BUDGET_MS;
 __exports["GB_RENDER_SLICE_GAP_MS"] = GB_RENDER_SLICE_GAP_MS;
 __exports["RACE_SHORE_FRAMES"] = RACE_SHORE_FRAMES;
+__exports["ICE_STEP_FRAMES"] = ICE_STEP_FRAMES;
+__exports["ICE_ACCEL"] = ICE_ACCEL;
+__exports["ICE_TURN_STEPS"] = ICE_TURN_STEPS;
+__exports["CHUNK_BOB_FRAMES"] = CHUNK_BOB_FRAMES;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -10549,8 +10586,13 @@ function registerTiles(defs) {
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
-      // edges, where the floor's edge shows. See `Room.artAt`.
+      // edges, where the floor's edge shows. See `Room.artAt`. `one` (S189)
+      // is a hole with no hole on any side: the Sword & Shield Maze's $f3.
       lip: def.lip || null,
+      // A KEEP SHAFT (S189): a hole or a flooded well with a room under it
+      // that only an ice chunk goes down and only the Dredge Line reaches
+      // through. To Link it is the pit or the water its flags say.
+      shaft: !!def.shaft,
       depth: def.depth || 0,
       // How strong you have to be to pick this up, against LIFT_STRENGTH and
       // any item that raises it, and what it looks like once lifted.
@@ -11383,7 +11425,11 @@ class Room {
     if (d.lip) {
       const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
       const n = other(y - 1), s = other(y + 1);
-      const art = n && s ? d.lip.ns : n ? d.lip.n : s ? d.lip.s : null;
+      // A hole alone in the floor (S189): the cartridge's rimmed $f3, when
+      // the cells either side are not hole either.
+      const side = (nx) => nx >= 0 && nx < this.tw && this.tile(nx, y, tide).family !== d.family;
+      const one = d.lip.one && n && s && side(x - 1) && side(x + 1);
+      const art = one ? d.lip.one : n && s ? d.lip.ns : n ? d.lip.n : s ? d.lip.s : null;
       if (art) return art;
     }
     if (d.edgeArt || d.edgePairs) {
@@ -13172,8 +13218,15 @@ function canOccupy(game, e, x, y, caps, terrainOnly = false) {
   }
   if (!airborne && !terrainOnly) {
     for (const o of game.entities) {
-      if (o === e || !o.solid || o.dead) continue;
+      // A solid thing in the air — held overhead, on a line, mid-throw — is
+      // not in anyone's way (S189: an ice chunk walled Link in from his own
+      // hands).
+      if (o === e || !o.solid || o.dead || o.carried || o.attached || o.flight) continue;
       const ob = o.rect();
+      if (o.yieldsWhenInside) {
+        const er = { x: e.x + e.hb.x, y: e.y + e.hb.y, w: e.hb.w, h: e.hb.h };
+        if (er.x < ob.x + ob.w && ob.x < er.x + er.w && er.y < ob.y + ob.h && ob.y < er.y + er.h) continue;
+      }
       if (x0 <= ob.x + ob.w - 1 && ob.x <= x1 && y0 <= ob.y + ob.h - 1 && ob.y <= y1) return false;
     }
   }
@@ -13783,10 +13836,10 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 2, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
+      { x: 4, y: 2, to: { map: 'd6', floor: 1, rx: 3, ry: 7, px: 112, py: 144 } },
       // Both halves of the arch enter. A two-tile-wide door whose
       // right half is scenery is a door the player bumps into.
-      { x: 5, y: 2, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
+      { x: 5, y: 2, to: { map: 'd6', floor: 1, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
       ['sign', 2, 4, { text: 'THE ABYSSAL KEEP\nNereth waits below the water.' }],
@@ -17542,6 +17595,8 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // The Bogwater Sanctum's floors (S181): 2 since the Undercroft went in
     // under it. See `migrate`.
     d3Floors: 2,
+    // The Abyssal Keep's floors (S189): 3 since the Hold went in under it.
+    d6Floors: 3,
     name,
     seed: seed >>> 0,
     // health
@@ -17582,6 +17637,11 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     chests: {},              // "mapId:roomKey:index" -> true
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
+    // THE ICE CHUNKS (S189, the Abyssal Keep's Hold): chunk id -> where it
+    // rests, { map, floor, rx, ry, tx, ty }. A chunk with no entry is where its
+    // room put it; one that has been moved is wherever it was last set down,
+    // dropped or hauled, on whichever floor. See src/game/chunk.js.
+    chunks: {},
     // Killed enemies that stay dead. Keyed the same as chests/secrets
     // ("mapId:roomKey:index"). A dungeon/cave entry is `{ perm: true }` and
     // never respawns; an overworld entry is `{ until: <owVisits value> }`
@@ -17837,7 +17897,7 @@ function migrate(p) {
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'slain', 'charms', 'charmOpen',
-    'charmTold',
+    'charmTold', 'chunks',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }
@@ -17887,6 +17947,21 @@ function migrate(p) {
     }
   }
   out.d3Floors = 2;
+  // A save from before the Abyssal Keep grew its Hold (S189) names the Keep
+  // as floors 0 and 1; they are 1 and 2 now, with the Hold under them.
+  if (!p.d6Floors) {
+    const up = (o) => (o && o.map === 'd6' ? { ...o, floor: (o.floor | 0) + 1 } : o);
+    out.pos = up(out.pos); out.respawn = up(out.respawn); out.coin = up(out.coin);
+    for (const k of ['chests', 'doors', 'secrets', 'slain']) {
+      const moved = {};
+      for (const [key, v] of Object.entries(out[k])) {
+        moved[key.replace(/^(seen:)?d6:(\d+),(?=\d+,\d+(:|$))/, (m, seen, f) => `${seen || ''}d6:${+f + 1},`)] = v;
+      }
+      out[k] = moved;
+    }
+    for (const [id, c] of Object.entries(out.chunks)) out.chunks[id] = up(c);
+  }
+  out.d6Floors = 3;
   return out;
 }
 __exports["HEART_UNITS"] = HEART_UNITS;
@@ -18282,6 +18357,251 @@ __exports["spawnEffectAt"] = spawnEffectAt;
 __exports["Explosion"] = Explosion;
 });
 
+/* ===== src/game/chunk.js ===== */
+__define("game/chunk.js", function (__exports, __require) {
+// The Abyssal Keep's ice chunks (S189).
+//
+// Seasons' INTERAC_D8_GRABBABLE_ICE (object_code/seasons/interactions/
+// swordShieldMazeGrabbableIce.s): a chunk of the Sword & Shield Maze's ice that
+// Link lifts and throws like a pot and that does NOT break where it lands; over
+// a hole it goes down it (objectCheckIsOnHazard -> the INTERAC_FALLDOWNHOLE
+// ball). In Seasons that is the dungeon's machine — ice thrown down the ice
+// floor's holes freezes the lava of the fire floor beneath. Ours is the Keep's
+// own sentence, "what the sea puts down, the line brings up":
+//
+//   * over a DRY drop hole (a Keep shaft at LOW) the chunk falls to the same
+//     cell one floor down and rests there, whole — on a plate, it holds it;
+//   * the Dredge Line dragged back over a FLOODED shaft searches the cell
+//     beneath, and a chunk lying there comes up the shaft and into Link's
+//     hands (`haulFromBelow`, called from DredgeLine.dragBack);
+//   * in deep water it FLOATS where it lies (ice floats) — the cartridge
+//     splashes it away; ours keeps it, out of reach of everything but the line,
+//     and when the sea goes out from under it, it settles or goes down;
+//   * Link cannot take a stair while holding it — no warp fires while he holds
+//     anything (bank1.s checkTileWarps reads wLinkGrabState), so a chunk only
+//     ever changes floor through a shaft.
+//
+// WHERE EACH CHUNK IS lives in the save, not on the entity: `progress.chunks`,
+// id -> { map, floor, rx, ry, tx, ty }, written whenever one comes to rest. A
+// chunk with no entry is where its room put it; a chunk lost into a pit with no
+// floor beneath goes back there, as Seasons' comes back with its room.
+
+const { Entity, defineEntity, moveEntity, overHole, spawnEntity } = __require("game/entity.js");
+const { F } = __require("world/tileset.js");
+const { TILE } = __require("core/screen.js");
+const { getRoom } = __require("world/maps.js");
+const { sprites } = __require("gfx/art.js");
+const { LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, HOLE_FOOT_DY, KNOCK_THROWN, CHUNK_BOB_FRAMES } = __require("data/feel.js");
+
+class IceChunk extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    // Seasons gives it collision radius 6 (objectSetCollideRadius $06).
+    this.hb = { x: 2, y: 2, w: 12, h: 12 };
+    this.chunkId = o.id || null;
+    this.harmless = true;
+    this.liftable = true;
+    // objectPushLinkAwayOnCollision: Link cannot stand in it. Solid, as the
+    // Keep's push blocks are, so it presses a plate it rests on.
+    this.solid = true;
+    // Squared onto its cell as it lands, it can come down over the edge of
+    // whoever stands beside it: one already inside it may walk out.
+    this.yieldsWhenInside = true;
+    this.flight = null;
+    this.floating = false;
+    this.depth = -1;
+    this.shadow = false;
+    this.power = 3;
+    // Down a Keep shaft to the floor beneath (Game.dropObjectThrough, `downTo`).
+    this.fallsThrough = true;
+  }
+
+  // ---------------------------------------------------------------- where
+
+  /** The tile it rests on: Seasons reads a hazard at y + 5 (objectCheckIsOnHazard). */
+  restTile() {
+    return { tx: Math.floor(this.cx / TILE), ty: Math.floor((this.cy + HOLE_FOOT_DY) / TILE) };
+  }
+
+  /** Write where it rests into the save. */
+  record(game, floor, rx, ry, tx, ty) {
+    if (!this.chunkId || !game.progress) return;
+    game.progress.chunks[this.chunkId] = { map: game.mapId, floor, rx, ry, tx, ty };
+  }
+
+  recordHere(game) {
+    const r = game.room;
+    if (!r) return;
+    const { tx, ty } = this.restTile();
+    this.record(game, r.floor, r.rx, r.ry, tx, ty);
+  }
+
+  /** Lost for good (a pit with no floor under it): back to its room's own place. */
+  lose(game) {
+    this.remove = true;
+    if (this.chunkId && game.progress) delete game.progress.chunks[this.chunkId];
+  }
+
+  /** Called by Game.dropObjectThrough: it has gone down to `floor`, cell tx,ty. */
+  downTo(game, floor, tx, ty) {
+    const r = game.room;
+    this.record(game, floor, r.rx, r.ry, tx, ty);
+  }
+
+  // ---------------------------------------------------------------- motion
+
+  /** Thrown from Link's hands: the pot's own arc (itemBeginThrow). */
+  launch(x, y, vx, vy, z) {
+    this.x = x; this.y = y;
+    this.flight = { vx, vy };
+    this.z = z; this.vz = LIFTED_THROW_RISE;
+    this.carried = false;
+    this.remove = false;
+    this.floating = false;
+    this.shadow = true;
+  }
+
+  fly(game) {
+    this.fz += this.vz;
+    this.vz -= LIFTED_THROW_GRAVITY;
+    const r = moveEntity(game, this, this.flight.vx, this.flight.vy, { jumping: true, swim: true });
+    if (r.hitX) this.flight.vx = 0;
+    if (r.hitY) this.flight.vy = 0;
+    // It hits what it meets for the bracelet's 3, and does not break.
+    const R = LIFTED_THROW_RADIUS;
+    const a = { x: this.cx - R, y: this.cy - R, w: 2 * R, h: 2 * R };
+    for (const e of game.entities) {
+      if (!e.isEnemy || e.dead) continue;
+      const b = e.contactRect();
+      if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) {
+        e.hurt(game, this.power, null, KNOCK_THROWN, this);
+        this.flight.vx = 0; this.flight.vy = 0;
+        break;
+      }
+    }
+    if (this.fz > 0) return;
+    this.fz = 0; this.vz = 0; this.flight = null; this.shadow = false;
+    game.audio.sfx('place');
+    this.settle(game);
+  }
+
+  /**
+   * At rest (just landed, set down, or the sea has changed under it): a hole
+   * takes it down or loses it, deep water floats it, anything else holds it.
+   */
+  settle(game) {
+    if (this.remove) return;
+    const hole = overHole(game, this);
+    if (hole) {
+      // Down the middle of the hole, as the ball goes (INTERAC_FALLDOWNHOLE).
+      this.x = hole.tx * TILE; this.y = hole.ty * TILE;
+      game.spawnEffect('hole', this.x, this.y);
+      game.audio.sfx('fallInHole');
+      if (!game.dropObjectThrough(this)) this.lose(game);
+      return;
+    }
+    const { tx, ty } = this.restTile();
+    const f = game.room && game.room.inBounds(tx, ty) ? game.room.flagsAt(tx, ty, game.tide) : 0;
+    // IT SETTLES SQUARE ON ITS CELL (S189), the cell the save keeps and the
+    // cell the line searches: a chunk left half over the next tile walled a
+    // brace stand, and came back on the grid after a load anyway.
+    this.x = tx * TILE; this.y = ty * TILE;
+    const wasFloating = this.floating;
+    this.floating = !!(f & F.DEEP);
+    if (this.floating && !wasFloating) {
+      game.spawnEffect('splash', this.x, this.y);
+      game.audio.sfx('splash');
+    }
+    this.recordHere(game);
+  }
+
+  update(game) {
+    this.frame++;
+    if (this.attached) return;           // on the Dredge Line, coming home
+    if (this.carried) return;
+    if (this.flight) { this.fly(game); return; }
+    // The sea moves under a resting chunk: check every frame, as Seasons'
+    // @state1 calls objectCheckIsOnHazard every frame.
+    const { tx, ty } = this.restTile();
+    const f = game.room && game.room.inBounds(tx, ty) ? game.room.flagsAt(tx, ty, game.tide) : 0;
+    if ((f & F.PIT) || !!(f & F.DEEP) !== this.floating) this.settle(game);
+  }
+
+  spriteName() { return 'o_icechunk0'; }
+
+  draw(ctx, game, ox, oy) {
+    // The ripped frame is 32x32 with the object's position at its middle.
+    const bob = this.floating && Math.floor(this.frame / CHUNK_BOB_FRAMES) % 2 ? 1 : 0;
+    sprites.draw(ctx, 'o_icechunk0', ox + this.x - 8, oy + this.y - 8 - this.z + bob);
+  }
+}
+defineEntity('icechunk', (x, y, o) => new IceChunk(x, y, o));
+
+/**
+ * The room's chunks, as the save has them: called by Game.spawnRoomEntities.
+ * A chunk the room places itself is skipped there if the save has moved it;
+ * every chunk the save says is in THIS room is spawned here — unless it is the
+ * one in Link's hands, which came in with him.
+ */
+function spawnRecordedChunks(game) {
+  const room = game.room;
+  if (!room || !game.progress) return;
+  const held = game.player && game.player.carrying;
+  for (const [id, c] of Object.entries(game.progress.chunks || {})) {
+    if (c.map !== game.mapId || c.floor !== room.floor || c.rx !== room.rx || c.ry !== room.ry) continue;
+    if (held && held.chunkId === id) continue;
+    const e = spawnEntity(game, 'icechunk', c.tx, c.ty, { id });
+    if (e) e.settle(game);
+  }
+}
+
+/** Is chunk `id` placed by its room (true) or moved by the save (false)? */
+function chunkAtHome(game, id) {
+  return !(game.progress && game.progress.chunks && game.progress.chunks[id]);
+}
+
+/**
+ * THE LINE BRINGS IT UP (S189): the Dredge Line's weight dragged back over a
+ * flooded shaft at tx,ty searches the cell directly beneath, one floor down.
+ * A chunk resting there comes up the shaft, hooked, and home to Link.
+ * Returns the chunk, or null.
+ */
+function haulFromBelow(game, line, tx, ty) {
+  const room = game.room;
+  if (!room || !game.map || !game.progress) return null;
+  const below = room.floor - 1;
+  if (below < 0 || !game.map.roomDefs[`${below},${room.rx},${room.ry}`]) return null;
+  let id = null;
+  for (const [cid, c] of Object.entries(game.progress.chunks || {})) {
+    if (c.map === game.mapId && c.floor === below && c.rx === room.rx && c.ry === room.ry
+        && c.tx === tx && c.ty === ty) { id = cid; break; }
+  }
+  // A chunk still where the room below placed it.
+  if (!id) {
+    const def = game.map.roomDefs[`${below},${room.rx},${room.ry}`];
+    for (const e of def.entities || []) {
+      if (e[0] !== 'icechunk' || e[1] !== tx || e[2] !== ty) continue;
+      const cid = e[3] && e[3].id;
+      if (cid && chunkAtHome(game, cid)) { id = cid; break; }
+    }
+  }
+  if (!id) return null;
+  const r = getRoom(game.mapId, below, room.rx, room.ry);
+  if (!r) return null;
+  const chunk = spawnEntity(game, 'icechunk', tx, ty, { id });
+  if (!chunk) return null;
+  // On the line it is nowhere until it is set down; the save keeps it here,
+  // at the shaft, so a save mid-haul finds it at the top of the shaft.
+  chunk.record(game, room.floor, room.rx, room.ry, tx, ty);
+  return chunk;
+}
+__exports["IceChunk"] = IceChunk;
+__exports["spawnRecordedChunks"] = spawnRecordedChunks;
+__exports["chunkAtHome"] = chunkAtHome;
+__exports["haulFromBelow"] = haulFromBelow;
+});
+
 /* ===== src/game/items.js ===== */
 __define("game/items.js", function (__exports, __require) {
 // Items: the registry of everything Link can own, plus the entities they spawn.
@@ -18307,6 +18627,7 @@ const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, BOMB_BOUNCE_STEP, PICKUP_BOUNCE_MIN, LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, DROP_IN_MAX_HEIGHT, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, BELT_SPEED, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE, KILNSHELL_STRIKE_FLASH_FRAMES, POT_HAULER_FACTOR, BOMB_FUSE_FRAMES, BOMB_STILL_FRAMES, BOMB_FLASH_BEAT } = __require("data/feel.js");
 const { sprites, tiles } = __require("gfx/art.js");
+const { haulFromBelow } = __require("game/chunk.js");
 
 // --------------------------------------------------------------------------
 // Bomb
@@ -18692,6 +19013,19 @@ class DredgeLine extends Entity {
       const [tx, ty] = this.path[i];
       const f = room.flagsAt(tx, ty, game.tide);
       if (!(f & (F.WET | F.SLOW))) continue;
+      // THROUGH A FLOODED SHAFT (S189, the Abyssal Keep): the floor the line
+      // searches is the floor of the room beneath, and what lies on that cell
+      // comes up the shaft. "The floor gives up only what the sea covers."
+      if ((f & F.DEEP) && room.tile(tx, ty, game.tide).shaft) {
+        const up = haulFromBelow(game, this, tx, ty);
+        if (up) {
+          this.hooked = up; up.attached = this;
+          this.x = tx * TILE + 3; this.y = ty * TILE + 3;
+          game.audio.sfx('hookHit');
+          game.spawnEffect('splash', tx * TILE, ty * TILE);
+          found = true; break;
+        }
+      }
       if (game.applyTileAction(tx, ty, 'dredge', this.level)) { found = true; break; }
       if (game.dredgeTile(tx, ty, this)) { found = true; break; }
     }
@@ -18713,6 +19047,15 @@ class DredgeLine extends Entity {
     const h = this.hooked;
     if (!h) return;
     h.attached = null;
+    // AN ICE CHUNK COMES HOME INTO HIS HANDS (S189): hauled up a shaft or
+    // fished off the water, it is lifted as it arrives, rather than dropped
+    // on his feet where a solid thing would wall him in.
+    if (h.chunkId !== undefined && p && !p.carrying && !h.remove) {
+      p.carrying = h; h.carried = true; h.floating = false; h.flight = null;
+      p.beginLift();
+      game.audio.sfx('lift');
+      return;
+    }
     if (h.isEnemy) {
       // Landed. It flops where the line dropped it, on whatever ground that
       // is, and `findSafeTile` keeps it out of scenery.
@@ -19750,7 +20093,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED } = __require("data/feel.js");
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
 // (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
@@ -20233,8 +20576,13 @@ class Player extends Entity {
     if (i.down('up')) dy -= 1;
     if (i.down('down')) dy += 1;
 
-    // Attacking roots you in place, as in the GBC games.
-    if (this.swinging > 0) { this.animT++; return; }
+    // Attacking roots you in place, as in the GBC games — except on ice,
+    // where nothing he does with his hands stops the slide (S189): the
+    // sword holds his d-pad, so the slide runs on as if nothing were held.
+    if (this.swinging > 0) {
+      if (this.ice && this.onIce(game, groundFlags(game, this))) this.updateIce(game, 0, 0, 1);
+      this.animT++; return;
+    }
 
     // The held blade keeps him facing the way it points: Seasons disables
     // turning for the sword's whole life, hold included (commonCode.s
@@ -20250,6 +20598,7 @@ class Player extends Entity {
       }
     }
     this._lastDx = dx; this._lastDy = dy;
+    this._lastIceIn = this._iceIn; this._iceIn = !!(dx || dy);
 
     // Speeds are subpixels per frame. The terrain multipliers are
     // dimensionless, so their product has to land back on a whole subpixel
@@ -20276,6 +20625,16 @@ class Player extends Entity {
     // DIAGONAL_FACTOR in feel.js and docs/FEEL-SPEC.md). Rounded once, after
     // the terrain product, so it too lands on a whole subpixel.
     if (dx && dy) speed = Math.max(1, Math.round(speed * DIAGONAL_FACTOR));
+
+    // ICE (S189): Seasons' slide, not a walk. See `updateIce`.
+    if (this.onIce(game, f)) {
+      if (this.bellowsOpen || this.bellowsT > 0 || this.ledgeHop || (this.clungBy && (this.frame & 1))) {
+        this.animT++; return;
+      }
+      this.updateIce(game, dx, dy, mult);
+      return;
+    }
+    this.ice = null;
 
     // Pumping costs you your feet. You may still turn — aiming a sustained
     // gust you cannot re-point would be a puzzle about pre-positioning rather
@@ -20321,6 +20680,68 @@ class Player extends Entity {
       this._pushT = 0;
       if (this.inDeep) this.animT++;      // treading water keeps animating
     }
+  }
+
+  // ------------------------------------------------------------------- ice
+
+  /** Standing on ice, on his feet, and not mid-lift (S189). */
+  onIce(game, f) {
+    return !!(f & F.ICE) && this.z <= 2 && !this.inDeep && !this.inShallow && !this.jumping
+      && !(this.liftT > 0);
+  }
+
+  /**
+   * SEASONS' ICE (link.s linkUpdateVelocity -> func_5933). Link has a heading
+   * of 32 steps and a speed; every ICE_STEP_FRAMES the heading turns one step
+   * toward the d-pad (or snaps to it when within a step) and the speed gains
+   * ICE_ACCEL while the d-pad points his way, loses it while it is let go or
+   * held against him, and turns without either across his path. At zero he
+   * stops, and the next press sets the heading outright. He arrives on the ice
+   * with the speed and heading he walked onto it with.
+   */
+  updateIce(game, dx, dy, mult) {
+    const want = (dx || dy) ? (Math.round(Math.atan2(dx, -dy) / (2 * Math.PI) * ICE_TURN_STEPS) + ICE_TURN_STEPS) % ICE_TURN_STEPS : -1;
+    let top = (this.speedBoost > 0 ? BOOST_SPEED : WALK_SPEED);
+    if (mult !== 1) top = Math.max(1, Math.round(top * mult));
+    if (!this.ice) {
+      // Onto the ice from the walk: his walking speed, his walking heading.
+      const moving = want >= 0 && this._lastIceIn;
+      this.ice = { angle: moving ? want : -1, speed: moving ? Math.min(top, WALK_SPEED) : 0, t: 0 };
+    }
+    const ice = this.ice;
+    if (ice.angle < 0) {
+      if (want >= 0) ice.angle = want;
+    } else {
+      let turn = 0, gain = 0;
+      if (want < 0) gain = -ICE_ACCEL;
+      else {
+        const diff = (want - ice.angle + 4 + ICE_TURN_STEPS) % ICE_TURN_STEPS;
+        if (diff < 9) {
+          gain = ICE_ACCEL;
+          if (diff < 3) turn = -1; else if (diff >= 6) turn = 1; else ice.angle = want;
+        } else if (diff - 16 >= 0 && diff - 16 < 9) {
+          gain = -ICE_ACCEL;
+          const d = diff - 16;
+          if (d < 3) turn = 1; else if (d >= 6) turn = -1; else ice.angle = (want + 16) % ICE_TURN_STEPS;
+        } else {
+          turn = diff < 16 ? 1 : -1;
+        }
+      }
+      if (++ice.t >= ICE_STEP_FRAMES) {
+        ice.t = 0;
+        ice.angle = (ice.angle + turn + ICE_TURN_STEPS) % ICE_TURN_STEPS;
+        ice.speed = Math.min(top, ice.speed + gain);
+        if (ice.speed <= 0) { ice.speed = 0; ice.angle = -1; }
+      }
+    }
+    if (ice.angle < 0 || ice.speed <= 0) { this.pushing = false; this.againstWall = false; return; }
+    const a = ice.angle / ICE_TURN_STEPS * 2 * Math.PI;
+    const vx = Math.round(Math.sin(a) * ice.speed), vy = Math.round(-Math.cos(a) * ice.speed);
+    const res = moveEntity(game, this, vx, vy);
+    this.animT++;
+    this.pushing = (dx || dy) ? ((res.hitX && dx !== 0) || (res.hitY && dy !== 0)) : false;
+    this.againstWall = game.input.down(this.dir) && this.facingWall(game);
+    if (this.pushing) game.doorwayPull(this, dx, dy, res);
   }
 
   // ------------------------------------------------------------ one-way ledge
@@ -20891,6 +21312,13 @@ class Player extends Entity {
     this.carrying = null;
     this.liftT = 0;
     c.carried = false;
+    // An ice chunk is let go of, not lost (S189): Seasons' dropLinkHeldItem
+    // sets the held object down where he stands (substate 3).
+    if (c.settle) {
+      c.x = this.x; c.y = this.y;
+      c.settle(game);
+      return;
+    }
     c.remove = true;
     game.spawnEffect('splash', c.x, c.y);
   }
@@ -21248,7 +21676,8 @@ class Player extends Entity {
       this.carrying = null; this.liftT = 0; c.carried = false;
       const { tx, ty } = groundTile(game, this);
       c.x = tx * TILE + 8 - c.w / 2; c.y = ty * TILE + 8 - c.h / 2;
-      if (!game.dropObjectThrough(c)) { c.remove = true; game.spawnEffect('puff', c.x, c.y); }
+      if (c.settle) c.settle(game);
+      else if (!game.dropObjectThrough(c)) { c.remove = true; game.spawnEffect('puff', c.x, c.y); }
     }
     this.falling = FALL_FRAMES;
     this.fallDrop = drop;
@@ -21726,6 +22155,7 @@ const OBJECT_THEMES = {
   dungeonSalt: 'salt',
   dungeonEyrie: 'eyrie',
   dungeonPalace: 'palace',
+  dungeonAbyssIce: 'grotto',
 };
 
 const TORCH_FLAME_COUNT = 4;
@@ -22509,7 +22939,11 @@ const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js"
 /** `base` in this map's own Seasons colours: a push block or floor button is
  *  a tile of the Seasons dungeon the map is built from (tools/rip-objects.py). */
 function themed(base, game) {
-  const t = game && game.map && OBJECT_THEMES[game.map.legend];
+  // A room may wear its own legend (S189: the Keep's Hold is the maze's ice
+  // half under its fire half), and its block and button are that legend's.
+  const legend = game && ((game.room && typeof game.room.def.legend === 'string' && game.room.def.legend)
+    || (game.map && game.map.legend));
+  const t = legend && OBJECT_THEMES[legend];
   return t ? base + '_' + t : base;
 }
 
@@ -23734,6 +24168,8 @@ class FloorSwitch extends Entity {
     for (const e of game.entities) {
       if (e === this || e.isEffect || e.isDrop) continue;
       if (sunk && e.isEnemy) continue;
+      // A chunk afloat over a drowned plate is on the surface, not on it.
+      if (e.floating) continue;
       // A stake plate is the Canopy's: nothing that wanders onto it counts.
       if (this.stake && e.isEnemy) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }
@@ -34673,6 +35109,7 @@ const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy }
 const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
 const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } = __require("game/items.js");
+const { spawnRecordedChunks, chunkAtHome } = __require("game/chunk.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
@@ -34939,6 +35376,7 @@ class Game {
     if (!room) return;
     const list = room.def.entities || [];
     list.forEach((spec, i) => this.spawnSpec(room, spec, i));
+    spawnRecordedChunks(this);
     this.spawnFallen();
     this.flushPending();
   }
@@ -34957,11 +35395,17 @@ class Game {
     const room = this.room;
     if (!room || !this.map || !obj || !obj.fallsThrough) return false;
     const tx = Math.floor(obj.cx / TILE), ty = Math.floor(obj.cy / TILE);
-    if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, this.tide) & F.DROP)) return false;
+    if (!room.inBounds(tx, ty)) return false;
+    // A drop hole (the Sanctum's, Link's too) or a Keep shaft (S189, chunks only).
+    const here = room.tile(tx, ty, this.tide);
+    if (!(here.flags & F.DROP) && !(here.shaft && obj.downTo)) return false;
     const below = room.floor - 1;
     if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
     const r = getRoom(this.mapId, below, room.rx, room.ry);
     if (!r || !r.inBounds(tx, ty) || (r.flagsAt(tx, ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
+    // An ice chunk (S189) keeps its own place in the save, so it is there on
+    // every visit and after every load, not only on the next one.
+    if (obj.downTo) { obj.downTo(this, below, tx, ty); obj.remove = true; return true; }
     if (!this.fallen) this.fallen = [];
     this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
     obj.remove = true;
@@ -35036,6 +35480,9 @@ class Game {
       if (this.progress.secrets[saveKey] && (type === 'pickup' || type === 'essence')) return;
       if (o.needFlag && !flag(this.progress, o.needFlag)) return;
       if (o.hideFlag && flag(this.progress, o.hideFlag)) return;
+      // An ice chunk the save has moved is spawned where the save says it is
+      // (spawnRecordedChunks), not here (S189).
+      if (type === 'icechunk' && !chunkAtHome(this, o.id)) return;
       // A killed enemy stays dead: permanently indoors, until the player has
       // put enough distance behind them on the overworld. Only ever set by
       // `onEnemyDefeated`, so a non-enemy sharing this saveKey never matches.
@@ -35578,6 +36025,13 @@ class Game {
     // locked until the player has stepped off any warp tile.
     if (!(f & F.WARP)) { this._warpLock = false; return; }
     if (this._warpLock) return;
+    // NOTHING IS CARRIED UP OR DOWN A STAIR (S189). Seasons' checkTileWarps
+    // (code/bank1.s), the routine every stair and doorway goes through, reads
+    // wLinkGrabState and initiates no warp while Link holds anything: he
+    // stands on the step holding it and the stair does nothing until he puts
+    // it down. The Abyssal Keep's ice chunks lean on it: a chunk changes floor
+    // only through a shaft.
+    if (p.carrying) return;
     const w = this.room.warpAt(tx, ty);
     if (!w) return;
     if (w.needFlag && !flag(this.progress, w.needFlag)) return;
@@ -46538,6 +46992,690 @@ const DUNGEON_THEME_ART = {
     2000000000000002
     2222222222222222`,
 
+  // the hole, inside a run, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $f4
+  kHole: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the hole, floor above it, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $f5
+  kHoleN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $f6
+  kHoleS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $f7
+  kHoleNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $f3
+  kHoleOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the blue cobble floor, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $a0
+  holdFloor: `
+    0011111120010021
+    0111111212000210
+    1111112011222200
+    1111120011111200
+    1111120011111200
+    1122220011111120
+    1200021001111112
+    2001002100111111
+    1111110012001002
+    2111111001200021
+    0211111100222211
+    0021111110211111
+    1021111100211111
+    0022221102111111
+    0120002121111110
+    1200100211111100`,
+
+  // the dark cobble ring, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $a1
+  holdFloorAlt: `
+    0000000000000000
+    0011111101111100
+    0110011101001110
+    0101111101111110
+    0111111000011110
+    0111110011001110
+    0111100111100000
+    0011001001100000
+    0000001011100110
+    0011101111001010
+    0100100110010110
+    0101110000101110
+    0111111001111110
+    0111111001111110
+    0011110000111100
+    0000000000000000`,
+
+  // the ice (TILETYPE_ICE), the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $8c
+  holdIce: `
+    0001012122101210
+    1000101212210121
+    1100010111221012
+    2110001011121101
+    1211000101112110
+    0121100010111111
+    1012110001011111
+    2101211000101111
+    1210011000011101
+    1221001100001110
+    2122100110010111
+    1212210011001011
+    0121221011100101
+    1011122100110010
+    0111012210011001
+    0011101221001100`,
+
+  // the fill of solid stone, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $a6
+  holdFill: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // ring corner, north-west, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b8
+  holdRingTL: `
+    0000000000000000
+    0132111110011001
+    0333212222222222
+    0122222202200222
+    0112321110011000
+    0122232111111111
+    0122123212111111
+    0121112321211222
+    0122011233333332
+    0022011233323322
+    0022011233332222
+    0120111132333232
+    0120111132233323
+    0022011232233333
+    0022012132222333
+    0120111222323333`,
+
+  // ring run, north wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b0
+  holdRingN: `
+    0000000000000000
+    1001100110011001
+    2222222222222222
+    0220022202200222
+    1001100010011000
+    1111111111111111
+    1211111112111111
+    2121122221211222
+    3333333333333333
+    2222222222222222
+    2232223222322232
+    3222232232222322
+    2323332323233323
+    3333323233333232
+    3333333333333333
+    3333333333333333`,
+
+  // ring corner, north-east, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b9
+  holdRingTR: `
+    0000000000000000
+    1001100111112310
+    2222222222123330
+    2220022022222210
+    0001100111232110
+    1111111112322210
+    1111112123212210
+    2221121232111210
+    2333333321102210
+    2233233321102200
+    2222333321102200
+    2323332311110210
+    3233322311110210
+    3333322321102200
+    3332222312102200
+    3333232221110210`,
+
+  // ring run, west wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b3
+  holdRingW: `
+    0122011232223233
+    0022011232322333
+    0022011232233233
+    0120111132223333
+    0120111132223333
+    0022011232322333
+    0022012132223333
+    0120111232232333
+    0122011232223233
+    0022011232322333
+    0022011232233233
+    0120111132223333
+    0120111132223333
+    0022011232322333
+    0022012132223333
+    0120111232232333`,
+
+  // ring run, east wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b1
+  holdRingE: `
+    3323222321102210
+    3332232321102200
+    3323322321102200
+    3333222311110210
+    3333222311110210
+    3332232321102200
+    3333222312102200
+    3332322321110210
+    3323222321102210
+    3332232321102200
+    3323322321102200
+    3333222311110210
+    3333222311110210
+    3332232321102200
+    3333222312102200
+    3332322321110210`,
+
+  // ring corner, south-west, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $ba
+  holdRingBL: `
+    0120111222323333
+    0022012132222333
+    0022011232233333
+    0120111132233323
+    0120111132333232
+    0022011233332222
+    0022011233323322
+    0122011233333332
+    0121112321211222
+    0122123212111111
+    0122232111111111
+    0112321110011000
+    0122222202200222
+    0333212222222222
+    0132111110011001
+    0000000000000000`,
+
+  // ring run, south wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b2
+  holdRingS: `
+    3333333333333333
+    3333333333333333
+    3333323233333232
+    2323332323233323
+    3222232232222322
+    2232223222322232
+    2222222222222222
+    3333333333333333
+    2121122221211222
+    1211111112111111
+    1111111111111111
+    1001100010011000
+    0220022202200222
+    2222222222222222
+    1001100110011001
+    0000000000000000`,
+
+  // ring corner, south-east, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $bb
+  holdRingBR: `
+    3333232221110210
+    3332222312102200
+    3333322321102200
+    3233322311110210
+    2323332311110210
+    2222333321102200
+    2233233321102200
+    2333333321102210
+    2221121232111210
+    1111112123212210
+    1111111112322210
+    0001100111232110
+    2220022022222210
+    2222222222123330
+    1001100111112310
+    0000000000000000`,
+
+  // north wall ends, doorway to its east, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b7
+  holdJambNW: `
+    0012111232223233
+    0012111232322333
+    0112112232233233
+    1112011232223333
+    2220002232223333
+    1111000232322333
+    1212100032223333
+    2222220032232333
+    3333333301232333
+    2222222210123333
+    2232223221022233
+    3222232232202333
+    2323332322320233
+    3333323232332233
+    3333333333333323
+    3333333333333333`,
+
+  // north wall ends, doorway to its west, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b6
+  holdJambNE: `
+    3323222321112100
+    3332232321112100
+    3323322322112110
+    3333222321102111
+    3333222322000222
+    3332232320001111
+    3333222300012121
+    3332322300222222
+    3332321033333333
+    3333210122222222
+    3322201223222322
+    3332022322322223
+    3320232232333232
+    3322332323233333
+    3233333333333333
+    3333333333333333`,
+
+  // south wall ends, doorway to its east, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b5
+  holdJambSW: `
+    3333333333333333
+    3333333333333323
+    3333323232332233
+    2323332322320233
+    3222232232202333
+    2232223221022233
+    2222222210123333
+    3333333301232333
+    2222220032232333
+    1212100032223333
+    1111000232322333
+    2220002232223333
+    1112011232223333
+    0112112232233233
+    0012111232322333
+    0012111232223233`,
+
+  // south wall ends, doorway to its west, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $b4
+  holdJambSE: `
+    3333333333333333
+    3233333333333333
+    3322332323233333
+    3320232232333232
+    3332022322322223
+    3322201223222322
+    3333210122222222
+    3332321033333333
+    3332322300222222
+    3333222300012121
+    3332232320001111
+    3333222322000222
+    3333222321102111
+    3323322322112110
+    3332232321112100
+    3323222321112100`,
+
+  // key door in a north wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $70
+  holdKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in an east wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $71
+  holdKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // key door in a south wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $72
+  holdKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in a west wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $73
+  holdKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in a north wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $78
+  holdShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in an east wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $79
+  holdShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a south wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $7a
+  holdShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in a west wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $7b
+  holdShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // the magenta block, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $1d
+  holdBlock: `
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
+  // the pot, on its own floor, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $10
+  holdPot: `
+    ......33333.....
+    .....3000003....
+    ....300222003...
+    ...33023332033..
+    ..3230233320323.
+    ..3230033300323.
+    .322320000023223
+    .322232000232223
+    .322223333322223
+    .332220000022233
+    .323222000222323
+    .320332222233023
+    ..3000333330003.
+    ..3200000000023.
+    ...33200000233..
+    .....3333333....`,
+
+  // the hole, inside a run, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $f4
+  holdHole: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the hole, floor above it, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $f5
+  holdHoleN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $f6
+  holdHoleS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $f7
+  holdHoleNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $f3
+  holdHoleOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
   // the stair down, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $45
   kStairsDown: `
     2222222222222222
@@ -47235,6 +48373,42 @@ const DUNGEON_THEME_PALETTES = {
   rHoleS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
   rHoleNS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
   kStairsUp: ['#cebd8c', '#737b39', '#633973', '#000000'],
+  kHole: ['#000000', '#000000', '#000000', '#000000'],
+  kHoleN: ['#737b39', '#633973', '#000000', '#000000'],
+  kHoleS: ['#737b39', '#633973', '#000000', '#000000'],
+  kHoleNS: ['#737b39', '#633973', '#000000', '#000000'],
+  kHoleOne: ['#cebd8c', '#737b39', '#000000', '#000000'],
+  holdFloor: ['#7394c6', '#5273a5', '#315284', '#315284'],
+  holdFloorAlt: ['#5273a5', '#315284', '#315284', '#315284'],
+  holdIce: ['#9cefff', '#7394b5', '#4a5a84', '#4a5a84'],
+  holdFill: ['#9cefff', '#9cefff', '#9cefff', '#9cefff'],
+  holdRingTL: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingN: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingTR: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingW: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingE: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingBL: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingS: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdRingBR: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdJambNW: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdJambNE: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdJambSW: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdJambSE: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  holdKeyN: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdKeyE: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdKeyS: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdKeyW: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdShutN: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdShutE: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdShutS: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdShutW: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  holdBlock: ['#ff7bff', '#84296b', '#000000', '#000000'],
+  holdPot: ['#ffad00', '#7394c6', '#8c4a00', '#000000'],
+  holdHole: ['#000000', '#000000', '#000000', '#000000'],
+  holdHoleN: ['#5273a5', '#315284', '#000000', '#000000'],
+  holdHoleS: ['#5273a5', '#315284', '#000000', '#000000'],
+  holdHoleNS: ['#5273a5', '#315284', '#000000', '#000000'],
+  holdHoleOne: ['#7394c6', '#5273a5', '#000000', '#000000'],
   kStairsDown: ['#cebd8c', '#737b39', '#633973', '#000000'],
   frRingTL: ['#ffffff', '#7b9cb5', '#31527b', '#000000'],
   frRingN: ['#ffffff', '#7b9cb5', '#31527b', '#000000'],
@@ -50627,7 +51801,7 @@ const HAND_ART = {
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
 // The dungeon themes, by the suffix every one of their tiles carries.
-const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie'];
+const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie', 'AbyssIce'];
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
 
@@ -52054,7 +53228,7 @@ function installCoreTiles() {
     // ($44) and down ($45) staircase, in its own colours. Exactly `dStairs`'
     // flags; the theme legends point `/` at the down one and `S` at the up.
     ...Object.fromEntries([['Grotto', 'g'], ['Coral', 'c'], ['Bog', 'b'], ['Cistern', 'x'],
-      ['Wood', 'r'], ['Abyss', 'k']].flatMap(([T, P]) => [
+      ['Wood', 'r'], ['Abyss', 'k'], ['AbyssIce', 'g']].flatMap(([T, P]) => [
       ['dStairsUp' + T, { art: ART[P + 'StairsUp'], pal: P + 'StairsUp', flags: F.WARP | F.STAIRS }],
       ['dStairsDown' + T, { art: ART[P + 'StairsDown'], pal: P + 'StairsDown', flags: F.WARP | F.STAIRS }],
     ])),
@@ -52182,6 +53356,58 @@ function installCoreTiles() {
     dUrnAbyss: { art: ART.kStatue, pal: 'kStatue', flags: F.SOLID, underArt: 'dFloorAbyss' },
     // The way out: a gap in the ring you walk down through, carrying the warp.
     dExitAbyss: { art: ART.kFloor, pal: 'kFloor', flags: F.WARP },
+    // THE KEEP'S SHAFTS (S189): the fire half's own hole ($f3-$f7) over the
+    // Hold, a tide tile — a hole at LOW, flooded at MID and HIGH (a 1F shaft;
+    // the sea rises through the Keep floor by floor). SEASONS' RULE, the
+    // human's choice (S189): to Link a shaft is an ordinary pit — he falls,
+    // is hurt and is set back on the edge, as he is at every hole of the
+    // Sword & Shield Maze — and only an ice chunk goes through it, to the
+    // same cell one floor down (`shaft`, read by Game.dropObjectThrough).
+    // Flooded, the Dredge Line cast over it searches that cell beneath
+    // (DredgeLine.dragBack). No F.DROP: that bit is the Sanctum's, Link's.
+    dHoleAbyss: {
+      art: ART.kHole, pal: 'kHole', flags: F.PIT, family: 'shaft', shaft: true,
+      lip: { n: 'dHoleAbyssN', s: 'dHoleAbyssS', ns: 'dHoleAbyssNS', one: 'dHoleAbyssOne' },
+    },
+    dHoleAbyssN: { art: ART.kHoleN, pal: 'kHoleN', flags: F.PIT, family: 'shaft', shaft: true },
+    dHoleAbyssS: { art: ART.kHoleS, pal: 'kHoleS', flags: F.PIT, family: 'shaft', shaft: true },
+    dHoleAbyssNS: { art: ART.kHoleNS, pal: 'kHoleNS', flags: F.PIT, family: 'shaft', shaft: true },
+    dHoleAbyssOne: { art: ART.kHoleOne, pal: 'kHoleOne', flags: F.PIT, family: 'shaft', shaft: true },
+    dShaftWaterAbyss: {
+      art: ART.waterD0, pal: 'deep', flags: F.DEEP, shaft: true,
+      anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
+    },
+    dShaftAbyss: { tide: ['dHoleAbyss', 'dShaftWaterAbyss', 'dShaftWaterAbyss'] },
+
+    // THE HOLD (S189), B1 under the Keep: the Sword & Shield Maze's ICE half,
+    // tileset $41 (`hold*` picks in rip-dungeon-themes.py) — blue cobble round
+    // a ring of pale stone, the ice ($8c, TILETYPE_ICE: `F.ICE`, Link slides,
+    // Player.updateIce), the darker cobble ring that marks the cell under a
+    // shaft, the magenta block, its own doors and its own holes (plain pits:
+    // there is no floor under the Hold).
+    dFloorAbyssIce: { art: ART.holdFloor, pal: 'holdFloor' },
+    dFloorAbyssIceAlt: { art: ART.holdFloorAlt, pal: 'holdFloorAlt' },
+    dIceAbyss: { art: ART.holdIce, pal: 'holdIce', flags: F.ICE },
+    dWallAbyssIce: { art: ART.holdFill, pal: 'holdFill', flags: F.SOLID, ring: {
+      TL: 'holdRingTL', TR: 'holdRingTR', BL: 'holdRingBL', BR: 'holdRingBR',
+      N: 'holdRingN', S: 'holdRingS', W: 'holdRingW', E: 'holdRingE',
+      jNW: 'holdJambNW', jNE: 'holdJambNE', jSW: 'holdJambSW', jSE: 'holdJambSE',
+      jWN: 'holdJambNW', jWS: 'holdJambSW', jEN: 'holdJambNE', jES: 'holdJambSE',
+      lockN: 'holdKeyN', lockS: 'holdKeyS', lockE: 'holdKeyE', lockW: 'holdKeyW',
+      shutN: 'holdShutN', shutS: 'holdShutS', shutE: 'holdShutE', shutW: 'holdShutW',
+      faces: true,
+    } },
+    dWallAbyssIceX: { art: ART.dWallCracked, pal: 'holdRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockAbyssIce: { art: ART.holdBlock, pal: 'holdBlock', flags: F.SOLID },
+    dUrnAbyssIce: { art: ART.holdBlock, pal: 'holdBlock', flags: F.SOLID },
+    dHoleAbyssIce: {
+      art: ART.holdHole, pal: 'holdHole', flags: F.PIT, family: 'pitIce',
+      lip: { n: 'dHoleAbyssIceN', s: 'dHoleAbyssIceS', ns: 'dHoleAbyssIceNS', one: 'dHoleAbyssIceOne' },
+    },
+    dHoleAbyssIceN: { art: ART.holdHoleN, pal: 'holdHoleN', flags: F.PIT, family: 'pitIce' },
+    dHoleAbyssIceS: { art: ART.holdHoleS, pal: 'holdHoleS', flags: F.PIT, family: 'pitIce' },
+    dHoleAbyssIceNS: { art: ART.holdHoleNS, pal: 'holdHoleNS', flags: F.PIT, family: 'pitIce' },
+    dHoleAbyssIceOne: { art: ART.holdHoleOne, pal: 'holdHoleOne', flags: F.PIT, family: 'pitIce' },
     kRingTL: { art: ART.kRingTL, pal: 'kRingTL', flags: F.SOLID },
     kRingTR: { art: ART.kRingTR, pal: 'kRingTR', flags: F.SOLID },
     kRingBL: { art: ART.kRingBL, pal: 'kRingBL', flags: F.SOLID },
@@ -52207,6 +53433,11 @@ function installCoreTiles() {
     kShutE: { art: ART.kShutE, pal: 'kShutE', flags: F.SOLID | F.DOOR },
     kShutW: { art: ART.kShutW, pal: 'kShutW', flags: F.SOLID | F.DOOR },
     kBossN: { art: ART.kBossN, pal: 'kBossN', flags: F.SOLID | F.DOOR },
+    // The Hold's ring, jambs and doors (S189), the ice half's own.
+    ...Object.fromEntries(['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE',
+      'JambNW', 'JambNE', 'JambSW', 'JambSE'].map(n => ['hold' + n, { art: ART['hold' + n], pal: 'hold' + n, flags: F.SOLID }])),
+    ...Object.fromEntries(['KeyN', 'KeyS', 'KeyE', 'KeyW', 'ShutN', 'ShutS', 'ShutE', 'ShutW']
+      .map(n => ['hold' + n, { art: ART['hold' + n], pal: 'hold' + n, flags: F.SOLID | F.DOOR }])),
 
     // THEMED SCENERY. `M` and `U` in the dungeon legend; the urn is themed per
     // dungeon just as the floor and wall are, so `U` in a Coral Spire room is a
@@ -52389,10 +53620,12 @@ function installCoreTiles() {
     TILE_DEFS['dPot' + T] = {
       art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
         : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot
-        : T === 'Salt' ? ART.hPot : T === 'Eyrie' ? ART.nPot : T === 'Palace' ? ART.uPot : ART.pot,
+        : T === 'Salt' ? ART.hPot : T === 'Eyrie' ? ART.nPot : T === 'Palace' ? ART.uPot
+        : T === 'AbyssIce' ? ART.holdPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
         : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot'
-        : T === 'Salt' ? 'hPot' : T === 'Eyrie' ? 'nPot' : T === 'Palace' ? 'uPot' : 'pot',
+        : T === 'Salt' ? 'hPot' : T === 'Eyrie' ? 'nPot' : T === 'Palace' ? 'uPot'
+        : T === 'AbyssIce' ? 'holdPot' : 'pot',
       // No `liftSprite`: lifted, a pot is drawn as the pot it was (S155).
       // It used to name `o_pot`, the hand-drawn stand-in, so every dungeon
       // pot turned into a different pot the moment Link picked it up.
@@ -52971,10 +54204,19 @@ function installLegends() {
   // The Keep is built at Oracle size (S142): its way out is a gap in the ring,
   // as the Grotto's is — the Sword & Shield Maze has no lit step to cut.
   registerLegend('dungeonAbyss', { 'C': 'dExitAbyss', '9': 'dDrownAbyss' }, 'dungeonAbyss');
+  // THE KEEP'S SHAFTS (S189): `5` is a 1F shaft, a hole at LOW and flooded
+  // above (`dShaftAbyss`); a digit because it is a tide tile, and the outdoor
+  // `channel` no room of the Keep places.
+  registerLegend('dungeonAbyss', { '5': 'dShaftAbyss' }, 'dungeonAbyss');
+  // THE HOLD (S189), the Keep's floor beneath: the Sword & Shield Maze's ice
+  // half. Its own floor, wall, block and pot; `i` is the ice, `,` the dark
+  // ring that marks the cell under a shaft, `O` its own hole.
+  theme('dungeonAbyssIce', 'dFloorAbyssIce', 'dFloorAbyssIceAlt', 'dWallAbyssIce', 'dWallAbyssIceX', 'dBlockAbyssIce', 'dUrnAbyssIce');
+  registerLegend('dungeonAbyssIce', { 'i': 'dIceAbyss', 'O': 'dHoleAbyssIce' }, 'dungeonAbyssIce');
   // Each main dungeon's own stairs (S164), as the Palace's: `/` goes down
   // (or back along the same floor), `S` goes up. `S` is the shared legend's
   // `riptideS`, which no main dungeon room places.
-  for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss']) {
+  for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss', 'AbyssIce']) {
     registerLegend('dungeon' + T, { '/': 'dStairsDown' + T, 'S': 'dStairsUp' + T }, 'dungeon' + T);
   }
 
@@ -61180,7 +62422,7 @@ function installDungeonsB() {
     id: 'd6',
     kind: 'dungeon',
     name: 'Abyssal Keep',
-    w: 8, h: 8, floors: 2,
+    w: 8, h: 8, floors: 3,
     cell: [15, 11],
     legend: 'dungeonAbyss',
     music: 'dungeon6',
@@ -61193,13 +62435,13 @@ function installDungeonsB() {
       // The Drowned King gets his own theme. `updateMusic` has always read a
       // per-dungeon `bossMusic`, and the Keep is the dungeon that sets one.
       bossMusic: 'finalBoss',
-      bossRoom: '1,3,0',
-      startRoom: '3,7',
+      bossRoom: '2,3,0',
+      startRoom: '1,3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32 },
     },
     rooms: {
       // ---------------------------------------------------- the way in
-      '0,3,7': {
+      '1,3,7': {
         name: 'Keep Door',
         map: [
           '#######.#######',
@@ -61221,7 +62463,7 @@ function installDungeonsB() {
           [2, 6, 'Cut in black stone: "Everything the sea takes,\nit keeps. Everything it keeps, it puts down."'],
         ],
       },
-      '0,3,6': {
+      '1,3,6': {
         name: 'Keep Landing',
         map: [
           '#######.#######',
@@ -61249,7 +62491,7 @@ function installDungeonsB() {
           },
         },
       },
-      '0,2,6': {
+      '1,2,6': {
         name: 'Map Crypt',
         map: [
           '#######.#######',
@@ -61269,7 +62511,7 @@ function installDungeonsB() {
           ['stalfos', 10, 7],
         ],
       },
-      '0,4,6': {
+      '1,4,6': {
         name: 'Bone Cell',
         map: [
           '#######.#######',
@@ -61295,7 +62537,7 @@ function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 8, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
         },
       },
-      '0,3,5': {
+      '1,3,5': {
         name: 'Drowned Hall',
         map: [
           '#######.#######',
@@ -61330,7 +62572,7 @@ function installDungeonsB() {
           [13, 4, 'A mooring plate, worn smooth: "The rings in\nthis house were for hauling. They will haul\nanything that takes hold."'],
         ],
       },
-      '0,2,5': {
+      '1,2,5': {
         name: 'Chartstone Crypt',
         map: [
           '###############',
@@ -61350,7 +62592,7 @@ function installDungeonsB() {
           ['darknut', 11, 6],
         ],
       },
-      '0,4,5': {
+      '1,4,5': {
         name: 'Drain Court',
         map: [
           '###############',
@@ -61377,7 +62619,7 @@ function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
         },
       },
-      '0,3,4': {
+      '1,3,4': {
         name: 'Three Heights',
         // The dungeon's own tide vocabulary said once, before anything depends
         // on it: `1` is dry then wading then over your head, `9` is a wall the
@@ -61404,7 +62646,7 @@ function installDungeonsB() {
           [2, 9, 'Scratched low, where the water reaches it:\n"Three heights. One way through."'],
         ],
       },
-      '0,2,4': {
+      '1,2,4': {
         name: 'West Crypt',
         // D6's own Bellows sill — the Squall Loft's fixture, wheel boxed by
         // wall and pit, the stand across the pit, a sump the only way up. The
@@ -61445,7 +62687,7 @@ function installDungeonsB() {
           },
         },
       },
-      '0,4,4': {
+      '1,4,4': {
         name: 'Black Kiln',
         map: [
           '###############',
@@ -61473,7 +62715,7 @@ function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 2, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
         },
       },
-      '0,3,3': {
+      '1,3,3': {
         name: 'Keep Lock',
         map: [
           '###############',
@@ -61493,7 +62735,7 @@ function installDungeonsB() {
           ['stalfos', 10, 8],
         ],
       },
-      '0,2,3': {
+      '1,2,3': {
         name: 'Keep Stair',
         map: [
           '###############',
@@ -61509,13 +62751,13 @@ function installDungeonsB() {
           '###############',
         ],
         warps: [
-          { x: 12, y: 2, to: { map: 'd6', floor: 1, rx: 3, ry: 5, px: 192, py: 48 } },
+          { x: 12, y: 2, to: { map: 'd6', floor: 2, rx: 3, ry: 5, px: 192, py: 48 } },
         ],
         entities: [
           ['stalfos', 5, 6],
         ],
       },
-      '0,4,3': {
+      '1,4,3': {
         name: 'Dredge Vault',
         map: [
           '#######.#######',
@@ -61534,7 +62776,7 @@ function installDungeonsB() {
           ['chest', 7, 5, { big: true, item: 'dredge', level: 1 }],
         ],
       },
-      '0,4,2': {
+      '1,4,2': {
         name: 'The Drowned Garden',
         // The Keep's own Reefseed grove, in the Keep's own materials: the bar
         // across the pool is `7`/`dLintel`, the Keep's masonry, stone at LOW
@@ -61573,25 +62815,33 @@ function installDungeonsB() {
       },
 
       // ---------------------------------------------------- the Slack Water
-      '0,5,3': {
+      '1,5,3': {
         name: 'The Slack Water',
         // THE TEACHING ROOM: a flat pan you can walk all the way round at any
         // sea, with one silted ring in the middle of it and a bell that hums at
         // the ring. Drag the line over it on the dry crust and the weight comes
         // home with nothing. Sound the conch one step and drag the same line
         // over the same tile and a Piece of Heart comes up out of it.
-        // `teaches: true`: nothing here is needed and nothing can be lost.
+        //
+        // K1, THE FIRST SOUNDING (S189): no longer a dead end. Its east door
+        // into the Draw is a shutter, and south of the pan two of the Keep's
+        // shafts go down into the Hold's Sounding Floor. At MID they are
+        // flooded wells: cast across the west one (3,8) and the line comes
+        // back with the ice chunk lying on the floor beneath. The plate (13,8)
+        // stands in a nook past a pit no foot crosses: throw the chunk onto it
+        // and the shutter opens. K3 takes it back off with the line and, at
+        // LOW, throws it down the east well (9,8) onto the islet below.
         map: [
           '###############',
           '###############',
           '####........###',
           '####.111111.###',
           '####.111111.###',
-          '.....116111....',
+          '.....116111...D',
           '####.111111.###',
-          '####........###',
-          '###############',
-          '###############',
+          '#...........###',
+          '#..5.....5..O.#',
+          '#...........###',
           '###############',
         ],
         buried: [[7, 5, 'heartPiece']],
@@ -61603,11 +62853,26 @@ function installDungeonsB() {
           ],
         },
         entities: [
-          ['bell', 11, 7, { points: [7, 5], say: 'The bell hums flat at the middle of the pan.' }],
+          ['bell', 2, 7, { points: [7, 5], say: 'The bell hums flat at the middle of the pan.' }],
           ['anglerfry', 10, 3],
+          ['switch', 13, 8, { hold: true }],
         ],
+        // tools/check-hold.mjs: the plate no foot and no throw from the floor
+        // beside it reaches unless a chunk is thrown from `feeds`; the chunk
+        // under the west well comes up on a line cast from `hauls`.
+        holdRoom: {
+          plate: [13, 8],
+          feeds: [{ at: [176, 128], face: 'right', sea: 1 }],
+          hauls: [{ from: [3, 7], face: 'down', sea: 1, below: [3, 8] }],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_slack',
+          reward: { openDoors: [[14, 5]], say: 'The east shutter grinds open.' },
+        },
         readable: [
           [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
+          [11, 9, 'Cut in the well\'s rim: "The Hold keeps what\nthe Keep lets fall. Sound it with the water in."'],
         ],
       },
 
@@ -61620,7 +62885,7 @@ function installDungeonsB() {
       // Key for the stair over only to a player who has learned that the line
       // brings home what it catches. The key opens Keep Lock's west door, and
       // a plate in the Hauling Pit opens the short way back into the Draw.
-      '0,6,3': {
+      '1,6,3': {
         name: 'The Draw',
         // CROSSING 0: the Drowned Stand's fixture, the first time the player
         // needs it. The shelf at 8,8 is `dWell` — wading at LOW, over your head
@@ -61628,20 +62893,31 @@ function installDungeonsB() {
         // post at 7,8 is the way home and stops a longer line from the bank.
         map: [
           '#######D#######',
-          '#.......#OO.6.#',
+          '#./.....#OO.6.#',
           '#.......#OO.1.#',
           '#.p.....#OO...#',
           '#.......#OO...#',
-          '........#OO....',
+          'D.......#OO....',
           '#.......#OO...#',
           '#.......#OO...#',
           '#......q3OO.q.#',
           '#........OO...#',
           '#######.#######',
         ],
+        // K4's way round (S189): a chunk set down on the east bank at 11,9 is
+        // caught by the line cast from the west bank and comes home across
+        // the shafts, as nobody can carry one over them.
+        holdRoom: {
+          catches: [{ from: [8, 9], face: 'right', sea: 0, at: [11, 9] }],
+        },
+        // The stair down into the Hold (S189), in the west half.
+        warps: [
+          { x: 2, y: 1, to: { map: 'd6', floor: 0, rx: 6, ry: 3, px: 32, py: 144, dir: 'down' } },
+        ],
         buried: [[12, 1, 'rupee20']],
         dredgeRoom: {
-          entry: [0, 5],
+          // The west door is K1's shutter now (S189); the south door is open.
+          entry: [7, 10],
           moorings: [
             { post: [12, 8], from: [8, 8], land: [11, 8], face: 'right', sea: 0 },
           ],
@@ -61660,7 +62936,7 @@ function installDungeonsB() {
           [6, 9, 'Scratched by the shaft: "The shelf holds your\nheels at slack water and at no other."'],
         ],
       },
-      '0,7,2': {
+      '1,7,2': {
         name: 'The Tally Hall',
         // THREE SEAS, ONE ROOM, two screens tall. Up from the door's bank to the
         // island at LOW off the shelf at 7,16; up from the island to the far
@@ -61676,7 +62952,7 @@ function installDungeonsB() {
           '#..........1..#',
           '#.............#',
           '..............#',
-          '#.............#',
+          '#..........5..#',
           '#.............#',
           '#........q....#',
           '#.............#',
@@ -61690,9 +62966,16 @@ function installDungeonsB() {
           '#......q......#',
           '#.............#',
           '#.............#',
-          '#.............#',
+          '#............5#',
           '###############',
         ],
+        // K4 (S189): a shaft on each bank, one over each half of the Rime Hall
+        // beneath — the north one (11,6) over its plate, the south one
+        // (13,20), in the corner out of the way, over its ring. The Hold has
+        // no way across; the Keep does.
+        holdRoom: {
+          hauls: [{ from: [13, 19], face: 'down', sea: 1, below: [13, 20] }],
+        },
         buried: [[11, 2, 'blank']],
         dredgeRoom: {
           entry: [0, 16],
@@ -61710,13 +62993,13 @@ function installDungeonsB() {
         },
         entities: [
           ['stalfos', 3, 19],
-          ['stalfos', 11, 18],
+          ['stalfos', 9, 19],
         ],
         readable: [
           [2, 18, 'A tally cut in the wall, three marks:\n"Slack for the shelf. Flood for the bar. Half\nwater for the floor."'],
         ],
       },
-      '0,6,2': {
+      '1,6,2': {
         name: 'The Hauling Pit',
         // THE LINE BRINGS HOME WHAT IT CATCHES. The Small Key is on a pillar
         // in the shaft, and the bar at 7,4 stands between it and the only bank
@@ -61766,7 +63049,7 @@ function installDungeonsB() {
         ],
       },
 
-      '0,6,4': {
+      '1,6,4': {
         name: 'The Angler Stews',
         // THE LINE'S OTHER HALF, and the only fight in the Keep built for it.
         // Four deep pools, an anglerfry in each, and a sword cannot reach the
@@ -61801,7 +63084,7 @@ function installDungeonsB() {
           [7, 1, 'A fishwife\'s board: "They will not come out\nfor a blade. They come out for a line."'],
         ],
       },
-      '0,7,4': {
+      '1,7,4': {
         name: 'The Silt Terraces',
         // Two screens tall and a step down the middle: brace on the shelf at
         // 7,8 at LOW and the line takes you to the lower terrace; the silt in
@@ -61853,8 +63136,168 @@ function installDungeonsB() {
         ],
       },
 
+      // ---------------------------------------------------- THE HOLD (S189)
+      //
+      // B1, under the Keep's east wing: the Sword & Shield Maze's ICE half,
+      // Seasons' own other half of the dungeon the Keep is built in. "What
+      // the sea puts down, the line brings up": at LOW an ice chunk over a
+      // shaft upstairs falls to the same cell here; at MID the Dredge Line
+      // cast over a flooded one hauls up whatever lies on the cell beneath.
+      // To Link the shafts are pits (Seasons' rule, the human's choice): he
+      // comes down by the Draw's stair. Every cell under a shaft is marked
+      // with the darker ring (`,`), and every plate is in sight of its room.
+      // Proved by tools/check-hold.mjs.
+      '0,6,3': {
+        name: 'The Rime Landing',
+        legend: 'dungeonAbyssIce',
+        // K2: ICE, ALONE. At the foot of the Draw's stair, a band of Seasons'
+        // ice across the room to cross to anywhere, a fight on it, and three
+        // chunks on a dais the way the maze's room $84 keeps one in an alcove.
+        map: [
+          '###############',
+          '#.....=...=...#',
+          '......=...=...#',
+          '#.....==.==...#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#..............',
+          '#S............#',
+          '###############',
+        ],
+        // The stair up is in the corner, off every line across the room (the
+        // robot's path from the east door to the west one crossed it, S189).
+        warps: [
+          { x: 1, y: 9, to: { map: 'd6', floor: 1, rx: 6, ry: 3, px: 32, py: 32, dir: 'down' } },
+        ],
+        entities: [
+          ['icechunk', 7, 1, { id: 'd6L1' }],
+          ['icechunk', 9, 1, { id: 'd6L2' }],
+          ['icechunk', 8, 2, { id: 'd6L3' }],
+          ['stalfos', 5, 6],
+          ['zol', 10, 5],
+          ['keese', 12, 2],
+        ],
+        readable: [
+          [12, 8, 'Scratched in the frost: "Down here the sea\nonly ever sets things down."'],
+        ],
+      },
+      '0,5,3': {
+        name: 'The Sounding Floor',
+        legend: 'dungeonAbyssIce',
+        // K3: DOWN AT LOW. A plate on an islet in a field of holes four
+        // tiles from any shore, under the Slack Water's EAST well (9,8); the
+        // ring at 3,8 under its WEST well is where K1's chunk lay. Throw the
+        // chunk down the east well at LOW and it lands on the plate.
+        map: [
+          '#######.#######',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiiii',
+          '#ii...........#',
+          '#ii..OOOOOOOOO#',
+          '#ii..OOOOOOOOO#',
+          '#ii..OOOOOOOOO#',
+          '#ii..OOOOOOOOO#',
+          '#ii,.OOOO.OOOO#',
+          '#ii..OOOOOOOOO#',
+          '###############',
+        ],
+        entities: [
+          ['icechunk', 3, 8, { id: 'd6S1' }],
+          ['switch', 9, 8, { hold: true }],
+        ],
+        holdRoom: {
+          plate: [9, 8],
+          drops: [{ room: '1,5,3', at: [144, 80], face: 'down', sea: 0 }],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_sounding',
+          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Something falls onto the ice.' },
+        },
+      },
+      '0,7,2': {
+        name: 'The Rime Hall',
+        legend: 'dungeonAbyssIce',
+        // K4: OVER, NOT ACROSS. Two screens tall under the Tally Hall: chunks
+        // on the south ice, a chasm across the middle no throw crosses, and a
+        // plate (11,6) beyond it under the Tally Hall's north well. Set a chunk
+        // on the ring (13,20) under its south well; go up; at MID haul it up
+        // the south well; carry it round the Keep to the north bank; at LOW
+        // throw it down the north well onto the plate.
+        size: [1, 2],
+        map: [
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#....p...p....#',
+          '#.............#',
+          '#.............#',
+          '#..........,..#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#.............#',
+          '..............#',
+          '#............,#',
+          '###############',
+        ],
+        entities: [
+          ['switch', 11, 6, { hold: true }],
+          ['icechunk', 2, 20, { id: 'd6R1' }],
+          ['icechunk', 3, 20, { id: 'd6R2' }],
+          ['stalfos', 9, 19],
+        ],
+        holdRoom: {
+          plate: [11, 6],
+          drops: [{ room: '1,7,2', at: [176, 48], face: 'down', sea: 0 }],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_rime',
+          reward: { spawn: [['pickup', 7, 19, { kind: 'key' }]], say: 'Something falls onto the ice.' },
+        },
+      },
+      '0,5,2': {
+        name: 'The Plumb\'s Foot',
+        legend: 'dungeonAbyssIce',
+        // The foot of the Plumb (S189; its well upstairs, the Weighhouse, is
+        // the second half's): the Hold keeps its chunks here, and the ring at
+        // 7,4 marks the cell under the Weighhouse's well.
+        map: [
+          '###############',
+          '#.p.p.....p.p.#',
+          '#.............#',
+          '#..iiiiiiiii..#',
+          '#..iiii,iiii..#',
+          '#..iiiiiiiii..#',
+          '#..iiiiiiiii..#',
+          '#..=.......=..#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
+        ],
+        entities: [
+          ['icechunk', 3, 8, { id: 'd6P1' }],
+          ['icechunk', 4, 8, { id: 'd6P2' }],
+          ['icechunk', 10, 8, { id: 'd6P3' }],
+          ['icechunk', 11, 8, { id: 'd6P4' }],
+          ['gel', 7, 6],
+          ['gel', 9, 2],
+        ],
+      },
+
       // ---------------------------------------------------- upper floor
-      '1,3,5': {
+      '2,3,5': {
         name: 'Upper Keep',
         map: [
           '#######.#######',
@@ -61870,13 +63313,13 @@ function installDungeonsB() {
           '###############',
         ],
         warps: [
-          { x: 12, y: 2, to: { map: 'd6', floor: 0, rx: 2, ry: 3, px: 192, py: 48 } },
+          { x: 12, y: 2, to: { map: 'd6', floor: 1, rx: 2, ry: 3, px: 192, py: 48 } },
         ],
         entities: [
           ['keese', 4, 6],
         ],
       },
-      '1,2,5': {
+      '2,2,5': {
         name: 'Shade Cell',
         map: [
           '#######.#######',
@@ -61902,7 +63345,7 @@ function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 5, { kind: 'heart' }]], say: 'The shadows thin out.' },
         },
       },
-      '1,2,4': {
+      '2,2,4': {
         name: 'Colonnade of the Drowned',
         // The hand-placed charm, the Coilrope, which adds a tile to every cast.
         // It sits behind a GRATE, and the only thing in the game that retracts
@@ -61936,7 +63379,7 @@ function installDungeonsB() {
       // what the line can reach over a bar, a flooded cell of anglerfry, and a
       // choir hall whose shelf is a hole at slack water and wades only at
       // half tide.
-      '1,0,5': {
+      '2,0,5': {
         name: 'The Long Sounding',
         // THREE SHAFTS, WEST FROM THE DOOR. LOW off the shelf at 23,5 to the
         // first island; HIGH from its west side over the bar at 16,7; LOW
@@ -61979,7 +63422,7 @@ function installDungeonsB() {
           [27, 8, 'A sounding line knotted to the wall:\n"Slack, flood, slack. Count them before you\ngo."'],
         ],
       },
-      '1,0,4': {
+      '2,0,4': {
         name: 'The Offering Pit',
         // What the Hauling Pit taught, with nothing at stake: a purse on a
         // pillar behind a bar, fetched at HIGH; and a silt nook in the corner
@@ -62012,7 +63455,7 @@ function installDungeonsB() {
           ['keese', 11, 8],
         ],
       },
-      '1,1,4': {
+      '2,1,4': {
         name: 'The Undertow Cell',
         // The Angler Stews upstairs, with a knight in the middle of it. The
         // north door opens when the room is empty.
@@ -62040,7 +63483,7 @@ function installDungeonsB() {
           reward: { openDoors: [[7, 0]], say: 'The north door grinds open.' },
         },
       },
-      '1,0,3': {
+      '2,0,3': {
         name: 'The Deep Choir',
         // THE SHELF THAT IS A HOLE AT SLACK WATER. The only footing that
         // reaches the far post is the drain at 18,5 — a pit at LOW, wading at
@@ -62082,7 +63525,7 @@ function installDungeonsB() {
           [20, 7, 'Cut under the choir stalls: "Sing at half\nwater. At slack the floor is gone, and at\nflood it is over your head."'],
         ],
       },
-      '1,4,5': {
+      '2,4,5': {
         name: 'Tideshade Hall',
         // Four screens, and the only miniboss arena in the game that is. The
         // tideshade phases with the water and the room's basins are `1` — dry
@@ -62125,7 +63568,7 @@ function installDungeonsB() {
           },
         },
       },
-      '1,4,4': {
+      '2,4,4': {
         name: 'Mermaid Vault',
         map: [
           '###############',
@@ -62146,7 +63589,7 @@ function installDungeonsB() {
         warps: [
           // Down to the Two Arches. The vault is the only way in and the only
           // way back out of it, so the fork below can never strand anyone.
-          { x: 3, y: 8, to: { map: 'd6', floor: 1, rx: 5, ry: 4, px: 104, py: 120, dir: 'down' } },
+          { x: 3, y: 8, to: { map: 'd6', floor: 2, rx: 5, ry: 4, px: 104, py: 120, dir: 'down' } },
         ],
       },
 
@@ -62158,7 +63601,7 @@ function installDungeonsB() {
       // open water and the other is still stone. The room pins the tide to
       // MID; both valves are INSIDE the chambers, past the one-way ledges. You
       // choose first. The fork at 10x8, set into the rock under the vault.
-      '1,5,4': {
+      '2,5,4': {
         name: 'The Two Arches',
         map: [
           '###############',
@@ -62182,12 +63625,12 @@ function installDungeonsB() {
         ],
         warps: [
           // The way back up, from the shelf you arrive on.
-          { x: 7, y: 7, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 7, y: 7, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
           // The climb out of each chamber. The wrong one is a walk, not a lock.
-          { x: 4, y: 5, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
-          { x: 9, y: 5, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 4, y: 5, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 9, y: 5, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
           // And out of the gallery above, once you have got into it.
-          { x: 9, y: 1, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 9, y: 1, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
         ],
         script: {
           onEvent(game, name) {
@@ -62214,7 +63657,7 @@ function installDungeonsB() {
       // happen — a `3` shelf you brace on, which drowns above LOW, or a `7`
       // lintel in the way, which is stone below HIGH. Every crossing carries a
       // mooring on the near side as well, so nothing here is one-way.
-      '1,3,4': {
+      '2,3,4': {
         name: 'The Drowned Stand',
         // CROSSING 1, at LOW, and the fixture at its plainest. The shelf is
         // `dWell` — wading at LOW, over your head above it — so the only sea
@@ -62253,7 +63696,7 @@ function installDungeonsB() {
           [4, 4, 'Cut into the coping: "Stand while you can\nstand. The ledge is only a ledge at low water."'],
         ],
       },
-      '1,3,3': {
+      '2,3,3': {
         name: 'Keep Crossing',
         map: [
           '#######L#######',
@@ -62273,7 +63716,7 @@ function installDungeonsB() {
           ['keese', 11, 2],
         ],
       },
-      '1,2,3': {
+      '2,2,3': {
         name: 'The Sunken Bar',
         // CROSSING 2, at HIGH, and the Drowned Stand inside out. The mooring is
         // in plain sight from the doorway and the lintel is what stops the
@@ -62314,7 +63757,7 @@ function installDungeonsB() {
           [11, 6, 'A tide board: "The bar is down at slack and up\nat flood. Everything in this room follows from\nthat."'],
         ],
       },
-      '1,4,3': {
+      '2,4,3': {
         name: 'The Drowned Sill',
         // CROSSING 3, at LOW, the Drowned Stand turned through a right angle
         // and handed the other way — and what is across the shaft is a Small
@@ -62352,7 +63795,7 @@ function installDungeonsB() {
       },
 
       // ---------------------------------------------------- the way out
-      '1,3,2': {
+      '2,3,2': {
         name: 'Keep Gate',
         // THE LAST HALL BEFORE THE KING, AND IT HOLDS THE KEEP'S SECOND FAIRY,
         // in the corner, off both the way in from the south and the way east
@@ -62375,7 +63818,7 @@ function installDungeonsB() {
           ['pickup', 1, 9, { kind: 'fairy' }],
         ],
       },
-      '1,3,1': {
+      '2,3,1': {
         name: 'The Stairhead',
         // THE ANTECHAMBER, and the fairy in it is behind nothing but the hall
         // it opens off — it used to stand behind the boss door, in a pocket of
@@ -62400,7 +63843,7 @@ function installDungeonsB() {
           ['pickup', 2, 5, { kind: 'fairy', life: 1e9 }],
         ],
       },
-      '1,4,2': {
+      '2,4,2': {
         name: 'The Crossed Shafts',
         // THE ROOM THAT SAYS IT OUT LOUD, and the only one in the dungeon that
         // holds both crossings. In at HIGH over the bar, down to LOW to brace
@@ -62450,7 +63893,7 @@ function installDungeonsB() {
           [7, 6, 'A king\'s inscription, and the only one in the\nKeep that is signed: "You cannot hold two seas.\nNereth."'],
         ],
       },
-      '1,3,0': {
+      '2,3,0': {
         name: 'Nereth, the Drowned King',
         // The boss keeps the mechanic: `noTide` pins the arena at whatever sea
         // was brought through the door, and Nereth's own phases pin it again.
@@ -72269,15 +73712,17 @@ __exports["installTreasureSprites"] = installTreasureSprites;
 
 /* ===== src/data/sprites-effects.js ===== */
 __define("data/sprites-effects.js", function (__exports, __require) {
-// The smoke puffs, the fall into a hole, the bomb blast and the moving platform, cut from Oracle of
+// The smoke puffs, the fall into a hole, the bomb blast, the moving platform and the ice chunk, cut from Oracle of
 // Seasons' own graphics.
 //
 // Generated by tools/rip-effects.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
 // commit 7584d87), assets/effects/oracles-disasm/seasons/: the common sprite
 // graphics every room keeps loaded, spr_dungeon_sprites (the platform, from
-// commit 21c924a; the tables are identical there), the tables that lay out
+// commit 21c924a; the tables are identical there) and spr_pedestal_ice (the
+// ice chunk, the same commit), the tables that lay out
 // INTERAC_PUFF, INTERAC_FALLDOWNHOLE, INTERAC_MOVING_PLATFORM,
+// INTERAC_D8_GRABBABLE_ICE,
 // PART_ENEMY_DESTROYED and the exploding ITEM_BOMB, and the standard sprite
 // palettes. Credit: the oracles-disasm project and its contributors; the
 // artwork is Nintendo's and Capcom's. This is fan-work art only.
@@ -72294,6 +73739,7 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 //   fx_kill*: frames 0 1 0 2 2 3 4 (held 2 2 2 4 4 4 2), tile base $0c
 //   fx_boom*: frames 0 1 0 2 3 4 (held 4 4 3 7 8 8), tile base $0c
 //   o_float*: frames 0 (held 127), tile base $08
+//   o_icechunk*: frames 0 (held 127), tile base $0a
 
 const { sprites } = __require("gfx/art.js");
 const { registerPalettes } = __require("gfx/palettes.js");
@@ -73047,6 +74493,40 @@ const EFFECT_ART = {
     03000000000000300300000000000030
     00333333333333000033333333333300
     00000000000000000000000000000000` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_icechunk0: { pal: 'o_icechunk0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ...............33...............
+    ..............3013..............
+    .............300113.............
+    ............30001103............
+    .........33.31001013.33.........
+    ........3003301001133003........
+    ........3100300011130003........
+    ........3110301011130113........
+    ........3111311011131113........
+    ........3333311011133333........
+    ........3003311011310003........
+    ........3001311013100003........
+    ........3110301031011003........
+    .........311030310111033........
+    ..........3111311111133.........
+    ...........3333333333...........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
 };
 
 const EFFECT_PALETTES = {
@@ -73072,6 +74552,7 @@ const EFFECT_PALETTES = {
   fx_boom3: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   fx_boom4: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   o_float0: ['#ffd68c', '#ffd68c', '#ffd68c', '#10ad42'],
+  o_icechunk0: ['#73adff', '#0000ff', '#0000ff', '#000000'],
 };
 
 function installEffectSprites() {

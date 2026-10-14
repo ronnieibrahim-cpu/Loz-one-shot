@@ -66,7 +66,7 @@ brief's end), and chose one change while building (below).
 - PICTURE: docs/briefs/d6-built/s189-hold.png (compose.py beside it).
 
 ### Verified
-Whole table green; check-playthrough 48/48, THE END, never died.
+Whole table green; check-playthrough 48/48, THE END, never died (the new check: THE HOLD WAS PLAYED). check-hold 63, test 138, replay 51, check-side 39, check-dredge 258, walk-dungeons 32.
 
 ### NEXT (S190): the second half (docs/prompts/NEXT-PROMPT.md)
 - K5 the Weighhouse (1F 5,2, new; a well over the Plumb's Foot ring 7,4; its
