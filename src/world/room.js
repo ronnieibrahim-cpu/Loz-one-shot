@@ -369,7 +369,11 @@ export class Room {
     if (d.lip) {
       const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
       const n = other(y - 1), s = other(y + 1);
-      const art = n && s ? d.lip.ns : n ? d.lip.n : s ? d.lip.s : null;
+      // A hole alone in the floor (S189): the cartridge's rimmed $f3, when
+      // the cells either side are not hole either.
+      const side = (nx) => nx >= 0 && nx < this.tw && this.tile(nx, y, tide).family !== d.family;
+      const one = d.lip.one && n && s && side(x - 1) && side(x + 1);
+      const art = one ? d.lip.one : n && s ? d.lip.ns : n ? d.lip.n : s ? d.lip.s : null;
       if (art) return art;
     }
     if (d.edgeArt || d.edgePairs) {

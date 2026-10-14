@@ -609,7 +609,7 @@ section('Dredge Line');
 // Dredge Line's whole second half and it is the one thing in the game that
 // wants the water UP, so it is asserted here in both directions rather than
 // once. `dragBack` skips a tile carrying neither F.WET nor F.SLOW.
-await park({ map: 'd6', rx: 5, ry: 3, tx: 7, ty: 7, dir: 'up', tide: 0, items: { dredge: 1 }, equipB: 'dredge' });
+await park({ map: 'd6', floor: 1, rx: 5, ry: 3, tx: 7, ty: 7, dir: 'up', tide: 0, items: { dredge: 1 }, equipB: 'dredge' });
 await step(4);
 r = await read(() => {
   const g = window.__game;
@@ -716,7 +716,7 @@ section('Resonance Rod');
 
 // The Colonnade of the Drowned: the Keep's one optional reward, the Coilrope,
 // sits in an alcove behind a grate. Metal, and only the Rod retracts metal.
-await park({ map: 'd6', floor: 1, rx: 2, ry: 4, tx: 7, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
+await park({ map: 'd6', floor: 2, rx: 2, ry: 4, tx: 7, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
 await step(4);
 r = await read(() => ({
   name: window.__game.room.baseName(7, 3),

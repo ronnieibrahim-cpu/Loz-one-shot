@@ -32,7 +32,11 @@ import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
 /** `base` in this map's own Seasons colours: a push block or floor button is
  *  a tile of the Seasons dungeon the map is built from (tools/rip-objects.py). */
 function themed(base, game) {
-  const t = game && game.map && OBJECT_THEMES[game.map.legend];
+  // A room may wear its own legend (S189: the Keep's Hold is the maze's ice
+  // half under its fire half), and its block and button are that legend's.
+  const legend = game && ((game.room && typeof game.room.def.legend === 'string' && game.room.def.legend)
+    || (game.map && game.map.legend));
+  const t = legend && OBJECT_THEMES[legend];
   return t ? base + '_' + t : base;
 }
 
@@ -1257,6 +1261,8 @@ export class FloorSwitch extends Entity {
     for (const e of game.entities) {
       if (e === this || e.isEffect || e.isDrop) continue;
       if (sunk && e.isEnemy) continue;
+      // A chunk afloat over a drowned plate is on the surface, not on it.
+      if (e.floating) continue;
       // A stake plate is the Canopy's: nothing that wanders onto it counts.
       if (this.stake && e.isEnemy) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }

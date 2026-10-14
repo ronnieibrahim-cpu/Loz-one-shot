@@ -529,7 +529,7 @@ export const PLANS = {
       // and a hold long enough to turn him would walk him into the shaft, which
       // is a pit at every sea — so the facing is set by the entry rather than by
       // a step, the way d5-overthrow sets it by walking into a tree.
-      enter: ['d6', 1, 3, 4, 128, 112, 'up'],
+      enter: ['d6', 2, 3, 4, 128, 112, 'up'],
       probes: [[8, 4], [10, 2]],
     },
     steps: [

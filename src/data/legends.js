@@ -446,10 +446,19 @@ export function installLegends() {
   // The Keep is built at Oracle size (S142): its way out is a gap in the ring,
   // as the Grotto's is — the Sword & Shield Maze has no lit step to cut.
   registerLegend('dungeonAbyss', { 'C': 'dExitAbyss', '9': 'dDrownAbyss' }, 'dungeonAbyss');
+  // THE KEEP'S SHAFTS (S189): `5` is a 1F shaft, a hole at LOW and flooded
+  // above (`dShaftAbyss`); a digit because it is a tide tile, and the outdoor
+  // `channel` no room of the Keep places.
+  registerLegend('dungeonAbyss', { '5': 'dShaftAbyss' }, 'dungeonAbyss');
+  // THE HOLD (S189), the Keep's floor beneath: the Sword & Shield Maze's ice
+  // half. Its own floor, wall, block and pot; `i` is the ice, `,` the dark
+  // ring that marks the cell under a shaft, `O` its own hole.
+  theme('dungeonAbyssIce', 'dFloorAbyssIce', 'dFloorAbyssIceAlt', 'dWallAbyssIce', 'dWallAbyssIceX', 'dBlockAbyssIce', 'dUrnAbyssIce');
+  registerLegend('dungeonAbyssIce', { 'i': 'dIceAbyss', 'O': 'dHoleAbyssIce' }, 'dungeonAbyssIce');
   // Each main dungeon's own stairs (S164), as the Palace's: `/` goes down
   // (or back along the same floor), `S` goes up. `S` is the shared legend's
   // `riptideS`, which no main dungeon room places.
-  for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss']) {
+  for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss', 'AbyssIce']) {
     registerLegend('dungeon' + T, { '/': 'dStairsDown' + T, 'S': 'dStairsUp' + T }, 'dungeon' + T);
   }
 

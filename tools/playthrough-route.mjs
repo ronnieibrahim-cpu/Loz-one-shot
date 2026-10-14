@@ -3595,7 +3595,7 @@ export const GOAL = {
   // The room the run finishes in: the throne room, with Nereth dead, the
   // sixth Essence claimed and the ending playing. This is the end of the
   // game.
-  room: 'd6/1,3,0',
+  room: 'd6/2,3,0',
   needsVerb: null,
   keysNeeded: 20,
   keysObtainable: 20,

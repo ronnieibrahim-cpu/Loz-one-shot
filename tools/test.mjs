@@ -124,6 +124,37 @@ async function loadPlaywright() {
   check('and a save already on two floors is left alone', again.pos.floor === 1 && again.doors['d3:1,3,4:7,0']);
 }
 
+// --- a save from before the Keep had a Hold loads where it was --------------
+//
+// S189 put the Hold under the Abyssal Keep as floor 0, so the Keep's two floors
+// are 1 and 2. A save written before that names them 0 and 1, and BOTH move.
+{
+  const { newProgress, exportCode, importCode } = await import('../src/game/progress.js');
+  const old = newProgress('LINK', 1);
+  delete old.d6Floors;
+  old.pos = { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' };
+  old.respawn = { map: 'd6', floor: 0, rx: 3, ry: 7, px: 112, py: 144 };
+  old.doors['d6:0,3,3:14,5'] = 'dDoorOpen';
+  old.doors['d6:1,4,3:0,5'] = 'dDoorOpen';
+  old.chests['d6:1,4,2:0'] = true;
+  old.chests['d6:0,4,3:0'] = true;
+  old.secrets['seen:d6:0,3,7'] = true;
+  old.secrets['seen:d6:1,3,0'] = true;
+  old.slain['d6:0,3,6:0'] = { perm: true };
+  old.doors['d3:1,3,4:7,0'] = 'dDoorOpen';
+  const got = importCode(exportCode(old));
+  check('an old save inside the Keep is moved up one floor, both floors',
+    got.pos.floor === 2 && got.respawn.floor === 1
+      && got.doors['d6:1,3,3:14,5'] === 'dDoorOpen' && got.doors['d6:2,4,3:0,5'] === 'dDoorOpen'
+      && !got.doors['d6:0,3,3:14,5'] && got.chests['d6:2,4,2:0'] && got.chests['d6:1,4,3:0']
+      && !got.chests['d6:0,4,3:0'] && got.secrets['seen:d6:1,3,7'] && got.secrets['seen:d6:2,3,0']
+      && got.slain['d6:1,3,6:0'] && got.doors['d3:1,3,4:7,0'] === 'dDoorOpen' && got.d6Floors === 3,
+    JSON.stringify({ pos: got.pos, doors: got.doors, chests: got.chests, secrets: got.secrets }));
+  const again = importCode(exportCode(got));
+  check('and a save already on three floors is left alone',
+    again.pos.floor === 2 && again.doors['d6:1,3,3:14,5'] && again.chests['d6:2,4,2:0']);
+}
+
 // --- determinism: nothing under src/ may call Math.random -------------------
 //
 // One global stream seeded from the save plus a per-room derived stream is the

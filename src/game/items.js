@@ -41,6 +41,7 @@ import {
   BOMB_FUSE_FRAMES, BOMB_STILL_FRAMES, BOMB_FLASH_BEAT,
 } from '../data/feel.js';
 import { sprites, tiles } from '../gfx/art.js';
+import { haulFromBelow } from './chunk.js';
 
 // --------------------------------------------------------------------------
 // Bomb
@@ -426,6 +427,19 @@ export class DredgeLine extends Entity {
       const [tx, ty] = this.path[i];
       const f = room.flagsAt(tx, ty, game.tide);
       if (!(f & (F.WET | F.SLOW))) continue;
+      // THROUGH A FLOODED SHAFT (S189, the Abyssal Keep): the floor the line
+      // searches is the floor of the room beneath, and what lies on that cell
+      // comes up the shaft. "The floor gives up only what the sea covers."
+      if ((f & F.DEEP) && room.tile(tx, ty, game.tide).shaft) {
+        const up = haulFromBelow(game, this, tx, ty);
+        if (up) {
+          this.hooked = up; up.attached = this;
+          this.x = tx * TILE + 3; this.y = ty * TILE + 3;
+          game.audio.sfx('hookHit');
+          game.spawnEffect('splash', tx * TILE, ty * TILE);
+          found = true; break;
+        }
+      }
       if (game.applyTileAction(tx, ty, 'dredge', this.level)) { found = true; break; }
       if (game.dredgeTile(tx, ty, this)) { found = true; break; }
     }
@@ -447,6 +461,15 @@ export class DredgeLine extends Entity {
     const h = this.hooked;
     if (!h) return;
     h.attached = null;
+    // AN ICE CHUNK COMES HOME INTO HIS HANDS (S189): hauled up a shaft or
+    // fished off the water, it is lifted as it arrives, rather than dropped
+    // on his feet where a solid thing would wall him in.
+    if (h.chunkId !== undefined && p && !p.carrying && !h.remove) {
+      p.carrying = h; h.carried = true; h.floating = false; h.flight = null;
+      p.beginLift();
+      game.audio.sfx('lift');
+      return;
+    }
     if (h.isEnemy) {
       // Landed. It flops where the line dropped it, on whatever ground that
       // is, and `findSafeTile` keeps it out of scenery.

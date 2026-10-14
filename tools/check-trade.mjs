@@ -408,7 +408,7 @@ section('the consumer: the Abyssal Keep grate');
     const g = window.__game;
     const { F } = await import('/src/world/tileset.js');
     g.mode = 'play';
-    g.enterMap('d6', 1, 2, 4, 7 * 16, 4 * 16, 'up', { instant: true });
+    g.enterMap('d6', 2, 2, 4, 7 * 16, 4 * 16, 'up', { instant: true });
     g.mode = 'play';
     g.progress.items.rod = 1;
     g.progress.equipB = 'rod';

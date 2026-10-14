@@ -503,9 +503,9 @@ check('the Maku Tree gave up both the Resonance Rod and the third blade',
 // THE KEEP SEAL OPENED. Upper Kell and the Abyss Stair each carry it right
 // across, and no item in the world touches it. The run walks through both.
 check('the road down the Kell opened, and the run walked into the Abyssal Keep',
-  ['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/0,3,7']
+  ['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/1,3,7']
     .every(r => a.rooms.includes(r)),
-  `rooms ${['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/0,3,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+  `rooms ${['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/1,3,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 
 // THE ABYSSAL KEEP HAS BEEN PLAYED, as far as the Boss Key's door. Every part
 // of this is something nothing in the repo had ever done in a run:
@@ -527,10 +527,10 @@ const D6_FLAGS = ['d6_bone', 'd6_drain', 'd6_kiln'];
 check('THE ABYSSAL KEEP WAS PLAYED TO NERETH\'S OWN DOOR — its four keys earned, its four locks opened, three shafts crossed on the Dredge Line',
   s.items.includes('dredge') && s.items.includes('kilnshell')
     && D6_FLAGS.every(f => (s.flags || []).includes(f))
-    && a.rooms.includes('d6/1,4,3') && a.rooms.includes('d6/1,3,2'),
+    && a.rooms.includes('d6/2,4,3') && a.rooms.includes('d6/2,3,2'),
   `dredge ${s.items.includes('dredge')}, kilnshell ${s.items.includes('kilnshell')}, `
   + `flags missing ${D6_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
-  + `rooms missing ${['d6/1,4,3', 'd6/1,3,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+  + `rooms missing ${['d6/2,4,3', 'd6/2,3,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
 
 // THE DUNGEON KEYS (S154). Every dungeon whose door is a keyhole was opened by
 // its own key, which the run was handed by that key's giver — read as flags
@@ -565,10 +565,10 @@ check(`EVERY LOCKED DUNGEON DOOR WAS OPENED WITH ITS OWN KEY — ${keyed.map(k =
 //     is claimed by touching it; the five before this were all taken in a
 //     shooter and never in a run.
 check('THE GAME WAS FINISHED — the Sunken Bar crossed at flood, the Brinehulk beaten for the Boss Key, and NERETH KILLED IN REAL COMBAT',
-  a.rooms.includes('d6/1,2,3') && a.rooms.includes('d6/1,4,2')
-    && a.rooms.includes('d6/1,3,1') && !!(s.beaten || {}).d6,
-  `Sunken Bar ${a.rooms.includes('d6/1,2,3')}, Crossed Shafts ${a.rooms.includes('d6/1,4,2')}, `
-  + `throne room ${a.rooms.includes('d6/1,3,1')}, d6 beaten ${!!(s.beaten || {}).d6}`);
+  a.rooms.includes('d6/2,2,3') && a.rooms.includes('d6/2,4,2')
+    && a.rooms.includes('d6/2,3,1') && !!(s.beaten || {}).d6,
+  `Sunken Bar ${a.rooms.includes('d6/2,2,3')}, Crossed Shafts ${a.rooms.includes('d6/2,4,2')}, `
+  + `throne room ${a.rooms.includes('d6/2,3,1')}, d6 beaten ${!!(s.beaten || {}).d6}`);
 
 // AND THE SIXTH ESSENCE IS IN HAND, which is a different fact from the boss
 // being dead and is the one the ending chains off. `GOAL.essences` already
@@ -592,11 +592,11 @@ check('THE GAME WAS FINISHED — the Sunken Bar crossed at flood, the Brinehulk 
 // the Two Arches, the Keep's Lens fork and the first one in the game answered
 // by a WALL rather than by a shaft.
 check('FLOOR 1\'S EAST WING WAS PLAYED — the tideshade beaten, the level-2 Cleats taken, the Lens fork read',
-  a.rooms.includes('d6/1,4,5') && a.rooms.includes('d6/1,4,4')
-    && a.rooms.includes('d6/1,5,4') && (s.flags || []).includes('d6_tideshade')
+  a.rooms.includes('d6/2,4,5') && a.rooms.includes('d6/2,4,4')
+    && a.rooms.includes('d6/2,5,4') && (s.flags || []).includes('d6_tideshade')
     && s.itemLevels && s.itemLevels.cleats >= 2,
-  `hall ${a.rooms.includes('d6/1,4,5')}, vault ${a.rooms.includes('d6/1,4,4')}, `
-  + `arches ${a.rooms.includes('d6/1,5,4')}, flag ${(s.flags || []).includes('d6_tideshade')}, `
+  `hall ${a.rooms.includes('d6/2,4,5')}, vault ${a.rooms.includes('d6/2,4,4')}, `
+  + `arches ${a.rooms.includes('d6/2,5,4')}, flag ${(s.flags || []).includes('d6_tideshade')}, `
   + `cleats ${s.itemLevels && s.itemLevels.cleats}`);
 
 // THE COLONNADE OF THE DROWNED, which is the one room in the Abyssal Keep that
@@ -607,9 +607,9 @@ check('FLOOR 1\'S EAST WING WAS PLAYED — the tideshade beaten, the level-2 Cle
 // the trade and the last dungeon meeting each other, which nothing had ever
 // made happen in a run.
 check('THE COILROPE WAS WON AND WORN — the Keep\'s grate answered to the Rod the trade paid out',
-  a.rooms.includes('d6/1,2,4') && (s.charmsOwned || []).includes('coilrope')
+  a.rooms.includes('d6/2,2,4') && (s.charmsOwned || []).includes('coilrope')
     && ((s.charmCases || {}).mid || []).includes('coilrope'),
-  `Colonnade ${a.rooms.includes('d6/1,2,4')}, owned ${(s.charmsOwned || []).join(', ')}, `
+  `Colonnade ${a.rooms.includes('d6/2,2,4')}, owned ${(s.charmsOwned || []).join(', ')}, `
   + `mid ${JSON.stringify((s.charmCases || {}).mid)}`);
 
 check('A CHARM WAS WORN — the scrimshaw case is not empty at the end of the run',
@@ -624,7 +624,7 @@ check('THE GAME ENDS ON "THE END" — the ending holds its card instead of handi
   s.mode === 'theend', `ended in mode "${s.mode}"`);
 
 check('THE SIXTH ESSENCE WAS CLAIMED IN NERETH\'S OWN HALL, and not off anything else',
-  s.essences.includes(6) && a.rooms.includes('d6/1,3,1'),
+  s.essences.includes(6) && a.rooms.includes('d6/2,3,1'),
   `essences ${JSON.stringify(s.essences)}`);
 
 // AND IT ARRIVES WITH ENOUGH HEALTH TO FIGHT WHAT IS DOWN THERE. This is the
@@ -644,7 +644,7 @@ check('THE SIXTH ESSENCE WAS CLAIMED IN NERETH\'S OWN HALL, and not off anything
 // the assertion silently started asking about a room two floors in, which is a
 // different and much harder question than the one the chain's long walk is
 // answerable for. The tour's cost is measured at the threshold.
-const arrival = a.roomHealth.filter(r => r.room === 'd6/0,3,7');
+const arrival = a.roomHealth.filter(r => r.room === 'd6/1,3,7');
 const arrivedOn = arrival.length ? arrival[0].enterHearts : 0;
 check('the run arrives at the Abyssal Keep\'s arch on at least half its hearts',
   arrivedOn * 2 >= s.maxHearts,

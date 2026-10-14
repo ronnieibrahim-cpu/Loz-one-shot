@@ -8,8 +8,8 @@
 // Every torch in the game was unlightable, and three puzzle rooms paid for it:
 //
 //   d2/0,4,5 Torch Cell  -> Small Key   (fatal: see below)
-//   d6/0,4,4 Black Kiln  -> Small Key
-//   d6/0,3,5 Drowned Hall-> rupees      (money only)
+//   d6/1,4,4 Black Kiln  -> Small Key
+//   d6/1,3,5 Drowned Hall-> rupees      (money only)
 //
 // The D2 one deadlocked the game. The Coral Spire has two keys and two locked
 // doors; that key's door is the Stair Coil, the only way to floor 1, so the

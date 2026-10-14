@@ -37,6 +37,8 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // The Bogwater Sanctum's floors (S181): 2 since the Undercroft went in
     // under it. See `migrate`.
     d3Floors: 2,
+    // The Abyssal Keep's floors (S189): 3 since the Hold went in under it.
+    d6Floors: 3,
     name,
     seed: seed >>> 0,
     // health
@@ -77,6 +79,11 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     chests: {},              // "mapId:roomKey:index" -> true
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
+    // THE ICE CHUNKS (S189, the Abyssal Keep's Hold): chunk id -> where it
+    // rests, { map, floor, rx, ry, tx, ty }. A chunk with no entry is where its
+    // room put it; one that has been moved is wherever it was last set down,
+    // dropped or hauled, on whichever floor. See src/game/chunk.js.
+    chunks: {},
     // Killed enemies that stay dead. Keyed the same as chests/secrets
     // ("mapId:roomKey:index"). A dungeon/cave entry is `{ perm: true }` and
     // never respawns; an overworld entry is `{ until: <owVisits value> }`
@@ -332,7 +339,7 @@ function migrate(p) {
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'slain', 'charms', 'charmOpen',
-    'charmTold',
+    'charmTold', 'chunks',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }
@@ -382,5 +389,20 @@ function migrate(p) {
     }
   }
   out.d3Floors = 2;
+  // A save from before the Abyssal Keep grew its Hold (S189) names the Keep
+  // as floors 0 and 1; they are 1 and 2 now, with the Hold under them.
+  if (!p.d6Floors) {
+    const up = (o) => (o && o.map === 'd6' ? { ...o, floor: (o.floor | 0) + 1 } : o);
+    out.pos = up(out.pos); out.respawn = up(out.respawn); out.coin = up(out.coin);
+    for (const k of ['chests', 'doors', 'secrets', 'slain']) {
+      const moved = {};
+      for (const [key, v] of Object.entries(out[k])) {
+        moved[key.replace(/^(seen:)?d6:(\d+),(?=\d+,\d+(:|$))/, (m, seen, f) => `${seen || ''}d6:${+f + 1},`)] = v;
+      }
+      out[k] = moved;
+    }
+    for (const [id, c] of Object.entries(out.chunks)) out.chunks[id] = up(c);
+  }
+  out.d6Floors = 3;
   return out;
 }

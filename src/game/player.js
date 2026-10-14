@@ -25,7 +25,7 @@ import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR,
-  SHALLOW_FACTOR, CARRY_FACTOR,
+  SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS,
   SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS,
   CHARGE_FRAMES, CHARGE_FLASH_BEAT,
   SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES,
@@ -534,8 +534,13 @@ export class Player extends Entity {
     if (i.down('up')) dy -= 1;
     if (i.down('down')) dy += 1;
 
-    // Attacking roots you in place, as in the GBC games.
-    if (this.swinging > 0) { this.animT++; return; }
+    // Attacking roots you in place, as in the GBC games — except on ice,
+    // where nothing he does with his hands stops the slide (S189): the
+    // sword holds his d-pad, so the slide runs on as if nothing were held.
+    if (this.swinging > 0) {
+      if (this.ice && this.onIce(game, groundFlags(game, this))) this.updateIce(game, 0, 0, 1);
+      this.animT++; return;
+    }
 
     // The held blade keeps him facing the way it points: Seasons disables
     // turning for the sword's whole life, hold included (commonCode.s
@@ -551,6 +556,7 @@ export class Player extends Entity {
       }
     }
     this._lastDx = dx; this._lastDy = dy;
+    this._lastIceIn = this._iceIn; this._iceIn = !!(dx || dy);
 
     // Speeds are subpixels per frame. The terrain multipliers are
     // dimensionless, so their product has to land back on a whole subpixel
@@ -577,6 +583,16 @@ export class Player extends Entity {
     // DIAGONAL_FACTOR in feel.js and docs/FEEL-SPEC.md). Rounded once, after
     // the terrain product, so it too lands on a whole subpixel.
     if (dx && dy) speed = Math.max(1, Math.round(speed * DIAGONAL_FACTOR));
+
+    // ICE (S189): Seasons' slide, not a walk. See `updateIce`.
+    if (this.onIce(game, f)) {
+      if (this.bellowsOpen || this.bellowsT > 0 || this.ledgeHop || (this.clungBy && (this.frame & 1))) {
+        this.animT++; return;
+      }
+      this.updateIce(game, dx, dy, mult);
+      return;
+    }
+    this.ice = null;
 
     // Pumping costs you your feet. You may still turn — aiming a sustained
     // gust you cannot re-point would be a puzzle about pre-positioning rather
@@ -622,6 +638,68 @@ export class Player extends Entity {
       this._pushT = 0;
       if (this.inDeep) this.animT++;      // treading water keeps animating
     }
+  }
+
+  // ------------------------------------------------------------------- ice
+
+  /** Standing on ice, on his feet, and not mid-lift (S189). */
+  onIce(game, f) {
+    return !!(f & F.ICE) && this.z <= 2 && !this.inDeep && !this.inShallow && !this.jumping
+      && !(this.liftT > 0);
+  }
+
+  /**
+   * SEASONS' ICE (link.s linkUpdateVelocity -> func_5933). Link has a heading
+   * of 32 steps and a speed; every ICE_STEP_FRAMES the heading turns one step
+   * toward the d-pad (or snaps to it when within a step) and the speed gains
+   * ICE_ACCEL while the d-pad points his way, loses it while it is let go or
+   * held against him, and turns without either across his path. At zero he
+   * stops, and the next press sets the heading outright. He arrives on the ice
+   * with the speed and heading he walked onto it with.
+   */
+  updateIce(game, dx, dy, mult) {
+    const want = (dx || dy) ? (Math.round(Math.atan2(dx, -dy) / (2 * Math.PI) * ICE_TURN_STEPS) + ICE_TURN_STEPS) % ICE_TURN_STEPS : -1;
+    let top = (this.speedBoost > 0 ? BOOST_SPEED : WALK_SPEED);
+    if (mult !== 1) top = Math.max(1, Math.round(top * mult));
+    if (!this.ice) {
+      // Onto the ice from the walk: his walking speed, his walking heading.
+      const moving = want >= 0 && this._lastIceIn;
+      this.ice = { angle: moving ? want : -1, speed: moving ? Math.min(top, WALK_SPEED) : 0, t: 0 };
+    }
+    const ice = this.ice;
+    if (ice.angle < 0) {
+      if (want >= 0) ice.angle = want;
+    } else {
+      let turn = 0, gain = 0;
+      if (want < 0) gain = -ICE_ACCEL;
+      else {
+        const diff = (want - ice.angle + 4 + ICE_TURN_STEPS) % ICE_TURN_STEPS;
+        if (diff < 9) {
+          gain = ICE_ACCEL;
+          if (diff < 3) turn = -1; else if (diff >= 6) turn = 1; else ice.angle = want;
+        } else if (diff - 16 >= 0 && diff - 16 < 9) {
+          gain = -ICE_ACCEL;
+          const d = diff - 16;
+          if (d < 3) turn = 1; else if (d >= 6) turn = -1; else ice.angle = (want + 16) % ICE_TURN_STEPS;
+        } else {
+          turn = diff < 16 ? 1 : -1;
+        }
+      }
+      if (++ice.t >= ICE_STEP_FRAMES) {
+        ice.t = 0;
+        ice.angle = (ice.angle + turn + ICE_TURN_STEPS) % ICE_TURN_STEPS;
+        ice.speed = Math.min(top, ice.speed + gain);
+        if (ice.speed <= 0) { ice.speed = 0; ice.angle = -1; }
+      }
+    }
+    if (ice.angle < 0 || ice.speed <= 0) { this.pushing = false; this.againstWall = false; return; }
+    const a = ice.angle / ICE_TURN_STEPS * 2 * Math.PI;
+    const vx = Math.round(Math.sin(a) * ice.speed), vy = Math.round(-Math.cos(a) * ice.speed);
+    const res = moveEntity(game, this, vx, vy);
+    this.animT++;
+    this.pushing = (dx || dy) ? ((res.hitX && dx !== 0) || (res.hitY && dy !== 0)) : false;
+    this.againstWall = game.input.down(this.dir) && this.facingWall(game);
+    if (this.pushing) game.doorwayPull(this, dx, dy, res);
   }
 
   // ------------------------------------------------------------ one-way ledge
@@ -1192,6 +1270,13 @@ export class Player extends Entity {
     this.carrying = null;
     this.liftT = 0;
     c.carried = false;
+    // An ice chunk is let go of, not lost (S189): Seasons' dropLinkHeldItem
+    // sets the held object down where he stands (substate 3).
+    if (c.settle) {
+      c.x = this.x; c.y = this.y;
+      c.settle(game);
+      return;
+    }
     c.remove = true;
     game.spawnEffect('splash', c.x, c.y);
   }
@@ -1549,7 +1634,8 @@ export class Player extends Entity {
       this.carrying = null; this.liftT = 0; c.carried = false;
       const { tx, ty } = groundTile(game, this);
       c.x = tx * TILE + 8 - c.w / 2; c.y = ty * TILE + 8 - c.h / 2;
-      if (!game.dropObjectThrough(c)) { c.remove = true; game.spawnEffect('puff', c.x, c.y); }
+      if (c.settle) c.settle(game);
+      else if (!game.dropObjectThrough(c)) { c.remove = true; game.spawnEffect('puff', c.x, c.y); }
     }
     this.falling = FALL_FRAMES;
     this.fallDrop = drop;

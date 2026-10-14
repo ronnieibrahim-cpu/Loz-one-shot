@@ -211,8 +211,13 @@ export function registerTiles(defs) {
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
-      // edges, where the floor's edge shows. See `Room.artAt`.
+      // edges, where the floor's edge shows. See `Room.artAt`. `one` (S189)
+      // is a hole with no hole on any side: the Sword & Shield Maze's $f3.
       lip: def.lip || null,
+      // A KEEP SHAFT (S189): a hole or a flooded well with a room under it
+      // that only an ice chunk goes down and only the Dredge Line reaches
+      // through. To Link it is the pit or the water its flags say.
+      shaft: !!def.shaft,
       depth: def.depth || 0,
       // How strong you have to be to pick this up, against LIFT_STRENGTH and
       // any item that raises it, and what it looks like once lifted.

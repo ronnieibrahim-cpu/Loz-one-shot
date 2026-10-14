@@ -2616,3 +2616,36 @@ export const GB_RENDER_SLICE_GAP_MS = 12;
  *  to think does not. The clock runs through a conch sweep and stops for a
  *  screen scroll and a text box. */
 export const RACE_SHORE_FRAMES = 600;
+
+// --- Ice (the Abyssal Keep's Hold, S189) ----------------------------------
+//
+// Seasons' ice is a velocity model, not a walk: linkApplyTileTypes
+// (specialObjects/commonCode.s @tileType_ice) sets wIsTileSlippery, and Link's
+// normal state then calls updateLinkSpeed_withParam with $88 (the slippery
+// row of its @speedTable, target speed only) and linkUpdateVelocity
+// (link.s func_5933). Every ICE_STEP_FRAMES it turns his heading one step of
+// 32 toward the d-pad and adds or takes ICE_ACCEL; with nothing held, or the
+// d-pad against him, it takes it away, and at zero he stops. Lifting cancels
+// it (wLinkGrabState 1-2); holding something does not.
+
+/** frames — how often the slide's speed and heading are stepped. derived from
+ *  the cartridge: @speedTable's slippery row gives var13 = $06, and func_5933
+ *  only applies its step when var12 reaches var13. */
+export const ICE_STEP_FRAMES = 6;
+
+/** sp/f — what each step adds while the d-pad is with him, and takes away
+ *  while it is not. derived from the cartridge: func_5933's c = $05 / $fb,
+ *  five units of the object speed scale (SPEED_100 = $28 = 1 px/f), so
+ *  SPEED_020: 1/8 px/f, 32 subpixels. */
+export const ICE_ACCEL = 32;
+
+/** headings — how many headings the slide has in a full turn; each step swings
+ *  it one of them toward the d-pad. derived from the cartridge: Link's angle is
+ *  5 bits ($00 up, $08 right, $10 down, $18 left) and func_5933's b = $01 /
+ *  $ff turns it by one; held within one heading of it, it snaps to it. */
+export const ICE_TURN_STEPS = 32;
+
+/** frames — how long a floating ice chunk holds each of its two bob heights
+ *  (1 px apart). guessed: Seasons never floats one (it splashes away); ours
+ *  floats, and bobs at the pace a buoy on the overworld sea would. */
+export const CHUNK_BOB_FRAMES = 24;

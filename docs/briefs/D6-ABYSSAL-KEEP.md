@@ -322,3 +322,46 @@ health re-checked on every one.
 6. **Two building sessions**: first the ice, the chunk, the shafts and the
    line's haul, the floor move, the Hold and K1-K4 with check-hold; then the
    Weighhouse, K5-K6, the Boss Key's move, the robot and the guide.
+
+## The human's answers (S189)
+
+**Yes to all six.**
+
+1. The machine — "what the sea puts down, the line brings up" — yes.
+2. Seasons' ice, Link sliding on it, and its liftable chunks — yes.
+3. The sea rises through the Keep floor by floor (1F shafts flood at MID,
+   2F shafts only at HIGH) — keep it.
+4. Link sets a chunk down at a stair — fine (see the cartridge's own rule
+   below).
+5. 53 screens on 3 floors and 7 keys — fine.
+6. Two building sessions — yes. S189 builds the first half.
+
+### What the cartridge does to a held object at a stair (read in S189)
+
+Before relying on question 4, S189 read it. Seasons' `checkTileWarps`
+(code/bank1.s), which is what a stair is: *"Check for warps initiated by
+touching certain tiles (ie. stairs)"* — after `checkTileIsWarpTile` it reads
+`wLinkGrabState` and, if Link is holding anything, jumps to
+`noWarpInitiated`. **A stair does nothing at all while Link holds
+something.** He walks onto it, it does not take him, and he goes on holding
+the thing; he has to set it down (or throw it) and step on again. (And if a
+room ever reloaded with something held, `loadingRoom` -> `func_5a60` calls
+`dropLinkHeldItem` before the new room's objects exist — nothing crosses a
+warp in his hands either way.)
+
+So the design rule stands, and it is the cartridge's own rule rather than
+ours: no chunk is ever carried up or down a stair. Ours follows it for
+every held thing (a pot, a bomb, a Kilnshell, a chunk), not for the chunk
+alone.
+
+### The shafts are pits to Link (the human, S189)
+
+Building K3 showed that a plate directly under a shaft is a plate Link can
+reach by jumping down the shaft himself (and a one-cell islet is somewhere
+he can be stranded). Asked, the human chose **Seasons' own rule**: in the
+Sword & Shield Maze every hole is an ordinary pit to Link (he falls, is
+hurt, and is put back on the edge) and only the ice goes through to the
+floor below. So the Keep's shafts are pits to Link and water to a swimmer;
+only an ice chunk goes down one, and only the Dredge Line reaches through
+one. The Hold is reached by its stair. This drops "the quick way into the
+Hold" and "sink down a flooded 1F shaft with the Cleats" from the brief.

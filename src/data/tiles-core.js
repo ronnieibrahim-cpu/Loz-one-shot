@@ -1456,7 +1456,7 @@ const HAND_ART = {
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
 // The dungeon themes, by the suffix every one of their tiles carries.
-const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie'];
+const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie', 'AbyssIce'];
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
 
@@ -2883,7 +2883,7 @@ export function installCoreTiles() {
     // ($44) and down ($45) staircase, in its own colours. Exactly `dStairs`'
     // flags; the theme legends point `/` at the down one and `S` at the up.
     ...Object.fromEntries([['Grotto', 'g'], ['Coral', 'c'], ['Bog', 'b'], ['Cistern', 'x'],
-      ['Wood', 'r'], ['Abyss', 'k']].flatMap(([T, P]) => [
+      ['Wood', 'r'], ['Abyss', 'k'], ['AbyssIce', 'g']].flatMap(([T, P]) => [
       ['dStairsUp' + T, { art: ART[P + 'StairsUp'], pal: P + 'StairsUp', flags: F.WARP | F.STAIRS }],
       ['dStairsDown' + T, { art: ART[P + 'StairsDown'], pal: P + 'StairsDown', flags: F.WARP | F.STAIRS }],
     ])),
@@ -3011,6 +3011,58 @@ export function installCoreTiles() {
     dUrnAbyss: { art: ART.kStatue, pal: 'kStatue', flags: F.SOLID, underArt: 'dFloorAbyss' },
     // The way out: a gap in the ring you walk down through, carrying the warp.
     dExitAbyss: { art: ART.kFloor, pal: 'kFloor', flags: F.WARP },
+    // THE KEEP'S SHAFTS (S189): the fire half's own hole ($f3-$f7) over the
+    // Hold, a tide tile — a hole at LOW, flooded at MID and HIGH (a 1F shaft;
+    // the sea rises through the Keep floor by floor). SEASONS' RULE, the
+    // human's choice (S189): to Link a shaft is an ordinary pit — he falls,
+    // is hurt and is set back on the edge, as he is at every hole of the
+    // Sword & Shield Maze — and only an ice chunk goes through it, to the
+    // same cell one floor down (`shaft`, read by Game.dropObjectThrough).
+    // Flooded, the Dredge Line cast over it searches that cell beneath
+    // (DredgeLine.dragBack). No F.DROP: that bit is the Sanctum's, Link's.
+    dHoleAbyss: {
+      art: ART.kHole, pal: 'kHole', flags: F.PIT, family: 'shaft', shaft: true,
+      lip: { n: 'dHoleAbyssN', s: 'dHoleAbyssS', ns: 'dHoleAbyssNS', one: 'dHoleAbyssOne' },
+    },
+    dHoleAbyssN: { art: ART.kHoleN, pal: 'kHoleN', flags: F.PIT, family: 'shaft', shaft: true },
+    dHoleAbyssS: { art: ART.kHoleS, pal: 'kHoleS', flags: F.PIT, family: 'shaft', shaft: true },
+    dHoleAbyssNS: { art: ART.kHoleNS, pal: 'kHoleNS', flags: F.PIT, family: 'shaft', shaft: true },
+    dHoleAbyssOne: { art: ART.kHoleOne, pal: 'kHoleOne', flags: F.PIT, family: 'shaft', shaft: true },
+    dShaftWaterAbyss: {
+      art: ART.waterD0, pal: 'deep', flags: F.DEEP, shaft: true,
+      anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
+    },
+    dShaftAbyss: { tide: ['dHoleAbyss', 'dShaftWaterAbyss', 'dShaftWaterAbyss'] },
+
+    // THE HOLD (S189), B1 under the Keep: the Sword & Shield Maze's ICE half,
+    // tileset $41 (`hold*` picks in rip-dungeon-themes.py) — blue cobble round
+    // a ring of pale stone, the ice ($8c, TILETYPE_ICE: `F.ICE`, Link slides,
+    // Player.updateIce), the darker cobble ring that marks the cell under a
+    // shaft, the magenta block, its own doors and its own holes (plain pits:
+    // there is no floor under the Hold).
+    dFloorAbyssIce: { art: ART.holdFloor, pal: 'holdFloor' },
+    dFloorAbyssIceAlt: { art: ART.holdFloorAlt, pal: 'holdFloorAlt' },
+    dIceAbyss: { art: ART.holdIce, pal: 'holdIce', flags: F.ICE },
+    dWallAbyssIce: { art: ART.holdFill, pal: 'holdFill', flags: F.SOLID, ring: {
+      TL: 'holdRingTL', TR: 'holdRingTR', BL: 'holdRingBL', BR: 'holdRingBR',
+      N: 'holdRingN', S: 'holdRingS', W: 'holdRingW', E: 'holdRingE',
+      jNW: 'holdJambNW', jNE: 'holdJambNE', jSW: 'holdJambSW', jSE: 'holdJambSE',
+      jWN: 'holdJambNW', jWS: 'holdJambSW', jEN: 'holdJambNE', jES: 'holdJambSE',
+      lockN: 'holdKeyN', lockS: 'holdKeyS', lockE: 'holdKeyE', lockW: 'holdKeyW',
+      shutN: 'holdShutN', shutS: 'holdShutS', shutE: 'holdShutE', shutW: 'holdShutW',
+      faces: true,
+    } },
+    dWallAbyssIceX: { art: ART.dWallCracked, pal: 'holdRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockAbyssIce: { art: ART.holdBlock, pal: 'holdBlock', flags: F.SOLID },
+    dUrnAbyssIce: { art: ART.holdBlock, pal: 'holdBlock', flags: F.SOLID },
+    dHoleAbyssIce: {
+      art: ART.holdHole, pal: 'holdHole', flags: F.PIT, family: 'pitIce',
+      lip: { n: 'dHoleAbyssIceN', s: 'dHoleAbyssIceS', ns: 'dHoleAbyssIceNS', one: 'dHoleAbyssIceOne' },
+    },
+    dHoleAbyssIceN: { art: ART.holdHoleN, pal: 'holdHoleN', flags: F.PIT, family: 'pitIce' },
+    dHoleAbyssIceS: { art: ART.holdHoleS, pal: 'holdHoleS', flags: F.PIT, family: 'pitIce' },
+    dHoleAbyssIceNS: { art: ART.holdHoleNS, pal: 'holdHoleNS', flags: F.PIT, family: 'pitIce' },
+    dHoleAbyssIceOne: { art: ART.holdHoleOne, pal: 'holdHoleOne', flags: F.PIT, family: 'pitIce' },
     kRingTL: { art: ART.kRingTL, pal: 'kRingTL', flags: F.SOLID },
     kRingTR: { art: ART.kRingTR, pal: 'kRingTR', flags: F.SOLID },
     kRingBL: { art: ART.kRingBL, pal: 'kRingBL', flags: F.SOLID },
@@ -3036,6 +3088,11 @@ export function installCoreTiles() {
     kShutE: { art: ART.kShutE, pal: 'kShutE', flags: F.SOLID | F.DOOR },
     kShutW: { art: ART.kShutW, pal: 'kShutW', flags: F.SOLID | F.DOOR },
     kBossN: { art: ART.kBossN, pal: 'kBossN', flags: F.SOLID | F.DOOR },
+    // The Hold's ring, jambs and doors (S189), the ice half's own.
+    ...Object.fromEntries(['RingTL', 'RingTR', 'RingBL', 'RingBR', 'RingN', 'RingS', 'RingW', 'RingE',
+      'JambNW', 'JambNE', 'JambSW', 'JambSE'].map(n => ['hold' + n, { art: ART['hold' + n], pal: 'hold' + n, flags: F.SOLID }])),
+    ...Object.fromEntries(['KeyN', 'KeyS', 'KeyE', 'KeyW', 'ShutN', 'ShutS', 'ShutE', 'ShutW']
+      .map(n => ['hold' + n, { art: ART['hold' + n], pal: 'hold' + n, flags: F.SOLID | F.DOOR }])),
 
     // THEMED SCENERY. `M` and `U` in the dungeon legend; the urn is themed per
     // dungeon just as the floor and wall are, so `U` in a Coral Spire room is a
@@ -3218,10 +3275,12 @@ export function installCoreTiles() {
     TILE_DEFS['dPot' + T] = {
       art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
         : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : T === 'Abyss' ? ART.kPot
-        : T === 'Salt' ? ART.hPot : T === 'Eyrie' ? ART.nPot : T === 'Palace' ? ART.uPot : ART.pot,
+        : T === 'Salt' ? ART.hPot : T === 'Eyrie' ? ART.nPot : T === 'Palace' ? ART.uPot
+        : T === 'AbyssIce' ? ART.holdPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
         : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : T === 'Abyss' ? 'kPot'
-        : T === 'Salt' ? 'hPot' : T === 'Eyrie' ? 'nPot' : T === 'Palace' ? 'uPot' : 'pot',
+        : T === 'Salt' ? 'hPot' : T === 'Eyrie' ? 'nPot' : T === 'Palace' ? 'uPot'
+        : T === 'AbyssIce' ? 'holdPot' : 'pot',
       // No `liftSprite`: lifted, a pot is drawn as the pot it was (S155).
       // It used to name `o_pot`, the hand-drawn stand-in, so every dungeon
       // pot turned into a different pot the moment Link picked it up.

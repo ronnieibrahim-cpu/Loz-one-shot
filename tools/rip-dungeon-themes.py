@@ -730,6 +730,53 @@ PICKS = [
     meta('rHoleS', 0x4a, 'the warp hole, floor below it, the Ancient Ruins', 'ruinsMeta'),
     meta('rHoleNS', 0x4b, 'the warp hole, floor above and below, the Ancient Ruins', 'ruinsMeta'),
     meta('kStairsUp', 0x44, 'the stair up, the Sword & Shield Maze (fire)', 'mazeFire'),
+    # THE KEEP'S SHAFTS (S189), the fire half's own holes (TILETYPE_HOLE
+    # $f3-$f7, tileTypeMappings.s @dungeons): $f4 inside a run, $f5 with floor
+    # above it (a lip on its top rows), $f6 with floor below, $f7 both, and
+    # $f3 a hole alone in the floor, rimmed all round.
+    meta('kHole', 0xf4, 'the hole, inside a run, the Sword & Shield Maze (fire)', 'mazeFire'),
+    meta('kHoleN', 0xf5, 'the hole, floor above it, the Sword & Shield Maze (fire)', 'mazeFire'),
+    meta('kHoleS', 0xf6, 'the hole, floor below it, the Sword & Shield Maze (fire)', 'mazeFire'),
+    meta('kHoleNS', 0xf7, 'the hole, floor above and below, the Sword & Shield Maze (fire)', 'mazeFire'),
+    meta('kHoleOne', 0xf3, 'a hole alone in the floor, the Sword & Shield Maze (fire)', 'mazeFire'),
+    # THE HOLD (S189): the Sword & Shield Maze's ICE half, tileset $41, the
+    # Abyssal Keep's new floor beneath it. Its floor $a0 and the darker ring
+    # $a1 (the cell under a shaft is marked with it), the ice $8c
+    # (TILETYPE_ICE), the fill $a6, the wall ring $b0-$bb and its jambs
+    # $b4-$b7, the doors $70-$7b (key, boss, shutter, N E S W), the magenta
+    # block $1d the ice rooms stand their obstacles in, the pot $10, and the
+    # holes $f3-$f7 as above.
+    meta('holdFloor', 0xa0, 'the blue cobble floor, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdFloorAlt', 0xa1, 'the dark cobble ring, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdIce', 0x8c, 'the ice (TILETYPE_ICE), the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdFill', 0xa6, 'the fill of solid stone, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingTL', 0xb8, 'ring corner, north-west, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingN', 0xb0, 'ring run, north wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingTR', 0xb9, 'ring corner, north-east, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingW', 0xb3, 'ring run, west wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingE', 0xb1, 'ring run, east wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingBL', 0xba, 'ring corner, south-west, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingS', 0xb2, 'ring run, south wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdRingBR', 0xbb, 'ring corner, south-east, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdJambNW', 0xb7, 'north wall ends, doorway to its east, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdJambNE', 0xb6, 'north wall ends, doorway to its west, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdJambSW', 0xb5, 'south wall ends, doorway to its east, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdJambSE', 0xb4, 'south wall ends, doorway to its west, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdKeyN', 0x70, 'key door in a north wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdKeyE', 0x71, 'key door in an east wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdKeyS', 0x72, 'key door in a south wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdKeyW', 0x73, 'key door in a west wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdShutN', 0x78, 'shutter in a north wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdShutE', 0x79, 'shutter in an east wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdShutS', 0x7a, 'shutter in a south wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdShutW', 0x7b, 'shutter in a west wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdBlock', 0x1d, 'the magenta block, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdPot', 0x10, 'the pot, on its own floor, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdHole', 0xf4, 'the hole, inside a run, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdHoleN', 0xf5, 'the hole, floor above it, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdHoleS', 0xf6, 'the hole, floor below it, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdHoleNS', 0xf7, 'the hole, floor above and below, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('holdHoleOne', 0xf3, 'a hole alone in the floor, the Sword & Shield Maze (ice)', 'mazeIce'),
     meta('kStairsDown', 0x45, 'the stair down, the Sword & Shield Maze (fire)', 'mazeFire'),
     # ---- Farore's room (S168) ------------------------------------------------
     #
@@ -779,7 +826,7 @@ PICKS = [
 # border-connected run IS the tile.
 # `uStatue` is not in it (S162): Mermaid's Cave's magenta block fills its
 # whole cell, so its dark faces ARE its border run, and keying ate them.
-KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue'}
+KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue', 'holdPot'}
 
 
 def lum(c):

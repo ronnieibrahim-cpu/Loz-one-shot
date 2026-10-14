@@ -140,7 +140,7 @@ const MINIS = {
   // d2 1,4,2, step 308 (`hold up` through the door) f36606: `17,103 hp 15/20
   // tide 1 [reefguard+urchin]`. The boss directive begins the same frame, so
   // the settle is 0 — the route walks in and swings.
-  reefguard: { dungeon: 'd2', room: '1,4,2', flag: 'd2_reefguard', tide: MID, qh: 20,
+  reefguard: { dungeon: 'd2', room: '2,4,2', flag: 'd2_reefguard', tide: MID, qh: 20,
                items: { sword: 1, conch: 1, anchor: 1, lens: 1 },
                at: [47, 153], facing: 'up', maxQh: 20, settle: 0, frame: 49244 },
   // d3 0,2,2, step 477 (`travel` in by the west door) f72075: `7,79 hp
@@ -148,7 +148,7 @@ const MINIS = {
   // ROUTE FIGHTS BOGMAW FOR THE FIRST TIME — the Kelp Locks are one way now
   // and the walk home comes back through this hall, so it is fought on the
   // way east from the Boss Key rather than skipped.
-  bogmaw: { dungeon: 'd3', room: '1,2,2', flag: 'd3_bogmaw', tide: LOW, qh: 21,
+  bogmaw: { dungeon: 'd3', room: '2,2,2', flag: 'd3_bogmaw', tide: LOW, qh: 21,
             items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 },
             opts: { openRetreat: true },
             at: [7, 79], facing: 'right', maxQh: 28, settle: 0, frame: 72075 },
@@ -170,16 +170,16 @@ const MINIS = {
                items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1 },
                at: [38, 81], facing: 'right', maxQh: 40, settle: 0, frame: 160937 },
-  // d6 1,4,5, S142 at Oracle size: step 1294 (`travel`) f198171: `7,79 hp
+  // d6 2,4,5, S142 at Oracle size: step 1294 (`travel`) f198171: `7,79 hp
   // 36/44 tide 0 [tideshade]`, after the east wing. NO CHARMS — the route does not put one on until step 1326,
   // two rooms later, so this is the last fight in the game fought bare.
   // S144: step 1414 f211618, `7,79 hp 36/44`.
-  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 36,
+  tideshade: { dungeon: 'd6', room: '2,4,5', flag: 'd6_tideshade', tide: LOW, qh: 36,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                opts: { breakContact: true },
                at: [7, 79], facing: 'right', maxQh: 44, settle: 0, frame: 211618 },
-  // d6 1,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
+  // d6 2,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
   // [brinehulk+beamos+keese]`. THE ONE ROW WHOSE FRAME IS NOT A ROOM ENTRY:
   // the Crossed Shafts are entered thousands of frames earlier and both
   // crossings are made with the colossus already awake, so the frame is the
@@ -189,7 +189,7 @@ const MINIS = {
   // S142, the Keep at Oracle size with the far island widened: step 1364
   // (`tide` up, on the landing) f209346: `305,95 hp 46/48 tide 2`.
   // S144: step 1532 (`equip`) f222672, `305,95 hp 45/48 tide 2`.
-  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 45,
+  brinehulk: { dungeon: 'd6', room: '2,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 45,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                charms: { mid: 'coilrope', high: 'gillcarve' },
@@ -299,7 +299,7 @@ const ROUTE_ARENA = {
   // S145, round the Rootbound barnacle and the Bole Walk's sump and past the
   // Sunken Nave's jellyfish: step 1086 (`hold up`) f163304, `113,149 hp 36/40`.
   d5: { at: [113, 149], facing: 'up', qh: 36, maxQh: 40, settle: 120, frame: 163304 },
-  // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
+  // d6 2,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is
   // what the arena runs for before the fight starts.

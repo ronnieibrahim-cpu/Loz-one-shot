@@ -111,6 +111,10 @@ THEMES = [
     ('dungeonEyrie', 'eyrie', 0x38),
     ('dungeonPalace', 'palace', ('ages', 0x3d)),
 ]
+# A legend that wears a tileset another legend above already cuts, by that
+# one's suffix (S189): the Abyssal Keep's Hold is the Sword & Shield Maze's ice
+# half, $41, whose block and button the Grotto has drawn since S164.
+ALIASES = [('dungeonAbyssIce', 'grotto')]
 # A block or button outside those six dungeons draws the Grotto's.
 DEFAULT_THEME = 'grotto'
 
@@ -393,6 +397,9 @@ def build():
         assert p2 == p
         put(f'o_switch_down_{suffix}', key_ground(g), p, 'TILEINDEX_PRESSED_BUTTON $0d, the same',
             f'o_switch_{suffix}')
+    for legend, suffix in ALIASES:
+        assert suffix in themes.values(), f'{legend} names a suffix nothing cuts'
+        themes[legend] = suffix
     for base in ('o_block', 'o_switch_up', 'o_switch_down'):
         art[base] = art[f'{base}_{DEFAULT_THEME}']
     notes.append(f'//   o_block, o_switch_up, o_switch_down: the {DEFAULT_THEME} ones, for a room '

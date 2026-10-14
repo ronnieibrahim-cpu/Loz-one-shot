@@ -1542,7 +1542,7 @@ export function installDungeonsB() {
     id: 'd6',
     kind: 'dungeon',
     name: 'Abyssal Keep',
-    w: 8, h: 8, floors: 2,
+    w: 8, h: 8, floors: 3,
     cell: [15, 11],
     legend: 'dungeonAbyss',
     music: 'dungeon6',
@@ -1555,13 +1555,13 @@ export function installDungeonsB() {
       // The Drowned King gets his own theme. `updateMusic` has always read a
       // per-dungeon `bossMusic`, and the Keep is the dungeon that sets one.
       bossMusic: 'finalBoss',
-      bossRoom: '1,3,0',
-      startRoom: '3,7',
+      bossRoom: '2,3,0',
+      startRoom: '1,3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32 },
     },
     rooms: {
       // ---------------------------------------------------- the way in
-      '0,3,7': {
+      '1,3,7': {
         name: 'Keep Door',
         map: [
           '#######.#######',
@@ -1583,7 +1583,7 @@ export function installDungeonsB() {
           [2, 6, 'Cut in black stone: "Everything the sea takes,\nit keeps. Everything it keeps, it puts down."'],
         ],
       },
-      '0,3,6': {
+      '1,3,6': {
         name: 'Keep Landing',
         map: [
           '#######.#######',
@@ -1611,7 +1611,7 @@ export function installDungeonsB() {
           },
         },
       },
-      '0,2,6': {
+      '1,2,6': {
         name: 'Map Crypt',
         map: [
           '#######.#######',
@@ -1631,7 +1631,7 @@ export function installDungeonsB() {
           ['stalfos', 10, 7],
         ],
       },
-      '0,4,6': {
+      '1,4,6': {
         name: 'Bone Cell',
         map: [
           '#######.#######',
@@ -1657,7 +1657,7 @@ export function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 8, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
         },
       },
-      '0,3,5': {
+      '1,3,5': {
         name: 'Drowned Hall',
         map: [
           '#######.#######',
@@ -1692,7 +1692,7 @@ export function installDungeonsB() {
           [13, 4, 'A mooring plate, worn smooth: "The rings in\nthis house were for hauling. They will haul\nanything that takes hold."'],
         ],
       },
-      '0,2,5': {
+      '1,2,5': {
         name: 'Chartstone Crypt',
         map: [
           '###############',
@@ -1712,7 +1712,7 @@ export function installDungeonsB() {
           ['darknut', 11, 6],
         ],
       },
-      '0,4,5': {
+      '1,4,5': {
         name: 'Drain Court',
         map: [
           '###############',
@@ -1739,7 +1739,7 @@ export function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
         },
       },
-      '0,3,4': {
+      '1,3,4': {
         name: 'Three Heights',
         // The dungeon's own tide vocabulary said once, before anything depends
         // on it: `1` is dry then wading then over your head, `9` is a wall the
@@ -1766,7 +1766,7 @@ export function installDungeonsB() {
           [2, 9, 'Scratched low, where the water reaches it:\n"Three heights. One way through."'],
         ],
       },
-      '0,2,4': {
+      '1,2,4': {
         name: 'West Crypt',
         // D6's own Bellows sill — the Squall Loft's fixture, wheel boxed by
         // wall and pit, the stand across the pit, a sump the only way up. The
@@ -1807,7 +1807,7 @@ export function installDungeonsB() {
           },
         },
       },
-      '0,4,4': {
+      '1,4,4': {
         name: 'Black Kiln',
         map: [
           '###############',
@@ -1835,7 +1835,7 @@ export function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 2, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
         },
       },
-      '0,3,3': {
+      '1,3,3': {
         name: 'Keep Lock',
         map: [
           '###############',
@@ -1855,7 +1855,7 @@ export function installDungeonsB() {
           ['stalfos', 10, 8],
         ],
       },
-      '0,2,3': {
+      '1,2,3': {
         name: 'Keep Stair',
         map: [
           '###############',
@@ -1871,13 +1871,13 @@ export function installDungeonsB() {
           '###############',
         ],
         warps: [
-          { x: 12, y: 2, to: { map: 'd6', floor: 1, rx: 3, ry: 5, px: 192, py: 48 } },
+          { x: 12, y: 2, to: { map: 'd6', floor: 2, rx: 3, ry: 5, px: 192, py: 48 } },
         ],
         entities: [
           ['stalfos', 5, 6],
         ],
       },
-      '0,4,3': {
+      '1,4,3': {
         name: 'Dredge Vault',
         map: [
           '#######.#######',
@@ -1896,7 +1896,7 @@ export function installDungeonsB() {
           ['chest', 7, 5, { big: true, item: 'dredge', level: 1 }],
         ],
       },
-      '0,4,2': {
+      '1,4,2': {
         name: 'The Drowned Garden',
         // The Keep's own Reefseed grove, in the Keep's own materials: the bar
         // across the pool is `7`/`dLintel`, the Keep's masonry, stone at LOW
@@ -1935,7 +1935,7 @@ export function installDungeonsB() {
       },
 
       // ---------------------------------------------------- the Slack Water
-      '0,5,3': {
+      '1,5,3': {
         name: 'The Slack Water',
         // THE TEACHING ROOM: a flat pan you can walk all the way round at any
         // sea, with one silted ring in the middle of it and a bell that hums at
@@ -1982,7 +1982,7 @@ export function installDungeonsB() {
       // Key for the stair over only to a player who has learned that the line
       // brings home what it catches. The key opens Keep Lock's west door, and
       // a plate in the Hauling Pit opens the short way back into the Draw.
-      '0,6,3': {
+      '1,6,3': {
         name: 'The Draw',
         // CROSSING 0: the Drowned Stand's fixture, the first time the player
         // needs it. The shelf at 8,8 is `dWell` — wading at LOW, over your head
@@ -2022,7 +2022,7 @@ export function installDungeonsB() {
           [6, 9, 'Scratched by the shaft: "The shelf holds your\nheels at slack water and at no other."'],
         ],
       },
-      '0,7,2': {
+      '1,7,2': {
         name: 'The Tally Hall',
         // THREE SEAS, ONE ROOM, two screens tall. Up from the door's bank to the
         // island at LOW off the shelf at 7,16; up from the island to the far
@@ -2078,7 +2078,7 @@ export function installDungeonsB() {
           [2, 18, 'A tally cut in the wall, three marks:\n"Slack for the shelf. Flood for the bar. Half\nwater for the floor."'],
         ],
       },
-      '0,6,2': {
+      '1,6,2': {
         name: 'The Hauling Pit',
         // THE LINE BRINGS HOME WHAT IT CATCHES. The Small Key is on a pillar
         // in the shaft, and the bar at 7,4 stands between it and the only bank
@@ -2128,7 +2128,7 @@ export function installDungeonsB() {
         ],
       },
 
-      '0,6,4': {
+      '1,6,4': {
         name: 'The Angler Stews',
         // THE LINE'S OTHER HALF, and the only fight in the Keep built for it.
         // Four deep pools, an anglerfry in each, and a sword cannot reach the
@@ -2163,7 +2163,7 @@ export function installDungeonsB() {
           [7, 1, 'A fishwife\'s board: "They will not come out\nfor a blade. They come out for a line."'],
         ],
       },
-      '0,7,4': {
+      '1,7,4': {
         name: 'The Silt Terraces',
         // Two screens tall and a step down the middle: brace on the shelf at
         // 7,8 at LOW and the line takes you to the lower terrace; the silt in
@@ -2216,7 +2216,7 @@ export function installDungeonsB() {
       },
 
       // ---------------------------------------------------- upper floor
-      '1,3,5': {
+      '2,3,5': {
         name: 'Upper Keep',
         map: [
           '#######.#######',
@@ -2232,13 +2232,13 @@ export function installDungeonsB() {
           '###############',
         ],
         warps: [
-          { x: 12, y: 2, to: { map: 'd6', floor: 0, rx: 2, ry: 3, px: 192, py: 48 } },
+          { x: 12, y: 2, to: { map: 'd6', floor: 1, rx: 2, ry: 3, px: 192, py: 48 } },
         ],
         entities: [
           ['keese', 4, 6],
         ],
       },
-      '1,2,5': {
+      '2,2,5': {
         name: 'Shade Cell',
         map: [
           '#######.#######',
@@ -2264,7 +2264,7 @@ export function installDungeonsB() {
           reward: { spawn: [['pickup', 7, 5, { kind: 'heart' }]], say: 'The shadows thin out.' },
         },
       },
-      '1,2,4': {
+      '2,2,4': {
         name: 'Colonnade of the Drowned',
         // The hand-placed charm, the Coilrope, which adds a tile to every cast.
         // It sits behind a GRATE, and the only thing in the game that retracts
@@ -2298,7 +2298,7 @@ export function installDungeonsB() {
       // what the line can reach over a bar, a flooded cell of anglerfry, and a
       // choir hall whose shelf is a hole at slack water and wades only at
       // half tide.
-      '1,0,5': {
+      '2,0,5': {
         name: 'The Long Sounding',
         // THREE SHAFTS, WEST FROM THE DOOR. LOW off the shelf at 23,5 to the
         // first island; HIGH from its west side over the bar at 16,7; LOW
@@ -2341,7 +2341,7 @@ export function installDungeonsB() {
           [27, 8, 'A sounding line knotted to the wall:\n"Slack, flood, slack. Count them before you\ngo."'],
         ],
       },
-      '1,0,4': {
+      '2,0,4': {
         name: 'The Offering Pit',
         // What the Hauling Pit taught, with nothing at stake: a purse on a
         // pillar behind a bar, fetched at HIGH; and a silt nook in the corner
@@ -2374,7 +2374,7 @@ export function installDungeonsB() {
           ['keese', 11, 8],
         ],
       },
-      '1,1,4': {
+      '2,1,4': {
         name: 'The Undertow Cell',
         // The Angler Stews upstairs, with a knight in the middle of it. The
         // north door opens when the room is empty.
@@ -2402,7 +2402,7 @@ export function installDungeonsB() {
           reward: { openDoors: [[7, 0]], say: 'The north door grinds open.' },
         },
       },
-      '1,0,3': {
+      '2,0,3': {
         name: 'The Deep Choir',
         // THE SHELF THAT IS A HOLE AT SLACK WATER. The only footing that
         // reaches the far post is the drain at 18,5 — a pit at LOW, wading at
@@ -2444,7 +2444,7 @@ export function installDungeonsB() {
           [20, 7, 'Cut under the choir stalls: "Sing at half\nwater. At slack the floor is gone, and at\nflood it is over your head."'],
         ],
       },
-      '1,4,5': {
+      '2,4,5': {
         name: 'Tideshade Hall',
         // Four screens, and the only miniboss arena in the game that is. The
         // tideshade phases with the water and the room's basins are `1` — dry
@@ -2487,7 +2487,7 @@ export function installDungeonsB() {
           },
         },
       },
-      '1,4,4': {
+      '2,4,4': {
         name: 'Mermaid Vault',
         map: [
           '###############',
@@ -2508,7 +2508,7 @@ export function installDungeonsB() {
         warps: [
           // Down to the Two Arches. The vault is the only way in and the only
           // way back out of it, so the fork below can never strand anyone.
-          { x: 3, y: 8, to: { map: 'd6', floor: 1, rx: 5, ry: 4, px: 104, py: 120, dir: 'down' } },
+          { x: 3, y: 8, to: { map: 'd6', floor: 2, rx: 5, ry: 4, px: 104, py: 120, dir: 'down' } },
         ],
       },
 
@@ -2520,7 +2520,7 @@ export function installDungeonsB() {
       // open water and the other is still stone. The room pins the tide to
       // MID; both valves are INSIDE the chambers, past the one-way ledges. You
       // choose first. The fork at 10x8, set into the rock under the vault.
-      '1,5,4': {
+      '2,5,4': {
         name: 'The Two Arches',
         map: [
           '###############',
@@ -2544,12 +2544,12 @@ export function installDungeonsB() {
         ],
         warps: [
           // The way back up, from the shelf you arrive on.
-          { x: 7, y: 7, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 7, y: 7, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
           // The climb out of each chamber. The wrong one is a walk, not a lock.
-          { x: 4, y: 5, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
-          { x: 9, y: 5, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 4, y: 5, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 9, y: 5, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
           // And out of the gallery above, once you have got into it.
-          { x: 9, y: 1, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
+          { x: 9, y: 1, to: { map: 'd6', floor: 2, rx: 4, ry: 4, px: 64, py: 128, dir: 'up' } },
         ],
         script: {
           onEvent(game, name) {
@@ -2576,7 +2576,7 @@ export function installDungeonsB() {
       // happen — a `3` shelf you brace on, which drowns above LOW, or a `7`
       // lintel in the way, which is stone below HIGH. Every crossing carries a
       // mooring on the near side as well, so nothing here is one-way.
-      '1,3,4': {
+      '2,3,4': {
         name: 'The Drowned Stand',
         // CROSSING 1, at LOW, and the fixture at its plainest. The shelf is
         // `dWell` — wading at LOW, over your head above it — so the only sea
@@ -2615,7 +2615,7 @@ export function installDungeonsB() {
           [4, 4, 'Cut into the coping: "Stand while you can\nstand. The ledge is only a ledge at low water."'],
         ],
       },
-      '1,3,3': {
+      '2,3,3': {
         name: 'Keep Crossing',
         map: [
           '#######L#######',
@@ -2635,7 +2635,7 @@ export function installDungeonsB() {
           ['keese', 11, 2],
         ],
       },
-      '1,2,3': {
+      '2,2,3': {
         name: 'The Sunken Bar',
         // CROSSING 2, at HIGH, and the Drowned Stand inside out. The mooring is
         // in plain sight from the doorway and the lintel is what stops the
@@ -2676,7 +2676,7 @@ export function installDungeonsB() {
           [11, 6, 'A tide board: "The bar is down at slack and up\nat flood. Everything in this room follows from\nthat."'],
         ],
       },
-      '1,4,3': {
+      '2,4,3': {
         name: 'The Drowned Sill',
         // CROSSING 3, at LOW, the Drowned Stand turned through a right angle
         // and handed the other way — and what is across the shaft is a Small
@@ -2714,7 +2714,7 @@ export function installDungeonsB() {
       },
 
       // ---------------------------------------------------- the way out
-      '1,3,2': {
+      '2,3,2': {
         name: 'Keep Gate',
         // THE LAST HALL BEFORE THE KING, AND IT HOLDS THE KEEP'S SECOND FAIRY,
         // in the corner, off both the way in from the south and the way east
@@ -2737,7 +2737,7 @@ export function installDungeonsB() {
           ['pickup', 1, 9, { kind: 'fairy' }],
         ],
       },
-      '1,3,1': {
+      '2,3,1': {
         name: 'The Stairhead',
         // THE ANTECHAMBER, and the fairy in it is behind nothing but the hall
         // it opens off — it used to stand behind the boss door, in a pocket of
@@ -2762,7 +2762,7 @@ export function installDungeonsB() {
           ['pickup', 2, 5, { kind: 'fairy', life: 1e9 }],
         ],
       },
-      '1,4,2': {
+      '2,4,2': {
         name: 'The Crossed Shafts',
         // THE ROOM THAT SAYS IT OUT LOUD, and the only one in the dungeon that
         // holds both crossings. In at HIGH over the bar, down to LOW to brace
@@ -2812,7 +2812,7 @@ export function installDungeonsB() {
           [7, 6, 'A king\'s inscription, and the only one in the\nKeep that is signed: "You cannot hold two seas.\nNereth."'],
         ],
       },
-      '1,3,0': {
+      '2,3,0': {
         name: 'Nereth, the Drowned King',
         // The boss keeps the mechanic: `noTide` pins the arena at whatever sea
         // was brought through the door, and Nereth's own phases pin it again.

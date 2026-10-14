@@ -41,6 +41,7 @@ import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy 
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
 import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } from './items.js';
+import { spawnRecordedChunks, chunkAtHome } from './chunk.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
   itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag,
@@ -328,6 +329,7 @@ export class Game {
     if (!room) return;
     const list = room.def.entities || [];
     list.forEach((spec, i) => this.spawnSpec(room, spec, i));
+    spawnRecordedChunks(this);
     this.spawnFallen();
     this.flushPending();
   }
@@ -346,11 +348,17 @@ export class Game {
     const room = this.room;
     if (!room || !this.map || !obj || !obj.fallsThrough) return false;
     const tx = Math.floor(obj.cx / TILE), ty = Math.floor(obj.cy / TILE);
-    if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, this.tide) & F.DROP)) return false;
+    if (!room.inBounds(tx, ty)) return false;
+    // A drop hole (the Sanctum's, Link's too) or a Keep shaft (S189, chunks only).
+    const here = room.tile(tx, ty, this.tide);
+    if (!(here.flags & F.DROP) && !(here.shaft && obj.downTo)) return false;
     const below = room.floor - 1;
     if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
     const r = getRoom(this.mapId, below, room.rx, room.ry);
     if (!r || !r.inBounds(tx, ty) || (r.flagsAt(tx, ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
+    // An ice chunk (S189) keeps its own place in the save, so it is there on
+    // every visit and after every load, not only on the next one.
+    if (obj.downTo) { obj.downTo(this, below, tx, ty); obj.remove = true; return true; }
     if (!this.fallen) this.fallen = [];
     this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
     obj.remove = true;
@@ -425,6 +433,9 @@ export class Game {
       if (this.progress.secrets[saveKey] && (type === 'pickup' || type === 'essence')) return;
       if (o.needFlag && !flag(this.progress, o.needFlag)) return;
       if (o.hideFlag && flag(this.progress, o.hideFlag)) return;
+      // An ice chunk the save has moved is spawned where the save says it is
+      // (spawnRecordedChunks), not here (S189).
+      if (type === 'icechunk' && !chunkAtHome(this, o.id)) return;
       // A killed enemy stays dead: permanently indoors, until the player has
       // put enough distance behind them on the overworld. Only ever set by
       // `onEnemyDefeated`, so a non-enemy sharing this saveKey never matches.
@@ -967,6 +978,13 @@ export class Game {
     // locked until the player has stepped off any warp tile.
     if (!(f & F.WARP)) { this._warpLock = false; return; }
     if (this._warpLock) return;
+    // NOTHING IS CARRIED UP OR DOWN A STAIR (S189). Seasons' checkTileWarps
+    // (code/bank1.s), the routine every stair and doorway goes through, reads
+    // wLinkGrabState and initiates no warp while Link holds anything: he
+    // stands on the step holding it and the stair does nothing until he puts
+    // it down. The Abyssal Keep's ice chunks lean on it: a chunk changes floor
+    // only through a shaft.
+    if (p.carrying) return;
     const w = this.room.warpAt(tx, ty);
     if (!w) return;
     if (w.needFlag && !flag(this.progress, w.needFlag)) return;
