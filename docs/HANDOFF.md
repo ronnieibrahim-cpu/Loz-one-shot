@@ -447,6 +447,31 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A puzzle plate directly under a hole Link can fall through is a plate
+  Link can stand on (S189).** The D6 brief put K3's plate on an islet under a
+  shaft Link could drop down himself: he would land on it (solving it with
+  his own weight) and then be stranded on a one-cell island. Seasons' own
+  Sword & Shield Maze answers it: its holes are pits to Link and only the
+  ice goes through. Before a puzzle sends an OBJECT down a hole, ask what
+  happens when the PLAYER goes down the same one.
+- **A thing held overhead must not be in its holder's way (S189).** A solid
+  ice chunk carried above Link's head blocked his own walk north; canOccupy
+  now ignores anything carried, on a line, or in flight. And a solid thing
+  that lands where it lands can come down over someone's edge: the chunk
+  settles square on its cell, and one already inside it may walk out.
+- **The game latches its input at the top of `update()` (S189).** A test
+  harness that hands the game a fake input and calls `input.update()` itself
+  after each frame turns every press into nothing (pressed = held and not
+  held). Latch inside `update()`, the way the robot's ScriptedInput does.
+- **A drop that lands across a pit is a fall for the robot's sweep (S189).**
+  A changed fight in the Crossed Shafts killed a keese that used to live,
+  its prize landed on the middle island, and `loot` walked into the shaft
+  after it five times. `['loot', n, { within: tiles }]` keeps a sweep near
+  where it starts.
+- **Seasons' warp tiles refuse a held object (S189).** bank1.s
+  checkTileWarps reads wLinkGrabState: holding anything, a stair does
+  nothing. Our engine now does the same for every carried thing.
+
 - **Seasons' D8 machine reads the room ABOVE (S188).** The freezing lava
   in the fire half checks the flag of the ice room over it (a table of four
   room ids in swordShieldMazeFreezingLavaEvent.s); nothing in the lava room

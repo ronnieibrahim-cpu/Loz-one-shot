@@ -3003,6 +3003,21 @@ export const ROUTE = [
   ['dredge', 7, 7, 'up', 'fish', 2400],
   ['loot', 900],
 
+  // K1 AND K3 — THE FIRST SOUNDING (S189). Still at MID, the two wells
+  // south of the pan are flooded: the line cast down the west one (3,8)
+  // comes back with the ice chunk lying on the Hold's floor beneath, into
+  // his hands. Thrown from 11,8 it comes down in the nook past the pit, on
+  // the plate, and the east shutter into the Draw opens. Then at LOW the line
+  // takes it back off the plate (the shutter stays open) and, thrown from
+  // 9,4 with ten frames of lean, it goes down the dry east well onto the
+  // islet plate in the Sounding Floor — the key it pays is picked up in the
+  // Hold later.
+  ['dredge', 3, 7, 'down', 'chunk', 2400],
+  ['goto', 11, 8, 900], ['hold', ['right'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['tide', 0, 140, 900],
+  ['dredge', 11, 8, 'right', 'chunk', 2400],
+  ['goto', 9, 4, 900], ['hold', ['down'], 10], ['tap', 'a', 30], ['wait', 90],
+
   // ------------------------------------------------ THE EAST WING (S142)
   // THE LINE'S EXAMINATION, and the Small Key for the stair is at the end of
   // it. The Draw is the first real crossing (brace on the shelf at LOW) and
@@ -3057,6 +3072,59 @@ export const ROUTE = [
   ['wait', 90],
   ['goto', 7, 9, 900],
   ['exit', 'down', 600],
+
+  // ------------------------------------------------ THE HOLD (S189)
+  // Down the Draw's new stair (2,1) into the Sword & Shield Maze's ice half.
+  // The Rime Landing is ice alone and a fight on it; the Rime Hall (K4) is
+  // where a chunk is set on the ring (13,20) under the Tally Hall's south
+  // well; the Sounding Floor pays K3's key, its chunk already on the islet.
+  ['goto', 2, 2, 900], ['hold', ['up'], 30], ['wait', 90],
+  ['equip', 'sword', 'A', 400],
+  ['fight', 3000, 2000],
+  ['goto', 13, 8, 1500], ['exit', 'right', 600],
+  ['fight', 3000, 2000],
+  ['lift', 900],
+  ['goto', 13, 18, 900], ['hold', ['down'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['goto', 1, 19, 1500], ['exit', 'left', 600],
+  ['goto', 1, 2, 1500], ['exit', 'left', 600],
+  ['fight', 3000, 2000],
+  ['loot', 900],
+  ['travel', 6, 3, 4000],
+  ['goto', 2, 9, 1500], ['hold', ['left'], 30], ['wait', 90],
+
+  // K4 — OVER, NOT ACROSS. Across the Draw at LOW to the Tally Hall's south
+  // bank; at MID the line hauls the chunk up the south well. Nobody casts
+  // with a chunk in his hands, so it goes back into the Draw, is set down on
+  // the east bank at 11,9, the line takes him back west at LOW, and from 8,9
+  // the line catches the chunk and brings it home across the shafts. Up
+  // through the Hauling Pit to the Tally Hall's north bank, and at LOW it
+  // goes down the north well onto the Rime Hall's plate.
+  ['equip', 'dredge', 'A', 400],
+  ['tide', 0, 140, 900],
+  ['dredge', 8, 8, 'right', [11, 8], 2400],
+  ['wait', 60],
+  ['goto', 13, 5, 1500], ['exit', 'right', 600],
+  ['tide', 1, 140, 900],
+  ['dredge', 13, 19, 'down', 'chunk', 2400],
+  ['goto', 1, 16, 1500], ['exit', 'left', 600],
+  ['goto', 11, 6, 900], ['hold', ['down'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['tide', 0, 140, 900],
+  ['dredge', 11, 8, 'left', [8, 8], 2400],
+  ['wait', 60],
+  ['dredge', 8, 9, 'right', 'chunk', 2400],
+  ['goto', 7, 1, 900], ['exit', 'up', 600],
+  ['goto', 13, 5, 1500], ['exit', 'right', 600],
+  ['goto', 11, 3, 900], ['hold', ['down'], 2], ['tap', 'a', 30], ['wait', 60],
+  // And down once more for the Rime Hall's key.
+  ['goto', 1, 5, 1500], ['exit', 'left', 600],
+  ['goto', 7, 9, 900], ['exit', 'down', 600],
+  ['goto', 2, 2, 900], ['hold', ['up'], 30], ['wait', 90],
+  ['goto', 13, 8, 1500], ['exit', 'right', 600],
+  ['loot', 900],
+  ['goto', 1, 19, 1500], ['exit', 'left', 600],
+  ['goto', 2, 9, 1500], ['hold', ['left'], 30], ['wait', 90],
+  ['goto', 1, 5, 1500], ['exit', 'left', 600],
+  ['equip', 'conch', 'B', 400],
   ['travel', 5, 3, 4000],
 
   // UP THE KEEP STAIR, through Keep Lock's west door with the Hauling Pit's
@@ -3431,13 +3499,15 @@ export const ROUTE = [
   ['tap', 'a', 30],
   ['dialogue', 600],
   ['wait', 180],
-  ['loot', 600],
+  // On the island only (S189): a keese killed in the fight dropped its prize
+  // on the middle island, and the sweep walked into the shaft after it.
+  ['loot', 600, { within: 6 }],
 
   // THE COLOSSUS'S HOARD, drunk here and not at the door. Seventeen
   // quarter-hearts of the Keep Gate's fairy were spent getting to this island
   // and the fight on it; what is left would not pay for the King.
   ['goto', 20, 3, 1500],
-  ['loot', 1200],
+  ['loot', 1200, { within: 6 }],
 
   // AND BACK, which is the same two crossings in reverse and at the same two
   // seas — every crossing in this dungeon carries a mooring on the near side

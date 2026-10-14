@@ -365,3 +365,48 @@ floor below. So the Keep's shafts are pits to Link and water to a swimmer;
 only an ice chunk goes down one, and only the Dredge Line reaches through
 one. The Hold is reached by its stair. This drops "the quick way into the
 Hold" and "sink down a flooded 1F shaft with the Cleats" from the brief.
+
+## As built (S189) — the first half
+
+Picture: `d6-built/s189-hold.png` (Seasons' ice half $84, $78, $7c above;
+ours in the game below), made by `d6-built/compose.py`.
+
+- **Ripped:** the ice half's tiles (`hold*` picks of tileset $41 in
+  rip-dungeon-themes.py: floor, the darker ring, the ice, fill, ring and
+  jambs, key doors and shutters, the magenta block, the pot, the holes
+  $f3-$f7) and the fire half's holes (`kHole*`, $f3-$f7) for the Keep's
+  shafts; the chunk (`o_icechunk0`, rip-effects.py: interaction $68,
+  spr_pedestal_ice, standard sprite palette 4 — the palette the mock left
+  unresolved is the standard one every room keeps).
+- **Ice underfoot** is Seasons' velocity model (link.s func_5933): a heading
+  of 32 steps and a speed stepped every 6 frames (ICE_STEP_FRAMES) by 1/8
+  px/f (ICE_ACCEL), turning one heading at a time. All derived.
+- **The chunk** (src/game/chunk.js): lifted and thrown like a pot, does not
+  break, hurts what it hits for the bracelet's 3, settles square on its cell,
+  goes down a dry shaft to the same cell one floor down, FLOATS in deep
+  water (the cartridge splashes it away; ours keeps it, out of reach but
+  the line's), and is remembered in the save wherever it last rested
+  (`progress.chunks`). Lost into a pit with no floor below, it goes home.
+- **The shafts** (`5` in the Keep's legend, `dShaftAbyss`): a hole at LOW,
+  flooded at MID and HIGH. To Link a pit (the human's choice, above).
+- **The line** (DredgeLine.dragBack): over a flooded shaft it searches the
+  cell beneath; a chunk there comes up and into Link's hands.
+- **The stair**: no warp fires while Link holds anything (Seasons'
+  checkTileWarps) — every held thing, not only the chunk.
+- **The floor move**: B1 = 0, 1F = 1, 2F = 2; `d6Floors: 3` moves old saves
+  (test.mjs proves both floors move).
+- **Rooms:** 1F the Slack Water (K1: wells at 3,8 and 9,8; the plate 13,8 in
+  a nook past a pit; the east door a shutter), the Draw (stair down at 2,1;
+  its west door the other side of K1's shutter), the Tally Hall (wells at
+  11,6 and 13,20). B1 the Rime Landing (K2; stair 1,9), the Sounding Floor
+  (K3; islet plate 9,8, four tiles from any shore), the Rime Hall (K4; plate
+  11,6 beyond a chasm no throw crosses — the north half is reached by no
+  foot, by design — ring 13,20), the Plumb's Foot (four chunks for K5-K6,
+  the ring 7,4 under the Weighhouse-to-be). 52 screens on 3 floors.
+- **K4's way round** is a throw and a catch: the chunk set down on the
+  Draw's east bank (11,9), the line from the west bank (8,9) catches it and
+  brings it home across the shafts.
+- **Keys:** K3 and K4 each pay a Small Key: 7 keys, 5 locks until S190's two.
+- **Not done (S190):** K5 the Weighhouse (1F 5,2) and the Plumb, K6 the
+  Crossed Shafts' two plates and 2F shafts ([hole, hole, water]), the Boss
+  Key's move, the two new locks, the guide re-shot.

@@ -361,6 +361,10 @@ export function canOccupy(game, e, x, y, caps, terrainOnly = false) {
       // hands).
       if (o === e || !o.solid || o.dead || o.carried || o.attached || o.flight) continue;
       const ob = o.rect();
+      if (o.yieldsWhenInside) {
+        const er = { x: e.x + e.hb.x, y: e.y + e.hb.y, w: e.hb.w, h: e.hb.h };
+        if (er.x < ob.x + ob.w && ob.x < er.x + er.w && er.y < ob.y + ob.h && ob.y < er.y + er.h) continue;
+      }
       if (x0 <= ob.x + ob.w - 1 && ob.x <= x1 && y0 <= ob.y + ob.h - 1 && ob.y <= y1) return false;
     }
   }

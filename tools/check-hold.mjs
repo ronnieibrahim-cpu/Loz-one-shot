@@ -206,11 +206,11 @@ const out = await page.evaluate(async () => {
 
   // ----------------------------------------------------- a stair and a held chunk
   {
-    // On the Rime Landing's stair (2,8), holding a chunk.
-    let p = enter('d6', '0,6,3', 0, 2 * TILE, 9 * TILE, 'up');
+    // On the Rime Landing's stair (1,9), holding a chunk.
+    let p = enter('d6', '0,6,3', 0, 2 * TILE, 9 * TILE, 'left');
     quiet();
     step(20);
-    p.x = 2 * TILE; p.y = 8 * TILE - 4;
+    p.x = 1 * TILE; p.y = 9 * TILE - 4;
     const c = spawnEntity(g, 'icechunk', 4, 9, { id: '__probe' });
     g.flushPending();
     p.carrying = c; c.carried = true;

@@ -1,3 +1,83 @@
+## S189 — the Abyssal Keep's first half built: the Hold, Seasons' ice, the chunk, K1-K4
+
+Branch claude/oracle-tides-d6-first-half-12qbp3, off main at df697c0 (S188).
+The human said yes to all six of the D6 brief's questions (written at the
+brief's end), and chose one change while building (below).
+
+### The human's choice this session
+- K3's islet plate sat under a shaft Link could drop down himself (landing
+  on the plate, or stranded on the islet). Asked, the human chose SEASONS'
+  RULE: the Keep's shafts are pits to Link; only ice chunks go through them.
+  The Hold is reached by its stair. (Recorded in the brief.)
+
+### Read from the cartridge
+- A held object at a stair: bank1.s checkTileWarps returns noWarpInitiated
+  while wLinkGrabState is set — a stair does nothing while Link holds
+  anything. Our checkWarpTile now does the same for every carried thing.
+- Ice: commonCode.s @tileType_ice, link.s updateLinkSpeed_withParam ($88,
+  slippery row: var13 = 6) and func_5933 (32 headings, +-5 speed units a
+  step, one heading a step, snap within one). feel.js ICE_STEP_FRAMES,
+  ICE_ACCEL, ICE_TURN_STEPS (derived); CHUNK_BOB_FRAMES (guessed).
+- The chunk: INTERAC_D8_GRABBABLE_ICE = interactionData $68: gfx $5b
+  spr_pedestal_ice, tile $0a, STANDARD sprite palette 4.
+
+### Built
+- RIPPED: rip-dungeon-themes.py `hold*` (tileset $41) and `kHole*` (the fire
+  half's $f3-$f7); rip-effects.py `o_icechunk0` (spr_pedestal_ice copied to
+  assets/effects/); rip-objects.py ALIASES (dungeonAbyssIce -> grotto's $41
+  block and button). objects.js `themed` reads a room's own legend.
+- TILES/LEGENDS: Keep `5` = dShaftAbyss [hole, water, water], tiledef
+  `shaft` (registered in tileset.js; NOT F.DROP — Link's fall is a pit
+  fall); `lip.one` ($f3, a hole alone). Legend `dungeonAbyssIce` (theme
+  AbyssIce: `i` ice, `,` the ring, `O` hole, `S` stair up).
+- ENGINE: Player.updateIce/onIce (Seasons' velocity model; the swing does
+  not stop the slide); src/game/chunk.js IceChunk (lift, throw, settle
+  square, down a dry shaft via Game.dropObjectThrough -> `downTo`, floats in
+  deep water, `progress.chunks` ledger, spawnRecordedChunks,
+  haulFromBelow); DredgeLine.dragBack hauls up through a flooded shaft and
+  `finish` puts a chunk into Link's hands; canOccupy ignores carried /
+  attached / flying solids and lets you walk out of a `yieldsWhenInside`
+  one; FloorSwitch ignores a floating thing; dropCarried sets a chunk down.
+- FLOOR MOVE: tools/oneshot/d6-floors-up.mjs; d6 floors 3 (B1 = 0);
+  progress `d6Floors: 3` migration (test.mjs: both old floors move); every
+  tool's d6 floor reference moved (check-items, check-trade, shoot-cutscene,
+  replay-plans, measure-boss-combat, check-playthrough, check-torches,
+  playthrough-route); d6-mooring replay re-recorded.
+- ROOMS: 1F the Slack Water (K1/K3: wells 3,8 and 9,8; plate 13,8 in a nook
+  past a pit; east door a shutter, flag d6_slack), the Draw (stair 2,1; west
+  door the shutter's far side; check-dredge entry now 7,10), the Tally Hall
+  (wells 11,6 and 13,20; a stalfos moved). B1 the Rime Landing (6,3; stair
+  1,9 in the corner; east door row 8), the Sounding Floor (5,3; islet plate
+  9,8, key d6_sounding), the Rime Hall (7,2, 1x2; plate 11,6 beyond a chasm,
+  ring 13,20, key d6_rime; its north half reached by no foot, by design),
+  the Plumb's Foot (5,2; chunks d6P1-4 for K5/K6, ring 7,4). 52 screens on 3
+  floors; keys 7, locks 5.
+- TOOLS: tools/check-hold.mjs (63; in CLAUDE.md's table). actor-runtime:
+  `dredge ... 'chunk'`, `setup.chunks`, `loot` takes `{ within }`.
+  check-playthrough gains "THE HOLD WAS PLAYED" (48). dungeon-strands
+  baseline re-recorded (renumbered floors; the islet, the nook, the Rime
+  Hall's north half).
+- ROUTE: K1+K3 in the Slack Water after its heart piece; after the Hauling
+  Pit down the Draw's stair: Landing fight, Rime Hall (chunk onto the ring
+  13,20), Sounding Floor (key), back up; K4: Tally south well at MID, set on
+  the Draw's east bank 11,9, back west, catch it from 8,9, Hauling Pit,
+  Tally north bank, LOW, down the north well; down again for the key. The
+  Crossed Shafts' two loots `within: 6` (a keese's prize fell across a shaft).
+- PICTURE: docs/briefs/d6-built/s189-hold.png (compose.py beside it).
+
+### Verified
+Whole table green; check-playthrough 48/48, THE END, never died.
+
+### NEXT (S190): the second half (docs/prompts/NEXT-PROMPT.md)
+- K5 the Weighhouse (1F 5,2, new; a well over the Plumb's Foot ring 7,4; its
+  doors to the Slack Water north, the Hauling Pit west, the Drowned Garden
+  east as a shutter), K6 the Crossed Shafts (2F shafts [hole, hole, water],
+  two plates, the Boss Key chest raised only by both), the two locks (7/7),
+  the guide re-shot (chapter for the Keep, B1 map).
+- The 1F shaft-to-Link rule and the 2F one are the same tile with a
+  different tide shape; check-hold's "every shaft" sweep asserts 1F's shape
+  only — teach it the 2F shape (by the room's floor) in the same commit.
+
 ## S188 — the Abyssal Keep designed to three floors: the Hold (NOT built)
 
 Branch claude/d6-abyssal-keep-design-l2n7mz, off main at f91ae32 (S187).

@@ -532,6 +532,18 @@ check('THE ABYSSAL KEEP WAS PLAYED TO NERETH\'S OWN DOOR — its four keys earne
   + `flags missing ${D6_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
   + `rooms missing ${['d6/2,4,3', 'd6/2,3,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
 
+// THE HOLD (S189): the Keep's floor beneath, and its four puzzles solved by
+// the machine itself — K1's plate held by a chunk hauled up a flooded well,
+// K3's islet by one thrown down a dry one, K4's far plate by one hauled up,
+// carried round the Keep and dropped down again. The flags are the plates'
+// own puzzles, so walking the rooms cannot satisfy this.
+const HOLD_FLAGS = ['d6_slack', 'd6_sounding', 'd6_rime'];
+check('THE HOLD WAS PLAYED — K1 to K4, the line hauling up through the sea and the shafts letting down',
+  HOLD_FLAGS.every(f => (s.flags || []).includes(f))
+    && ['d6/0,6,3', 'd6/0,5,3', 'd6/0,7,2'].every(r => a.rooms.includes(r)),
+  `flags missing ${HOLD_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
+  + `rooms missing ${['d6/0,6,3', 'd6/0,5,3', 'd6/0,7,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+
 // THE DUNGEON KEYS (S154). Every dungeon whose door is a keyhole was opened by
 // its own key, which the run was handed by that key's giver — read as flags
 // off the save, and which doors ARE keyholes read off the tile table, so a

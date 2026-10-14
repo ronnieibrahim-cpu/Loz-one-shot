@@ -582,9 +582,13 @@ export async function installRuntime() {
    * Re-planned every pass because a pickup has a lifetime and can expire
    * mid-walk, and because collecting one often leaves another closer.
    */
-  function* dLoot(maxF) {
+  // `o.within` (S189): only drops within that many tiles of where the sweep
+  // starts — for a room whose drops can land across a pit from the player.
+  function* dLoot(maxF, o = {}) {
     const g = window.__game;
     const budget = maxF || 600;
+    const from = g.player ? { cx: g.player.cx, cy: g.player.cy } : null;
+    const near = (e) => !o.within || !from || Math.hypot(e.cx - from.cx, e.cy - from.cy) <= o.within * TILE;
     let spent = 0;
     for (let pass = 0; pass < 12 && spent < budget; pass++) {
       const p = g.player;
@@ -600,7 +604,7 @@ export async function installRuntime() {
       // but not yet grabbable is waited on; nothing present at all is the only
       // case that gives up.
       const pending = g.entities.filter(e => e.isDrop && !e.dead && !e.remove && !e.__skip
-        && e.life > 30);
+        && e.life > 30 && near(e));
       if (!pending.length) return;
       const drops = pending.filter(e => e.grabDelay <= 0);
       if (!drops.length) { yield 0; spent++; continue; }
@@ -3385,7 +3389,7 @@ export async function installRuntime() {
       else if (kind === 'newgame') yield* dNewGame(a[0]);
       else if (kind === 'use') yield* dUse(a[0], a[1], a[2]);
       else if (kind === 'travel') yield* dTravel(a[0], a[1], a[2]);
-      else if (kind === 'loot') yield* dLoot(a[0]);
+      else if (kind === 'loot') yield* dLoot(a[0], a[1]);
       else if (kind === 'boss') yield* dBoss(a[0], a[1], a[2]);
       else if (kind === 'tide') yield* dTide(a[0], a[1], a[2]);
       else if (kind === 'soles') yield* dSoles(a[0], a[1]);

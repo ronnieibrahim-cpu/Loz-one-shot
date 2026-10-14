@@ -2036,7 +2036,8 @@ export function installDungeonsB() {
         ],
         buried: [[12, 1, 'rupee20']],
         dredgeRoom: {
-          entry: [0, 5],
+          // The west door is K1's shutter now (S189); the south door is open.
+          entry: [7, 10],
           moorings: [
             { post: [12, 8], from: [8, 8], land: [11, 8], face: 'right', sea: 0 },
           ],
@@ -2083,16 +2084,17 @@ export function installDungeonsB() {
           '#OOOOOOOOOOOOO#',
           '.......3......#',
           '#......q......#',
-          '#..........5..#',
           '#.............#',
           '#.............#',
+          '#............5#',
           '###############',
         ],
         // K4 (S189): a shaft on each bank, one over each half of the Rime Hall
         // beneath — the north one (11,6) over its plate, the south one
-        // (11,18) over its ring. The Hold has no way across; the Keep does.
+        // (13,20), in the corner out of the way, over its ring. The Hold has
+        // no way across; the Keep does.
         holdRoom: {
-          hauls: [{ from: [11, 17], face: 'down', sea: 1, below: [11, 18] }],
+          hauls: [{ from: [13, 19], face: 'down', sea: 1, below: [13, 20] }],
         },
         buried: [[11, 2, 'blank']],
         dredgeRoom: {
@@ -2277,15 +2279,17 @@ export function installDungeonsB() {
           '......=...=...#',
           '#.....==.==...#',
           '#iiiiiiiiiiiii#',
-          '#iiiiiiiiiiiiii',
           '#iiiiiiiiiiiii#',
           '#iiiiiiiiiiiii#',
-          '#.S...........#',
-          '#.............#',
+          '#iiiiiiiiiiiii#',
+          '#..............',
+          '#S............#',
           '###############',
         ],
+        // The stair up is in the corner, off every line across the room (the
+        // robot's path from the east door to the west one crossed it, S189).
         warps: [
-          { x: 2, y: 8, to: { map: 'd6', floor: 1, rx: 6, ry: 3, px: 32, py: 32, dir: 'down' } },
+          { x: 1, y: 9, to: { map: 'd6', floor: 1, rx: 6, ry: 3, px: 32, py: 32, dir: 'down' } },
         ],
         entities: [
           ['icechunk', 7, 1, { id: 'd6L1' }],
@@ -2322,7 +2326,6 @@ export function installDungeonsB() {
         entities: [
           ['icechunk', 3, 8, { id: 'd6S1' }],
           ['switch', 9, 8, { hold: true }],
-          ['keese', 8, 2],
         ],
         holdRoom: {
           plate: [9, 8],
@@ -2340,7 +2343,7 @@ export function installDungeonsB() {
         // K4: OVER, NOT ACROSS. Two screens tall under the Tally Hall: chunks
         // on the south ice, a chasm across the middle no throw crosses, and a
         // plate (11,6) beyond it under the Tally Hall's north well. Set a chunk
-        // on the ring (11,18) under its south well; go up; at MID haul it up
+        // on the ring (13,20) under its south well; go up; at MID haul it up
         // the south well; carry it round the Keep to the north bank; at LOW
         // throw it down the north well onto the plate.
         size: [1, 2],
@@ -2361,18 +2364,18 @@ export function installDungeonsB() {
           '#OOOOOOOOOOOOO#',
           '#OOOOOOOOOOOOO#',
           '#iiiiiiiiiiiii#',
-          'iiiiiiiiiiiiii#',
           '#iiiiiiiiiiiii#',
-          '#..........,..#',
+          '#iiiiiiiiiiiii#',
           '#.............#',
-          '#.............#',
+          '..............#',
+          '#............,#',
           '###############',
         ],
         entities: [
           ['switch', 11, 6, { hold: true }],
-          ['icechunk', 3, 19, { id: 'd6R1' }],
-          ['icechunk', 4, 19, { id: 'd6R2' }],
-          ['zol', 9, 16],
+          ['icechunk', 2, 20, { id: 'd6R1' }],
+          ['icechunk', 3, 20, { id: 'd6R2' }],
+          ['stalfos', 9, 19],
         ],
         holdRoom: {
           plate: [11, 6],
@@ -2392,7 +2395,7 @@ export function installDungeonsB() {
         // 7,4 marks the cell under the Weighhouse's well.
         map: [
           '###############',
-          '#.ppp.....ppp.#',
+          '#.p.p.....p.p.#',
           '#.............#',
           '#..iiiiiiiii..#',
           '#..iiii,iiii..#',

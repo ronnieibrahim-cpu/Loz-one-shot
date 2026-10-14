@@ -46,6 +46,9 @@ export class IceChunk extends Entity {
     // objectPushLinkAwayOnCollision: Link cannot stand in it. Solid, as the
     // Keep's push blocks are, so it presses a plate it rests on.
     this.solid = true;
+    // Squared onto its cell as it lands, it can come down over the edge of
+    // whoever stands beside it: one already inside it may walk out.
+    this.yieldsWhenInside = true;
     this.flight = null;
     this.floating = false;
     this.depth = -1;
@@ -141,6 +144,10 @@ export class IceChunk extends Entity {
     }
     const { tx, ty } = this.restTile();
     const f = game.room && game.room.inBounds(tx, ty) ? game.room.flagsAt(tx, ty, game.tide) : 0;
+    // IT SETTLES SQUARE ON ITS CELL (S189), the cell the save keeps and the
+    // cell the line searches: a chunk left half over the next tile walled a
+    // brace stand, and came back on the grid after a load anyway.
+    this.x = tx * TILE; this.y = ty * TILE;
     const wasFloating = this.floating;
     this.floating = !!(f & F.DEEP);
     if (this.floating && !wasFloating) {
