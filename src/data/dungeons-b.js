@@ -1977,6 +1977,14 @@ export function installDungeonsB() {
           ['anglerfry', 10, 3],
           ['switch', 13, 8, { hold: true }],
         ],
+        // tools/check-hold.mjs: the plate no foot and no throw from the floor
+        // beside it reaches unless a chunk is thrown from `feeds`; the chunk
+        // under the west well comes up on a line cast from `hauls`.
+        holdRoom: {
+          plate: [13, 8],
+          feeds: [{ at: [176, 128], face: 'right', sea: 1 }],
+          hauls: [{ from: [3, 7], face: 'down', sea: 1, below: [3, 8] }],
+        },
         puzzle: {
           switches: 'all',
           flag: 'd6_slack',
@@ -2016,6 +2024,12 @@ export function installDungeonsB() {
           '#........OO...#',
           '#######.#######',
         ],
+        // K4's way round (S189): a chunk set down on the east bank at 11,9 is
+        // caught by the line cast from the west bank and comes home across
+        // the shafts, as nobody can carry one over them.
+        holdRoom: {
+          catches: [{ from: [8, 9], face: 'right', sea: 0, at: [11, 9] }],
+        },
         // The stair down into the Hold (S189), in the west half.
         warps: [
           { x: 2, y: 1, to: { map: 'd6', floor: 0, rx: 6, ry: 3, px: 32, py: 144, dir: 'down' } },
@@ -2077,6 +2091,9 @@ export function installDungeonsB() {
         // K4 (S189): a shaft on each bank, one over each half of the Rime Hall
         // beneath — the north one (11,6) over its plate, the south one
         // (11,18) over its ring. The Hold has no way across; the Keep does.
+        holdRoom: {
+          hauls: [{ from: [11, 17], face: 'down', sea: 1, below: [11, 18] }],
+        },
         buried: [[11, 2, 'blank']],
         dredgeRoom: {
           entry: [0, 16],
@@ -2307,6 +2324,10 @@ export function installDungeonsB() {
           ['switch', 9, 8, { hold: true }],
           ['keese', 8, 2],
         ],
+        holdRoom: {
+          plate: [9, 8],
+          drops: [{ room: '1,5,3', at: [144, 80], face: 'down', sea: 0 }],
+        },
         puzzle: {
           switches: 'all',
           flag: 'd6_sounding',
@@ -2353,6 +2374,10 @@ export function installDungeonsB() {
           ['icechunk', 4, 19, { id: 'd6R2' }],
           ['zol', 9, 16],
         ],
+        holdRoom: {
+          plate: [11, 6],
+          drops: [{ room: '1,7,2', at: [176, 48], face: 'down', sea: 0 }],
+        },
         puzzle: {
           switches: 'all',
           flag: 'd6_rime',
