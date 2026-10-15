@@ -2433,6 +2433,8 @@ export function installCoreTiles() {
     dTangleSaltWet: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dFloorSalt' },
     dKelpSalt: { tide: ['dTangleSalt', 'dTangleSaltWet', 'dTangleSaltWet'] },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
+    // A bush with a stair under it (S192): cut it and the stair stays.
+    bushSandStairs: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
     // The Reefseed's snarl, outdoors — item-reuse (docs/prompts/STATE.md). Not
     // `dSnarl`: that one is drawn in `treeoakdk`, a ramp built for the Drowned
     // Wood's oaks, and S96 already proved what happens when it is dropped
@@ -3357,6 +3359,7 @@ export function installCoreTiles() {
   registerTransforms({
     bush: { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut', drop: 'common', sfx: 'cut' },
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
+    bushSandStairs: { cut: 'stairsDown', bomb: 'stairsDown', fire: 'stairsDown', fx: 'cut', sfx: 'cut', persist: true },
     hTallGrass: { cut: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     bushLawn: { cut: 'hLawn', bomb: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },

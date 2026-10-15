@@ -3437,16 +3437,17 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TTTTggTTTT',
-      'TTggggggTT',
-      'gg......gg',
-      'gg.5555.gg',
-      'gg155551gg',
-      '11******11',
+      'TTTTggTTTT',
+      'gg....TTgg',
+      'g..O..TT.g',
+      'gg.1111..g',
+      '1111111111',
       '**********',
       '**********',
     ],
     entities: [
-      ['octorokSea', 4, 3],
+      ['crab', 2, 3],
+      ['octorokSea', 6, 5],
     ],
   },
   '0,14,0': {
@@ -3619,16 +3620,19 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTggggggTT',
-      'gg.O..O.gg',
-      'gg......gg',
-      'gg111111gg',
+      'TTTTTTTTTT',
+      'g..bA...gg',
+      'g..b..b.gg',
+      'gg.1111.gg',
       '1111111111',
       '**********',
       '**********',
     ],
     entities: [
-      ['crab', 3, 3],
+      ['crab', 6, 4],
+    ],
+    warps: [
+      { x: 4, y: 2, to: { map: 'cave13', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
 };

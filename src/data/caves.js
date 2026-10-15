@@ -494,4 +494,34 @@ export function installCaves() {
       },
     },
   });
+  // THE FAR SHORE'S SECRET (S192): a stair under one of the bushes on Pale
+  // Strand (0,14,9). Cut it and the stair is there for good.
+  registerMap({
+    id: 'cave13',
+    kind: 'cave',
+    name: 'Driftwood Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o......o#',
+          '#..p..p..#',
+          '#........#',
+          '#.o....o.#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { rupees: 100 }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 9, px: 64, py: 48, dir: 'down' } }],
+      },
+    },
+  });
 }
