@@ -374,4 +374,34 @@ export function installCaves() {
       },
     },
   });
+  // THE SALT PANS' SECRET (S191): behind a crack in the marble terrace on
+  // Brine Steps (0,8,1), opened by a bomb.
+  registerMap({
+    id: 'cave9',
+    kind: 'cave',
+    name: 'Brine Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#..o..o..#',
+          '#........#',
+          '#.p....p.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'dryKindling' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
+      },
+    },
+  });
 }

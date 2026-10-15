@@ -131,6 +131,7 @@ export function installLegends() {
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
     '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
     'V': 'saltVane',        // region gate: only the Resonance Rod rings it
+    'Z': 'cliffCrackedCaveMarble',  // a bombable crack with a cave behind it (S191)
     '9': 'drownWallSalt',   // a pan wall the high sea covers (S166)
     '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
