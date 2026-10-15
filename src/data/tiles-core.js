@@ -2318,6 +2318,9 @@ export function installCoreTiles() {
     // leaves a cave mouth rather than sand. The room lists the warp on this
     // cell from the start; it is inert until the tile under it carries F.WARP.
     cliffCrackedCave: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    // The same in the dark stone of the Drowned Wood's bluffs (S191), whose
+    // `#` is `cliffDk`: the light crack would be a pale patch in a dark wall.
+    cliffCrackedCaveDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -3376,6 +3379,7 @@ export function installCoreTiles() {
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
     cliffCrackedCave: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedCaveDk: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
     // The Power Bracelet is gone and lifting is base moveset, so a boulder
     // needs a reason to still be a boulder: `liftLevel: 2` puts it past bare
     // hands, and the Dredge Line drags it out of the way. That is the same

@@ -311,4 +311,67 @@ export function installCaves() {
       },
     },
   });
+  // THE DROWNED WOOD'S TWO SECRETS (S191). The Oakroot Hollow is behind a
+  // crack in the dark bluff on Hollow Oaks (0,6,3), opened by a bomb; the
+  // Stump Cellar is under the islet in Stump Pool (0,7,5), whose mouth is
+  // only above the water at LOW and is walked to along the sandbar. The
+  // cellar holds its tide like the Slackwater Cave, so the way out is always
+  // the way in.
+  registerMap({
+    id: 'cave7',
+    kind: 'cave',
+    name: 'Oakroot Hollow',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o......o#',
+          '#..p..p..#',
+          '#........#',
+          '#.o......#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 2, { charm: 'quartermaster' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 3, px: 80, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  registerMap({
+    id: 'cave8',
+    kind: 'cave',
+    name: 'Stump Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#.22..22.#',
+          '#.22..22.#',
+          '#........#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { rupees: 50 }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 5, px: 80, py: 64, dir: 'down' } }],
+      },
+    },
+  });
 }

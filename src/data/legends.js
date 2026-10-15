@@ -122,6 +122,7 @@ export function installLegends() {
     'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'D': 'block:portalD5',  // the Drowned Wood Shrine's gate
+    'Z': 'cliffCrackedCaveDk',  // a bombable crack with a cave behind it (S191)
   }, 'base');
 
   // ---- salt flats: bleached pans that flood ------------------------------
