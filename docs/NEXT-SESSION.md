@@ -1,3 +1,60 @@
+## S191 — the overworld's newer screens, first half: the Drowned Wood and the Salt Pans
+
+Branch claude/oracle-tides-next-work-lcl6v3, off main at 6b16763 (S190).
+
+### The human's choices this session
+- Asked what next (NEXT-PROMPT's three candidates): THE 42 NEWER OVERWORLD
+  SCREENS (S157's widened columns, made into quiet corridors in S158).
+- Scope: "new screens + their edges" — redraw the newer screens freely, touch
+  an older neighbour only where a path must line up. Regions keep their
+  borders (and every gate seam stays shut).
+- Rewards: SECRET CAVES. Heart pieces are at the top of the window (16), so
+  caves hold rupees or charms. Order: the Drowned Wood first.
+
+### Built
+- REFERENCE: the real Seasons overworld drawn from oracles-disasm (rooms/
+  seasons/small/room00XX.bin, 10x8 metatiles, tileset = group0Tilesets.bin
+  byte & 0x7f, via tools/oneshot/oracle-study/render.py's metatile()). The
+  scratch script lived in the session scratchpad (BOX=x0,y0,x1,y1); the
+  recipe is: clone oracles-disasm into $ORACLE_STUDY, link flat-seasons as
+  run.sh does, then for each room paste metatile(ts, b[ty*10+tx]).
+- THE DROWNED WOOD (0,6..8 x 3..6, 12 screens): redrawn as one wood. North-
+  south paths join all four rows; a pond across 0,7,4 / 0,7,5; trees only as
+  whole 2x2 blocks on the even lattice. EVERY INTERNAL SEAM IS CHARACTER-
+  IDENTICAL on both sides — check-overworld's "every seam agrees at all three
+  tide levels" fails on a tree facing grass across a seam, so design at the
+  2x2-macro level and make both macros at a seam the same kind.
+- THE SALT PANS (0,6..8 x 0..2 except 0,7,1 Salt Works, which carries the
+  Lens-outdoors side puzzle and check-gates' vane column and was left alone):
+  north-south gaps through the terrace bands at 6,0/6,1, 6,1/6,2, 8,0/8,1,
+  8,1/8,2; the Pans' south wall to the Wood stays shut (the Rod gate).
+- TILES: cliffCrackedCaveDk (pal stonedk; wood legend `Z`) and
+  cliffCrackedCaveMarble (pal marble; salt legend `Z`), both bomb to
+  caveMouth like S155's cliffCrackedCave.
+- CAVES (caves.js): cave7 Oakroot Hollow (0,6,3 crack at 5,1; chest charm
+  quartermaster), cave8 Stump Cellar (0,7,5 islet mouth `&` at 5,3, dry only
+  at LOW, walked to along the sandbar; noTide; chest 50 rupees), cave9 Brine
+  Cellar (0,8,1 crack at 6,1; chest charm dryKindling). Both charms were
+  previously only carvable; like the other chest charms they are not marked
+  `found` (that would change the scrimshander's pool and the robot's RNG).
+- TOOLS: check-side +8 scenarios (each cave won; refused without a bomb /
+  at MID and HIGH; the cellar's held tide and dry way out).
+
+### Verified
+Whole table green after each region; check-playthrough 49/49, THE END, never
+died (the robot's `travel` legs re-plan through the new screens on their own).
+
+### NEXT (S192): the rest of the newer screens
+- Left: the Reef approach 13..14 x 0..3 (8), the Coral 13..14 x 4..5 (4),
+  the Dunes 13..14 x 6..7 (4), the far shore 13..14 x 9 (2) and the south
+  shore 6..8 x 9 (3) — 21 screens. Same method; one secret cave per region
+  the human agrees to. Unplaced charms still only carvable: beachcomber,
+  brineSkin, chandlersEye (the Reef Market?), drownedLantern, potHauler,
+  fishermansRegret.
+- Keep shut: Reef (rows 0-3) vs Coral (row 4) — the Reef Palace is reached
+  only through the Pans; Reef Market -> Drowned Steps stays a low-tide
+  channel (S158). Dunes vs Sandpiper Row: check-towns.
+
 ## S190 — the Abyssal Keep's second half built: the Weighhouse, the Crossed Shafts' Boss Key
 
 Branch claude/d6-abyssal-keep-second-half-oeftrv, off main at 88b7c32 (S189). Landed in `1de41b7`.

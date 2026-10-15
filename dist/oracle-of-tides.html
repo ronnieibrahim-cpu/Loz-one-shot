@@ -16449,26 +16449,26 @@ const rooms = {
       '1g..11..g1',
       'gg.2222.gg',
       'gG.2222.Gg',
-      'gggggggggg',
-      '#ggGgggg##',
-      '##########',
+      'gggggg..gg',
+      '#ggg##..##',
+      '######..##',
     ],
     entities: [
-      ['leever', 5, 5, {phase: 0}],
+      ['leever', 5, 5, { phase: 0 }],
     ],
   },
   '0,6,1': {
     name: "Pan Hollow",
     legend: 'salt', music: 'salt',
     map: [
-      '##########',
-      '##gg###gg#',
-      'gg..gg..gg',
+      '######..##',
+      '##gg##..g#',
+      'gg..gg...g',
       'gg.2222.g#',
       'gG.2222.gg',
       'gggggggggg',
       '#ggg##ggg#',
-      '##########',
+      '####gg####',
     ],
     entities: [
       ['beetle', 5, 2],
@@ -16478,7 +16478,7 @@ const rooms = {
     name: "Bleached Reach",
     legend: 'salt', music: 'salt',
     map: [
-      '##########',
+      '####gg####',
       '#gggg2222#',
       '1111..1111',
       '11.1111.11',
@@ -16495,14 +16495,17 @@ const rooms = {
     name: "Hollow Oaks",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg..ff..gg',
-      'gg.0000.gg',
+      'TTTT####TT',
+      'TTTT#Z##TT',
+      'gg.b...gTT',
+      'gg.....fTT',
       'gg..TT..gg',
-      'gg..TTg.gg',
-      'TTggggggTT',
-      'TTTTTTTTTT',
+      'gf..TT.ggg',
+      'TTg..gTTTT',
+      'TTg..gTTTT',
+    ],
+    warps: [
+      { x: 5, y: 1, to: { map: 'cave7', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['wisp', 7, 3], ['keese', 2, 5],
@@ -16512,51 +16515,51 @@ const rooms = {
     name: "Fern Hollow",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg..TT..gg',
-      'gg..TT.fgg',
+      'TTg..gTTTT',
+      'TTgf..TTTT',
       'gg......gg',
-      'gg.0000.gg',
-      'TTggggggTT',
-      'TTTTTTTTTT',
+      'ggG..f..gg',
+      'ggTTTT..gg',
+      'gfTTTT.ggg',
+      'TTTTg..gTT',
+      'TTTTg..gTT',
     ],
     entities: [
-      ['wisp', 7, 4],
+      ['wisp', 4, 2],
     ],
   },
   '0,6,5': {
     name: "Sallow Glade",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg.0000.gg',
+      'TTTTg..gTT',
+      'TTTTg..fTT',
       'gg......gg',
-      'ggTT..TTgg',
-      'ggTT..TTgg',
-      'TTgg..ggTT',
-      'TTTTTTTTTT',
+      'gg.000..gg',
+      'ggTT..f.gg',
+      'g.TT....gg',
+      'TTTT..TTTT',
+      'TTTTg.TTTT',
     ],
     entities: [
-      ['zol', 4, 3],
+      ['zol', 5, 2],
     ],
   },
   '0,6,6': {
     name: "Low Copse",
     legend: 'wood', music: 'overworld',
     map: [
+      'TTTTg.TTTT',
+      'TTTT..TTTT',
+      'gg.f....gg',
+      'gg.0000.gg',
+      'gg.0000.TT',
+      'gfg0000.TT',
       'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg..ff..gg',
-      'gg.1111.gg',
-      'gg.1111.gg',
-      'gg......gg',
-      'TTggTTggTT',
       'TTTTTTTTTT',
     ],
     entities: [
-      ['keese', 4, 2],
+      ['keese', 4, 1],
     ],
   },
   '0,6,7': {
@@ -16624,8 +16627,8 @@ const rooms = {
     legend: 'salt', music: 'salt',
     map: [
       '**********',
-      '***1111***',
-      '11.g..g.11',
+      '*111**111*',
+      '11.g11g.11',
       'gg..o...gg',
       'gg.3333.gg',
       'ggg...oggg',
@@ -16702,66 +16705,69 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
-      'gg.GGG..gg',
-      'gg..TT..gg',
-      'gg..TT..gg',
-      'gg.0000.gg',
-      'TTgggfggTT',
-      'TTTTTTTTTT',
+      'TT.G..TTTT',
+      'TT....TTTT',
+      'ggTT....gg',
+      'ggTT..f.gg',
+      'TTg....gTT',
+      'TTg....gTT',
     ],
     entities: [
-      ['moblin', 6, 4],
+      ['moblin', 4, 3],
     ],
   },
   '0,7,4': {
     name: "Drowned Ring",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTggggggTT',
-      'gg.====.gg',
-      'gg.====.gg',
-      'gg......gg',
-      'ggg.ff.ggg',
-      'TTggTTggTT',
-      'TTTTTTTTTT',
+      'TTg....gTT',
+      'TTg.f..gTT',
+      'gg.~==~.gg',
+      'g.~====~.g',
+      'g~======~g',
+      'g~======~g',
+      'TT======TT',
+      'TT======TT',
     ],
     entities: [
-      ['anglerfry', 4, 2], ['keese', 7, 5],
+      ['anglerfry', 5, 4], ['keese', 4, 1],
     ],
   },
   '0,7,5': {
     name: "Stump Pool",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg......gg',
-      'gg.~==~.gg',
-      'gg.~==~.gg',
-      'ggg....ggg',
-      'TTgfggggTT',
-      'TTTTTTTTTT',
+      'TT======TT',
+      'TT======TT',
+      'g~==##==~g',
+      'g.~=#&=~.g',
+      'gg.~11~.gg',
+      'gg..11..gg',
+      'TTg....gTT',
+      'TT.gg..gTT',
+    ],
+    warps: [
+      { x: 5, y: 3, to: { map: 'cave8', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['anglerfry', 4, 3],
+      ['anglerfry', 3, 0],
     ],
   },
   '0,7,6': {
     name: "Kelp Meadow",
     legend: 'wood', music: 'overworld',
     map: [
+      'TT.gg..gTT',
+      'TT...G.gTT',
+      'g.......gg',
+      'gg.00000gg',
+      'TT.....Ggg',
+      'TT.f....gg',
       'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg.0000.gg',
-      'gg......gg',
-      'ggTT..TTgg',
-      'ggTT..TTgg',
-      'TTgg..ggTT',
       'TTTTTTTTTT',
     ],
     entities: [
-      ['moblin', 4, 4],
+      ['moblin', 5, 4],
     ],
   },
   '0,7,7': {
@@ -16831,8 +16837,8 @@ const rooms = {
       'gg.2222.gg',
       'ggG....Ggg',
       'ggg.oo.ggg',
-      '#gggggggg#',
-      '##########',
+      '#g..gggg##',
+      '##..######',
     ],
     entities: [
       ['crab', 2, 5],
@@ -16842,25 +16848,28 @@ const rooms = {
     name: "Brine Steps",
     legend: 'salt', music: 'salt',
     map: [
-      '##########',
-      '##gggggg##',
+      '##..######',
+      '##..##Z###',
+      'gg....g.gg',
+      '#g.1111.gg',
+      'gg.1221.gg',
       'gg.1111.gg',
-      '#g.1221.gg',
-      'gg.1111.gg',
-      'gggggggggg',
-      '#ggggggg##',
-      '##########',
+      '#gggg..g##',
+      '#####..###',
+    ],
+    warps: [
+      { x: 6, y: 1, to: { map: 'cave9', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['zol', 2, 5], ['leever', 7, 3, {phase: 0}],
+      ['zol', 2, 5], ['leever', 7, 3, { phase: 0 }],
     ],
   },
   '0,8,2': {
     name: "Pan's End",
     legend: 'salt', music: 'salt',
     map: [
-      '##########',
-      '#gggggggg#',
+      '#####..###',
+      '#ggg....g#',
       '1111gg1111',
       '11.1111.11',
       'ggGo..oGgg',
@@ -16878,62 +16887,62 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
-      'gg......gg',
-      'ggf.11.fgg',
-      'gg.1111.gg',
-      'ggg....ggg',
-      'TTgggggfTT',
-      'TTTTTTTTTT',
+      'TT......gg',
+      'TTf.11..gg',
+      'ggTTTT..gg',
+      'ggTTTT.fgg',
+      'TTg..f.gTT',
+      'TTg....gTT',
     ],
     entities: [
-      ['zol', 2, 2],
+      ['zol', 6, 2],
     ],
   },
   '0,8,4': {
     name: "Rootwater",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
-      'gg......gg',
-      'gg.1111.gg',
+      'TTg....gTT',
+      'TT.f...gTT',
+      'ggTTTT..gg',
+      'ggTTTT.Ggg',
       'gg..TT..gg',
-      'gf..TT..fg',
-      'TTggggggTT',
-      'TTTTTTTTTT',
+      'g...TTf.gg',
+      'TTg...g.TT',
+      'TTgg...gTT',
     ],
     entities: [
-      ['moblin', 3, 2],
+      ['moblin', 6, 1],
     ],
   },
   '0,8,5': {
     name: "Wisp Reach",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTggTTggTT',
-      'gg..TT..gg',
-      'gg..TT..gg',
+      'TTgg...gTT',
+      'TT.f...gTT',
       'gg......gg',
-      'gg.0000.gg',
-      'TTggggggTT',
-      'TTTTTTTTTT',
+      'g.f..G..gg',
+      'ggTTTT..gg',
+      'ggTTTT.fgg',
+      'TTg..g.gTT',
+      'TT.g...gTT',
     ],
     entities: [
-      ['wisp', 3, 4],
+      ['wisp', 3, 2],
     ],
   },
   '0,8,6': {
     name: "Wood Hem",
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTTTTTTTTT',
+      'TT.g...gTT',
+      'TTg..f.gTT',
       'gg......gg',
-      'gg..TT..gg',
-      'gg..TT..gg',
-      'gg.0000.gg',
-      'TTgggfggTT',
+      'gg.1111.gg',
+      'ggTT....gg',
+      'ggTT.f..gg',
+      'TTTTTTTTTT',
       'TTTTTTTTTT',
     ],
     entities: [
@@ -52695,6 +52704,11 @@ function installCoreTiles() {
     // leaves a cave mouth rather than sand. The room lists the warp on this
     // cell from the start; it is inert until the tile under it carries F.WARP.
     cliffCrackedCave: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    // The same in the dark stone of the Drowned Wood's bluffs (S191), whose
+    // `#` is `cliffDk`: the light crack would be a pale patch in a dark wall.
+    cliffCrackedCaveDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    // And in the Salt Pans' marble terraces (S191).
+    cliffCrackedCaveMarble: { art: ART.cliffCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -53753,6 +53767,8 @@ function installCoreTiles() {
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
     cliffCrackedCave: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedCaveDk: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedCaveMarble: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
     // The Power Bracelet is gone and lifting is base moveset, so a boulder
     // needs a reason to still be a boulder: `liftLevel: 2` puts it past bare
     // hands, and the Dredge Line drags it out of the way. That is the same
@@ -53917,6 +53933,7 @@ function installLegends() {
     'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'D': 'block:portalD5',  // the Drowned Wood Shrine's gate
+    'Z': 'cliffCrackedCaveDk',  // a bombable crack with a cave behind it (S191)
   }, 'base');
 
   // ---- salt flats: bleached pans that flood ------------------------------
@@ -53925,6 +53942,7 @@ function installLegends() {
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
     '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
     'V': 'saltVane',        // region gate: only the Resonance Rod rings it
+    'Z': 'cliffCrackedCaveMarble',  // a bombable crack with a cave behind it (S191)
     '9': 'drownWallSalt',   // a pan wall the high sea covers (S166)
     '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
@@ -54604,6 +54622,99 @@ function installCaves() {
           ['pickup', 4, 4, { kind: 'heartPiece' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  // THE DROWNED WOOD'S TWO SECRETS (S191). The Oakroot Hollow is behind a
+  // crack in the dark bluff on Hollow Oaks (0,6,3), opened by a bomb; the
+  // Stump Cellar is under the islet in Stump Pool (0,7,5), whose mouth is
+  // only above the water at LOW and is walked to along the sandbar. The
+  // cellar holds its tide like the Slackwater Cave, so the way out is always
+  // the way in.
+  registerMap({
+    id: 'cave7',
+    kind: 'cave',
+    name: 'Oakroot Hollow',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o......o#',
+          '#..p..p..#',
+          '#........#',
+          '#.o......#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 2, { charm: 'quartermaster' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 3, px: 80, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  registerMap({
+    id: 'cave8',
+    kind: 'cave',
+    name: 'Stump Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#.22..22.#',
+          '#.22..22.#',
+          '#........#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { rupees: 50 }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 5, px: 80, py: 64, dir: 'down' } }],
+      },
+    },
+  });
+  // THE SALT PANS' SECRET (S191): behind a crack in the marble terrace on
+  // Brine Steps (0,8,1), opened by a bomb.
+  registerMap({
+    id: 'cave9',
+    kind: 'cave',
+    name: 'Brine Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#..o..o..#',
+          '#........#',
+          '#.p....p.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'dryKindling' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
       },
     },
   });
