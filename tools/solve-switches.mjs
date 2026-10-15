@@ -154,6 +154,17 @@ for (const r of rooms) {
     // engine. Here the stake is stood on its plate, as the ferried block is.
     const drops = room.def.dropRoom ? [].concat(room.def.dropRoom) : [];
     for (const D of drops) room.setTile(D.plate[0], D.plate[1], 'coralPillar');
+    // AN ICE CHUNK ON A HOLD PLATE (S189-S190) comes up a shaft on the line
+    // or down one at LOW — tools/check-hold.mjs proves, in the engine, that
+    // each gets there. Here a chunk is set on each plate a `holdRoom` claims,
+    // as the stake and the ferried block are, and the plates must open it.
+    const H = room.def.holdRoom;
+    const holdPlates = H ? (H.plates ? H.plates.map(x => x.plate) : H.plate ? [H.plate] : []) : [];
+    if (holdPlates.length > 1) {
+      for (const [hx, hy] of holdPlates) ent.spawnEntity(g, 'icechunk', hx, hy, {});
+      g.flushPending();
+      await new Promise(r2 => { const s = g.frame; const t = () => (g.frame - s >= 10 ? r2() : requestAnimationFrame(t)); t(); });
+    }
     for (const bl of blocks) {
       if (bl.ferried) continue;
       const bx = Math.floor(bl.cx / 16), by = Math.floor(bl.cy / 16);

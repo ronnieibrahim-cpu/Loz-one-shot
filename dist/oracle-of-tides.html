@@ -12225,6 +12225,27 @@ function getRoom(mapId, floor, x, y) {
   return r;
 }
 
+/**
+ * THE CELL DIRECTLY BENEATH (S190): the same place on the map one floor down,
+ * whatever the rooms' sizes. A 2x1 room upstairs (the Crossed Shafts) stands
+ * over two 1x1 rooms (the Drowned Garden and the Weighhouse), so its tile
+ * 24,5 is the Weighhouse's 9,5 — the room above's own key and tile would ask
+ * the Garden for a column it does not have. Returns { room, floor, rx, ry,
+ * tx, ty } (rx, ry the room beneath's own key) or null.
+ */
+function cellBeneath(mapId, room, tx, ty) {
+  const m = MAPS.get(mapId);
+  if (!m || !room) return null;
+  const below = room.floor - 1;
+  if (below < 0) return null;
+  const [cw, ch] = cellTiles(m);
+  const r = getRoom(mapId, below, room.rx + Math.floor(tx / cw), room.ry + Math.floor(ty / ch));
+  if (!r) return null;
+  const lx = tx + (room.rx - r.rx) * cw, ly = ty + (room.ry - r.ry) * ch;
+  if (!r.inBounds(lx, ly)) return null;
+  return { room: r, floor: below, rx: r.rx, ry: r.ry, tx: lx, ty: ly };
+}
+
 function hasRoom(mapId, floor, x, y) {
   return !!roomKeyAt(mapId, floor, x, y);
 }
@@ -12341,6 +12362,7 @@ __exports["cellPixels"] = cellPixels;
 __exports["roomKey"] = roomKey;
 __exports["roomKeyAt"] = roomKeyAt;
 __exports["getRoom"] = getRoom;
+__exports["cellBeneath"] = cellBeneath;
 __exports["hasRoom"] = hasRoom;
 __exports["liveRooms"] = liveRooms;
 __exports["resetRooms"] = resetRooms;
@@ -18389,7 +18411,7 @@ __define("game/chunk.js", function (__exports, __require) {
 const { Entity, defineEntity, moveEntity, overHole, spawnEntity } = __require("game/entity.js");
 const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
-const { getRoom } = __require("world/maps.js");
+const { cellBeneath } = __require("world/maps.js");
 const { sprites } = __require("gfx/art.js");
 const { LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, HOLE_FOOT_DY, KNOCK_THROWN, CHUNK_BOB_FRAMES } = __require("data/feel.js");
 
@@ -18443,10 +18465,9 @@ class IceChunk extends Entity {
     if (this.chunkId && game.progress) delete game.progress.chunks[this.chunkId];
   }
 
-  /** Called by Game.dropObjectThrough: it has gone down to `floor`, cell tx,ty. */
-  downTo(game, floor, tx, ty) {
-    const r = game.room;
-    this.record(game, floor, r.rx, r.ry, tx, ty);
+  /** Called by Game.dropObjectThrough: it has gone down to `c` (maps.cellBeneath). */
+  downTo(game, c) {
+    this.record(game, c.floor, c.rx, c.ry, c.tx, c.ty);
   }
 
   // ---------------------------------------------------------------- motion
@@ -18570,25 +18591,24 @@ function chunkAtHome(game, id) {
 function haulFromBelow(game, line, tx, ty) {
   const room = game.room;
   if (!room || !game.map || !game.progress) return null;
-  const below = room.floor - 1;
-  if (below < 0 || !game.map.roomDefs[`${below},${room.rx},${room.ry}`]) return null;
+  // The cell beneath by place on the map (S190): a wide room upstairs stands
+  // over more than one room.
+  const c = cellBeneath(game.mapId, room, tx, ty);
+  if (!c) return null;
   let id = null;
-  for (const [cid, c] of Object.entries(game.progress.chunks || {})) {
-    if (c.map === game.mapId && c.floor === below && c.rx === room.rx && c.ry === room.ry
-        && c.tx === tx && c.ty === ty) { id = cid; break; }
+  for (const [cid, k] of Object.entries(game.progress.chunks || {})) {
+    if (k.map === game.mapId && k.floor === c.floor && k.rx === c.rx && k.ry === c.ry
+        && k.tx === c.tx && k.ty === c.ty) { id = cid; break; }
   }
   // A chunk still where the room below placed it.
   if (!id) {
-    const def = game.map.roomDefs[`${below},${room.rx},${room.ry}`];
-    for (const e of def.entities || []) {
-      if (e[0] !== 'icechunk' || e[1] !== tx || e[2] !== ty) continue;
+    for (const e of c.room.def.entities || []) {
+      if (e[0] !== 'icechunk' || e[1] !== c.tx || e[2] !== c.ty) continue;
       const cid = e[3] && e[3].id;
       if (cid && chunkAtHome(game, cid)) { id = cid; break; }
     }
   }
   if (!id) return null;
-  const r = getRoom(game.mapId, below, room.rx, room.ry);
-  if (!r) return null;
   const chunk = spawnEntity(game, 'icechunk', tx, ty, { id });
   if (!chunk) return null;
   // On the line it is nowhere until it is set down; the save keeps it here,
@@ -24172,6 +24192,10 @@ class FloorSwitch extends Entity {
       if (e.floating) continue;
       // A stake plate is the Canopy's: nothing that wanders onto it counts.
       if (this.stake && e.isEnemy) continue;
+      // A FLIER IS NOT ON THE FLOOR (S190): a keese crossing the Crossed
+      // Shafts' far nook held its plate for the frames it was over it, and
+      // with a chunk on the other one that was enough to raise the Boss Key.
+      if (e.isEnemy && e.flying) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }
     }
     if (!this.hold && this.pressed) on = true;
@@ -35102,7 +35126,7 @@ const { TINTS } = __require("gfx/palettes.js");
 const { drawText, drawTextCentered, textWidth } = __require("gfx/font.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
-const { getMap, getRoom, hasRoom, resetRooms, MAPS } = __require("world/maps.js");
+const { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } = __require("world/maps.js");
 const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } = __require("game/entity.js");
@@ -35399,13 +35423,21 @@ class Game {
     // A drop hole (the Sanctum's, Link's too) or a Keep shaft (S189, chunks only).
     const here = room.tile(tx, ty, this.tide);
     if (!(here.flags & F.DROP) && !(here.shaft && obj.downTo)) return false;
+    // An ice chunk (S189) keeps its own place in the save, so it is there on
+    // every visit and after every load, not only on the next one. It finds the
+    // cell beneath by place on the map (S190): a wide room upstairs stands
+    // over more than one room.
+    if (obj.downTo) {
+      const c = cellBeneath(this.mapId, room, tx, ty);
+      if (!c || (c.room.flagsAt(c.tx, c.ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
+      obj.downTo(this, c);
+      obj.remove = true;
+      return true;
+    }
     const below = room.floor - 1;
     if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
     const r = getRoom(this.mapId, below, room.rx, room.ry);
     if (!r || !r.inBounds(tx, ty) || (r.flagsAt(tx, ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
-    // An ice chunk (S189) keeps its own place in the save, so it is there on
-    // every visit and after every load, not only on the next one.
-    if (obj.downTo) { obj.downTo(this, below, tx, ty); obj.remove = true; return true; }
     if (!this.fallen) this.fallen = [];
     this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
     obj.remove = true;
@@ -53378,6 +53410,11 @@ function installCoreTiles() {
       anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
     },
     dShaftAbyss: { tide: ['dHoleAbyss', 'dShaftWaterAbyss', 'dShaftWaterAbyss'] },
+    // A 2F SHAFT (S190): the sea rises through the Keep floor by floor, and
+    // reaches the upper floor only at HIGH — a hole at LOW and MID, flooded at
+    // HIGH. The Crossed Shafts' two, over the Drowned Garden and the
+    // Weighhouse: a chunk climbs the Keep one sea at a time.
+    dShaftAbyssHigh: { tide: ['dHoleAbyss', 'dHoleAbyss', 'dShaftWaterAbyss'] },
 
     // THE HOLD (S189), B1 under the Keep: the Sword & Shield Maze's ICE half,
     // tileset $41 (`hold*` picks in rip-dungeon-themes.py) — blue cobble round
@@ -54207,7 +54244,9 @@ function installLegends() {
   // THE KEEP'S SHAFTS (S189): `5` is a 1F shaft, a hole at LOW and flooded
   // above (`dShaftAbyss`); a digit because it is a tide tile, and the outdoor
   // `channel` no room of the Keep places.
-  registerLegend('dungeonAbyss', { '5': 'dShaftAbyss' }, 'dungeonAbyss');
+  // `8` (S190) is a 2F shaft, a hole at LOW and MID and flooded only at HIGH
+  // (`dShaftAbyssHigh`); the shared `tideRock`, which no room of the Keep places.
+  registerLegend('dungeonAbyss', { '5': 'dShaftAbyss', '8': 'dShaftAbyssHigh' }, 'dungeonAbyss');
   // THE HOLD (S189), the Keep's floor beneath: the Sword & Shield Maze's ice
   // half. Its own floor, wall, block and pot; `i` is the ice, `,` the dark
   // ring that marks the cell under a shaft, `O` its own hole.
@@ -62785,14 +62824,18 @@ function installDungeonsB() {
         // HIGH drowns it, the stake is open water at every sea until a pillar
         // is grown on it, and the snarl sits in the one gap of the wall above.
         // Cut it and the alcove opens for good — a find, not a need.
+        //
+        // S190: a way east into the Weighhouse, a shutter K5's plate opens, and
+        // the cell 12,5 under the Crossed Shafts' middle shaft (2F 4,2 12,5):
+        // a chunk set down here is hauled up onto the middle island at HIGH.
         map: [
           '###############',
           '###############',
           '####........###',
           '#######k#######',
-          '####.0WWW0..###',
-          '####...7....###',
-          '####........###',
+          '####.0WWW0....#',
+          '####...7......D',
+          '####..........#',
           '####........###',
           '#######.#######',
           '#######.#######',
@@ -62832,8 +62875,8 @@ function installDungeonsB() {
         // and the shutter opens. K3 takes it back off with the line and, at
         // LOW, throws it down the east well (9,8) onto the islet below.
         map: [
-          '###############',
-          '###############',
+          '#######L#######',
+          '#######.#######',
           '####........###',
           '####.111111.###',
           '####.111111.###',
@@ -62873,6 +62916,60 @@ function installDungeonsB() {
         readable: [
           [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
           [11, 9, 'Cut in the well\'s rim: "The Hold keeps what\nthe Keep lets fall. Sound it with the water in."'],
+        ],
+      },
+
+      // ---------------------------------------------------- the Weighhouse (S190)
+      '1,5,2': {
+        name: 'The Weighhouse',
+        // K5, THE PLUMB: the middle of a column of three rooms joined by
+        // shafts one over the other — the Plumb's Foot in the Hold, this, and
+        // the Crossed Shafts' far island on 2F. The well at 7,4 is over the
+        // Plumb's Foot's ring, where the Hold keeps a chunk: at MID cast across
+        // it and the line brings the chunk up, as in the Slack Water. The
+        // plate (1,8) stands in a nook past a pit, the Slack Water's nook
+        // turned round: throw the chunk onto it and the west shutter into the
+        // Drowned Garden opens. Nothing here says the 2F shaft is overhead —
+        // the Crossed Shafts says it, from above: the cell under its far shaft
+        // is 12,3, and a chunk set there goes up to the far island at HIGH.
+        //
+        // Both of the Keep's S190 locks are this room's (the human's choice):
+        // the south door from the Slack Water and the east door to the
+        // Hauling Pit. Open one to come in and the other is the way round.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#......5......#',
+          'D.............L',
+          '#.............#',
+          '##............#',
+          '#.O.........U.#',
+          '##............#',
+          '#######L#######',
+        ],
+        entities: [
+          ['switch', 1, 8, { hold: true }],
+          ['stalfos', 4, 6],
+          ['stalfos', 10, 2],
+        ],
+        // tools/check-hold.mjs: the plate is fed by a throw from 3,8; the
+        // chunk on the Plumb's Foot ring comes up on a line cast from 7,3;
+        // a chunk on the plate comes back off it on the line from 3,8.
+        holdRoom: {
+          plate: [1, 8],
+          feeds: [{ at: [48, 128], face: 'left', sea: 1 }],
+          hauls: [{ from: [7, 3], face: 'down', sea: 1, below: [7, 4] }],
+          catches: [{ from: [3, 8], face: 'left', sea: 1, at: [1, 8] }],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_weigh',
+          reward: { openDoors: [[0, 5]], say: 'The west shutter grinds open.' },
+        },
+        readable: [
+          [12, 8, 'A weigher\'s mark on the plinth: "Weigh what\nthe Hold gives up. Weigh it twice, and higher."'],
         ],
       },
 
@@ -63014,7 +63111,7 @@ function installDungeonsB() {
           '#####OO.OO#####',
           '#####OOOOO#####',
           '#####OO7OO#####',
-          '#....OOOOO.....',
+          'L....OOOOO.....',
           '#..#..........#',
           '#.#6#.........#',
           '#..1..........#',
@@ -63272,7 +63369,8 @@ function installDungeonsB() {
         legend: 'dungeonAbyssIce',
         // The foot of the Plumb (S189; its well upstairs, the Weighhouse, is
         // the second half's): the Hold keeps its chunks here, and the ring at
-        // 7,4 marks the cell under the Weighhouse's well.
+        // 7,4 marks the cell under the Weighhouse's well — one lies on it
+        // from the start (S190), so K5 is the Slack Water's haul again.
         map: [
           '###############',
           '#.p.p.....p.p.#',
@@ -63289,7 +63387,8 @@ function installDungeonsB() {
         entities: [
           ['icechunk', 3, 8, { id: 'd6P1' }],
           ['icechunk', 4, 8, { id: 'd6P2' }],
-          ['icechunk', 10, 8, { id: 'd6P3' }],
+          // The one the Hold keeps under the Weighhouse's well (S190): K5's.
+          ['icechunk', 7, 4, { id: 'd6P3' }],
           ['icechunk', 11, 8, { id: 'd6P4' }],
           ['gel', 7, 6],
           ['gel', 9, 2],
@@ -63852,14 +63951,23 @@ function installDungeonsB() {
         // 5,2 as well as its own. At Oracle size the far island runs the whole
         // east screen: the colossus is fought there, and a five-tile ledge
         // between it and the pits was a fight decided by knockback (S142).
+        //
+        // K6, THE BOSS KEY (S190): A CHUNK CLIMBS THE KEEP ONE SEA AT A TIME.
+        // Two 2F shafts (`8`), holes at LOW and MID and flooded only at HIGH:
+        // 12,5 on the middle island over the Drowned Garden's 12,5, and 27,3
+        // on the far island over the Weighhouse's 12,3. A plate in a nook past
+        // a pit on each island (15,1 and 23,1). Both held raise the Boss Key's
+        // chest. Each chunk: up out of the Hold through the Weighhouse's well
+        // at MID, set down on 1F under its shaft, and at HIGH hauled up onto
+        // its island with the line — a chunk crosses no shaft in Link's hands.
         size: [2, 1],
         map: [
           '##############################',
-          '##############################',
-          '######....#O.....OO..........#',
-          '######..q.7O.q...OO..........#',
-          '######....#O.....OO..........#',
-          '..........#O.....OO..........#',
+          '###############.#######.######',
+          '######....#O...O.OO....O.....#',
+          '######..q.7O.q...OO........8.#',
+          '######....#O.....OO...U......#',
+          '..........#O8....OO..........#',
           '######....#O...q3OO.q........#',
           '######....#O.....OO..........#',
           '####################.........#',
@@ -63878,7 +63986,9 @@ function installDungeonsB() {
           ],
         },
         entities: [
-          ['chest', 22, 4, { pickup: 'bossKey' }],
+          ['chest', 21, 5, { pickup: 'bossKey', needFlag: 'd6_crossed' }],
+          ['switch', 15, 1, { hold: true }],
+          ['switch', 23, 1, { hold: true }],
           // THE COLOSSUS'S HOARD, and the last thing to heal on before the
           // King's stair, taken on the way back with the Boss Key. `life`
           // keeps it through the fight in front of it.
@@ -63889,6 +63999,24 @@ function installDungeonsB() {
           ['beamos', 14, 2],
           ['keese', 21, 6],
         ],
+        // tools/check-hold.mjs: each plate fed by a throw from the island in
+        // front of its nook, and each chunk hauled up its shaft at HIGH (and
+        // not at LOW or MID: the sea has not reached this floor).
+        holdRoom: {
+          plates: [
+            { plate: [15, 1], feeds: [{ at: [240, 48], face: 'up', sea: 2 }] },
+            { plate: [23, 1], feeds: [{ at: [368, 48], face: 'up', sea: 2 }] },
+          ],
+          hauls: [
+            { from: [12, 4], face: 'down', sea: 2, below: [12, 5] },
+            { from: [27, 4], face: 'up', sea: 2, below: [27, 3] },
+          ],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_crossed',
+          reward: { reveal: true, say: 'Two weights in the Drowned King\'s scales.\nA chest rises on the far island.' },
+        },
         readable: [
           [7, 6, 'A king\'s inscription, and the only one in the\nKeep that is signed: "You cannot hold two seas.\nNereth."'],
         ],

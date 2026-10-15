@@ -449,7 +449,9 @@ export function installLegends() {
   // THE KEEP'S SHAFTS (S189): `5` is a 1F shaft, a hole at LOW and flooded
   // above (`dShaftAbyss`); a digit because it is a tide tile, and the outdoor
   // `channel` no room of the Keep places.
-  registerLegend('dungeonAbyss', { '5': 'dShaftAbyss' }, 'dungeonAbyss');
+  // `8` (S190) is a 2F shaft, a hole at LOW and MID and flooded only at HIGH
+  // (`dShaftAbyssHigh`); the shared `tideRock`, which no room of the Keep places.
+  registerLegend('dungeonAbyss', { '5': 'dShaftAbyss', '8': 'dShaftAbyssHigh' }, 'dungeonAbyss');
   // THE HOLD (S189), the Keep's floor beneath: the Sword & Shield Maze's ice
   // half. Its own floor, wall, block and pot; `i` is the ice, `,` the dark
   // ring that marks the cell under a shaft, `O` its own hole.

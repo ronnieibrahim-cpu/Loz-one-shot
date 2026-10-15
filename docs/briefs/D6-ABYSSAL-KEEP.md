@@ -1,4 +1,4 @@
-# D6 — the Abyssal Keep, grown to three floors (S188 design; NOT built)
+# D6 — the Abyssal Keep, grown to three floors (S188 design; BUILT S189-S190)
 
 **Status (S188): designed and mocked, shown to the human. Nothing in the
 game has changed.** Written against docs/briefs/DUNGEON-DESIGN-LANGUAGE.md;
@@ -410,3 +410,49 @@ ours in the game below), made by `d6-built/compose.py`.
 - **Not done (S190):** K5 the Weighhouse (1F 5,2) and the Plumb, K6 the
   Crossed Shafts' two plates and 2F shafts ([hole, hole, water]), the Boss
   Key's move, the two new locks, the guide re-shot.
+
+## As built (S190) — the second half
+
+Picture: `d6-built/s190-plumb.png` (Seasons' fire half $5e, $6c, $6d above;
+ours in the game below), made by `d6-built/compose-s190.py`.
+
+- **The two new locks are both the Weighhouse's (the human, S190).** Down in
+  the Hold every room has one way in, so a lock there would only be a gate
+  (spend a key, find a key). The Weighhouse's south door (from the Slack
+  Water) and east door (to the Hauling Pit) are both locked: open either to
+  come in and the other becomes the way round. 7 keys, 7 locks.
+- **The plates are in nooks past a pit (not in the brief).** A plate on open
+  floor is a plate Link holds himself: in the Crossed Shafts he could stand
+  on one plate with a chunk on the other and K6 would need one chunk, not
+  two. Every new plate is the Slack Water's nook (S189): walls either side, a
+  pit in front, fed by a throw over the pit. The Weighhouse's at 1,8 (thrown
+  from 3,8); the Crossed Shafts' at 15,1 and 23,1 (thrown from 15,3 and 23,3
+  over the pits at 15,2 and 23,2).
+- **K5, the Weighhouse (1F 5,2, new).** Its well (7,4) is over the Plumb's
+  Foot's ring, where the Hold now keeps one chunk from the start (d6P3), so
+  K5 is the Slack Water's haul again: at MID cast down the well, throw onto
+  the plate, the west shutter into the Drowned Garden opens. The Garden
+  gained a way east and the cell 12,5 under the middle 2F shaft.
+- **K6, the Crossed Shafts (2F 4..5,2).** Two 2F shafts (`8`,
+  `dShaftAbyssHigh`: hole, hole, water): 12,5 over the Garden's 12,5 and 27,3
+  over the Weighhouse's 12,3. Nothing marks those 1F cells (the brief: the
+  Crossed Shafts says it, from above). Both plates held raise the Boss Key's
+  chest at 21,5 (`needFlag: 'd6_crossed'`). An urn (`U`) stands at 22,4
+  where the old chest stood: the chest was part of the Brinehulk's arena,
+  and without it every fight the robot was swept over was lost. (A chest in
+  front of the urn put the Boss Key inside it — a chest pops its prize a
+  tile above itself.)
+- **Engine:** `cellBeneath` (src/world/maps.js) finds the cell one floor
+  down by place on the map — the Crossed Shafts is one 2x1 room over two
+  1x1 rooms — and the chunk's fall and the line's haul use it. A flier no
+  longer holds a plate (a keese over the far nook raised the chest early).
+- **Tools:** check-hold learns the 2F shape (by floor), the cell beneath by
+  place, `plates` (several per room, each fed with the ones before it held;
+  only the last solves the room) and hauls refused at every lower sea (109
+  assertions). solve-switches stands a chunk on each plate of a
+  several-plate holdRoom. check-playthrough: "THE PLUMB WAS PLAYED" (49).
+- **The robot:** K5 straight after K1/K3 (the spare key opens the
+  Slack Water's north door), the chunk carried to the Garden; in the Hold a
+  chunk onto the Plumb's Foot's ring; after K4 the second haul into the
+  Weighhouse; in the Crossed Shafts the middle plate on the way in, the far
+  one after the Brinehulk (entry wait 48), the chest from 21,6.

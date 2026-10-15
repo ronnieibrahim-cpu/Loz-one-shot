@@ -1905,14 +1905,18 @@ export function installDungeonsB() {
         // HIGH drowns it, the stake is open water at every sea until a pillar
         // is grown on it, and the snarl sits in the one gap of the wall above.
         // Cut it and the alcove opens for good — a find, not a need.
+        //
+        // S190: a way east into the Weighhouse, a shutter K5's plate opens, and
+        // the cell 12,5 under the Crossed Shafts' middle shaft (2F 4,2 12,5):
+        // a chunk set down here is hauled up onto the middle island at HIGH.
         map: [
           '###############',
           '###############',
           '####........###',
           '#######k#######',
-          '####.0WWW0..###',
-          '####...7....###',
-          '####........###',
+          '####.0WWW0....#',
+          '####...7......D',
+          '####..........#',
           '####........###',
           '#######.#######',
           '#######.#######',
@@ -1952,8 +1956,8 @@ export function installDungeonsB() {
         // and the shutter opens. K3 takes it back off with the line and, at
         // LOW, throws it down the east well (9,8) onto the islet below.
         map: [
-          '###############',
-          '###############',
+          '#######L#######',
+          '#######.#######',
           '####........###',
           '####.111111.###',
           '####.111111.###',
@@ -1993,6 +1997,60 @@ export function installDungeonsB() {
         readable: [
           [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
           [11, 9, 'Cut in the well\'s rim: "The Hold keeps what\nthe Keep lets fall. Sound it with the water in."'],
+        ],
+      },
+
+      // ---------------------------------------------------- the Weighhouse (S190)
+      '1,5,2': {
+        name: 'The Weighhouse',
+        // K5, THE PLUMB: the middle of a column of three rooms joined by
+        // shafts one over the other — the Plumb's Foot in the Hold, this, and
+        // the Crossed Shafts' far island on 2F. The well at 7,4 is over the
+        // Plumb's Foot's ring, where the Hold keeps a chunk: at MID cast across
+        // it and the line brings the chunk up, as in the Slack Water. The
+        // plate (1,8) stands in a nook past a pit, the Slack Water's nook
+        // turned round: throw the chunk onto it and the west shutter into the
+        // Drowned Garden opens. Nothing here says the 2F shaft is overhead —
+        // the Crossed Shafts says it, from above: the cell under its far shaft
+        // is 12,3, and a chunk set there goes up to the far island at HIGH.
+        //
+        // Both of the Keep's S190 locks are this room's (the human's choice):
+        // the south door from the Slack Water and the east door to the
+        // Hauling Pit. Open one to come in and the other is the way round.
+        map: [
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#......5......#',
+          'D.............L',
+          '#.............#',
+          '##............#',
+          '#.O.........U.#',
+          '##............#',
+          '#######L#######',
+        ],
+        entities: [
+          ['switch', 1, 8, { hold: true }],
+          ['stalfos', 4, 6],
+          ['stalfos', 10, 2],
+        ],
+        // tools/check-hold.mjs: the plate is fed by a throw from 3,8; the
+        // chunk on the Plumb's Foot ring comes up on a line cast from 7,3;
+        // a chunk on the plate comes back off it on the line from 3,8.
+        holdRoom: {
+          plate: [1, 8],
+          feeds: [{ at: [48, 128], face: 'left', sea: 1 }],
+          hauls: [{ from: [7, 3], face: 'down', sea: 1, below: [7, 4] }],
+          catches: [{ from: [3, 8], face: 'left', sea: 1, at: [1, 8] }],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_weigh',
+          reward: { openDoors: [[0, 5]], say: 'The west shutter grinds open.' },
+        },
+        readable: [
+          [12, 8, 'A weigher\'s mark on the plinth: "Weigh what\nthe Hold gives up. Weigh it twice, and higher."'],
         ],
       },
 
@@ -2134,7 +2192,7 @@ export function installDungeonsB() {
           '#####OO.OO#####',
           '#####OOOOO#####',
           '#####OO7OO#####',
-          '#....OOOOO.....',
+          'L....OOOOO.....',
           '#..#..........#',
           '#.#6#.........#',
           '#..1..........#',
@@ -2392,7 +2450,8 @@ export function installDungeonsB() {
         legend: 'dungeonAbyssIce',
         // The foot of the Plumb (S189; its well upstairs, the Weighhouse, is
         // the second half's): the Hold keeps its chunks here, and the ring at
-        // 7,4 marks the cell under the Weighhouse's well.
+        // 7,4 marks the cell under the Weighhouse's well — one lies on it
+        // from the start (S190), so K5 is the Slack Water's haul again.
         map: [
           '###############',
           '#.p.p.....p.p.#',
@@ -2409,7 +2468,8 @@ export function installDungeonsB() {
         entities: [
           ['icechunk', 3, 8, { id: 'd6P1' }],
           ['icechunk', 4, 8, { id: 'd6P2' }],
-          ['icechunk', 10, 8, { id: 'd6P3' }],
+          // The one the Hold keeps under the Weighhouse's well (S190): K5's.
+          ['icechunk', 7, 4, { id: 'd6P3' }],
           ['icechunk', 11, 8, { id: 'd6P4' }],
           ['gel', 7, 6],
           ['gel', 9, 2],
@@ -2972,14 +3032,23 @@ export function installDungeonsB() {
         // 5,2 as well as its own. At Oracle size the far island runs the whole
         // east screen: the colossus is fought there, and a five-tile ledge
         // between it and the pits was a fight decided by knockback (S142).
+        //
+        // K6, THE BOSS KEY (S190): A CHUNK CLIMBS THE KEEP ONE SEA AT A TIME.
+        // Two 2F shafts (`8`), holes at LOW and MID and flooded only at HIGH:
+        // 12,5 on the middle island over the Drowned Garden's 12,5, and 27,3
+        // on the far island over the Weighhouse's 12,3. A plate in a nook past
+        // a pit on each island (15,1 and 23,1). Both held raise the Boss Key's
+        // chest. Each chunk: up out of the Hold through the Weighhouse's well
+        // at MID, set down on 1F under its shaft, and at HIGH hauled up onto
+        // its island with the line — a chunk crosses no shaft in Link's hands.
         size: [2, 1],
         map: [
           '##############################',
-          '##############################',
-          '######....#O.....OO..........#',
-          '######..q.7O.q...OO..........#',
-          '######....#O.....OO..........#',
-          '..........#O.....OO..........#',
+          '###############.#######.######',
+          '######....#O...O.OO....O.....#',
+          '######..q.7O.q...OO........8.#',
+          '######....#O.....OO...U......#',
+          '..........#O8....OO..........#',
           '######....#O...q3OO.q........#',
           '######....#O.....OO..........#',
           '####################.........#',
@@ -2998,7 +3067,9 @@ export function installDungeonsB() {
           ],
         },
         entities: [
-          ['chest', 22, 4, { pickup: 'bossKey' }],
+          ['chest', 21, 5, { pickup: 'bossKey', needFlag: 'd6_crossed' }],
+          ['switch', 15, 1, { hold: true }],
+          ['switch', 23, 1, { hold: true }],
           // THE COLOSSUS'S HOARD, and the last thing to heal on before the
           // King's stair, taken on the way back with the Boss Key. `life`
           // keeps it through the fight in front of it.
@@ -3009,6 +3080,24 @@ export function installDungeonsB() {
           ['beamos', 14, 2],
           ['keese', 21, 6],
         ],
+        // tools/check-hold.mjs: each plate fed by a throw from the island in
+        // front of its nook, and each chunk hauled up its shaft at HIGH (and
+        // not at LOW or MID: the sea has not reached this floor).
+        holdRoom: {
+          plates: [
+            { plate: [15, 1], feeds: [{ at: [240, 48], face: 'up', sea: 2 }] },
+            { plate: [23, 1], feeds: [{ at: [368, 48], face: 'up', sea: 2 }] },
+          ],
+          hauls: [
+            { from: [12, 4], face: 'down', sea: 2, below: [12, 5] },
+            { from: [27, 4], face: 'up', sea: 2, below: [27, 3] },
+          ],
+        },
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_crossed',
+          reward: { reveal: true, say: 'Two weights in the Drowned King\'s scales.\nA chest rises on the far island.' },
+        },
         readable: [
           [7, 6, 'A king\'s inscription, and the only one in the\nKeep that is signed: "You cannot hold two seas.\nNereth."'],
         ],

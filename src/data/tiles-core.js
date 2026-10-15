@@ -3033,6 +3033,11 @@ export function installCoreTiles() {
       anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
     },
     dShaftAbyss: { tide: ['dHoleAbyss', 'dShaftWaterAbyss', 'dShaftWaterAbyss'] },
+    // A 2F SHAFT (S190): the sea rises through the Keep floor by floor, and
+    // reaches the upper floor only at HIGH — a hole at LOW and MID, flooded at
+    // HIGH. The Crossed Shafts' two, over the Drowned Garden and the
+    // Weighhouse: a chunk climbs the Keep one sea at a time.
+    dShaftAbyssHigh: { tide: ['dHoleAbyss', 'dHoleAbyss', 'dShaftWaterAbyss'] },
 
     // THE HOLD (S189), B1 under the Keep: the Sword & Shield Maze's ICE half,
     // tileset $41 (`hold*` picks in rip-dungeon-themes.py) — blue cobble round

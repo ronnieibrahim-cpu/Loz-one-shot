@@ -447,6 +447,26 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A plate on open floor is a plate the player holds himself (S190).** The
+  D6 brief put K6's two plates on the islands; Link standing on one with a
+  chunk on the other would have raised the Boss Key with one chunk instead of
+  two. Every plate a puzzle means an OBJECT to hold goes in a nook past a pit
+  (the Slack Water's shape), and check-hold's "no foot reaches it" proves it.
+- **A flier held a plate (S190).** FloorSwitch counted every enemy over it;
+  a keese crossing the far nook pressed the plate for a few frames, and with
+  a chunk on the other plate that raised the chest. Fliers no longer count.
+- **What stands in a boss arena is part of the fight (S190).** The Boss Key
+  chest stood on the Brinehulk's island; making it rise later emptied that
+  square, and every entry wait the robot was swept over lost. An urn where
+  the chest stood gave the arena back its shape. Before moving anything solid
+  out of an arena, re-sweep the fight.
+- **A wide room upstairs stands over several rooms (S190).** The Crossed
+  Shafts is one 2x1 room over the Garden and the Weighhouse; "the room
+  beneath" by the upstairs room's own key asked the Garden for column 27.
+  `cellBeneath` finds the cell by its place on the map.
+- **`git checkout <file>` throws away every uncommitted edit to it, not just
+  the debugging lines (S190).** Strip debug output by hand, or commit first.
+
 - **A puzzle plate directly under a hole Link can fall through is a plate
   Link can stand on (S189).** The D6 brief put K3's plate on an islet under a
   shaft Link could drop down himself: he would land on it (solving it with

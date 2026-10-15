@@ -4,15 +4,22 @@
 // room makes about it with `holdRoom`:
 //
 //   * EVERY SHAFT in the world (a tile whose tiledef says `shaft` at some sea)
-//     is a hole at LOW and flooded water at MID and HIGH (a 1F shaft), has a
-//     room directly beneath it, and the cell beneath is somewhere a chunk can
-//     rest at every sea, marked with the Hold's darker ring or a plate;
+//     is a hole at LOW and flooded water at MID and HIGH on 1F, and a hole at
+//     LOW and MID and flooded only at HIGH on 2F (S190: the sea rises through
+//     the Keep floor by floor), has a room directly beneath it — found by
+//     place on the map, as a wide room upstairs stands over more than one —
+//     and the cell beneath is somewhere a chunk can rest at every sea; in the
+//     Hold it is marked with the darker ring or a plate (on 1F nothing marks
+//     the cell under a 2F shaft: the brief's "the Crossed Shafts says it,
+//     from above");
 //   * to LINK a shaft is a pit (Seasons' rule, the human's S189 choice): he
 //     walks into a dry one and is put back on his own floor;
 //   * a chunk resting over a dry shaft goes down it to the same cell one
-//     floor down; over a flooded one it floats there and stays on its floor;
+//     floor down, at every sea it is dry; over a flooded one it floats there
+//     and stays on its floor;
 //   * the Dredge Line cast over a flooded shaft brings up a chunk lying on the
-//     cell beneath, into Link's hands, and over a dry one brings up nothing;
+//     cell beneath, into Link's hands, and over a dry one — at every sea it
+//     is dry — brings up nothing;
 //   * holding a chunk, Link stands on a stair and it does not take him
 //     (Seasons' checkTileWarps); set down, it does;
 //   * ICE: on Seasons' ice Link keeps sliding when the d-pad is let go, and
@@ -24,7 +31,9 @@
 //     never comes to rest on it — and each of its `feeds` (thrown in that
 //     room) or `drops` (thrown down a shaft from the room above) does put a
 //     chunk on it, which then holds the plate, sets the room's puzzle flag,
-//     and is still there after a save and a load;
+//     and is still there after a save and a load. A room may claim several
+//     `plates` (the Crossed Shafts' two, S190): each is fed in turn with the
+//     ones before it still held, and the puzzle is solved only by the last;
 //   * every `hauls` claim brings a chunk up at its sea and not at LOW, and
 //     every `catches` claim brings a chunk lying across the shafts home.
 import { chromium } from 'playwright';
@@ -64,7 +73,7 @@ const check = (n, c, d) => c ? (pass++, console.log('  ok   ' + n)) : (fail.push
 const out = await page.evaluate(async () => {
   const g = window.__game;
   window.__harness.takeOver();
-  const { MAPS, getRoom } = await import('/src/world/maps.js');
+  const { MAPS, getRoom, cellBeneath } = await import('/src/world/maps.js');
   const { F, getTileDef } = await import('/src/world/tileset.js');
   const { spawnEntity, canOccupy, groundFlags } = await import('/src/game/entity.js');
   const { giveItem, exportCode, importCode } = await import('/src/game/progress.js');
@@ -132,20 +141,25 @@ const out = await page.evaluate(async () => {
     const name = `${s.map} ${s.key} ${tx},${ty}`;
     const f = [0, 1, 2].map(lv => r.flagsAt(tx, ty, lv));
     const sh = [0, 1, 2].map(lv => r.tile(tx, ty, lv).shaft);
-    ok(`${name}: a hole at LOW, flooded at MID and HIGH, a shaft at all three`,
-      (f[0] & F.PIT) && !(f[0] & F.DROP) && (f[1] & F.DEEP) && (f[2] & F.DEEP) && sh.every(Boolean),
-      f.map(x => x.toString(16)).join(' '));
-    const below = r.floor - 1;
-    const bk = `${below},${r.rx},${r.ry}`;
-    const m = MAPS.get ? MAPS.get(s.map) : MAPS[s.map];
-    const br = below >= 0 && m.roomDefs[bk] ? getRoom(s.map, below, r.rx, r.ry) : null;
-    ok(`${name}: a room beneath it`, !!br);
-    if (!br) continue;
-    const fb = [0, 1, 2].map(lv => br.flagsAt(tx, ty, lv));
-    ok(`${name}: the cell beneath holds a chunk at every sea`, fb.every(x => !(x & (F.SOLID | F.PIT | F.VOID | F.DEEP))));
-    const plate = (br.def.entities || []).some(e => e[0] === 'switch' && e[1] === tx && e[2] === ty);
-    const ring = br.baseName(tx, ty) === br.legend[','];
-    ok(`${name}: the cell beneath is marked (the ring, or a plate)`, plate || ring, br.baseName(tx, ty));
+    // 1F floods at MID, 2F only at HIGH: the first sea it is water at.
+    const wet = r.floor >= 2 ? 2 : 1;
+    const shape = [0, 1, 2].every(lv => lv < wet
+      ? (f[lv] & F.PIT) && !(f[lv] & F.DROP) && !(f[lv] & F.DEEP)
+      : (f[lv] & F.DEEP) && !(f[lv] & F.PIT));
+    ok(`${name}: on floor ${r.floor} a hole below ${seaNames[wet]}, flooded from it, a shaft at all three`,
+      shape && sh.every(Boolean), f.map(x => x.toString(16)).join(' '));
+    const cb = cellBeneath(s.map, r, tx, ty);
+    ok(`${name}: a room beneath it`, !!cb);
+    if (!cb) continue;
+    const br = cb.room;
+    const fb = [0, 1, 2].map(lv => br.flagsAt(cb.tx, cb.ty, lv));
+    ok(`${name}: the cell beneath (${br.key} ${cb.tx},${cb.ty}) holds a chunk at every sea`, fb.every(x => !(x & (F.SOLID | F.PIT | F.VOID | F.DEEP))));
+    if (br.def.legend === 'dungeonAbyssIce') {
+      const plate = (br.def.entities || []).some(e => e[0] === 'switch' && e[1] === cb.tx && e[2] === cb.ty);
+      const ring = br.baseName(cb.tx, cb.ty) === br.legend[','];
+      ok(`${name}: the cell beneath in the Hold is marked (the ring, or a plate)`, plate || ring, br.baseName(cb.tx, cb.ty));
+    }
+    const below = cb.floor;
 
     // To Link it is a pit: he walks in at LOW and is put back on his floor.
     let p = enter(s.map, s.key, 0, tx * TILE, ty * TILE - 14, 'down');
@@ -155,53 +169,50 @@ const out = await page.evaluate(async () => {
     ok(`${name}: Link walking into it at LOW falls as into a pit and stays on his floor`,
       g.room.floor === fl && g.room.key === s.key, `room ${g.room.key}`);
 
-    // A chunk at rest over it at LOW goes down to the same cell.
-    p = enter(s.map, s.key, 0, 16, 16);
-    quiet();
-    delete g.progress.chunks.__probe;
-    let c = spawnEntity(g, 'icechunk', tx, ty, { id: '__probe' });
-    g.flushPending();
-    c.settle(g);
-    step(2);
-    const L = ledger().__probe;
-    ok(`${name}: a chunk over it at LOW goes down to the same cell one floor down`,
-      L && L.floor === below && L.tx === tx && L.ty === ty, JSON.stringify(L));
-    // At MID it floats, on its own floor.
-    p = enter(s.map, s.key, 1, 16, 16);
-    quiet();
-    delete g.progress.chunks.__probe;
-    c = spawnEntity(g, 'icechunk', tx, ty, { id: '__probe' });
-    g.flushPending();
-    c.settle(g);
-    step(2);
-    const M = ledger().__probe;
-    ok(`${name}: a chunk over it at MID floats there and stays on its floor`,
-      M && M.floor === r.floor && c.floating && !c.remove, JSON.stringify(M));
-    delete g.progress.chunks.__probe;
+    // A chunk at rest over it at every dry sea goes down to the same cell;
+    // at the first wet sea it floats, on its own floor.
+    for (let sea = 0; sea <= wet; sea++) {
+      enter(s.map, s.key, sea, 16, 16);
+      quiet();
+      delete g.progress.chunks.__probe;
+      const c = spawnEntity(g, 'icechunk', tx, ty, { id: '__probe' });
+      g.flushPending();
+      c.settle(g);
+      step(2);
+      const L = ledger().__probe;
+      if (sea < wet) {
+        ok(`${name}: a chunk over it at ${seaNames[sea]} goes down to the cell beneath`,
+          L && L.floor === below && L.rx === cb.rx && L.ry === cb.ry && L.tx === cb.tx && L.ty === cb.ty, JSON.stringify(L));
+      } else {
+        ok(`${name}: a chunk over it at ${seaNames[sea]} floats there and stays on its floor`,
+          L && L.floor === r.floor && c.floating && !c.remove, JSON.stringify(L));
+      }
+      delete g.progress.chunks.__probe;
+    }
 
-    // The line: from each side of it that Link can stand on, at MID it
-    // brings up a chunk lying beneath; at LOW nothing.
+    // The line: from each side of it that Link can stand on, at its wet sea
+    // it brings up a chunk lying beneath; at every dry sea nothing.
     const sides = [[0, -1, 'down'], [0, 1, 'up'], [-1, 0, 'right'], [1, 0, 'left']];
-    let castFrom = 0, hauled = 0, dry = 0;
+    let castFrom = 0, hauled = 0, dry = 0, dryCasts = 0;
     for (const [dx, dy, face] of sides) {
       const sx = tx + dx, sy = ty + dy;
-      for (const sea of [1, 0]) {
+      for (let sea = wet; sea >= 0; sea--) {
         p = enter(s.map, s.key, sea, sx * TILE, sy * TILE, face);
         quiet();
         if (!canOccupy(g, p, sx * TILE, sy * TILE) || (groundFlags(g, p) & (F.PIT | F.DEEP))) break;
-        placeChunk('__probe', below, r.rx, r.ry, tx, ty);
+        placeChunk('__probe', below, cb.rx, cb.ry, cb.tx, cb.ty);
         p.dir = face;
         // The line is on A.
         step(1, ['a']); step(160);
         const got = !!(p.carrying && p.carrying.chunkId === '__probe');
-        if (sea === 1) { castFrom++; if (got) hauled++; } else if (!got && ledger().__probe && ledger().__probe.floor === below) dry++;
+        if (sea === wet) { castFrom++; if (got) hauled++; } else { dryCasts++; if (!got && ledger().__probe && ledger().__probe.floor === below) dry++; }
         delete g.progress.chunks.__probe;
         p.carrying = null;
       }
     }
-    ok(`${name}: the line cast over it at MID brings up the chunk beneath, from every side Link stands (${hauled}/${castFrom})`,
+    ok(`${name}: the line cast over it at ${seaNames[wet]} brings up the chunk beneath, from every side Link stands (${hauled}/${castFrom})`,
       castFrom > 0 && hauled === castFrom);
-    ok(`${name}: and over it at LOW brings up nothing (${dry}/${castFrom})`, dry === castFrom);
+    ok(`${name}: and over it dry brings up nothing (${dry}/${dryCasts})`, dryCasts > 0 && dry === dryCasts);
   }
 
   // ----------------------------------------------------- a stair and a held chunk
@@ -309,8 +320,11 @@ const out = await page.evaluate(async () => {
   for (const cl of claims) {
     const { H, key } = cl;
     const name = `${cl.map} ${key} (${cl.def.name})`;
-    if (H.plate) {
-      const [px, py] = H.plate;
+    const plates = H.plates || (H.plate ? [{ plate: H.plate, feeds: H.feeds, drops: H.drops }] : []);
+    const kept = {};
+    for (let pi = 0; pi < plates.length; pi++) {
+      const P = plates[pi], last = pi === plates.length - 1;
+      const [px, py] = P.plate;
       // No foot: flood over the engine's own canOccupy, swimming allowed.
       let footReached = false;
       for (let sea = 0; sea < 3 && !footReached; sea++) {
@@ -321,7 +335,7 @@ const out = await page.evaluate(async () => {
       // No throw from its own floor — unless the claim says a throw in this
       // very room is how it is fed (`feeds`), when the feeds are the proof.
       let thrown = 0, hit = null;
-      for (let sea = 0; sea < 3 && !hit && !H.feeds; sea++) {
+      for (let sea = 0; sea < 3 && !hit && !P.feeds; sea++) {
         enter(cl.map, key, sea, 16, 16); quiet();
         g.player.freeze = true;
         for (const [x, y] of standings(sea, px * TILE, py * TILE, 24 * TILE)) {
@@ -334,10 +348,11 @@ const out = await page.evaluate(async () => {
         }
         g.player.freeze = false;
       }
-      if (!H.feeds) ok(`${name}: no chunk thrown from any of ${thrown} standing places in the room lands on the plate`, thrown > 100 && !hit, hit || '');
-      // Fed for real.
-      for (const fd of [...(H.feeds || []).map(x => ({ ...x, room: key, same: true })), ...(H.drops || [])]) {
-        g.progress.chunks = {};
+      if (!P.feeds) ok(`${name}: no chunk thrown from any of ${thrown} standing places in the room lands on the plate`, thrown > 100 && !hit, hit || '');
+      // Fed for real, with every plate before it still held.
+      const fid = '__feed' + pi;
+      for (const fd of [...(P.feeds || []).map(x => ({ ...x, room: key, same: true })), ...(P.drops || [])]) {
+        g.progress.chunks = { ...kept };
         g.progress.flags = {};
         const [ax, ay] = fd.at;
         enter(cl.map, fd.room, fd.sea, ax, ay, fd.face); quiet();
@@ -345,21 +360,25 @@ const out = await page.evaluate(async () => {
         // A probe has no id; throw a real one so the save keeps it.
         const p = g.player;
         p.x = ax; p.y = ay; p.dir = fd.face;
-        const c = spawnEntity(g, 'icechunk', 0, 0, { id: '__feed' });
+        const c = spawnEntity(g, 'icechunk', 0, 0, { id: fid });
         g.flushPending();
         p.carrying = c; c.carried = true;
         p.throwCarried(g);
         step(90);
-        const L = ledger().__feed;
+        const L = ledger()[fid];
         const [cf] = key.split(',').map(Number);
-        ok(`${name}: a chunk thrown from ${ax},${ay} ${fd.face} at ${seaNames[fd.sea]} in ${fd.room} comes to rest on the plate`,
+        ok(`${name}: a chunk thrown from ${ax},${ay} ${fd.face} at ${seaNames[fd.sea]} in ${fd.room} comes to rest on the plate at ${px},${py}`,
           L && L.floor === cf && L.tx === px && L.ty === py, JSON.stringify(L) + ' probe ' + JSON.stringify(at));
         enter(cl.map, key, fd.sea, 16, 16);
         step(3);
         const sw = g.entities.find(e => e instanceof FloorSwitch && Math.floor(e.cx / TILE) === px && Math.floor(e.cy / TILE) === py);
         const pz = cl.def.puzzle;
-        ok(`${name}: and holds it, and the room's puzzle (${pz && pz.flag}) is solved`,
-          sw && sw.pressed && (!pz || !pz.flag || g.progress.flags[pz.flag]));
+        const solved = !pz || !pz.flag || !!g.progress.flags[pz.flag];
+        if (last) {
+          ok(`${name}: and holds it, and the room's puzzle (${pz && pz.flag}) is solved`, sw && sw.pressed && solved);
+        } else {
+          ok(`${name}: and holds it, and the room's puzzle (${pz && pz.flag}) is NOT solved by ${pi + 1} of ${plates.length}`, sw && sw.pressed && !solved);
+        }
         // A save and a load.
         const back = importCode(exportCode(g.progress));
         g.progress = back;
@@ -368,27 +387,34 @@ const out = await page.evaluate(async () => {
         step(3);
         const sw2 = g.entities.find(e => e instanceof FloorSwitch && Math.floor(e.cx / TILE) === px && Math.floor(e.cy / TILE) === py);
         ok(`${name}: and after a save and a load it is still on the plate`, sw2 && sw2.pressed);
+        if (L) kept[fid] = L;
       }
     }
     for (const h of H.hauls || []) {
       const [fx, fy] = h.from, [bx, by] = h.below;
-      const [f, rx, ry] = key.split(',').map(Number);
+      const cb = cellBeneath(cl.map, getRoom(cl.map, ...key.split(',').map(Number)), bx, by);
       const got = [];
-      for (const sea of [h.sea, 0]) {
-        g.progress.chunks = { __haul: { map: cl.map, floor: f - 1, rx, ry, tx: bx, ty: by } };
+      const seas = [h.sea]; for (let lv = 0; lv < h.sea; lv++) seas.push(lv);
+      for (const sea of seas) {
+        g.progress.chunks = { __haul: { map: cl.map, floor: cb.floor, rx: cb.rx, ry: cb.ry, tx: cb.tx, ty: cb.ty } };
         const p = enter(cl.map, key, sea, fx * TILE, fy * TILE, h.face); quiet();
+        // Anything the room queued on entry (the Brinehulk) goes too.
+        g.flushPending(); quiet();
+        p.dir = h.face;
         step(1, ['a']); step(160);
         got.push(!!(p.carrying && p.carrying.chunkId === '__haul'));
         p.carrying = null;
       }
-      ok(`${name}: the line cast ${h.face} from ${fx},${fy} at ${seaNames[h.sea]} brings up the chunk under ${bx},${by}`, got[0]);
-      ok(`${name}: and at LOW it does not`, !got[1]);
+      ok(`${name}: the line cast ${h.face} from ${fx},${fy} at ${seaNames[h.sea]} brings up the chunk from ${cb.room.key} ${cb.tx},${cb.ty}`, got[0]);
+      ok(`${name}: and at every lower sea it does not`, got.slice(1).every(x => !x));
     }
     for (const h of H.catches || []) {
       const [fx, fy] = h.from, [cx, cy] = h.at;
       const [f, rx, ry] = key.split(',').map(Number);
       g.progress.chunks = { __catch: { map: cl.map, floor: f, rx, ry, tx: cx, ty: cy } };
       const p = enter(cl.map, key, h.sea, fx * TILE, fy * TILE, h.face); quiet();
+      g.flushPending(); quiet();
+      p.dir = h.face;
       g.progress.chunks = { __catch: { map: cl.map, floor: f, rx, ry, tx: cx, ty: cy } };
       spawnEntity(g, 'icechunk', cx, cy, { id: '__catch' }); g.flushPending();
       step(1, ['a']); step(160);

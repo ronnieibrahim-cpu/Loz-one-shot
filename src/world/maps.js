@@ -145,6 +145,27 @@ export function getRoom(mapId, floor, x, y) {
   return r;
 }
 
+/**
+ * THE CELL DIRECTLY BENEATH (S190): the same place on the map one floor down,
+ * whatever the rooms' sizes. A 2x1 room upstairs (the Crossed Shafts) stands
+ * over two 1x1 rooms (the Drowned Garden and the Weighhouse), so its tile
+ * 24,5 is the Weighhouse's 9,5 — the room above's own key and tile would ask
+ * the Garden for a column it does not have. Returns { room, floor, rx, ry,
+ * tx, ty } (rx, ry the room beneath's own key) or null.
+ */
+export function cellBeneath(mapId, room, tx, ty) {
+  const m = MAPS.get(mapId);
+  if (!m || !room) return null;
+  const below = room.floor - 1;
+  if (below < 0) return null;
+  const [cw, ch] = cellTiles(m);
+  const r = getRoom(mapId, below, room.rx + Math.floor(tx / cw), room.ry + Math.floor(ty / ch));
+  if (!r) return null;
+  const lx = tx + (room.rx - r.rx) * cw, ly = ty + (room.ry - r.ry) * ch;
+  if (!r.inBounds(lx, ly)) return null;
+  return { room: r, floor: below, rx: r.rx, ry: r.ry, tx: lx, ty: ly };
+}
+
 export function hasRoom(mapId, floor, x, y) {
   return !!roomKeyAt(mapId, floor, x, y);
 }

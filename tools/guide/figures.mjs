@@ -534,14 +534,17 @@ FIGURES.push(
 
   // ------------------------------------------------------------------- D6
   { out: 'd6-map-f0', scale: 1, map: { rooms: floorRooms('d6', 0) }, marks: [
-    { n: 1, at: [4, 6, 7, 7] }, { n: 2, at: [4, 5, 7, 5] }, { n: 3, at: [4, 4, 7, 3] }, { n: 4, at: [2, 4, 7, 6] },
-    { n: 5, at: [3, 3, 7, 5] }, { n: 6, at: [4, 3, 7, 6] }, { n: 7, at: [5, 3, 7, 5] }, { n: 8, at: [6, 3, 7, 5] },
-    { n: 9, at: [7, 2, 7, 12] }, { n: 10, at: [6, 2, 7, 5] }, { n: 11, at: [2, 3, 7, 5] },
+    { n: 12, at: [6, 3, 7, 5] }, { n: 13, at: [7, 2, 7, 18] }, { n: 14, at: [5, 3, 7, 5] }, { n: 15, at: [5, 2, 7, 5] },
   ] },
   { out: 'd6-map-f1', scale: 1, map: { rooms: floorRooms('d6', 1) }, marks: [
-    { n: 12, at: [4, 5, 14, 12] }, { n: 13, at: [4, 4, 7, 6] }, { n: 14, at: [5, 4, 7, 6] }, { n: 15, at: [2, 5, 7, 6] },
-    { n: 16, at: [2, 4, 7, 6] }, { n: 17, at: [3, 4, 7, 6] }, { n: 18, at: [2, 3, 7, 7] }, { n: 19, at: [4, 3, 7, 7] },
-    { n: 20, at: [3, 2, 7, 6] }, { n: 21, at: [4, 2, 22, 7] }, { n: 22, at: [3, 0, 12, 7] },
+    { n: 1, at: [4, 6, 7, 7] }, { n: 2, at: [4, 5, 7, 5] }, { n: 3, at: [4, 4, 7, 3] }, { n: 4, at: [2, 4, 7, 6] },
+    { n: 5, at: [3, 3, 7, 5] }, { n: 6, at: [4, 3, 7, 6] }, { n: 7, at: [5, 3, 7, 5] }, { n: 8, at: [5, 2, 7, 6] },
+    { n: 9, at: [6, 3, 7, 5] }, { n: 10, at: [7, 2, 7, 12] }, { n: 11, at: [6, 2, 7, 5] }, { n: 18, at: [2, 3, 7, 5] },
+  ] },
+  { out: 'd6-map-f2', scale: 1, map: { rooms: floorRooms('d6', 2) }, marks: [
+    { n: 19, at: [4, 5, 14, 12] }, { n: 20, at: [4, 4, 7, 6] }, { n: 21, at: [5, 4, 7, 6] }, { n: 22, at: [2, 5, 7, 6] },
+    { n: 23, at: [2, 4, 7, 6] }, { n: 24, at: [3, 4, 7, 6] }, { n: 25, at: [2, 3, 7, 7] }, { n: 26, at: [4, 3, 7, 7] },
+    { n: 27, at: [3, 2, 7, 6] }, { n: 28, at: [4, 2, 22, 7] }, { n: 29, at: [3, 0, 12, 7] },
   ] },
   { out: 'd6-drain', src: 'd6-drain-done-whole', marks: [
     { ring: [2, 2] }, lbl('block onto the far plate', [2.8, 1.6], 'e'), { ring: [12, 8] }, lbl('stand on this one', [11.2, 8], 'w'), MID,
@@ -552,12 +555,30 @@ FIGURES.push(
   { out: 'd6-crypt', src: 'd6-crypt-blow-whole', marks: [{ ring: [5, 4] }, { path: [[7.4, 4], [5.6, 4]], w: 5 }, lbl('blow the wheel at MID', [7, 5.4])] },
   { out: 'd6-dredge-get', src: 'd6-dredge-get' },
   { out: 'd6-slack', src: 'd6-slack-cast-whole', marks: [lbl('cast over the silted ring at MID:\na Piece of Heart comes up', [7, 2.4], 'c'), MID] },
+  { out: 'd6-slack-k1', src: 'd6-slack-k1-whole', marks: [
+    { ring: [3, 8] }, lbl('MID: the line down the\nwest well brings up a chunk', [3, 6.4], 'c'), { ring: [13, 8] }, lbl('thrown onto the plate:\nthe east shutter opens', [12.6, 9.6], 'e'), MID,
+  ] },
+  { out: 'd6-weigh', src: 'd6-weigh-whole', marks: [{ ring: [7, 4] }, lbl('MID: cast down the well', [7, 2.4], 'c'), MID] },
+  { out: 'd6-weigh-plate', src: 'd6-weigh-plate-whole', marks: [{ ring: [1, 8] }, lbl('throw it onto the plate\nin the nook: the west\nshutter opens', [3.6, 6.4], 'w')] },
+  { out: 'd6-garden', src: 'd6-garden-whole', marks: [{ ring: [12, 5] }, lbl('the line takes it back off the plate;\nset it down here, for later', [9, 7.6], 'c')] },
   { out: 'd6-draw', src: 'd6-draw-cast-whole', marks: [lbl('LOW: stand on the shelf and cast\nat the post across the pit', [7, 2.4], 'c'), LOW] },
+  { out: 'd6-landing', src: 'd6-landing-whole', marks: [lbl('Seasons\' ice: you slide', [7, 3.4], 'c')] },
+  { out: 'd6-rime', src: 'd6-rime-whole', marks: [{ ring: [13, 20] }, lbl('a chunk on the ring', [12.6, 18.4], 'c'), { ring: [11, 6] }, lbl('the plate no throw reaches', [11, 4.4], 'c')] },
+  { out: 'd6-sounding', src: 'd6-sounding-whole', marks: [{ ring: [9, 8] }, lbl('the chunk you threw down\nthe Slack Water\'s east well', [9, 6.4], 'c')] },
+  { out: 'd6-plumb', src: 'd6-plumb-whole', marks: [{ ring: [7, 4] }, lbl('a chunk on the ring, under\nthe Weighhouse\'s well', [7, 1.4], 'c')] },
+  { out: 'd6-tally-k4', src: 'd6-tally-k4-whole', marks: [{ ring: [13, 20] }, lbl('MID: haul it up the south well', [10, 18.4], 'c'), { ring: [11, 6] }, lbl('LOW: drop it down the north well', [9, 4.4], 'c'), MID] },
+  { out: 'd6-weigh2', src: 'd6-weigh2-whole', marks: [{ ring: [12, 3] }, lbl('a second chunk up the well,\nset down here', [9, 5.6], 'c')] },
   { out: 'd6-tideshade', src: 'd6-tideshade-fight' },
   { out: 'd6-colonnade', src: 'd6-colonnade-rod-whole', marks: [{ ring: [7, 2] }, lbl('ring the Rod here:\nthe grate lifts', [7, 3.4])] },
   { out: 'd6-shafts', src: 'd6-shafts-cast2-whole', scale: 2, marks: [
     lbl('1: HIGH, cast over the bar', [9, 1.6], 'c', 14), lbl('2: LOW, cast from the shelf', [16, 8.6], 'c', 14),
-    { ring: [22, 4] }, lbl('Boss Key', [22, 3], 'n', 14),
+    { ring: [12, 5] }, { ring: [27, 3] }, lbl('the shafts: holes until HIGH', [24, 9.4], 'c', 14),
+  ] },
+  { out: 'd6-shafts-k6a', src: 'd6-shafts-k6a-whole', scale: 2, marks: [
+    { ring: [12, 5] }, lbl('HIGH: the line brings up\nthe chunk from the Garden', [7, 7.4], 'c', 14), { ring: [15, 1] }, lbl('onto the plate', [15, 3.4], 'c', 14), HIGH,
+  ] },
+  { out: 'd6-shafts-k6b', src: 'd6-shafts-k6b-whole', scale: 2, marks: [
+    { ring: [27, 3] }, { ring: [23, 1] }, lbl('the Weighhouse\'s chunk, onto the far plate', [24, 6.4], 'c', 14), { ring: [21, 5] }, lbl('Boss Key', [21, 7], 's', 14), HIGH,
   ] },
   { out: 'd6-brinehulk', src: 'd6-brinehulk-fight' },
   { out: 'd6-nereth-intro', src: 'd6-nereth-intro' },

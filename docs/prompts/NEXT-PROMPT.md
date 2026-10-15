@@ -1,34 +1,27 @@
-# Next session (S190) — build D6's second half (the Weighhouse and the Boss Key)
+# Next session (S191) — after the Abyssal Keep: ask what is next
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/briefs/D6-ABYSSAL-KEEP.md, especially "The human's answers", "The
-  shafts are pits to Link" and "As built (S189)"; its pictures in
-  docs/briefs/d6-mock/ and docs/briefs/d6-built/s189-hold.png.
-- docs/NEXT-SESSION.md S189; docs/HANDOFF.md lessons (top five).
-- docs/DUNGEON-STATUS.md (D6's row).
+- docs/NEXT-SESSION.md S190 and S189; docs/HANDOFF.md lessons (top ten).
+- docs/DUNGEON-STATUS.md: D3-D6 are all grown to the S179 plan now.
+- docs/briefs/D6-ABYSSAL-KEEP.md "As built (S189)" and "As built (S190)",
+  and its picture docs/briefs/d6-built/s190-plumb.png.
 
 ## State
-- S189 built the Hold (B1), Seasons' ice and the chunk, the Keep's shafts,
-  the line's haul through a flooded shaft, the floor move, K1-K4 and
-  check-hold.mjs. 52 screens on 3 floors; keys 7, locks 5. Whole table
-  green; check-playthrough 48/48, THE END, never died.
+- S190 finished D6's growth: the Weighhouse (K5), the Crossed Shafts' two
+  plates and 2F shafts (K6), the Boss Key raised only when both are held,
+  both new locks on the Weighhouse (the human's choice). 53 screens on 3
+  floors, keys 7 / locks 7. Whole table green; check-playthrough 49/49, THE
+  END, never died. The guide is re-shot for the Keep's three floors.
 
 ## The task
-1. K5 the Weighhouse (1F 5,2, NEW) over the Plumb's Foot: its well over the
-   ring at 7,4; doors to the Slack Water (north), the Hauling Pit (west, a
-   key door: one of the two new locks) and the Drowned Garden (east, a
-   shutter the plate opens).
-2. K6 the Crossed Shafts (2F): shafts [hole, hole, water] over the Drowned
-   Garden and the Weighhouse, a plate on the middle and far islands, the
-   Boss Key chest raised only when both are held. check-hold learns the 2F
-   tide shape in the same commit.
-3. The second new lock (7 keys, 7 locks), the robot through K5-K6, the
-   guide re-shot for the Keep (B1 on the map).
-Ask before anything the brief does not say.
+- Ask the human what to do next before building anything. Candidates: the
+  overworld's 42 placeholder screens (CLAUDE.md, the 17-wide map), the
+  rotation objectives in docs/prompts/CHARTER.md, or a play-feel pass on the
+  Keep's ice and chunks.
 
 ## Done means
-- Whole table green; check-playthrough 48/48 or more, THE END, never died;
+- Whole table green; check-playthrough 49/49 or more, THE END, never died;
   npm run build, dist/ committed; NEXT-SESSION.md and this file updated;
   pushed; merged to main when done.
 

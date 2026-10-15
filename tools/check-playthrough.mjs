@@ -544,6 +544,17 @@ check('THE HOLD WAS PLAYED — K1 to K4, the line hauling up through the sea and
   `flags missing ${HOLD_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
   + `rooms missing ${['d6/0,6,3', 'd6/0,5,3', 'd6/0,7,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
 
+// THE PLUMB (S190): K5's plate held by a chunk hauled up the Weighhouse's well,
+// and K6's two plates in the Crossed Shafts by chunks hauled up two floors —
+// the Boss Key's chest rises only when both are held, so the Keep's Boss Key
+// cannot have come from anywhere else.
+const PLUMB_FLAGS = ['d6_weigh', 'd6_crossed'];
+check('THE PLUMB WAS PLAYED — K5 and K6, two chunks up two floors for the Boss Key',
+  PLUMB_FLAGS.every(f => (s.flags || []).includes(f))
+    && ['d6/1,5,2', 'd6/0,5,2', 'd6/1,4,2'].every(r => a.rooms.includes(r)),
+  `flags missing ${PLUMB_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
+  + `rooms missing ${['d6/1,5,2', 'd6/0,5,2', 'd6/1,4,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+
 // THE DUNGEON KEYS (S154). Every dungeon whose door is a keyhole was opened by
 // its own key, which the run was handed by that key's giver — read as flags
 // off the save, and which doors ARE keyholes read off the tile table, so a

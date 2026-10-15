@@ -28,7 +28,7 @@
 import { Entity, defineEntity, moveEntity, overHole, spawnEntity } from './entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
-import { getRoom } from '../world/maps.js';
+import { cellBeneath } from '../world/maps.js';
 import { sprites } from '../gfx/art.js';
 import {
   LIFTED_THROW_RISE, LIFTED_THROW_GRAVITY, LIFTED_THROW_RADIUS, HOLE_FOOT_DY, KNOCK_THROWN, CHUNK_BOB_FRAMES,
@@ -84,10 +84,9 @@ export class IceChunk extends Entity {
     if (this.chunkId && game.progress) delete game.progress.chunks[this.chunkId];
   }
 
-  /** Called by Game.dropObjectThrough: it has gone down to `floor`, cell tx,ty. */
-  downTo(game, floor, tx, ty) {
-    const r = game.room;
-    this.record(game, floor, r.rx, r.ry, tx, ty);
+  /** Called by Game.dropObjectThrough: it has gone down to `c` (maps.cellBeneath). */
+  downTo(game, c) {
+    this.record(game, c.floor, c.rx, c.ry, c.tx, c.ty);
   }
 
   // ---------------------------------------------------------------- motion
@@ -211,25 +210,24 @@ export function chunkAtHome(game, id) {
 export function haulFromBelow(game, line, tx, ty) {
   const room = game.room;
   if (!room || !game.map || !game.progress) return null;
-  const below = room.floor - 1;
-  if (below < 0 || !game.map.roomDefs[`${below},${room.rx},${room.ry}`]) return null;
+  // The cell beneath by place on the map (S190): a wide room upstairs stands
+  // over more than one room.
+  const c = cellBeneath(game.mapId, room, tx, ty);
+  if (!c) return null;
   let id = null;
-  for (const [cid, c] of Object.entries(game.progress.chunks || {})) {
-    if (c.map === game.mapId && c.floor === below && c.rx === room.rx && c.ry === room.ry
-        && c.tx === tx && c.ty === ty) { id = cid; break; }
+  for (const [cid, k] of Object.entries(game.progress.chunks || {})) {
+    if (k.map === game.mapId && k.floor === c.floor && k.rx === c.rx && k.ry === c.ry
+        && k.tx === c.tx && k.ty === c.ty) { id = cid; break; }
   }
   // A chunk still where the room below placed it.
   if (!id) {
-    const def = game.map.roomDefs[`${below},${room.rx},${room.ry}`];
-    for (const e of def.entities || []) {
-      if (e[0] !== 'icechunk' || e[1] !== tx || e[2] !== ty) continue;
+    for (const e of c.room.def.entities || []) {
+      if (e[0] !== 'icechunk' || e[1] !== c.tx || e[2] !== c.ty) continue;
       const cid = e[3] && e[3].id;
       if (cid && chunkAtHome(game, cid)) { id = cid; break; }
     }
   }
   if (!id) return null;
-  const r = getRoom(game.mapId, below, room.rx, room.ry);
-  if (!r) return null;
   const chunk = spawnEntity(game, 'icechunk', tx, ty, { id });
   if (!chunk) return null;
   // On the line it is nowhere until it is set down; the save keeps it here,

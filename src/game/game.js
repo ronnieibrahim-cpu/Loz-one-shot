@@ -34,7 +34,7 @@ import { TINTS } from '../gfx/palettes.js';
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
-import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
+import { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } from './entity.js';
@@ -352,13 +352,21 @@ export class Game {
     // A drop hole (the Sanctum's, Link's too) or a Keep shaft (S189, chunks only).
     const here = room.tile(tx, ty, this.tide);
     if (!(here.flags & F.DROP) && !(here.shaft && obj.downTo)) return false;
+    // An ice chunk (S189) keeps its own place in the save, so it is there on
+    // every visit and after every load, not only on the next one. It finds the
+    // cell beneath by place on the map (S190): a wide room upstairs stands
+    // over more than one room.
+    if (obj.downTo) {
+      const c = cellBeneath(this.mapId, room, tx, ty);
+      if (!c || (c.room.flagsAt(c.tx, c.ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
+      obj.downTo(this, c);
+      obj.remove = true;
+      return true;
+    }
     const below = room.floor - 1;
     if (below < 0 || !this.map.roomDefs[`${below},${room.rx},${room.ry}`]) return false;
     const r = getRoom(this.mapId, below, room.rx, room.ry);
     if (!r || !r.inBounds(tx, ty) || (r.flagsAt(tx, ty, this.tide) & (F.SOLID | F.PIT | F.VOID))) return false;
-    // An ice chunk (S189) keeps its own place in the save, so it is there on
-    // every visit and after every load, not only on the next one.
-    if (obj.downTo) { obj.downTo(this, below, tx, ty); obj.remove = true; return true; }
     if (!this.fallen) this.fallen = [];
     this.fallen.push({ map: this.mapId, floor: below, rx: room.rx, ry: room.ry, tx, ty, spec: obj.fallSpec() });
     obj.remove = true;

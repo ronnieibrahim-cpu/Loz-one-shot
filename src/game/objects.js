@@ -1265,6 +1265,10 @@ export class FloorSwitch extends Entity {
       if (e.floating) continue;
       // A stake plate is the Canopy's: nothing that wanders onto it counts.
       if (this.stake && e.isEnemy) continue;
+      // A FLIER IS NOT ON THE FLOOR (S190): a keese crossing the Crossed
+      // Shafts' far nook held its plate for the frames it was over it, and
+      // with a chunk on the other one that was enough to raise the Boss Key.
+      if (e.isEnemy && e.flying) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }
     }
     if (!this.hold && this.pressed) on = true;

@@ -1,3 +1,56 @@
+## S190 — the Abyssal Keep's second half built: the Weighhouse, the Crossed Shafts' Boss Key
+
+Branch claude/d6-abyssal-keep-second-half-oeftrv, off main at 88b7c32 (S189).
+
+### The human's choice this session
+- Both new locks on the Weighhouse (its south door from the Slack Water and
+  its east door to the Hauling Pit), not one in the Hold: every Hold room has
+  one way in, so a lock there is only a gate. Recorded in the brief.
+
+### Built
+- TILE: Keep `8` = `dShaftAbyssHigh` [dHoleAbyss, dHoleAbyss,
+  dShaftWaterAbyss], a 2F shaft (the sea reaches 2F only at HIGH).
+- ENGINE: `cellBeneath(mapId, room, tx, ty)` in src/world/maps.js (the cell
+  one floor down by place on the map); Game.dropObjectThrough's chunk branch,
+  IceChunk.downTo(game, cell) and haulFromBelow use it (the 2x1 Crossed
+  Shafts stands over the Garden and the Weighhouse). FloorSwitch ignores a
+  flying enemy (a keese over the far nook raised the chest).
+- ROOMS (src/data/dungeons-b.js): 1F 5,2 the Weighhouse (NEW: well 7,4 over
+  the Plumb's Foot ring; plate 1,8 in a nook past the pit 2,8, fed from 3,8;
+  west shutter D to the Garden, flag d6_weigh; south and east doors `L`).
+  The Slack Water gains a north `L` door (7,0); the Hauling Pit a west `L`
+  (0,5); the Garden a way east (shutter at 14,5) and floor round 12,5. The
+  Plumb's Foot's d6P3 starts ON the ring (7,4). 2F 4,2 the Crossed Shafts:
+  shafts 12,5 (over the Garden 12,5) and 27,3 (over the Weighhouse 12,3);
+  nook plates 15,1 and 23,1 over pits 15,2 and 23,2; puzzle d6_crossed
+  raises the Boss Key chest at 21,5 (needFlag); an urn `U` at 22,4 where the
+  old chest stood (the Brinehulk's arena needs it). holdRoom `plates` list.
+  53 screens on 3 floors; keys 7, locks 7.
+- TOOLS: check-hold (109): 2F shape by floor, cellBeneath, `plates`, hauls
+  refused at every lower sea, Hold-only marking. solve-switches: a chunk on
+  each plate of a several-plate holdRoom. check-playthrough: "THE PLUMB WAS
+  PLAYED" (49).
+- ROUTE: K5 after K1/K3 (MID, Slack north door, Weighhouse fight, haul, plate,
+  catch it back, carry to the Garden, throw from 9,5 to 12,5); in the Hold
+  the Plumb's Foot (lift a chunk, throw from 7,1 onto the ring); after K4 up
+  to the Weighhouse (haul, throw from 9,3 to 12,3, back to LOW); Crossed
+  Shafts: middle haul from 12,4 and throw from 15,3 on the way in, shelf,
+  wait 48 (swept), Brinehulk, far haul from 27,4 and throw from 23,3, chest
+  from 21,6.
+- GUIDE: remapped from a2a0773; rooms-list d6 regenerated (three floors);
+  three maps (B1, 1F, 2F), the Hold section (stops 12-18), upper floor 19-28,
+  Nereth 29; new pictures d6-slack-k1, d6-weigh, d6-weigh-plate, d6-garden,
+  d6-landing, d6-rime, d6-sounding, d6-plumb, d6-tally-k4, d6-weigh2,
+  d6-shafts-k6a, d6-shafts-k6b.
+- PICTURE: docs/briefs/d6-built/s190-plumb.png (compose-s190.py).
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died.
+
+### NEXT
+- D6 is done to its brief; DUNGEON-STATUS has no dungeon left on the S179
+  growth plan. Ask the human what is next (docs/prompts/NEXT-PROMPT.md).
+
 ## S189 — the Abyssal Keep's first half built: the Hold, Seasons' ice, the chunk, K1-K4
 
 Branch claude/oracle-tides-d6-first-half-12qbp3, off main at df697c0 (S188).

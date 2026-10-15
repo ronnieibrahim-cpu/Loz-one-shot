@@ -3018,6 +3018,29 @@ export const ROUTE = [
   ['dredge', 11, 8, 'right', 'chunk', 2400],
   ['goto', 9, 4, 900], ['hold', ['down'], 10], ['tap', 'a', 30], ['wait', 90],
 
+  // K5 — THE WEIGHHOUSE (S190), through the Slack Water's new north door with
+  // the spare key. At MID the line cast down its well brings up the chunk
+  // the Hold keeps on the Plumb's Foot's ring; thrown from 3,8 it lands on
+  // the plate in the nook and the west shutter into the Drowned Garden
+  // opens. Then K6's first half: the line takes it back off the plate and it
+  // is carried west and thrown from 9,5 to 12,5 in the Garden, the cell under
+  // the Crossed Shafts' middle shaft.
+  ['tide', 1, 140, 900],
+  ['goto', 7, 1, 900], ['hold', ['up'], 24], ['tap', 'a', 30], ['dialogue', 300],
+  ['goto', 7, 1, 900], ['exit', 'up', 600],
+  ['equip', 'sword', 'A', 400],
+  ['fight', 3000, 2000],
+  ['loot', 900],
+  ['equip', 'dredge', 'A', 400],
+  ['dredge', 7, 3, 'down', 'chunk', 2400],
+  ['goto', 3, 8, 900], ['hold', ['left'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['dialogue', 300],
+  ['dredge', 3, 8, 'left', 'chunk', 2400],
+  ['goto', 1, 5, 900], ['exit', 'left', 600],
+  ['goto', 9, 5, 900], ['hold', ['right'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['goto', 12, 4, 900], ['goto', 13, 5, 900], ['exit', 'right', 600],
+  ['goto', 7, 9, 900], ['exit', 'down', 600],
+
   // ------------------------------------------------ THE EAST WING (S142)
   // THE LINE'S EXAMINATION, and the Small Key for the stair is at the end of
   // it. The Draw is the first real crossing (brace on the shelf at LOW) and
@@ -3089,6 +3112,13 @@ export const ROUTE = [
   ['goto', 1, 2, 1500], ['exit', 'left', 600],
   ['fight', 3000, 2000],
   ['loot', 900],
+  // North into the Plumb's Foot (S190): a chunk onto the ring at 7,4 under
+  // the Weighhouse's well, for K6's second half.
+  ['goto', 7, 1, 900], ['exit', 'up', 600],
+  ['fight', 3000, 2000],
+  ['lift', 900],
+  ['goto', 7, 1, 900], ['hold', ['down'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['goto', 7, 9, 900], ['exit', 'down', 600],
   ['travel', 6, 3, 4000],
   ['goto', 2, 9, 1500], ['hold', ['left'], 30], ['wait', 90],
 
@@ -3125,6 +3155,16 @@ export const ROUTE = [
   ['goto', 2, 9, 1500], ['hold', ['left'], 30], ['wait', 90],
   ['goto', 1, 5, 1500], ['exit', 'left', 600],
   ['equip', 'conch', 'B', 400],
+  // K6's second half on 1F (S190): up into the Weighhouse, at MID the line
+  // brings the chunk up off the Plumb's Foot's ring, and thrown from 9,3 it
+  // comes down on 12,3, the cell under the Crossed Shafts' far shaft.
+  ['equip', 'dredge', 'A', 400],
+  ['tide', 1, 140, 900],
+  ['goto', 7, 1, 900], ['exit', 'up', 600],
+  ['dredge', 7, 3, 'down', 'chunk', 2400],
+  ['goto', 9, 3, 900], ['hold', ['right'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['goto', 7, 9, 900], ['exit', 'down', 600],
+  ['tide', 0, 140, 900],
   ['travel', 5, 3, 4000],
 
   // UP THE KEEP STAIR, through Keep Lock's west door with the Hauling Pit's
@@ -3460,11 +3500,21 @@ export const ROUTE = [
   ['tide', 2, 140, 900],
   ['dredge', 9, 3, 'right', [12, 3], 2400],
   ['wait', 60],
+  // K6 (S190): still at HIGH, the middle shaft is flooded — the only sea the
+  // upper floor's shafts ever are — and the line brings up the chunk left on
+  // the Drowned Garden's 12,5. Thrown from 15,3 over the pit, onto the plate
+  // in the north nook.
+  ['dredge', 12, 4, 'down', 'chunk', 2400],
+  ['goto', 15, 3, 900], ['hold', ['up'], 2], ['tap', 'a', 30], ['wait', 60],
   ['tide', 0, 140, 900],
   ['dredge', 16, 6, 'right', [19, 6], 2400],
   // S179 (the blade takes drops; the run arrives with a different history):
   // wins at waits 30 and 38-44, loses at 34-36 and 50; 40 leaves the most.
-  ['wait', 40],
+  // S190 (K5-K6 move the run's history, the middle plate is fed on the way
+  // in, and the far island has an urn where the chest stood): swept 0-140 by
+  // 4, won at 0-8, 16-32, 48, 60, 72 and 136; 48 leaves the most (40
+  // quarter-hearts, the keese down too).
+  ['wait', 48],
 
   // THE BRINEHULK, AND THE JOKE THE ROOM IS BUILT ON. Brine dissolves salt:
   // the colossus is armoured at LOW and comes apart at HIGH — and LOW is the
@@ -3487,6 +3537,19 @@ export const ROUTE = [
   ['boss', 12000, 'brinehulk', { openRetreat: true, diagRetreat: true, reachSwing: true }],
   ['wait', 240],
 
+  // K6's far plate (S190): at HIGH the far shaft (27,3) is flooded, and the
+  // line brings up the chunk left on the Weighhouse's 12,3; thrown from 23,3
+  // over the pit onto the plate in the nook. Both plates held: the chest
+  // rises beside the urn that stands where the old one did (a chest pops its
+  // prize a tile above itself, and one in front of the urn put the Boss Key
+  // inside it).
+  ['equip', 'dredge', 'A', 400],
+  ['dredge', 27, 4, 'up', 'chunk', 2400],
+  ['goto', 23, 3, 900], ['hold', ['up'], 2], ['tap', 'a', 30], ['wait', 60],
+  ['dialogue', 600],
+  ['wait', 60],
+  ['equip', 'sword', 'A', 400],
+
   // THE BOSS KEY. The chest on the far island, and the last locked thing in
   // the game. NO SWEEP FOR DROPS BEFORE IT: the fight scatters them up to the
   // pit column at the island's west edge, a sweep walks into the pit after
@@ -3494,7 +3557,7 @@ export const ROUTE = [
   // pits, with no line cast and the chest out of reach (S140, after D5's
   // rebuild moved the fight's clock). The loot after the chest picks up what
   // is on the island.
-  ['goto', 22, 5, 1500],
+  ['goto', 21, 6, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
