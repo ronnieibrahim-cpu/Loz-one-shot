@@ -404,4 +404,34 @@ export function installCaves() {
       },
     },
   });
+  // THE REEF APPROACH'S SECRET (S192): behind a crack in the south cliff of
+  // Palm Bank (0,13,3), opened by a bomb. A sea cave half full of the reef.
+  registerMap({
+    id: 'cave10',
+    kind: 'cave',
+    name: 'Spray Grotto',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#.555555.#',
+          '#.55..55.#',
+          '#.55..55.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'brineSkin' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 13, ry: 3, px: 64, py: 80, dir: 'down' } }],
+      },
+    },
+  });
 }
