@@ -434,4 +434,34 @@ export function installCaves() {
       },
     },
   });
+  // THE CORAL REEF'S SECRET (S192): behind a crack in the pink cliff on
+  // Pink Shallows (0,14,4), opened by a bomb. A chandler's old store.
+  registerMap({
+    id: 'cave11',
+    kind: 'cave',
+    name: "Chandler's Hold",
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o.q..q.o#',
+          '#........#',
+          '#.p....p.#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'chandlersEye' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 4, px: 64, py: 32, dir: 'down' } }],
+      },
+    },
+  });
 }

@@ -156,6 +156,7 @@ export function installLegends() {
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
     'C': 'caveMouthCoral',
+    'Z': 'cliffCrackedCaveCoral',  // a bombable crack with a cave behind it (S192)
     'D': 'block:portalD2',  // the Coral Spire's gate
     '_': 'ledgeCoral',
     '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',

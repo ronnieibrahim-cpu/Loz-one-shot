@@ -147,6 +147,22 @@ const SCENARIOS = [
     expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' with no bomb')`,
   },
   {
+    name: "Chandler's Hold: a bomb opens the crack in Pink Shallows' cliff, and the Chandler's Eye is inside",
+    setup: setup({ items: { sword: 1, bombs: 1 }, equipA: 'sword', equipB: 'bombs',
+      enter: ['overworld', 0, 14, 4, 64, 48, 'up'] }),
+    steps: [['goto', 4, 2, 400], ['hold', ['up'], 6], ['use', 'bombs', 1, 10],
+      ['goto', 4, 5, 200], ['wait', 120], ['goto', 4, 2, 300], ['hold', ['up'], 60],
+      ['wait', 60], ['goto', 4, 4, 400], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400]],
+    expect: `g.mapId === 'cave11' && g.progress.charms.chandlersEye || ('in ' + g.mapId + ', charm ' + !!g.progress.charms.chandlersEye)`,
+  },
+  {
+    name: "Chandler's Hold: without a bomb the crack is a wall",
+    setup: setup({ items: { sword: 1 }, equipA: 'sword',
+      enter: ['overworld', 0, 14, 4, 64, 48, 'up'] }),
+    steps: [['goto', 4, 2, 400], ['hold', ['up'], 90], ['wait', 30]],
+    expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' with no bomb')`,
+  },
+  {
     name: 'The ledger: found on the South Sands, carried to the shop, paid for with a Piece of Heart',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 5, 9, 64, 32, 'right'] }),
     steps: [['goto', 8, 2, 400], ['wait', 90], ['travel', 5, 8, 3000], ['wait', 30], ['travel', 5, 7, 3000], ['wait', 30],
