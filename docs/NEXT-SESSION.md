@@ -1,6 +1,6 @@
 ## S190 — the Abyssal Keep's second half built: the Weighhouse, the Crossed Shafts' Boss Key
 
-Branch claude/d6-abyssal-keep-second-half-oeftrv, off main at 88b7c32 (S189).
+Branch claude/d6-abyssal-keep-second-half-oeftrv, off main at 88b7c32 (S189). Landed in `1de41b7`.
 
 ### The human's choice this session
 - Both new locks on the Weighhouse (its south door from the Slack Water and
