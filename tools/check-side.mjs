@@ -163,6 +163,22 @@ const SCENARIOS = [
     expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' with no bomb')`,
   },
   {
+    name: 'Sandglass Cellar: a rock on Dune Crest has a stair under it, and the Beachcomber is down it',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword',
+      enter: ['overworld', 0, 14, 6, 112, 96, 'up'] }),
+    steps: [['hold', ['up'], 4], ['tap', 'a', 40], ['tap', 'a', 60], ['goto', 7, 5, 200],
+      ['wait', 60], ['goto', 4, 4, 400], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400]],
+    expect: `g.mapId === 'cave12' && g.progress.charms.beachcomber || ('in ' + g.mapId + ', charm ' + !!g.progress.charms.beachcomber)`,
+  },
+  {
+    name: 'Sandglass Cellar: the stair is still there when Link comes back up',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword',
+      enter: ['overworld', 0, 14, 6, 112, 96, 'up'] }),
+    steps: [['hold', ['up'], 4], ['tap', 'a', 40], ['tap', 'a', 60], ['goto', 7, 5, 200],
+      ['wait', 60], ['hold', ['down'], 90], ['wait', 60], ['hold', ['up'], 40], ['wait', 60]],
+    expect: `g.mapId === 'cave12' || ('back up, then ' + g.mapId + ' at ' + g.room.key)`,
+  },
+  {
     name: 'The ledger: found on the South Sands, carried to the shop, paid for with a Piece of Heart',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 5, 9, 64, 32, 'right'] }),
     steps: [['goto', 8, 2, 400], ['wait', 90], ['travel', 5, 8, 3000], ['wait', 30], ['travel', 5, 7, 3000], ['wait', 30],

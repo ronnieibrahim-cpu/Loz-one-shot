@@ -464,4 +464,34 @@ export function installCaves() {
       },
     },
   });
+  // THE DUNES' SECRET (S192): a stair under one of the rocks on Dune Crest
+  // (0,14,6), found by lifting it, as Seasons hides its stairs.
+  registerMap({
+    id: 'cave12',
+    kind: 'cave',
+    name: 'Sandglass Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#.o....o.#',
+          '#........#',
+          '#.q....q.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'beachcomber' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 6, px: 112, py: 96, dir: 'down' } }],
+      },
+    },
+  });
 }

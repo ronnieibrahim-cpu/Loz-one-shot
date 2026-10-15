@@ -86,6 +86,7 @@ export function installLegends() {
     'T': 'palm', 'b': 'bushSand', 'o': 'rockSand', 'q': 'postSand',
     '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeSand',
     'C': 'caveMouthSand',   // cut into a sand cliff, so it wears the sand ramp
+    'L': 'rockSandStairs',  // a rock with a stair under it (S192)
     'D': 'block:portalD1',  // the Tidewash Grotto's gate
     '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
     '9': 'drownWallSand',   // the base drownWall's grey cliff read as a

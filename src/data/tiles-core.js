@@ -2448,6 +2448,9 @@ export function installCoreTiles() {
     seaSnarl: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'waterD' },
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
+    // A rock with a stair under it (S192), Seasons' commonest overworld secret:
+    // drawn as any other sand rock, lifted bare-handed, and the stair stays.
+    rockSandStairs: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
     // A cave's own rock and pot (S155): the same art on the cave's dark stone
     // floor. The plain ones name grass and dungeon floor beneath them, so a
@@ -3374,6 +3377,7 @@ export function installCoreTiles() {
     seaSnarl: { cut: 'waterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
+    rockSandStairs: { lift: 'stairsDown', persist: true },
     rockLawn: { lift: 'hLawn', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
     rockCave: { lift: 'rockFloorDk', drop: 'common' },
