@@ -13227,6 +13227,13 @@ function canOccupy(game, e, x, y, caps, terrainOnly = false) {
   for (const py of ys) {
     for (const px of xs) {
       if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
+      // A BOSS KEEPS TO ITS ARENA (S192). In Seasons a boss or miniboss never
+      // follows Link into a doorway: the ring of tiles round a dungeon room is
+      // wall to it. Ours could, and Bogmaw sat on Link in the hall's west door
+      // until he died there. Only in a room with a wall ring, so an outdoor
+      // fight keeps the whole screen.
+      if (e._bossClass && room.cw === 15 && !airborne
+          && (px < TILE || py < TILE || px >= room.pw - TILE || py >= room.ph - TILE)) return false;
       if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
@@ -16602,24 +16609,24 @@ const rooms = {
   },
   '0,6,9': {
     name: "Gull Sands",
-    legend: 'coast', music: 'overworld',
     // THE SHIPWRIGHT'S HOLLOW (S158): the first blade, as Seasons' Hero's
     // Cave holds its first. A mouth in a low bluff above the beach.
+    legend: 'coast', music: 'overworld',
     map: [
       'TT######TT',
       'TT##C#ggTT',
       'gg......gg',
-      'gg..o...gg',
-      'gg.1111.gg',
-      '1111**1111',
+      'gg.,,.o.gg',
+      'gg..111..g',
+      '1111111111',
+      '*111****11',
       '**********',
-      '**********',
-    ],
-    warps: [
-      { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 6, 2, { text: 'Scratched on a plank: "Gone to wait out\nthe sea. Blade inside. Lean on the door."' }],
+    ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,7,0': {
@@ -16812,19 +16819,24 @@ const rooms = {
   },
   '0,7,9': {
     name: "Shell Bank",
+    // THE SOUTH SHORE'S SECRET (S192): a sea rock off the bank with a cave
+    // mouth that is only above water at LOW, walked to over the seafloor.
     legend: 'coast', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTTTggTTTT',
-      'gg......gg',
-      'gg.4444.gg',
-      'gg144441gg',
-      '11******11',
-      '**********',
+      'TTTTTTTTTT',
+      'gg.f..gggg',
+      'g..,...ggg',
+      'g..,,.###g',
+      '1111.1#&#1',
+      '114444444*',
       '**********',
     ],
     entities: [
-      ['crab', 7, 3],
+      ['crab', 3, 3],
+    ],
+    warps: [
+      { x: 7, y: 5, to: { map: 'cave14', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,8,0': {
@@ -16996,19 +17008,19 @@ const rooms = {
     legend: 'town', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTggggggTT',
+      'TTTTTTTTTT',
+      'gg.hhh.fgg',
       'gg.hhh..gg',
       'gg.hhh..gg',
-      'gg.hhh..gg',
-      '11......11',
+      '11..,...11',
+      '*11*******',
       '**********',
-      '**********',
-    ],
-    warps: [
-      { x: 4, y: 4, to: { map: 'faroreShrine', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 7, 4, { text: "FARORE'S SHRINE\nKnock, and mind the step." }],
+    ],
+    warps: [
+      { x: 4, y: 4, to: { map: 'faroreShrine', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,13,0': {
@@ -17016,67 +17028,70 @@ const rooms = {
     legend: 'reef', music: 'reef',
     map: [
       '**********',
-      '*11111111*',
-      '1g.6666.g1',
-      'gg.6666.gg',
-      'gg......gg',
-      'ggg.qq.ggg',
-      '#gggggggg#',
-      '##########',
+      '**111****1',
+      '1g..1166.6',
+      'gg.6666666',
+      'gg..6666..',
+      'ggo......g',
+      '##g..g####',
+      '###..#####',
     ],
     entities: [
-      ['siren', 4, 3],
+      ['siren', 5, 3],
     ],
   },
   '0,13,1': {
     name: "Kelp Steps",
     legend: 'reef', music: 'reef',
     map: [
-      '##########',
-      '#gg7777gg#',
-      'gg.7777.gg',
-      'gg......gg',
-      'gg.q..q.gg',
-      'gggggggggg',
-      '#gggggggg#',
-      '##########',
+      '###..#####',
+      '#g...g7777',
+      'gg..q.7777',
+      'gg...777..',
+      'ggTT.777.g',
+      'ggTT.....g',
+      '#gg.g..#.#',
+      '####..####',
     ],
     entities: [
-      ['octorokSea', 4, 1],
+      ['octorokSea', 7, 2],
     ],
   },
   '0,13,2': {
     name: "Market Channel",
     legend: 'reef', music: 'reef',
     map: [
-      '##########',
-      '#g5555555#',
-      '5555555555',
-      '55..b..555',
-      '555....555',
-      '5555555555',
-      '#gggggggg#',
-      '##########',
+      '####..####',
+      '#g....ggg#',
+      '5555885555',
+      '555...b555',
+      '5555...555',
+      '5555588555',
+      '#gggg..gg#',
+      '#####..###',
     ],
     entities: [
-      ['octorokSea', 2, 5],
+      ['octorokSea', 1, 3],
     ],
   },
   '0,13,3': {
     name: "Palm Bank",
     legend: 'reef', music: 'reef',
     map: [
-      '##########',
-      '#gggggggg#',
-      'gg.6666.gg',
-      'gg.6666.gg',
-      'gg......gg',
-      'ggggTTgggg',
-      '#gggggggg#',
+      '#####..###',
+      '#gg....gg#',
+      'g.TT..TT.g',
+      'g.TT..TT.g',
+      'gg.....ggg',
+      'ggg....ggg',
+      '####Z#####',
       '##########',
     ],
     entities: [
-      ['barnacle', 4, 2],
+      ['barnacle', 5, 4],
+    ],
+    warps: [
+      { x: 4, y: 6, to: { map: 'cave10', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,13,4': {
@@ -17084,29 +17099,29 @@ const rooms = {
     legend: 'coral', music: 'reef',
     map: [
       '##########',
-      '#g666666g#',
-      'gg......gg',
-      'gg.6..6.gg',
-      'gg......gg',
-      'gggg77gggg',
-      '#gggggggg#',
-      '##########',
+      '#gg.666..#',
+      'g.TT666..g',
+      'g.TT....gg',
+      'gg...77.gg',
+      'gg...77..g',
+      '#gg.....g#',
+      '###..#####',
     ],
     entities: [
-      ['urchin', 4, 2],
+      ['urchin', 5, 3],
     ],
   },
   '0,13,5': {
     name: "Coral Sill",
     legend: 'coral', music: 'reef',
     map: [
-      '##########',
-      '#gggggggg#',
-      'gg.6666.gg',
-      'gg......gg',
-      'gg..TT..gg',
-      'gg..TT..gg',
-      '#gggggggg#',
+      '###..#####',
+      '#g.....gg#',
+      'gg.6666..g',
+      'g.......gg',
+      'g.TT.77.gg',
+      'g.TT.77..g',
+      '#gg......#',
       '##########',
     ],
     entities: [
@@ -17118,33 +17133,33 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTggggggTT',
-      'gg......gg',
-      'gg.1111.gg',
-      'gg..TT..gg',
-      'ggg.TT.ggg',
-      'TTggggggTT',
       'TTTTTTTTTT',
+      'gg..TT..gg',
+      'g.G.TT.G.g',
+      'gg......Og',
+      'g.1111...g',
+      'TTg.11.gTT',
+      'TTg....gTT',
     ],
     entities: [
-      ['crab', 3, 2],
+      ['crab', 3, 4],
     ],
   },
   '0,13,7': {
     name: "Leever Bowl",
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTggggggTT',
+      'TTg....gTT',
+      'TTg.vv.gTT',
       'gg.vvvv.gg',
-      '55......gg',
-      'gg.O..O.gg',
-      'ggg....ggg',
-      'TTggggggTT',
+      '5555.vv.gg',
+      'g555...O.g',
+      'gg...O...g',
+      'TTTTTTTTTT',
       'TTTTTTTTTT',
     ],
     entities: [
-      ['leever', 4, 3, {phase: 0}],
+      ['leever', 4, 4, { phase: 0 }],
     ],
   },
   '0,13,8': {
@@ -17170,16 +17185,17 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TTTTggTTTT',
-      'TTggggggTT',
-      'gg......gg',
-      'gg.5555.gg',
-      'gg155551gg',
-      '11******11',
+      'TTTTggTTTT',
+      'gg....TTgg',
+      'g..O..TT.g',
+      'gg.1111..g',
+      '1111111111',
       '**********',
       '**********',
     ],
     entities: [
-      ['octorokSea', 4, 3],
+      ['crab', 2, 3],
+      ['octorokSea', 6, 5],
     ],
   },
   '0,14,0': {
@@ -17187,64 +17203,67 @@ const rooms = {
     legend: 'reef', music: 'reef',
     map: [
       '**********',
-      '**1111****',
-      '1g......g1',
-      'gg.7777.gg',
-      'gg.7777.gg',
-      'gggggggggg',
-      '#gggggggg#',
-      '##########',
+      '1***1111**',
+      '6.111.TTg1',
+      '6666..TTgg',
+      '.666....gg',
+      'g..88...gg',
+      '####g..g##',
+      '#####..###',
     ],
     entities: [
-      ['octorokSea', 4, 3],
+      ['crab', 5, 4],
     ],
   },
   '0,14,1': {
     name: "Pearl Bed",
     legend: 'reef', music: 'reef',
     map: [
-      '##########',
-      '#gggggggg#',
-      'gg.6666.gg',
-      'gg.6666.gg',
-      'ggg....ggg',
-      'gg.8888.gg',
-      '#gggggggg#',
-      '##########',
+      '#####..###',
+      '7777g...g#',
+      '7777..o.gg',
+      '..7.....gg',
+      'g.7.6666gg',
+      'g...6666gg',
+      '#..g##ggg#',
+      '###..#####',
     ],
     entities: [
-      ['barnacle', 4, 2],
+      ['barnacle', 5, 4],
     ],
   },
   '0,14,2': {
     name: "Sunk Pier",
     legend: 'reef', music: 'reef',
     map: [
-      '##########',
-      '#5555555g#',
-      '5555555555',
-      '555.b.5555',
+      '###..#####',
+      '#gg..g.gg#',
+      '5558855555',
       '55.....555',
-      '5555555555',
-      '#gggggggg#',
-      '##########',
+      '55.q.b.555',
+      '5555588555',
+      '#ggg...gg#',
+      '####..####',
+    ],
+    entities: [
+      ['siren', 8, 4],
     ],
   },
   '0,14,3': {
     name: "Barnacle Reach",
     legend: 'reef', music: 'reef',
     map: [
-      '##########',
-      '#ggg88ggg#',
-      'gg.7777.gg',
-      'gg......gg',
-      'ggg.bb.ggg',
-      'ggTTggTTgg',
-      '#gggggggg#',
+      '####..####',
+      '#g...gggg#',
+      'gg.6666.gg',
+      'gg.6666.gg',
+      'gg..TT..gg',
+      'gg..TT.ggg',
+      '#g.....gg#',
       '##########',
     ],
     entities: [
-      ['siren', 5, 2],
+      ['siren', 4, 2],
     ],
   },
   '0,14,4': {
@@ -17252,29 +17271,32 @@ const rooms = {
     legend: 'coral', music: 'reef',
     map: [
       '##########',
-      '#gggggggg#',
-      'gg.7777.gg',
-      'gg.7777.gg',
-      'ggg....ggg',
-      'gg.b..b.gg',
-      '#gggggggg#',
-      '##########',
+      '####Z#####',
+      'gg..g..6gg',
+      'g.7777.66g',
+      'g.7777..gg',
+      'gg....b.gg',
+      '#g.....gg#',
+      '###..#####',
     ],
     entities: [
-      ['jellyfish', 4, 2],
+      ['jellyfish', 3, 3],
+    ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'cave11', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,14,5': {
     name: "Spire Lee",
     legend: 'coral', music: 'reef',
     map: [
-      '##########',
-      '#gg....gg#',
-      'gg.b..b.gg',
-      'gg......gg',
-      'gg.7777.gg',
-      'gggggggggg',
-      '#gggggggg#',
+      '###..#####',
+      '#g.....gg#',
+      'gg.b..TTgg',
+      'g.....TT.g',
+      'g.7777...g',
+      'gg7777.ggg',
+      '#gg.....g#',
       '##########',
     ],
     entities: [
@@ -17286,33 +17308,36 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTggggggTT',
-      'gg.O..O.gg',
-      'gg......gg',
-      'gg.vvvv.gg',
-      'ggg....ggg',
-      'TTggggggTT',
       'TTTTTTTTTT',
+      'g.TTTT..Og',
+      'g.TTTT...g',
+      'g......O.g',
+      'gg...O.L.g',
+      'TTg....gTT',
+      'TTg....gTT',
     ],
     entities: [
-      ['leever', 4, 3, {phase: 0}],
+      ['leever', 3, 4, { phase: 0 }],
+    ],
+    warps: [
+      { x: 7, y: 5, to: { map: 'cave12', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,14,7': {
     name: "Channel Dunes",
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTTTTTTTT',
-      'TTggggggTT',
-      'gg......gg',
-      'gg.5555.55',
-      'gg......gg',
-      'gg.1111.gg',
-      'TTggggggTT',
+      'TTg....gTT',
+      'TTg..O.gTT',
+      'g.....55gg',
+      'g..5555555',
+      'g.TT.55.gg',
+      'g.TT....gg',
+      'TTTTTTggTT',
       'TTTTTTggTT',
     ],
     entities: [
-      ['crab', 6, 4],
+      ['crab', 4, 4],
     ],
   },
   '0,14,8': {
@@ -17343,16 +17368,19 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTggggggTT',
-      'gg.O..O.gg',
-      'gg......gg',
-      'gg111111gg',
+      'TTTTTTTTTT',
+      'g..bA...gg',
+      'g..b..b.gg',
+      'gg.1111.gg',
       '1111111111',
       '**********',
       '**********',
     ],
     entities: [
-      ['crab', 3, 3],
+      ['crab', 6, 4],
+    ],
+    warps: [
+      { x: 4, y: 2, to: { map: 'cave13', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
 };
@@ -52709,6 +52737,8 @@ function installCoreTiles() {
     cliffCrackedCaveDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // And in the Salt Pans' marble terraces (S191).
     cliffCrackedCaveMarble: { art: ART.cliffCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    // And in the Coral Reef's pink cliffs (S192).
+    cliffCrackedCaveCoral: { art: ART.cliffCracked, pal: 'coral', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -52817,6 +52847,8 @@ function installCoreTiles() {
     dTangleSaltWet: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dFloorSalt' },
     dKelpSalt: { tide: ['dTangleSalt', 'dTangleSaltWet', 'dTangleSaltWet'] },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
+    // A bush with a stair under it (S192): cut it and the stair stays.
+    bushSandStairs: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
     // The Reefseed's snarl, outdoors — item-reuse (docs/prompts/STATE.md). Not
     // `dSnarl`: that one is drawn in `treeoakdk`, a ramp built for the Drowned
     // Wood's oaks, and S96 already proved what happens when it is dropped
@@ -52832,6 +52864,9 @@ function installCoreTiles() {
     seaSnarl: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'waterD' },
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
+    // A rock with a stair under it (S192), Seasons' commonest overworld secret:
+    // drawn as any other sand rock, lifted bare-handed, and the stair stays.
+    rockSandStairs: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
     // A cave's own rock and pot (S155): the same art on the cave's dark stone
     // floor. The plain ones name grass and dungeon floor beneath them, so a
@@ -53738,6 +53773,7 @@ function installCoreTiles() {
   registerTransforms({
     bush: { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut', drop: 'common', sfx: 'cut' },
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
+    bushSandStairs: { cut: 'stairsDown', bomb: 'stairsDown', fire: 'stairsDown', fx: 'cut', sfx: 'cut', persist: true },
     hTallGrass: { cut: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     bushLawn: { cut: 'hLawn', bomb: 'hLawn', fire: 'hLawn', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
@@ -53758,6 +53794,7 @@ function installCoreTiles() {
     seaSnarl: { cut: 'waterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
+    rockSandStairs: { lift: 'stairsDown', persist: true },
     rockLawn: { lift: 'hLawn', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
     rockCave: { lift: 'rockFloorDk', drop: 'common' },
@@ -53769,6 +53806,7 @@ function installCoreTiles() {
     cliffCrackedCave: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
     cliffCrackedCaveDk: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
     cliffCrackedCaveMarble: { bomb: 'caveMouth', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedCaveCoral: { bomb: 'caveMouthCoral', fx: 'boom', persist: true, sfx: 'break' },
     // The Power Bracelet is gone and lifting is base moveset, so a boulder
     // needs a reason to still be a boulder: `liftLevel: 2` puts it past bare
     // hands, and the Dredge Line drags it out of the way. That is the same
@@ -53897,6 +53935,8 @@ function installLegends() {
     'T': 'palm', 'b': 'bushSand', 'o': 'rockSand', 'q': 'postSand',
     '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeSand',
     'C': 'caveMouthSand',   // cut into a sand cliff, so it wears the sand ramp
+    'L': 'rockSandStairs',  // a rock with a stair under it (S192)
+    'A': 'bushSandStairs',  // a bush with a stair under it (S192)
     'D': 'block:portalD1',  // the Tidewash Grotto's gate
     '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
     '9': 'drownWallSand',   // the base drownWall's grey cliff read as a
@@ -53967,6 +54007,7 @@ function installLegends() {
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
     'C': 'caveMouthCoral',
+    'Z': 'cliffCrackedCaveCoral',  // a bombable crack with a cave behind it (S192)
     'D': 'block:portalD2',  // the Coral Spire's gate
     '_': 'ledgeCoral',
     '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',
@@ -54715,6 +54756,157 @@ function installCaves() {
           ['chest', 4, 3, { charm: 'dryKindling' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  // THE REEF APPROACH'S SECRET (S192): behind a crack in the south cliff of
+  // Palm Bank (0,13,3), opened by a bomb. A sea cave half full of the reef.
+  registerMap({
+    id: 'cave10',
+    kind: 'cave',
+    name: 'Spray Grotto',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#.555555.#',
+          '#.55..55.#',
+          '#.55..55.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'brineSkin' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 13, ry: 3, px: 64, py: 80, dir: 'down' } }],
+      },
+    },
+  });
+  // THE CORAL REEF'S SECRET (S192): behind a crack in the pink cliff on
+  // Pink Shallows (0,14,4), opened by a bomb. A chandler's old store.
+  registerMap({
+    id: 'cave11',
+    kind: 'cave',
+    name: "Chandler's Hold",
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o.q..q.o#',
+          '#........#',
+          '#.p....p.#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'chandlersEye' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 4, px: 64, py: 32, dir: 'down' } }],
+      },
+    },
+  });
+  // THE DUNES' SECRET (S192): a stair under one of the rocks on Dune Crest
+  // (0,14,6), found by lifting it, as Seasons hides its stairs.
+  registerMap({
+    id: 'cave12',
+    kind: 'cave',
+    name: 'Sandglass Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#.o....o.#',
+          '#........#',
+          '#.q....q.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'beachcomber' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 6, px: 112, py: 96, dir: 'down' } }],
+      },
+    },
+  });
+  // THE FAR SHORE'S SECRET (S192): a stair under one of the bushes on Pale
+  // Strand (0,14,9). Cut it and the stair is there for good.
+  registerMap({
+    id: 'cave13',
+    kind: 'cave',
+    name: 'Driftwood Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o......o#',
+          '#..p..p..#',
+          '#........#',
+          '#.o....o.#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { rupees: 100 }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 9, px: 64, py: 48, dir: 'down' } }],
+      },
+    },
+  });
+  // THE SOUTH SHORE'S SECRET (S192): a sea rock off Shell Bank (0,7,9) whose
+  // mouth is only above water at LOW, walked to over the seafloor.
+  registerMap({
+    id: 'cave14',
+    kind: 'cave',
+    name: 'Netmender\'s Rock',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#.q....q.#',
+          '#..2..2..#',
+          '#........#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'fishermansRegret' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 9, px: 112, py: 96, dir: 'down' } }],
       },
     },
   });

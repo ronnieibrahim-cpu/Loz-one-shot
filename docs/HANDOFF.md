@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A boss could follow Link into a doorway (S192).** canOccupy let a
+  ground boss onto the doorway tiles of a dungeon room, and Bogmaw pinned the
+  robot in its hall's west door until it died. Seasons treats the ring as
+  wall to a boss; ours does now. When a fight is thin, trace it frame by
+  frame (`FRAMES=a-b node tools/route-prefix.mjs ...`) before sweeping
+  waits: ~150 sweeps found only luck; one trace found the bug.
+- **Any change on the opening's screens re-rolls the whole run (S192).** The
+  robot's first `travel` wanders the south shore; a crab hit more or less
+  there moved D3's fights. Trimming waits to line the frames back up does
+  not work (travel time depends on the start frame). Expect to re-check the
+  thinnest fights after touching row 9 west of Tidewatch.
+- **A prop cluster against a screen edge can make a pocket only the next
+  screen reaches (S192).** check-strands counts it reached (it floods across
+  seams); the robot's screen-by-screen search does not, and spent its whole
+  budget there. Leave a way round every cluster on its own screen.
+
 - **A plate on open floor is a plate the player holds himself (S190).** The
   D6 brief put K6's two plates on the islands; Link standing on one with a
   chunk on the other would have raised the Boss Key with one chunk instead of

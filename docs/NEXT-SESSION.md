@@ -1,3 +1,62 @@
+## S192 — the overworld's newer screens, second half: reef, coral, dunes, far shore, south shore
+
+Branch claude/oracle-tides-overworld-screens-arjwgq, off main at f5a79cd (S191).
+
+### The human's choices this session
+- Charms for the five secret caves: PLAN A — Reef: Brine Skin, Coral:
+  Chandler's Eye, Dunes: Beachcomber, far shore: rupees (100), south shore:
+  Fisherman's Regret. Still only carvable: drownedLantern, potHauler.
+- The south shore broke the robot's D3 (below). Offered: soften Bogmaw /
+  fairy after Bogmaw / leave the beach / keep re-routing. The human chose
+  "soften Bogmaw" — and then it was not needed: the root fault was an
+  engine bug (a boss could follow Link into a doorway), fixed instead, with
+  Bogmaw's numbers unchanged. Tell the human if they ask.
+
+### Built (one commit per region; whole table green before each)
+- 959f80a REEF APPROACH 13..14 x 0..3: rock shelves joined N-S by sand paths,
+  a reef pool, a pearl bed, the Market Channel crossed by `8` stepping
+  stones. Seams to columns 12/15 unchanged; sea north; the cliff to the
+  coral (row 3/4) shut. Cave10 Spray Grotto behind a bombable `Z` in Palm
+  Bank's south cliff (0,13,3 at 4,6): Brine Skin.
+- 0c58f28 CORAL 13..14 x 4..5: one garden, N-S sand paths, palms, pools.
+  Shut to the reef above and the dunes below. New tile cliffCrackedCaveCoral
+  (coral `Z`, bombs to caveMouthCoral). Cave11 Chandler's Hold behind the
+  crack on Pink Shallows (0,14,4 at 4,1): Chandler's Eye.
+- 4098a79 DUNES 13..14 x 6..7: palm gaps join the two rows; a creek, a
+  quicksand hollow, a tide pool. New tile rockSandStairs (dunes `L`): a sand
+  rock that lifts (bare hands) to `stairsDown`, persisted — Seasons' stair
+  under a rock. Cave12 Sandglass Cellar under it (0,14,6 at 7,5): Beachcomber.
+  LESSON (HANDOFF): my first rock cluster boxed a pocket reachable only from
+  the screen east; the robot's blind screen search died in it.
+- 328eb29 FAR SHORE 13..14 x 9: one beach. New tile bushSandStairs (dunes
+  `A`): a bush that cuts to `stairsDown`, persisted. Cave13 Driftwood Cellar
+  (0,14,9 at 4,2): 100 rupees.
+- 106e0de SOUTH SHORE 6..8 x 9: Gull Sands keeps
+  the Shipwright bluff and sign; Shell Bank has a sea rock with a `&` mouth
+  (dry at LOW only) walked to over seafloor `4`; Tern Point keeps Farore's
+  shrine. Cave14 Netmender's Rock (noTide): Fisherman's Regret.
+- check-side: +12 scenarios (each cave won; refused without bomb / without
+  cutting / at MID and HIGH; stairs stay; the rock's held tide).
+
+### The D3 break, and the engine fix
+- Any change to the south shore re-rolled the opening (the robot's first
+  `travel` used to take two crab hits on Shell Bank) and the run then lost
+  BOGMAW in D3: the old run had only won it on 3/28 plus a lucky fairy drop.
+  ~150 entry/wait/option sweeps found only thin wins and a death at Gloomtide.
+- The FRAMES trace (route-prefix FRAMES=a-b) showed why: the robot is knocked into the hall's west
+  doorway and Bogmaw follows it INTO the doorway and sits on it. Seasons'
+  bosses never leave the arena floor. FIX (src/game/entity.js canOccupy): an
+  entity of the Boss class (`_bossClass`, minibosses too), on the ground, in
+  a 15-wide Oracle room, refuses the outer ring of tiles. With it the run wins
+  Bogmaw on 12/28 and Gloomtide on 14/28 with no route change.
+
+### NEXT (S193)
+- All 42 newer screens are drawn now. Ask the human what is next. Candidates:
+  the OLDER screens round them (columns 11, 12, 15, 16 of the reef/coral are
+  still the boxy S158-era layout), the rotation in docs/prompts/STATE.md
+  (next: (e) music), the picture guide (docs/guide) still shows the old
+  overworld screens.
+
 ## S191 — the overworld's newer screens, first half: the Drowned Wood and the Salt Pans
 
 Branch claude/oracle-tides-next-work-lcl6v3, off main at 6b16763 (S190).
