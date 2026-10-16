@@ -343,6 +343,13 @@ export function canOccupy(game, e, x, y, caps, terrainOnly = false) {
   for (const py of ys) {
     for (const px of xs) {
       if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
+      // A BOSS KEEPS TO ITS ARENA (S192). In Seasons a boss or miniboss never
+      // follows Link into a doorway: the ring of tiles round a dungeon room is
+      // wall to it. Ours could, and Bogmaw sat on Link in the hall's west door
+      // until he died there. Only in a room with a wall ring, so an outdoor
+      // fight keeps the whole screen.
+      if (e._bossClass && room.cw === 15 && !airborne
+          && (px < TILE || py < TILE || px >= room.pw - TILE || py >= room.ph - TILE)) return false;
       if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
