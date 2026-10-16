@@ -45,7 +45,7 @@ Branch claude/oracle-tides-overworld-screens-arjwgq, off main at f5a79cd (S191).
   ~150 entry/wait/option sweeps found only thin wins and a death at Gloomtide.
 - The FRAMES trace (route-prefix FRAMES=a-b) showed why: the robot is knocked into the hall's west
   doorway and Bogmaw follows it INTO the doorway and sits on it. Seasons'
-  bosses never leave the arena floor. FIX (src/game/entity.js canOccupy): an
+  bosses never leave the arena floor. FIX 4b5ab06 (src/game/entity.js canOccupy): an
   entity of the Boss class (`_bossClass`, minibosses too), on the ground, in
   a 15-wide Oracle room, refuses the outer ring of tiles. With it the run wins
   Bogmaw on 12/28 and Gloomtide on 14/28 with no route change.
