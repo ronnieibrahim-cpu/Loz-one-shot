@@ -1,3 +1,46 @@
+## S193 — the reef and coral's older screens redrawn round the new ones
+
+Branch claude/oracle-tides-overworld-next-n0zaxs, off main at 10b9c2a (S192).
+
+### The human's choices this session
+- Asked what next: THE REEF AND CORAL EDGES (columns 11, 12, 15, 16, rows
+  0-5 — the boxy S158 layout either side of S192's redrawn 13-14).
+- Rewards: TWO SECRET CAVES, one charm each, so every charm is now findable
+  (Pot-Hauler west, Drowned Lantern east).
+- Scope: redraw freely; keep the landmarks (Reef Palace porch and sign,
+  Coral Spire gate, the reef fisher, the Coastwise trader, the fairy, the
+  heart piece) and every region border shut as it was.
+
+### Built
+- 22 screens' interiors redrawn: irregular reef pools instead of rectangles,
+  wandering sand paths, rocks in ones and twos, single palms instead of
+  rows of three, the posts of the Sunken Colonnade kept as ruins. EVERY
+  SCREEN EDGE IS UNCHANGED (rows 0/7, columns 0/9), so every seam and gate
+  is as it was. Left alone: 0,15,0 Tide Steps (the tide-steps-split replay
+  and test.mjs measure it) and 0,15,5 Spire Mouth (the robot's D2 door).
+  Old one-way ledges in open ground on Coral Shelf and Coral Foot removed;
+  Drowned Steps' ledge kept (it is load-bearing for the Palace route).
+- cave15 Pot Cellar: a bombable `Z` in the foot of the reef cliff on Reef
+  Foot (0,11,3 at 6,6); chest charm potHauler.
+- cave16 Lantern Rock: a sea rock on Outer Reef (0,16,2), `&` mouth at 7,4
+  (dry at LOW only) walked to over seafloor `4`; noTide; chest charm
+  drownedLantern.
+- check-side +6 scenarios (each cave won; Pot Cellar refused without a bomb;
+  Lantern Rock refused at MID and HIGH, and the way out is dry).
+- LESSON: a palm (`T`) pair is ONE palm drawn 32x32 upward; `TT` over `TT`
+  is two palms stacked, not a 2x2 tree. An urchin must stand on reef, not
+  sand (check-placement).
+- REFERENCE RENDER: oracles-disasm overworld screens (small rooms, 10x8,
+  tileset = group0Tilesets.bin & 0x7f) via tools/oneshot/oracle-study/
+  render.py's metatile(), as S191 did; the scratch script loops rooms
+  ry*16+rx over a box and pastes metatiles.
+
+### NEXT (S194)
+- Ask the human. Candidates: the music pass (rotation (e) in
+  docs/prompts/STATE.md); re-shooting the picture guide (docs/guide) for the
+  redrawn overworld; any other older overworld region still in the S158
+  boxy style.
+
 ## S192 — the overworld's newer screens, second half: reef, coral, dunes, far shore, south shore
 
 Branch claude/oracle-tides-overworld-screens-arjwgq, off main at f5a79cd (S191).

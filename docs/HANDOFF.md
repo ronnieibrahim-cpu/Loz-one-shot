@@ -447,6 +447,9 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A palm pair is one palm (S193).** `TT` in one row draws ONE palm,
+  32x32, overhanging upward; `TT` over `TT` is two palms stacked, not a 2x2
+  tree. Place palms as a single `TT` row.
 - **A boss could follow Link into a doorway (S192).** canOccupy let a
   ground boss onto the doorway tiles of a dungeon room, and Bogmaw pinned the
   robot in its hall's west door until it died. Seasons treats the ring as

@@ -555,4 +555,67 @@ export function installCaves() {
       },
     },
   });
+  // THE WEST REEF'S SECRET (S193): behind a crack in the foot of the reef
+  // cliff on Reef Foot (0,11,3), opened by a bomb. Where the reef's
+  // potters stacked what the tide brought in.
+  registerMap({
+    id: 'cave15',
+    kind: 'cave',
+    name: 'Pot Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#p.p..p.p#',
+          '#........#',
+          '#.o....o.#',
+          '#........#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'potHauler' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 11, ry: 3, px: 96, py: 80, dir: 'down' } }],
+      },
+    },
+  });
+  // THE EAST REEF'S SECRET (S193): a sea rock off Outer Reef (0,16,2) whose
+  // mouth is only out of the water at LOW, walked to over the seafloor. The
+  // conch is not heard inside, so the way out is still dry.
+  registerMap({
+    id: 'cave16',
+    kind: 'cave',
+    name: 'Lantern Rock',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#.2....2.#',
+          '#........#',
+          '#q......q#',
+          '#..2..2..#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'drownedLantern' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 16, ry: 2, px: 112, py: 80, dir: 'down' } }],
+      },
+    },
+  });
 }
