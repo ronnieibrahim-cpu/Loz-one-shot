@@ -12,7 +12,7 @@ Branch claude/oracle-tides-overworld-next-n0zaxs, off main at 10b9c2a (S192).
   heart piece) and every region border shut as it was.
 
 ### Built
-- 22 screens' interiors redrawn: irregular reef pools instead of rectangles,
+- 0a0eedc: 22 screens' interiors redrawn: irregular reef pools instead of rectangles,
   wandering sand paths, rocks in ones and twos, single palms instead of
   rows of three, the posts of the Sunken Colonnade kept as ruins. EVERY
   SCREEN EDGE IS UNCHANGED (rows 0/7, columns 0/9), so every seam and gate
