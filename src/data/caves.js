@@ -524,4 +524,35 @@ export function installCaves() {
       },
     },
   });
+  // THE SOUTH SHORE'S SECRET (S192): a sea rock off Shell Bank (0,7,9) whose
+  // mouth is only above water at LOW, walked to over the seafloor.
+  registerMap({
+    id: 'cave14',
+    kind: 'cave',
+    name: 'Netmender\'s Rock',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#.q....q.#',
+          '#..2..2..#',
+          '#........#',
+          '#o......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'fishermansRegret' }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 9, px: 112, py: 96, dir: 'down' } }],
+      },
+    },
+  });
 }

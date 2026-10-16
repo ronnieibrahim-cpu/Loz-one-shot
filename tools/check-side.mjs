@@ -194,6 +194,28 @@ const SCENARIOS = [
     expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' through a bush')`,
   },
   {
+    name: "Netmender's Rock: at LOW the seafloor leads to a dry mouth, and the Fisherman's Regret is inside",
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
+      enter: ['overworld', 0, 7, 9, 48, 48, 'down'] }),
+    steps: [['goto', 6, 6, 400], ['goto', 7, 6, 200], ['hold', ['up'], 60], ['wait', 60],
+      ['goto', 4, 4, 400], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400]],
+    expect: `g.mapId === 'cave14' && g.progress.charms.fishermansRegret || ('in ' + g.mapId + ', charm ' + !!g.progress.charms.fishermansRegret)`,
+  },
+  {
+    name: "Netmender's Rock: the conch is held inside, and the way out is the dry seafloor",
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
+      enter: ['cave14', 0, 0, 0, 72, 81, 'up'] }),
+    steps: [['use', 'conch', 2, 140], ['goto', 5, 5, 300], ['hold', ['down'], 60], ['wait', 60]],
+    expect: `g.mapId === 'overworld' && g.tide.level === 0 && !g.player.inDeep || ('in ' + g.mapId + ' at tide ' + g.tide.level)`,
+  },
+  ...[1, 2].map(t => ({
+    name: `Netmender's Rock: at ${t === 1 ? 'MID' : 'HIGH'} the sea stands in the mouth`,
+    setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: t,
+      enter: ['overworld', 0, 7, 9, 112, 96, 'up'] }),
+    steps: [['hold', ['up'], 180], ['wait', 30]],
+    expect: `g.mapId === 'overworld' || ('got into ' + g.mapId + ' at tide ' + g.tide.level)`,
+  })),
+  {
     name: 'The ledger: found on the South Sands, carried to the shop, paid for with a Piece of Heart',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 5, 9, 64, 32, 'right'] }),
     steps: [['goto', 8, 2, 400], ['wait', 90], ['travel', 5, 8, 3000], ['wait', 30], ['travel', 5, 7, 3000], ['wait', 30],

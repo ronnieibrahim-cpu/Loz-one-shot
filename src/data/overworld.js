@@ -2866,24 +2866,24 @@ const rooms = {
   },
   '0,6,9': {
     name: "Gull Sands",
-    legend: 'coast', music: 'overworld',
     // THE SHIPWRIGHT'S HOLLOW (S158): the first blade, as Seasons' Hero's
     // Cave holds its first. A mouth in a low bluff above the beach.
+    legend: 'coast', music: 'overworld',
     map: [
       'TT######TT',
       'TT##C#ggTT',
       'gg......gg',
-      'gg..o...gg',
-      'gg.1111.gg',
-      '1111**1111',
+      'gg.,,.o.gg',
+      'gg..111..g',
+      '1111111111',
+      '*111****11',
       '**********',
-      '**********',
-    ],
-    warps: [
-      { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 6, 2, { text: 'Scratched on a plank: "Gone to wait out\nthe sea. Blade inside. Lean on the door."' }],
+    ],
+    warps: [
+      { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,7,0': {
@@ -3076,19 +3076,24 @@ const rooms = {
   },
   '0,7,9': {
     name: "Shell Bank",
+    // THE SOUTH SHORE'S SECRET (S192): a sea rock off the bank with a cave
+    // mouth that is only above water at LOW, walked to over the seafloor.
     legend: 'coast', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTTTggTTTT',
-      'gg......gg',
-      'gg.4444.gg',
-      'gg144441gg',
-      '11******11',
-      '**********',
+      'TTTTTTTTTT',
+      'gg.f..gggg',
+      'g..,...ggg',
+      'g..,,.###g',
+      '1111.1#&#1',
+      '114444444*',
       '**********',
     ],
     entities: [
-      ['crab', 7, 3],
+      ['crab', 3, 3],
+    ],
+    warps: [
+      { x: 7, y: 5, to: { map: 'cave14', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,8,0': {
@@ -3260,19 +3265,19 @@ const rooms = {
     legend: 'town', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TTggggggTT',
+      'TTTTTTTTTT',
+      'gg.hhh.fgg',
       'gg.hhh..gg',
       'gg.hhh..gg',
-      'gg.hhh..gg',
-      '11......11',
+      '11..,...11',
+      '*11*******',
       '**********',
-      '**********',
-    ],
-    warps: [
-      { x: 4, y: 4, to: { map: 'faroreShrine', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 7, 4, { text: "FARORE'S SHRINE\nKnock, and mind the step." }],
+    ],
+    warps: [
+      { x: 4, y: 4, to: { map: 'faroreShrine', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
   },
   '0,13,0': {
