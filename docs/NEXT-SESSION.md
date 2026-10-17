@@ -1,3 +1,41 @@
+## S194 — the picture guide re-shot on the redrawn overworld, and its ten secret caves
+
+Branch claude/oracle-tides-s194-2zqotg, off main at d784fc3 (S193).
+
+### The human's choice this session
+- Asked what next (music pass / re-shoot the guide / another boxy region):
+  RE-SHOOT THE PICTURE GUIDE.
+
+### Built
+- Every guide picture re-captured on the game as of S193 (last capture S190).
+  The route had not changed since (no directive moved), so no `after`/`by`
+  numbers needed remapping. 139 of 236 pictures changed; most only by hearts,
+  water animation frames, or the S191-S193 overworld redraw. Looked at old
+  beside new for every one (contact sheets ranked by changed pixels).
+- Two fight shots re-timed (shots.mjs `plus`, picked from a scan at 30- and
+  20-frame steps): d3-boss-a 400 -> 240 (at 400 Gloomtide sat on Link and
+  hid him; the fight is now over by ~360, hp 27 -> 6 of 28 at its worst,
+  which is the run's low-water mark 6) and d6-tideshade-fight 300 -> 120 (at
+  300 the shade was already dead and its text box covered the room).
+- NEW GUIDE SECTION "Secret caves" (id `secret`, between Side quests and
+  Charms): the ten S191-S193 caves, where and how in, and the prize, with a
+  picture of each way in (figures `sc-*`, ringed and labelled). Three new
+  LOW-tide stills (`ow-t0-7-5`, `ow-t0-7-9`, `ow-t0-16-2`) for the sea rocks.
+  Three columns, not four: four were clipped at phone width.
+- Charm table: the eight cave charms added; its last line now says the
+  Wrackbone is the one charm only ever carved (30 of 31 are in chests).
+- docs/guide/README.md has an S194 note.
+
+### Checks
+- Only tools/guide/ and docs/guide/ changed; the whole table run anyway,
+  green. check-playthrough 49/49, THE END, never died, low-water mark 6.
+
+### NEXT (S195)
+- Ask the human. Candidates: the music pass (rotation (e) in
+  docs/prompts/STATE.md); any other overworld region still in the S158
+  boxy style (photograph the whole overworld beside Seasons first and show
+  the human which screens still read hand-laid).
+
 ## S193 — the reef and coral's older screens redrawn round the new ones
 
 Branch claude/oracle-tides-overworld-next-n0zaxs, off main at 10b9c2a (S192).

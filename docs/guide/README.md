@@ -51,3 +51,11 @@ were re-timed by a scan (`plus` at 20-frame steps, looked at side by side).
 `capture.mjs` now photographs a text box with its page typed out (the run is
 not advanced for it) and the title shot starts the card and skips the
 opening, so it shows the logo. The HUD figure's numbers follow S167's bar.
+
+## S194: re-shot on the redrawn overworld
+
+Every picture was re-captured on the game as of S193 (the S191-S193
+overworld redraw). The route had not moved since S190, so nothing was
+remapped; two fight shots were re-timed by a scan (Gloomtide's opening blow
+and the Tideshade mid-fight). New: the "Secret caves" section and its ten
+`sc-*` figures, with three LOW-tide stills for the sea-rock caves.

@@ -182,7 +182,7 @@ export const ROUTE_SHOTS = [
   { id: 'd3-lockgallery', after: 746, plus: 5, whole: true },
   { id: 'd3-bossdoor', after: 754, plus: 5, whole: true },
   { id: 'd3-boss-intro', after: 756, plus: 60, whole: true },
-  { id: 'd3-boss-a', after: 756, plus: 400 },
+  { id: 'd3-boss-a', after: 756, plus: 240 },
   { id: 'd3-boss-b', after: 756, plus: 600 },
   { id: 'd3-boss-c', after: 756, plus: 900 },
   { id: 'ow4-deepcut', after: 793, plus: 5, whole: true },
@@ -327,7 +327,7 @@ export const ROUTE_SHOTS = [
   { id: 'd6-weigh2', after: 1885, plus: 40, whole: true },
   { id: 'd6-upper', after: 1903, plus: 5, whole: true },
   { id: 'd6-tideshade', after: 1907, plus: 60, whole: true },
-  { id: 'd6-tideshade-fight', after: 1907, plus: 300 },
+  { id: 'd6-tideshade-fight', after: 1907, plus: 120 },
   { id: 'd6-mermaid', after: 1912, plus: 5, whole: true },
   { id: 'd6-arches', after: 1919, plus: 5, whole: true },
   { id: 'd6-arches-lens', after: 1922, plus: 0, until: 'g.player && g.player.lensHeld', by: 1924 },
@@ -391,3 +391,5 @@ STATIC_SHOTS.push({ id: 'opt-palace-lair', room: ['palace', 0, 1, 0], tide: 1 })
 
 // The Slackwater Cave's mouth, open only at LOW (S155 side content).
 STATIC_SHOTS.push({ id: 'ow-t0-1-2', room: ['overworld', 0, 1, 2], tide: 0 });
+// The secret caves whose mouths are out of the sea only at LOW (S191-S193).
+for (const [x, y] of [[7, 5], [7, 9], [16, 2]]) STATIC_SHOTS.push({ id: `ow-t0-${x}-${y}`, room: ['overworld', 0, x, y], tide: 0 });

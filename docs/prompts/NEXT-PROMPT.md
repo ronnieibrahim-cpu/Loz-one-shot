@@ -1,19 +1,18 @@
-# Next session (S194) — after the reef and coral edges: ask what is next
+# Next session (S195) — after the guide re-shoot: ask what is next
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S193 and S192; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S194 and S193; docs/HANDOFF.md lessons (top ten).
 
 ## State
-- S191-S193 redrew the overworld's newer screens (S191-S192) and the reef
-  and coral's older columns round them (S193). Ten secret caves; every charm
-  can now be found in a chest (S193: Pot Cellar, Lantern Rock).
+- S191-S193 redrew the overworld's newer screens and the reef and coral
+  round them, with ten secret caves. S194 re-shot the picture guide
+  (docs/guide) on the redrawn overworld and added a Secret caves section.
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
 - Ask the human what to do next before building anything. Candidates: the
-  rotation in docs/prompts/STATE.md (next: (e) music); re-shooting the
-  picture guide (docs/guide) for the redrawn overworld; any other overworld
+  rotation in docs/prompts/STATE.md (next: (e) music); any other overworld
   region still in the boxy S158 style.
 
 ## Done means

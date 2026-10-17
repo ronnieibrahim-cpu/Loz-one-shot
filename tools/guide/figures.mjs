@@ -609,3 +609,19 @@ FIGURES.push(
   hp('vault', 'opt-vault-pan', 7, 6), hp('eyrie', 'opt-eyrie-roost', 7, 6),
   hp('palacechapel', 'opt-palace-chapel', 7, 2), hp('palaceeel', 'opt-palace-lair', 7, 6),
 );
+
+// ---------------------------------------------------- the secret caves (S191-S193)
+const sc = (out, src, tx, ty, label, extra = []) => ({ out: 'sc-' + out, src, scale: 2,
+  marks: [{ ring: [tx, ty] }, lbl(label, [tx, ty + 1.2 > 6.5 ? ty - 1.2 : ty + 1.2], ty + 1.2 > 6.5 ? 'n' : 's'), ...extra] });
+FIGURES.push(
+  sc('oakroot', 'ow-t1-6-3', 5, 1, 'bomb the crack'),
+  sc('stump', 'ow-t0-7-5', 5, 3, 'open at LOW', [LOW]),
+  sc('brine', 'ow-t1-8-1', 6, 1, 'bomb the crack'),
+  sc('spray', 'ow-t1-13-3', 4, 6, 'bomb the crack'),
+  sc('chandler', 'ow-t1-14-4', 4, 1, 'bomb the crack'),
+  sc('sandglass', 'ow-t1-14-6', 7, 5, 'lift the rock'),
+  sc('driftwood', 'ow-t1-14-9', 4, 2, 'cut the bush'),
+  sc('netmender', 'ow-t0-7-9', 7, 5, 'open at LOW', [LOW]),
+  sc('pot', 'ow-t1-11-3', 6, 6, 'bomb the crack'),
+  sc('lantern', 'ow-t0-16-2', 7, 4, 'open at LOW', [LOW]),
+);
