@@ -1,3 +1,63 @@
+## S195 — the Cliffs of Kell redrawn, and the quarryman's bigger bomb bag
+
+Branch claude/oracle-tides-s195-kl0giv, off main at c740506 (S194).
+
+### The human's choices this session
+- Shown the whole overworld beside Seasons' (oracles-disasm rooms/seasons/
+  small, the S191 recipe; scratch script pasted metatile() per room over the
+  16x16 grid), every screen marked redrawn (S191-S193) or still boxy, A-G.
+  Chose A: THE KELL CLIFFS (0..3 x 2..5, 16 screens).
+- Look: keep the grey stone (not Seasons' brown mountain). Scope: insides
+  only, every screen edge unchanged. Prize: "something new" -> of four
+  offered (bigger bomb bag / Race the Flood mini-game / bigger seed satchel /
+  a new charm) chose THE BIGGER BOMB BAG.
+- Still unredrawn, as shown to the human: B the Abyss shore 0..3 x 0..1 (8),
+  C the Salt Pans' edges 4..5 and 9..10 x 0..2 (12), D the Drowned Wood's
+  edges 4..5 and 9..10 x 3..6 (16), E the Marsh 0..2 x 6..9 (12), F the Dunes
+  either side of Sandpiper Row (19), G the coast strips (col 3 rows 6-9, col
+  9 rows 7-9, 4..5 x 9).
+
+### Built
+- 13 cliff screens' interiors redrawn: no rockFloorDk bands, no rectangles
+  of drown wall; plain rock floor, 2-tall cliff outcrops off the edge walls,
+  irregular rock pools, rocks in ones and twos. Open-ground ledges on Kell
+  Head, Wind Shelf, Cistern Mouth, Low Kell and Boulder Run removed (none was
+  load-bearing). Kept as built: Cistern Path and Cliff Face (Bellows
+  fixtures; only their `G` bands made plain), The Deep Cut (the bomb gate and
+  the robot's gotos; `G` made plain), Upper Kell's seal row, Cistern Mouth's
+  door and its keyhole tile 6,2, Marsh Stair's ledge-and-boulder gate (rows
+  5-6), the sea cave and the Eyrie mouth. Five enemies moved off new rocks or
+  pools.
+- NEW TILE rockPool (tiles-core): tide ['rockFloorDk', 'waterS', 'waterD'];
+  the cliffs legend's `1` now means it. At LOW `sandbar` left squares of beach
+  on the grey shelf; this is dark stone. Same passability as sandbar.
+- Cliffs legend `Z` = cliffCrackedCaveDk. cave17 QUARRY HOLLOW behind a crack
+  in Kell Spur's east cliff (0,3,5 at 7,1): a quarryman (salter sprite, a
+  `giver` with `pickup: 'bombBag'`, flag `gotBombBag`). PICKUPS.bombBag raises
+  maxBombs to BOMB_CAPACITY_BAG (20, feel.js, guessed) and fills it. Not an
+  inventory item (check-items' roster is untouched).
+- Giver's `pickup` branch now hands over with `presentPrize` (held overhead);
+  no other giver used it. The bombs-from-a-cutscene grant no longer caps the
+  bag back to 10.
+- check-side +3: the crack opens to a bomb and the bag is 20; no bomb, no way
+  in; asked again he only talks.
+
+### Checks
+- Whole table green. check-playthrough 49/49, THE END, never died, low-water
+  mark 6 (the robot crosses the Cliffs by `travel` and re-planned by itself).
+- tools/check-guide.mjs (not in CLAUDE.md's table) FAILS ON MAIN TOO: docs/
+  GUIDE.md still names D6 rooms by their pre-S142 cells and misses two D6
+  heart pieces. Old, unrelated to S195; fix when the guide is next touched.
+
+### NEXT (S196)
+- Ask the human. Candidates: another boxy region (B-G above); the music pass
+  (rotation (e)); the picture guide now says TEN secret caves and there are
+  eleven (add Quarry Hollow and its bag to docs/guide's Secret caves).
+- LESSON for the next region: the screen edges (`###gggg###` both sides of
+  every seam) are most of what still reads as a grid; an "insides only"
+  redraw cannot remove it. Ask the human whether a region may have its
+  internal seam WALLS reshaped (both sides together, openings unchanged).
+
 ## S194 — the picture guide re-shot on the redrawn overworld, and its ten secret caves
 
 Branch claude/oracle-tides-s194-2zqotg, off main at d784fc3 (S193).

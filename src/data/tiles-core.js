@@ -2164,6 +2164,9 @@ export function installCoreTiles() {
     // A tide tile resolves to a different concrete tile per tide level.
     // low (0)            mid (1)            high (2)
     sandbar: { tide: ['sand', 'waterS', 'waterD'] },              // beach that drowns
+    // The Cliffs of Kell's own (S195): a rock pool, dry stone at LOW where
+    // `sandbar` left a square of beach on a grey shelf.
+    rockPool: { tide: ['rockFloorDk', 'waterS', 'waterD'] },
     tidePool: { tide: ['sandWet', 'waterS', 'waterD'] },
     shoal: { tide: ['sandRipple', 'sandWet', 'waterS'] },         // only floods at high
     seafloor: { tide: ['sandWet', 'waterD', 'waterD'] },          // exposed only at low

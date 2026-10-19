@@ -111,6 +111,8 @@ export function installLegends() {
     '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk', '_': 'ledgeRock',
     '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
     'D': 'block:portalD4',  // the Cliffside Cistern's gate
+    'Z': 'cliffCrackedCaveDk',  // the quarryman's door (S195), bombs open it
+    '1': 'rockPool',        // a rock pool: stone at LOW, not a beach (S195)
   }, 'base');
 
   // ---- drowned wood: sunken forest --------------------------------------

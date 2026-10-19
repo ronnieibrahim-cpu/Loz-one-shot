@@ -109,7 +109,7 @@ export function runCutscene(game, steps, data = {}) {
     if (step.give) {
       giveItem(game.progress, step.give.item, step.give.level || 1);
       game.autoEquip(step.give.item);
-      if (step.give.item === 'bombs') { game.progress.maxBombs = 10; game.progress.bombs = 10; }
+      if (step.give.item === 'bombs') { game.progress.maxBombs = Math.max(game.progress.maxBombs, 10); game.progress.bombs = game.progress.maxBombs; }
     }
     // A PERSON HANDING SOMETHING OVER is the same beat as a chest or a key:
     // Link holds it up to Seasons' own item jingle and the box says what it

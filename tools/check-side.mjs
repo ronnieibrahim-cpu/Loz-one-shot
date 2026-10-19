@@ -231,6 +231,31 @@ const SCENARIOS = [
     steps: [['goto', 6, 5, 400], ['hold', ['down'], 90], ['wait', 30]],
     expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' with no bomb')`,
   },
+  // THE CLIFFS' SECRET (S195): a crack in Kell Spur's east cliff (0,3,5),
+  // and the quarryman's bigger bomb bag inside.
+  {
+    name: 'Quarry Hollow: a bomb opens the crack in Kell Spur, and the quarryman doubles the bomb bag',
+    setup: setup({ items: { sword: 1, bombs: 1 }, equipA: 'sword', equipB: 'bombs',
+      enter: ['overworld', 0, 3, 5, 112, 64, 'up'] }),
+    steps: [['goto', 7, 2, 400], ['hold', ['up'], 6], ['use', 'bombs', 1, 10],
+      ['goto', 7, 4, 200], ['wait', 120], ['goto', 7, 2, 300], ['hold', ['up'], 60],
+      ['wait', 60], ['goto', 4, 4, 400], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 600]],
+    expect: `g.mapId === 'cave17' && g.progress.maxBombs === 20 && g.progress.bombs === 20 && g.progress.flags.gotBombBag || ('in ' + g.mapId + ', bag ' + g.progress.maxBombs + ', bombs ' + g.progress.bombs)`,
+  },
+  {
+    name: 'Quarry Hollow: without a bomb the crack is a wall',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword',
+      enter: ['overworld', 0, 3, 5, 112, 64, 'up'] }),
+    steps: [['goto', 7, 2, 400], ['hold', ['up'], 90], ['wait', 30]],
+    expect: `g.mapId === 'overworld' || ('walked into ' + g.mapId + ' with no bomb')`,
+  },
+  {
+    name: 'Quarry Hollow: the bag is given once — asked again, the quarryman only talks',
+    setup: setup({ items: { sword: 1, bombs: 1 }, equipA: 'sword', equipB: 'bombs', flags: ['gotBombBag'],
+      enter: ['cave17', 0, 0, 0, 72, 81, 'up'] }),
+    steps: [['goto', 4, 4, 400], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 600]],
+    expect: `g.progress.maxBombs === 10 || ('bag ' + g.progress.maxBombs + ', bombs ' + g.progress.bombs)`,
+  },
   {
     name: 'Lantern Rock: at LOW the seafloor leads to a dry mouth, and the Drowned Lantern is inside',
     setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0,
