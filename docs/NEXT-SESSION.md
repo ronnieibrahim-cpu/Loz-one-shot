@@ -45,6 +45,9 @@ Branch claude/oracle-tides-s195-kl0giv, off main at c740506 (S194).
 ### Checks
 - Whole table green. check-playthrough 49/49, THE END, never died, low-water
   mark 6 (the robot crosses the Cliffs by `travel` and re-planned by itself).
+- tools/check-guide.mjs (not in CLAUDE.md's table) FAILS ON MAIN TOO: docs/
+  GUIDE.md still names D6 rooms by their pre-S142 cells and misses two D6
+  heart pieces. Old, unrelated to S195; fix when the guide is next touched.
 
 ### NEXT (S196)
 - Ask the human. Candidates: another boxy region (B-G above); the music pass
