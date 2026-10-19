@@ -25,7 +25,7 @@ import {
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES,
-  FLOAT_SPEED, FLOAT_FOOT_DY,
+  FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
 
@@ -80,6 +80,19 @@ export const PICKUPS = {
   // S155: it is now the cartridge's own DROP, `p_bomb` (tools/rip-treasures.py,
   // item drop 4), which is what Seasons draws on the floor.
   bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
+  // THE QUARRYMAN'S BAG (S195): a bigger bomb bag, handed over in a cave in
+  // the Cliffs of Kell. Not an inventory item — it raises the count the bombs
+  // already in `progress.items` can reach, and fills it.
+  bombBag: {
+    sprite: 'i_bomb', pal: null,
+    get(g) {
+      const p = g.progress;
+      p.maxBombs = Math.max(p.maxBombs, BOMB_CAPACITY_BAG);
+      addBombs(p, p.maxBombs);
+      g.audio.jingle('itemGet');
+      g.say(`A bigger bomb bag! It holds ${p.maxBombs} bombs.`);
+    },
+  },
   // NO TEXT BOX, deliberately. An open dialogue freezes every entity while the
   // mode is still 'play' (see CLAUDE.md, traps), so a first-time hint on a
   // FLOOR DROP stops the game dead in the middle of whatever fight dropped it.
@@ -830,7 +843,7 @@ export class Giver extends NPC {
         game.audio.jingle('fanfareShort');
         game.say('A carved charm!');
       } else if (this.pickup) {
-        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game, null);
+        game.presentPrize(this.pickup);
       }
     };
     // Speak first, then hand the item over once the box is dismissed.

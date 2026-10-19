@@ -586,6 +586,40 @@ export function installCaves() {
       },
     },
   });
+  // THE CLIFFS' SECRET (S195): behind a crack in the cliff on Kell Spur
+  // (0,3,5), opened by a bomb. A quarryman lives in the hole he blasted, and
+  // hands over a bag that holds twice the bombs.
+  registerMap({
+    id: 'cave17',
+    kind: 'cave',
+    name: 'Quarry Hollow',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '##########',
+          '#o......o#',
+          '#........#',
+          '#.o......#',
+          '#.......o#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['giver', 4, 3, {
+            sprite: 'npc_salter_d', frames: { down: ['npc_salter_d'], up: ['npc_salter_u'], side: ['npc_salter_s'] },
+            dialogue: 'quarryman', after: 'quarrymanAfter', flag: 'gotBombBag', pickup: 'bombBag',
+          }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 5, px: 112, py: 32, dir: 'down' } }],
+      },
+    },
+  });
   // THE EAST REEF'S SECRET (S193): a sea rock off Outer Reef (0,16,2) whose
   // mouth is only out of the water at LOW, walked to over the seafloor. The
   // conch is not heard inside, so the way out is still dry.

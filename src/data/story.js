@@ -34,6 +34,10 @@ export const DIALOGUE = {
   // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',
   digger: 'Three Essences. Then take the Coin. Throw\nit down and let the water turn. It pays\nthe ferryman, and the ferryman is patient.',
+  // The quarryman in the Cliffs of Kell (S195): the bigger bomb bag.
+  quarryman: 'You came in by the loud door, same as\nme. Take this bag. It holds twice what\nyours does, and Kell is a lot of rock.',
+  quarrymanAfter: 'The sea cuts this cliff slow. I cut it\nfast. Between us, Kell will be flat by\nthe time you are my age.',
+
   diggerAfter: 'One coin, boy. Where you drop it is where\nthe next tide puts you. Choose the drop,\nnot the moment — the moment is not yours.',
 
   // The Maku Tree, the last link of the Coastwise Chain: the Resonance Rod for

@@ -1873,6 +1873,10 @@ export const REEFSEED_CAPACITY = 8;
  *  number any more than anything else is. */
 export const BOMB_CAPACITY = 10;
 
+/** how many bombs the quarryman's bigger bag holds (S195, a cave in the
+ *  Cliffs of Kell). guessed; twice the first bag, the human's choice. */
+export const BOMB_CAPACITY_BAG = 20;
+
 // --- Dredge Line -----------------------------------------------------------
 
 /** px — how far the line is cast. guessed; four tiles, so it reaches across a

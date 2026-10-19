@@ -447,6 +447,12 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Scattered single cells of a second floor read as static (S195).** Two
+  grounds with no transition tiles between them (rockFloor / rockFloorDk)
+  only work as large patches; one-cell `.` paths made the cliffs look like
+  noise. And a tide digit falls through to the base legend's tile, so `1`
+  was beach at LOW on a grey shelf: give a region its own tide tile
+  (`rockPool`) rather than living with the square.
 - **A palm pair is one palm (S193).** `TT` in one row draws ONE palm,
   32x32, overhanging upward; `TT` over `TT` is two palms stacked, not a 2x2
   tree. Place palms as a single `TT` row.
