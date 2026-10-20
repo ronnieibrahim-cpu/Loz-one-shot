@@ -1245,7 +1245,9 @@ export const ROUTE = [
   // S182 (the Sanctum's cellar: the run arrives through the Sump, P6 and the
   // Undertow Cellar on 21/28): 44-50 all win (44 and 46 on 27/28, the rest
   // hurt), 20-43 and 56-120 lose. 46.
-  ['wait', 46],
+  // S198 (the Dunes redrawn: the run reaches here on a different clock):
+  // 46 loses; 60-78 all win on 9-12/28 (34-54 scattered, the rest lose). 68.
+  ['wait', 68],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
