@@ -1,3 +1,57 @@
+## S198 — the Dunes redrawn round Sandpiper Row
+
+Branch claude/oracle-tides-s198-p5srml, off main at 4840010 (S197).
+
+### The human's choices this session
+- Shown the whole overworld again (shoot-region 0 0 16 9, regions B C F G
+  overlaid, Seasons' spring sheet below). Chose F: THE DUNES — 10..16 x 6..8
+  less Sandpiper Row (12..14,8), 18 screens.
+- Asked about the one-tile chasms (the last hop gaps in the world, all in the
+  old Dunes): LEAVE THEM OUT. The hop stays base moveset with no use on the
+  map; check-gates now draws its own chasm on Sandbar Run to prove it.
+
+### Built
+- 18 Dune screens redrawn as three canvases (tools/oneshot/splice-canvas.mjs:
+  rows 6-7 as one 70x16 picture, row 8's 10-11 and 15-16 as two more). Open
+  sand with `g` ripple in large swathes (a 3-pass majority filter took out
+  the speckle), palms in staggered single blocks instead of a 2x2 clump at
+  every screen corner, sandbar lagoons with deep cores across seams, a
+  two-row `5` tidal creek 12,7 -> 15,7, tide pools on 15,7/16,7. All black
+  chasm bands gone. EVERY OUTER SEAM unchanged per tide (dump-seams before /
+  after); no MISMATCH.
+- Kept: Grotto Mouth 11,8 rows 0-2 (door, cliff, keyhole) and the robot's
+  4,2; Dune Crest's rock stair L at 14,6 7,5 with rocks 7,4 / 5,5 / 8,2 and
+  7,6 walkable (cave12 return, check-side); Shell Flats' seafloor patch with
+  the heart piece 15,8 6,4 and 4,4 (check-respawn); Dune Corner's buried
+  2,2 and dig mark 3,2; 16,x cols 7-9 (the world's east rim). Grotto Mouth's
+  lone `""""` ledge in open sand removed (a ledge-rule violation).
+- Feather Gap's sign no longer talks about gaps ("North lies the reef. /
+  South, the dunes run down to the sea."). Six creatures moved off new palms,
+  water and creek; the sea octorok on Sandbar Run is in the lagoon now.
+- check-strands baseline re-recorded (one 1-cell pocket gone, none new).
+
+### The robot
+- Arriving at Grotto Mouth from the west on row 2, its `goto 4,6` stepped on
+  the door: added `goto 1,5` first.
+- The run reaches D3 on a new clock. Bogmaw re-swept (5 option sets, 9 entry
+  steps, waits 30-90): best is wait 42 on 16/28 (60-78 win on 9-12 but leave
+  Gloomtide winnable only on 1-4). Gloomtide unchanged: wait 52 wins on
+  13/28 (a broad band now — B options at 60-72 also 14).
+
+### Checks
+- Whole table green; check-playthrough 49/49, THE END, never died.
+
+### NEXT (S199)
+- Ask the human. Candidates: boxy regions left B (Abyss shore 0..3 x 0..1),
+  C (Salt Pans' edges 4..5 and 9..10 x 0..2), G (coast strips col 3 rows
+  6-9, col 9 rows 7-9, 4..5 x 9) and the south shore row 9 cols 10..16
+  (still boxy, now beside the redrawn Dunes); the music pass (rotation (e));
+  the picture guide's Secret caves missing Quarry Hollow; docs/GUIDE.md's
+  stale D6 rooms (tools/check-guide.mjs fails, old).
+- Recipe: dump-seams before; canvases; splice; dump-seams after (only inner
+  seams differ); check-placement; check-strands; check-ground; shoot-region;
+  table; playthrough, and re-sweep D3's two fights if it dies there.
+
 ## S197 — the Drowned Wood's edges redrawn
 
 Branch claude/oracle-tides-s197-7vjpxw, off main at 33a4c2c (S196).

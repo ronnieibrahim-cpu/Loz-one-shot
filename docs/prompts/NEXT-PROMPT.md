@@ -1,20 +1,20 @@
-# Next session (S198) — after the Drowned Wood: ask what is next
+# Next session (S199) — after the Dunes: ask what is next
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S197 and S196; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S198 and S197; docs/HANDOFF.md lessons (top ten).
 
 ## State
-- S191-S195 redrew most of the overworld; S196 redrew THE MARSH (raised bog
-  shelf behind a real cliff, inner screen edges opened, every old crossing
-  kept). S197 redrew THE DROWNED WOOD'S EDGES (cols 4-5, 9-10, rows 3-6),
-  drawn as canvases across seams, and gave the wood dark low-tide pools.
-  The human allows reshaping walls along screen edges now.
+- S191-S197 redrew most of the overworld; S198 redrew THE DUNES round
+  Sandpiper Row (10..16 x 6..8 less the town): open sand, palm groves,
+  lagoons and a tidal creek; the old chasm bands are gone (the human chose
+  to leave the hop gaps out). Outer seams unchanged.
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
 - Ask the human what to do next before building anything. Candidates: the
-  boxy regions left (B, C, F, G in S196's list; show the overworld
+  boxy regions left (B the Abyss shore, C the Salt Pans' edges, G the coast
+  strips, and the south shore row 9 east of the village; show the overworld
   picture again); the rotation in docs/prompts/STATE.md (next: (e) music);
   the picture guide's Secret caves section is missing Quarry Hollow, and
   docs/GUIDE.md names D6 rooms by old cells.
