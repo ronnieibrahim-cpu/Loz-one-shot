@@ -1,3 +1,46 @@
+## S196 — the Sunken Marsh redrawn
+
+Branch claude/oracle-tides-s196-keo2op, off main at 11bd5d7 (S195).
+
+### The human's choices this session
+- Shown the whole overworld again, boxy regions marked B-G (marked picture
+  made from shoot-region 0 0 16 9 plus a PIL overlay; Seasons' sheet is
+  assets/sheets/oracle-seasons-overworld-spring.png). Chose "another boxy
+  region" without naming one; took E, THE MARSH (0..2 x 6..9), the offered
+  default. Said YES to reshaping the walls along screen edges.
+
+### Built
+- 12 Marsh screens redrawn. Row 6 (Bog Head, Bog Stair, Reedbank) is a
+  raised bog shelf ending in a cliffDk band (shelf rows 6-7, marsh row 0;
+  jogs up at Bog Head 6..8,5 and Reedbank 6..7,6; foot outcrops on row 1
+  of the screens below). Bog Stair 3..6,6 are `_` ledges: one way DOWN into
+  Sanctum Path. The old shelf edge was a hedge plus `#""""#` (ledge UP, i.e.
+  climbable from the marsh) that check-overworld's flood treated as a wall;
+  the dredge gate now really holds (still seals exactly 0,0,6 and 0,2,6).
+- Every old crossing between Marsh screens kept (scratch seams diff), many
+  inner ones added; the only one removed was 0,0,6->S col 3, a sandbar into
+  a one-tile pocket. Shelf/Kell, Marsh/coast (col 9 of x=2) and the bomb
+  wall strip (0,2,7 cols 7-9) unchanged; row 9's south rows, Witch's dig
+  row, Marsh Corner rows 2-7, Sanctum door rows 0-3 cols 2-7 unchanged.
+- Interiors: dark grass, mud trails, groves, `!` mudflat pools (mud at LOW,
+  water above) with `~`/`=` cores. Trees sit on the room's fixed 2x2 lattice
+  (Room.drawQuads: block = even x, even y); a T anywhere in a block draws the
+  whole tree and makes its top row solid. Ten creatures moved off new trees
+  or water. tools/strands-baseline.json re-recorded (two 1-cell pockets
+  gone, nothing new).
+
+### Checks
+- Whole table green; check-playthrough 49/49, THE END, never died. The
+  robot's marsh steps (bomb 0,2,7 8,2; keyhole 0,1,8 4,3) were untouched.
+
+### NEXT (S197)
+- Ask the human. Candidates: boxy regions left B (Abyss shore 0..3 x 0..1),
+  C (Salt Pans' edges), D (Drowned Wood's edges), F (Dunes round Sandpiper
+  Row), G (coast strips incl. col 3 rows 6-9 beside the Marsh); the music
+  pass (rotation (e)); the picture guide's Secret caves missing Quarry
+  Hollow; docs/GUIDE.md's stale D6 rooms (tools/check-guide.mjs fails, old).
+- The guide's Marsh pictures (if any) now show the old layout.
+
 ## S195 — the Cliffs of Kell redrawn, and the quarryman's bigger bomb bag
 
 Branch claude/oracle-tides-s195-kl0giv, off main at c740506 (S194).

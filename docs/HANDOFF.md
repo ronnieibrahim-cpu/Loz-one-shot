@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Trees snap to a fixed 2x2 lattice per room, and a seam is two rows that
+  must agree (S196).** A `T` anywhere in an even-x, even-y block draws the
+  whole 32x32 tree and makes the block's top row solid, so `TT` one column
+  off kills the cell beside it — including a crossing. And check-overworld
+  needs both sides of every screen edge walkable at the same tides, so a
+  tree on row 0 of a screen needs a blocked cell on row 7 above. Lint the
+  lattice and diff the crossings before rendering.
+- **A north-facing ledge is a way UP (S196).** `"` is ledge 'up': you hop
+  north over it. The Marsh's shelf was "sealed" only because the flood
+  counts every ledge as a wall. A one-way edge belongs to the high side.
+
 - **Scattered single cells of a second floor read as static (S195).** Two
   grounds with no transition tiles between them (rockFloor / rockFloorDk)
   only work as large patches; one-cell `.` paths made the cliffs look like
