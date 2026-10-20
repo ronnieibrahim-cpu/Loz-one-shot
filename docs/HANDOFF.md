@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An overworld redraw re-times D3 (S198, after S192).** The robot's
+  `travel` legs change length, so Bogmaw and Gloomtide are met on a new
+  clock. Sweep BOTH together: the Bogmaw wait that wins most often (60-78)
+  left too little health for Gloomtide, and the right answer was a narrower
+  Bogmaw window that wins on more. `PATCH='i=[...]' node tools/route-prefix.mjs`
+  in parallel with xargs -P 6 runs ~150 variants in about ten minutes.
+- **A redraw can remove the last use of a verb (S198).** The Dunes' chasm
+  bands were the world's only hop gaps, and check-gates' hop probe stood on
+  one. Before deleting a tile type from a region, grep the world for others.
+
 - **A screen is a 5x4 grid of tree blocks; draw two screens as one canvas
   (S197).** Because a tree is a fixed 2x2 block, a seam opening is two rows
   wide wherever trees make the wall, and a rock or bush is the only way to

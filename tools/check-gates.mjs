@@ -404,12 +404,21 @@ check('...and only the boulder in front', bNext === 'boulder', bNext);
 // roster, and this checker's job here is to prove the HOP works, since nothing
 // else in the suite walks into a gap.
 //
-// Room 0,8,6: a one-tile chasm at col 1, rows 2-5, behind the west doorway.
-const CHASM = { rx: 11, ry: 6, gx: 1, gy: 3, tx: 0, ty: 3, dir: 'right' };
-const c0 = await setup({ ...CHASM, item: 'sword', level: 1 });
-check('the coral chasm is a chasm', c0 === 'chasm', c0);
+// S198: the Dunes' one-tile gaps were the last ones in the world, and the
+// human chose to leave them out of the redrawn sand. The hop is still base
+// moveset, so the probe draws its own gap — a chasm laid over open sand on
+// Sandbar Run (0,12,6) for this probe only — and walks into it.
+const CHASM = { rx: 12, ry: 6, gx: 5, gy: 2, tx: 3, ty: 2, dir: 'right' };
+await setup({ ...CHASM, item: 'sword', level: 1 });
+const c0 = await page.evaluate((b) => {
+  const g = window.__game;
+  g.room.setTile(b.gx, b.gy, 'chasm');
+  return g.room.tile(b.gx, b.gy, 1).name;
+}, CHASM);
+check('the probe\'s chasm is a chasm', c0 === 'chasm', c0);
 const cWalk = await walkAt('ArrowRight', false);
-check('walking into a one-tile chasm hops it', cWalk.tx >= 2, `ended ${JSON.stringify(cWalk)}`);
+check('walking into a one-tile chasm hops it', cWalk.tx >= 6, `ended ${JSON.stringify(cWalk)}`);
+await page.evaluate((b) => window.__game.room.clearTile(b.gx, b.gy), CHASM);
 
 // --- Hookshot / Zora's Flippers: NOT expressible as tiles ------------------
 // Both were built and both were reverted; docs/HANDOFF.md records the numbers.

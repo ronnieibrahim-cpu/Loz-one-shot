@@ -553,6 +553,10 @@ export const ROUTE = [
   // ------------------------------------------------------- overworld 0,8,8
   // The Grotto Mouth's own crab. Plain `fight` kills it in a few hundred
   // frames — no special handling needed, unlike the one below.
+  // S198: since the Dunes were redrawn `travel` arrives from the west on
+  // row 2, level with the door; down the west side first, or the walk to
+  // 4,6 steps onto the door and goes back into the Grotto.
+  ['goto', 1, 5, 300],
   ['goto', 4, 6, 500],
   ['exit', 'right', 400],
   ['goto', 4, 1, 800],
@@ -1241,7 +1245,11 @@ export const ROUTE = [
   // S182 (the Sanctum's cellar: the run arrives through the Sump, P6 and the
   // Undertow Cellar on 21/28): 44-50 all win (44 and 46 on 27/28, the rest
   // hurt), 20-43 and 56-120 lose. 46.
-  ['wait', 46],
+  // S198 (the Dunes redrawn: the run reaches here on a different clock):
+  // 46 loses; 60-78 all win on 9-12/28, which leaves too little for
+  // Gloomtide (he then wins only on 1-4/28). Swept with five option sets and
+  // nine entry steps: 42 is the best, 16/28 (38 and 46 either side are worse).
+  ['wait', 42],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
