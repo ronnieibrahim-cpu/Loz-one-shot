@@ -1,3 +1,52 @@
+## S197 — the Drowned Wood's edges redrawn
+
+Branch claude/oracle-tides-s197-7vjpxw, off main at 33a4c2c (S196).
+
+### The human's choices this session
+- Shown the whole overworld again (shoot-region 0 0 16 9, boxy regions
+  overlaid B-G beside Seasons' spring sheet). Chose "another boxy area",
+  D: THE DROWNED WOOD'S EDGES — cols 4-5 and 9-10, rows 3-6 (15 screens;
+  10,6 Dune Head is the Dunes', left for F).
+
+### Built
+- 15 wood screens redrawn, each pair of columns drawn as ONE canvas so ponds,
+  trails and tree masses run across inner seams (tools/oneshot/
+  splice-canvas.mjs; canvases are 2-letter groups because a tree is a fixed
+  2x2 block, so a 10x8 screen is a 5x4 grid of tree blocks). Mostly dark
+  grass, one connected mud trail (Kell entrance -> Shrine door -> clearing ->
+  Wick -> village), round ponds with deep cores. Inner seams reshaped (a
+  four-screen clearing where 4,4/5,4/4,5/5,5 meet; 10,4->10,5 open full
+  width); EVERY OUTER SEAM's crossing cells unchanged per tide (tools/
+  oneshot/dump-seams.mjs before/after). Kept: Shrine Mouth's door, cliff,
+  keyhole stand 4,3 and sign; The Gyre rows 0-5 (check-items parks there);
+  Wick at 5,5 2,2. Gyre rows 6-7 redrawn (a rock and bush at col 9 instead
+  of a tree, which left 8,5 a one-cell pocket).
+- NEW TILES woodPool ['grassDark','waterS','waterD'] and tideGrassDk
+  ['grassDark','grassDark','waterS'] (tiles-core); the wood legend's `1`
+  and `0` now mean them, so dry pools at LOW are the wood's floor instead of
+  squares of beach sand and pale lawn. Same passability as sandbar /
+  tideGrass. This also changes how the S191 middle wood looks at LOW.
+- Two signs made true: The Wading ("South: Tidewatch Village. North: the
+  Drowned Wood Shrine." — it said only a swimmer goes north, and you walk)
+  and Wood Gate ("North: the Salt Pans.", there is no gap). Eight creatures
+  and a rupee moved off new trees and water; Log Drift got a pool for its
+  anglerfry.
+
+### Checks
+- Whole table green; check-playthrough 49/49, THE END, never died, first
+  try (the robot crosses the wood by `travel` and re-planned). check-strands
+  baseline re-recorded: six 1-cell pockets gone, none new.
+
+### NEXT (S198)
+- Ask the human. Candidates: boxy regions left B (Abyss shore 0..3 x 0..1),
+  C (Salt Pans' edges 4..5 and 9..10 x 0..2 — borders the wood's top now),
+  F (Dunes round Sandpiper Row, incl. 10,6), G (coast strips); the music
+  pass (rotation (e)); the picture guide's Secret caves missing Quarry
+  Hollow; docs/GUIDE.md's stale D6 rooms (tools/check-guide.mjs fails, old).
+- Recipe for the next region: dump-seams before; draw canvases; splice;
+  dump-seams after (only inner seams may differ); check-placement; check-
+  strands; shoot-region; then the table.
+
 ## S196 — the Sunken Marsh redrawn
 
 Branch claude/oracle-tides-s196-keo2op, off main at 11bd5d7 (S195).
