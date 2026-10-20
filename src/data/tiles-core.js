@@ -2167,6 +2167,11 @@ export function installCoreTiles() {
     // The Cliffs of Kell's own (S195): a rock pool, dry stone at LOW where
     // `sandbar` left a square of beach on a grey shelf.
     rockPool: { tide: ['rockFloorDk', 'waterS', 'waterD'] },
+    // The Drowned Wood's own (S197): a pool that dries to the wood's dark
+    // grass, and a meadow that floods, where `sandbar` and `tideGrass` left
+    // squares of beach and pale lawn on the dark floor at LOW.
+    woodPool: { tide: ['grassDark', 'waterS', 'waterD'] },
+    tideGrassDk: { tide: ['grassDark', 'grassDark', 'waterS'] },
     tidePool: { tide: ['sandWet', 'waterS', 'waterD'] },
     shoal: { tide: ['sandRipple', 'sandWet', 'waterS'] },         // only floods at high
     seafloor: { tide: ['sandWet', 'waterD', 'waterD'] },          // exposed only at low

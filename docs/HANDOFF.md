@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A screen is a 5x4 grid of tree blocks; draw two screens as one canvas
+  (S197).** Because a tree is a fixed 2x2 block, a seam opening is two rows
+  wide wherever trees make the wall, and a rock or bush is the only way to
+  stop one row. Drawing a region screen by screen gave every edge the same
+  four-tile gap; drawing each pair of columns as one picture
+  (tools/oneshot/splice-canvas.mjs) let ponds and trails cross the seams.
+  And a texture of alternating `g.`/`.g` cells read as static, as S195
+  found with stone: one connected trail through plain grass reads as ground.
+
 - **Trees snap to a fixed 2x2 lattice per room, and a seam is two rows that
   must agree (S196).** A `T` anywhere in an even-x, even-y block draws the
   whole 32x32 tree and makes the block's top row solid, so `TT` one column
