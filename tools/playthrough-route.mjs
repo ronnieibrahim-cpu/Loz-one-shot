@@ -553,6 +553,10 @@ export const ROUTE = [
   // ------------------------------------------------------- overworld 0,8,8
   // The Grotto Mouth's own crab. Plain `fight` kills it in a few hundred
   // frames — no special handling needed, unlike the one below.
+  // S198: since the Dunes were redrawn `travel` arrives from the west on
+  // row 2, level with the door; down the west side first, or the walk to
+  // 4,6 steps onto the door and goes back into the Grotto.
+  ['goto', 1, 5, 300],
   ['goto', 4, 6, 500],
   ['exit', 'right', 400],
   ['goto', 4, 1, 800],
