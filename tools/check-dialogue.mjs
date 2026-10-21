@@ -42,8 +42,10 @@ installData();
 // The entity option fields that hold a dialogue id. Keep this in step with
 // `src/game/objects.js`; a field added there and not here is a reference this
 // tool cannot see.
-// `ask`/`busy`/`win`/`lose` are a race's `racer` (S155).
-const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'win', 'lose'];
+// `ask`/`busy`/`win`/`lose` are a race's `racer` (S155); `noRod`/`turn`/
+// `sour`/`winAgain` and the `next` list the buoy sailor's (S201).
+const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'win', 'lose',
+  'noRod', 'turn', 'sour', 'winAgain'];
 const DEAL_ID_FIELDS = ['text', 'blocked', 'after'];
 
 const referenced = new Map();   // id -> [where, ...]
@@ -62,6 +64,7 @@ for (const m of MAPS.values()) {
         referenced.get(id).push(`${m.id}/${key} ${kind}.${f}`);
       };
       for (const f of ID_FIELDS) note(opts[f], f);
+      for (const id of opts.next || []) note(id, 'next[]');
       for (const d of opts.deals || []) {
         for (const f of DEAL_ID_FIELDS) note(d[f], `deals[].${f}`);
       }

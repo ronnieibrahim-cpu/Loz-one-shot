@@ -6,7 +6,7 @@
 
 import { hash32 } from '../core/rng.js';
 import { newCharmSlots, CHARM_SLOTS } from './scrimshaw.js';
-import { REEFSEED_CAPACITY, BOTTLE_CAPACITY, BOMB_CAPACITY } from '../data/feel.js';
+import { REEFSEED_CAPACITY, REEFSEED_CAPACITY_BAG, BOTTLE_CAPACITY, BOMB_CAPACITY } from '../data/feel.js';
 import { OVERWORLD_W, widenOverworldX } from '../data/overworld.js';
 
 export const HEART_UNITS = 4;
@@ -151,7 +151,7 @@ export function giveItem(p, id, level = 1) {
       p.bombs = Math.max(p.bombs, p.maxBombs);
     }
     if (id === 'reefseed') {
-      p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
+      p.maxReefseeds = Math.max(p.maxReefseeds, reefseedBase(p));
       p.reefseeds = Math.max(p.reefseeds, p.maxReefseeds);
     }
     if (id === 'bottle') {
@@ -160,6 +160,15 @@ export function giveItem(p, id, level = 1) {
     }
   }
   return gained;
+}
+
+/**
+ * What the Reefseed satchel holds before any charm: the first satchel, or the
+ * buoy sailor's bigger bag (S201). The bag can be won before the Reefseed is
+ * found, so it is a flag the grant reads rather than a number set early.
+ */
+export function reefseedBase(p) {
+  return p.flags && p.flags.seedBag ? REEFSEED_CAPACITY_BAG : REEFSEED_CAPACITY;
 }
 
 export function flag(p, k) { return !!p.flags[k]; }

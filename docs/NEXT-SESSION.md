@@ -1,3 +1,77 @@
+## S201 — the guides caught up; the south shore redrawn; the bell-buoy echo
+
+Branch claude/oracle-tides-s201-sn05oe, off main at eb2445e (S200).
+
+### The human's choices this session
+- Shown the overworld again (B, C, G, S marked; Seasons' spring sheet beside)
+  and asked what next: "All of the above" — a mini-game, a region, the guides.
+- Of four mini-games pitched (crab round-up with the Bellows, bell-buoy echo
+  with the Rod, skipping stones, the rising-tide shell hunt again) chose THE
+  BELL-BUOY ECHO. Location: redraw region S (the south shore) and put the bay
+  in it (recommended, chosen). Prize: a BIGGER SEED BAG.
+- Queued for next session (S202): THE DIALOGUE PASS — townsfolk's lines read
+  long, cryptic and machine-written and often say nothing. Study Seasons' and
+  Ages' NPC text, rewrite ours shorter and meaningful (docs/prompts/NEXT-PROMPT.md).
+
+### The guides
+- docs/GUIDE.md chapter 16 (the Abyssal Keep) rewritten for the rebuilt Keep
+  (three floors, B1 = floor 0, seven keys/locks, every cast, haul and chunk
+  throw from the room claims); its other Keep references moved (Nereth's arena
+  d6/2,3,0, items, chartstone/map, heart pieces 20/21). check-guide 4/4 (it
+  failed since S189). tools/oneshot/list-rooms.mjs prints a map's rooms with
+  their claims.
+- Picture guide: Quarry Hollow and Lightkeeper's Cove in Secret caves (new
+  figures sc-quarry, sc-cove; static shot `ow-lit-0-1` with
+  prep.flags lighthouseLit), the dark lighthouse and the bell-buoy echo in Side
+  quests, the charm table fixed (Lamplighter's Wick in the cove, Wrackbone in
+  the Root Cellar, the shop's Ballast Heart; all 31 listed). docs/GUIDE.html is
+  the old hand-built page and was NOT touched (stale; the picture guide
+  supersedes it).
+
+### Region S redrawn (0,10..16,9)
+- One 70x8 canvas (splice-canvas). Five of seven screens hold fixtures, so it is
+  a restyle there and a real redraw on Sandbar Shallows (13) and Sunken Cove
+  (15): kept South Shallows' and World's Edge's Reefseed groves (cols 3-7 rows
+  2-6) and World's Edge cols 7-9, Wrecked Hull's salvage pool and Dov, Pale
+  Strand's bush stair (4,2), and DEEP BAR's ANCHOR GATE rows 5-6 (`anchorGate`
+  1,6 -> 8,6 and its blank at 8,6 — first overwritten, see HANDOFF). Every
+  outer seam unchanged; inner seams 14|15 and 15|16 changed (15|16 is row 2 only
+  now). check-strands baseline unchanged.
+- check-placement now flushes `pendingAdd` after entering each room: a room
+  script's onEnter pickup (Deep Bar's blank) was being counted in the NEXT room.
+
+### The bell-buoy echo (Sunken Cove 0,15,9)
+- Bay: open sea with a seafloor spit (cols 4-5, LOW only), a sandbar/sinkhole
+  channel at col 7 (rows 3-4 `1`, rows 5-6 `$`: waded only at MID), sandbars on
+  the west edge. Buoys (entity `buoy`, note 1..5): 1 at 1,4; 2 at 3,2; 3 at 3,6;
+  4 at 6,2; 5 at 8,6. Alone: 1, 2, 4 at LOW/MID; 3 only LOW (5,5); 5 only MID
+  (7,5); all five from 5,1 at HIGH (ROD_RANGE_HIGH). Positions found by search
+  (tools/oneshot/buoy-solve.mjs, scratch).
+- `buoyKeeper` (npc_fisher, 8,2): tunes [2,4,2], [1,4,3,2], [3,1,5,4,[1..5]].
+  Plays each note (chime at a pentatonic pitch, the buoy's bell gold and a
+  gold sparkle), then listens; a stroke's buoys are gathered in
+  `game.buoyStrike` and judged as one note; rings while swimming are ignored;
+  a wrong set sours (talk again to retry the round). First win: `seedBag`
+  (flag `seedBag`; progress.reefseedBase -> REEFSEED_CAPACITY_BAG 16; filled
+  if the Reefseed is owned, else waits for giveItem), later wins rupee20, flag
+  `buoysWon`. Without the Rod he says so. feel.js: BUOY_NOTE_FRAMES 44,
+  BUOY_LIT_FRAMES 32, BUOY_LEAD_IN_FRAMES 40, BUOY_BOB_FRAMES 32,
+  REEFSEED_CAPACITY_BAG 16 (all guessed). Buoy art drawn to match
+  (sprites-errands.js o_buoy0/1, palettes o_buoy / o_buoyLit).
+- NEW tools/check-buoys.mjs (25; in CLAUDE.md's table): the `buoyRoom` claims
+  struck in the engine and the game played to both prizes.
+- Lines kept short on purpose (the human's dialogue note).
+
+### Checks
+- Whole table: see the session's last commit message. check-playthrough
+  49/49, THE END, never died (first try; the robot's walk through Wrecked
+  Hull and Deep Bar re-planned).
+
+### NEXT (S202)
+- THE DIALOGUE PASS (queued by the human; see NEXT-PROMPT.md).
+- Still boxy: B (dark shore 0..3 x 0..1, the lighthouse), C (Salt Pans' edges),
+  G (coast strips by Tidewatch).
+
 ## S200 — the dark lighthouse (side quest)
 
 Branch claude/oracle-tides-music-done-pju84f, off main at cd5badc (S199).

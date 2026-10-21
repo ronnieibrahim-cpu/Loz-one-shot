@@ -2626,6 +2626,28 @@ export const GB_RENDER_SLICE_GAP_MS = 12;
  *  screen scroll and a text box. */
 export const RACE_SHORE_FRAMES = 600;
 
+// --- the bell-buoy echo (S201 side content) --------------------------------
+
+/** f — between two notes of the sailor's tune. guessed; slow enough to see
+ *  which buoy lit before the next one does. */
+export const BUOY_NOTE_FRAMES = 44;
+
+/** f — how long a buoy glows and its bell shows gold after it rings.
+ *  guessed; a little under one note of the tune. */
+export const BUOY_LIT_FRAMES = 32;
+
+/** f — the pause before the sailor plays a tune, after his line closes.
+ *  guessed. */
+export const BUOY_LEAD_IN_FRAMES = 40;
+
+/** f — one rise or fall of a buoy riding the swell (two pictures). guessed;
+ *  the cartridge's own floating things bob on about this beat. */
+export const BUOY_BOB_FRAMES = 32;
+
+/** how many Reefseeds the buoy sailor's bigger seed bag holds (S201).
+ *  guessed; twice the first satchel, like the quarryman's bomb bag. */
+export const REEFSEED_CAPACITY_BAG = 16;
+
 // --- Ice (the Abyssal Keep's Hold, S189) ----------------------------------
 //
 // Seasons' ice is a velocity model, not a walk: linkApplyTileTypes

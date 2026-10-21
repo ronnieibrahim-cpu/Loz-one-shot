@@ -1553,118 +1553,201 @@ and swim the wall.
 
 **Entrance:** `overworld/0,1,0`, tile (4,1).
 **Items:** Dredge Line (`dredge`) **and** the Mermaid Suit (`cleats` level 2).
-**Small Keys:** 4 — and the fourth is **buried**. **Boss:** `nereth`, in
-`d6/1,3,1`.
+**Small Keys:** 7, for 7 locked doors. **Boss:** `nereth`, in `d6/2,3,0`.
+**Floors:** three — the Keep (1F, floor 1), the upper floor (2F, floor 2), and
+**the Hold** (B1, floor 0) underneath the ground floor's east wing, a floor of
+Seasons' ice.
 **Tide theme:** the only one of the six that wants the water **on**.
+*"What the sea puts down, the line brings up."*
 
 The Keep is the last dungeon and its problem is what you already own. Since the
 Bogwater Sanctum, deep water has been a road — both Cleat modes cross it and no
 sea level is a wall. So a barrier here has to be a **pit**, the one thing neither
-mode crosses and no conch fills, and every crossing in the second half of this
-dungeon is a shaft.
+mode crosses and no conch fills.
 
-### Ground floor
+**The shafts.** Some holes in the Keep's floors are shafts down to the floor
+below. To you they are ordinary pits — fall in and you are put back on the edge
+(Seasons' rule in its own ice dungeon). But an **ice chunk** goes straight down
+a dry shaft and lands on the same cell one floor down; and when the sea fills a
+shaft, the **Dredge Line** cast across it reaches down and **hauls up**
+whatever lies beneath, into your hands. The sea rises through the Keep a floor
+at a time: **1F's shafts are open at LOW and flooded at MID and HIGH; 2F's are
+open until HIGH.** Chunks are lifted and thrown like pots and never break. A
+stair does nothing while you hold one, so a chunk changes floors only through a
+shaft. On the ice of the Hold you slide when you let go and turn slowly.
 
-**Keep Door** (`d6/0,3,7`). *"Everything the sea takes, it keeps. Everything it
+**Go to MID the moment you walk in**: several of the ground floor's squares are
+holes at LOW. Keep the **Resonance Rod** handy for the fights: ringing it locks
+every `darknut`'s armour for a moment, and that is when the sword gets through.
+
+### The Keep's key economy
+
+| Key | Where | How |
+|---|---|---|
+| 1 | Bone Cell `d6/1,4,6` | Clear the room |
+| 2 | Drain Court `d6/1,4,5` | Block onto the far plate, stand on the near one |
+| 3 | Black Kiln `d6/1,4,4` | Light four torches with the Kilnshell |
+| 4 | The Hauling Pit `d6/1,6,2` | Haul it off its pillar at **HIGH** |
+| 5 | The Sounding Floor `d6/0,5,3` (B1) | A chunk thrown down the Slack Water's east well at LOW lands on its plate |
+| 6 | The Rime Hall `d6/0,7,2` (B1) | A chunk thrown down the Tally Hall's north well at LOW lands on its plate |
+| 7 | The Drowned Sill `d6/2,4,3` | **Buried**: dredge it up at MID |
+
+The seven locked doors: Three Heights' north door (into Keep Lock), Keep Lock's
+east (Dredge Vault) and west (Keep Stair) doors, the Slack Water's north door
+and the Weighhouse's east door (the Weighhouse's two locks; open either
+first), and Keep Crossing's east and north doors upstairs. **Keep Crossing's
+east door first**: the key behind it opens the north one.
+
+### Ground floor (1F)
+
+**Keep Door** (`d6/1,3,7`). *"Everything the sea takes, it keeps. Everything it
 keeps, it puts down."*
 
-**Keep Landing** (`d6/0,3,6`). A `darknut` and a `keese`; clear them for a heart.
+**Keep Landing** (`d6/1,3,6`). A `darknut` and a `keese`; clear them for a heart.
 
-**Map Crypt** (`d6/0,2,6`), west — the **Dungeon Map**, and a `stalfos`.
+**Map Crypt** (`d6/1,2,6`), west — the **Dungeon Map**, and a `stalfos`.
 
-**Bone Cell** (`d6/0,4,6`), east. Two `stalfos` and a `darknut`. Ring the Rod to
-lock the darknut and go round behind it. Clear the room for **Small Key 1**.
+**Bone Cell** (`d6/1,4,6`), east. Two `stalfos` and a `darknut`. Ring the Rod to
+lock the darknut. Clear the room for **Small Key 1**.
 
-**Drowned Hall** (`d6/0,3,5`) — the hub. A `wizzrobe`, a `darknut`, a `siren`,
-and three torches at (1,1), (8,1) and (1,6). Set the **Kilnshell** beside each
-and light all three for a `rupee20` — money only, so it costs you nothing to
-skip. The mooring plate on the wall is the dungeon's thesis: *"The rings in this
-house were for hauling. They will haul anything that takes hold."*
+**Drowned Hall** (`d6/1,3,5`) — the hub. A `wizzrobe`, a `darknut`, a `siren`,
+and three torches at (1,1), (13,1) and (1,9). Light all three with the
+**Kilnshell** for a `rupee20` — money only.
 
-**Chartstone Crypt** (`d6/0,2,5`), west — a chest with the **Chartstone**.
+**Chartstone Crypt** (`d6/1,2,5`), west — the **Chartstone**, and a `darknut`.
 
-**Drain Court** (`d6/0,4,5`), east. Switches at (2,2) and (7,5), one block at
-(2,3), and a `beamos` at (6,2) that fires whenever you line up with it. Push the
-block onto the near switch and stand on the far one. **Small Key 2**.
+**Drain Court** (`d6/1,4,5`), east. Plates at (2,2) and (12,8), one block at
+(2,3), and a `beamos` at (11,2). Push the block **up** onto the far plate and
+stand on the near one. **Small Key 2**.
 
-**Three Heights** (`d6/0,3,4`). *"Three heights. One way through."* Locked —
-spend a key here.
+**Black Kiln** (`d6/1,4,4`). Four torches at (2,2), (12,2), (2,8) and (12,8),
+a `darknut` between them. Stand beside each, face it and set the Kilnshell
+down alight; take it back and do the next. All four: **Small Key 3**. Not
+optional — bring the Kilnshell into the Keep.
 
-**The Keep's key economy, stated once**, because it is the only dungeon with
-four of each and one of the keys is hidden: **four Small Keys, four locked
-doors, in a fixed order.**
+**West Crypt** (`d6/1,2,4`). A wheel at (5,4): blow it with the Bellows at MID
+for a fairy.
 
-| Key | Where | Opens |
-|---|---|---|
-| 1 | Bone Cell `d6/0,4,6` — clear the room | Three Heights `d6/0,3,4` |
-| 2 | Drain Court `d6/0,4,5` — one block, one switch you stand on | Keep Lock `d6/0,3,3` |
-| 3 | Black Kiln `d6/0,4,4` — four torches | Keep Crossing `d6/1,3,3`, the door at (7,5), **east** to The Drowned Sill |
-| 4 | **Buried** in The Drowned Sill `d6/1,4,3` — dredge it up | Keep Crossing `d6/1,3,3`, the door at (4,2), **north** to the boss door |
+**Three Heights** (`d6/1,3,4`). *"Three heights. One way through."* Spend a key
+on the north door. **Keep Lock** (`d6/1,3,3`) behind it: a `darknut` and a
+`stalfos`. Spend a key on its **east** door.
 
-The west way out of Keep Crossing, toward the Sunken Bar, is **not** locked — go
-that way freely. And note the dependency in rows 3 and 4: the key behind the east
-door is the key to the north door, so there is no point standing at the boss door
-wondering what you missed.
+**Dredge Vault** (`d6/1,4,3`). The big chest holds the **Dredge Line**.
 
-**West Crypt** (`d6/0,2,4`), west — a fairy and a `stalfos`.
-
-**Black Kiln** (`d6/0,4,4`), east. Four torches, at (2,2), (7,2), (2,5) and
-(7,5), with a `darknut` in the middle. Set the **Kilnshell** beside each in turn
-and light all four for **Small Key 3** — and unlike the Torch Cell, this one is
-not optional: the Keep needs all four of its keys for all four of its doors.
-Bring the Kilnshell into the Abyssal Keep with you.
-
-**Keep Lock** (`d6/0,3,3`). Locked. A `darknut` and a `wizzrobe` behind it.
-
-**Dredge Vault** (`d6/0,4,3`). The big chest holds the **Dredge Line**.
-
-**How it works.** *Cast* it into deep water and drag. Three separate behaviours,
-and all three matter:
+**How it works.** *Cast* it straight ahead and drag. Three behaviours:
 
 - **A fixed snag pulls you.** Cast at a mooring post and the Line hauls **you**
   to it, over anything — a pit included. This is the crossing verb.
 - **The floor is searchable.** Dragged back across silted ground it brings up
-  what the floor is holding: chests, keys, carryables, rupees, hearts — and
-  **blanks are common in dredged loot and rare everywhere else**, which is how
-  you supply the scrimshander rather than a way you might happen to.
+  what the floor is holding: keys, rupees, hearts, chunks — and **blanks**,
+  common in dredged loot and rare everywhere else.
 - **It drags aquatic enemies onto land**, where they flop and are helpless.
 
-Two guards define its geometry:
+Two guards define its geometry: **you cannot cast while swimming or on the
+seafloor** (the line is thrown from your heels, so the ground you brace on is
+the puzzle), and **the cast stops dead on solid tiles.** And the rule that makes
+the Keep the Keep: **the floor gives up what it is holding only while the sea is
+on it.** Dry crust is dragged straight over.
 
-1. **You cannot cast while swimming or on the seafloor.** A weighted line is
-   thrown from your heels. So the ground you brace on is a puzzle constraint.
-2. **The cast stops dead on solid tiles.** A lintel of the Keep's own masonry
-   standing across a shaft blocks the line until the sea covers it.
+**The Slack Water** (`d6/1,5,3`), east of the Vault — the teaching room. *"Dry
+pan, dry line. We only ever worked it with the water in."* The bell at (2,7)
+hums at the middle of the pan.
 
-And the rule that makes the Keep the Keep: **the floor gives up what it is
-holding only while the sea is on it.** A silted cache is searchable only at the
-level where its tile reads wet. Dry crust is dragged straight over. Every other
-item in this game asks you to take the water off something; the last one asks you
-to put it back.
+1. **Heart Piece 20:** stand at **(7,7), face up, at MID**, and cast.
+2. **The west well:** still at MID, stand at **(3,7), face down**, and cast down
+   the well at (3,8): a chunk comes up into your hands. From **(11,8), face
+   right**, throw it over the pit onto the **plate** at (13,8) in its nook. The
+   east shutter opens.
+3. **Key 5, from above:** go to **LOW**, cast at the chunk on the plate to bring
+   it back, stand at **(9,5), face down**, and throw it down the dry east well.
+   It lands on the Sounding Floor's plate in the Hold; the key it pays waits
+   there.
 
-**The Slack Water** (`d6/0,5,3`), east — the teaching room. A dredger's tally on
-the wall: *"Dry pan, dry line. We only ever worked it with the water in."* There
-is a bell at (8,6): ring the Rod and it leans toward (4,4). Stand at **(4,6),
-face up, at MID tide**, and cast. **Heart Piece 20** comes up out of the pan.
+**The Weighhouse** (`d6/1,5,2`), through the Slack Water's north door (locked).
+At **MID** stand at **(7,3), face down**, and cast down the well at (7,4): the
+chunk lying on the Plumb's Foot's ring below comes up. From **(3,8), face
+left**, throw it onto the plate at (1,8): the west shutter into **The Drowned
+Garden** (`d6/1,4,2`) opens. Cast left from (3,8) to catch the chunk back,
+carry it into the Garden and throw it from (9,5) so it lands at (12,5) — under
+the Crossed Shafts' first shaft, two floors up. It waits there.
 
-**Keep Stair** (`d6/0,2,3`), west of Keep Lock. The stairs at (8,1) go up.
+**The Draw** (`d6/1,6,3`), through the shutter. A `stalfos` pair.
 
-### Upper floor
+- **Cross:** stand at **(8,8), face right, at LOW**, cast at the post at (12,8),
+  land at (11,8). **Back:** from (11,8), face left, at LOW.
+- **Cache:** from **(12,2), face up, at MID** — a `rupee20` at (12,1).
+- The stair at (2,1) goes down to the Hold.
 
-**Upper Keep** (`d6/1,3,5`) → **Shade Cell** (`d6/1,2,5`) west: a `wizzrobe`, a
-`darknut` and a `keese`; clear them for a heart.
+**The Tally Hall** (`d6/1,7,2`), east of the Draw's far bank, two screens tall.
+*"Slack for the shelf. Flood for the bar. Half water for the floor."*
 
-**Colonnade of the Drowned** (`d6/1,2,4`), north. Four **grates** seal an alcove
-in this room, and the only thing in the game that retracts metal is the
-**Resonance Rod** — so this alcove is the one place in the Keep that asks whether
-you went and walked the Coastwise Chain. Ring the Rod and they go up. Inside, a
-chest at (4,2) holds **Coilrope** (`coilrope`) — the Dredge Line reaches one tile
-further. A MID charm, and at 6 Essences you will have two MID slots. A `beamos`
-watches the room from (2,5). The chandler's note beside it is a warning worth
-reading before you rely on the extra tile: *"More rope is more room. It is not
-more sea."*
+- **Up to the island:** from **(7,16), face up, at LOW** — land at (7,13).
+  **Over the bar:** from **(9,12), face up, at HIGH** — land at (9,9).
+  Back: (7,13) face down at LOW; (5,9) face down at HIGH.
+- **Cache:** from **(11,3), face up, at MID** — a **blank** at (11,2).
 
-**Tideshade Hall** (`d6/1,4,5`), east of Upper Keep. Two screens wide.
+**The Hauling Pit** (`d6/1,6,2`), west of the Tally Hall's top. **Key 4** sits on
+a pillar at (7,2): from **(7,6), face up, at HIGH**, the line hauls it home.
+A cache: from (3,8), face up, at MID, a `rupee20`. The plate at (12,8) opens the
+south door back down into the Draw.
+
+**The Angler Stews** (`d6/1,6,4`), optional: four `anglerfry`. Clear them for
+**Kelp Braid**. **The Silt Terraces** (`d6/1,7,4`), optional, two screens tall:
+from (7,8), face down, at LOW, cast to land at (7,11); back from (7,11) face up.
+**Pressure Scar** in the chest at (2,19); a **blank** from (12,15), face up, at
+MID.
+
+### The Hold (B1)
+
+**The Rime Landing** (`d6/0,6,3`), down the Draw's stair. Ice. A `stalfos`, a
+`zol` and a `keese`; three chunks against the north wall.
+
+**The Rime Hall** (`d6/0,7,2`), east, two screens tall. Lift a chunk from the
+bottom (2,20) and throw it onto the **dark ring** at (13,20). The plate across
+the chasm at (11,6) cannot be reached from this floor.
+
+**The Sounding Floor** (`d6/0,5,3`), west. The chunk you threw down the Slack
+Water's east well is on the islet's plate at (9,8), and **Small Key 5** lies at
+(4,3).
+
+**The Plumb's Foot** (`d6/0,5,2`), north. A chunk sits on the dark ring at
+(7,4), under the Weighhouse's well; if it is gone, throw another on. Two `gel`.
+
+**Key 6, from above.** Back up the stair. Cross the Draw at LOW and go into the
+Tally Hall. At **MID**, stand at **(13,19), face down**, and cast down the south
+well: the chunk from the Rime Hall's ring comes up. No one can carry a chunk over
+the Draw's pit, so set it down on the Draw's east bank at (11,9), cross back at
+LOW, and from **(8,9), face right, at LOW** catch it with the line. Carry it up
+through the Hauling Pit to the Tally Hall's north bank, and at **LOW** throw it
+from **(11,3), face down**, into the north well: it lands on the Rime Hall's
+plate. Go down once more for **Small Key 6** at (7,19).
+
+**The Weighhouse again.** At **MID** cast down its well for the chunk on the
+Plumb's Foot's ring, and throw it from (9,3) to land at (12,3), under the
+Crossed Shafts' far shaft. Then spend a key on Keep Lock's **west** door: the
+**Keep Stair** (`d6/1,2,3`) goes up from (12,2).
+
+### Upper floor (2F)
+
+**Upper Keep** (`d6/2,3,5`). **Shade Cell** (`d6/2,2,5`), west: a `wizzrobe`, a
+`darknut` and a `keese`; clear it for a heart.
+
+**Colonnade of the Drowned** (`d6/2,2,4`). A grate seals an alcove, and only the
+**Resonance Rod** retracts metal: ring it below the grate. The chest at (7,2)
+holds **Coilrope** (`coilrope`) — every cast reaches one tile further. A
+`beamos` at (2,8).
+
+**The west wing** (optional). **The Long Sounding** (`d6/2,0,5`), two screens
+wide, west of the Shade Cell: three crossings — from (23,5) face left at LOW,
+from (18,7) face left at HIGH, from (12,5) face left at LOW — to the chest at
+(3,5), **Hagstone**. **The Offering Pit** (`d6/2,0,4`): 100 rupees on a pillar
+hauled from (7,7) face up at HIGH; a `rupee20` from (3,7) face down at MID.
+**The Undertow Cell** (`d6/2,1,4`): clear it to open its north door to **The
+Deep Choir** (`d6/2,0,3`), two screens wide: cross from (18,5), face left, at
+MID; the chest at (7,8) holds **Neap Charm**, and 100 rupees are buried at
+(7,2) — from (7,5), face up, at HIGH.
+
+**Tideshade Hall** (`d6/2,4,5`), east of the Upper Keep, two screens each way.
 
 > **Miniboss: Tideshade** (20 HP). Nereth's shadow, thrown ahead of him, and it
 > is a preview of the boss's own trick. Phase 1: it chases at 0.7 and casts
@@ -1676,72 +1759,65 @@ more sea."*
 > — a third more shots to walk through for nothing. Killing it opens the door
 > above.
 
-**Mermaid Vault** (`d6/1,4,4`). The big chest holds the **Mermaid Suit**
+**Mermaid Vault** (`d6/2,4,4`). The big chest holds the **Mermaid Suit**
 (`cleats` level 2): **unlimited breath in sink mode, and you can push blocks
-underwater**. Everything you avoided doing on the seafloor is now free.
+underwater**.
+
+**The Two Arches** (`d6/2,5,4`), optional, down from the Vault: *"Both arches
+are shut. Only one of them is stone."* The **west** arch opens at HIGH (hold up
+the Lens to see which); two `rupee20` beyond.
 
 ### The crossings
 
-Four rooms, and each is a crossing at one sea and a cache at another. The order
-cannot be reversed: the stand drowns when you raise the sea to fish, and the bar
-comes back down when you lower it. Each solution below is exact — the tile to
-brace on, the direction to face, and the tide to do it at.
+**The Drowned Stand** (`d6/2,3,4`). *"Stand while you can stand. The ledge is
+only a ledge at low water."*
 
-**The Drowned Stand** (`d6/1,3,4`). Enter at (4,7). The coping reads *"Stand
-while you can stand. The ledge is only a ledge at low water."*
+- **Cross:** from **(8,7), face up, at LOW**, cast at the post at (8,3); land at
+  (8,4). **Back:** from (9,4), face down, at LOW.
+- **Cache:** from **(10,4), face up, at MID** — a `rupee20` at (10,2).
 
-- **Cross:** stand at **(5,6), face up, at LOW tide**, and cast at the post at
-  (5,2). The Line hauls you to land at (5,3).
-- **Come back:** from **(6,3), face down, at LOW**, cast at the post at (6,7) and
-  land at (6,6).
-- **Cache:** from **(7,3), face up, at MID tide**, cast at (7,1). A `rupee20` is
-  buried there.
+**Keep Crossing** (`d6/2,3,3`). A `darknut` and a `keese`, and the last two
+locked doors: north (7,0) to the boss, east (14,5). **West is open.**
 
-**Keep Crossing** (`d6/1,3,3`). A `darknut` and a `keese`, and the dungeon's
-last two locked doors — at (4,2) going north to the boss, and at (7,5) going
-east. **West, at (0,3), is open**: go there first.
+**The Sunken Bar** (`d6/2,2,3`). Crosses at **HIGH**: the bar of masonry across
+the shaft is stone until HIGH covers it.
 
-**The Sunken Bar** (`d6/1,2,3`). The Drowned Stand inside out — this one crosses
-at **HIGH**, because the bar of masonry across the shaft is stone until HIGH
-covers it. The tide board says so: *"The bar is down at slack and up at flood."*
+- **Cross:** from **(10,5), face left, at HIGH**, cast at the post at (6,5);
+  land at (7,5). **Back:** from (7,5), face right, at HIGH.
+- **Caches:** from **(5,3), face up, at MID** — **Heart Piece 21** at (5,2).
+  From **(6,3), face up, at MID** — a `rupee20` at (6,2).
 
-- **Cross:** stand at **(7,4), face left, at HIGH tide**, cast at the post at
-  (3,4), land at (4,4).
-- **Come back:** from **(4,4), face right, at HIGH**, cast at (8,4), land at
-  (7,4).
-- **Caches:** from **(2,2), face up, at MID**, cast at (2,1) — **Heart Piece
-  21**. From **(3,2), face up, at MID**, cast at (3,1) — a `rupee20`.
+**The Drowned Sill** (`d6/2,4,3`), through Keep Crossing's **east** door.
 
-**The Drowned Sill** (`d6/1,4,3`). Back to a LOW crossing.
+- **Cross:** from **(5,4), face right, at LOW**, cast at (9,4); land at (8,4).
+  **Back:** from (8,4), face left, at LOW.
+- **Cache:** from **(11,4), face up, at MID** — **Small Key 7**, buried at
+  (11,2). Wrecker's Eye makes it glimmer. A `siren` guards it: hit it while it is
+  up, or drag it out with the line.
 
-- **Cross:** stand at **(2,4), face right, at LOW**, cast at (6,4), land at
-  (5,4).
-- **Come back:** from **(5,4), face left, at LOW**, cast at (1,4), land at (2,4).
-- **Cache:** from **(8,4), face up, at MID**, cast at (8,2) — **Small Key 4**,
-  buried. This is the key that is easiest to walk past; Wrecker's Eye makes it
-  glimmer.
+**Keep Gate** (`d6/2,3,2`), through the **north** door. A `wizzrobe` and a fairy.
 
-There is a `siren` in this room at (7,5) — it surfaces to sing a shot and
-submerges to dodge, so hit it while it is up or drag it out with the Line.
+**The Crossed Shafts** (`d6/2,4,2`), east of Keep Gate, two screens wide. *"You
+cannot hold two seas. Nereth."* Each island has a **shaft** (a hole until HIGH)
+and a **plate** in a nook past a pit, and the shafts stand right over the two
+chunks you left in the Garden and the Weighhouse.
 
-**Keep Gate** (`d6/1,3,2`). The boss door, and a `wizzrobe`.
+1. Enter at (0,5). **At HIGH**, from **(9,3), face right**, cast at the post at
+   (13,3); land at (12,3).
+2. Still at HIGH, from **(12,4), face down**, cast down the shaft at (12,5): the
+   Garden's chunk comes up. From **(15,3), face up**, throw it onto the plate at
+   (15,1).
+3. Go to **LOW**. From **(16,6), face right**, cast at (20,6); land at (19,6).
+   The Brinehulk is waiting (below).
+4. Beaten, go to **HIGH**. From **(27,4), face up**, cast down the shaft at
+   (27,3) for the Weighhouse's chunk, and from **(23,3), face up**, throw it onto
+   the plate at (23,1). Both plates held: a chest rises at (21,5). Open it from
+   (21,6): the **Boss Key**. A fairy at (20,2).
+5. Back: (19,6) face left at LOW; (12,3) face left at HIGH.
 
-**The Crossed Shafts** (`d6/1,4,2`). Two screens wide, two crossings at two
-different seas, and the Boss Key at the end of them. The king's own inscription
-is on the wall, and it is the only signed one in the Keep: *"You cannot hold two
-seas. Nereth."*
+A `beamos` at (14,2) covers the first island and a `keese` the second.
 
-1. Enter at (0,4). **Stand at (4,2), face right, at HIGH tide**, cast at the post
-   at (8,2), land at (7,2).
-2. From (7,2), sound the conch down to **LOW**. **Stand at (11,5), face right, at
-   LOW**, cast at (15,5), land at (14,5).
-3. To come back: **(14,5) face left at LOW** returns you to (11,5); **(7,2) face
-   left at HIGH** returns you to (4,2).
-
-A `beamos` covers the first shaft from (9,1) and a `keese` the second. The chest
-at (17,3) holds the **Boss Key** — and it is guarded.
-
-> **Guardian: Brinehulk, the Salt Colossus** (60 HP), at (17,4). A golem of
+> **Guardian: Brinehulk, the Salt Colossus** (60 HP), at (25,5). A golem of
 > packed salt, and the single hardest thing in the game that is not Nereth. Water
 > dissolves it, and that cuts both ways:
 >
@@ -1763,15 +1839,16 @@ at (17,3) holds the **Boss Key** — and it is guarded.
 >   twelve-shard ring, and summons two `beetle`.
 >
 > **The choice is real.** At HIGH you get a permanently open target and a golem
-> half again as fast; at LOW you get a slow golem you cannot hurt. **MID is the
-> honest answer** for most players — a 70-frame window every four seconds against
-> an enemy moving at its base speed. Go HIGH only if you have the health to trade.
+> half again as fast; at LOW you get a slow golem you cannot hurt. You arrive at
+> LOW: sound the conch up as soon as you land, and again every time it dries the
+> room.
 
-Take the Boss Key back to Keep Gate.
+Take the Boss Key back to Keep Gate. **The Stairhead** (`d6/2,3,1`), north, has
+a last fairy; the boss door is in its north wall.
 
 ## 17. Nereth, the Drowned King
 
-**80 HP. Arena `d6/1,3,1`.** The `nerethIntro` scene runs first: Nereth explains
+**80 HP. Arena `d6/2,3,0`.** The `nerethIntro` scene runs first: Nereth explains
 that he did not break the Bell to be cruel, but because the sea was told what to
 do for a thousand years and never once asked.
 
@@ -1856,7 +1933,7 @@ And the remaining buried rupee caches, all of them Dredge Line work:
 | `overworld/0,3,6` Bluff Hollow (3,4) | `rupee20` — the sign says someone has been digging |
 | `overworld/0,3,9` South Bluff (3,4) | `rupee20` |
 | `overworld/0,16,8` Dune Corner (2,2) | `rupee20` |
-| `d6/1,3,4` The Drowned Stand (7,1) | `rupee20` |
+| `d6/2,3,4` The Drowned Stand (10,2) | `rupee20` |
 
 ---
 
@@ -1919,10 +1996,10 @@ Numbered in the order this walkthrough passes them.
     (`overworld/0,3,6`, just north-west of the village) has a short cliff face
     in its treeline with a crack in it at (4,1): **bomb it** and a cave mouth
     opens. Needs **bombs** and nothing else.
-20. **Heart Piece 20** — `d6/0,5,3`, The Slack Water, buried at (4,4). **Dredge
-    Line**, cast from (4,6) facing up at **MID**.
-21. **Heart Piece 21** — `d6/1,2,3`, The Sunken Bar, buried at (2,1). **Dredge
-    Line**, cast from (2,2) facing up at **MID**.
+20. **Heart Piece 20** — `d6/1,5,3`, The Slack Water, buried at (7,5). **Dredge
+    Line**, cast from (7,7) facing up at **MID**.
+21. **Heart Piece 21** — `d6/2,2,3`, The Sunken Bar, buried at (5,2). **Dredge
+    Line**, cast from (5,3) facing up at **MID**.
 22. **Heart Piece 22** — `overworld/0,0,0`, Drowned Shore, buried at (3,3).
     **Dredge Line**. Ring the Rod at the bell to be pointed at it.
 23. **Heart Piece 23** — the **tide-pool race**'s first prize, paid on the
@@ -1958,7 +2035,7 @@ Numbered in the order this walkthrough passes them.
 
 **Heart Containers**, one from each boss: `gohmaraq` in `d1/0,3,1`, `anemos` in
 `d2/1,3,1`, `gloomtide` in `d3/1,3,1`, `wyverna` in `d4/0,3,1`, `rootmaw` in
-`d5/0,3,1`, `nereth` in `d6/1,3,1`.
+`d5/0,3,1`, `nereth` in `d6/2,3,0`.
 
 ## The Coastwise Chain
 
@@ -2021,6 +2098,25 @@ numbered in the heart list above); they are all optional.
   sweeps the shore, and the cliff at (8,0) on **Sunless Flat**
   (`overworld/0,0,1`, the screen south of the lighthouse) is now a cave mouth:
   **Lightkeeper's Cove** (`cave18`) holds the Lamplighter's Wick and 100 rupees.
+- **The bell-buoy echo** (a **bigger seed bag**, 16 Reefseeds; 20 rupees on
+  later wins; S201). In **Sunken Cove** (`overworld/0,15,9`, the south shore
+  two screens east of Sandpiper Row's beach) a sailor plays tunes on five bell
+  buoys and you ring them back with the **Resonance Rod**. The Rod rings every
+  bell within three squares (six at HIGH), so the trick is where you stand.
+  Number the buoys 1-5 from the lowest note: 1 is the one off the west shore,
+  2 and 4 the two along the top of the bay, 3 the one at the foot of the
+  middle sandbar, 5 the one in the south-east corner.
+  - Alone at **LOW or MID**: buoy 1 from the west edge (0,4); buoy 2 from (2,1);
+    buoy 4 from (7,1).
+  - Alone only at **LOW**: buoy 3, from the tip of the sandbar spit (5,5).
+  - Alone only at **MID**: buoy 5, wading the little channel to (7,5).
+  - At **HIGH** the note carries twice as far: from the beach at (5,1) all
+    five ring at once.
+  Round 1 is 2-4-2. Round 2 is 1-4-3-2 (play it at LOW). Round 3 is 3-1-5-4
+  and then the whole bay: 3 and 1 at LOW, sound the conch to MID for 5 and 4,
+  and once more to HIGH for the last stroke. A wrong buoy, or two at once,
+  sours it; talk to him to try the round again. Rings made while swimming do
+  not count. Won before you have the Reefseed, the bag waits until you do.
 - **The salvage dive** (Heart Piece 14). Dov, at Wrecked Hull, lost five casks
   in the deep pool behind the wreck. Set the **Kelp-Soled Cleats** to walk the
   sea floor and bring up all five **in one breath** — surface early and they
@@ -2037,10 +2133,10 @@ numbered in the heart list above); they are all optional.
 | Brineglass Lens | `lens` | `d2/1,4,4`, big chest | *(deliberately absent)* | Phased enemies become hittable while held | Preview the next tide level before committing |
 | Bombs | `bombs` | `d2/1,5,3`, big chest | Blasts the Marsh and Cliffs gates open | Radius damage | Opens cracked walls |
 | Kilnshell | `kilnshell` | `cave2/0,0,0`, big chest | Burns drift-tangle — the one obstacle nothing else touches | Sets a doorway alight; a little damage per tick to anything standing on it | Lights torches; deep water puts it out, so route around it |
-| Kelp-Soled Cleats / Mermaid Suit | `cleats` | L1: `d3/1,3,3`. L2: `d6/1,4,4` | Swim the surface, or sink and walk the floor | Sink mode takes no knockback and ignores currents | Carry heavy things under surface-only barriers; L2 pushes blocks underwater |
+| Kelp-Soled Cleats / Mermaid Suit | `cleats` | L1: `d3/1,3,3`. L2: `d6/2,4,4` | Swim the surface, or sink and walk the floor | Sink mode takes no knockback and ignores currents | Carry heavy things under surface-only barriers; L2 pushes blocks underwater |
 | Squall Bellows | `bellows` | `d4/0,1,4`, big chest | Drives rafts and floating platforms | Shoves light enemies into pits and hazards | Spins wheels; holds the tide back one level in a held cone |
 | Reefseed | `reefseed` | `d5/0,1,4`, big chest | A LOW pillar is a step | Wall off a charging enemy; grow one under a flier | What it becomes depends on the tide when it *finishes growing* |
-| Dredge Line / Deepline | `dredge` | `d6/0,4,3`, big chest | A fixed snag hauls you across a pit | Drags an aquatic enemy onto land, helpless | The seafloor — and buried land — is searchable |
+| Dredge Line / Deepline | `dredge` | `d6/1,4,3`, big chest | A fixed snag hauls you across a pit | Drags an aquatic enemy onto land, helpless | The seafloor — and buried land — is searchable |
 | Resonance Rod | `rod` | Maku Tree, end of the Coastwise Chain, 1 Essence | Retracts grates; bells point the way | Locks armoured enemies rigid ~90 frames | Rings all metal and crystal at once; range doubles at HIGH |
 | Ferryman's Coin | `coin` | Village digger, `overworld/0,4,7`, 3 Essences | Teleport-swap with the thrown coin, priced in one tide change | An escape from a corner, or a boss re-entry | Get the coin somewhere you cannot walk, then change the tide |
 | Bottled Tide | `bottle` | Case: `cave3/0,0,0`. Refills: shop, 40 rupees | Opens a route where the conch is suppressed | Changes a boss arena mid-fight | The single step is the resource |
@@ -2048,9 +2144,9 @@ numbered in the heart list above); they are all optional.
 | Dungeon Map | `map` | One per dungeon | — | — | Reveals the layout |
 
 **Chartstone locations:** `d1/0,4,5`, `d2/0,4,4`, `d3/1,2,4`, `d4/0,2,5`,
-`d5/0,2,5`, `d6/0,2,5`.
+`d5/0,2,5`, `d6/1,2,5`.
 **Dungeon Map locations:** `d1/0,2,5`, `d2/0,2,5`, `d3/1,2,5`, `d4/0,2,6`,
-`d5/0,2,6`, `d6/0,2,6`.
+`d5/0,2,6`, `d6/1,2,6`.
 
 ## Charms and the scrimshander
 
@@ -2075,7 +2171,7 @@ if you want all thirty-one charms.
 | `wreckersEye` — chests and buried things glimmer | LOW | `d3/1,4,6` Bell Cell |
 | `bosunsWhistle` — the conch sounds faster | MID | `d4/0,5,5` Cliffside Cell |
 | `gillcarve` — unlimited seafloor breath | HIGH | `d5/0,4,5` Thicket Cell |
-| `coilrope` — the Dredge Line reaches one tile further | MID | `d6/1,2,4` Colonnade of the Drowned |
+| `coilrope` — the Dredge Line reaches one tile further | MID | `d6/2,2,4` Colonnade of the Drowned |
 | `ballastHeart` — knockback halved | MID | Village shop, 80 rupees |
 | `coilbone` — a moment's safety each time the tide changes | any | `palace/1,0,0` Pearl Vault (optional dungeon) |
 | `lamplighter` — dark rooms less dark | MID | `cave18` Lightkeeper's Cove, the dark lighthouse's prize (S200) |

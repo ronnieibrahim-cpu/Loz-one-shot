@@ -95,6 +95,10 @@ const report = await page.evaluate(async () => {
       // entity is reported as standing in. Entity-on-entity is a real fault
       // and is reported below, but it has to be between PLACED entities.
       g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
+      // What the room's own script put down on the way in (Deep Bar's blank)
+      // waits in pendingAdd until the next frame: flush it here, or it is
+      // counted against whichever room this loop enters next (S201).
+      g.flushPending();
       // A sunken plate (S143) stands on deep water by design: it is on the
       // bottom, and check-cleats.mjs proves the floor reaches it.
       const sunk = new Set((def.sunkPlates || []).map(p => p.join(',')));

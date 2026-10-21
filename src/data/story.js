@@ -144,6 +144,16 @@ export const DIALOGUE = {
   raceBusy: 'Why are you still here? RUN!',
   raceWin: 'Pip: You made it! Nobody beats the tide\nlike that. Here, you earned it.',
   raceLose: 'Too slow! The tide would have had you.\nCome back and try again.',
+  // The bell-buoy echo (S201), Sunken Cove. Short on purpose (the human's
+  // S201 note on our townsfolk running long and saying little).
+  buoyAsk: 'Each buoy rings its own note. I play a\ntune, you ring it back with your Rod.\nIt rings every bell near you, mind.',
+  buoyNoRod: 'These buoys play a tune if you strike\nthem. Come back with something metal\nthat rings.',
+  buoyTurn: 'Your turn. Ring it back.',
+  buoySour: 'Sour note! Talk to me and we will\ntry that one again.',
+  buoyNext1: 'Good ear. Now four notes.\nSome only reach at low tide.',
+  buoyNext2: 'Last one. It ends with the whole bay\nringing at once.',
+  buoyWin: 'That is the old tune, every note!\nHave my spare seed bag. It holds\ntwice as many.',
+  buoyWinAgain: 'Still in tune. Here, for your trouble.',
   raceGoalWait: 'Pip: The finish is here. Get my friend\non South Bluff to start the clock.',
   ledgerAsk: 'My ledger went out of the window in the\nlast big wind. Every debt on this coast\nis in that book. Try the South Sands.',
   ledgerThanks: 'My ledger! Wet, but legible. Wet is how\nit always is. Here: I owe you, and now\nthat is written down too.',
