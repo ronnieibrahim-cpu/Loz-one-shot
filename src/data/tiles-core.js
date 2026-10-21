@@ -1636,6 +1636,183 @@ function shutDoorway(bl, br) {
   return [half(0), half(W / 2)];
 }
 
+// THE LIGHTHOUSE ON THE DROWNED SHORE (S200, the dark lighthouse quest).
+// No Oracle game has a lighthouse, so it is DRAWN TO MATCH, a 2x4 block in the
+// register of the Keep's gate beside it: four colours a cell, a hard outline,
+// whitewash with Seasons' brick red banding and roof. The top two rows are the
+// lamp room and its gallery; their glass is index 1 of `lighthouseLamp`, and
+// once the lamp is lit (`lighthouseLit`, the story-gate machinery) every one
+// of those four cells becomes its `Lit` twin: the same art in a palette whose
+// glass is lamplight. The bottom row is the door, both halves of it, as a
+// dungeon portal's is.
+const LIGHTHOUSE_ART = {
+  lighthouse0L: `
+    ...............3
+    ..............32
+    ..............33
+    .............302
+    ............3022
+    ...........30222
+    ..........302222
+    .........3022222
+    ........30222222
+    .......302222222
+    ......3333333333
+    .......300000000
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110`,
+  lighthouse0R: `
+    3...............
+    23..............
+    33..............
+    223.............
+    2223............
+    22223...........
+    222223..........
+    2222223.........
+    22222223........
+    222222223.......
+    3333333333......
+    000000003.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......`,
+  lighthouse1L: `
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......300000000
+    .333333333333333
+    .330030030030030
+    .330030030030030
+    .333333333333333
+    .300000000000000
+    ..33333333333333`,
+  lighthouse1R: `
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    000000003.......
+    333333333333333.
+    030030030030033.
+    030030030030033.
+    333333333333333.
+    000000000000003.
+    33333333333333..`,
+  lighthouse2L: `
+    ......3000000000
+    ......3000000003
+    ......3000000003
+    ......3000000003
+    ......3000000000
+    ......3111111111
+    .....32222222222
+    .....32222222222
+    .....32222222222
+    .....32222222222
+    .....32222222222
+    .....31111111111
+    .....30000000000
+    .....30000000000
+    .....31111111111
+    .....32222222222`,
+  lighthouse2R: `
+    0000001113......
+    3000001113......
+    3000001113......
+    3000001113......
+    0000001113......
+    1111111113......
+    22222222223.....
+    22222222223.....
+    22222222223.....
+    22222222223.....
+    22222222223.....
+    11111111113.....
+    00000001113.....
+    00000001113.....
+    11111111113.....
+    22222222223.....`,
+  lighthouse3L: `
+    ....322222222222
+    ....322222222222
+    ....322222222222
+    ....311111111111
+    ....300000000011
+    ....300000000033
+    ....300000000333
+    ....300000013333
+    ....300000013333
+    ....300000013333
+    ...3000000013333
+    ...3000000013333
+    ...3000000013333
+    ...3000000013333
+    ...3000000013333
+    ...3333333333333`,
+  lighthouse3R: `
+    222222222223....
+    222222222223....
+    222222222223....
+    111111111113....
+    110000001113....
+    330000001113....
+    333000001113....
+    333310001113....
+    333310001113....
+    333310001113....
+    3333100001113...
+    3333100001113...
+    3333100001113...
+    3333100001113...
+    3333100001113...
+    3333333333333...`,
+};
+
+/** Tiledefs and the block registry for the lighthouse, unlit and lit. */
+function installLighthouse() {
+  registerPalettes({
+    lighthouseLamp: ['#f0f0e8', '#30406c', '#b83830', '#08080f'],
+    lighthouseLit: ['#f0f0e8', '#f8d848', '#b83830', '#08080f'],
+    lighthouseBody: ['#f0f0e8', '#a8b0c8', '#b83830', '#08080f'],
+  });
+  const defs = {}, tiles = [];
+  for (let y = 0; y < 4; y++) {
+    const row = [];
+    for (const s of ['L', 'R']) {
+      const name = `lighthouse${y}${s}`, art = LIGHTHOUSE_ART[name];
+      const door = y === 3;
+      defs[name] = {
+        art, pal: y < 2 ? 'lighthouseLamp' : 'lighthouseBody', underArt: 'sandRust',
+        flags: door ? F.SOLID | F.WARP : F.SOLID,
+        ...(door ? { mask: 0 } : {}),
+        ...(y < 2 ? { openFlag: 'lighthouseLit', openTo: name + 'Lit' } : {}),
+      };
+      if (y < 2) defs[name + 'Lit'] = { art, pal: 'lighthouseLit', underArt: 'sandRust', flags: F.SOLID };
+      row.push(name);
+    }
+    tiles.push(row);
+  }
+  registerTiles(defs);
+  registerBlocks({ lighthouse: { w: 2, h: 4, tiles } });
+  return defs;
+}
+
 /** Tiledefs and the block registry for the six dungeon doors. */
 function installDungeonPortals() {
   const pals = {}, defs = {}, blocks = {};
@@ -2498,6 +2675,12 @@ export function installCoreTiles() {
     caveMouthSand: { art: ART.caveMouth, pal: 'sandwet', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
     caveMouthCoral: { art: ART.caveMouth, pal: 'coraldk', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
     caveMouthAbyss: { art: ART.caveMouth, pal: 'abyss', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
+    // THE LIGHTHOUSE COVE (S200): plain dark cliff until the lamp on the
+    // Drowned Shore is lit, then the cave mouth its beam shows. A story gate
+    // (`openFlag`); the room lists the warp on this cell from the start, inert
+    // until the tile under it carries F.WARP, as the Palace Porch's hatch does.
+    cliffAbyssCove: { art: ART.cliff, pal: 'abyss', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' },
+      openFlag: 'lighthouseLit', openTo: 'caveMouthAbyss' },
     // A HOLLOW IS NOT A CAVE. Tidewatch's Maku Tree is entered through a gap in
     // the tree line at the top of the square — the room data has said so since
     // it was laid out — and it was drawn with the grey stone cave arch, so the
@@ -3345,6 +3528,7 @@ export function installCoreTiles() {
   Object.assign(TILE_DEFS, townDefs);
   Object.assign(TILE_DEFS, installMakuGrove());
   Object.assign(TILE_DEFS, installDungeonPortals());
+  Object.assign(TILE_DEFS, installLighthouse());
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark

@@ -860,7 +860,8 @@ export function installDungeonsB() {
         puzzle: {
           enemies: true,
           flag: 'd5_rootcellar',
-          reward: { spawn: [['chest', 7, 5, { charm: 'lamplighter' }]], say: 'Something settles in the middle of the room.' },
+          // The Wrackbone since S200: the Lamplighter's Wick went to the lighthouse.
+          reward: { spawn: [['chest', 7, 5, { charm: 'wrackbone' }]], say: 'Something settles in the middle of the room.' },
         },
       },
       '0,5,6': {

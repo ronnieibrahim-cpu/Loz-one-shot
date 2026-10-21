@@ -1759,6 +1759,11 @@ export const WHEEL_SPIN_BEAT = 4;
  *  dungeon animation group $18's first entry, which copies the flame tiles
  *  over the lit torch, TILEINDEX_LIT_TORCH $09), `.db $0f` per frame. */
 export const TORCH_FLAME_FRAMES = 15;
+/** f — one full turn of the lighthouse lamp on the Drowned Shore (S200): the
+ *  beam swings out to the east, back through the glass and out to the west in
+ *  this many frames. guessed: slow enough to read as a lamp turning rather
+ *  than a flicker; no Oracle game has a lighthouse to measure. */
+export const LIGHTHOUSE_TURN_FRAMES = 240;
 /** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
 export const RIPTIDE_ANIM_RATE = 4;
 /** f — how long the Sunken Palace's whirlpool holds each of its four frames.

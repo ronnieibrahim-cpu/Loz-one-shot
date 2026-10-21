@@ -150,6 +150,8 @@ export function installLegends() {
     'C': 'caveMouthAbyss',
     'D': 'block:portalD6',  // the Abyssal Keep's gate
     'V': 'keepSeal',        // story gate: the Maku Tree opens it at five Essences
+    'L': 'block:lighthouse', // the lighthouse on the Drowned Shore (S200)
+    'u': 'cliffAbyssCove',  // cliff until the lighthouse is lit, then a cave mouth
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');

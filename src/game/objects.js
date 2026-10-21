@@ -24,7 +24,7 @@ import {
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
-  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES,
+  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES,
   FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
@@ -486,6 +486,11 @@ export class NPC extends Entity {
     this.afterText = o.after || null;
     this.needEssences = o.needEssences || 0;
     this.needFlag = o.needFlag || null;
+    // `afterFlag` (S200): the second line waits on a flag, like `needFlag`,
+    // but the person is there from the start. `needFlag` on an entity also
+    // means "not in the room until the flag is set" (Game.spawnSpec), which
+    // is right for a reward and wrong for the lighthouse keeper.
+    this.afterFlag = o.afterFlag || null;
     this.dir = o.dir || 'down';
     this.wander = !!o.wander;
     this.rate = o.rate || 22;
@@ -510,8 +515,12 @@ export class NPC extends Entity {
   errandTalk(game) {
     const e = this.errand, p = game.progress;
     if (!e || flag(p, e.flag)) return false;
-    if (!flag(p, e.need)) {
-      game.startDialogue(e.ask, this);
+    // `need` may be a LIST (S200, the lighthouse keeper's three lamp parts):
+    // every flag in it, and `partial` is said once some but not all are in.
+    const needs = Array.isArray(e.need) ? e.need : [e.need];
+    const have = needs.filter(n => flag(p, n)).length;
+    if (have < needs.length) {
+      game.startDialogue(have && e.partial ? e.partial : e.ask, this);
       // `asked`: a flag the asking sets, for an errand whose object is only
       // there once somebody has said so (the salvage dive's cargo).
       if (e.asked && !flag(p, e.asked)) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
@@ -560,6 +569,7 @@ export class NPC extends Entity {
     const p = game.progress;
     if (p.essences.length < this.needEssences) return false;
     if (this.needFlag && !flag(p, this.needFlag)) return false;
+    if (this.afterFlag && !flag(p, this.afterFlag)) return false;
     return true;
   }
 
@@ -567,7 +577,7 @@ export class NPC extends Entity {
    *  an entity with no condition — which is right for a `Giver` with nothing
    *  to wait for, and wrong for choosing a line, since it would make an
    *  unconditional `after` the only line the NPC ever said. */
-  conditional() { return this.needEssences > 0 || !!this.needFlag; }
+  conditional() { return this.needEssences > 0 || !!this.needFlag || !!this.afterFlag; }
 
   interact(game, player) {
     if (this.faceOnTalk) {
@@ -1324,6 +1334,84 @@ export class Torch extends Entity {
   update() { this.frame++; }
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
+
+// THE LIGHTHOUSE LAMP (S200): Seasons' own torch on the lamp-room floor, and
+// a torch in every way but two. It takes fire only once the keeper has all
+// three of its parts back (`ready`, a flag his errand sets), so a Kilnshell
+// set beside it before then does nothing; and lighting it is for good — it
+// sets `flag`, which the Drowned Shore reads for the beam and the cove, and
+// which lights it again whenever the room is entered.
+export class Lamp extends Torch {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.ready = o.ready || 'lampReady';
+    this.litFlag = o.flag || 'lighthouseLit';
+    this.litLine = o.dialogue || null;
+    this.flammable = false;
+  }
+  update(game) {
+    this.frame++;
+    const p = game.progress;
+    if (flag(p, this.litFlag)) this.lit = true;
+    this.flammable = !this.lit && flag(p, this.ready);
+  }
+  ignite(game) {
+    if (!super.ignite(game)) return false;
+    setFlag(game.progress, this.litFlag);
+    game.audio.jingle('secret');
+    if (this.litLine) game.startDialogue(this.litLine);
+    return true;
+  }
+}
+defineEntity('lamp', (x, y, o) => new Lamp(x, y, o));
+
+// THE LIGHTHOUSE BEAM (S200): placed on the tower's lamp-room cell and drawn
+// only once `flag` (lighthouseLit) is set. Seen from the side, a turning lamp
+// throws its beam out to one side, swings it round through the glass, where
+// the glass flashes white, and out to the other. The beam is a CHECKERED
+// wedge of lamplight rather than a solid one: the Game Boy had no
+// transparency, and a checker over the ground is how its games drew light
+// lying on something. It touches nothing; it is `perched` in the lamp room,
+// so check-placement does not ask it to stand on the tower.
+const BEAM_LIGHT = '#f8f0b0';
+export class Beam extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.flag = o.flag || 'lighthouseLit';
+    this.harmless = true; this.shadow = false; this.perched = true;
+    this.grounded = false; this.flying = true;
+    this.hb = { x: 0, y: 0, w: 0, h: 0 };
+    this.depth = 40;
+    // The middle of the lamp glass, from the block's top-left cell.
+    this.ox = o.ox != null ? o.ox : 16; this.oy = o.oy != null ? o.oy : 18;
+    this.reach = o.reach || 128;
+    this.on = false;
+  }
+  update(game) {
+    this.frame++;
+    this.on = flag(game.progress, this.flag);
+  }
+  draw(ctx, game, ox, oy) {
+    if (!this.on) return;
+    const a = (this.frame % LIGHTHOUSE_TURN_FRAMES) / LIGHTHOUSE_TURN_FRAMES * Math.PI * 2;
+    const s = Math.sin(a), c = Math.cos(a);
+    const sx = ox + this.x + this.ox, sy = oy + this.y + this.oy;
+    ctx.fillStyle = BEAM_LIGHT;
+    // Facing the viewer, the whole glass flares.
+    if (c > 0.92) ctx.fillRect(sx - 6, sy - 5, 13, 11);
+    const len = Math.round(this.reach * Math.abs(s));
+    const dir = s >= 0 ? 1 : -1;
+    for (let i = 4; i < len; i++) {
+      const half = 1 + Math.floor(i / 10);
+      const px = sx + dir * i;
+      for (let dy = -half; dy <= half; dy++) {
+        const py = sy + dy;
+        if (((px + py) & 1) === 0) ctx.fillRect(px, py, 1, 1);
+      }
+    }
+  }
+}
+defineEntity('beam', (x, y, o) => new Beam(x, y, o));
 
 // --------------------------------------------------------------------------
 // Essence: the dungeon reward

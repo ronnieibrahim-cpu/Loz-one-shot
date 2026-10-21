@@ -652,4 +652,38 @@ export function installCaves() {
       },
     },
   });
+  // THE LIGHTHOUSE COVE (S200): the cave the lit lamp shows in the cliff of
+  // Sunless Flat (0,0,1), the dark lighthouse quest's prize. Its mouth is a
+  // story gate (`cliffAbyssCove`), so the room is only reachable once the
+  // keeper's lamp burns.
+  registerMap({
+    id: 'cave18',
+    kind: 'cave',
+    name: "Lightkeeper's Cove",
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#........#',
+          '#.o....o.#',
+          '#........#',
+          '#..p..p..#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 3, 3, { charm: 'lamplighter' }],
+          ['chest', 6, 3, { rupees: 100 }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
+      },
+    },
+  });
 }

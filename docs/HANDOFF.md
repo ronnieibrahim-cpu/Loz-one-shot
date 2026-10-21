@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A map id registered twice used to replace the first silently (S200).**
+  The lighthouse cove was written as `cave17`, Quarry Hollow's id, and the
+  quarryman's whole cave vanished with every checker but one green: only
+  check-dialogue noticed, because his two lines had nobody left to say them.
+  `registerMap` throws on a repeat now. Grep `id: 'cave` before naming one.
+- **`needFlag` on an entity is also a spawn condition (S200).** `Game.spawnSpec`
+  keeps it out of the room until the flag is set, so an NPC given
+  `needFlag` to pick its second line is simply not there. Use `afterFlag`.
+
 - **On the way into a room its entities are still pending (S199).**
   `spawnEntity` puts them in `game.pendingAdd`, flushed next frame, and
   `setRoom` calls `updateMusic` before that: a check of `game.entities`

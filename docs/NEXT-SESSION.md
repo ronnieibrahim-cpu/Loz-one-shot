@@ -1,3 +1,77 @@
+## S200 — the dark lighthouse (side quest)
+
+Branch claude/oracle-tides-music-done-pju84f, off main at cd5badc (S199).
+
+### The human's choices this session
+- Shown the overworld again (B, C, G, S marked, Seasons' spring map beside)
+  and offered region redraws, side content, or the guides. Chose SIDE
+  CONTENT, and of three ideas (a rising-tide shell hunt mini-game, bottled
+  letters, a dark lighthouse) chose THE DARK LIGHTHOUSE only.
+- Approved its shape: a keeper in a tower in the dark shore's corner; three
+  lamp parts, each found by a different item at a different sea; lit with the
+  Kilnshell; the beam sweeps the shore and shows a hidden cove (no dimming of
+  the shore: Seasons never darkens outdoors); the prize the Lamplighter's
+  Wick. That charm was already the Root Cellar's (d5/0,7,6) reward: the
+  human chose to MOVE it and put the WRACKBONE (the one charm no chest held)
+  in the Root Cellar.
+
+### Built
+- THE TOWER: `lighthouse` block (2x4, src/data/tiles-core.js
+  installLighthouse), DRAWN TO MATCH (no Oracle game has a lighthouse; Ages'
+  Black Tower and Seasons' Subrosia sheet were looked at and are not one):
+  whitewash, brick-red bands and roof, outlined, 4 colours a cell. Its top
+  four cells are story gates (`openFlag: lighthouseLit`) that become `...Lit`
+  twins, the same art with yellow glass. Legend `L` in `abyss`. On Drowned
+  Shore (0,0,0) cols 1-2 rows 1-4; door warps at (1,4)/(2,4). The bell moved
+  to 8,5 and a keese to 5,2.
+- THE BEAM: entity `beam` (objects.js Beam), checkered pale wedge thrown
+  east/west as the lamp turns, the glass flaring when it faces you;
+  LIGHTHOUSE_TURN_FRAMES = 240 in feel.js (guessed). `perched` so
+  check-placement skips it.
+- INSIDE (`lighthouse` map, overworld.js, two floors, legend `house`): the
+  keeper (npc_elder) with an errand whose `need` is a LIST (NPC.errandTalk
+  now takes one; `partial` is the line once some are in) and `prize: null`,
+  `flag: lampReady`. His second line waits on `afterFlag: lighthouseLit` —
+  a new NPC option, because `needFlag` on an entity also keeps it out of the
+  room until the flag is set (Game.spawnSpec), which hid him. check-dialogue
+  drives afterFlag. Upstairs the `lamp` entity (objects.js Lamp, a Torch that
+  takes fire only once `lampReady`, and lit sets `lighthouseLit` and says
+  `lampLit`).
+- THE PARTS (errands.js, icons hand-drawn in sprites-errands.js): `e_lens`
+  buried at East Strand (0,9,8) 4,3 on a sandbar, dredged at MID/HIGH (dry at
+  LOW); its room script re-spawns it if dredged and left. `e_mirror` spawned
+  when World's Edge's (0,16,9) existing grove snarl at 5,6 is cut (room
+  script on the `tile` event, and on entry if the snarl is already gone).
+  `e_oil` on East Crust (0,10,0) at 5,3 in a one-cell hollow of `9` salt
+  wall, reached by swimming at HIGH only; the moblin moved to 3,3.
+- THE COVE: `cliffAbyssCove` (legend `u` in abyss) at Sunless Flat (0,0,1)
+  8,0, a cliff that becomes `caveMouthAbyss` once lit; warp to `cave18`,
+  Lightkeeper's Cove: chests with `lamplighter` and 100 rupees.
+- registerMap now THROWS on a repeated id: the cove was first `cave17`,
+  which is Quarry Hollow, and silently replaced it (see HANDOFF).
+- docs/GUIDE.md: the lighthouse in Side quests, both rooms in Caves, the
+  Wick and the Wrackbone in the charm table.
+
+### Checks
+- check-side: 10 new lighthouse scenarios (each part, each refusal, the
+  keeper with two of three, the lamp before fitting, the cove shut while
+  dark, and the whole chain to the Wick). Whole table green;
+  check-playthrough 49/49, THE END, never died (the robot never visits any
+  screen that changed, first try).
+
+### NEXT (S201)
+- Rotation (f) is half done: the ORIGINAL MINI-GAME is still to propose
+  (the human passed on the rising-tide shell hunt this time; offer it again
+  with others). Other candidates as before: boxy regions B (Abyss shore,
+  where the lighthouse now stands), C (Salt Pans' edges; the oil hollow is on
+  East Crust), G (coast strips), S (south shore row 9 cols 10..16); the
+  picture guide's Secret caves missing Quarry Hollow (and now the
+  Lightkeeper's Cove); docs/GUIDE.md's stale D6 rooms (check-guide fails,
+  old).
+- If region B is redrawn: keep the lighthouse block at 1..2 x 1..4 with its
+  door row clear below, the beam entity on its 1,1 cell, and Sunless Flat's
+  8,0 cove cell with walkable 8,1 under it.
+
 ## S199 — the music pass: nine new tunes
 
 Branch claude/oracle-tides-s199-u5neii, off main at f36274d (S198).

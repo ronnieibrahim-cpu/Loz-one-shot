@@ -80,7 +80,7 @@ export const REQUIRED_SPRITES = {
 
   // ---- pack: sprites-errands.js -----------------------------------------
   // The townsfolk's errands' objects (S155). Hand-drawn for the same reason.
-  errands: ['i_e_ledger', 'i_e_kite', 'i_e_jar', 'i_e_salvage'],
+  errands: ['i_e_ledger', 'i_e_kite', 'i_e_jar', 'i_e_salvage', 'i_e_lens', 'i_e_mirror', 'i_e_oil'],
 
   // ---- pack: sprites-keys.js (GENERATED, tools/rip-keys.py) -----------
   // The six dungeon keys: the Oracle cartridges' key-item shapes, our keys.

@@ -3132,6 +3132,11 @@ const WHEEL_SPIN_BEAT = 4;
  *  dungeon animation group $18's first entry, which copies the flame tiles
  *  over the lit torch, TILEINDEX_LIT_TORCH $09), `.db $0f` per frame. */
 const TORCH_FLAME_FRAMES = 15;
+/** f — one full turn of the lighthouse lamp on the Drowned Shore (S200): the
+ *  beam swings out to the east, back through the glass and out to the west in
+ *  this many frames. guessed: slow enough to read as a lamp turning rather
+ *  than a flicker; no Oracle game has a lighthouse to measure. */
+const LIGHTHOUSE_TURN_FRAMES = 240;
 /** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
 const RIPTIDE_ANIM_RATE = 4;
 /** f — how long the Sunken Palace's whirlpool holds each of its four frames.
@@ -4286,6 +4291,7 @@ __exports["TORRENT_PUSH"] = TORRENT_PUSH;
 __exports["TORRENT_ANIM_RATE"] = TORRENT_ANIM_RATE;
 __exports["WHEEL_SPIN_BEAT"] = WHEEL_SPIN_BEAT;
 __exports["TORCH_FLAME_FRAMES"] = TORCH_FLAME_FRAMES;
+__exports["LIGHTHOUSE_TURN_FRAMES"] = LIGHTHOUSE_TURN_FRAMES;
 __exports["RIPTIDE_ANIM_RATE"] = RIPTIDE_ANIM_RATE;
 __exports["WHIRLPOOL_ANIM_RATE"] = WHIRLPOOL_ANIM_RATE;
 __exports["SINK_ENTER_FRAMES"] = SINK_ENTER_FRAMES;
@@ -12127,6 +12133,11 @@ const MAPS = new Map();
 
 function registerMap(def) {
   const kind = def.kind || 'overworld';
+  // AN ID IS REGISTERED ONCE (S200). A second map under an id that is taken
+  // used to replace the first without a word: the lighthouse cove was first
+  // written as `cave17`, which is Quarry Hollow, and the quarryman's cave
+  // simply ceased to exist — found only because his lines turned up orphaned.
+  if (MAPS.has(def.id)) throw new Error(`map '${def.id}' is registered twice`);
   // Room size is validated HERE, at registration, not lazily when a room is
   // first walked into. A bad size in a room nobody visits during a test run
   // would otherwise sit in the data until a player found it.
@@ -13834,21 +13845,30 @@ const rooms = {
     legend: 'abyss', music: 'abyss',
     map: [
       '**********',
-      '*11111111*',
-      '*1..GG..g1',
-      '*1g?gg?ggg',
-      '*1..GG..gg',
+      '*LL111111*',
+      '*LL.GG..g1',
+      '*LL?gg?ggg',
+      '*LL.GG..gg',
       '*gg____ggg',
       '*11gggggg#',
       '***1ggg###',
     ],
+    // THE DARK LIGHTHOUSE (S200, side content): the tower in the corner of
+    // the world, its door the two cells of its bottom row. Its keeper wants
+    // the three parts of the lamp the sea took (src/data/errands.js); lit,
+    // the lamp's beam sweeps this shore and shows the cove below.
+    warps: [
+      { x: 1, y: 4, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 2, y: 4, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['keese', 2, 3], ['keese', 6, 4],
+      ['keese', 5, 2], ['keese', 6, 4],
+      ['beam', 1, 1, { flag: 'lighthouseLit' }],
       // The Rod's overworld verb: struck here, the bell points at the hole
       // with the Heart Piece in it. A direction, never a distance — it
       // narrows the search and does not finish it. And the note carries twice
       // as far at HIGH tide, which is what makes this shore worth revisiting.
-      ['bell', 1, 5, { points: [3, 3], say: 'The bell leans toward the near hole.' }],
+      ['bell', 8, 5, { points: [3, 3], say: 'The bell leans toward the near hole.' }],
     ],
     // `abyssHole` is deep at every tide level. Nothing on this shore has ever
     // been able to reach what is in them; the Dredge Line reads the same
@@ -14015,18 +14035,22 @@ const rooms = {
   '0,10,0': {
     name: 'East Crust',
     legend: 'salt', music: 'salt',
+    // THE LIGHTHOUSE OIL (S200): a cask the high sea set down in a one-cell
+    // hollow of salt wall (`9`, a pan wall the high sea covers). Nothing
+    // walks in; at HIGH the walls are under water and Link swims over them.
     map: [
       '**********',
       '*11111111*',
-      '1g5o..o.1*',
-      'gg5.....1*',
-      'gg5o..o.g#',
+      '1g5o.9o.1*',
+      'gg5.9.9.1*',
+      'gg5o.9o.g#',
       'gg55GGGGg#',
       '#gg5ggggg#',
       '###51gg###',
     ],
     entities: [
-      ['moblin', 4, 3],
+      ['moblin', 3, 3],
+      ['pickup', 5, 3, { kind: 'e_oil' }],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -14104,8 +14128,14 @@ const rooms = {
   '0,0,1': {
     name: 'Sunless Flat',
     legend: 'abyss', music: 'abyss',
+    // The lighthouse cove (S200): the cliff at 8,0 is a cave mouth once the
+    // lamp on the Drowned Shore is lit (`cliffAbyssCove`, a story gate). The
+    // warp is listed from the start and is inert until then.
+    warps: [
+      { x: 8, y: 0, to: { map: 'cave18', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     map: [
-      '***1ggg###',
+      '***1ggg#u#',
       '*11....gg#',
       '*1.?..?.gg',
       '*1g....ggg',
@@ -15939,6 +15969,18 @@ const rooms = {
   '0,9,8': {
     name: 'East Strand',
     legend: 'coast', music: 'overworld',
+    // THE LIGHTHOUSE LENS (S200, the dark lighthouse quest) lies under the
+    // sandbar at 4,3: dry sand at LOW, so the Dredge Line finds it only once
+    // the sea covers that floor. Dredged and left lying, it comes back on the
+    // next visit until it is carried off.
+    buried: [[4, 3, 'e_lens']],
+    script: {
+      onEnter(game) {
+        if (game.progress.flags.foundLens) return;
+        if (!game.progress.secrets['overworld:0,9,8:dredge:4,3']) return;
+        game.spawnPickup(64, 48, 'e_lens', { grabDelay: 14 });
+      },
+    },
     map: [
       'TToggggoTT',
       'Tfg..11ggT',
@@ -16454,6 +16496,21 @@ const rooms = {
     entities: [
       ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
     ],
+    // THE LIGHTHOUSE REFLECTOR (S200) is caught in the snarl at 5,6, which
+    // only a blade standing on the grove's stake reaches: cut it and the
+    // reflector is lying in the water where it was.
+    script: {
+      onEnter(game) {
+        if (game.progress.flags.foundMirror) return;
+        if (!game.progress.doors['overworld:0,16,9:5,6']) return;
+        game.spawnPickup(80, 96, 'e_mirror', { grabDelay: 14 });
+      },
+      onEvent(game, name, data) {
+        if (name !== 'tile' || !data || data.tx !== 5 || data.ty !== 6) return;
+        if (game.progress.flags.foundMirror) return;
+        game.spawnPickup(80, 96, 'e_mirror', { grabDelay: 14 });
+      },
+    },
   },
 
   // ---- S157/S158: the widened columns -----------------------------------
@@ -17603,6 +17660,60 @@ function installHouses() {
       ],
     }],
   ], { rx: 4, ry: 8, px: 48, py: 88 });
+
+  // THE LIGHTHOUSE (S200, the dark lighthouse quest). Two floors: the
+  // keeper's room at the foot of the stair, and the lamp room above it. He
+  // asks for the lamp's three parts (`need` is a list, NPC.errandTalk), and
+  // with all three back his errand sets `lampReady`; then the lamp takes the
+  // Kilnshell's fire (`Lamp`, src/game/objects.js), and lit it sets
+  // `lighthouseLit` for good.
+  registerMap({
+    id: 'lighthouse', kind: 'interior', name: 'The Lighthouse',
+    w: 1, h: 1, floors: 2,
+    legend: 'house', music: 'house', tint: 'cave', scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '#.......p#',
+          '#.......p#',
+          '#........#',
+          '#........#',
+          '#.......p#',
+          '#/...o...#',
+          '##########',
+        ],
+        entities: [
+          ['npc', 4, 2, { sprite: 'npc_elder', dialogue: 'keeperLight', after: 'keeperAfter', afterFlag: 'lighthouseLit',
+            errand: { need: ['foundLens', 'foundMirror', 'foundOil'], prize: null, flag: 'lampReady',
+              ask: 'keeperAsk', partial: 'keeperPartial', thanks: 'keeperThanks' } }],
+        ],
+        warps: [
+          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
+          { x: 1, y: 6, to: { map: 'lighthouse', floor: 1, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
+        ],
+      },
+      '1,0,0': {
+        map: [
+          '##########',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#/.......#',
+          '##########',
+        ],
+        entities: [
+          ['lamp', 4.5, 3, { dialogue: 'lampLit' }],
+          ['sign', 7, 5, { text: 'THE LAMP\nOil, lens, glass. Then fire.' }],
+        ],
+        warps: [
+          { x: 1, y: 6, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
+        ],
+      },
+    },
+  });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
@@ -22100,6 +22211,22 @@ const ERRANDS = {
     name: 'Jar of Bog Water', icon: 'i_e_jar', flag: 'foundBogWater',
     got: 'A jar left filling at the bog spring.\nThe water in it is the colour of tea.',
   },
+  // THE DARK LIGHTHOUSE (S200): the three parts of the lamp on the Drowned
+  // Shore, which the sea took the night it went strange. The keeper there
+  // asks for all three (`need` is a list); each is found by a different item
+  // at a different sea, and the lamp is then lit with the Kilnshell.
+  lens: {
+    name: 'Great Lens', icon: 'i_e_lens', flag: 'foundLens',
+    got: 'The lighthouse lens, whole! The sea\nhas only polished it.',
+  },
+  mirror: {
+    name: 'Brass Reflector', icon: 'i_e_mirror', flag: 'foundMirror',
+    got: 'The lamp\'s reflector, cut out of the\nkelp. Still bright under the green.',
+  },
+  oil: {
+    name: 'Lamp Oil', icon: 'i_e_oil', flag: 'foundOil',
+    got: 'A stoppered flask of lamp oil. The\nhigh sea set it down in the salt.',
+  },
 };
 __exports["ERRANDS"] = ERRANDS;
 });
@@ -23008,7 +23135,7 @@ const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
@@ -23468,6 +23595,11 @@ class NPC extends Entity {
     this.afterText = o.after || null;
     this.needEssences = o.needEssences || 0;
     this.needFlag = o.needFlag || null;
+    // `afterFlag` (S200): the second line waits on a flag, like `needFlag`,
+    // but the person is there from the start. `needFlag` on an entity also
+    // means "not in the room until the flag is set" (Game.spawnSpec), which
+    // is right for a reward and wrong for the lighthouse keeper.
+    this.afterFlag = o.afterFlag || null;
     this.dir = o.dir || 'down';
     this.wander = !!o.wander;
     this.rate = o.rate || 22;
@@ -23492,8 +23624,12 @@ class NPC extends Entity {
   errandTalk(game) {
     const e = this.errand, p = game.progress;
     if (!e || flag(p, e.flag)) return false;
-    if (!flag(p, e.need)) {
-      game.startDialogue(e.ask, this);
+    // `need` may be a LIST (S200, the lighthouse keeper's three lamp parts):
+    // every flag in it, and `partial` is said once some but not all are in.
+    const needs = Array.isArray(e.need) ? e.need : [e.need];
+    const have = needs.filter(n => flag(p, n)).length;
+    if (have < needs.length) {
+      game.startDialogue(have && e.partial ? e.partial : e.ask, this);
       // `asked`: a flag the asking sets, for an errand whose object is only
       // there once somebody has said so (the salvage dive's cargo).
       if (e.asked && !flag(p, e.asked)) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
@@ -23542,6 +23678,7 @@ class NPC extends Entity {
     const p = game.progress;
     if (p.essences.length < this.needEssences) return false;
     if (this.needFlag && !flag(p, this.needFlag)) return false;
+    if (this.afterFlag && !flag(p, this.afterFlag)) return false;
     return true;
   }
 
@@ -23549,7 +23686,7 @@ class NPC extends Entity {
    *  an entity with no condition — which is right for a `Giver` with nothing
    *  to wait for, and wrong for choosing a line, since it would make an
    *  unconditional `after` the only line the NPC ever said. */
-  conditional() { return this.needEssences > 0 || !!this.needFlag; }
+  conditional() { return this.needEssences > 0 || !!this.needFlag || !!this.afterFlag; }
 
   interact(game, player) {
     if (this.faceOnTalk) {
@@ -24307,6 +24444,84 @@ class Torch extends Entity {
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
 
+// THE LIGHTHOUSE LAMP (S200): Seasons' own torch on the lamp-room floor, and
+// a torch in every way but two. It takes fire only once the keeper has all
+// three of its parts back (`ready`, a flag his errand sets), so a Kilnshell
+// set beside it before then does nothing; and lighting it is for good — it
+// sets `flag`, which the Drowned Shore reads for the beam and the cove, and
+// which lights it again whenever the room is entered.
+class Lamp extends Torch {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.ready = o.ready || 'lampReady';
+    this.litFlag = o.flag || 'lighthouseLit';
+    this.litLine = o.dialogue || null;
+    this.flammable = false;
+  }
+  update(game) {
+    this.frame++;
+    const p = game.progress;
+    if (flag(p, this.litFlag)) this.lit = true;
+    this.flammable = !this.lit && flag(p, this.ready);
+  }
+  ignite(game) {
+    if (!super.ignite(game)) return false;
+    setFlag(game.progress, this.litFlag);
+    game.audio.jingle('secret');
+    if (this.litLine) game.startDialogue(this.litLine);
+    return true;
+  }
+}
+defineEntity('lamp', (x, y, o) => new Lamp(x, y, o));
+
+// THE LIGHTHOUSE BEAM (S200): placed on the tower's lamp-room cell and drawn
+// only once `flag` (lighthouseLit) is set. Seen from the side, a turning lamp
+// throws its beam out to one side, swings it round through the glass, where
+// the glass flashes white, and out to the other. The beam is a CHECKERED
+// wedge of lamplight rather than a solid one: the Game Boy had no
+// transparency, and a checker over the ground is how its games drew light
+// lying on something. It touches nothing; it is `perched` in the lamp room,
+// so check-placement does not ask it to stand on the tower.
+const BEAM_LIGHT = '#f8f0b0';
+class Beam extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.flag = o.flag || 'lighthouseLit';
+    this.harmless = true; this.shadow = false; this.perched = true;
+    this.grounded = false; this.flying = true;
+    this.hb = { x: 0, y: 0, w: 0, h: 0 };
+    this.depth = 40;
+    // The middle of the lamp glass, from the block's top-left cell.
+    this.ox = o.ox != null ? o.ox : 16; this.oy = o.oy != null ? o.oy : 18;
+    this.reach = o.reach || 128;
+    this.on = false;
+  }
+  update(game) {
+    this.frame++;
+    this.on = flag(game.progress, this.flag);
+  }
+  draw(ctx, game, ox, oy) {
+    if (!this.on) return;
+    const a = (this.frame % LIGHTHOUSE_TURN_FRAMES) / LIGHTHOUSE_TURN_FRAMES * Math.PI * 2;
+    const s = Math.sin(a), c = Math.cos(a);
+    const sx = ox + this.x + this.ox, sy = oy + this.y + this.oy;
+    ctx.fillStyle = BEAM_LIGHT;
+    // Facing the viewer, the whole glass flares.
+    if (c > 0.92) ctx.fillRect(sx - 6, sy - 5, 13, 11);
+    const len = Math.round(this.reach * Math.abs(s));
+    const dir = s >= 0 ? 1 : -1;
+    for (let i = 4; i < len; i++) {
+      const half = 1 + Math.floor(i / 10);
+      const px = sx + dir * i;
+      for (let dy = -half; dy <= half; dy++) {
+        const py = sy + dy;
+        if (((px + py) & 1) === 0) ctx.fillRect(px, py, 1, 1);
+      }
+    }
+  }
+}
+defineEntity('beam', (x, y, o) => new Beam(x, y, o));
+
 // --------------------------------------------------------------------------
 // Essence: the dungeon reward
 // --------------------------------------------------------------------------
@@ -24770,6 +24985,8 @@ __exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
 __exports["FloorSwitch"] = FloorSwitch;
 __exports["Torch"] = Torch;
+__exports["Lamp"] = Lamp;
+__exports["Beam"] = Beam;
 __exports["Essence"] = Essence;
 __exports["Raft"] = Raft;
 __exports["Float"] = Float;
@@ -52091,6 +52308,183 @@ function shutDoorway(bl, br) {
   return [half(0), half(W / 2)];
 }
 
+// THE LIGHTHOUSE ON THE DROWNED SHORE (S200, the dark lighthouse quest).
+// No Oracle game has a lighthouse, so it is DRAWN TO MATCH, a 2x4 block in the
+// register of the Keep's gate beside it: four colours a cell, a hard outline,
+// whitewash with Seasons' brick red banding and roof. The top two rows are the
+// lamp room and its gallery; their glass is index 1 of `lighthouseLamp`, and
+// once the lamp is lit (`lighthouseLit`, the story-gate machinery) every one
+// of those four cells becomes its `Lit` twin: the same art in a palette whose
+// glass is lamplight. The bottom row is the door, both halves of it, as a
+// dungeon portal's is.
+const LIGHTHOUSE_ART = {
+  lighthouse0L: `
+    ...............3
+    ..............32
+    ..............33
+    .............302
+    ............3022
+    ...........30222
+    ..........302222
+    .........3022222
+    ........30222222
+    .......302222222
+    ......3333333333
+    .......300000000
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110`,
+  lighthouse0R: `
+    3...............
+    23..............
+    33..............
+    223.............
+    2223............
+    22223...........
+    222223..........
+    2222223.........
+    22222223........
+    222222223.......
+    3333333333......
+    000000003.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......`,
+  lighthouse1L: `
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......301111110
+    .......300000000
+    .333333333333333
+    .330030030030030
+    .330030030030030
+    .333333333333333
+    .300000000000000
+    ..33333333333333`,
+  lighthouse1R: `
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    011111103.......
+    000000003.......
+    333333333333333.
+    030030030030033.
+    030030030030033.
+    333333333333333.
+    000000000000003.
+    33333333333333..`,
+  lighthouse2L: `
+    ......3000000000
+    ......3000000003
+    ......3000000003
+    ......3000000003
+    ......3000000000
+    ......3111111111
+    .....32222222222
+    .....32222222222
+    .....32222222222
+    .....32222222222
+    .....32222222222
+    .....31111111111
+    .....30000000000
+    .....30000000000
+    .....31111111111
+    .....32222222222`,
+  lighthouse2R: `
+    0000001113......
+    3000001113......
+    3000001113......
+    3000001113......
+    0000001113......
+    1111111113......
+    22222222223.....
+    22222222223.....
+    22222222223.....
+    22222222223.....
+    22222222223.....
+    11111111113.....
+    00000001113.....
+    00000001113.....
+    11111111113.....
+    22222222223.....`,
+  lighthouse3L: `
+    ....322222222222
+    ....322222222222
+    ....322222222222
+    ....311111111111
+    ....300000000011
+    ....300000000033
+    ....300000000333
+    ....300000013333
+    ....300000013333
+    ....300000013333
+    ...3000000013333
+    ...3000000013333
+    ...3000000013333
+    ...3000000013333
+    ...3000000013333
+    ...3333333333333`,
+  lighthouse3R: `
+    222222222223....
+    222222222223....
+    222222222223....
+    111111111113....
+    110000001113....
+    330000001113....
+    333000001113....
+    333310001113....
+    333310001113....
+    333310001113....
+    3333100001113...
+    3333100001113...
+    3333100001113...
+    3333100001113...
+    3333100001113...
+    3333333333333...`,
+};
+
+/** Tiledefs and the block registry for the lighthouse, unlit and lit. */
+function installLighthouse() {
+  registerPalettes({
+    lighthouseLamp: ['#f0f0e8', '#30406c', '#b83830', '#08080f'],
+    lighthouseLit: ['#f0f0e8', '#f8d848', '#b83830', '#08080f'],
+    lighthouseBody: ['#f0f0e8', '#a8b0c8', '#b83830', '#08080f'],
+  });
+  const defs = {}, tiles = [];
+  for (let y = 0; y < 4; y++) {
+    const row = [];
+    for (const s of ['L', 'R']) {
+      const name = `lighthouse${y}${s}`, art = LIGHTHOUSE_ART[name];
+      const door = y === 3;
+      defs[name] = {
+        art, pal: y < 2 ? 'lighthouseLamp' : 'lighthouseBody', underArt: 'sandRust',
+        flags: door ? F.SOLID | F.WARP : F.SOLID,
+        ...(door ? { mask: 0 } : {}),
+        ...(y < 2 ? { openFlag: 'lighthouseLit', openTo: name + 'Lit' } : {}),
+      };
+      if (y < 2) defs[name + 'Lit'] = { art, pal: 'lighthouseLit', underArt: 'sandRust', flags: F.SOLID };
+      row.push(name);
+    }
+    tiles.push(row);
+  }
+  registerTiles(defs);
+  registerBlocks({ lighthouse: { w: 2, h: 4, tiles } });
+  return defs;
+}
+
 /** Tiledefs and the block registry for the six dungeon doors. */
 function installDungeonPortals() {
   const pals = {}, defs = {}, blocks = {};
@@ -52953,6 +53347,12 @@ function installCoreTiles() {
     caveMouthSand: { art: ART.caveMouth, pal: 'sandwet', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
     caveMouthCoral: { art: ART.caveMouth, pal: 'coraldk', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
     caveMouthAbyss: { art: ART.caveMouth, pal: 'abyss', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
+    // THE LIGHTHOUSE COVE (S200): plain dark cliff until the lamp on the
+    // Drowned Shore is lit, then the cave mouth its beam shows. A story gate
+    // (`openFlag`); the room lists the warp on this cell from the start, inert
+    // until the tile under it carries F.WARP, as the Palace Porch's hatch does.
+    cliffAbyssCove: { art: ART.cliff, pal: 'abyss', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' },
+      openFlag: 'lighthouseLit', openTo: 'caveMouthAbyss' },
     // A HOLLOW IS NOT A CAVE. Tidewatch's Maku Tree is entered through a gap in
     // the tree line at the top of the square — the room data has said so since
     // it was laid out — and it was drawn with the grey stone cave arch, so the
@@ -53800,6 +54200,7 @@ function installCoreTiles() {
   Object.assign(TILE_DEFS, townDefs);
   Object.assign(TILE_DEFS, installMakuGrove());
   Object.assign(TILE_DEFS, installDungeonPortals());
+  Object.assign(TILE_DEFS, installLighthouse());
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark
@@ -54048,6 +54449,8 @@ function installLegends() {
     'C': 'caveMouthAbyss',
     'D': 'block:portalD6',  // the Abyssal Keep's gate
     'V': 'keepSeal',        // story gate: the Maku Tree opens it at five Essences
+    'L': 'block:lighthouse', // the lighthouse on the Drowned Shore (S200)
+    'u': 'cliffAbyssCove',  // cliff until the lighthouse is lit, then a cave mouth
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');
@@ -55056,6 +55459,40 @@ function installCaves() {
           ['chest', 4, 3, { charm: 'drownedLantern' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 16, ry: 2, px: 112, py: 80, dir: 'down' } }],
+      },
+    },
+  });
+  // THE LIGHTHOUSE COVE (S200): the cave the lit lamp shows in the cliff of
+  // Sunless Flat (0,0,1), the dark lighthouse quest's prize. Its mouth is a
+  // story gate (`cliffAbyssCove`), so the room is only reachable once the
+  // keeper's lamp burns.
+  registerMap({
+    id: 'cave18',
+    kind: 'cave',
+    name: "Lightkeeper's Cove",
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    tint: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        noTide: true,
+        map: [
+          '##########',
+          '##########',
+          '#........#',
+          '#.o....o.#',
+          '#........#',
+          '#..p..p..#',
+          '#....C...#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 3, 3, { charm: 'lamplighter' }],
+          ['chest', 6, 3, { rupees: 100 }],
+        ],
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
       },
     },
   });
@@ -62231,7 +62668,8 @@ function installDungeonsB() {
         puzzle: {
           enemies: true,
           flag: 'd5_rootcellar',
-          reward: { spawn: [['chest', 7, 5, { charm: 'lamplighter' }]], say: 'Something settles in the middle of the room.' },
+          // The Wrackbone since S200: the Lamplighter's Wick went to the lighthouse.
+          reward: { spawn: [['chest', 7, 5, { charm: 'wrackbone' }]], say: 'Something settles in the middle of the room.' },
         },
       },
       '0,5,6': {
@@ -65587,6 +66025,23 @@ const DIALOGUE = {
   kiteThanks: 'My kite! Mum said it was gone for good.\nI found this under the doorstep in the\nflood. You have it. I have a kite.',
   bogwaterAsk: 'My husband left a jar filling at the spring\nup at Bog Head and came home without it.\nNets last twice as long tanned in bog water.',
   bogwaterThanks: 'That is the colour! Tea-brown. The nets\ngo in tonight. Take this for the walk;\nthe bog is no place to go for nothing.',
+  // THE DARK LIGHTHOUSE (S200). The keeper asks for the lamp's three parts
+  // (`keeperAsk`, then `keeperPartial` once one is home), takes them all at
+  // once (`keeperThanks`), and sends you up the stair with fire.
+  keeperAsk: [
+    'This light kept ships off the Abyss for\nforty years. The night the sea went\nstrange, a wave came up the stair and\ntook the lamp to pieces.',
+    'The great lens is in the shallows of the\nEast Strand, past your village. A line\nwould drag it up where the sea covers it.',
+    'The reflector is in the kelp at the\nWorld\'s Edge, too far out for a blade.\nYou would want ground under you there.',
+    'And the oil: the high sea set the cask\nin a salt-walled hollow on the East\nCrust of the pans. Bring me all three.',
+  ],
+  keeperPartial: 'Good, good. Lens, reflector and oil:\nall three, and the light can burn again.\nI will not fit one without the others.',
+  keeperThanks: [
+    'Lens, reflector, oil... all of it, and\nnot a crack in the glass.',
+    'There. She is fitted. My hands shake too\nmuch for the flame now. Take the stair\nand bring a fire to her yourself.',
+  ],
+  keeperLight: 'The lamp is fitted and waiting. Take a\nflame up the stair. That shell of yours\nburns; I have seen it.',
+  keeperAfter: 'Look at her sweep! When the beam crosses\nthe cliff south of here, you can see a\ncove I had forgotten. It is yours.',
+  lampLit: 'The lamp catches! Light pours out over\nthe Drowned Shore and away to sea.',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
 
   // ---- second states -----------------------------------------------------
@@ -74142,6 +74597,59 @@ const ERRAND_ART = {
     ................
     ................
     ................` },
+  // THE LIGHTHOUSE'S THREE PARTS (S200): the great glass lens in its brass
+  // ring, the polished reflector that stands behind it, and a flask of lamp oil.
+  i_e_lens: { pal: 'i_e_lens', art: `
+    ................
+    .....333333.....
+    ...3322222233...
+    ..322111111223..
+    ..321100011123..
+    .32110001111123.
+    .32100011111123.
+    .32100111111123.
+    .32101111111123.
+    .32111111111123.
+    ..321111111123..
+    ..322111111223..
+    ...3322222233...
+    .....333333.....
+    ................
+    ................` },
+  i_e_mirror: { pal: 'i_e_mirror', art: `
+    ................
+    ....33333333....
+    ...3222222223...
+    ..322000000223..
+    ..320001111023..
+    ..320011111023..
+    ..320111111123..
+    ..320111111123..
+    ..320111111123..
+    ..322111111223..
+    ...3222222223...
+    ....33333333....
+    ......3223......
+    .....322223.....
+    .....333333.....
+    ................` },
+  i_e_oil: { pal: 'i_e_oil', art: `
+    ................
+    ......3333......
+    ......3223......
+    .....332233.....
+    ....31111113....
+    ...3100111113...
+    ..310011111113..
+    ..310111111123..
+    ..311111111123..
+    ..311111111223..
+    ..311111112223..
+    ...3111122223...
+    ....33333333....
+    ................
+    ................
+    ................` },
 };
 
 const ERRAND_PALETTES = {
@@ -74153,6 +74661,12 @@ const ERRAND_PALETTES = {
   i_e_jar: ['#f0e0b8', '#b08050', '#5a3a20', '#000000'],
   // Sea-grey staves and green-black iron hoops: it has been down a while.
   i_e_salvage: ['#e0d8c0', '#9a8a68', '#384838', '#000000'],
+  // Clear glass with a white glint, in a brass ring.
+  i_e_lens: ['#ffffff', '#a8d8f0', '#c09038', '#000000'],
+  // A polished gold face, darker brass round its rim and on its stand.
+  i_e_mirror: ['#fff8e0', '#f0c850', '#9a6020', '#000000'],
+  // Amber oil in a stoppered flask.
+  i_e_oil: ['#f8f0a0', '#d89820', '#805010', '#000000'],
 };
 
 function installErrandSprites() {
