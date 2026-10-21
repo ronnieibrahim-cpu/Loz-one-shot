@@ -66,7 +66,7 @@ for (const m of MAPS.values()) {
         for (const f of DEAL_ID_FIELDS) note(d[f], `deals[].${f}`);
       }
       // A townsperson's errand (S155) speaks two lines of its own.
-      if (opts.errand) { note(opts.errand.ask, 'errand.ask'); note(opts.errand.thanks, 'errand.thanks'); }
+      if (opts.errand) { note(opts.errand.ask, 'errand.ask'); note(opts.errand.thanks, 'errand.thanks'); if (opts.errand.partial) note(opts.errand.partial, 'errand.partial'); }
     }
   }
 }
@@ -101,7 +101,7 @@ for (const m of MAPS.values()) {
       if (!o || !o.after) continue;
       const npc = new NPC(0, 0, o);
       npc.faceOnTalk = false;
-      const run = (essences) => {
+      const run = (essences, flagged) => {
         const said = [];
         // A key-giver's story beat (S154) is its own scene, heard once; the lines
         // proved here are what the person says every other time.
@@ -110,6 +110,8 @@ for (const m of MAPS.values()) {
         const flags = {};
         if (o.beat) flags[o.beat.flag] = true;
         if (o.errand) flags[o.errand.flag] = true;
+        // `afterFlag` (S200): the second line waits on a flag as well.
+        if (flagged && o.afterFlag) flags[o.afterFlag] = true;
         npc.interact({ progress: { essences, flags },
           startDialogue: id => said.push(id) },
           { cx: 0, cy: 0 });
@@ -122,8 +124,8 @@ for (const m of MAPS.values()) {
           `the ONLY line it ever says and '${o.dialogue}' would be unreachable`);
         continue;
       }
-      const before = run(new Array(Math.max(0, need - 1)).fill(1));
-      const after = run(new Array(need).fill(1));
+      const before = run(new Array(Math.max(0, need - 1)).fill(1), false);
+      const after = run(new Array(need).fill(1), true);
       if (before !== o.dialogue) {
         problems.push(`${where}: below its threshold it says '${before}', not '${o.dialogue}'`);
       }

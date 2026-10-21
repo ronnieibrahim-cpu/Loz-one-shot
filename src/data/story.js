@@ -151,6 +151,23 @@ export const DIALOGUE = {
   kiteThanks: 'My kite! Mum said it was gone for good.\nI found this under the doorstep in the\nflood. You have it. I have a kite.',
   bogwaterAsk: 'My husband left a jar filling at the spring\nup at Bog Head and came home without it.\nNets last twice as long tanned in bog water.',
   bogwaterThanks: 'That is the colour! Tea-brown. The nets\ngo in tonight. Take this for the walk;\nthe bog is no place to go for nothing.',
+  // THE DARK LIGHTHOUSE (S200). The keeper asks for the lamp's three parts
+  // (`keeperAsk`, then `keeperPartial` once one is home), takes them all at
+  // once (`keeperThanks`), and sends you up the stair with fire.
+  keeperAsk: [
+    'This light kept ships off the Abyss for\nforty years. The night the sea went\nstrange, a wave came up the stair and\ntook the lamp to pieces.',
+    'The great lens is in the shallows of the\nEast Strand, past your village. A line\nwould drag it up where the sea covers it.',
+    'The reflector is in the kelp at the\nWorld\'s Edge, too far out for a blade.\nYou would want ground under you there.',
+    'And the oil: the high sea set the cask\nin a salt-walled hollow on the East\nCrust of the pans. Bring me all three.',
+  ],
+  keeperPartial: 'Good, good. Lens, reflector and oil:\nall three, and the light can burn again.\nI will not fit one without the others.',
+  keeperThanks: [
+    'Lens, reflector, oil... all of it, and\nnot a crack in the glass.',
+    'There. She is fitted. My hands shake too\nmuch for the flame now. Take the stair\nand bring a fire to her yourself.',
+  ],
+  keeperLight: 'The lamp is fitted and waiting. Take a\nflame up the stair. That shell of yours\nburns; I have seen it.',
+  keeperAfter: 'Look at her sweep! When the beam crosses\nthe cliff south of here, you can see a\ncove I had forgotten. It is yours.',
+  lampLit: 'The lamp catches! Light pours out over\nthe Drowned Shore and away to sea.',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
 
   // ---- second states -----------------------------------------------------

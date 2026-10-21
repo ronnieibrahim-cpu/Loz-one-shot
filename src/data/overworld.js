@@ -86,21 +86,30 @@ const rooms = {
     legend: 'abyss', music: 'abyss',
     map: [
       '**********',
-      '*11111111*',
-      '*1..GG..g1',
-      '*1g?gg?ggg',
-      '*1..GG..gg',
+      '*LL111111*',
+      '*LL.GG..g1',
+      '*LL?gg?ggg',
+      '*LL.GG..gg',
       '*gg____ggg',
       '*11gggggg#',
       '***1ggg###',
     ],
+    // THE DARK LIGHTHOUSE (S200, side content): the tower in the corner of
+    // the world, its door the two cells of its bottom row. Its keeper wants
+    // the three parts of the lamp the sea took (src/data/errands.js); lit,
+    // the lamp's beam sweeps this shore and shows the cove below.
+    warps: [
+      { x: 1, y: 4, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 2, y: 4, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['keese', 2, 3], ['keese', 6, 4],
+      ['keese', 5, 2], ['keese', 6, 4],
+      ['beam', 1, 1, { flag: 'lighthouseLit' }],
       // The Rod's overworld verb: struck here, the bell points at the hole
       // with the Heart Piece in it. A direction, never a distance — it
       // narrows the search and does not finish it. And the note carries twice
       // as far at HIGH tide, which is what makes this shore worth revisiting.
-      ['bell', 1, 5, { points: [3, 3], say: 'The bell leans toward the near hole.' }],
+      ['bell', 8, 5, { points: [3, 3], say: 'The bell leans toward the near hole.' }],
     ],
     // `abyssHole` is deep at every tide level. Nothing on this shore has ever
     // been able to reach what is in them; the Dredge Line reads the same
@@ -267,18 +276,22 @@ const rooms = {
   '0,10,0': {
     name: 'East Crust',
     legend: 'salt', music: 'salt',
+    // THE LIGHTHOUSE OIL (S200): a cask the high sea set down in a one-cell
+    // hollow of salt wall (`9`, a pan wall the high sea covers). Nothing
+    // walks in; at HIGH the walls are under water and Link swims over them.
     map: [
       '**********',
       '*11111111*',
-      '1g5o..o.1*',
-      'gg5.....1*',
-      'gg5o..o.g#',
+      '1g5o.9o.1*',
+      'gg5.9.9.1*',
+      'gg5o.9o.g#',
       'gg55GGGGg#',
       '#gg5ggggg#',
       '###51gg###',
     ],
     entities: [
-      ['moblin', 4, 3],
+      ['moblin', 3, 3],
+      ['pickup', 5, 3, { kind: 'e_oil' }],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -356,8 +369,14 @@ const rooms = {
   '0,0,1': {
     name: 'Sunless Flat',
     legend: 'abyss', music: 'abyss',
+    // The lighthouse cove (S200): the cliff at 8,0 is a cave mouth once the
+    // lamp on the Drowned Shore is lit (`cliffAbyssCove`, a story gate). The
+    // warp is listed from the start and is inert until then.
+    warps: [
+      { x: 8, y: 0, to: { map: 'cave18', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     map: [
-      '***1ggg###',
+      '***1ggg#u#',
       '*11....gg#',
       '*1.?..?.gg',
       '*1g....ggg',
@@ -2191,6 +2210,18 @@ const rooms = {
   '0,9,8': {
     name: 'East Strand',
     legend: 'coast', music: 'overworld',
+    // THE LIGHTHOUSE LENS (S200, the dark lighthouse quest) lies under the
+    // sandbar at 4,3: dry sand at LOW, so the Dredge Line finds it only once
+    // the sea covers that floor. Dredged and left lying, it comes back on the
+    // next visit until it is carried off.
+    buried: [[4, 3, 'e_lens']],
+    script: {
+      onEnter(game) {
+        if (game.progress.flags.foundLens) return;
+        if (!game.progress.secrets['overworld:0,9,8:dredge:4,3']) return;
+        game.spawnPickup(64, 48, 'e_lens', { grabDelay: 14 });
+      },
+    },
     map: [
       'TToggggoTT',
       'Tfg..11ggT',
@@ -2706,6 +2737,21 @@ const rooms = {
     entities: [
       ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
     ],
+    // THE LIGHTHOUSE REFLECTOR (S200) is caught in the snarl at 5,6, which
+    // only a blade standing on the grove's stake reaches: cut it and the
+    // reflector is lying in the water where it was.
+    script: {
+      onEnter(game) {
+        if (game.progress.flags.foundMirror) return;
+        if (!game.progress.doors['overworld:0,16,9:5,6']) return;
+        game.spawnPickup(80, 96, 'e_mirror', { grabDelay: 14 });
+      },
+      onEvent(game, name, data) {
+        if (name !== 'tile' || !data || data.tx !== 5 || data.ty !== 6) return;
+        if (game.progress.flags.foundMirror) return;
+        game.spawnPickup(80, 96, 'e_mirror', { grabDelay: 14 });
+      },
+    },
   },
 
   // ---- S157/S158: the widened columns -----------------------------------
@@ -3855,6 +3901,60 @@ function installHouses() {
       ],
     }],
   ], { rx: 4, ry: 8, px: 48, py: 88 });
+
+  // THE LIGHTHOUSE (S200, the dark lighthouse quest). Two floors: the
+  // keeper's room at the foot of the stair, and the lamp room above it. He
+  // asks for the lamp's three parts (`need` is a list, NPC.errandTalk), and
+  // with all three back his errand sets `lampReady`; then the lamp takes the
+  // Kilnshell's fire (`Lamp`, src/game/objects.js), and lit it sets
+  // `lighthouseLit` for good.
+  registerMap({
+    id: 'lighthouse', kind: 'interior', name: 'The Lighthouse',
+    w: 1, h: 1, floors: 2,
+    legend: 'house', music: 'house', tint: 'cave', scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '#.......p#',
+          '#.......p#',
+          '#........#',
+          '#........#',
+          '#.......p#',
+          '#/...o...#',
+          '##########',
+        ],
+        entities: [
+          ['npc', 4, 2, { sprite: 'npc_elder', dialogue: 'keeperLight', after: 'keeperAfter', afterFlag: 'lighthouseLit',
+            errand: { need: ['foundLens', 'foundMirror', 'foundOil'], prize: null, flag: 'lampReady',
+              ask: 'keeperAsk', partial: 'keeperPartial', thanks: 'keeperThanks' } }],
+        ],
+        warps: [
+          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
+          { x: 1, y: 6, to: { map: 'lighthouse', floor: 1, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
+        ],
+      },
+      '1,0,0': {
+        map: [
+          '##########',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#/.......#',
+          '##########',
+        ],
+        entities: [
+          ['lamp', 4.5, 3, { dialogue: 'lampLit' }],
+          ['sign', 7, 5, { text: 'THE LAMP\nOil, lens, glass. Then fire.' }],
+        ],
+        warps: [
+          { x: 1, y: 6, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
+        ],
+      },
+    },
+  });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
