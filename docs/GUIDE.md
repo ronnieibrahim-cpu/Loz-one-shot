@@ -1979,7 +1979,7 @@ nothing but still speaks.
 
 ## Side quests
 
-Seven things to do off the main road. Five pay a Piece of Heart (they are
+Eight things to do off the main road. Five pay a Piece of Heart (they are
 numbered in the heart list above); they are all optional.
 
 - **The Hollow Den** (Heart Piece 19). In Bluff Hollow, the tree-lined clearing
@@ -2000,6 +2000,27 @@ numbered in the heart list above); they are all optional.
   waits on a sand islet out in the sea two screens east. Only at **LOW tide**
   does a sand path through the sea reach the islet. A clock counts down in the
   corner: about six and a half seconds, so do not stop.
+- **The dark lighthouse** (the **Lamplighter's Wick** charm and 100 rupees;
+  S200). A lighthouse stands in the north-west corner of the **Drowned Shore**
+  (`overworld/0,0,0`), so it waits on the Abyssal approach opening at five
+  Essences. Its keeper lost three parts of the lamp to the sea, and each is
+  found with a different item at a different sea:
+  - the **Great Lens**, under the sandbar at (4,3) on the **East Strand**
+    (`overworld/0,9,8`, just east of Tidewatch): stand at (4,2), face down
+    and cast the **Dredge Line** at **MID or HIGH**. At LOW the bar is dry and
+    nothing comes up.
+  - the **Brass Reflector**, in the kelp snarl at the **World's Edge**
+    (`overworld/0,16,9`, the far south-east). Throw a **Reefseed** down from
+    (5,3) at **HIGH**, swim onto the stake, sound the sea down to **LOW** and
+    stand on it, then cut the snarl below and step down to pick it up.
+  - the **Lamp Oil**, in a one-cell salt hollow at (5,3) on the **East Crust**
+    (`overworld/0,10,0`, the Salt Pans' north-east corner): its walls are only
+    under water at **HIGH**, so swim over them then.
+  Bring all three to the keeper (he fits nothing until he has all of them),
+  climb his stair, and set the **Kilnshell** down against the lamp. The beam
+  sweeps the shore, and the cliff at (8,0) on **Sunless Flat**
+  (`overworld/0,0,1`, the screen south of the lighthouse) is now a cave mouth:
+  **Lightkeeper's Cove** (`cave18`) holds the Lamplighter's Wick and 100 rupees.
 - **The salvage dive** (Heart Piece 14). Dov, at Wrecked Hull, lost five casks
   in the deep pool behind the wreck. Set the **Kelp-Soled Cleats** to walk the
   sea floor and bring up all five **in one breath** — surface early and they
@@ -2057,6 +2078,8 @@ if you want all thirty-one charms.
 | `coilrope` — the Dredge Line reaches one tile further | MID | `d6/1,2,4` Colonnade of the Drowned |
 | `ballastHeart` — knockback halved | MID | Village shop, 80 rupees |
 | `coilbone` — a moment's safety each time the tide changes | any | `palace/1,0,0` Pearl Vault (optional dungeon) |
+| `lamplighter` — dark rooms less dark | MID | `cave18` Lightkeeper's Cove, the dark lighthouse's prize (S200) |
+| `wrackbone` — double sword damage, double damage taken | any | `d5/0,7,6` The Root Cellar (clear the room; S200, was the Lamplighter's Wick) |
 
 **Case unlocks**, on total Essences held — not on visiting the scrimshander:
 
@@ -2105,6 +2128,8 @@ hit.
 | `cave3/0,0,0` Salt Pan Vault | `overworld/0,9,1` (3,2), behind the vanes | Big chest with the **Bottled Tide** case |
 | `cave4/0,0,0` Palace Porch | `overworld/0,15,1` (4,1), behind the vanes | 20 rupees |
 | `cave6/0,0,0` Slackwater Cave | `overworld/0,1,2` (3,1) — a sea cave, open at **LOW tide** only | **Heart Piece 18** |
+| `lighthouse` The Lighthouse | `overworld/0,0,0` (1,4)-(2,4), the tower's door | The keeper; the lamp up the stair (the dark lighthouse) |
+| `cave18/0,0,0` Lightkeeper's Cove | `overworld/0,0,1` (8,0) — cliff until the lighthouse is lit | Chests with the **Lamplighter's Wick** and 100 rupees |
 | `cave5/0,0,0` Hollow Den | `overworld/0,3,6` (4,1) — a cracked wall; **bomb it** | **Heart Piece 19** |
 
 The Salt Pan Vault and the Palace Porch are the one-room ruins of what used to be

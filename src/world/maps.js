@@ -42,6 +42,11 @@ export const MAPS = new Map();
 
 export function registerMap(def) {
   const kind = def.kind || 'overworld';
+  // AN ID IS REGISTERED ONCE (S200). A second map under an id that is taken
+  // used to replace the first without a word: the lighthouse cove was first
+  // written as `cave17`, which is Quarry Hollow, and the quarryman's cave
+  // simply ceased to exist — found only because his lines turned up orphaned.
+  if (MAPS.has(def.id)) throw new Error(`map '${def.id}' is registered twice`);
   // Room size is validated HERE, at registration, not lazily when a room is
   // first walked into. A bad size in a room nobody visits during a test run
   // would otherwise sit in the data until a player found it.
