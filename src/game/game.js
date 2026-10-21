@@ -1262,6 +1262,8 @@ export class Game {
       this.onBossDefeated(e);
       return;
     }
+    // The miniboss is gone: the dungeon's own theme takes the room back.
+    if (e._bossClass) this.updateMusic();
     // Record the kill so this enemy does not come back on a room reload.
     // Bosses are exempt — `progress.beaten` above already owns their
     // persistence, and they are not respawned by `spawnRoomEntities` at all.
@@ -1851,7 +1853,15 @@ export class Game {
   updateMusic() {
     const want = this.room && this.room.music ? this.room.music
       : (this.map && this.map.music) || 'overworld';
-    const track = this.boss ? (this.map.dungeon && this.map.dungeon.bossMusic || 'boss') : want;
+    // A MINIBOSS HAS ITS OWN TUNE (S199), as Seasons stops a dungeon's theme
+    // for one: the room's own music comes back once it is gone. A miniboss is
+    // a `Boss` that has cleared `isBoss`, so it never sets `this.boss`.
+    // A room's entities wait in `pendingAdd` until the next frame, and this
+    // runs on the way into a room, so both lists are asked.
+    const isMini = (e) => e._bossClass && !e.isBoss && !e.dead && !e.remove;
+    const mini = !this.boss && (this.entities.some(isMini) || this.pendingAdd.some(isMini));
+    const track = this.boss ? (this.map.dungeon && this.map.dungeon.bossMusic || 'boss')
+      : mini ? 'miniboss' : want;
     if (track) this.audio.play(track);
   }
 

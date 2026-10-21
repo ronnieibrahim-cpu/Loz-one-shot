@@ -578,7 +578,7 @@ const rooms = {
   // ---- cliffs ------------------------------------------------------------
   '0,0,2': {
     name: 'Kell Head',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '****######',
       '*11gg#####',
@@ -595,7 +595,7 @@ const rooms = {
   },
   '0,1,2': {
     name: 'Wind Shelf',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     // THE SEA CAVE (S155 side content). Its mouth at 3,1 is `seaCaveMouth`:
     // above water only at LOW, when the channel in front of it is wadeable
     // too. At MID and HIGH the sea stands in the mouth and the warp is inert.
@@ -621,7 +621,7 @@ const rooms = {
   },
   '0,2,2': {
     name: 'Upper Kell',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     // THE SEAL'S UPPER COURSE. These four were boulders, and the four plugs one
     // screen north on the Abyss Stair were the other half of the same gate:
     // nothing at all lies between them, so opening one course alone buys the
@@ -644,7 +644,7 @@ const rooms = {
   },
   '0,3,2': {
     name: 'Kell Corner',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '##########',
       '#15##C####',
@@ -809,7 +809,7 @@ const rooms = {
   // ---- cliffs ------------------------------------------------------------
   '0,0,3': {
     name: 'Cistern Path',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     // THE THIRD OUTDOOR BELLOWS FIXTURE, on the screen you walk to the Cistern
     // along — so the first thing the Bellows meet on the way back out is a
     // headland you have passed a dozen times. The gust goes LEFT, out to sea:
@@ -849,7 +849,7 @@ const rooms = {
   },
   '0,1,3': {
     name: 'Cistern Mouth',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###g##g###',
       '##ggDDgg##',
@@ -873,7 +873,7 @@ const rooms = {
   },
   '0,2,3': {
     name: 'Kell Ledges',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###5ggg###',
       '#g15gggg##',
@@ -892,7 +892,7 @@ const rooms = {
   },
   '0,3,3': {
     name: 'Cliff Face',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     // THE FIRST BELLOWS FIXTURE OUT OF DOORS, and it is the Drowned Sill
     // (d4 `0,2,3`) carried outside rather than a new idea: a shelf you can
     // only get onto while the sea is up, and a wheel that only the cone can
@@ -948,7 +948,7 @@ const rooms = {
   // ---- wood --------------------------------------------------------------
   '0,4,3': {
     name: 'Wood Edge',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTTTobTT',
       'TTTTTTggTT',
@@ -965,7 +965,7 @@ const rooms = {
   },
   '0,5,3': {
     name: 'Rotting Grove',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -982,7 +982,7 @@ const rooms = {
   },
   '0,9,3': {
     name: 'Wood Gate',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTbggggoTT',
       'TTgg.gggTT',
@@ -1000,7 +1000,7 @@ const rooms = {
   },
   '0,10,3': {
     name: 'The Gyre',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     // A closed circulation: east along the top, south down the right, west
     // along the bottom, north up the left. Swim it and it carries you round
     // instead of across; sink and you walk the floor straight through it, which
@@ -1098,7 +1098,7 @@ const rooms = {
   // ---- cliffs ------------------------------------------------------------
   '0,0,4': {
     name: 'Low Kell',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '***1ggg###',
       '*11ggg####',
@@ -1115,7 +1115,7 @@ const rooms = {
   },
   '0,1,4': {
     name: 'Boulder Run',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###5511###',
       '#gg5511g##',
@@ -1132,7 +1132,7 @@ const rooms = {
   },
   '0,2,4': {
     name: 'Kell Basin',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###gggg###',
       '##gggg####',
@@ -1149,7 +1149,7 @@ const rooms = {
   },
   '0,3,4': {
     name: 'The Deep Cut',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     // The Squall Bellows' overworld room. The raft in the cut goes wherever it
     // is blown and takes you with it; the long way round the north shelf is
     // still open, so this is a shortcut you earn rather than a gate.
@@ -1184,7 +1184,7 @@ const rooms = {
   // ---- wood --------------------------------------------------------------
   '0,4,4': {
     name: 'Shrine Path',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTg..gTT',
       'TTTTgg.gTT',
@@ -1201,7 +1201,7 @@ const rooms = {
   },
   '0,5,4': {
     name: 'Shrine Mouth',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTg.##.gTT',
       'TT.gDDg.TT',
@@ -1227,7 +1227,7 @@ const rooms = {
     name: 'Log Drift',
     // Its Piece of Heart is Dov's thanks for his cargo now (S155, side
     // content); a rupee keeps the spot.
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTgggg.gTT',
       'TTg..gg1TT',
@@ -1244,7 +1244,7 @@ const rooms = {
   },
   '0,10,4': {
     name: 'Drowned Hollow',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTg..gggTT',
       'TTggg11gTT',
@@ -1331,7 +1331,7 @@ const rooms = {
   // ---- cliffs ------------------------------------------------------------
   '0,0,5': {
     name: 'Kell Foot',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '***1555###',
       '*11g555g##',
@@ -1348,7 +1348,7 @@ const rooms = {
   },
   '0,1,5': {
     name: 'Marsh Stair',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###gggg###',
       '#11gggg###',
@@ -1365,7 +1365,7 @@ const rooms = {
   },
   '0,2,5': {
     name: 'Sunken Shelf',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###gggg###',
       '#ggggggg##',
@@ -1382,7 +1382,7 @@ const rooms = {
   },
   '0,3,5': {
     name: 'Kell Spur',
-    legend: 'cliffs', music: 'overworld',
+    legend: 'cliffs', music: 'kell',
     map: [
       '###gggg###',
       '#ggggg#Z##',
@@ -1405,7 +1405,7 @@ const rooms = {
   // ---- wood --------------------------------------------------------------
   '0,4,5': {
     name: 'Bog Trees',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTggggg..g',
       'TTg111g..g',
@@ -1422,7 +1422,7 @@ const rooms = {
   },
   '0,5,5': {
     name: 'Wood Heart',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'gggg.gTTTT',
       'ggg..gTTTT',
@@ -1444,7 +1444,7 @@ const rooms = {
   },
   '0,9,5': {
     name: 'Sunken Glade',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTgg.ggg',
       'TTTTg.gg.g',
@@ -1461,7 +1461,7 @@ const rooms = {
   },
   '0,10,5': {
     name: 'Wood Verge',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'ggggggggTT',
       '.gg111ggTT',
@@ -1642,7 +1642,7 @@ const rooms = {
   // ---- wood --------------------------------------------------------------
   '0,4,6': {
     name: 'South Wood',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTggggTT',
       'TTTTg11gTT',
@@ -1659,7 +1659,7 @@ const rooms = {
   },
   '0,5,6': {
     name: 'The Wading',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTggg..gTT',
       'TTgg..ggTT',
@@ -1676,7 +1676,7 @@ const rooms = {
   },
   '0,9,6': {
     name: 'Wood Foot',
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTg.ggTTTT',
       'TTgg.gTTTT',
@@ -1694,7 +1694,7 @@ const rooms = {
   // ---- dunes -------------------------------------------------------------
   '0,10,6': {
     name: 'Dune Head',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TTTTOOTTTT',
       'TTT.O.TT..',
@@ -1711,7 +1711,7 @@ const rooms = {
   },
   '0,11,6': {
     name: 'North Dunes',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TTTTTTOOTT',
       '..TT..O...',
@@ -1728,7 +1728,7 @@ const rooms = {
   },
   '0,12,6': {
     name: 'Sandbar Run',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TTTTTTTTTT',
       '..g.TT....',
@@ -1745,7 +1745,7 @@ const rooms = {
   },
   '0,15,6': {
     name: 'Feather Gap',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TToggggoTT',
       'T..gggg..T',
@@ -1762,7 +1762,7 @@ const rooms = {
   },
   '0,16,6': {
     name: 'East Dunes',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TTTTTT****',
       'TgTTTTT*1*',
@@ -1947,7 +1947,7 @@ const rooms = {
   // ---- dunes -------------------------------------------------------------
   '0,10,7': {
     name: 'Shallows Gate',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TT..gggggg',
       'TT.ggggggg',
@@ -1965,7 +1965,7 @@ const rooms = {
   },
   '0,11,7': {
     name: 'Grotto Approach',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'gggg...111',
       '..gg....11',
@@ -1982,7 +1982,7 @@ const rooms = {
   },
   '0,12,7': {
     name: 'Dune Bowl',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       '11g....ggg',
       '1g........',
@@ -1999,7 +1999,7 @@ const rooms = {
   },
   '0,15,7': {
     name: 'Tidepools',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       '..gg....TT',
       '.g22g...TT',
@@ -2016,7 +2016,7 @@ const rooms = {
   },
   '0,16,7': {
     name: 'Far Dunes',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TT....1***',
       'TT....O*1*',
@@ -2208,7 +2208,7 @@ const rooms = {
   // ---- dunes -------------------------------------------------------------
   '0,10,8': {
     name: 'Dune Crossing',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'OO.gg.....',
       'O.ggg.....',
@@ -2225,7 +2225,7 @@ const rooms = {
   },
   '0,11,8': {
     name: 'Grotto Mouth',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       '..og##goTT',
       '.gg.DD.ggT',
@@ -2283,7 +2283,7 @@ const rooms = {
   },
   '0,15,8': {
     name: 'Shell Flats',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TT.g......',
       'TT.g11g...',
@@ -2300,7 +2300,7 @@ const rooms = {
   },
   '0,16,8': {
     name: 'Dune Corner',
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       '......1***',
       '......O*1*',
@@ -2770,7 +2770,7 @@ const rooms = {
   },
   '0,6,3': {
     name: "Hollow Oaks",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTT####TT',
       'TTTT#Z##TT',
@@ -2790,7 +2790,7 @@ const rooms = {
   },
   '0,6,4': {
     name: "Fern Hollow",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTg..gTTTT',
       'TTgf..TTTT',
@@ -2807,7 +2807,7 @@ const rooms = {
   },
   '0,6,5': {
     name: "Sallow Glade",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTg..gTT',
       'TTTTg..fTT',
@@ -2824,7 +2824,7 @@ const rooms = {
   },
   '0,6,6': {
     name: "Low Copse",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTg.TTTT',
       'TTTT..TTTT',
@@ -2978,7 +2978,7 @@ const rooms = {
   },
   '0,7,3': {
     name: "Moss Stair",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -2995,7 +2995,7 @@ const rooms = {
   },
   '0,7,4': {
     name: "Drowned Ring",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTg....gTT',
       'TTg.f..gTT',
@@ -3012,7 +3012,7 @@ const rooms = {
   },
   '0,7,5': {
     name: "Stump Pool",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TT======TT',
       'TT======TT',
@@ -3032,7 +3032,7 @@ const rooms = {
   },
   '0,7,6': {
     name: "Kelp Meadow",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TT.gg..gTT',
       'TT...G.gTT',
@@ -3165,7 +3165,7 @@ const rooms = {
   },
   '0,8,3': {
     name: "Mire Gap",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
@@ -3182,7 +3182,7 @@ const rooms = {
   },
   '0,8,4': {
     name: "Rootwater",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTg....gTT',
       'TT.f...gTT',
@@ -3199,7 +3199,7 @@ const rooms = {
   },
   '0,8,5': {
     name: "Wisp Reach",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TTgg...gTT',
       'TT.f...gTT',
@@ -3216,7 +3216,7 @@ const rooms = {
   },
   '0,8,6': {
     name: "Wood Hem",
-    legend: 'wood', music: 'overworld',
+    legend: 'wood', music: 'wood',
     map: [
       'TT.g...gTT',
       'TTg..f.gTT',
@@ -3400,7 +3400,7 @@ const rooms = {
   },
   '0,13,6': {
     name: "Palm Flats",
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TTTTTTTTTT',
       '....TT....',
@@ -3417,7 +3417,7 @@ const rooms = {
   },
   '0,13,7': {
     name: "Leever Bowl",
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'g...gggg..',
       '...gggg...',
@@ -3575,7 +3575,7 @@ const rooms = {
   },
   '0,14,6': {
     name: "Dune Crest",
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       'TTTTTTTTTT',
       '....TT..TT',
@@ -3595,7 +3595,7 @@ const rooms = {
   },
   '0,14,7': {
     name: "Channel Dunes",
-    legend: 'dunes', music: 'overworld',
+    legend: 'dunes', music: 'dunes',
     map: [
       '..gggg....',
       '.gg.......',
@@ -3703,7 +3703,7 @@ function installHouses() {
     // THE SEASONS GROVE, WHOLE. The room is one extracted screen of the
     // original Maku Tree's clearing (tools/rip-maku.py), placed as a single
     // block; the cave tint that suited a stone room is gone with the room.
-    legend: 'makuGrove', music: 'village', scroll: false,
+    legend: 'makuGrove', music: 'maku', scroll: false,
     rooms: {
       '0,0,0': {
         map: [
@@ -3802,7 +3802,7 @@ function installHouses() {
   registerMap({
     id: 'faroreShrine', kind: 'interior', name: "Farore's Shrine",
     w: 1, h: 1, floors: 1,
-    legend: 'faroreRoom', music: 'village', scroll: false,
+    legend: 'faroreRoom', music: 'house', scroll: false,
     rooms: {
       '0,0,0': {
         map: [
@@ -3829,7 +3829,7 @@ function installHouses() {
     },
   });
 
-  home('houseHearth', 'A Village House', 'village', [
+  home('houseHearth', 'A Village House', 'house', [
     // Her errand (S155): the jar of bog water left at Bog Head's spring, for
     // a hundred rupees. The only errand that pays in rupees.
     ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
@@ -3846,7 +3846,7 @@ function installHouses() {
   // counter picks which of them is live, so she hands over the float on the
   // first visit and takes the kettle back on the eleventh, and says the same
   // flat thing about it not being her kettle on every visit in between.
-  home('houseNets', "The Net-mender's", 'village', [
+  home('houseNets', "The Net-mender's", 'house', [
     ['trader', 4, 2, {
       sprite: 'npc_zelda', waiting: 'ossaWait', after: 'ossaAfter',
       deals: [
@@ -3856,7 +3856,7 @@ function installHouses() {
     }],
   ], { rx: 4, ry: 8, px: 48, py: 88 });
 
-  home('houseSandpiper', 'Sandpiper Cottage', 'village', [
+  home('houseSandpiper', 'Sandpiper Cottage', 'house', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
   ], { rx: 12, ry: 8, px: 32, py: 88 });

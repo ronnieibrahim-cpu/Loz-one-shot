@@ -1,3 +1,52 @@
+## S199 — the music pass: nine new tunes
+
+Branch claude/oracle-tides-s199-u5neii, off main at f36274d (S198).
+
+### The human's choices this session
+- Shown the overworld again (boxy regions B, C, G, S marked); chose THE
+  MUSIC PASS (rotation (e), pass 1) instead.
+- Shown the audit of every place against its tune, with sound files (ours
+  as they played, and Seasons' indoors, Maku Tree, miniboss and Samasa
+  desert for comparison). Chose ALL FOUR gaps: own tunes for the three
+  optional dungeons, a miniboss tune, the Maku Tree and houses, and the
+  Dunes / Kell cliffs / Drowned Wood. Still OUR tunes on the Game Boy's
+  engine (the S164 rule). Listened to all nine: "All good, keep them".
+
+### Built
+- Nine tracks in src/data/audio.js: `vault` (E phrygian dominant, 112, a
+  3-3-2 kiln crackle), `eyrie` (F lydian, 132, octave-bouncing bass, open
+  hats), `palace` (F# minor waltz, 96, 12 rows a bar, a chromatic whirlpool
+  bridge), `miniboss` (E minor, 152), `maku` (G major, 76, rolled wave
+  chords, echo), `house` (C major, 96, pulses in thirds), `dunes` (D
+  mixolydian 6/8: rowsPerBeat 3, 84), `kell` (A dorian, 126, octave march),
+  `wood` (E minor, 92, broken-chord p2).
+- Wired: the three optional dungeons' map music; the Maku grove `maku`;
+  houses and Farore's Shrine `house`; 61 overworld screens' `music:` (kell
+  0..3 x 2..5, wood 4..10 x 3..5 + 4..9 x 6, dunes 10..16 x 6..7 + 10, 11,
+  15, 16 x 8). Holodrum (`overworld`) now plays only on the 19 coast screens
+  round Tidewatch (col 3 rows 6-9, col 9 rows 7-9, row 9).
+- MINIBOSS MUSIC: `Game.updateMusic` plays `miniboss` while a `_bossClass`
+  entity that is not `isBoss` lives in the room — asked of `pendingAdd` too,
+  because room entities are still pending when setRoom calls it — and
+  `onEnemyDefeated` re-asks when one dies. test.mjs drives it (+1).
+- `village` (the old town tune every house played) retired; check-sfx's
+  stem test plays `house`. audio-render baseline re-recorded after the
+  human listened (9 added, village removed). docs/MUSIC.md rewritten from
+  the data.
+
+### Checks
+- Whole table green; check-playthrough 49/49, THE END, never died (first try: music changes nothing the robot sees).
+
+### NEXT (S200)
+- Ask the human. Candidates: boxy regions B (Abyss shore 0..3 x 0..1), C
+  (Salt Pans' edges 4..5 and 9..10 x 0..2), G (coast strips col 3 rows
+  6-9, col 9 rows 7-9, 4..5 x 9), S (south shore row 9 cols 10..16); the
+  rotation's next area (f) side content (propose a mini-game and a side
+  quest first); the picture guide's Secret caves missing Quarry Hollow and
+  docs/GUIDE.md's stale D6 rooms (tools/check-guide.mjs fails, old).
+- Music leftovers if wanted: bosses D1-D5 share `boss` and caves share
+  `cave` (both faithful to Seasons); per-boss themes would be a design call.
+
 ## S198 — the Dunes redrawn round Sandpiper Row
 
 Branch claude/oracle-tides-s198-p5srml, off main at 4840010 (S197).

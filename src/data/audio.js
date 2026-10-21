@@ -182,71 +182,9 @@ const TRACKS = {
   // S151 replaced the transcription with the cartridge's own data, which the
   // human's soundtrack recording matches note for note.
   overworld: { seasons: 'overworld' },
-  village: {
-    bpm: 112, rowsPerBeat: 4, loop: true,
-    cfg: {
-      p1: { duty: 0.5, vol: 0.15, decay: 0.2, vibrato: {} },
-      p2: { duty: 0.125, vol: 0.09, decay: 0.24 },
-      wav: { vol: 0.2, decay: 0.1 },
-      noi: { vol: 0.08 },
-    },
-    patterns: {
-      // Intro: arriving in town. A rising greeting over two arpeggiated
-      // chords, no percussion until the last beat, where two hats hand over
-      // to the loop.
-      I: {
-        p1: 'G4 .  C5 .  E5 -  -  .  D5 .  E5 .  F5 -  -  -  -  -  -  .  .  .  .  .  G5 -  -  -  -  -  -  .',
-        p2: 'E4 .  G4 .  C5 -  -  .  B4 .  C5 .  A4 -  -  -  -  -  -  .  .  .  .  .  B4 -  -  -  -  -  -  .',
-        wav: 'C2+E2+G2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  F2+A2+C3 -  -  -  -  -  -  -  G2 -  -  -  G2 -  -  -',
-        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  h  h',
-      },
-      A: {
-        p1: 'C5 .  E5 .  G5 .  E5 .  F5 .  D5 .  C5 -  -  .  D5 .  F5 .  A5 .  F5 .  G5 -  -  -  -  -  -  .',
-        p2: 'C4 .  .  .  E4 .  .  .  F4 .  .  .  E4 .  .  .  D4 .  .  .  F4 .  .  .  E4 .  .  .  G4 .  .  .',
-        wav: 'C3 -  -  -  G2 -  -  -  F2 -  -  -  C3 -  -  -  D3 -  -  -  F2 -  -  -  C3 -  -  -  G2 -  -  -',
-        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
-      },
-      // Turns toward F major for a warmer, more legato phrase.
-      B: {
-        p1: 'F5  .  A5 .  C6  -  -  .  Bb5 .  A5 .  G5 .  F5 .  E5 .  G5 .  A5 -  -  .  G5 .  F5 .  E5 -  -  .',
-        // NOTE: this line was one token short of the pattern's 32 rows for the
-        // whole life of the track, so its last C5 rang on into the next
-        // pattern's downbeat instead of releasing with p1. The trailing rest
-        // is the whole fix — no note here moved.
-        p2: 'A4  .  C5 .  .   .  .  .  D5  .  C5 .  Bb4 .  A4 .  C5 .  E5 .  .  .  .  E5 .  D5 .  C5 -  -  .  .',
-        wav: 'F2  -  -  -  C3  -  -  -  Bb1 -  -  -  F2  -  -  -  C2  -  -  -  G1  -  -  -  C2  -  -  -  G1  -  -  -',
-        noi: '.   .  h  .  .   .  h  .  .   .  h  .  .   .  h  h  .   .  h  .  .  .  h  .  .   .  h  .  .   .  h  h',
-      },
-      // Bridge: the square lead drops out, just a low pulse behind the
-      // bass, before the melody eases back in for the last bar.
-      C: {
-        p1: 'E5  -  -  -  D5  -  -  -  C5  -  -  -  D5  -  -  -  E5 .  G5 .  A5 .  G5 .  F5 .  E5 .  D5 -  -  .',
-        p2: '.   .  .  .  .   .  .  .  .   .  .  .  .   .  .  .  .  .  .  .  C5 .  .  .  A4 .  .  .  G4 .  .  .',
-        wav: 'C3  -  -  -  -  -  -  -  F2  -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  .',
-        noi: '.   .  .  .  .   .  .  .  .   .  .  .  .   .  .  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
-      },
-      // D is the only pattern where the two pulses take turns: p1 states a
-      // phrase and stops dead, and p2 answers into the hole it leaves. In
-      // A, B and C the second pulse is always sounding at the same time as
-      // the first, so this is the theme's only call and response.
-      D: {
-        p1: 'C5 .  D5 .  E5 -  -  .  .  .  .  .  .  .  .  .  F5 .  E5 .  D5 -  -  .  .  .  .  .  .  .  .  .',
-        p2: '.  .  .  .  .  .  .  .  G4 .  A4 .  C5 -  -  .  .  .  .  .  .  .  .  .  A4 .  G4 .  F4 -  -  .',
-        wav: 'C3 -  -  -  C3 -  -  -  E2 -  -  -  E2 -  -  -  F2 -  -  -  F2 -  -  -  G2 -  -  -  G2 -  -  -',
-        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
-      },
-      // E is the only pattern in the town theme with a kick in it: the
-      // pulses drop to offbeat stabs and the kit carries the two bars.
-      E: {
-        p1: '.  .  C5 .  .  .  E5 .  .  .  D5 .  .  .  .  .  .  .  C5 .  .  .  F5 .  .  .  E5 .  .  .  .  .',
-        p2: '.  .  E4 .  .  .  G4 .  .  .  F4 .  .  .  .  .  .  .  A4 .  .  .  C5 .  .  .  G4 .  .  .  .  .',
-        wav: 'C3 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -',
-        noi: 'x  .  h  h  s  h  .  h  x  h  .  h  s  .  h  h  x  .  h  h  s  h  .  h  x  h  s  .  s  h  h  H',
-      },
-    },
-    intro: ['I'],
-    order: ['A', 'B', 'A', 'D', 'E', 'C'],
-  },
+  // The old town tune `village` (pre-S158 Tidewatch, then every house) was
+  // retired at S199 when the houses got `house` and the Maku Tree `maku`;
+  // it is in git history.
 
   // TIDEWATCH (S158). The human asked for each town to have a theme of its
   // own, "calm and serene", and original. Horon has one; so does Tidewatch
@@ -930,6 +868,344 @@ const TRACKS = {
     },
     intro: ['I'],
     order: ['A', 'A', 'B', 'A', 'C', 'D'],
+  },
+
+  // S199, THE MUSIC PASS: every place that borrowed another's tune gets its
+  // own, the way Seasons gives each dungeon, the Maku Tree, its houses and its
+  // miniboss fights their own. All ours, in the Game Boy register (S164).
+
+  // The Salt Pan Vault — "fire the sea puts out". E phrygian dominant, 112
+  // bpm, the second pulse and the kick in a 3-3-2 stagger like a kiln's
+  // crackle; the bridge holds still while the sea comes in over the fire.
+  vault: {
+    bpm: 112, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.25, vol: 0.14, decay: 0.14, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.08, decay: 0.1 },
+      wav: { vol: 0.22, decay: 0.07 },
+      noi: { vol: 0.11 },
+    },
+    patterns: {
+      I: {
+        p1: 'E5 -  -  -  -  -  -  -  F5 -  -  -  -  -  -  -  E5 -  -  -  -  -  -  -  D5 .  C5 .  B4 .  G#4 .',
+        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  B4 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
+        wav: 'E1+G#1+B1 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  F1+A1+C2 -  -  -  -  -  -  -  E1 -  -  -  E1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  .  h  x  .  h  h',
+      },
+      A: {
+        p1: 'E5 .  F5 .  G#5 -  -  .  F5 .  E5 .  D5 -  -  .  C5 .  D5 .  E5 .  F5 .  E5 -  -  -  -  -  -  .',
+        p2: 'G#4 .  .  G#4 .  .  G#4 .  A4 .  .  A4 .  .  A4 .  F4 .  .  F4 .  .  F4 .  G#4 .  .  G#4 .  .  .  .',
+        wav: 'E2 -  -  .  E2 -  -  .  F2 -  -  .  F2 -  -  .  D2 -  -  .  D2 -  -  .  E2 -  -  -  -  -  -  .',
+        noi: 'x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  h  x  .  .  h  .  .  s  .  x  .  h  .  s  .  h  h',
+      },
+      B: {
+        p1: 'A5 -  -  .  G#5 .  F5 .  E5 -  -  .  F5 .  G#5 .  A5 .  B5 .  C6 .  B5 .  G#5 -  -  -  -  -  -  .',
+        p2: 'C5 .  .  C5 .  .  C5 .  A4 .  .  A4 .  .  A4 .  F4 .  .  F4 .  .  F4 .  G#4 .  .  G#4 .  .  .  .',
+        wav: 'A1 -  -  .  A1 -  -  .  F1 -  -  .  F1 -  -  .  D2 -  -  .  D2 -  -  .  E2 -  -  -  -  -  -  .',
+        noi: 'x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  h  x  .  .  h  .  .  s  .  x  s  x  s  x  s  h  h',
+      },
+      C: {
+        p1: 'E5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  C5 -  -  -  B4 -  -  -  G#4 -  -  -  -  -  -  .',
+        p2: '.  .  .  .  B4 -  -  .  .  .  .  .  A4 -  -  .  .  .  .  .  G#4 -  -  .  .  .  .  .  E4 -  -  .',
+        wav: 'A1+C2+E2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  F1+A1+C2 -  -  -  -  -  -  -  E1 -  -  -  E1 -  -  -',
+        noi: '.  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  x  .  s  .  x  s  x  s',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // The Gullwind Eyrie — "the tide change is how you move". F lydian, 132
+  // bpm: the raised fourth that never comes down, a lead that leaps by
+  // octaves and fifths, the bass bouncing in octaves and an open hat for
+  // the wind on every off-beat. The bridge is the gulls.
+  eyrie: {
+    bpm: 132, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.14, decay: 0.12, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.08, decay: 0.2 },
+      wav: { vol: 0.2, decay: 0.07 },
+      noi: { vol: 0.1 },
+    },
+    patterns: {
+      I: {
+        p1: 'C5 .  F5 .  A5 .  C6 -  -  -  -  -  -  -  -  .  B5 -  -  -  -  -  -  -  A5 -  -  -  G5 -  -  .',
+        p2: 'A4 .  C5 .  F5 .  A5 -  -  -  -  -  -  -  -  .  G5 -  -  -  -  -  -  -  E5 -  -  -  D5 -  -  .',
+        wav: 'F2+A2+C3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  G2+B2+D3 -  -  -  -  -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  H  .  .  .  .  .  .  .  x  .  h  .  s  .  H  .',
+      },
+      A: {
+        p1: 'F5 .  C6 .  A5 -  -  .  G5 .  B5 .  C6 -  -  .  D6 .  C6 .  B5 .  G5 .  A5 -  -  -  -  -  -  .',
+        p2: 'A4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  B4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  .',
+        wav: 'F2 .  F3 .  F2 .  F3 .  G2 .  G3 .  G2 .  G3 .  E2 .  E3 .  E2 .  E3 .  F2 .  F3 .  F2 .  F3 .',
+        noi: 'x  .  h  .  s  .  H  .  x  .  h  .  s  .  H  .  x  .  h  .  s  .  H  .  x  .  h  .  s  .  h  h',
+      },
+      B: {
+        p1: 'G5 .  B5 .  D6 -  -  .  C6 .  B5 .  A5 -  -  .  E5 .  G5 .  A5 .  B5 .  C6 -  -  -  -  -  -  .',
+        p2: 'B4 -  -  -  -  -  -  -  E5 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  E5 -  -  -  -  -  -  .',
+        wav: 'G2 .  G3 .  G2 .  G3 .  E2 .  E3 .  E2 .  E3 .  A2 .  A3 .  A2 .  A3 .  C3 .  C2 .  C3 .  C2 .',
+        noi: 'x  .  h  .  s  .  H  .  x  .  h  .  s  .  H  .  x  .  h  .  s  .  H  .  x  s  x  s  c  .  .  .',
+      },
+      C: {
+        p1: 'C6 -  -  .  .  .  .  .  F5 -  -  .  .  .  .  .  D6 -  -  .  .  .  .  .  E6 -  -  -  -  -  -  .',
+        p2: '.  .  .  .  C5 -  -  .  .  .  .  .  A4 -  -  .  .  .  .  .  B4 -  -  .  .  .  .  .  C5 -  -  .',
+        wav: 'F2+A2+C3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  G2+B2+D3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  H  .  .  .  .  .  .  .  H  .  .  .  .  .  .  .  x  .  s  .  x  s  H  .',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // The Sunken Palace — "the sea's height decides which floor you're on". A
+  // waltz in F# minor at 96 bpm (twelve rows a bar): the bass on the one,
+  // the second pulse on two and three, a court still dancing under the sea.
+  // C is the whirlpool — the lead slides down a chromatic octave over an
+  // augmented chord that never settles, until the floor below catches it.
+  palace: {
+    bpm: 96, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.13, decay: 0.2, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.12 },
+      wav: { vol: 0.2, decay: 0.1 },
+      noi: { vol: 0.07 },
+    },
+    patterns: {
+      I: {
+        p1: '.  .  .  .  .  .  .  .  .  .  .  .  C#5 -  -  -  -  -  -  -  -  -  -  .',
+        wav: 'F#1+A1+C#2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
+      },
+      A: {
+        p1: 'C#5 -  -  -  -  -  -  -  A4 -  B4 -  A4 -  -  -  -  -  -  -  F#4 -  -  -  G#4 -  -  -  B4 -  -  -  E5 -  -  -  C#5 -  -  -  -  -  -  -  -  -  -  .',
+        p2: '.  .  .  .  A4 .  .  .  A4 .  .  .  .  .  .  .  F#4 .  .  .  F#4 .  .  .  .  .  .  .  G#4 .  .  .  G#4 .  .  .  .  .  .  .  G#4 .  .  .  F4 .  .  .',
+        wav: 'F#2 -  -  -  .  .  .  .  C#2 -  -  -  D2 -  -  -  .  .  .  .  A1 -  -  -  E2 -  -  -  .  .  .  .  B1 -  -  -  C#2 -  -  -  .  .  .  .  G#1 -  -  -',
+        noi: 'x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  s  .  .  .  s  .  .  .',
+      },
+      B: {
+        p1: 'D5 -  -  -  C#5 -  B4 -  D5 -  -  -  C#5 -  -  -  -  -  -  -  A4 -  -  -  B4 -  -  -  G#4 -  -  -  E4 -  -  -  F4 -  -  -  G#4 -  -  -  C#5 -  -  .',
+        p2: '.  .  .  .  F#4 .  .  .  F#4 .  .  .  .  .  .  .  A4 .  .  .  A4 .  .  .  .  .  .  .  G#4 .  .  .  B4 .  .  .  .  .  .  .  G#4 .  .  .  G#4 .  .  .',
+        wav: 'B1 -  -  -  .  .  .  .  F#2 -  -  -  F#2 -  -  -  .  .  .  .  C#2 -  -  -  E2 -  -  -  .  .  .  .  B1 -  -  -  C#2 -  -  -  .  .  .  .  G#1 -  -  -',
+        noi: 'x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  s  .  .  .  s  .  s  .',
+      },
+      C: {
+        p1: 'F#5 -  F5 -  E5 -  D#5 -  D5 -  C#5 -  C5 -  B4 -  A#4 -  A4 -  G#4 -  G4 -  F#4 -  -  -  -  -  -  -  -  -  -  -  C#5 -  -  -  -  -  -  -  -  -  -  .',
+        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  A4 .  .  .  A4 .  .  .  .  .  .  .  G#4 .  .  .  F4 .  .  .',
+        wav: 'D2+F#2+A#2 -  -  -  -  -  -  -  -  -  -  -  C2+E2+G#2 -  -  -  -  -  -  -  -  -  -  -  F#1 -  -  -  .  .  .  .  C#2 -  -  -  C#2 -  -  -  .  .  .  .  G#1 -  -  -',
+        noi: 'H  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  H  .  .  .  x  .  .  .  h  .  .  .  h  .  .  .  x  .  .  .  s  .  .  .  s  .  s  .',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'B', 'A', 'C'],
+  },
+
+  // A MINIBOSS (S199). Seasons stops a dungeon's theme for its miniboss and
+  // plays a short, hard loop of its own; ours does the same. E minor, 152
+  // bpm, a lead that keeps snapping back to E, the bass hammering the root
+  // and its flat second, and B climbing chromatically back into A.
+  miniboss: {
+    bpm: 152, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.16, decay: 0.1, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.1, decay: 0.08 },
+      wav: { vol: 0.24, decay: 0.05 },
+      noi: { vol: 0.15 },
+    },
+    patterns: {
+      I: {
+        p1: 'B4 .  .  .  C5 .  .  .  C#5 .  .  .  D5 -  D#5 -',
+        p2: 'E4 .  .  .  F4 .  .  .  F#4 .  .  .  G4 -  G#4 -',
+        wav: 'E2 .  .  .  E2 .  .  .  E2 .  .  .  E2 .  E2 .',
+        noi: 'c  .  .  .  x  .  .  .  x  .  .  .  x  s  x  s',
+      },
+      A: {
+        p1: 'E5 .  .  E5 G5 .  E5 .  F#5 .  .  F#5 A5 .  F#5 .  E5 .  .  E5 G5 .  B5 .  A#5 -  -  .  A5 -  -  .',
+        p2: 'B3 .  B3 .  B3 .  B3 .  C4 .  C4 .  C4 .  C4 .  B3 .  B3 .  B3 .  B3 .  C#4 .  C#4 .  C4 .  C4 .',
+        wav: 'E2 E2 .  E2 E2 .  E2 .  F2 F2 .  F2 F2 .  F2 .  E2 E2 .  E2 E2 .  E2 .  F#2 -  -  .  F2 -  -  .',
+        noi: 'x  .  s  .  x  x  s  .  x  .  s  .  x  x  s  .  x  .  s  .  x  x  s  .  x  s  x  s  x  s  s  s',
+      },
+      B: {
+        p1: 'G5 -  -  .  F#5 -  -  .  F5 -  -  .  E5 -  -  .  D#5 .  E5 .  F#5 .  G5 .  A5 .  A#5 .  B5 -  -  .',
+        p2: 'C4 .  C4 .  B3 .  B3 .  A#3 .  A#3 .  A3 .  A3 .  B3 .  B3 .  B3 .  B3 .  C#4 .  D4 .  D#4 -  -  .',
+        wav: 'C2 C2 .  C2 B1 B1 .  B1 A#1 A#1 .  A#1 A1 A1 .  A1 B1 .  B1 .  B1 .  B1 .  B1 .  B1 .  B1 -  -  .',
+        noi: 'x  .  s  .  x  .  s  .  x  .  s  .  x  .  s  .  x  x  s  .  x  x  s  .  x  s  x  s  c  .  .  .',
+      },
+    },
+    intro: ['I'],
+    order: ['A', 'A', 'B'],
+  },
+
+  // THE MAKU TREE (S199): its grove has its own tune, as Seasons' does. G
+  // major, 76 bpm, the wave channel a harp — every chord rolled — and the
+  // second pulse the lead returning, softer, a beat and a half later.
+  maku: {
+    bpm: 76, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.25, vol: 0.12, decay: 0.3, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.4, echo: { of: 'p1', rows: 6, volMul: 0.4 } },
+      wav: { vol: 0.16, decay: 0.3 },
+      noi: { vol: 0.03 },
+    },
+    patterns: {
+      A: {
+        p1: 'B4 -  -  -  -  -  -  -  D5 -  -  -  C5 -  B4 -  A4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  .',
+        wav: 'G1+B1+D2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  C2+E2+G2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
+      B: {
+        p1: 'E5 -  -  -  D5 -  -  -  B4 -  -  -  D5 -  -  -  C5 -  -  -  B4 -  -  -  A4 -  -  -  -  -  -  .',
+        wav: 'E2+G2+B2 -  -  -  -  -  -  -  B1+D2+F#2 -  -  -  -  -  -  -  C2+E2+G2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
+      C: {
+        p1: 'G5 -  -  -  F#5 -  -  -  E5 -  -  -  D5 -  -  -  B4 -  -  -  C5 -  -  -  D5 -  -  -  -  -  -  .',
+        wav: 'E2+G2+B2 -  -  -  -  -  -  -  A1+C2+E2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
+      D: {
+        p1: 'B4 -  -  -  A4 -  -  -  G4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
+        wav: 'C2+E2+G2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -  G1+B1+D2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
+      },
+    },
+    order: ['A', 'B', 'C', 'D'],
+  },
+
+  // INDOORS (S199): every house, and Farore's shrine. Seasons' houses share
+  // one quiet tune of their own; this is ours. C major, 96 bpm, the two
+  // pulses in thirds like two people humming, hats only.
+  house: {
+    bpm: 96, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.25, vol: 0.11, decay: 0.2 },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.24 },
+      wav: { vol: 0.16, decay: 0.12 },
+      noi: { vol: 0.04 },
+    },
+    patterns: {
+      A: {
+        p1: 'E5 .  G5 .  C6 -  -  .  B5 .  G5 .  A5 -  -  .  G5 .  E5 .  F5 .  D5 .  E5 -  -  -  -  -  -  .',
+        p2: 'C5 .  E5 .  G5 -  -  .  G5 .  E5 .  F5 -  -  .  E5 .  C5 .  D5 .  B4 .  C5 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  C2 -  -  -  G1 -  -  -  F2 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .',
+      },
+      B: {
+        p1: 'A5 .  G5 .  F5 .  E5 .  D5 .  E5 .  F5 -  -  .  G5 .  F5 .  E5 .  D5 .  C5 -  -  -  -  -  -  .',
+        p2: 'F5 .  E5 .  D5 .  C5 .  B4 .  C5 .  D5 -  -  .  E5 .  D5 .  C5 .  B4 .  G4 -  -  -  -  -  -  .',
+        wav: 'F2 -  -  -  C2 -  -  -  D2 -  -  -  G1 -  -  -  C2 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .',
+      },
+      C: {
+        p1: 'C5 -  -  -  D5 -  -  -  E5 -  -  -  G5 -  -  -  F5 -  -  -  E5 -  -  -  D5 -  -  -  -  -  -  .',
+        p2: 'A4 -  -  -  B4 -  -  -  C5 -  -  -  E5 -  -  -  D5 -  -  -  C5 -  -  -  B4 -  -  -  -  -  -  .',
+        wav: 'A1 -  -  -  -  -  -  -  F1 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  G1 -  -  -  G1 -  -  -',
+        noi: '.  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  h  .  h  .',
+      },
+    },
+    order: ['A', 'B', 'A', 'C'],
+  },
+
+  // THE DUNES round Sandpiper Row (S199). D mixolydian in a lazy 6/8 (three
+  // rows a beat, six a bar, 84 dotted-quarter beats a minute): the second
+  // pulse ticks the off-beats like heat off the sand, and C is the shimmer
+  // at noon, the chords held still under one long note.
+  dunes: {
+    bpm: 84, rowsPerBeat: 3, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.13, decay: 0.18, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.1 },
+      wav: { vol: 0.2, decay: 0.1 },
+      noi: { vol: 0.07 },
+    },
+    patterns: {
+      A: {
+        p1: 'A4 -  -  D5 -  E5 F#5 -  -  -  -  .  E5 -  D5 C5 -  A4 B4 -  -  -  -  .',
+        p2: '.  F#4 A4 .  F#4 A4 .  F#4 A4 .  F#4 A4 .  E4 G4 .  E4 G4 .  D4 G4 .  D4 B4',
+        wav: 'D2 -  -  A1 -  -  D2 -  -  A1 -  -  C2 -  -  G1 -  -  G1 -  -  D2 -  -',
+        noi: 'x  .  h  s  .  h  x  .  h  s  .  h  x  .  h  s  .  h  x  .  h  s  h  h',
+      },
+      B: {
+        p1: 'C5 -  -  B4 -  A4 G4 -  -  A4 -  B4 C5 -  D5 E5 -  C5 D5 -  -  -  -  .',
+        p2: '.  E4 G4 .  E4 G4 .  D4 G4 .  D4 G4 .  E4 A4 .  E4 A4 .  F#4 A4 .  F#4 A4',
+        wav: 'C2 -  -  G1 -  -  G1 -  -  D2 -  -  A1 -  -  E2 -  -  D2 -  -  A1 -  -',
+        noi: 'x  .  h  s  .  h  x  .  h  s  .  h  x  .  h  s  .  h  x  .  h  s  h  h',
+      },
+      C: {
+        p1: 'A5 -  -  -  -  -  G5 -  -  F#5 -  -  E5 -  -  C5 -  -  D5 -  -  -  -  .',
+        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  E4 G4 .  E4 G4 .  F#4 A4 .  .  .',
+        wav: 'D2+F#2+A2 -  -  -  -  -  C2+E2+G2 -  -  -  -  -  C2 -  -  G1 -  -  D2 -  -  A1 -  -',
+        noi: 'H  .  .  .  .  .  .  .  .  h  .  .  x  .  h  s  .  h  x  .  h  s  h  h',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // THE KELL CLIFFS (S199). A dorian, 126 bpm: a climbing tune with the bass
+  // marching in octaves, the brightest chord kept for the top of B (A major,
+  // the view from the shelf), and C the wind across the ledges.
+  kell: {
+    bpm: 126, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.15, decay: 0.12, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.08, decay: 0.2 },
+      wav: { vol: 0.21, decay: 0.07 },
+      noi: { vol: 0.11 },
+    },
+    patterns: {
+      A: {
+        p1: 'A4 .  .  A4 E5 -  -  .  D5 .  C5 .  B4 .  C5 .  D5 -  -  .  A4 .  .  A4 G5 -  -  .  F#5 -  E5 -',
+        p2: 'C5 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  F#4 -  -  -  -  -  -  -  B4 -  -  -  A4 -  -  -',
+        wav: 'A1 .  A2 .  A1 .  A2 .  G1 .  G2 .  G1 .  G2 .  D2 .  D3 .  D2 .  D3 .  E2 .  E3 .  E2 .  E3 .',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  h  .  s  s  h  .',
+      },
+      B: {
+        p1: 'C5 -  -  .  D5 .  E5 .  G5 -  -  .  F#5 .  E5 .  D5 .  E5 .  F#5 .  A5 -  -  -  -  -  -  -  -  .',
+        p2: 'E4 -  -  -  -  -  -  -  B4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  C#5 -  -  -  -  -  -  .',
+        wav: 'C2 .  C3 .  C2 .  C3 .  E2 .  E3 .  E2 .  E3 .  D2 .  D3 .  D2 .  D3 .  A1 .  A2 .  A1 .  A2 .',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  h  .  x  s  x  s',
+      },
+      C: {
+        p1: 'E5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  C5 -  -  -  B4 -  -  -  A4 -  -  -  -  -  -  .',
+        p2: '.  .  .  .  B4 -  -  -  .  .  .  .  A4 -  -  -  .  .  .  .  G4 -  -  -  .  .  .  .  E4 -  -  -',
+        wav: 'A1 -  -  -  -  -  -  -  F1 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  E1 -  -  -  E1 -  -  -',
+        noi: 'H  .  .  .  .  .  .  .  H  .  .  .  .  .  .  .  H  .  .  .  .  .  .  .  x  .  s  .  x  s  x  s',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // THE DROWNED WOOD (S199). E minor, 92 bpm: the second pulse turns over
+  // broken chords like water round roots, the drums are a single hat a bar,
+  // and B turns to B major to lead home, the light through the canopy.
+  wood: {
+    bpm: 92, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.25, vol: 0.13, decay: 0.22, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.07, decay: 0.12 },
+      wav: { vol: 0.18, decay: 0.2 },
+      noi: { vol: 0.05 },
+    },
+    patterns: {
+      A: {
+        p1: 'B4 -  -  -  E5 -  -  -  D5 -  -  -  B4 -  A4 -  G4 -  -  -  A4 -  -  -  B4 -  -  -  -  -  -  .',
+        p2: 'E4 .  G4 .  B4 .  G4 .  D4 .  G4 .  B4 .  G4 .  C4 .  E4 .  G4 .  E4 .  D4 .  F#4 .  A4 .  F#4 .',
+        wav: 'E2 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  C2 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  h  .',
+      },
+      B: {
+        p1: 'E5 -  -  -  G5 -  -  -  F#5 -  E5 -  D5 -  -  -  C5 -  -  -  D5 -  -  -  E5 -  B4 -  -  -  -  .',
+        p2: 'C4 .  E4 .  G4 .  E4 .  D4 .  F#4 .  A4 .  F#4 .  A3 .  C4 .  E4 .  C4 .  B3 .  D#4 .  F#4 .  D#4 .',
+        wav: 'C2 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -  A1 -  -  -  -  -  -  -  B1 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  h  .',
+      },
+      C: {
+        p1: 'G5 -  -  -  -  -  -  -  F#5 -  -  -  -  -  -  -  E5 -  -  -  D#5 -  -  -  E5 -  -  -  -  -  -  .',
+        p2: 'C4 .  E4 .  G4 .  E4 .  B3 .  D#4 .  F#4 .  D#4 .  E4 .  G4 .  B4 .  G4 .  E4 .  G4 .  B4 .  G4 .',
+        wav: 'C2 -  -  -  -  -  -  -  B1 -  -  -  -  -  -  -  E2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  H  .  .  .',
+      },
+    },
+    order: ['A', 'B', 'A', 'C'],
   },
 
   // --- jingles (loop: false, they hand control back to the previous track) --
