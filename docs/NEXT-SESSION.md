@@ -1,3 +1,56 @@
+## S202 — the dialogue pass
+
+Branch claude/oracle-tides-dialogue-o7bbee, off main at 6970612 (S201).
+
+### The human's choices this session
+- Shown 15 lines before and after, each beside a real Seasons/Ages line, and
+  the measurements below. Approved the voice ("go with it") and chose to give
+  EVERYTHING the same pass: townsfolk, the Coastwise Chain and errands, the
+  story scenes (Farore, the Maku Tree, the key-givers, Nereth, the ending) and
+  the signs and dungeon inscriptions.
+
+### What the cartridges do (oracles-disasm text/{seasons,ages}/text.yaml)
+- Median message 9 words (Seasons), 10 (Ages); townsfolk groups 0x14-0x17
+  median 11-12. Ours was 22 (mean 22.3); now median 17, mean 18.0.
+- One fact or one feeling per line; hints name the place and the direction
+  ("Swamp? You mean Spool Swamp? Find it north then west of the village.");
+  jokes are one naive beat ("Lately I've been making breakfast twice--on
+  accident."); exclamation marks; key words in red. Ours were aphorisms with
+  a twist at the end. The rule is now written at the top of src/data/story.js.
+
+### Built
+- src/data/story.js: all 92 dialogue ids and every cutscene `say` rewritten;
+  facts and hints kept (who to see next, where, which tide). LOW/MID/HIGH in
+  capitals stand in for the cartridge's red. Lines no longer carry `\n`
+  (paginate wraps them). The intro caption is shorter, not longer.
+- Every sign in the overworld and every `readable` in caves, dungeons and the
+  optional dungeons rewritten plain: "slack/flood/half water" are LOW/HIGH/MID
+  now, riddles that are the puzzle (the Two Arches, the Hollow Three, the
+  Sounding Fork's three shafts) keep the puzzle but say it in plain words.
+- TWO STALE HINTS FOUND AND FIXED: the bog witch and the Sanctum's door sign
+  said the current runs "at one height only / at middling water"; torrents
+  are deep at every tide and the trick is walking the bottom under them
+  (Cleats). The Reef Market fisher's "currents in the palace run one way"
+  now says what the Sunken Palace does: whirlpools only take you down, the
+  stairs bring you back. See HANDOFF.
+- Guides: docs/GUIDE.md's quoted inscriptions/signs updated (22 + 3 by hand;
+  two quotes that were already stale, the Glass Cell plaque and The Wading's
+  sign, fixed too). Picture guide: tools/guide/guide.html quotes updated, the
+  intro-* and d1-essence figures re-shot (their text boxes show the new
+  lines), index.html rebuilt.
+
+### Checks
+- Whole table green; check-playthrough 49/49, THE END, never died, first try
+  (shorter conversations change the robot's clock and it still wins).
+
+### NEXT (S203)
+- Ask the human. Candidates: boxy regions B (dark shore round the
+  lighthouse, 0..3 x 0..1), C (Salt Pans' edges), G (coast strips by
+  Tidewatch); the rotation in docs/prompts/STATE.md.
+- If the human wants the dialogue pushed further: the median is still 17
+  words against the cartridges' 11. The longest are the key-giver scenes and
+  the errand asks, where the facts are many.
+
 ## S201 — the guides caught up; the south shore redrawn; the bell-buoy echo
 
 Branch claude/oracle-tides-s201-sn05oe, off main at eb2445e (S200).

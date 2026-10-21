@@ -140,8 +140,8 @@ if (NERETH) {
 // The ending: prove claimEssence(6) actually reaches it, rather than that
 // starting it directly by id "works". Nothing in the game ever called
 // startCutscene('ending') before this fix — story.js wrote the scene, and the
-// essence6 scene's own text ("The Tide Bell is whole. It is much smaller than
-// the stories, and much heavier.") reads as the line right before it, but
+// essence6 scene's own text ("The Tide Bell is whole again. It's smaller than
+// in the stories, and much heavier.") reads as the line right before it, but
 // nothing chained the two, so a player who beat Nereth and picked up the
 // sixth Essence got the essence6 card and then just kept playing. No THE
 // END, no `finishedGame` flag, ever. Game.claimEssence now queues 'ending'

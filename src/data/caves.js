@@ -31,7 +31,7 @@ export function installCaves() {
           //
           // The sword keeps the tile. It is not the senior claim by date, it is
           // the senior claim by geography: the readable at 6,3 below is the
-          // sword's own inscription — "Four shards, and the second blade is
+          // sword's own inscription — "Come back with four Essences, and this blade is
           // yours" — and a signpost has to stand next to the thing it is about.
           // Move the sword and the bluff is lecturing an empty tile.
           //
@@ -63,7 +63,7 @@ export function installCaves() {
             needText: 'The blade will not come out of the stone.\nFour Essences, says the stone.',
           }],
         ],
-        readable: [[6, 3, 'Cut into the bluff: "Four shards, and the\nsecond blade is yours. Fewer, and it stays\nthe bluff\'s."']],
+        readable: [[6, 3, 'Cut into the bluff: "Come back with four Essences, and this blade is yours."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
     },
@@ -147,11 +147,11 @@ export function installCaves() {
           ['pickup', 2, 2, { kind: 'heartPiece' }],
         ],
         readable: [
-          [8, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."'],
+          [8, 3, 'Scratched into the rock: "At LOW tide, walk where the fish used to swim."'],
           // The tide pool at 2..4,5 is the shell's classroom: dry at LOW to set
           // it down on, shallow at MID to light it, and deep at HIGH to lose it
           // in. All three states of one tile, which is the item in miniature.
-          [1, 5, 'Older, and lower down: "Lime drinks the sea and spits fire.\nDrown it and it sulks."'],
+          [1, 5, 'Older, and lower down: "A splash of sea lights the lime shell. Too much puts it out."'],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 7, px: 64, py: 64, dir: 'down' } }],
       },
@@ -198,7 +198,7 @@ export function installCaves() {
           // thousand years is where a swallow of it would be kept.
           ['chest', 4, 3, { big: true, item: 'bottle', level: 1 }],
         ],
-        readable: [[7, 3, 'Salt-etched: "One swallow of the sea, kept where the sea cannot follow it."']],
+        readable: [[7, 3, 'Salt-etched: "A bottle of the sea, kept where the sea can\'t reach it."']],
         warps: [
           { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
           // THE LOWER VAULT (S160), an optional dungeon: the Kilnshell's.
@@ -235,7 +235,7 @@ export function installCaves() {
           // content); a rupee keeps the spot.
           ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
-        readable: [[7, 2, 'A palace notice, in a hand that gave up halfway: "The rest of it is under. Do not go and look."']],
+        readable: [[7, 2, 'A palace notice, half finished: "The rest of the palace is underwater. Don\'t go looking!"']],
         warps: [
           { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
           // THE SUNKEN PALACE (S161), an optional dungeon, under a hatch the

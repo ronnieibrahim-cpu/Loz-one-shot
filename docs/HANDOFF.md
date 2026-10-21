@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A hint line goes stale when its dungeon is rebuilt, and nothing checks it
+  (S202).** The bog witch and the Sanctum's door sign said the current "runs at
+  one height only" for twenty sessions after the torrents became deep at every
+  tide; the Reef Market fisher described palace currents that are whirlpools.
+  check-dialogue proves a line EXISTS, never that it is TRUE. When a dungeon's
+  mechanic changes, grep story.js and its signs for the dungeon's name.
+- **The cartridges' townsfolk say about 11 words (S202).** Measured over
+  oracles-disasm's text.yaml: one fact or feeling, a hint naming place and
+  direction, a joke in one beat. Ours ran at 22 in an aphorism register an
+  early session set on purpose. The rule is at the top of src/data/story.js.
+
 - **A screen can hold a puzzle that no grep for its name finds (S201).** Deep
   Bar's `anchorGate` and its onEnter blank were keyed on the room, not named
   anywhere a tool or the route mentions `0,12,9`; the south-shore redraw

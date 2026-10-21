@@ -95,8 +95,8 @@ export function installOptionalDungeons() {
           { x: 7, y: 10, to: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 112, py: 32, dir: 'down' } },
         ],
         readable: [
-          [3, 5, 'Scratched in the salt: "Strike it here, where\nthe kiln keeps the air dry. Below, the\nbrine will not let it catch."'],
-          [11, 5, 'Older: "What the sea puts out, the sea\nkeeps. Carry the fire. Mind the water."'],
+          [3, 5, 'Scratched in the salt: "Light it here, where the kiln keeps the air dry. Down below, it\'s too damp to catch."'],
+          [11, 5, 'Older: "Whatever the sea puts out stays out. Carry your fire, and mind the water."'],
         ],
       },
       '0,1,1': {
@@ -132,7 +132,7 @@ export function installOptionalDungeons() {
         },
         kilnRoom: { target: [7, 5], from: [3, 5], dir: 'right', levels: [0] },
         readable: [
-          [1, 9, 'A plate by the stair: "Down here the fire\ngoes where it is thrown, and the sea\ndecides whether it arrives."'],
+          [1, 9, 'A plate by the stair: "Throw your fire across. If it flies over deep water, the sea puts it out."'],
         ],
       },
       '0,2,1': {
@@ -318,7 +318,7 @@ export function installOptionalDungeons() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 3, ry: 2, px: 80, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 2, 'Scratched by the stair: "The gulls cross\nwhere nobody walks. Throw the fare over,\nand let the turning sea carry you after."'],
+          [2, 2, 'Scratched by the stair: "Gulls cross where nobody can walk. Throw the Coin over, and the turning tide carries you after it."'],
         ],
         coinRoom: { from: [7, 7], dir: 'up', lands: [7, 3], levels: [0, 1, 2] },
       },
@@ -529,8 +529,8 @@ export function installOptionalDungeons() {
           stair(12, 8, P(0, 1, 2, 12, 9, 'down')),
         ],
         readable: [
-          [2, 2, 'Cut in the pillar: "The sea is under this\nfloor. When it stands high it opens it,\nand takes whoever swims in down to it."'],
-          [12, 2, 'Older: "Low water, walk. High water, sink.\nThe stairs are for coming home."'],
+          [2, 2, 'Cut in the pillar: "The sea is under this floor. At HIGH tide it opens up and pulls swimmers down."'],
+          [12, 2, 'Older: "LOW tide, walk. HIGH tide, sink. Take the stairs to come home."'],
         ],
       },
       '1,1,1': {
@@ -643,7 +643,7 @@ export function installOptionalDungeons() {
           '#######B#######',
         ],
         readable: [
-          [2, 2, 'On the throne\'s step: "The king of this\nhouse is the eel beneath it. Go down at\nhigh water, and come up if you can."'],
+          [2, 2, 'On the throne\'s step: "The king of this palace is the eel below. Go down at HIGH tide... and come back up if you can."'],
         ],
         whirlRoom: { lands: [[7, 4]] },
       },

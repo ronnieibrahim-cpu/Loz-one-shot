@@ -139,7 +139,7 @@ export function installDungeonsA() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 11, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [3, 7, 'Carved by the door: "The sea keeps this floor. Take it back."'],
+          [3, 7, 'Carved by the door: "The sea took this floor. Take it back!"'],
         ],
       },
       '0,3,6': {
@@ -168,7 +168,7 @@ export function installDungeonsA() {
           ['keese', 7, 2, { drops: 'good' }],
         ],
         readable: [
-          [13, 9, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
+          [13, 9, 'A rusted plate: "Lower the sea, and you can wade across."'],
         ],
       },
       '0,2,6': {
@@ -433,7 +433,7 @@ export function installDungeonsA() {
           ['chest', 7, 3, { big: true, item: 'anchor', level: 1 }],
         ],
         readable: [
-          [3, 3, 'The sluicegate plate: "Iron remembers. Sink it where you want the sea to stay."'],
+          [3, 3, 'The sluicegate plate: "Drop the Anchor where you want the water to stay put."'],
         ],
       },
 
@@ -791,7 +791,7 @@ export function installDungeonsA() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 15, ry: 5, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 7, 'Coral script over the door: "What rises, carries.\nWhat falls, reveals. Look before you fall."'],
+          [2, 7, 'Coral script over the door: "Rising water carries you up. Falling water shows the way. Look before you drop!"'],
         ],
       },
       '0,3,6': {
@@ -960,7 +960,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [12, 2, 'A rusted plate: "The floor of this room is a door.\nShut the sea out and it is only a hole."'],
+          [12, 2, 'A rusted plate: "The hole in this floor is a way up when the sea fills it. With the sea out, it\'s only a hole."'],
         ],
       },
       '0,4,4': {
@@ -1109,7 +1109,7 @@ export function installDungeonsA() {
           ['urchin', 11, 2],
         ],
         readable: [
-          [12, 8, 'A pane of green glass set in the wall, and behind it\nthe room stands a hand deeper in water than it is.'],
+          [12, 8, 'A pane of green glass in the wall. Through it, the room looks a little deeper in water than it really is.'],
         ],
       },
       '1,4,5': {
@@ -1152,8 +1152,8 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [2, 9, 'Wingbeats in an empty room, and the sea\nwill not come in to show you what beats them.'],
-          [12, 9, 'What lives at the other tide, the glass\nshows. What the glass shows, a blade finds.'],
+          [2, 9, 'You can hear wings flapping, but the room is empty. The tide here won\'t change to show you what they are.'],
+          [12, 9, 'Scratched by the door: "Look through the glass to see what lives at the other tide. What you can see, your sword can hit."'],
         ],
       },
       '1,4,3': {
@@ -1193,7 +1193,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [7, 8, 'Cut into the shelf: "Two throats, one drinks.\nThe dry one keeps its own counsel."'],
+          [7, 8, 'Cut into the shelf: "Two shafts. One fills with water. The other stays dry."'],
         ],
         lensRoom: {
           pin: 0, reveals: 1, decide: [7, 6],
@@ -1309,7 +1309,7 @@ export function installDungeonsA() {
           ['keese', 3, 3],
         ],
         readable: [
-          [6, 9, 'Scratched into the coral: "The bar goes under when the sea comes up. Nothing else here ever moves."'],
+          [6, 9, 'Scratched into the coral: "The coral bar goes under at HIGH tide. Nothing else in here changes."'],
         ],
         warps: [
           { x: 2, y: 9, to: { map: 'd2', floor: 1, rx: 5, ry: 4, px: 192, py: 112, dir: 'up' } },
@@ -1407,7 +1407,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [7, 8, 'Three marks on the shelf, and beneath them:\n"One wades. One waits. One keeps you."'],
+          [7, 8, 'Three marks on the shelf, and under them: "One you can wade. One stays a pit. One is over your head."'],
         ],
         lensRoom: {
           pin: 0, reveals: 1, decide: [7, 7],
@@ -1541,7 +1541,7 @@ export function installDungeonsA() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 7, 'Bog script: "The water has two floors.\nOnly one of them drowns you."'],
+          [2, 7, 'Bog script: "You can swim on top of the water, or walk along the bottom."'],
         ],
       },
       '1,3,6': {
@@ -2080,7 +2080,7 @@ export function installDungeonsA() {
         ],
         cleatRoom: { from: [1, 5], to: [43, 5] },
         readable: [
-          [10, 2, 'Scratched into the statue: "The eels swim\nhome with the current. The eel-catcher walks\nout under it."'],
+          [10, 2, 'Scratched into the statue: "The current carries swimmers back. Walk along the bottom instead!"'],
         ],
       },
       '1,4,2': {
@@ -2121,7 +2121,7 @@ export function installDungeonsA() {
         ],
         cleatRoom: { from: [22, 9], to: [0, 5], layers: true },
         readable: [
-          [20, 8, 'A plate on the lock wall: "The lock carries a\nswimmer round to its last gate, and no further.\nThe floor goes on where the water will not."'],
+          [20, 8, 'A plate on the lock wall: "The current carries a swimmer round to the last gate, and no further. Sink there, and walk the rest."'],
         ],
       },
       '1,3,2': {
@@ -2195,7 +2195,7 @@ export function installDungeonsA() {
           reward: { openDoors: [[22, 10]], say: 'Something heavy shifts in the south wall.' },
         },
         readable: [
-          [3, 2, 'Bog script on the statue: "The plate is on the\nbottom. The swimmer floats over it and the\nwater keeps its secret."'],
+          [3, 2, 'Bog script on the statue: "The switch is on the bottom. Swimmers float right over it."'],
         ],
       },
       '1,6,5': {
@@ -2235,7 +2235,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [3, 2, 'Scratched by the well: "A stone will not go into\ndeep water. The other plate lies where only\nthe floor-walker goes."'],
+          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. The other switch is where only a floor-walker can go."'],
         ],
       },
 
@@ -2524,7 +2524,7 @@ export function installDungeonsA() {
           reward: { reveal: true, say: 'The two flames answer each other.\nSomething rises between them.' },
         },
         readable: [
-          [2, 1, 'Cut in the urn: "No water comes here.\nWhat burns here came down dry."'],
+          [2, 1, 'Cut in the urn: "No water gets in here. Any fire here came down from above, dry."'],
         ],
       },
       '0,4,4': {
@@ -2697,7 +2697,7 @@ export function installDungeonsA() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 8, 'Chiselled deep: "This cistern is worked from\nthe far bank. Nothing here is meant to be\nreached."'],
+          [2, 8, 'Chiselled deep: "Everything here was worked from the far bank. Nothing is meant to be reached by hand."'],
         ],
       },
       '0,3,6': {
@@ -2768,7 +2768,7 @@ export function installDungeonsA() {
           ['keese', 10, 9],
         ],
         readable: [
-          [1, 9, 'Scratched in the basin wall: "The spikes are\nsafe only under the top of the tide."'],
+          [1, 9, 'Scratched in the basin wall: "The spikes are only safe at HIGH tide, under deep water."'],
         ],
       },
       '0,3,5': {
@@ -2798,7 +2798,7 @@ export function installDungeonsA() {
           ['keese', 3, 6],
         ],
         readable: [
-          [2, 8, 'Cut into the weir: "The float runs on the race,\nand the race runs on the sea."'],
+          [2, 8, 'Cut into the weir: "The float only moves while its channel runs. At LOW tide, it stops."'],
         ],
       },
       '0,2,5': {
@@ -2947,7 +2947,7 @@ export function installDungeonsA() {
           ['stalfos', 9, 7],
         ],
         readable: [
-          [2, 2, 'A winch plate, bolted shut: "The wheels are\nset where no hand goes. Bring wind."'],
+          [2, 2, 'A winch plate, bolted shut: "The wheels are where no hand can reach. Bring wind!"'],
         ],
       },
       '0,1,4': {
@@ -3002,7 +3002,7 @@ export function installDungeonsA() {
           ['keese', 11, 8],
         ],
         readable: [
-          [6, 7, 'A plate on the loft: "The wheel turns in the\nwind, and never under water. Take the water\noff it and blow."'],
+          [6, 7, 'A plate on the loft: "The wheel turns in the wind, but not underwater. Blow the water off it!"'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3039,7 +3039,7 @@ export function installDungeonsA() {
           ['keese', 11, 3],
         ],
         readable: [
-          [3, 2, 'Scratched under the sill: "This wheel stands\nin the sluice, and the sluice is only over\nits head at high water."'],
+          [3, 2, 'Scratched under the sill: "This wheel is only underwater at HIGH tide."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3172,7 +3172,7 @@ export function installDungeonsA() {
           ['keese', 2, 8],
         ],
         readable: [
-          [1, 9, 'A plate by the race: "Where the float will not\nstop, the wind will stop it."'],
+          [1, 9, 'A plate by the race: "If the float won\'t stop, the wind can stop it."'],
         ],
       },
       '0,5,3': {
@@ -3277,7 +3277,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [2, 9, 'Carved by the gate: "The key to the deep\ndoor is kept where the wind lifts two\nfloods."'],
+          [2, 9, 'Carved by the gate: "The Boss Key is where the water has to drop two levels."'],
         ],
       },
       '0,4,1': {
@@ -3335,7 +3335,7 @@ export function installDungeonsA() {
           ['keese', 11, 8],
         ],
         readable: [
-          [2, 8, 'A plate over the spillway: "The cell below\nis only open to the flood, and the wheel in\nit only turns at the ebb."'],
+          [2, 8, 'A plate over the spillway: "You can only get into the cell below at HIGH tide, and its wheel only turns at LOW."'],
         ],
       },
       '0,0,4': {
@@ -3381,7 +3381,7 @@ export function installDungeonsA() {
           ['tektite', 5, 15],
         ],
         readable: [
-          [3, 13, 'Cut beside the cell: "The well is two floods\ndeep, and wind lifts only one. Come in on the\nflood, and let the sea go out around you."'],
+          [3, 13, 'Cut beside the cell: "This well is two levels deep, and wind only lowers it one. Come in at HIGH tide, then let the sea go out around you."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3492,7 +3492,7 @@ export function installDungeonsA() {
           ['zol', 14, 5],
         ],
         readable: [
-          [21, 8, 'Scratched by the cell: "Gulls nest where the\nwind is. The wheel in the corner turns only\nwhen the sea is at the top."'],
+          [21, 8, 'Scratched by the cell: "Gulls nest where the wind is. The wheel in the corner only turns when you come in at HIGH tide."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3571,7 +3571,7 @@ export function installDungeonsA() {
           ['keese', 11, 2],
         ],
         readable: [
-          [2, 8, 'A plate by the stair: "The intake fills these\ntanks from the sea below. Nothing is heard\nabove it."'],
+          [2, 8, 'A plate by the stair: "The sea below fills these tanks. Your conch can\'t be heard up here."'],
         ],
       },
       '1,5,3': {
@@ -3634,7 +3634,7 @@ export function installDungeonsA() {
           ['float', 7, 3, { race: [5, 5], path: [['wait', 64], ['down', 96], ['wait', 64], ['up', 96], ['loop', 0]] }],
         ],
         readable: [
-          [2, 9, 'Cut over the pit: "The wind alone will not\nstop this float. Drain its race first."'],
+          [2, 9, 'Cut over the pit: "Wind alone won\'t stop this float. Drain its channel first."'],
         ],
       },
       '1,4,2': {
@@ -3676,7 +3676,7 @@ export function installDungeonsA() {
           reward: { say: 'A chest rises on the landing.' },
         },
         readable: [
-          [11, 1, 'A plate on the landing: "No block moves in\nthe deep. Lift the west gate, and the tank\nstands a level lower."'],
+          [11, 1, 'A plate on the landing: "Blocks won\'t move in deep water. Open the west gate, and this tank drops a level."'],
         ],
       },
       '1,6,2': {
@@ -3716,7 +3716,7 @@ export function installDungeonsA() {
           reward: { openDoors: [[7, 10]], say: 'The south shutter grinds open.' },
         },
         readable: [
-          [2, 2, 'Carved over the well: "Wind lifts one flood,\nand the gate another."'],
+          [2, 2, 'Carved over the well: "Wind lowers the water one level. The gate lowers it another."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3768,9 +3768,9 @@ export function installDungeonsA() {
           ['keese', 6, 6],
         ],
         readable: [
-          [3, 7, 'A plate under the west wheel: "The west\ntank lies below."'],
-          [25, 7, 'A plate under the middle wheel: "The float\ntank lies below."'],
-          [33, 9, 'A plate under the east wheel: "The east\ntank lies below."'],
+          [3, 7, 'A plate under the west wheel: "The west tank is below."'],
+          [25, 7, 'A plate under the middle wheel: "The float tank is below."'],
+          [33, 9, 'A plate under the east wheel: "The east tank is below."'],
         ],
         script: {
           // A gate opened from here changes rooms nobody is standing in, and
