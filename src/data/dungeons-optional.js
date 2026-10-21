@@ -57,7 +57,7 @@ export function installOptionalDungeons() {
     w: 3, h: 3, floors: 1,
     cell: [15, 11],
     legend: 'dungeonSalt',
-    music: 'dungeon',
+    music: 'vault',
     tint: 'cave',
     dungeon: {
       optional: true,
@@ -279,7 +279,7 @@ export function installOptionalDungeons() {
     w: 3, h: 3, floors: 1,
     cell: [15, 11],
     legend: 'dungeonEyrie',
-    music: 'dungeon',
+    music: 'eyrie',
     tint: 'cave',
     dungeon: {
       optional: true,
@@ -493,7 +493,7 @@ export function installOptionalDungeons() {
     w: 3, h: 3, floors: 2,
     cell: [15, 11],
     legend: 'dungeonPalace',
-    music: 'dungeon',
+    music: 'palace',
     tint: 'cave',
     dungeon: {
       optional: true,

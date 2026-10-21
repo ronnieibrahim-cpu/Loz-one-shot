@@ -225,13 +225,13 @@ for (const n of defined) {
     createBufferSource: () => ({ connect() {}, start() {}, stop() {} }),
     createPeriodicWave: () => ({}), createOscillator: node };
   const a = new Audio(); a.addTracks(TRACKS); a.addSfx(SFX); a.init(ctx);
-  a.play('village');
+  a.play('house');
   // Render the track and its stems outright rather than a sliver a frame.
   const p = a._pendingGb;
   if (p) { p.job.step(Infinity); a._pendingGb = null; a._playBuffer(p.job.result, p.onEnd, p.gb); }
   const stems = a._music ? a._music.stems : {};
   for (const st of Object.values(stems)) { st.job.step(Infinity); a._startStem(st); }
-  if (Object.keys(stems).length !== 4) problems.push(`the village theme has stems for [${Object.keys(stems)}], not all four music channels`);
+  if (Object.keys(stems).length !== 4) problems.push(`the house theme has stems for [${Object.keys(stems)}], not all four music channels`);
   const SHARE = { 2: 0, 3: 1, 5: 4, 7: 6 };
   let tested = 0;
   for (const [name, d] of Object.entries(SFX)) {

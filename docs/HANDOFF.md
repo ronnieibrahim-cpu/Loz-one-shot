@@ -447,6 +447,12 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **On the way into a room its entities are still pending (S199).**
+  `spawnEntity` puts them in `game.pendingAdd`, flushed next frame, and
+  `setRoom` calls `updateMusic` before that: a check of `game.entities`
+  for the room's miniboss found nothing and played the dungeon tune. Ask
+  both lists in anything that runs during room entry.
+
 - **An overworld redraw re-times D3 (S198, after S192).** The robot's
   `travel` legs change length, so Bogmaw and Gloomtide are met on a new
   clock. Sweep BOTH together: the Bogmaw wait that wins most often (60-78)

@@ -24,44 +24,55 @@ edition's jingle — the cartridge's is what plays. Every other track is ours.
 
 ## Places
 
+Re-read from the data at S199 (the music pass, rotation (e) pass 1).
+
 | Place | Track | Status |
 |---|---|---|
 | Title screen | `title` | Seasons' own |
 | File select | `fileSelect` | Seasons' own |
-| Intro cutscene | none, then `village` / `overworld` (story.js steps) | own |
-| Coast: Tidewatch Village, dunes, strands, Grotto approach (overworld screens) | `overworld` | Seasons' own; shared with the Kell cliffs and the Drowned Wood |
-| The Kell cliffs (Kell Head .. Cistern Mouth) | `overworld` | shared |
-| The Drowned Wood (Wood Edge .. Shrine Mouth) | `overworld` | shared |
-| The Reef (24 screens, Coral Gate .. Spire Mouth) | `reef` | own |
-| The Marsh (12 screens, Bog Head .. Sanctum Mouth) | `marsh` | own |
-| The Salt Pans (12 screens) | `salt` | own |
-| The Abyss shore (8 screens, Drowned Shore .. Gate of the Keep) | `abyss` | own |
-| Village houses: the Maku Tree, a village house, the Net-mender's, Sandpiper Cottage | `village` | shared by the four houses |
+| Intro cutscene | none, then `overworld` (story.js steps) | authored silences, then Seasons' |
+| The coast round Tidewatch: col 3 rows 6-9, col 9 rows 7-9, row 9 (19 screens) | `overworld` | Seasons' own (Holodrum) |
+| Tidewatch Village (10 screens) | `tidewatch` | own (S158) |
+| Sandpiper Row (3 screens) | `sandpiper` | own (S158) |
+| The Kell cliffs, 0..3 x 2..5 (16 screens) | `kell` | own — new S199 (was `overworld`) |
+| The Drowned Wood, 4..10 x 3..5 and 4..9 x 6 (27 screens) | `wood` | own — new S199 (was `overworld`) |
+| The Dunes, 10..16 x 6..7 and 10,11,15,16 x 8 (18 screens) | `dunes` | own — new S199 (was `overworld`) |
+| The Reef (36 screens) | `reef` | own |
+| The Marsh (12 screens) | `marsh` | own |
+| The Salt Pans (21 screens) | `salt` | own |
+| The Abyss shore (8 screens) | `abyss` | own |
+| The Maku Tree's grove | `maku` | own — new S199 (was `village`) |
+| Houses: a village house, the Net-mender's, Sandpiper Cottage, Farore's Shrine | `house` | own — new S199 (was `village`, retired) |
 | Tidewatch Shop | `shop` | own |
-| Caves: Bluff Grotto, Reef Hollow, Salt Pan Vault, Palace Porch | `cave` | shared by the four caves |
-| D1 Tidewash Grotto (and the Clawcrab) | `dungeon` | own |
-| D2 Coral Spire (and the Reefguard) | `dungeon2` | own |
-| D3 Bogwater Sanctum (and Bogmaw) | `dungeon3` | own — new S150 (was `dungeon`, shared with D1 and D5) |
-| D4 Cliffside Cistern (and the Iron Knight) | `dungeon4` | own — new S150 (was `dungeon2`, shared with D2 and D6) |
-| D5 Drowned Wood Shrine (and Thornvine) | `dungeon5` | own — new S150 (was `dungeon`) |
-| D6 Abyssal Keep (Tideshade, the Brinehulk) | `dungeon6` | own — new S150 (was `dungeon2`) |
-| Bosses D1-D5: Gohmaraq, Anemos, Gloomtide, Wyverna, Rootmaw | `boss` | shared by five bosses |
-| Nereth (D6 throne room) | `finalBoss` | own |
+| Caves (all 18) | `cave` | shared, as Seasons' caves share one |
+| D1 Tidewash Grotto | `dungeon` | own |
+| D2 Coral Spire | `dungeon2` | own |
+| D3 Bogwater Sanctum | `dungeon3` | own |
+| D4 Cliffside Cistern | `dungeon4` | own |
+| D5 Drowned Wood Shrine | `dungeon5` | own |
+| D6 Abyssal Keep | `dungeon6` | own |
+| The Lower Vault (Salt Pans) | `vault` | own — new S199 (was `dungeon`) |
+| Gullwind Eyrie | `eyrie` | own — new S199 (was `dungeon`) |
+| The Sunken Palace | `palace` | own — new S199 (was `dungeon`) |
+| Every miniboss while it lives | `miniboss` | own — new S199 (was the dungeon's own) |
+| Bosses D1-D5 | `boss` | shared, as Seasons shares one |
+| Nereth | `finalBoss` | own |
 | Ending | `ending` | own |
-| Jingles: item get, fanfare, essence, boss clear, game over, secret, heart piece | `itemGet`, `fanfare`, `fanfareShort`, `essence`, `bossClear`, `gameOver`, `secret`, `heartPiece` | own |
+| Jingles | `itemGet`, `fanfare`, `essence`, `bossClear`, `gameOver`, `secret`, `heartPiece` | Seasons' own |
+
+A miniboss is a `Boss` that clears `isBoss`, so it never sets `g.boss`;
+`Game.updateMusic` asks whether one is alive in the room (or waiting in
+`pendingAdd` on the way in) and `onEnemyDefeated` asks again once it is gone.
+test.mjs drives it.
 
 No place is silent by accident: the intro's and the ending's `music: null`
 steps are authored silences.
 
-## Still shared (candidates for later passes, fewest first)
+## Still shared (faithful to Seasons, not gaps)
 
-1. `boss` — five bosses share one fight theme. Seasons shares one boss theme
-   across its dungeons too, so this is faithful rather than wrong; a per-boss
-   theme is a design choice for the human.
-2. `cave` — four caves. Seasons plays one cave theme everywhere as well.
-3. `village` — four houses, as Seasons' houses share Horon's.
-4. `overworld` — the coast, the Kell cliffs and the Drowned Wood. Seasons
-   plays Holodrum across most of its overworld; the cliffs and the wood are
-   the regions that could want their own.
+1. `boss` — five bosses share one fight theme, as Seasons' do.
+2. `cave` — every cave, as in Seasons.
+3. `house` — every house and Farore's shrine, as Seasons' houses share one.
+4. `overworld` — only the coast round Tidewatch now.
 
-Target met: no dungeon shares a track with another dungeon.
+Target met: no dungeon, optional or not, shares a track with another.

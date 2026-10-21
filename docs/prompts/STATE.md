@@ -19,7 +19,8 @@ the area whose turn it is and nothing else; its stub is in QUEUE.md.
   h fairness  — the thinnest fight to 11/13 (next: the Brinehulk, 10/13).
   i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
-Rotation position: next is (e) music, pass 1. (a)-(c) pass 1 done S146, (d) S147.
+Rotation position: next is (f) side, pass 1. (a)-(c) pass 1 done S146, (d) S147,
+  (e) S199 (nine new tracks; docs/MUSIC.md).
 
 RETIRED ROTATION: 1 wide-rooms MET S111 | 2 art-provenance S9/S74 |
   3 boss-art S75 | 4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89 |

@@ -1005,6 +1005,30 @@ const main = async () => {
     JSON.stringify(music.arpeggio.notes) === '[24,28,31,24,28,31]' && music.arpeggio.gridOK, JSON.stringify(music.arpeggio));
   check('arpeggio fills exactly the rows it was written for', music.arpeggio.total === music.arpeggio.want, JSON.stringify(music.arpeggio));
 
+  // A miniboss stops the dungeon's theme for its own (S199), as Seasons'
+  // do, and the dungeon's theme comes back once it is gone. Driven on the
+  // real game: a Clawcrab spawned in D1's mouth room, then its death.
+  const mini = await G(async () => {
+    const g = window.__game;
+    const { spawnEntity } = await import('/src/game/entity.js');
+    const track = () => (g.audio.ok ? g.audio.trackName : g.audio._pendingTrack);
+    const save = JSON.stringify(g.progress);
+    const back = [g.mapId, g.room.floor || 0, g.room.rx, g.room.ry, g.player.x, g.player.y, g.player.dir];
+    g.enterMap('d1', 0, 3, 7, 112, 120, 'up', { instant: true });
+    const out = { before: track() };
+    const e = spawnEntity(g, 'clawcrab', 7, 3, {});
+    g.updateMusic();
+    out.during = track(); out.isBoss = !!e.isBoss;
+    e.die(g);
+    while (e.dying) e.update(g);
+    out.after = track();
+    g.enterMap(...back, { instant: true });
+    Object.assign(g.progress, JSON.parse(save));
+    return out;
+  });
+  check('a miniboss plays its own tune and gives the dungeon\'s back when it dies',
+    mini.before === 'dungeon' && mini.during === 'miniboss' && !mini.isBoss && mini.after === 'dungeon', JSON.stringify(mini));
+
   console.log('\n--- HUD, menu, save ---');
   // The menu comes and goes through Seasons' white fade (MENU_FADE_OPEN /
   // _CLOSE), and the page does not answer until it has faded in.
