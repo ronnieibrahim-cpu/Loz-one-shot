@@ -21,6 +21,14 @@
   picture guide's Secret caves (Quarry Hollow and Lightkeeper's Cove are
   missing) and docs/GUIDE.md's stale D6 rooms.
 
+## Queued by the human (S201): the dialogue pass
+- Townspeople's lines read long, cryptic and machine-written, and often say
+  nothing. Study how Oracle of Seasons and Ages write their NPCs (both
+  cartridges' text is in oracles-disasm: text/ under seasons and ages), then
+  rewrite ours shorter and plainer, each line telling the player something
+  (a hint, a place, a person, a joke). Show the human before/after samples
+  first. check-dialogue and check-text must stay green.
+
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;
   npm run build, dist/ committed; NEXT-SESSION.md and this file updated;
