@@ -1,33 +1,37 @@
-# Next session (S201) — after the dark lighthouse: ask what is next
+# Next session (S202) — the dialogue pass
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S200 and S199; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S201 and S200; docs/HANDOFF.md lessons (top ten).
 
 ## State
-- S191-S198 redrew most of the overworld; S199 the music pass. S200 built
-  the dark lighthouse side quest: a keeper on the Drowned Shore, three lamp
-  parts (lens dredged off East Strand, reflector cut from World's Edge's
-  kelp from a Reefseed stake, oil swum to at HIGH on East Crust), the lamp
-  lit with the Kilnshell, a beam, and Lightkeeper's Cove with the
-  Lamplighter's Wick. The Root Cellar (D5) holds the Wrackbone now.
+- S201: the written guide's Keep chapter rewritten (check-guide green again),
+  the picture guide's secret caves/side quests/charms caught up, region S (the
+  south shore east of the village) redrawn, and the bell-buoy echo built in
+  Sunken Cove (Resonance Rod mini-game; prize a bigger seed bag; proved by
+  tools/check-buoys.mjs).
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
-## The task
-- Ask the human what to do next before building anything. Candidates: the
-  rotation's (f) other half, an ORIGINAL mini-game (propose several; the
-  rising-tide shell hunt was offered once and not picked); the boxy regions
-  B, C, G, S (show the overworld picture again with them marked); the
-  picture guide's Secret caves (Quarry Hollow and Lightkeeper's Cove are
-  missing) and docs/GUIDE.md's stale D6 rooms.
+## The task: the dialogue pass (queued by the human, S201)
+- The human: townspeople's lines read long-winded, cryptic and "AI generated",
+  and often do not actually convey anything. Study how Oracle of Seasons and
+  Ages write their NPCs, then make ours less long-winded and more meaningful.
+- Source: both cartridges' text is in oracles-disasm (text/ under seasons and
+  ages; the repo copies parts in assets/*/oracles-disasm — check what is there,
+  or fetch github.com/Stewmath/oracles-disasm). Measure it: words per line,
+  pages per NPC, how often a line names a place, an item, a person or gives a
+  direct hint, how jokes and personality land in few words.
+- Then audit ours (src/data/story.js and every `say`/sign text in room data):
+  flag the long, vague and purple ones. Show the human a before/after sample
+  of 10-15 lines (with Seasons/Ages lines beside them for register) and ask
+  before rewriting the rest. Keep every line's job (a hint must stay a hint;
+  story beats keep their facts).
+- check-dialogue, check-text and check-cutscenes/watch-cutscenes (caption
+  reading time) must stay green; the guides quote some lines — update them.
 
-## Queued by the human (S201): the dialogue pass
-- Townspeople's lines read long, cryptic and machine-written, and often say
-  nothing. Study how Oracle of Seasons and Ages write their NPCs (both
-  cartridges' text is in oracles-disasm: text/ under seasons and ages), then
-  rewrite ours shorter and plainer, each line telling the player something
-  (a hint, a place, a person, a joke). Show the human before/after samples
-  first. check-dialogue and check-text must stay green.
+## Other candidates, if asked
+- Boxy regions left: B (the dark shore round the lighthouse, 0..3 x 0..1),
+  C (the Salt Pans' edges), G (the coast strips beside Tidewatch).
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

@@ -3999,6 +3999,28 @@ const GB_RENDER_SLICE_GAP_MS = 12;
  *  screen scroll and a text box. */
 const RACE_SHORE_FRAMES = 600;
 
+// --- the bell-buoy echo (S201 side content) --------------------------------
+
+/** f — between two notes of the sailor's tune. guessed; slow enough to see
+ *  which buoy lit before the next one does. */
+const BUOY_NOTE_FRAMES = 44;
+
+/** f — how long a buoy glows and its bell shows gold after it rings.
+ *  guessed; a little under one note of the tune. */
+const BUOY_LIT_FRAMES = 32;
+
+/** f — the pause before the sailor plays a tune, after his line closes.
+ *  guessed. */
+const BUOY_LEAD_IN_FRAMES = 40;
+
+/** f — one rise or fall of a buoy riding the swell (two pictures). guessed;
+ *  the cartridge's own floating things bob on about this beat. */
+const BUOY_BOB_FRAMES = 32;
+
+/** how many Reefseeds the buoy sailor's bigger seed bag holds (S201).
+ *  guessed; twice the first satchel, like the quarryman's bomb bag. */
+const REEFSEED_CAPACITY_BAG = 16;
+
 // --- Ice (the Abyssal Keep's Hold, S189) ----------------------------------
 //
 // Seasons' ice is a velocity model, not a walk: linkApplyTileTypes
@@ -4491,6 +4513,11 @@ __exports["GB_RENDER_BUDGET_MS"] = GB_RENDER_BUDGET_MS;
 __exports["GB_PRERENDER_BUDGET_MS"] = GB_PRERENDER_BUDGET_MS;
 __exports["GB_RENDER_SLICE_GAP_MS"] = GB_RENDER_SLICE_GAP_MS;
 __exports["RACE_SHORE_FRAMES"] = RACE_SHORE_FRAMES;
+__exports["BUOY_NOTE_FRAMES"] = BUOY_NOTE_FRAMES;
+__exports["BUOY_LIT_FRAMES"] = BUOY_LIT_FRAMES;
+__exports["BUOY_LEAD_IN_FRAMES"] = BUOY_LEAD_IN_FRAMES;
+__exports["BUOY_BOB_FRAMES"] = BUOY_BOB_FRAMES;
+__exports["REEFSEED_CAPACITY_BAG"] = REEFSEED_CAPACITY_BAG;
 __exports["ICE_STEP_FRAMES"] = ICE_STEP_FRAMES;
 __exports["ICE_ACCEL"] = ICE_ACCEL;
 __exports["ICE_TURN_STEPS"] = ICE_TURN_STEPS;
@@ -16353,7 +16380,7 @@ const rooms = {
     map: [
       'TToggggoTT',
       'Tgg....ggT',
-      'Tg......gg',
+      'Tg.g....gg',
       'Tg.11.1.gg',
       '*1111911gg',
       '*1**===*11',
@@ -16430,10 +16457,10 @@ const rooms = {
     // not a gate while you can walk round the back of it.
     map: [
       'TToggggoTT',
-      'Tgg....ggT',
-      'gg.4444.gg',
-      'gg.4444.gg',
-      'gg144441gg',
+      'Tgg.....gT',
+      'gg..oo...g',
+      'g.1111.1.g',
+      'g.444441.g',
       '11*******1',
       '*1444$$$1*',
       '**********',
@@ -16454,16 +16481,39 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TToggggoTT',
-      'Tgg....ggT',
-      'gg......gg',
-      'gg.5555.gg',
-      'gg155551gg',
-      '11******11',
-      '*1******1*',
+      'Tg......gT',
+      'g..*44*..g',
+      '.1**44*1**',
+      '1***44*1**',
+      '1****4*$**',
+      '*1*****$**',
       '**********',
     ],
+    // Where each buoy can be rung ALONE, at exactly which seas, and where
+    // the whole bay rings at once (see the entities below).
+    buoyRoom: {
+      alone: {
+        1: { seas: [0, 1], from: [0, 4] }, 2: { seas: [0, 1], from: [2, 1] },
+        3: { seas: [0], from: [5, 5] }, 4: { seas: [0, 1], from: [7, 1] },
+        5: { seas: [1], from: [7, 5] },
+      },
+      all: { sea: 2, from: [5, 1] },
+    },
     entities: [
-      ['octorokSea', 4, 3], ['siren', 6, 4],
+      // THE BELL-BUOY ECHO (S201): five buoys, note 1 lowest, and the sailor
+      // who plays tunes on them. Where each can be rung ALONE (the Rod rings
+      // every bell in earshot): 1, 2 and 4 from the beach at LOW or MID; 3
+      // only from the sandbar spit's tip at LOW; 5 only from the sinkhole
+      // channel, waded at MID. At HIGH the note reaches the whole bay.
+      // tools/check-buoys.mjs proves each claim (`buoyRoom`) in the engine.
+      ['buoy', 1, 4, { note: 1 }], ['buoy', 3, 2, { note: 2 }], ['buoy', 3, 6, { note: 3 }],
+      ['buoy', 6, 2, { note: 4 }], ['buoy', 8, 6, { note: 5 }],
+      ['buoyKeeper', 8, 2, {
+        sprite: 'npc_fisher', tunes: [[2, 4, 2], [1, 4, 3, 2], [3, 1, 5, 4, [1, 2, 3, 4, 5]]],
+        prize: 'seedBag', again: 'rupee20', flag: 'buoysWon',
+        ask: 'buoyAsk', noRod: 'buoyNoRod', turn: 'buoyTurn', sour: 'buoySour',
+        next: ['buoyNext1', 'buoyNext2'], win: 'buoyWin', winAgain: 'buoyWinAgain',
+      }],
     ],
   },
   '0,16,9': {
@@ -16479,11 +16529,11 @@ const rooms = {
     map: [
       'TToggg1***',
       'TgggggT*1*',
-      'gg.O.O.11*',
-      'gg......1*',
-      'gg1119111*',
-      '11**===*1*',
-      '*1***k**1*',
+      'g..O.O.11*',
+      '*g......1*',
+      '*g1119111*',
+      '****===*1*',
+      '*****k**1*',
       '**********',
     ],
     reefseedRoom: {
@@ -17261,16 +17311,16 @@ const rooms = {
     map: [
       'TTTTggTTTT',
       'TTTTggTTTT',
-      'gg....TTgg',
-      'g..O..TT.g',
-      'gg.1111..g',
-      '1111111111',
-      '**********',
+      'g...gg..Og',
+      'gg......gg',
+      '.1111..11.',
+      '11**11**11',
+      '*1****1***',
       '**********',
     ],
     entities: [
       ['crab', 2, 3],
-      ['octorokSea', 6, 5],
+      ['octorokSea', 6, 6],
     ],
   },
   '0,14,0': {
@@ -17444,11 +17494,11 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
-      'g..bA...gg',
-      'g..b..b.gg',
-      'gg.1111.gg',
-      '1111111111',
-      '**********',
+      'g..bA..g.g',
+      'g..b..b..g',
+      'gg.1111..1',
+      '11*1111*11',
+      '*1***11***',
       '**********',
     ],
     entities: [
@@ -17752,7 +17802,7 @@ __define("game/progress.js", function (__exports, __require) {
 
 const { hash32 } = __require("core/rng.js");
 const { newCharmSlots, CHARM_SLOTS } = __require("game/scrimshaw.js");
-const { REEFSEED_CAPACITY, BOTTLE_CAPACITY, BOMB_CAPACITY } = __require("data/feel.js");
+const { REEFSEED_CAPACITY, REEFSEED_CAPACITY_BAG, BOTTLE_CAPACITY, BOMB_CAPACITY } = __require("data/feel.js");
 const { OVERWORLD_W, widenOverworldX } = __require("data/overworld.js");
 
 const HEART_UNITS = 4;
@@ -17897,7 +17947,7 @@ function giveItem(p, id, level = 1) {
       p.bombs = Math.max(p.bombs, p.maxBombs);
     }
     if (id === 'reefseed') {
-      p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
+      p.maxReefseeds = Math.max(p.maxReefseeds, reefseedBase(p));
       p.reefseeds = Math.max(p.reefseeds, p.maxReefseeds);
     }
     if (id === 'bottle') {
@@ -17906,6 +17956,15 @@ function giveItem(p, id, level = 1) {
     }
   }
   return gained;
+}
+
+/**
+ * What the Reefseed satchel holds before any charm: the first satchel, or the
+ * buoy sailor's bigger bag (S201). The bag can be won before the Reefseed is
+ * found, so it is a flag the grant reads rather than a number set early.
+ */
+function reefseedBase(p) {
+  return p.flags && p.flags.seedBag ? REEFSEED_CAPACITY_BAG : REEFSEED_CAPACITY;
 }
 
 function flag(p, k) { return !!p.flags[k]; }
@@ -18160,6 +18219,7 @@ __exports["newProgress"] = newProgress;
 __exports["itemLevel"] = itemLevel;
 __exports["hasItem"] = hasItem;
 __exports["giveItem"] = giveItem;
+__exports["reefseedBase"] = reefseedBase;
 __exports["flag"] = flag;
 __exports["setFlag"] = setFlag;
 __exports["keyCount"] = keyCount;
@@ -23130,12 +23190,12 @@ const { TILE } = __require("core/screen.js");
 const { FP_ONE, sp } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { drawText } = __require("gfx/font.js");
-const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag, hasItem } = __require("game/progress.js");
+const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag, hasItem, reefseedBase } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
@@ -23200,6 +23260,25 @@ const PICKUPS = {
       addBombs(p, p.maxBombs);
       g.audio.jingle('itemGet');
       g.say(`A bigger bomb bag! It holds ${p.maxBombs} bombs.`);
+    },
+  },
+  // THE BUOY SAILOR'S BAG (S201): the bell-buoy echo's first prize. Like the
+  // quarryman's bag it raises a ceiling rather than adding an item. It can be
+  // won before the Reefseed is found, so the bag is a flag the grant reads
+  // (progress.reefseedBase) and fills the satchel only if there is one.
+  seedBag: {
+    sprite: 'i_reefseed', pal: null,
+    get(g) {
+      const p = g.progress;
+      setFlag(p, 'seedBag');
+      g.audio.jingle('itemGet');
+      if (p.maxReefseeds > 0) {
+        p.maxReefseeds = Math.max(p.maxReefseeds, reefseedBase(p));
+        addReefseeds(p, g.reefseedCap(), g.reefseedCap());
+        g.say(`A bigger seed bag! It holds ${p.maxReefseeds} Reefseeds.`);
+      } else {
+        g.say(`A bigger seed bag! It will hold ${reefseedBase(p)} Reefseeds,\nonce you have some.`);
+      }
     },
   },
   // NO TEXT BOX, deliberately. An open dialogue freezes every entity while the
@@ -23766,6 +23845,169 @@ class RaceGoal extends NPC {
   }
 }
 defineEntity('raceGoal', (x, y, o) => new RaceGoal(x, y, o));
+
+// --------------------------------------------------------------------------
+// The bell-buoy echo (S201 side content): a sailor plays a tune on the buoys
+// moored in Sunken Cove, and the player rings it back with the Resonance Rod.
+// The Rod rings EVERY bell in earshot (ringResonance), so the game is where
+// you stand: a spot where only the right buoy hears you, and the tide decides
+// which spots there are — a sandbar tip only at LOW, a sinkhole channel only
+// waded at MID, and at HIGH the note carries twice as far, which rings the
+// whole bay at once. Run state lives on the sailor, so leaving the screen
+// drops a game in progress; only the first win is saved (`flag`).
+//
+//   ['buoy', 3, 2, { note: 2 }]                       note 1..5, low to high
+//   ['buoyKeeper', 5, 1, { tunes: [[2, 4, 2], ...], prize: 'seedBag',
+//     again: 'rupee20', flag: 'buoysWon', ask: ..., ... }]
+//
+// A tune is a list of notes; a note is a buoy number or a list of buoy
+// numbers rung in the same stroke.
+// --------------------------------------------------------------------------
+
+// The chime is one voice played at five pitches: a major pentatonic, an
+// octave under the sunken bell's, so the bay sounds like buoys and not a
+// shrine bell.
+const BUOY_PITCH = [0.5, 0.5625, 0.625, 0.75, 0.8333];
+
+class Buoy extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 4, w: 12, h: 11 };
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    // Moored in open water nobody walks: check-placement asks no ground of it.
+    this.perched = true;
+    this.note = o.note || 1;
+    this.lit = 0;
+    this.t = 0;
+  }
+
+  /** Sound this buoy's note and light it, whoever struck it. */
+  sound(game) {
+    this.lit = BUOY_LIT_FRAMES;
+    game.audio.sfx('chime', { pitch: BUOY_PITCH[this.note - 1] || 1 });
+    // The bell is two pixels wide: the sparkle is what a player watching the
+    // sailor's tune actually sees, the sunken bell's own answer (SunkenBell).
+    game.spawnEffect('sparkle', this.cx - 8, this.cy - 18, { life: BUOY_LIT_FRAMES, pal: 'gold' });
+  }
+
+  /** Called by ringResonance for every entity in earshot: one stroke may
+   *  reach several buoys, and the sailor judges them together. */
+  onRing(game) {
+    this.sound(game);
+    (game.buoyStrike = game.buoyStrike || []).push(this.note);
+  }
+
+  update() {
+    this.t++;
+    if (this.lit > 0) this.lit--;
+  }
+
+  interact(game) { game.say('A bell buoy, riding at its mooring.'); }
+
+  spriteName() { return Math.floor(this.t / BUOY_BOB_FRAMES) % 2 ? 'o_buoy1' : 'o_buoy0'; }
+
+  draw(ctx, game, ox, oy) {
+    this.pal = this.lit > 0 ? 'o_buoyLit' : 'o_buoy';
+    super.draw(ctx, game, ox, oy);
+  }
+}
+defineEntity('buoy', (x, y, o) => new Buoy(x, y, o));
+
+class BuoyKeeper extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.tunes = o.tunes || [];
+    this.prize = o.prize || 'rupee20';
+    this.again = o.again || 'rupee20';
+    this.winFlag = o.flag || null;
+    this.text = {
+      ask: o.ask, noRod: o.noRod, turn: o.turn, sour: o.sour,
+      next: o.next || [], win: o.win, winAgain: o.winAgain,
+    };
+    this.round = 0;       // which tune
+    this.state = 'idle';  // idle | lead | play | listen
+    this.timer = 0;
+    this.step = 0;        // the note being played, or the note expected
+  }
+
+  buoys(game) { return game.entities.filter(e => e instanceof Buoy && !e.remove); }
+
+  interact(game, player) {
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    if (!hasItem(game.progress, 'rod')) { game.startDialogue(this.text.noRod, this); return; }
+    if (this.state === 'listen' || this.state === 'play') { game.startDialogue(this.text.turn, this); return; }
+    const go = () => this.begin(game);
+    game.startDialogue(this.round === 0 ? this.text.ask : this.text.next[this.round - 1], this);
+    if (game.dialogue.active) game.dialogue.onClose = go; else go();
+  }
+
+  /** Play the current round's tune from the start. */
+  begin(game) {
+    this.state = 'lead';
+    this.timer = BUOY_LEAD_IN_FRAMES;
+    this.step = 0;
+    game.buoyStrike = null;
+  }
+
+  noteSet(note) { return (Array.isArray(note) ? note : [note]).slice().sort((a, b) => a - b).join(','); }
+
+  update(game) {
+    super.update(game);
+    const strike = game.buoyStrike;
+    game.buoyStrike = null;
+    if (this.state === 'lead' || this.state === 'play') {
+      if (--this.timer > 0) return;
+      const tune = this.tunes[this.round];
+      if (this.state === 'play' && this.step >= tune.length) {
+        this.state = 'listen';
+        this.step = 0;
+        return;
+      }
+      this.state = 'play';
+      const want = new Set(Array.isArray(tune[this.step]) ? tune[this.step] : [tune[this.step]]);
+      for (const b of this.buoys(game)) if (want.has(b.note)) b.sound(game);
+      this.step++;
+      this.timer = BUOY_NOTE_FRAMES;
+      return;
+    }
+    if (this.state !== 'listen' || !strike) return;
+    // Rung treading water or from the seafloor: the bay answers, the sailor
+    // does not count it. The Dredge Line and the Reefseed want feet down too.
+    const p = game.player;
+    if (p && (p.inDeep || p.underwater)) return;
+    const tune = this.tunes[this.round];
+    if (this.noteSet(strike) !== this.noteSet(tune[this.step])) {
+      this.state = 'idle';
+      game.audio.sfx('deny');
+      game.startDialogue(this.text.sour, this);
+      return;
+    }
+    if (++this.step < tune.length) return;
+    // The whole tune.
+    this.state = 'idle';
+    this.round++;
+    if (this.round < this.tunes.length) {
+      game.audio.jingle('secret');
+      const go = () => this.begin(game);
+      game.startDialogue(this.text.next[this.round - 1], this);
+      if (game.dialogue.active) game.dialogue.onClose = go; else go();
+      return;
+    }
+    this.round = 0;
+    const first = !(this.winFlag && flag(game.progress, this.winFlag));
+    if (this.winFlag) setFlag(game.progress, this.winFlag);
+    game.startDialogue(first ? this.text.win : this.text.winAgain, this);
+    const pay = () => game.presentPrize(first ? this.prize : this.again);
+    if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
+  }
+}
+defineEntity('buoyKeeper', (x, y, o) => new BuoyKeeper(x, y, o));
 
 class Sign extends Entity {
   constructor(x, y, o = {}) {
@@ -24975,6 +25217,8 @@ __exports["Chest"] = Chest;
 __exports["NPC"] = NPC;
 __exports["Racer"] = Racer;
 __exports["RaceGoal"] = RaceGoal;
+__exports["Buoy"] = Buoy;
+__exports["BuoyKeeper"] = BuoyKeeper;
 __exports["Sign"] = Sign;
 __exports["CAPACITY_FOR"] = CAPACITY_FOR;
 __exports["ShopItem"] = ShopItem;
@@ -35419,7 +35663,7 @@ const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
 const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } = __require("game/items.js");
 const { spawnRecordedChunks, chunkAtHome } = __require("game/chunk.js");
-const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE } = __require("game/progress.js");
+const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE, reefseedBase } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu, invalidateWorldMap } = __require("game/menu.js");
@@ -35432,7 +35676,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -36785,7 +37029,7 @@ class Game {
       this.autoEquip(id);
       if (id === 'bombs') { p.maxBombs = Math.max(p.maxBombs, 10); addBombs(p, 10); }
       if (id === 'reefseed') {
-        p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
+        p.maxReefseeds = Math.max(p.maxReefseeds, reefseedBase(p));
         addReefseeds(p, this.reefseedCap(), this.reefseedCap());
       }
       if (id === 'bottle') {
@@ -66018,6 +66262,16 @@ const DIALOGUE = {
   raceBusy: 'Why are you still here? RUN!',
   raceWin: 'Pip: You made it! Nobody beats the tide\nlike that. Here, you earned it.',
   raceLose: 'Too slow! The tide would have had you.\nCome back and try again.',
+  // The bell-buoy echo (S201), Sunken Cove. Short on purpose (the human's
+  // S201 note on our townsfolk running long and saying little).
+  buoyAsk: 'Each buoy rings its own note. I play a\ntune, you ring it back with your Rod.\nIt rings every bell near you, mind.',
+  buoyNoRod: 'These buoys play a tune if you strike\nthem. Come back with something metal\nthat rings.',
+  buoyTurn: 'Your turn. Ring it back.',
+  buoySour: 'Sour note! Talk to me and we will\ntry that one again.',
+  buoyNext1: 'Good ear. Now four notes.\nSome only reach at low tide.',
+  buoyNext2: 'Last one. It ends with the whole bay\nringing at once.',
+  buoyWin: 'That is the old tune, every note!\nHave my spare seed bag. It holds\ntwice as many.',
+  buoyWinAgain: 'Still in tune. Here, for your trouble.',
   raceGoalWait: 'Pip: The finish is here. Get my friend\non South Bluff to start the clock.',
   ledgerAsk: 'My ledger went out of the window in the\nlast big wind. Every debt on this coast\nis in that book. Try the South Sands.',
   ledgerThanks: 'My ledger! Wet, but legible. Wet is how\nit always is. Here: I owe you, and now\nthat is written down too.',
@@ -74650,6 +74904,45 @@ const ERRAND_ART = {
     ................
     ................
     ................` },
+  // A BELL BUOY (S201), moored in Sunken Cove for the bell-buoy echo. No
+  // Oracle game has one; drawn to sit beside the extracted sea creatures. A
+  // red-and-white float, a cage on top and the bell inside it. Two pictures,
+  // the second a pixel lower, for riding the swell; it is drawn in `o_buoy`
+  // and, while it rings, `o_buoyLit` (the bell turns gold).
+  o_buoy0: { pal: 'o_buoy', art: `
+    .......33.......
+    ....33333333....
+    ....3..33..3....
+    ....3.3223.3....
+    ....3.3223.3....
+    ...3333333333...
+    ...3000000003...
+    ..301111111103..
+    ..311111111113..
+    ..300000000003..
+    ..322222222223..
+    ...3333333333...
+    ................
+    ................
+    ................
+    ................` },
+  o_buoy1: { pal: 'o_buoy', art: `
+    ................
+    .......33.......
+    ....33333333....
+    ....3..33..3....
+    ....3.3223.3....
+    ....3.3223.3....
+    ...3333333333...
+    ...3000000003...
+    ..301111111103..
+    ..311111111113..
+    ..300000000003..
+    ..322222222223..
+    ...3333333333...
+    ................
+    ................
+    ................` },
 };
 
 const ERRAND_PALETTES = {
@@ -74667,6 +74960,9 @@ const ERRAND_PALETTES = {
   i_e_mirror: ['#fff8e0', '#f0c850', '#9a6020', '#000000'],
   // Amber oil in a stoppered flask.
   i_e_oil: ['#f8f0a0', '#d89820', '#805010', '#000000'],
+  // A white band, a red float, the rust-dark bell; ringing, the bell is gold.
+  o_buoy: ['#f8f8f0', '#e04838', '#784028', '#000000'],
+  o_buoyLit: ['#f8f8f0', '#e04838', '#f8c838', '#000000'],
 };
 
 function installErrandSprites() {

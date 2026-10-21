@@ -11,7 +11,7 @@ import { sprites } from '../gfx/art.js';
 import { drawText } from '../gfx/font.js';
 import {
   addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer,
-  addHeartPiece, HEART_UNITS, setFlag, flag, hasItem,
+  addHeartPiece, HEART_UNITS, setFlag, flag, hasItem, reefseedBase,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
@@ -26,6 +26,7 @@ import {
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES,
   FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG,
+  BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
 
@@ -91,6 +92,25 @@ export const PICKUPS = {
       addBombs(p, p.maxBombs);
       g.audio.jingle('itemGet');
       g.say(`A bigger bomb bag! It holds ${p.maxBombs} bombs.`);
+    },
+  },
+  // THE BUOY SAILOR'S BAG (S201): the bell-buoy echo's first prize. Like the
+  // quarryman's bag it raises a ceiling rather than adding an item. It can be
+  // won before the Reefseed is found, so the bag is a flag the grant reads
+  // (progress.reefseedBase) and fills the satchel only if there is one.
+  seedBag: {
+    sprite: 'i_reefseed', pal: null,
+    get(g) {
+      const p = g.progress;
+      setFlag(p, 'seedBag');
+      g.audio.jingle('itemGet');
+      if (p.maxReefseeds > 0) {
+        p.maxReefseeds = Math.max(p.maxReefseeds, reefseedBase(p));
+        addReefseeds(p, g.reefseedCap(), g.reefseedCap());
+        g.say(`A bigger seed bag! It holds ${p.maxReefseeds} Reefseeds.`);
+      } else {
+        g.say(`A bigger seed bag! It will hold ${reefseedBase(p)} Reefseeds,\nonce you have some.`);
+      }
     },
   },
   // NO TEXT BOX, deliberately. An open dialogue freezes every entity while the
@@ -657,6 +677,169 @@ export class RaceGoal extends NPC {
   }
 }
 defineEntity('raceGoal', (x, y, o) => new RaceGoal(x, y, o));
+
+// --------------------------------------------------------------------------
+// The bell-buoy echo (S201 side content): a sailor plays a tune on the buoys
+// moored in Sunken Cove, and the player rings it back with the Resonance Rod.
+// The Rod rings EVERY bell in earshot (ringResonance), so the game is where
+// you stand: a spot where only the right buoy hears you, and the tide decides
+// which spots there are — a sandbar tip only at LOW, a sinkhole channel only
+// waded at MID, and at HIGH the note carries twice as far, which rings the
+// whole bay at once. Run state lives on the sailor, so leaving the screen
+// drops a game in progress; only the first win is saved (`flag`).
+//
+//   ['buoy', 3, 2, { note: 2 }]                       note 1..5, low to high
+//   ['buoyKeeper', 5, 1, { tunes: [[2, 4, 2], ...], prize: 'seedBag',
+//     again: 'rupee20', flag: 'buoysWon', ask: ..., ... }]
+//
+// A tune is a list of notes; a note is a buoy number or a list of buoy
+// numbers rung in the same stroke.
+// --------------------------------------------------------------------------
+
+// The chime is one voice played at five pitches: a major pentatonic, an
+// octave under the sunken bell's, so the bay sounds like buoys and not a
+// shrine bell.
+const BUOY_PITCH = [0.5, 0.5625, 0.625, 0.75, 0.8333];
+
+export class Buoy extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 4, w: 12, h: 11 };
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    // Moored in open water nobody walks: check-placement asks no ground of it.
+    this.perched = true;
+    this.note = o.note || 1;
+    this.lit = 0;
+    this.t = 0;
+  }
+
+  /** Sound this buoy's note and light it, whoever struck it. */
+  sound(game) {
+    this.lit = BUOY_LIT_FRAMES;
+    game.audio.sfx('chime', { pitch: BUOY_PITCH[this.note - 1] || 1 });
+    // The bell is two pixels wide: the sparkle is what a player watching the
+    // sailor's tune actually sees, the sunken bell's own answer (SunkenBell).
+    game.spawnEffect('sparkle', this.cx - 8, this.cy - 18, { life: BUOY_LIT_FRAMES, pal: 'gold' });
+  }
+
+  /** Called by ringResonance for every entity in earshot: one stroke may
+   *  reach several buoys, and the sailor judges them together. */
+  onRing(game) {
+    this.sound(game);
+    (game.buoyStrike = game.buoyStrike || []).push(this.note);
+  }
+
+  update() {
+    this.t++;
+    if (this.lit > 0) this.lit--;
+  }
+
+  interact(game) { game.say('A bell buoy, riding at its mooring.'); }
+
+  spriteName() { return Math.floor(this.t / BUOY_BOB_FRAMES) % 2 ? 'o_buoy1' : 'o_buoy0'; }
+
+  draw(ctx, game, ox, oy) {
+    this.pal = this.lit > 0 ? 'o_buoyLit' : 'o_buoy';
+    super.draw(ctx, game, ox, oy);
+  }
+}
+defineEntity('buoy', (x, y, o) => new Buoy(x, y, o));
+
+export class BuoyKeeper extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.tunes = o.tunes || [];
+    this.prize = o.prize || 'rupee20';
+    this.again = o.again || 'rupee20';
+    this.winFlag = o.flag || null;
+    this.text = {
+      ask: o.ask, noRod: o.noRod, turn: o.turn, sour: o.sour,
+      next: o.next || [], win: o.win, winAgain: o.winAgain,
+    };
+    this.round = 0;       // which tune
+    this.state = 'idle';  // idle | lead | play | listen
+    this.timer = 0;
+    this.step = 0;        // the note being played, or the note expected
+  }
+
+  buoys(game) { return game.entities.filter(e => e instanceof Buoy && !e.remove); }
+
+  interact(game, player) {
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    if (!hasItem(game.progress, 'rod')) { game.startDialogue(this.text.noRod, this); return; }
+    if (this.state === 'listen' || this.state === 'play') { game.startDialogue(this.text.turn, this); return; }
+    const go = () => this.begin(game);
+    game.startDialogue(this.round === 0 ? this.text.ask : this.text.next[this.round - 1], this);
+    if (game.dialogue.active) game.dialogue.onClose = go; else go();
+  }
+
+  /** Play the current round's tune from the start. */
+  begin(game) {
+    this.state = 'lead';
+    this.timer = BUOY_LEAD_IN_FRAMES;
+    this.step = 0;
+    game.buoyStrike = null;
+  }
+
+  noteSet(note) { return (Array.isArray(note) ? note : [note]).slice().sort((a, b) => a - b).join(','); }
+
+  update(game) {
+    super.update(game);
+    const strike = game.buoyStrike;
+    game.buoyStrike = null;
+    if (this.state === 'lead' || this.state === 'play') {
+      if (--this.timer > 0) return;
+      const tune = this.tunes[this.round];
+      if (this.state === 'play' && this.step >= tune.length) {
+        this.state = 'listen';
+        this.step = 0;
+        return;
+      }
+      this.state = 'play';
+      const want = new Set(Array.isArray(tune[this.step]) ? tune[this.step] : [tune[this.step]]);
+      for (const b of this.buoys(game)) if (want.has(b.note)) b.sound(game);
+      this.step++;
+      this.timer = BUOY_NOTE_FRAMES;
+      return;
+    }
+    if (this.state !== 'listen' || !strike) return;
+    // Rung treading water or from the seafloor: the bay answers, the sailor
+    // does not count it. The Dredge Line and the Reefseed want feet down too.
+    const p = game.player;
+    if (p && (p.inDeep || p.underwater)) return;
+    const tune = this.tunes[this.round];
+    if (this.noteSet(strike) !== this.noteSet(tune[this.step])) {
+      this.state = 'idle';
+      game.audio.sfx('deny');
+      game.startDialogue(this.text.sour, this);
+      return;
+    }
+    if (++this.step < tune.length) return;
+    // The whole tune.
+    this.state = 'idle';
+    this.round++;
+    if (this.round < this.tunes.length) {
+      game.audio.jingle('secret');
+      const go = () => this.begin(game);
+      game.startDialogue(this.text.next[this.round - 1], this);
+      if (game.dialogue.active) game.dialogue.onClose = go; else go();
+      return;
+    }
+    this.round = 0;
+    const first = !(this.winFlag && flag(game.progress, this.winFlag));
+    if (this.winFlag) setFlag(game.progress, this.winFlag);
+    game.startDialogue(first ? this.text.win : this.text.winAgain, this);
+    const pay = () => game.presentPrize(first ? this.prize : this.again);
+    if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
+  }
+}
+defineEntity('buoyKeeper', (x, y, o) => new BuoyKeeper(x, y, o));
 
 export class Sign extends Entity {
   constructor(x, y, o = {}) {

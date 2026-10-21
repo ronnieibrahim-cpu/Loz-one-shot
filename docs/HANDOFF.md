@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A screen can hold a puzzle that no grep for its name finds (S201).** Deep
+  Bar's `anchorGate` and its onEnter blank were keyed on the room, not named
+  anywhere a tool or the route mentions `0,12,9`; the south-shore redraw
+  overwrote the gate's row and only check-placement (oddly, one room over)
+  noticed. Before redrawing a screen, read its WHOLE room definition: every
+  `*Room`/`*Gate` claim, `script`, `buried`, entity.
+- **check-placement entered rooms without stepping a frame (S201)**, so a
+  pickup a room's script spawns on entry waited in `pendingAdd` and was judged
+  in the next room it entered. It flushes after each entry now.
+
 - **A map id registered twice used to replace the first silently (S200).**
   The lighthouse cove was written as `cave17`, Quarry Hollow's id, and the
   quarryman's whole cave vanished with every checker but one green: only

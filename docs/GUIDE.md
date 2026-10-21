@@ -2098,6 +2098,25 @@ numbered in the heart list above); they are all optional.
   sweeps the shore, and the cliff at (8,0) on **Sunless Flat**
   (`overworld/0,0,1`, the screen south of the lighthouse) is now a cave mouth:
   **Lightkeeper's Cove** (`cave18`) holds the Lamplighter's Wick and 100 rupees.
+- **The bell-buoy echo** (a **bigger seed bag**, 16 Reefseeds; 20 rupees on
+  later wins; S201). In **Sunken Cove** (`overworld/0,15,9`, the south shore
+  two screens east of Sandpiper Row's beach) a sailor plays tunes on five bell
+  buoys and you ring them back with the **Resonance Rod**. The Rod rings every
+  bell within three squares (six at HIGH), so the trick is where you stand.
+  Number the buoys 1-5 from the lowest note: 1 is the one off the west shore,
+  2 and 4 the two along the top of the bay, 3 the one at the foot of the
+  middle sandbar, 5 the one in the south-east corner.
+  - Alone at **LOW or MID**: buoy 1 from the west edge (0,4); buoy 2 from (2,1);
+    buoy 4 from (7,1).
+  - Alone only at **LOW**: buoy 3, from the tip of the sandbar spit (5,5).
+  - Alone only at **MID**: buoy 5, wading the little channel to (7,5).
+  - At **HIGH** the note carries twice as far: from the beach at (5,1) all
+    five ring at once.
+  Round 1 is 2-4-2. Round 2 is 1-4-3-2 (play it at LOW). Round 3 is 3-1-5-4
+  and then the whole bay: 3 and 1 at LOW, sound the conch to MID for 5 and 4,
+  and once more to HIGH for the last stroke. A wrong buoy, or two at once,
+  sours it; talk to him to try the round again. Rings made while swimming do
+  not count. Won before you have the Reefseed, the bag waits until you do.
 - **The salvage dive** (Heart Piece 14). Dov, at Wrecked Hull, lost five casks
   in the deep pool behind the wreck. Set the **Kelp-Soled Cleats** to walk the
   sea floor and bring up all five **in one breath** — surface early and they

@@ -2594,7 +2594,7 @@ const rooms = {
     map: [
       'TToggggoTT',
       'Tgg....ggT',
-      'Tg......gg',
+      'Tg.g....gg',
       'Tg.11.1.gg',
       '*1111911gg',
       '*1**===*11',
@@ -2671,10 +2671,10 @@ const rooms = {
     // not a gate while you can walk round the back of it.
     map: [
       'TToggggoTT',
-      'Tgg....ggT',
-      'gg.4444.gg',
-      'gg.4444.gg',
-      'gg144441gg',
+      'Tgg.....gT',
+      'gg..oo...g',
+      'g.1111.1.g',
+      'g.444441.g',
       '11*******1',
       '*1444$$$1*',
       '**********',
@@ -2695,16 +2695,39 @@ const rooms = {
     legend: 'dunes', music: 'overworld',
     map: [
       'TToggggoTT',
-      'Tgg....ggT',
-      'gg......gg',
-      'gg.5555.gg',
-      'gg155551gg',
-      '11******11',
-      '*1******1*',
+      'Tg......gT',
+      'g..*44*..g',
+      '.1**44*1**',
+      '1***44*1**',
+      '1****4*$**',
+      '*1*****$**',
       '**********',
     ],
+    // Where each buoy can be rung ALONE, at exactly which seas, and where
+    // the whole bay rings at once (see the entities below).
+    buoyRoom: {
+      alone: {
+        1: { seas: [0, 1], from: [0, 4] }, 2: { seas: [0, 1], from: [2, 1] },
+        3: { seas: [0], from: [5, 5] }, 4: { seas: [0, 1], from: [7, 1] },
+        5: { seas: [1], from: [7, 5] },
+      },
+      all: { sea: 2, from: [5, 1] },
+    },
     entities: [
-      ['octorokSea', 4, 3], ['siren', 6, 4],
+      // THE BELL-BUOY ECHO (S201): five buoys, note 1 lowest, and the sailor
+      // who plays tunes on them. Where each can be rung ALONE (the Rod rings
+      // every bell in earshot): 1, 2 and 4 from the beach at LOW or MID; 3
+      // only from the sandbar spit's tip at LOW; 5 only from the sinkhole
+      // channel, waded at MID. At HIGH the note reaches the whole bay.
+      // tools/check-buoys.mjs proves each claim (`buoyRoom`) in the engine.
+      ['buoy', 1, 4, { note: 1 }], ['buoy', 3, 2, { note: 2 }], ['buoy', 3, 6, { note: 3 }],
+      ['buoy', 6, 2, { note: 4 }], ['buoy', 8, 6, { note: 5 }],
+      ['buoyKeeper', 8, 2, {
+        sprite: 'npc_fisher', tunes: [[2, 4, 2], [1, 4, 3, 2], [3, 1, 5, 4, [1, 2, 3, 4, 5]]],
+        prize: 'seedBag', again: 'rupee20', flag: 'buoysWon',
+        ask: 'buoyAsk', noRod: 'buoyNoRod', turn: 'buoyTurn', sour: 'buoySour',
+        next: ['buoyNext1', 'buoyNext2'], win: 'buoyWin', winAgain: 'buoyWinAgain',
+      }],
     ],
   },
   '0,16,9': {
@@ -2720,11 +2743,11 @@ const rooms = {
     map: [
       'TToggg1***',
       'TgggggT*1*',
-      'gg.O.O.11*',
-      'gg......1*',
-      'gg1119111*',
-      '11**===*1*',
-      '*1***k**1*',
+      'g..O.O.11*',
+      '*g......1*',
+      '*g1119111*',
+      '****===*1*',
+      '*****k**1*',
       '**********',
     ],
     reefseedRoom: {
@@ -3502,16 +3525,16 @@ const rooms = {
     map: [
       'TTTTggTTTT',
       'TTTTggTTTT',
-      'gg....TTgg',
-      'g..O..TT.g',
-      'gg.1111..g',
-      '1111111111',
-      '**********',
+      'g...gg..Og',
+      'gg......gg',
+      '.1111..11.',
+      '11**11**11',
+      '*1****1***',
       '**********',
     ],
     entities: [
       ['crab', 2, 3],
-      ['octorokSea', 6, 5],
+      ['octorokSea', 6, 6],
     ],
   },
   '0,14,0': {
@@ -3685,11 +3708,11 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
-      'g..bA...gg',
-      'g..b..b.gg',
-      'gg.1111.gg',
-      '1111111111',
-      '**********',
+      'g..bA..g.g',
+      'g..b..b..g',
+      'gg.1111..1',
+      '11*1111*11',
+      '*1***11***',
       '**********',
     ],
     entities: [

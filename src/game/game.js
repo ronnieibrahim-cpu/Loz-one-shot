@@ -45,7 +45,7 @@ import { spawnRecordedChunks, chunkAtHome } from './chunk.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
   itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag,
-  OVERWORLD_RESPAWN_DISTANCE,
+  OVERWORLD_RESPAWN_DISTANCE, reefseedBase,
 } from './progress.js';
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
@@ -71,7 +71,7 @@ import {
   GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
-  LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
+  LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
   WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
@@ -1429,7 +1429,7 @@ export class Game {
       this.autoEquip(id);
       if (id === 'bombs') { p.maxBombs = Math.max(p.maxBombs, 10); addBombs(p, 10); }
       if (id === 'reefseed') {
-        p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
+        p.maxReefseeds = Math.max(p.maxReefseeds, reefseedBase(p));
         addReefseeds(p, this.reefseedCap(), this.reefseedCap());
       }
       if (id === 'bottle') {
