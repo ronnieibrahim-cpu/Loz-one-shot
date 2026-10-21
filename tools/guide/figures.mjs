@@ -624,4 +624,7 @@ FIGURES.push(
   sc('netmender', 'ow-t0-7-9', 7, 5, 'open at LOW', [LOW]),
   sc('pot', 'ow-t1-11-3', 6, 6, 'bomb the crack'),
   sc('lantern', 'ow-t0-16-2', 7, 4, 'open at LOW', [LOW]),
+  // S201: the quarryman's door (S195) and the lighthouse's cove (S200).
+  sc('quarry', 'ow-t1-3-5', 7, 1, 'bomb the crack'),
+  sc('cove', 'ow-lit-0-1', 8, 0, 'open once the lamp is lit'),
 );

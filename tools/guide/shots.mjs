@@ -393,3 +393,5 @@ STATIC_SHOTS.push({ id: 'opt-palace-lair', room: ['palace', 0, 1, 0], tide: 1 })
 STATIC_SHOTS.push({ id: 'ow-t0-1-2', room: ['overworld', 0, 1, 2], tide: 0 });
 // The secret caves whose mouths are out of the sea only at LOW (S191-S193).
 for (const [x, y] of [[7, 5], [7, 9], [16, 2]]) STATIC_SHOTS.push({ id: `ow-t0-${x}-${y}`, room: ['overworld', 0, x, y], tide: 0 });
+// Lightkeeper's Cove (S200): its mouth is a cliff until the lighthouse is lit (S201).
+STATIC_SHOTS.push({ id: 'ow-lit-0-1', room: ['overworld', 0, 0, 1], tide: 1, prep: { flags: ['lighthouseLit'] } });
