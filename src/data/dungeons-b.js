@@ -133,7 +133,7 @@ export function installDungeonsB() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 8, 'Cut into the lintel: "The wood was here before\nthe water. Stand on what you plant, and plant\nwhile you can stand."'],
+          [2, 8, 'Cut into the lintel: "Plant your seeds, then stand on what grows."'],
         ],
       },
       '0,3,6': {
@@ -245,7 +245,7 @@ export function installDungeonsB() {
           reward: { reveal: true, say: 'The coral holds the plate down.\nA chest rises by the east wall.' },
         },
         readable: [
-          [2, 9, 'Scratched into the bark: "At high water the\nwood is not there. Everything else in this\nshrine follows from that."'],
+          [2, 9, 'Scratched into the bark: "At HIGH tide the trees here vanish underwater. Everything in this shrine starts from that."'],
         ],
       },
       '0,2,5': {
@@ -439,7 +439,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [6, 7, 'Burnt into the shelf:\n"Three trunks drank.\nOnly one of them is empty."'],
+          [6, 7, 'Burnt into the shelf: "Three trunks. Two are solid. Only one is hollow."'],
         ],
         lensRoom: {
           pin: 1, reveals: 2, decide: [6, 7],
@@ -526,7 +526,7 @@ export function installDungeonsB() {
           ['stalfos', 9, 7],
         ],
         readable: [
-          [2, 2, 'A warden\'s plate: "Past this door the floor\nis a thing you bring with you."'],
+          [2, 2, 'A warden\'s plate: "Past this door, you\'ll have to grow your own floor."'],
         ],
       },
       '0,1,4': {
@@ -604,7 +604,7 @@ export function installDungeonsB() {
           ['keese', 2, 7],
         ],
         readable: [
-          [2, 3, 'Knotted into a rope on the wall: "One from the\nbank at flood. One from the first at slack."'],
+          [2, 3, 'Knotted into a rope on the wall: "Throw one from the bank at HIGH tide. Throw the next from the first at LOW."'],
         ],
       },
       '0,0,3': {
@@ -655,7 +655,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [12, 3, 'A ferryman\'s mark: "The road is only there\nwhen the water is not."'],
+          [12, 3, 'A ferryman\'s mark: "The road is only there when the water isn\'t."'],
         ],
       },
 
@@ -832,7 +832,7 @@ export function installDungeonsB() {
           ['keese', 3, 15],
         ],
         readable: [
-          [12, 18, 'Cut into the shaft\'s foot: "Once at flood.\nTwice at slack. Then the knife."'],
+          [12, 18, 'Cut into the shaft\'s foot: "Once at HIGH tide. Twice at LOW. Then cut!"'],
         ],
       },
       '0,7,6': {
@@ -970,7 +970,7 @@ export function installDungeonsB() {
           ['tektite', 13, 7],
         ],
         readable: [
-          [2, 2, 'Cut low, where the water reaches it: "Throw\nwhile the wood is gone. Stand once it is back."'],
+          [2, 2, 'Cut low, where the water reaches it: "Throw while the trees are underwater. Stand on it once they\'re back."'],
         ],
       },
       '0,2,3': {
@@ -1230,7 +1230,7 @@ export function installDungeonsB() {
           reward: { reveal: true, say: 'Three stakes hold the notches down.\nSomething rises in the west hall.' },
         },
         readable: [
-          [33, 5, 'A shrine board, barely legible: "Twice over.\nThe first while the wood is under, the second\nwhile it is not."'],
+          [33, 5, 'A shrine board, barely legible: "Twice over. The first at HIGH tide, the second at LOW."'],
         ],
       },
       '0,3,2': {
@@ -1581,7 +1581,7 @@ export function installDungeonsB() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 6, 'Cut in black stone: "Everything the sea takes,\nit keeps. Everything it keeps, it puts down."'],
+          [2, 6, 'Cut in black stone: "Whatever the sea takes, it keeps. Whatever it keeps, it sets down below."'],
         ],
       },
       '1,3,6': {
@@ -1690,7 +1690,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [13, 4, 'A mooring plate, worn smooth: "The rings in\nthis house were for hauling. They will haul\nanything that takes hold."'],
+          [13, 4, 'A mooring plate, worn smooth: "The rings in this hall were for hauling. Hook your line on one, and it pulls you across."'],
         ],
       },
       '1,2,5': {
@@ -1764,7 +1764,7 @@ export function installDungeonsB() {
           ['jellyfish', 7, 5],
         ],
         readable: [
-          [2, 9, 'Scratched low, where the water reaches it:\n"Three heights. One way through."'],
+          [2, 9, 'Scratched low, where the water reaches it: "Three tides. One way through."'],
         ],
       },
       '1,2,4': {
@@ -1935,7 +1935,7 @@ export function installDungeonsB() {
           ['pickup', 7, 2, { kind: 'rupee20' }],
         ],
         readable: [
-          [5, 6, 'A gardener\'s plate, green with age: "The course\ndrowns at the flood. Sow then, and stand when the\nsea goes out."'],
+          [5, 6, 'A gardener\'s plate, green with age: "The stone bar drowns at HIGH tide. Plant then, and stand once the sea goes out."'],
         ],
       },
 
@@ -1996,8 +1996,8 @@ export function installDungeonsB() {
           reward: { openDoors: [[14, 5]], say: 'The east shutter grinds open.' },
         },
         readable: [
-          [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
-          [11, 9, 'Cut in the well\'s rim: "The Hold keeps what\nthe Keep lets fall. Sound it with the water in."'],
+          [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan, empty line. We only ever fished it with the water in."'],
+          [11, 9, 'Cut in the well\'s rim: "Whatever falls from the Keep lands in the Hold below. Fish for it with the water in."'],
         ],
       },
 
@@ -2051,7 +2051,7 @@ export function installDungeonsB() {
           reward: { openDoors: [[0, 5]], say: 'The west shutter grinds open.' },
         },
         readable: [
-          [12, 8, 'A weigher\'s mark on the plinth: "Weigh what\nthe Hold gives up. Weigh it twice, and higher."'],
+          [12, 8, 'A weigher\'s mark on the plinth: "Weigh what the Hold gives up. Then do it again, a floor higher."'],
         ],
       },
 
@@ -2112,7 +2112,7 @@ export function installDungeonsB() {
           ['stalfos', 5, 2],
         ],
         readable: [
-          [6, 9, 'Scratched by the shaft: "The shelf holds your\nheels at slack water and at no other."'],
+          [6, 9, 'Scratched by the shaft: "This ledge only holds your feet at LOW tide."'],
         ],
       },
       '1,7,2': {
@@ -2175,7 +2175,7 @@ export function installDungeonsB() {
           ['stalfos', 9, 19],
         ],
         readable: [
-          [2, 18, 'A tally cut in the wall, three marks:\n"Slack for the shelf. Flood for the bar. Half\nwater for the floor."'],
+          [2, 18, 'A tally cut in the wall, three marks: "LOW for the ledge. HIGH for the bar. MID for the floor."'],
         ],
       },
       '1,6,2': {
@@ -2224,7 +2224,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [12, 6, 'Carved over the shaft: "What the line\ncatches, it brings home."'],
+          [12, 6, 'Carved over the shaft: "Whatever the line catches, it brings home."'],
         ],
       },
 
@@ -2260,7 +2260,7 @@ export function installDungeonsB() {
           reward: { spawn: [['chest', 7, 5, { charm: 'kelpBraid' }]], say: 'The pools go still.' },
         },
         readable: [
-          [7, 1, 'A fishwife\'s board: "They will not come out\nfor a blade. They come out for a line."'],
+          [7, 1, 'A fishwife\'s board: "They won\'t come out for a sword. They\'ll come out for a line!"'],
         ],
       },
       '1,7,4': {
@@ -2551,7 +2551,7 @@ export function installDungeonsB() {
           ['beamos', 2, 8],
         ],
         readable: [
-          [11, 5, 'A chandler\'s note nailed to the column: "More\nrope is more room. It is not more sea."'],
+          [11, 5, 'A chandler\'s note nailed to the column: "More rope means more reach. It doesn\'t mean more sea."'],
         ],
       },
       // ---------------------------------------------------- the west wing (S142)
@@ -2600,7 +2600,7 @@ export function installDungeonsB() {
           ['darknut', 4, 8],
         ],
         readable: [
-          [27, 8, 'A sounding line knotted to the wall:\n"Slack, flood, slack. Count them before you\ngo."'],
+          [27, 8, 'A sounding line knotted to the wall: "LOW, HIGH, LOW. Count them before you go."'],
         ],
       },
       '2,0,4': {
@@ -2703,7 +2703,7 @@ export function installDungeonsB() {
           ['darknut', 24, 6],
         ],
         readable: [
-          [20, 7, 'Cut under the choir stalls: "Sing at half\nwater. At slack the floor is gone, and at\nflood it is over your head."'],
+          [20, 7, 'Cut under the choir stalls: "Cross at MID tide. At LOW the floor is gone, and at HIGH it\'s over your head."'],
         ],
       },
       '2,4,5': {
@@ -2874,7 +2874,7 @@ export function installDungeonsB() {
           ['anglerfry', 6, 7],
         ],
         readable: [
-          [4, 4, 'Cut into the coping: "Stand while you can\nstand. The ledge is only a ledge at low water."'],
+          [4, 4, 'Cut into the coping: "This ledge is only a ledge at LOW tide. Stand on it while you can."'],
         ],
       },
       '2,3,3': {
@@ -2935,7 +2935,7 @@ export function installDungeonsB() {
           ['keese', 10, 6],
         ],
         readable: [
-          [11, 6, 'A tide board: "The bar is down at slack and up\nat flood. Everything in this room follows from\nthat."'],
+          [11, 6, 'A tide board: "The stone bar is in your way at LOW tide, and underwater at HIGH. This whole room turns on that."'],
         ],
       },
       '2,4,3': {
@@ -3100,7 +3100,7 @@ export function installDungeonsB() {
           reward: { reveal: true, say: 'Two weights in the Drowned King\'s scales.\nA chest rises on the far island.' },
         },
         readable: [
-          [7, 6, 'A king\'s inscription, and the only one in the\nKeep that is signed: "You cannot hold two seas.\nNereth."'],
+          [7, 6, 'A king\'s inscription, the only signed one in the Keep: "You can\'t hold two seas at once. -Nereth"'],
         ],
       },
       '2,3,0': {

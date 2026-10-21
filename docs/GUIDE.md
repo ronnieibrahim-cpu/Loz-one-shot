@@ -288,7 +288,7 @@ Inside `cave2/0,0,0`:
 
 - A `rupee20` at (3,3), inside the seafloor patch — walkable only at
   **LOW tide**. A readable at (8,3), across the room, is the whole puzzle:
-  *"When the sea withdraws, walk where fish swam."*
+  *"At LOW tide, walk where the fish used to swim."*
 - **Heart Piece 2** at (2,2), deeper in the same patch. Same requirement: you
   cannot reach it except at **LOW tide**.
 - A big chest at (7,5), in the open, no requirements — the **Kilnshell**.
@@ -296,8 +296,7 @@ Inside `cave2/0,0,0`:
   **drift-tangle** (the tangled weed at 7,2 and 8,2) — nothing else in the game
   opens it. This is where the item's movement verb is taught, for the cost of
   twenty rupees rather than a dungeon.
-- A readable at (1,5), low on the wall by the room's tide pool: *"Lime drinks
-  the sea and spits fire. Drown it and it sulks."*
+- A readable at (1,5), low on the wall by the room's tide pool: *"A splash of sea lights the lime shell. Too much puts it out."*
 
 **How the Kilnshell works.** Press the button and it sets one down, already
 lit, on the tile you're facing. Press the button again, from anywhere, to take
@@ -335,8 +334,7 @@ teaches it.
 
 ### The southern half — no Anchor yet
 
-**Grotto Mouth** (`d1/0,3,7`). A plaque: *"The sea keeps this floor. Take it
-back."* Two pots. North.
+**Grotto Mouth** (`d1/0,3,7`). A plaque: *"The sea took this floor. Take it back!"* Two pots. North.
 
 **The Drinking Floor** (`d1/0,3,6`). Four rows of well fill the middle of the
 room and there is no walking round them. **Sound the conch to LOW** and the
@@ -384,8 +382,7 @@ out of the wall.
 ### The Sluicegate — the Anchor
 
 **The Sluicegate** (`d1/0,3,2`). The big chest at (4,4) is the **Tidewright's
-Anchor**. The plate reads: *"Iron remembers. Sink it where you want the sea to
-stay."*
+Anchor**. The plate reads: *"Drop the Anchor where you want the water to stay put."*
 
 **How it works.** Throw it and it sinks: within roughly eight tiles the tide
 **stays at whatever level it was when the iron landed**, while the rest of the
@@ -582,8 +579,7 @@ over. The Lens is the only thing in the game that draws a room **as it will be**
 
 ### Ground floor
 
-**Spire Mouth** (`d2/0,3,7`). *"What rises, carries. What falls, reveals. Look
-before you fall."*
+**Spire Mouth** (`d2/0,3,7`). *"Rising water carries you up. Falling water shows the way. Look before you drop!"*
 
 **Coral Landing** (`d2/0,3,6`). An `urchin` and a `crab`; clear them for a fairy.
 
@@ -606,8 +602,7 @@ beside them at (2,5) and (7,6), plus a `barnacle` at (4,6) that opens to spit
 and is shielded while shut. Push both blocks onto their switches; the door at
 (4,1) lifts, and **the mandatory Small Key 1** rattles loose with it — this is
 the room the Spire's route actually runs through, not the Torch Cell. The plate
-says it plainly: *"The floor of this room is a door. Shut the sea out and it is
-only a hole."*
+says it plainly: *"The hole in this floor is a way up when the sea fills it. With the sea out, it's only a hole."*
 
 **Cistern Cell** (`d2/0,3,3`), through that door. A chest at (2,1) holds
 **Barnacle Skin** (`barnacleSkin`) — one free hit per room, and it cracks until
@@ -635,8 +630,7 @@ it survivable first time.
 
 **Glass Cell** (`d2/1,4,5`), south. Two `keese` in here are **phase-shifted**:
 they are neither drawn nor hittable unless the Lens is up. Hold the Lens, kill
-them, and take **Heart Piece 7** at (4,2). The plaque — *"Nothing here. The salt
-on the floor says otherwise"* — is the tutorial.
+them, and take **Heart Piece 7** at (4,2). The plaque — *"Look through the glass to see what lives at the other tide. What you can see, your sword can hit."* — is the tutorial.
 
 ### The forks
 
@@ -685,7 +679,7 @@ this room, and so is the last locked door. Spend Small Key 2 to go west.
 **The Sounding Fork** (`d2/1,2,2`). The same primitive with a third answer, and
 it is the one the first fork could not teach: a shaft that fills **over your
 head**. Three throats, at x=1, x=4 and x=7. The shelf is at (4,6); the marks
-read *"One wades. One waits. One keeps you."*
+read *"One you can wade. One stays a pit. One is over your head."*
 
 Hold the Lens. One level up:
 
@@ -750,7 +744,7 @@ the only way into the Cliffs, and therefore the only way to everything north of
 them — the Salt Pans and the Abyssal approach included.
 
 The Deep Cut also has a raft on it at (3,3) and a sign explaining the three ways
-across the cut: *"Swim it, blow the raft, or grow a bridge."* All three work,
+across the water: *"Swim it, blow the raft across, or grow a bridge!"* All three work,
 once you own the things.
 
 **Then the Peat Key.** With two Essences, talk to the old man who wanders the
@@ -788,8 +782,7 @@ becomes a shaft for good.
 
 ### Before the Cleats
 
-**Sanctum Mouth** (`d3/1,3,7`). *"The water has two floors. Only one of them
-drowns you."*
+**Sanctum Mouth** (`d3/1,3,7`). *"You can swim on top of the water, or walk along the bottom."*
 
 **Drowned Nave** (`d3/1,3,6`). A `keese` and a `crab`; clear them for a
 fairy. The pool in the middle is a shaft — fight at MID if you would rather not
@@ -946,8 +939,8 @@ the fight.
   **eight-way ink rings**. Two `zol` are summoned at the phase change. Keep the
   tide off MID, keep circling, and hit it between rings.
 
-Heart Container, then **Essence III — the Bog Bell**. The marsh drains a finger's
-width and stays there.
+Heart Container, then **Essence III — the Bog Bell**. The marsh drains a little,
+and stays put.
 
 ## 9. The Cliffs of Kell
 
@@ -968,8 +961,7 @@ Ledges — same place, and the Basin is full of `tektite` which hop across water
 and are worth the practice.
 
 The Cliffs are a high stone shelf over deep water. The sign on Upper Kell
-(`overworld/0,2,2`) tells you the rule the whole region runs on: *"The low walls
-drown at HIGH tide. Swim what you cannot climb."* The iron seal above that screen
+(`overworld/0,2,2`) tells you the rule the whole region runs on: *"At HIGH tide the low walls go under. Swim over them!"* The iron seal above that screen
 is the Keep's, and nothing you carry opens it.
 
 **Marsh Stair** (`overworld/0,1,5`), south of the cliffs, is a run of four
@@ -995,8 +987,7 @@ sits behind a trench of **pit**, which neither Cleat mode crosses.
 
 ### Before the Bellows
 
-**Cistern Head** (`d4/0,3,7`). *"This cistern is worked from the far bank.
-Nothing here is meant to be reached."*
+**Cistern Head** (`d4/0,3,7`). *"Everything here was worked from the far bank. Nothing is meant to be reached by hand."*
 
 **Rainwater Landing** (`d4/0,3,6`) → **Overflow Sluice** (`d4/0,2,6`) west for
 the **Dungeon Map** → **Cracked Basin** (`d4/0,4,6`) east: a `stalfos`, a
@@ -1024,8 +1015,7 @@ shelf, it is worth wearing for the rest of the game.
 the far one yourself** — where a room has fewer blocks than switches, you are the
 second weight. **Small Key 2**.
 
-**Barnacle Cell** (`d4/0,3,4`) → **Winch Room** (`d4/0,2,4`). *"The wheels are
-set where no hand goes. Bring wind."* Locked door at (2,3); spend Small Key 2.
+**Barnacle Cell** (`d4/0,3,4`) → **Winch Room** (`d4/0,2,4`). *"The wheels are where no hand can reach. Bring wind!"* Locked door at (2,3); spend Small Key 2.
 
 **Bellows Vault** (`d4/0,1,4`). The big chest holds the **Squall Bellows**.
 
@@ -1156,8 +1146,8 @@ turns up a key grown over with moss (`mossKey`). You can walk the Drowned Wood
 without it; you cannot open the Shrine.
 
 From Tidewatch: east to Village East (`overworld/0,5,7`), north to The Wading
-(`overworld/0,5,6`) — *"Only a swimmer goes north from here,"* which is true at
-MID and not at LOW — then north to **Wood Heart** (`overworld/0,5,5`) and north
+(`overworld/0,5,6`) — its sign points north to the Shrine, and the way north
+is swum at MID, not walked at LOW — then north to **Wood Heart** (`overworld/0,5,5`) and north
 again to **Shrine Mouth** (`overworld/0,5,4`). Dungeon 5's door is at tile (4,1):
 lean into its keyhole holding the Moss Key.
 
@@ -1170,8 +1160,7 @@ On the way and around it:
   with an `anglerfry` in the water beside it. Anglerfry hang in deep water and
   lunge; take this at LOW when the water is not theirs.
 - **Wood Foot** (`overworld/0,9,6`) has a `rupee20` in the open at (6,4).
-- **The Gyre** (`overworld/0,10,3`) is a ring current — *"Swimmers go round.
-  Walkers go through."* Sink or wait for LOW.
+- **The Gyre** (`overworld/0,10,3`) is a ring current — *"Swimmers get carried round. Walk through instead!"* Sink or wait for LOW.
 
 ## 12. Dungeon 5: Drowned Wood Shrine
 
@@ -1187,15 +1176,13 @@ Everything after the Reefseed is one sentence built five different ways:
 
 ### Before the Reefseed
 
-**Shrine Mouth** (`d5/0,3,7`). *"The wood was here before the water. Stand on
-what you plant, and plant while you can stand."*
+**Shrine Mouth** (`d5/0,3,7`). *"Plant your seeds, then stand on what grows."*
 
 **Rootwater Landing** (`d5/0,3,6`) → **Silt Gallery** (`d5/0,2,6`) west for the
 **Dungeon Map** → **Bracken Cell** (`d5/0,4,6`) east: a `stalfos`, a `tektite`
 and a `keese`; clear them for **Small Key 1**.
 
-**The Standing Grove** (`d5/0,3,5`). *"At high water the wood is not there.
-Everything else in this shrine follows from that."* Locked; spend Small Key 1.
+**The Standing Grove** (`d5/0,3,5`). *"At HIGH tide the trees here vanish underwater. Everything in this shrine starts from that."* Locked; spend Small Key 1.
 
 **Chartstone Nave** (`d5/0,2,5`), west — a chest with the **Chartstone**.
 
@@ -1215,8 +1202,7 @@ every dredging room in Dungeon 6 comfortable.
 (2,1) and (7,6), blocks beside them at (3,1) and (6,6). Push each one square onto
 its switch. **Small Key 2**.
 
-**Rootbound Hall** (`d5/0,3,4`) → **Warden's Sill** (`d5/0,2,4`). *"Past this
-door the floor is a thing you bring with you."* Locked; spend Small Key 2.
+**Rootbound Hall** (`d5/0,3,4`) → **Warden's Sill** (`d5/0,2,4`). *"Past this door, you'll have to grow your own floor."* Locked; spend Small Key 2.
 
 **Reefseed Vault** (`d5/0,1,4`). The big chest holds the **Reefseed**.
 
@@ -1289,7 +1275,7 @@ down, at HIGH**; stake at (4,3). Snarl at (4,4), cut from (4,3).
 
 **Grove 5 — The Shrine Ford** (`d5/0,4,2`). Two screens wide, and the only grove
 that needs **two stakes at two different seas** — the shrine board says so:
-*"Twice over. The first while the wood is under, the second while it is not."*
+*"Twice over. The first at HIGH tide, the second at LOW."*
 
 1. Enter at (14,7). **Stand at (15,4), face left, at HIGH tide.** Stake lands at
    (13,4).
@@ -1460,7 +1446,7 @@ Wading (`0,5,6`), east to Wood Foot (`0,6,6`), north through Sunken Glade
   (`overworld/0,15,1`).
 - **Palace Mouth** has a cave mouth at tile (4,1) leading to `cave4/0,0,0`, the
   **Palace Porch**: 20 rupees at (4,1) (its Piece of Heart moved to the
-  Slackwater Cave), and a notice from someone who gave up halfway — *"The rest of it is under. Do not go and look."*
+  Slackwater Cave), and a notice from someone who gave up halfway — *"The rest of the palace is underwater. Don't go looking!"*
 - North from Reefway is **Coral Gate** (`overworld/0,11,0`), and east of that
   **Palace Wall** (`overworld/0,12,0`) — 20 rupees in the open at (2,5), with an
   `octorokSea` in the water. (A Piece of Heart used to lie here; it is now in
@@ -1600,8 +1586,7 @@ east door first**: the key behind it opens the north one.
 
 ### Ground floor (1F)
 
-**Keep Door** (`d6/1,3,7`). *"Everything the sea takes, it keeps. Everything it
-keeps, it puts down."*
+**Keep Door** (`d6/1,3,7`). *"Whatever the sea takes, it keeps. Whatever it keeps, it sets down below."*
 
 **Keep Landing** (`d6/1,3,6`). A `darknut` and a `keese`; clear them for a heart.
 
@@ -1628,7 +1613,7 @@ optional — bring the Kilnshell into the Keep.
 **West Crypt** (`d6/1,2,4`). A wheel at (5,4): blow it with the Bellows at MID
 for a fairy.
 
-**Three Heights** (`d6/1,3,4`). *"Three heights. One way through."* Spend a key
+**Three Heights** (`d6/1,3,4`). *"Three tides. One way through."* Spend a key
 on the north door. **Keep Lock** (`d6/1,3,3`) behind it: a `darknut` and a
 `stalfos`. Spend a key on its **east** door.
 
@@ -1649,8 +1634,7 @@ the puzzle), and **the cast stops dead on solid tiles.** And the rule that makes
 the Keep the Keep: **the floor gives up what it is holding only while the sea is
 on it.** Dry crust is dragged straight over.
 
-**The Slack Water** (`d6/1,5,3`), east of the Vault — the teaching room. *"Dry
-pan, dry line. We only ever worked it with the water in."* The bell at (2,7)
+**The Slack Water** (`d6/1,5,3`), east of the Vault — the teaching room. *"Dry pan, empty line. We only ever fished it with the water in."* The bell at (2,7)
 hums at the middle of the pan.
 
 1. **Heart Piece 20:** stand at **(7,7), face up, at MID**, and cast.
@@ -1679,7 +1663,7 @@ the Crossed Shafts' first shaft, two floors up. It waits there.
 - The stair at (2,1) goes down to the Hold.
 
 **The Tally Hall** (`d6/1,7,2`), east of the Draw's far bank, two screens tall.
-*"Slack for the shelf. Flood for the bar. Half water for the floor."*
+*"LOW for the ledge. HIGH for the bar. MID for the floor."*
 
 - **Up to the island:** from **(7,16), face up, at LOW** — land at (7,13).
   **Over the bar:** from **(9,12), face up, at HIGH** — land at (9,9).
@@ -1769,8 +1753,7 @@ the Lens to see which); two `rupee20` beyond.
 
 ### The crossings
 
-**The Drowned Stand** (`d6/2,3,4`). *"Stand while you can stand. The ledge is
-only a ledge at low water."*
+**The Drowned Stand** (`d6/2,3,4`). *"This ledge is only a ledge at LOW tide. Stand on it while you can."*
 
 - **Cross:** from **(8,7), face up, at LOW**, cast at the post at (8,3); land at
   (8,4). **Back:** from (9,4), face down, at LOW.
@@ -1797,8 +1780,7 @@ the shaft is stone until HIGH covers it.
 
 **Keep Gate** (`d6/2,3,2`), through the **north** door. A `wizzrobe` and a fairy.
 
-**The Crossed Shafts** (`d6/2,4,2`), east of Keep Gate, two screens wide. *"You
-cannot hold two seas. Nereth."* Each island has a **shaft** (a hole until HIGH)
+**The Crossed Shafts** (`d6/2,4,2`), east of Keep Gate, two screens wide. *"You can't hold two seas at once. -Nereth"* Each island has a **shaft** (a hole until HIGH)
 and a **plate** in a nook past a pit, and the shafts stand right over the two
 chunks you left in the Garden and the Weighhouse.
 

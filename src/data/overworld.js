@@ -166,7 +166,7 @@ const rooms = {
     ],
     entities: [
       ['wizzrobe', 4, 4],
-      ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nThe Keep holds this water. No shell\nsounds here. Bring your own sea.' }],
+      ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
     ],
   },
   '0,3,0': {
@@ -420,7 +420,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 5, { text: 'Below: the Cliffs of Kell.\nAbove: the end of everything.' }],
+      ['sign', 6, 5, { text: 'Down: the Cliffs of Kell.\nUp: the Abyssal Keep.' }],
     ],
   },
   '0,3,1': {
@@ -473,7 +473,7 @@ const rooms = {
     ],
     entities: [
       ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder', after: 'salterElderAfter', needEssences: 4 }],
-      ['sign', 6, 5, { text: 'The pans drink the sea and give back stone.' }],
+      ['sign', 6, 5, { text: 'THE SALT PANS\nLet the sea in, let it dry, and you get salt!' }],
     ],
   },
   '0,9,1': {
@@ -493,7 +493,7 @@ const rooms = {
       { x: 3, y: 2, to: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 5, 2, { text: 'SALT PAN VAULT\nThe pan keeps one swallow of the sea.' }],
+      ['sign', 5, 2, { text: 'SALT PAN VAULT\nThe Salters keep a bottle of the sea in here.' }],
       ['beetle', 6, 5],
     ],
   },
@@ -573,7 +573,7 @@ const rooms = {
       { x: 6, y: 2, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'REEF PALACE\nDrowned to the arches. The porch is all\nthat is left of it.' }],
+      ['sign', 2, 3, { text: 'REEF PALACE\nSunk up to its arches. Only the porch is left above water.' }],
       ['siren', 6, 4],
     ],
   },
@@ -658,7 +658,7 @@ const rooms = {
       '###5ggg###',
     ],
     entities: [
-      ['keese', 3, 3], ['sign', 6, 5, { text: 'The low walls drown at HIGH tide.\nSwim what you cannot climb.' }],
+      ['keese', 3, 3], ['sign', 6, 5, { text: 'At HIGH tide the low walls go under. Swim over them!' }],
     ],
   },
   '0,3,2': {
@@ -886,7 +886,7 @@ const rooms = {
       { x: 5, y: 2, to: { map: 'd4', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'CLIFFSIDE CISTERN\nWhat the water hides, the water opens.' }],
+      ['sign', 2, 3, { text: 'CLIFFSIDE CISTERN\nDeep water hides the spikes.' }],
       ['keese', 7, 4],
     ],
   },
@@ -1038,7 +1038,7 @@ const rooms = {
     ],
     entities: [
       ['anglerfry', 4, 5],
-      ['sign', 4, 6, { text: 'The water here runs in a ring.\nSwimmers go round. Walkers go through.' }],
+      ['sign', 4, 6, { text: 'The water here runs in a circle. Swimmers get carried round. Walk through instead!' }],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -1194,7 +1194,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 2, 2, { text: 'East across the cut: the Drowned Wood.\nSwim it, blow the raft, or grow a bridge.' }],
+      ['sign', 2, 2, { text: 'East across the water: the Drowned Wood. Swim it, blow the raft across, or grow a bridge!' }],
       // Moored, not patrolling: `range: 0` and `needTide: 0` make it a raft
       // that sits where it is until something blows it.
       ['raft', 3, 3, { axis: 'x', range: 0, needTide: 0 }],
@@ -1238,7 +1238,7 @@ const rooms = {
       { x: 5, y: 2, to: { map: 'd5', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'DROWNED WOOD SHRINE\nRide what floats.' }],
+      ['sign', 2, 3, { text: 'DROWNED WOOD SHRINE\nHop on anything that floats!' }],
       ['wisp', 8, 5],
     ],
   },
@@ -1867,7 +1867,7 @@ const rooms = {
       { x: 3, y: 2, to: { map: 'cave1', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 4, 4, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
+      ['sign', 4, 4, { text: 'A cave in the bluff. Something\'s glittering inside!' }],
       ['octorok', 6, 4],
     ],
   },
@@ -2088,7 +2088,7 @@ const rooms = {
       { x: 5, y: 2, to: { map: 'd3', floor: 1, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'BOGWATER SANCTUM\nThe current runs at one height only.' }],
+      ['sign', 2, 3, { text: 'BOGWATER SANCTUM\nThe current only pushes swimmers.' }],
       ['zol', 7, 4],
     ],
   },
@@ -2544,7 +2544,7 @@ const rooms = {
     anchorGate: { from: [8, 6], to: [1, 6] },
     entities: [
       ['pickup', 4, 4, { kind: 'rupee20' }],
-      ['sign', 2, 2, { text: 'Only the drained sea shows this floor.' }],
+      ['sign', 2, 2, { text: 'This floor only shows at LOW tide.' }],
     ],
     script: {
       onEnter(game) {
@@ -2610,7 +2610,7 @@ const rooms = {
     },
     entities: [
       ['crab', 4, 3],
-      ['sign', 6, 2, { text: 'Sow at the flood. Stand once the sea has gone back out.' }],
+      ['sign', 6, 2, { text: 'Plant seeds at HIGH tide. Stand on what grows at LOW tide!' }],
     ],
   },
   '0,11,9': {
@@ -2962,7 +2962,7 @@ const rooms = {
       '**********',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'Scratched on a plank: "Gone to wait out\nthe sea. Blade inside. Lean on the door."' }],
+      ['sign', 6, 2, { text: 'Scratched on a plank: "Gone till the sea calms down. Blade\'s inside. Push the door!"' }],
     ],
     warps: [
       { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -3020,7 +3020,7 @@ const rooms = {
       ['valve', 2, 5],
       ['valve', 7, 5],
       ['pickup', 4, 5, { kind: 'rupee100' }],
-      ['sign', 8, 1, { text: 'The works keep their pans walled in salt.\nSome walls the high sea climbs; some it never will.' }],
+      ['sign', 8, 1, { text: 'The pans are walled in with salt. HIGH tide washes over some of the walls, but not all of them.' }],
     ],
     script: {
       onEvent(game, name) {
@@ -3970,7 +3970,7 @@ function installHouses() {
         ],
         entities: [
           ['lamp', 4.5, 3, { dialogue: 'lampLit' }],
-          ['sign', 7, 5, { text: 'THE LAMP\nOil, lens, glass. Then fire.' }],
+          ['sign', 7, 5, { text: 'THE LAMP\nNeeds oil, a lens and a reflector. Then fire!' }],
         ],
         warps: [
           { x: 1, y: 6, to: { map: 'lighthouse', floor: 0, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
