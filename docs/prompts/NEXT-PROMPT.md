@@ -12,7 +12,8 @@
   tools/check-buoys.mjs).
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
-## The task: the dialogue pass (queued by the human, S201)
+## The task
+The dialogue pass (queued by the human, S201).
 - The human: townspeople's lines read long-winded, cryptic and "AI generated",
   and often do not actually convey anything. Study how Oracle of Seasons and
   Ages write their NPCs, then make ours less long-winded and more meaningful.
