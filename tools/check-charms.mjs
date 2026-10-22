@@ -587,14 +587,15 @@ await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 2, items: { cle
 // evaluation, so there is no frame between standing in the water and asking
 // about the breath.
 //
-// `overworld 6,7` is open water at HIGH — 23 deep tiles — and 4,3 is in the
-// middle of them, so the player is touching deep on every side rather than
-// balanced on a lip.
+// `overworld 10,7` (Shallows Gate) is open water at HIGH, and 7,3 is in the
+// middle of it, so the player is touching deep on every side rather than
+// balanced on a lip. (It was 9,7's 4,3 until S203 redrew that coast and put
+// sand there: this check went red with nothing wrong with the charm. S205.)
 const DIVE = `
   const g = window.__game;
-  g.enterMap('overworld', 0, 9, 7, 64, 48, 'down', { instant: true });
+  g.enterMap('overworld', 0, 10, 7, 112, 48, 'down', { instant: true });
   g.tide.setLevel(2, { instant: true });
-  g.player.x = 64; g.player.y = 48; g.player.z = 0;
+  g.player.x = 112; g.player.y = 48; g.player.z = 0;
   g.player._cleats = 1; g.player.underwater = true; g.player.breath = 100;
   for (let i = 0; i < 30; i++) g.player.updateBreath(g);
   const out = { breath: g.player.breath, under: g.player.underwater };

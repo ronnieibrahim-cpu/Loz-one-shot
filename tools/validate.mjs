@@ -197,6 +197,7 @@ for (const [name, d] of TILES) {
   for (const [, map] of LEGENDS) for (const t of Object.values(map)) reachable.add(t);
   for (const [, d] of TILES) {
     if (d.tide) for (const t of d.tide) reachable.add(t);
+    if (d.toggle) for (const t of d.toggle) reachable.add(t);
     if (d.underArt) reachable.add(d.underArt);
     // An Oracle wall ring's pieces are named by `Room.ringArt`, not a grid.
     if (d.ring) for (const t of Object.values(d.ring)) reachable.add(t);

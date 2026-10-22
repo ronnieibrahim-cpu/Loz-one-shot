@@ -441,7 +441,10 @@ export async function installRuntime() {
    * the verb returns rather than throwing, so the directive after it reports
    * the mismatch in the trace where it can be read.
    */
-  function* dTide(level, gap, maxF) {
+  // With a fifth element, ['tide', 0, 140, 900, 1], the red and blue blocks
+  // too (S205): pressed on round until the sea is there AND that colour's
+  // state holds (0 red up, 1 blue up) — every press flips them.
+  function* dTide(level, gap, maxF, toggle) {
     const g = window.__game;
     const budget = maxF || 900;
     // Each press is a press and a settle, EXACTLY as `use` spends them: a
@@ -454,7 +457,7 @@ export async function installRuntime() {
     // wrong room eleven directives later, at full health, with the tide
     // correct.
     for (let f = 0; f < budget;) {
-      if (g.tide.level === level) return;
+      if (g.tide.level === level && (toggle == null || g.tide.toggle === toggle)) return;
       const p = g.player;
       if (!p || g.mode !== 'play') { yield 0; f++; continue; }
       if (p.frozen > 0 || g.tide.busy || p.conchTime !== 0) { yield 0; f++; continue; }
@@ -3391,7 +3394,7 @@ export async function installRuntime() {
       else if (kind === 'travel') yield* dTravel(a[0], a[1], a[2]);
       else if (kind === 'loot') yield* dLoot(a[0], a[1]);
       else if (kind === 'boss') yield* dBoss(a[0], a[1], a[2]);
-      else if (kind === 'tide') yield* dTide(a[0], a[1], a[2]);
+      else if (kind === 'tide') yield* dTide(a[0], a[1], a[2], a[3]);
       else if (kind === 'soles') yield* dSoles(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'charm') yield* dCharm(a[0], a[1], a[2], a[3]);

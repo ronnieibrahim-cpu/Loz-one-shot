@@ -105,11 +105,10 @@ SHEETS = {
     # palette 7), and which of the two stands up is not the layout's doing but
     # the graphics': roomGfxChanges.s func_02_7a77 copies four tiles of
     # gfx_animations_2 over VRAM $8cc0 — UNCMP_GFXH_AGES_3d (blue up, red
-    # down) or _3f (red up, blue down) — and the toggle cutscene shows _3e
+    # down) or _3f (red up, blue down); the toggle cutscene shows _3e
     # (both half-way) between them. `!NN` draws the tileset with
     # uncmpGfxHeaderNN applied.
     'crownA': 'ages:3a!3d',
-    'crownMid': 'ages:3a!3e',
     'crownB': 'ages:3a!3f',
     # THE ANCIENT RUINS' BELTS (S186): tileset $3c with every animation at
     # its k-th step, so each of the four conveyor steps is one pick.
@@ -697,8 +696,6 @@ PICKS = [
     # colour raised, lowered, and the half-way picture the toggle shows.
     meta('tgBlueUp', 0x0e, 'blue block raised, the Crown Dungeon (UNCMP_GFXH_AGES_3d)', 'crownA'),
     meta('tgRedDown', 0x0f, 'red block lowered, the same', 'crownA'),
-    meta('tgBlueMid', 0x0e, 'blue block half-way (UNCMP_GFXH_AGES_3e)', 'crownMid'),
-    meta('tgRedMid', 0x0f, 'red block half-way, the same', 'crownMid'),
     meta('tgBlueDown', 0x0e, 'blue block lowered (UNCMP_GFXH_AGES_3f)', 'crownB'),
     meta('tgRedUp', 0x0f, 'red block raised, the same', 'crownB'),
     meta('uStatue', 0x1d, 'the magenta block, Mermaid\'s Cave (rooms $52e, $530)', 'mermaid'),
