@@ -1249,7 +1249,11 @@ export const ROUTE = [
   // 46 loses; 60-78 all win on 9-12/28, which leaves too little for
   // Gloomtide (he then wins only on 1-4/28). Swept with five option sets and
   // nine entry steps: 42 is the best, 16/28 (38 and 46 either side are worse).
-  ['wait', 42],
+  // S203 (the coast strips round Tidewatch redrawn, a new clock again): 42
+  // loses Gloomtide on 6/28. Swept 20-100: 50-60 all beat Bogmaw on 12-14/28
+  // and Gloomtide after them; 54 leaves him on 12/28 (the rest 6), and with
+  // 54 Gloomtide's own wait wins across 44-58. 54.
+  ['wait', 54],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
