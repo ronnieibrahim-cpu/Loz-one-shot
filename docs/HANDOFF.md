@@ -447,6 +447,28 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A forced press is the whole of a toggle puzzle, and a free tile kills it
+  (S205).** Every tide change flips the red and blue blocks, so a room can
+  only force an order through tiles where the conch may be pressed ONCE
+  (sluice: LOW to MID) or not at all; one dry tile reachable past the first
+  gate is a place to press round the cycle and the puzzle falls to the conch.
+  The model (tools/lib/toggle-flood.mjs) finds it in a second; design with
+  `check-toggles.mjs --mock`.
+- **The Anchor's recall can strand you on a block (S205).** Hold the water,
+  step onto a lowered block among pools, recall: the pools close and the
+  conch would raise the block under you, so it is refused. check-toggles'
+  no-trap clause found it in both first drafts; a dry nook at the end of a
+  block row (touching only the blocks) is the fix, as long as it is not past
+  the forced press.
+- **Ages' toggle blocks are drawn by graphics, not layout (S205).**
+  Metatiles $0e (blue) and $0f (red) never change; roomGfxChanges.s copies
+  four tiles of gfx_animations_2 (uncmpGfxHeader 3d or 3f) over VRAM $8cc0
+  to stand one colour up. rip-dungeon-themes reads `ages:3a!3d`.
+- **A checker's probe sat on a redrawn screen for two sessions (S205).**
+  check-charms' Gillcarve dive stood in 0,9,7's 4,3, sand since S203: red on
+  main, nobody noticed. S203's lesson again: grep tools for a screen's
+  coordinates before redrawing it.
+
 - **Every switch room was one push, by a rule written as a fix (S204).** "A
   push block moves exactly one tile, ever" was set down to stop keys being
   unearnable, and from then on every block puzzle was a block seated beside

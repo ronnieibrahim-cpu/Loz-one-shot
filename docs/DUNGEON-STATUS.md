@@ -41,6 +41,16 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S205: THE DRIP VAULT AND THE CORAL SPIRE'S RED AND BLUE BLOCKS
+
+D1's **Drip Vault** (0,1,1) is the Two Gauges' step up: three marks, one out
+of every bite's reach, one iron between two wells (check-anchor `marks`).
+D2 has Ages' red and blue blocks, flipped by every tide change: the **Rising
+Chamber** (0,3,4) teaches them (one forced press in the sluice row) and the
+**Turning Pool** (1,2,3, formerly the empty Drowned Cell) asks for the Anchor
+to hold the water while the blocks go round. `tools/check-toggles.mjs`.
+D2 now has five real puzzles (two forks, the Glass Cell, these two).
+
 ## S204: THE PUZZLE PASS BEGINS — the plan is docs/briefs/PUZZLE-PASS.md
 
 The human asked for "top notch" puzzles; shown the audit (eight one-push

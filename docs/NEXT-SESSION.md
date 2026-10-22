@@ -1,3 +1,49 @@
+## S205 — the Drip Vault steps up; red and blue blocks in the Coral Spire
+
+Branch claude/oracle-tides-puzzle-pass-ygf9fr, off main at 2b5d777 (S204).
+
+### The human's choices this session
+- Shown three mocks in the real engine (docs/briefs/puzzle-pass/s205-*.png):
+  the Drip Vault beside the Two Gauges; the Rising Chamber and the new room
+  beside Ages' Crown Dungeon rooms $4a2 and $4b5. Approved all three, and the
+  new room IN PLACE OF the Drowned Cell (an empty pool on the main path).
+
+### Built
+- RED AND BLUE BLOCKS (kind B). Ages' toggle blocks, the conch as the orb:
+  EVERY non-instant tide change flips `Tide.toggle` (saved as
+  `progress.toggle`). Tiles `dToggleRed`/`dToggleBlue` (`a`/`b` in the
+  dungeonCoral legend) carry `toggle: [at0, at1]`, resolved in `resolveTile`
+  by module state `setToggleState` (Tide keeps it equal; checkers set it; the
+  Lens's `viewAt` passes the flipped state). Lowered blocks are NOSPAWN, now in
+  every walker's avoid mask. The conch is refused (deny buzz) when a block
+  would rise under Link (`Player.blockRisesUnder`). Art: rip-dungeon-themes.py
+  `ages:3a!3d` / `!3f` = Crown Dungeon tileset with uncmpGfxHeader 3d/3f
+  applied (tgBlueUp, tgRedDown, tgBlueDown, tgRedUp); Ages' half-way frame
+  (_3e) is NOT used: the tide wipe carries the change. Assets copied:
+  gfx_tileset_crown_dungeon.png, tilesetMappings25.bin, uncmpGfxHeaders.s.
+- tools/check-toggles.mjs + tools/lib/toggle-flood.mjs (new; CLAUDE.md table).
+  dungeon-flood takes both block states as its upper bound.
+- D2 Rising Chamber 0,3,4: wells / red / sluice row / blue / drains / plate,
+  nooks at the block rows' ends (they stop the Anchor stranding you), the dais
+  drops off both ends by one-way ledges. Plate: north shutter + Small Key.
+- D2 The Turning Pool 1,2,3 (was the Drowned Cell): red at the way in (over
+  the well column, LOW) and out (over the drains, MID), one press between;
+  the Anchor holds the water, not the blocks (`toggleRoom.anchor`).
+- D1 The Drip Vault 0,1,1: three marks (`anchorGauges.marks`), the basin
+  between two lion masks out of every bite's reach, so the sea must be HIGH
+  and one iron must hold both floor wells — thrown between them. check-anchor
+  learned marks: the iron on any one mark opens nothing.
+- check-charms' Gillcarve probe dove at 0,9,7's 4,3, sand since S203: moved
+  to 0,10,7's 7,3 (it was red on main).
+- Robot: `['tide', level, gap, budget, toggle]` sets the blocks too. Routed
+  through all three; check-playthrough 49/49 first try, Anemos still won at
+  the 246 wait. Guide: remap-guide 2b5d777, D1 drip and D2 rising re-shot, new
+  d2-turning figure, texts in guide.html and GUIDE.md.
+
+### NEXT (S206)
+- PUZZLE-PASS.md order step 4: E and G in D3 (torches the rising sea puts out;
+  a key from above), each mocked beside the cartridge room first.
+
 ## S204 — the puzzle pass begins: three real puzzles in the Grotto
 
 Branch claude/oracle-tides-s204-76y1pz, off main at a882a59 (S203).

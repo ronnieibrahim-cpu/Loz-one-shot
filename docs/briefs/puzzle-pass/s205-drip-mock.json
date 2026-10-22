@@ -1,17 +1,20 @@
-{"legend":"dungeonGrotto","rooms":{
-"drip":[
+{
+"legend": "dungeonGrotto",
+"rooms": {
+"drip": [
 "###############",
-"#....M3M......#",
-"#....###......#",
-"#....###......#",
+"#....#M3M#....#",
+"#....#####....#",
+"#....#####....#",
 "#.............#",
 "#.............D",
 "#....3...3....#",
 "#.............#",
 "#.............#",
 "#..pp.........#",
-"#######.#######"],
-"gauges":[
+"#######.#######"
+],
+"gauges": [
 "###############",
 "#.............#",
 "#..3.......3..#",
@@ -22,10 +25,44 @@
 "#######D#######",
 "#.............#",
 "#.U.........//#",
-"###############"]},
-"shots":[
-{"room":"gauges","tide":2,"anchor":[5,4,0],"out":"gauges-solved.png"},
-{"room":"drip","tide":0,"out":"drip-low.png"},
-{"room":"drip","tide":2,"anchor":[3,6,0],"out":"drip-wrong.png"},
-{"room":"drip","tide":2,"anchor":[7,6,0],"out":"drip-solved.png"}
-]}
+"###############"
+]
+},
+"shots": [
+{
+"room": "gauges",
+"tide": 2,
+"anchor": [
+5,
+4,
+0
+],
+"out": "gauges-solved.png"
+},
+{
+"room": "drip",
+"tide": 0,
+"out": "drip-low.png"
+},
+{
+"room": "drip",
+"tide": 2,
+"anchor": [
+3,
+6,
+0
+],
+"out": "drip-wrong.png"
+},
+{
+"room": "drip",
+"tide": 2,
+"anchor": [
+7,
+6,
+0
+],
+"out": "drip-solved.png"
+}
+]
+}
