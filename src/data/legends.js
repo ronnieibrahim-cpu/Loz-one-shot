@@ -138,6 +138,8 @@ export function installLegends() {
     'V': 'saltVane',        // region gate: only the Resonance Rod rings it
     'Z': 'cliffCrackedCaveMarble',  // a bombable crack with a cave behind it (S191)
     '9': 'drownWallSalt',   // a pan wall the high sea covers (S166)
+    '1': 'saltPool', '2': 'saltPool',  // pans that dry to salt crust at LOW (S203)
+    '3': 'saltShoal',       // salt flat that floods only at HIGH (S203)
     '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
 
@@ -154,6 +156,8 @@ export function installLegends() {
     'u': 'cliffAbyssCove',  // cliff until the lighthouse is lit, then a cave mouth
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
+    '1': 'rockPool',        // a rock pool: dark stone at LOW, not a beach (S203)
+    '9': 'drownWallAbyss',  // a low wall the high sea covers, in the shore's stone (S203)
   }, 'base');
 
   // ---- coral: the reef city ---------------------------------------------

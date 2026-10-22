@@ -1348,6 +1348,9 @@ export function installDungeonsA() {
           ['jellyfish', 7, 14],
           ['crab', 10, 19],
           ['keese', 4, 6],
+          // S203: Anemos was the hardest fight in the game (23 quarter-hearts
+          // in, 2 left), so a fairy waits under his door, as Nereth's does.
+          ['pickup', 7, 3, { kind: 'fairy', life: 1e9 }],
         ],
       },
       '1,2,3': {
@@ -2235,7 +2238,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. The other switch is where only a floor-walker can go."'],
+          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. Push it on at LOW tide! The other switch is on the bottom of the pool. Walk the floor to it."'],
         ],
       },
 
@@ -3381,7 +3384,7 @@ export function installDungeonsA() {
           ['tektite', 5, 15],
         ],
         readable: [
-          [3, 13, 'Cut beside the cell: "This well is two levels deep, and wind only lowers it one. Come in at HIGH tide, then let the sea go out around you."'],
+          [3, 13, 'Cut beside the cell: "Swim in over the low wall at HIGH tide. Then sound the conch for LOW, and blow on the wheel!"'],
         ],
         script: {
           onEvent(game, name, data) {

@@ -1,3 +1,67 @@
+## S203 — three boxy regions redrawn; the six dungeons compared
+
+Branch claude/oracle-tides-s203-zz4fc6, off main at eaa750d (S202).
+
+### The human's choices this session
+- Shown the overworld again (B, C, G marked; Seasons' spring sheet beside).
+  Chose "all of the above": regions B, C, G AND the dungeon comparison
+  (rotation (g)), the comparison written up before anything changed.
+  Dialogue: leave it as S202 left it.
+- After the write-up: a FAIRY under Anemos's door; Wyverna LEFT for later;
+  BOTH flagged signs reworded (Two Weights, Ebb Cell).
+
+### Built
+- NEW tide tiles, the S195/S197 fix for squares of beach on foreign ground:
+  `rockPool` is the abyss legend's `1` (dark stone at LOW), `drownWallAbyss`
+  (['cliffAbyss','cliffAbyss','waterD']) its `9`; `saltPool`
+  (['saltCrust','waterS','waterD']) is the salt legend's `1` AND `2`, and
+  `saltShoal` (['saltFlat','saltCrust','waterS']) its `3`. This restyles the
+  WHOLE Salt Pans at LOW, the S191 middle included.
+- B, the dark shore (0..3 x 0..1), one 40x16 canvas: rust sand as a beach by
+  the sea, rims round the abyss holes and one worn road from the seal to the
+  Keep's gate; the lone ledges in open ground gone (Drowned Shore row 5, Gate
+  of the Keep col 6, Abyss Stair row 4). Kept: the lighthouse block, warps,
+  beam, bell and both buried holes; the Keep's gate; the Black Causeway's
+  bands; Rustfall's cols 5-9 (bellows); Sunless Flat's cove cliff; the seal.
+  Every seam unchanged.
+- C, the Salt Pans' edges (4..5 and 9..10 x 0..2), two 20x24 canvases: round
+  pools rimmed by crust, the walls between screen rows broken into chunks
+  with gaps widened to six (inner seams only; now open at HIGH on cols 2/7/8),
+  South Pan's lone ledge gone. Kept East Crust's oil hollow, the Vault's cave,
+  both salt vanes. North Pan 4,1 stays a `2` pool: check-items' Bellows
+  probe blows on it.
+- G, the coast strips: West Bluff/Bluff Hollow/Shell Beach/South Bluff (col 3)
+  with staggered tree blocks instead of straight double columns and the rock
+  pair at every gap, West Bluff's lone ledge gone, a creek to a rounder
+  lagoon; Sunken Reef/East Strand/Reef Pocket (col 9) the same, the lens's
+  sandbar and Reef Pocket rows 2-7 (anchor gate) kept; the beach under the
+  village (0,4,9 / 0,5,9) a wavier shore. Outer seams unchanged.
+- D2: a fairy (`life: 1e9`) at Spire Ascent 7,3, under Anemos's door.
+- Signs: the Two Weights ("...Push it on at LOW tide! The other switch is on
+  the bottom of the pool. Walk the floor to it.") and the Ebb Cell ("Swim in
+  over the low wall at HIGH tide. Then sound the conch for LOW, and blow on
+  the wheel!").
+- docs/DUNGEON-STATUS.md "S203: THE SIX COMPARED": screens, keys, fights,
+  robot time, damage, lowest health and each boss's cost, off one real run.
+  D2's Anemos is the hardest fight in the game (23 -> 2); D4's Wyverna the
+  gentlest after D1 (26 -> 22).
+- tools/oneshot/room-info.mjs prints a room definition without its map.
+
+### The robot
+- The coast redraw moved D3's clock (as S192 warned): Bogmaw re-swept to 54.
+  Then Anemos's fairy (the run takes it) moved D2's: Anemos's entry wait
+  swept 30-270, 192-234 win on 1-8/24, 204 chosen; and D3 again: Bogmaw 24
+  (thin: 20, 24, 28-42 win; 22 loses), Gloomtide 52 inside a 40-60 band.
+
+### Checks
+- See the session's last commit message.
+
+### NEXT (S204)
+- Ask the human. Candidates: Anemos's fight itself (arena or pattern — no
+  damage/health numbers, S150); Wyverna too easy for D4; the Salt Pans'
+  middle (6..8 x 0..2) still has the straight wall bands the edges lost;
+  rotation (h) fairness (the Brinehulk) or (i) a play pass.
+
 ## S202 — the dialogue pass
 
 Branch claude/oracle-tides-dialogue-o7bbee, off main at 6970612 (S201).

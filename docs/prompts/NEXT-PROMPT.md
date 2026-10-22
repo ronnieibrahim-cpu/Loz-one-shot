@@ -1,24 +1,23 @@
-# Next session (S203) — after the dialogue pass: ask what is next
+# Next session (S204) — after the last boxy regions and the dungeon comparison
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S202 and S201; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S203 and S202; docs/HANDOFF.md lessons (top ten);
+  docs/DUNGEON-STATUS.md "S203: THE SIX COMPARED".
 
 ## State
-- S202: the dialogue pass. Every townsperson, trader, errand, story scene,
-  sign and dungeon inscription rewritten short and plain, measured against
-  Seasons' and Ages' own text (rule at the top of src/data/story.js). Two
-  stale hints fixed (the Sanctum's currents, the Sunken Palace's whirlpools).
-  Guides updated, intro figures re-shot.
+- S203: regions B (dark shore), C (Salt Pans' edges) and G (coast strips)
+  redrawn; abyss and salt pools dry to their own ground at LOW. The six
+  dungeons compared; a fairy under Anemos's door; the Two Weights' and the
+  Ebb Cell's signs say which tide.
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- Ask the human what to do next before building anything. Candidates: the
-  boxy regions B (dark shore round the lighthouse, 0..3 x 0..1), C (the Salt
-  Pans' edges), G (the coast strips beside Tidewatch), with the overworld
-  picture again; the rotation in docs/prompts/STATE.md; a second dialogue
-  pass if the human wants it shorter still (median 17 words vs the
-  cartridges' 11).
+- Ask the human what to do next before building anything. Candidates:
+  Anemos's fight itself (still the game's hardest: arena or pattern only);
+  Wyverna too easy for D4 (left by the human for later); the Salt Pans'
+  middle 6..8 x 0..2 (straight wall bands the edges no longer have);
+  rotation (h) fairness or (i) a play pass. Show the overworld picture.
 - New lines follow the rule in src/data/story.js's header.
 
 ## Done means

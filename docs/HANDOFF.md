@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A fairy before a boss moves every fight after it (S203).** The robot
+  takes the pickup, so it reaches the door a few frames later, and a boss
+  whose timers run off the absolute frame (Anemos) re-rolls — and so does
+  every boss downstream (Bogmaw and Gloomtide moved twice this session).
+  Sweep the boss's entry wait and then the next dungeon's, with
+  `PATCH='i=[...]' node tools/route-prefix.mjs a b` through xargs -P 6.
+- **A region's tide digits fall through to beach (S203, third time).** The
+  abyss and salt legends had no `1`/`2`/`3` of their own, so their pools dried
+  to yellow sand and brown wet sand: most of what made B and C look boxy.
+  Before redrawing a region, render it at LOW and look for this first.
+- **A checker can park on a cell you are redrawing (S203).** check-items'
+  Bellows probe blows on North Pan 4,1 and wants a deep pool there at HIGH.
+  Grep tools for `rx: X, ry: Y` of every screen in the region first.
+
 - **A hint line goes stale when its dungeon is rebuilt, and nothing checks it
   (S202).** The bog witch and the Sanctum's door sign said the current "runs at
   one height only" for twenty sessions after the torrents became deep at every

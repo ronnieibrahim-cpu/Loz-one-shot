@@ -41,6 +41,64 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S203: THE SIX COMPARED (rotation (g), pass 1) — the write-up, nothing changed yet
+
+Read off one real run (`check-playthrough`, seed 20260806, after S203's
+redraw), plus `tools/oneshot/our-dungeon-stats.mjs`. Damage and health in
+quarter-hearts; time is the ROBOT's time inside the dungeon (a person takes
+several times longer, but the ratios hold). Fights = placed enemies.
+
+| | screens | floors | keys | fights | robot min | damage taken | lowest health (of max) | boss: in -> lowest | optional charms |
+|---|---|---|---|---|---|---|---|---|---|
+| D1 Tidewash Grotto | 25 | 1 | 3 | 29 | 7.5 | 12 | 8 / 16 | Gohmaraq 16 -> 10 | 1 |
+| D2 Coral Spire | 27 | 2 | 3 | 29 | 4.7 | 36 | **2 / 24** | **Anemos 23 -> 2** | 1 |
+| D3 Bogwater Sanctum | 42 | 2 | 5 | 42 | 9.7 | 30 | 12 / 28 | Gloomtide 28 -> 12 | 3 |
+| D4 Cliffside Cistern | 44 | 3 | 5 | 63 | 11.8 | **16** | 22 / 36 | **Wyverna 26 -> 22** | 4 |
+| D5 Drowned Wood Shrine | 47 | 2 | 7 | 62 | 12.5 | 31 | 17 / 44 | Rootmaw 30 -> 17 | 4 |
+| D6 Abyssal Keep | 53 | 3 | 6 | 73 | 16.3 | 98 | 7 / 48 | Nereth 44 -> 28 | 4 |
+
+Size, keys, fights and time climb D1 -> D6 cleanly. DIFFICULTY DOES NOT:
+
+- **D2 is the hardest boss in the game.** Anemos takes 21 of the 23
+  quarter-hearts Link walks in with — the deepest trough of the whole run
+  (2/48 at the end, 2/24 then). Nereth, the final boss, takes 16 of 44. The
+  dungeon around him is the shortest in the game (4.7 robot-minutes), so the
+  second dungeon is both the quickest and the most dangerous.
+- **D4 is the easiest dungeon after D1.** 16 quarter-hearts across 44
+  screens, and Wyverna takes 4 — the gentlest boss of the six, sitting
+  between Gloomtide (16) and Rootmaw (13).
+- **D6's cost is two rooms**: d6/2,4,2 (the Crossed Shafts, 24) and Nereth
+  (16) are 40 of its 98; the rest is a steady tax. Fine for a last dungeon.
+
+Ways to level it WITHOUT touching damage or health numbers (S150's rule):
+D2 — a heart/fairy before Anemos's door, a fairer arena (room to back off),
+or a slower opening pattern; D4 — more of the Cistern's own enemies in
+Wyverna's arena or on the walk to it, or a second phase that uses the wind.
+**Ask the human before any of it.**
+
+Clarity, the two rooms S143 flagged (signs as they read after S202):
+- **The Two Weights** (D3): "A block won't go into deep water. The other
+  switch is where only a floor-walker can go." Says what but not WHEN: the
+  well square is only shallow at LOW. Candidate: "A block won't go into deep
+  water. Push it on at LOW tide. The other switch is at the bottom of the
+  pool -- walk the floor to it."
+- **The Ebb Cell** (D4): "This well is two levels deep, and wind only lowers
+  it one. Come in at HIGH tide, then let the sea go out around you." The
+  last clause is the riddle: swim over the low wall at HIGH, sound LOW from
+  inside the cell, then blow the wheel. Candidate: "Swim in over the low
+  wall at HIGH tide. Then sound the conch for LOW and blow the wheel dry."
+Both still want a person to play them cold.
+
+**The human's choices (S203):** a FAIRY under Anemos's door (Spire Ascent
+7,3, `life: 1e9`, the Keep Gate's pattern) — done; Wyverna LEFT for a later
+session; BOTH SIGNS REWORDED — done ("A block won't go into deep water. Push
+it on at LOW tide! The other switch is on the bottom of the pool. Walk the
+floor to it." / "Swim in over the low wall at HIGH tide. Then sound the
+conch for LOW, and blow on the wheel!"). The fairy only refills a player who
+arrives hurt; the robot arrives full, and its Anemos entry wait swept 30-270
+wins only at 192-234, on 1-8/24. THE FIGHT ITSELF IS STILL THE GAME'S
+HARDEST, and the only levers left under S150 are the arena and his pattern.
+
 ## S179: MEASURED AGAINST SEASONS AND AGES — AND THE PLAN TO GROW D3-D6
 
 The human asked for the dungeons' complexity to be reassessed against both
