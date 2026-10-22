@@ -1,0 +1,118 @@
+{
+"legend": "dungeonCoral",
+"rooms": {
+"rising": [
+"#######D#######",
+"#.==.......==.#",
+"#.==4444444==.#",
+"#.=.bbbbbbb.=.#",
+"#.==1111111==.#",
+"L.=.aaaaaaa.=..",
+"#.==3333333==.#",
+"#.............#",
+"#.............#",
+"#.............#",
+"#######.#######"
+],
+"turn": [
+"#######.#######",
+"#....=...=....#",
+"#....=aaa=....#",
+"#....=444=....#",
+"#....b444=....#",
+"#....=1113a...L",
+"#....=1113a...#",
+"#....=1113a...#",
+"#....=====....#",
+"#.............#",
+"###############"
+]
+},
+"claims": {
+"rising": {
+"from": [
+7,
+10
+],
+"to": [
+7,
+1
+]
+},
+"turn": {
+"from": [
+13,
+5
+],
+"to": [
+7,
+0
+],
+"anchor": true
+}
+},
+"shots": [
+{
+"room": "rising",
+"tide": 0,
+"toggle": 0,
+"out": "rising-low-red.png",
+"entities": [
+[
+"switch",
+7,
+1
+]
+]
+},
+{
+"room": "rising",
+"tide": 0,
+"toggle": 1,
+"out": "rising-low-blue.png",
+"entities": [
+[
+"switch",
+7,
+1
+]
+]
+},
+{
+"room": "rising",
+"tide": 1,
+"toggle": 0,
+"out": "rising-mid-red.png",
+"entities": [
+[
+"switch",
+7,
+1
+]
+]
+},
+{
+"room": "turn",
+"tide": 0,
+"toggle": 0,
+"out": "turn-low-red.png"
+},
+{
+"room": "turn",
+"tide": 1,
+"toggle": 0,
+"out": "turn-mid-red.png"
+},
+{
+"room": "turn",
+"tide": 1,
+"toggle": 1,
+"anchor": [
+11,
+5,
+0
+],
+"out": "turn-solved.png"
+}
+]
+}

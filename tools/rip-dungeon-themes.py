@@ -99,6 +99,18 @@ SHEETS = {
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
     'whirl3': 'ages:5f@3',
+    # THE CORAL SPIRE'S RED AND BLUE BLOCKS (S205): Ages' Crown Dungeon ($3a),
+    # one of the three dungeons dungeonsUsingToggleBlocks.s names. Its
+    # raised/lowered blocks are metatiles $0e (blue, palette 6) and $0f (red,
+    # palette 7), and which of the two stands up is not the layout's doing but
+    # the graphics': roomGfxChanges.s func_02_7a77 copies four tiles of
+    # gfx_animations_2 over VRAM $8cc0 — UNCMP_GFXH_AGES_3d (blue up, red
+    # down) or _3f (red up, blue down) — and the toggle cutscene shows _3e
+    # (both half-way) between them. `!NN` draws the tileset with
+    # uncmpGfxHeaderNN applied.
+    'crownA': 'ages:3a!3d',
+    'crownMid': 'ages:3a!3e',
+    'crownB': 'ages:3a!3f',
     # THE ANCIENT RUINS' BELTS (S186): tileset $3c with every animation at
     # its k-th step, so each of the four conveyor steps is one pick.
     'ruins0': 'meta:3c@0',
@@ -114,7 +126,7 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:39': "the Poison Moth's Lair", 'meta:3a': 'the Dancing Dragon Dungeon',
               'meta:3c': 'the Ancient Ruins', 'meta:42': "the Sword & Shield Maze, fire half",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
-              'meta:4b': "Farore's room"}
+              'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon'}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -122,7 +134,26 @@ def meta(name, m, note, sheet, **opt):
     return (name, (m % 16) * 16, (m // 16) * 16, note, dict(sheet=sheet, **opt) if opt else sheet)
 
 
-def render_tileset(index, frame=None):
+def uncmp_vram(t, ro, header):
+    """`t`'s VRAM with Ages' uncmpGfxHeader`header` applied: each line
+    `m_GfxHeader file, $dest, $size, $offset` copies size+1 tiles... except
+    that the toggle blocks' headers name $04 and sit $40 bytes (four tiles)
+    apart in a 128-tile file, so this copies exactly the tiles the four
+    metatile quarters read, four, and asserts the source has them."""
+    import re as _re
+    body = _re.search(r'uncmpGfxHeader%s:\n(.*?)m_GfxHeaderEnd' % header,
+                      ro.text('uncmpGfxHeaders.s', ro.AGES), _re.S).group(1)
+    vram = {0: dict(t.vram[0]), 1: dict(t.vram[1])}
+    for f, d, n, off in _re.findall(r'm_GfxHeader (\w+), \$(\w+), \$(\w+), \$(\w+)', body):
+        src = ro.png_tiles(f, ro.AGES)
+        dst, first = int(d, 16), int(off, 16) // 16
+        assert first + 4 <= len(src), 'uncmpGfxHeader%s runs off %s' % (header, f)
+        for i in range(4):
+            vram[dst & 1][(dst & 0xfff0) + i * 16] = src[first + i]
+    return vram
+
+
+def render_tileset(index, frame=None, uncmp=None):
     """All 256 metatiles of tileset `index`, 16 to a row, as an RGB image.
     `index` is a Seasons tileset number, or ('ages', number). With `frame`,
     every animated metatile is drawn at that step of its animation.
@@ -136,10 +167,11 @@ def render_tileset(index, frame=None):
     ro = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ro)
     t = ro.Tileset(index)
+    base = uncmp_vram(t, ro, uncmp) if uncmp else t.vram
     im = Image.new('RGB', (256, 256), (0, 0, 0))
     for m in range(256):
         tiles, attrs = t.map[m * 8:m * 8 + 4], t.map[m * 8 + 4:m * 8 + 8]
-        vram = t.vram
+        vram = base
         if frame is not None:
             steps = t.animation_vram(m)
             if steps:
@@ -164,8 +196,9 @@ def open_sheet(path):
         idx, _, frame = path[5:].partition('@')
         return render_tileset(int(idx, 16), int(frame) if frame else None)
     if path.startswith('ages:'):
-        idx, _, frame = path[5:].partition('@')
-        return render_tileset(('ages', int(idx, 16)), int(frame) if frame else None)
+        idx, _, uncmp = path[5:].partition('!')
+        idx, _, frame = idx.partition('@')
+        return render_tileset(('ages', int(idx, 16)), int(frame) if frame else None, uncmp or None)
     return Image.open(path).convert('RGB')
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
@@ -660,6 +693,14 @@ PICKS = [
     # Mermaid's Cave stands its rooms' obstacles in magenta blocks (rooms
     # $52e, $530: runs of $1d), not the green crystal, which none of them
     # places (S162, the human's pick from the two side by side).
+    # The Coral Spire's red and blue blocks (S205), Ages' Crown Dungeon. Each
+    # colour raised, lowered, and the half-way picture the toggle shows.
+    meta('tgBlueUp', 0x0e, 'blue block raised, the Crown Dungeon (UNCMP_GFXH_AGES_3d)', 'crownA'),
+    meta('tgRedDown', 0x0f, 'red block lowered, the same', 'crownA'),
+    meta('tgBlueMid', 0x0e, 'blue block half-way (UNCMP_GFXH_AGES_3e)', 'crownMid'),
+    meta('tgRedMid', 0x0f, 'red block half-way, the same', 'crownMid'),
+    meta('tgBlueDown', 0x0e, 'blue block lowered (UNCMP_GFXH_AGES_3f)', 'crownB'),
+    meta('tgRedUp', 0x0f, 'red block raised, the same', 'crownB'),
     meta('uStatue', 0x1d, 'the magenta block, Mermaid\'s Cave (rooms $52e, $530)', 'mermaid'),
     # Its own staircases (S162), in its own stone: Ages' indoor up and down
     # stairs (TILEINDEX_INDOOR_UPSTAIRCASE $44, _DOWNSTAIRCASE $45). Every
@@ -1048,7 +1089,7 @@ def main():
             L.append('  // %s — Seasons tileset $%s (%s), metatile $%02x'
                      % (note, base[5:], META_NAMES[base], (y // 16) * 16 + x // 16))
         elif sheet.startswith('ages:'):
-            base = sheet.split('@')[0]
+            base = sheet.split('@')[0].split('!')[0]
             L.append('  // %s — Ages tileset $%s (%s), metatile $%02x'
                      % (note, base[5:], META_NAMES[base], (y // 16) * 16 + x // 16))
         else:

@@ -20,7 +20,7 @@
 
 import { MAPS, getRoom } from '../../src/world/maps.js';
 import { cellTiles } from '../../src/world/room.js';
-import { F, transformFor } from '../../src/world/tileset.js';
+import { F, transformFor, setToggleState, toggleState } from '../../src/world/tileset.js';
 import { DREDGE_RANGE, COIN_THROW_SPEED, COIN_SETTLE_FRAMES } from '../../src/data/feel.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
 import { floatSweep, floatStations } from '../../src/game/float-path.js';
@@ -134,9 +134,20 @@ export function floodDungeon(mapId, opts = {}) {
   // AND FROM D3 ONWARD THE PLAYER CAN SWIM (the Kelp-Soled Cleats). Off for
   // d1/d2, where the player provably does not have them yet.
   const CAPS = capsForDungeonIndex(m.dungeon.index);
+  // AND AT EITHER STATE OF THE RED AND BLUE BLOCKS (S205): every tide change
+  // flips them, so the player controls them exactly as he controls the sea,
+  // and this upper bound takes both. Which state a route needs WHEN is
+  // tools/check-toggles.mjs's to prove.
   const walkableAt = (room, x, y, t) => {
-    if (room.flagsAt(x, y, t) & F.STAIRS) return true;
-    return tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
+    const was = toggleState();
+    try {
+      for (const p of [0, 1]) {
+        setToggleState(p);
+        if (room.flagsAt(x, y, t) & F.STAIRS) return true;
+        if (tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID)) return true;
+      }
+      return false;
+    } finally { setToggleState(was); }
   };
   const passable = (room, x, y) => [0, 1, 2].some(t => walkableAt(room, x, y, t));
 

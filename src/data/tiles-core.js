@@ -3442,6 +3442,21 @@ export function installCoreTiles() {
     // only, needed no new art and reads as the room's own masonry going under.
     dCoralBar: { tide: ['dWallCoral', 'dWallCoral', 'dWaterD'] },
 
+    // THE RED AND BLUE BLOCKS (S205), Oracle of Ages' toggle blocks, cut from
+    // its Crown Dungeon by tools/rip-dungeon-themes.py. Raised, a block is a
+    // wall; lowered, it is floor in its own colour — and floor no enemy will
+    // walk onto (NOSPAWN, in every walker's avoid mask), so nothing is
+    // standing on one when it comes up. Which colour stands is the tide's
+    // `toggle` bit, and every tide change flips it: see `resolveTile`.
+    // `a` and `b` in the Spire's legend. tools/check-toggles.mjs proves every
+    // room that places them.
+    dRedUp: { art: ART.tgRedUp, pal: 'tgRedUp', flags: F.SOLID },
+    dRedDown: { art: ART.tgRedDown, pal: 'tgRedDown', flags: F.NOSPAWN },
+    dBlueUp: { art: ART.tgBlueUp, pal: 'tgBlueUp', flags: F.SOLID },
+    dBlueDown: { art: ART.tgBlueDown, pal: 'tgBlueDown', flags: F.NOSPAWN },
+    dToggleRed: { toggle: ['dRedUp', 'dRedDown'] },
+    dToggleBlue: { toggle: ['dBlueDown', 'dBlueUp'] },
+
     // The Cistern's drown-wall is its own grey stone going under, not the
     // outdoor `drownWall` cliff it drew for its whole life at 10x8: the same
     // argument as the Spire's bar and the Keep's lintel. Stone at LOW and MID,
