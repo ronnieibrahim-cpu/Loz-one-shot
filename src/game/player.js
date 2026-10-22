@@ -16,7 +16,7 @@ import {
   enemyHurtRect,
 } from './entity.js';
 export { enemyHurtRect };
-import { F, transformFor } from '../world/tileset.js';
+import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
@@ -1461,6 +1461,23 @@ export class Player extends Entity {
 
   // ---------------------------------------------------------------- conch
 
+  /** Would flipping the red and blue blocks raise one under Link's feet? */
+  blockRisesUnder(game) {
+    const room = game.room;
+    if (!room) return false;
+    const next = game.tide.toggle ^ 1;
+    const x0 = this.x + this.hb.x, y0 = this.y + this.hb.y;
+    for (const py of [y0, y0 + this.hb.h - 1]) {
+      for (const px of [x0, x0 + this.hb.w - 1]) {
+        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+        const name = room.baseName(tx, ty);
+        if (!getTileDef(name).toggle) continue;
+        if (resolveTile(name, 0, next).flags & F.SOLID) return true;
+      }
+    }
+    return false;
+  }
+
   playConch(game) {
     if (this.conchTime > 0) return true;
     const why = game.tide.blockedReason();
@@ -1469,6 +1486,14 @@ export class Player extends Entity {
       game.say(why === 'locked'
         ? 'The conch will not sound in here.'
         : (why === 'forced' ? 'Something holds the water fast.' : ''));
+      return true;
+    }
+    // A RED OR BLUE BLOCK WILL NOT COME UP UNDER LINK (S205). Every tide
+    // change flips them, so a press while he stands on a lowered one would
+    // raise a wall through him; the conch refuses instead, the way a press
+    // that changes nothing is refused — the deny buzz and no tide.
+    if (this.blockRisesUnder(game)) {
+      game.audio.sfx('deny');
       return true;
     }
     const cf = game.charm('bosunsWhistle')

@@ -71,11 +71,13 @@ import {
   HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED,
 } from '../data/feel.js';
 
+// NOSPAWN is a lowered red or blue block (S205): a walker never stands on
+// one, so none is ever inside one when it comes up.
 const TERRAIN_AVOID = {
-  land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
-  shallow: F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
+  land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE | F.NOSPAWN,
+  shallow: F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE | F.NOSPAWN,
   water: 0,          // aquatic: constrained separately to wet tiles
-  any: F.PIT,
+  any: F.PIT | F.NOSPAWN,
   air: 0,
 };
 

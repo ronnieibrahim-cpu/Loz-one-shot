@@ -454,15 +454,16 @@ export const ROUTE = [
   ['exit', 'up', 300],
 
   // ---------------------------------------------------------------- d1 0,1,1
-  // THE DRIP VAULT. The same gauges, north and south: LOW, hold the upper
-  // well under the iron, HIGH.
+  // THE DRIP VAULT (S205): both wells empty, the basin full. LOW, the iron
+  // in the gap between the two wells so it holds both, then HIGH fills the
+  // basin no bite can reach.
   ['equip', 'sword', 'A', 400],
   ['fight', 900],
   ['loot', 400],
   ['equip', 'anchor', 'A', 400],
-  ['use', 'conch', 2, 140],
-  ['anchor', 7, 4, 1600],
-  ['use', 'conch', 2, 140],
+  ['tide', 0, 140, 600],
+  ['anchor', 7, 6, 1600],
+  ['tide', 2, 140, 600],
   ['dialogue', 400],
   ['goto', 13, 5, 600],
   ['exit', 'right', 300],
@@ -700,11 +701,10 @@ export const ROUTE = [
   // doors in the wall ring, Reefguard Hall and Spire Ascent two rooms long.
   //
   // ---------------------------------------------------------------- d2 0,3,4
-  // Rising Chamber. Push each block outward onto its plate: the shutter in
-  // the north wall lifts and the floor-0 Small Key drops north of the drain
-  // band. THE BARNACLE AT 7,8 IS A FIXED HAZARD, never fought — so the key
-  // is fetched up the east side, clear of it. Then the key opens the west
-  // wall's key door, which is the Stair Coil's.
+  // Rising Chamber (S205): the red and blue blocks, taught. Set the hall to
+  // LOW with the blue up (red down), walk the wells and the red into the
+  // middle row, sound once (MID, blue down) and wade the drains to the plate.
+  // The key drops on the dais; hop off its west end and take the west door.
   //
   // S150: the jellyfish in 0,3,5 drifts up the one column `travel` walks, and
   // with the cartridge's contact box it stung the run five times in a row on
@@ -714,16 +714,17 @@ export const ROUTE = [
   ['fight', 1200],
   ['loot', 400],
   ['travel', 3, 4, 1500],
-  ['goto', 3, 8, 400],
-  ['hold', ['left'], 40],
-  ['goto', 11, 8, 500],
-  ['hold', ['right'], 40],
+  ['fight', 900],
+  ['loot', 400],
+  ['goto', 7, 8, 500],
+  ['tide', 0, 140, 900, 1],
+  ['goto', 7, 4, 500],
+  ['use', 'conch', 1, 140],
+  ['goto', 7, 1, 500],
   ['dialogue', 300],
-  ['wait', 60],
-  ['goto', 12, 3, 700],
-  ['goto', 7, 3, 400],
-  ['hold', ['up'], 3],
-  ['wait', 10],
+  ['loot', 400],
+  ['goto', 3, 1, 400],
+  ['hold', ['left'], 30],
   ['goto', 1, 5, 700],
   ['hold', ['left'], 20],
   ['tap', 'a', 30],
@@ -823,6 +824,18 @@ export const ROUTE = [
   ['tap', 'a', 30],
   ['dialogue', 300],
   ['travel', 2, 3, 900],
+
+  // ---------------------------------------------------------------- d2 1,2,3
+  // The Turning Pool (S205): red at the way in and the way out, and one
+  // press between. Hold the east wells at LOW with the iron, then go on round
+  // to MID with the blue up — the red down — and walk through.
+  ['loot', 600],
+  ['goto', 13, 5, 400],
+  ['tide', 0, 140, 900],
+  ['equip', 'anchor', 'A', 400],
+  ['anchor', 11, 6, 1600],
+  ['tide', 1, 140, 900, 1],
+  ['equip', 'sword', 'A', 400],
 
   // ---------------------------------------------------------------- d2 1,2,2
   // The Sounding Fork, the west throat: hop the ledge, turn the valve, wade

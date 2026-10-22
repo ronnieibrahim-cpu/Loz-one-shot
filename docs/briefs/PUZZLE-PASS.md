@@ -60,11 +60,14 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    the Anchor) — `check-blocks.mjs`; the Sunken Hall 0,3,5 (three plates,
    each right while ankle-deep) — `check-tideplates.mjs`. Pictures in
    `docs/briefs/puzzle-pass/`.
-2. NEXT: the Drip Vault 0,1,1 made a step up from the Two Gauges 0,4,3 (both
-   are "one well empty, one well full"; the Drip Vault could add a block
-   that must sit in the held patch, or a third gauge), then on to D2.
-3. B in D2 (the Rising Chamber, plus one new room: D2's fix 4).
-4. E and G in D3 (Sunken Vestry; a key from above).
+2. **S205, DONE: the Drip Vault 0,1,1** — three marks; the basin out of
+   every bite's reach, so one iron goes BETWEEN the two floor wells
+   (check-anchor's `marks`).
+3. **S205, DONE: B in D2.** Red and blue blocks flipped by every tide change
+   (`tools/check-toggles.mjs`): the Rising Chamber 0,3,4 (one forced press in
+   the sluice row) and the Turning Pool 1,2,3, which replaced the empty
+   Drowned Cell (red in and red out; the Anchor holds water, not blocks).
+4. NEXT: E and G in D3 (Sunken Vestry; a key from above).
 5. D and G in D4 (Cistern Floor; the crumbling floor); the wheel rooms each
    given a twist or swapped.
 6. C and F in D5 (Sunken Bracken; the one-stake copies).

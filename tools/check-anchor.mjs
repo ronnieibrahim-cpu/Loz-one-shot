@@ -361,41 +361,53 @@ for (const r of gates) {
 for (const r of gauges) {
   CAPS = r.caps;
   const where = `${r.mapId} ${r.key} (${r.name})`;
-  const { a, b, aLevel, bLevel, door } = r.g;
-  check(`${where}: the two gauges want different levels`, aLevel !== bLevel,
-    `both want ${aLevel}`);
-  const span = Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
-  check(`${where}: no one patch can cover both gauges`, span > 2 * ANCHOR_RADIUS_TILES,
-    `they are ${span} tiles apart and the patch is ${2 * ANCHOR_RADIUS_TILES + 1} across`);
+  // THE MARKS. Two (`a`/`b`, the Two Gauges) or, since S205, a list
+  // (`marks: [[x, y, level], ...]`, the Drip Vault's three).
+  const marks = r.g.marks || [[...r.g.a, r.g.aLevel], [...r.g.b, r.g.bLevel]];
+  const door = r.g.door;
+  const levels = [...new Set(marks.map(m => m[2]))];
+  check(`${where}: the marks want different levels`, levels.length > 1, `all want ${levels[0]}`);
 
-  // And the room has to be solvable: reach a tile at base aLevel from which the
-  // iron bites a tile whose patch covers gauge a and not gauge b, then take the
-  // base to bLevel and walk to the door. Tried both ways round, because either
-  // gauge may be the one held.
+  // One reachable placement: the patch covers exactly the marks that want its
+  // level, the base is the other level, and the player survives taking it
+  // there and walks to the door. Every reachable bite is tried at every level.
   const start = r.g.from || [4, 4];
   const startTile = walkableDef(defAt(r.legend, r.grid[start[1]][start[0]], 1)) ? start : null;
+  const seen = flood(r, startTile || marks[0], null);
+  const all = placements(r, seen);
+  const opens = (p) => {
+    const held = marks.filter(m => inPatch(m[0], m[1], p));
+    if (!held.length || held.some(m => m[2] !== p.level)) return null;
+    const rest = marks.filter(m => !inPatch(m[0], m[1], p));
+    const bases = [...new Set(rest.map(m => m[2]))];
+    if (bases.length !== 1) return null;
+    const after = flood(r, [p.fromX, p.fromY], p, new Set([door.join(',')]));
+    if (!after.has(`${p.fromX},${p.fromY},${bases[0]}`) || !reaches(after, door)) return null;
+    return { p, base: bases[0], held };
+  };
   let solved = null;
-  for (const [g1, l1, g2, l2] of [[a, aLevel, b, bLevel], [b, bLevel, a, aLevel]]) {
-    const seen = flood(r, startTile || a, null);
-    for (const p of placements(r, seen)) {
-      if (p.level !== l1) continue;                       // must capture g1's level
-      if (!inPatch(g1[0], g1[1], p)) continue;            // covering g1
-      if (inPatch(g2[0], g2[1], p)) continue;             // and not g2
-      // The player must survive taking the base to l2 and then reach the door.
-      const after = flood(r, [p.fromX, p.fromY], p, new Set([door.join(',')]));
-      if (!after.has(`${p.fromX},${p.fromY},${l2}`)) continue;
-      if (!reaches(after, door)) continue;
-      solved = { p, held: g1, heldLevel: l1, base: l2 };
-      break;
-    }
-    if (solved) break;
-  }
+  for (const p of all) { solved = opens(p); if (solved) break; }
   check(`${where}: one anchor placement opens the door`, !!solved,
-    'no reachable bite covers one gauge at its level with the base at the other');
+    'no reachable bite covers the marks of one level with the base at the other');
   if (solved) {
-    console.log(`       solution: hold ${solved.held} at ${['LOW', 'MID', 'HIGH'][solved.heldLevel]} `
-      + `(bite ${solved.p.tx},${solved.p.ty} from ${solved.p.fromX},${solved.p.fromY}), `
+    console.log(`       solution: hold ${solved.held.map(m => m.slice(0, 2).join(',')).join(' and ')} at `
+      + `${['LOW', 'MID', 'HIGH'][solved.p.level]} (bite ${solved.p.tx},${solved.p.ty} from ${solved.p.fromX},${solved.p.fromY}), `
       + `then take the sea to ${['LOW', 'MID', 'HIGH'][solved.base]}`);
+  }
+  if (marks.length === 2) {
+    const span = Math.max(Math.abs(marks[0][0] - marks[1][0]), Math.abs(marks[0][1] - marks[1][1]));
+    check(`${where}: no one patch can cover both gauges`, span > 2 * ANCHOR_RADIUS_TILES,
+      `they are ${span} tiles apart and the patch is ${2 * ANCHOR_RADIUS_TILES + 1} across`);
+  } else {
+    // THE STEP UP (S205): the iron thrown onto any one mark — the Two Gauges'
+    // answer — opens nothing; it has to go where its patch takes in more than
+    // one. And a mark no reachable bite can cover is the sea's alone.
+    const onAMark = all.filter(p => marks.some(m => m[0] === p.tx && m[1] === p.ty));
+    check(`${where}: the iron thrown onto any one mark opens nothing`,
+      onAMark.length > 0 && !onAMark.some(opens), `${onAMark.length} such bites`);
+    const unheld = marks.filter(m => !all.some(p => inPatch(m[0], m[1], p)));
+    check(`${where}: one mark no bite can reach, so the sea alone sets it`, unheld.length === 1,
+      unheld.map(m => m.join(',')).join(' '));
   }
 }
 

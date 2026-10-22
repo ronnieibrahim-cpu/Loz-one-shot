@@ -164,6 +164,7 @@ export class Game {
     this.dive = null;
     this.tide.clearOverrides();
     this.tide.level = this.progress.tide;
+    this.tide.setToggle(this.progress.toggle | 0);
     const s = this.progress.pos;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir;
@@ -191,6 +192,7 @@ export class Game {
     // reason for.
     this.tide.clearOverrides();
     this.tide.level = p.tide;
+    this.tide.setToggle(p.toggle | 0);
     const s = p.pos;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';

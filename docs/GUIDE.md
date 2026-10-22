@@ -484,9 +484,12 @@ right: it holds the four wells at LOW. Sound MID: the drains fill, the held
 wells stay shallow, and you push the block the length of the lane onto the
 switch, walking behind it. A `rupee20`.
 
-**The Drip Vault** (`d1/0,1,1`). The second gauge room, arranged vertically: the
-door at (8,3) wants the **upper well at (4,1) drained** and the **lower well at
-(4,6) drowned**. Same trick, same five-tile patch, one axis rotated.
+**The Drip Vault** (`d1/0,1,1`). The gauge room's step up (S205): the door wants
+**both floor wells (5,6) and (9,6) drained** and **the basin (7,1) full**. The
+basin is set into the wall between two lion masks, out of every bite's reach,
+so the sea must be HIGH; and one iron must hold both wells — thrown into the
+gap between them, (7,4)..(7,8), never onto either. *"Three marks beside the
+door: both wells empty, the basin full."*
 
 **Bosskey Vault** (`d1/0,2,1`). A chest with the **Boss Key**, and a one-way
 staircase at (5,5) back to the Locked Stair.
@@ -607,12 +610,14 @@ in turn — and a Small Key drops. **Optional.** Nothing later in the dungeon
 needs this key; walk past it without the Kilnshell and come back for it once
 you own one, or skip it outright.
 
-**Rising Chamber** (`d2/0,3,4`). Two switches at (1,5) and (8,6) with blocks
-beside them at (2,5) and (7,6), plus a `barnacle` at (4,6) that opens to spit
-and is shielded while shut. Push both blocks onto their switches; the door at
-(4,1) lifts, and **the mandatory Small Key 1** rattles loose with it — this is
-the room the Spire's route actually runs through, not the Torch Cell. The plate
-says it plainly: *"The hole in this floor is a way up when the sea fills it. With the sea out, it's only a hole."*
+**Rising Chamber** (`d2/0,3,4`). THE RED AND BLUE BLOCKS (S205): every tide
+change swaps which colour stands. From the hall: wells (LOW), a red row, a row
+of sluice, a blue row, drains (MID), the plate at (7,1). The sluice row floods
+at HIGH, so it allows one press, LOW to MID — which must drop the blue as it
+fills the drains. So set the hall to LOW with the red down, walk in, press
+once, wade to the plate. The north shutter lifts and **the mandatory Small Key
+1** drops at (9,1); hop off the dais's west end and spend it on the west wall.
+*"Each turn of the tide turns the red and the blue."*
 
 **Cistern Cell** (`d2/0,3,3`), through that door. A chest at (2,1) holds
 **Barnacle Skin** (`barnacleSkin`) — one free hit per room, and it cracks until
@@ -684,7 +689,12 @@ now open**.
 with a `jellyfish`, a `crab` and a `keese` spread up it. The **boss door** is in
 this room, and so is the last locked door. Spend Small Key 2 to go west.
 
-**Drowned Cell** (`d2/1,2,3`) — an `urchin` and a `rupee20`.
+**The Turning Pool** (`d2/1,2,3`, the Drowned Cell until S205). Red blocks at
+the way in (over the well column, LOW) and the way out (over the drains, MID);
+the pool between allows one press, which flips the red. The Anchor holds the
+water and not the blocks: bite the floor just east of the wells (11,6) at LOW,
+then sound on round to MID with the red down, and walk through. An `urchin`
+and a `rupee20`.
 
 **The Sounding Fork** (`d2/1,2,2`). The same primitive with a third answer, and
 it is the one the first fork could not teach: a shaft that fills **over your

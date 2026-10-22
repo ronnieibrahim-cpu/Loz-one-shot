@@ -10545,6 +10545,10 @@ function registerTiles(defs) {
       flags: def.flags || 0,
       mask: def.mask == null ? 15 : def.mask,
       tide: def.tide || null,
+      // A RED OR BLUE BLOCK (S205): [the tile at toggle 0, the tile at 1].
+      // See `resolveTile`. Named here: this registrar discards what it does
+      // not name.
+      toggle: def.toggle || null,
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
@@ -10747,9 +10751,30 @@ function getTileDef(name) {
   return d;
 }
 
+/**
+ * THE RED AND BLUE BLOCKS (S205): which of the two stands up. Oracle of Ages
+ * keeps one bit, wToggleBlocksState, that an orb flips; in this game the
+ * conch is the orb, and every tide change flips it (`Tide.setLevel`). A tile
+ * with `toggle: [atZero, atOne]` resolves to one of two concrete tiles by
+ * this bit, before its tide is looked at.
+ *
+ * It is module state rather than an argument because every query in the game
+ * reaches tiles through `resolveTile`, and threading a second dimension
+ * through all of them would be a hundred edits for one bit. The running game
+ * keeps it equal to `Tide.toggle` (Tide owns it and sets it here); a checker
+ * sets it explicitly with `setToggleState` before asking a room anything. A
+ * caller asking about a parity other than the live one — the Lens's preview —
+ * passes it as `resolveTile`'s third argument, and `Room.tile` does that when
+ * the tide it is handed carries a `toggle` of its own.
+ */
+let TOGGLE = 0;
+function setToggleState(p) { TOGGLE = p & 1; }
+function toggleState() { return TOGGLE; }
+
 /** Resolve a possibly-virtual tile name to its concrete tile at a tide level. */
-function resolveTile(name, tide) {
-  const d = getTileDef(name);
+function resolveTile(name, tide, toggle = TOGGLE) {
+  let d = getTileDef(name);
+  if (d.toggle) d = getTileDef(d.toggle[toggle & 1]);
   if (!d.tide) return d;
   const target = d.tide[Math.max(0, Math.min(2, tide))] ?? d.tide[d.tide.length - 1];
   const r = getTileDef(target);
@@ -10986,6 +11011,13 @@ function validateTiles() {
       }
       if (d.art) problems.push(`${name}: tide tiles must not define art`);
       if (d.variants) problems.push(`${name}: tide tiles must not declare variants`);
+    } else if (d.toggle) {
+      if (d.toggle.length !== 2) problems.push(`${name}: toggle must have exactly 2 entries`);
+      for (const t of d.toggle) {
+        if (!TILES.has(t)) { problems.push(`${name}: toggle state '${t}' is not registered`); continue; }
+        if (TILES.get(t).toggle || TILES.get(t).tide) problems.push(`${name}: toggle state '${t}' is itself virtual`);
+      }
+      if (d.art) problems.push(`${name}: toggle tiles must not define art`);
     } else if (!d.art && !d.anim) {
       problems.push(`${name}: concrete tile has neither art nor anim`);
     }
@@ -11076,6 +11108,8 @@ __exports["registerBlocks"] = registerBlocks;
 __exports["blockRef"] = blockRef;
 __exports["artDef"] = artDef;
 __exports["getTileDef"] = getTileDef;
+__exports["setToggleState"] = setToggleState;
+__exports["toggleState"] = toggleState;
 __exports["resolveTile"] = resolveTile;
 __exports["tileDefSolid"] = tileDefSolid;
 __exports["tileArt"] = tileArt;
@@ -11135,7 +11169,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
+const { F, resolveTile, toggleState, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -11327,7 +11361,8 @@ class Room {
   /** Concrete tile definition at the given tide level or field. */
   tile(tx, ty, tide) {
     if (!this.inBounds(tx, ty)) return getTileDef('void');
-    const d = resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
+    const d = resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty),
+      tide && typeof tide === 'object' && tide.toggle != null ? tide.toggle : toggleState());
     const s = this._floorSub;
     return s && s[d.name] ? s[d.name] : d;
   }
@@ -12447,7 +12482,7 @@ __define("game/tide.js", function (__exports, __require) {
 // water while collision uses the new — it looks wrong and nothing fails.
 
 const { offscreen } = __require("core/screen.js");
-const { F } = __require("world/tileset.js");
+const { F, setToggleState } = __require("world/tileset.js");
 const { TIDE_SWEEP_FRAMES } = __require("data/feel.js");
 
 /**
@@ -12487,6 +12522,20 @@ class Tide {
     this.overrides = [];
     this.stamp = 0;
     this._nextId = 1;
+    // THE RED AND BLUE BLOCKS (S205): 0 while the red stand up, 1 while the
+    // blue do. Every tide change flips it — the conch is Ages' orb — and a
+    // level set `instant` (a save restored, a room pinning its sea, a boss
+    // between phases) does not, because nothing visibly moved. Saved in
+    // `progress.toggle`. See `resolveTile`.
+    this.toggle = 0;
+  }
+
+  /** Set the blocks' state outright: a new game, a load. */
+  setToggle(p) {
+    this.toggle = p & 1;
+    setToggleState(this.toggle);
+    if (this.game && this.game.progress) this.game.progress.toggle = this.toggle;
+    this.touch();
   }
 
   get busy() { return this.sweep > 0; }
@@ -12639,9 +12688,14 @@ class Tide {
    */
   viewAt(base) {
     const self = this;
+    // The blocks flip once per step, so the view `steps` presses ahead has
+    // them flipped `steps` times: the Lens's next tide shows them swapped.
+    const steps = ((base - this.level) % TIDE_COUNT + TIDE_COUNT) % TIDE_COUNT;
+    const toggle = this.toggle ^ (steps & 1);
     return {
       level: base,
-      stamp: this.stamp + ':' + base,
+      toggle,
+      stamp: this.stamp + ':' + base + ':' + toggle,
       levelAt(tx, ty, room) { return self.resolve(base, tx, ty, room); },
     };
   }
@@ -12781,6 +12835,11 @@ class Tide {
 
     this.level = next;
     if (g.progress) g.progress.tide = next;
+    if (!instant) {
+      this.toggle ^= 1;
+      setToggleState(this.toggle);
+      if (g.progress) g.progress.toggle = this.toggle;
+    }
     this.touch();
     for (const fn of this.listeners) fn(next, this.prevLevel, g);
     if (g.onTideChanged) g.onTideChanged(next, this.prevLevel);
@@ -17895,6 +17954,9 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     coin: null,
     // world state
     tide: 1,
+    // Which of the red and blue blocks stand up (S205): 0 red, 1 blue. Every
+    // tide change flips it; see Tide.toggle.
+    toggle: 0,
     // position
     // WASHED ASHORE (S158). A new game opens on the Fishing Stones below
     // Tidewatch, holding nothing, as Seasons opens on Link lying in Holodrum's
@@ -20332,7 +20394,7 @@ __define("game/player.js", function (__exports, __require) {
 
 const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect } = __require("game/entity.js");
 
-const { F, transformFor } = __require("world/tileset.js");
+const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
@@ -21749,6 +21811,23 @@ class Player extends Entity {
 
   // ---------------------------------------------------------------- conch
 
+  /** Would flipping the red and blue blocks raise one under Link's feet? */
+  blockRisesUnder(game) {
+    const room = game.room;
+    if (!room) return false;
+    const next = game.tide.toggle ^ 1;
+    const x0 = this.x + this.hb.x, y0 = this.y + this.hb.y;
+    for (const py of [y0, y0 + this.hb.h - 1]) {
+      for (const px of [x0, x0 + this.hb.w - 1]) {
+        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+        const name = room.baseName(tx, ty);
+        if (!getTileDef(name).toggle) continue;
+        if (resolveTile(name, 0, next).flags & F.SOLID) return true;
+      }
+    }
+    return false;
+  }
+
   playConch(game) {
     if (this.conchTime > 0) return true;
     const why = game.tide.blockedReason();
@@ -21757,6 +21836,14 @@ class Player extends Entity {
       game.say(why === 'locked'
         ? 'The conch will not sound in here.'
         : (why === 'forced' ? 'Something holds the water fast.' : ''));
+      return true;
+    }
+    // A RED OR BLUE BLOCK WILL NOT COME UP UNDER LINK (S205). Every tide
+    // change flips them, so a press while he stands on a lowered one would
+    // raise a wall through him; the conch refuses instead, the way a press
+    // that changes nothing is refused — the deny buzz and no tide.
+    if (this.blockRisesUnder(game)) {
+      game.audio.sfx('deny');
       return true;
     }
     const cf = game.charm('bosunsWhistle')
@@ -33905,11 +33992,13 @@ const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED } = __require("data/feel.js");
 
+// NOSPAWN is a lowered red or blue block (S205): a walker never stands on
+// one, so none is ever inside one when it comes up.
 const TERRAIN_AVOID = {
-  land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
-  shallow: F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
+  land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE | F.NOSPAWN,
+  shallow: F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE | F.NOSPAWN,
   water: 0,          // aquatic: constrained separately to wet tiles
-  any: F.PIT,
+  any: F.PIT | F.NOSPAWN,
   air: 0,
 };
 
@@ -35764,6 +35853,7 @@ class Game {
     this.dive = null;
     this.tide.clearOverrides();
     this.tide.level = this.progress.tide;
+    this.tide.setToggle(this.progress.toggle | 0);
     const s = this.progress.pos;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir;
@@ -35791,6 +35881,7 @@ class Game {
     // reason for.
     this.tide.clearOverrides();
     this.tide.level = p.tide;
+    this.tide.setToggle(p.toggle | 0);
     const s = p.pos;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';
@@ -46556,6 +46647,82 @@ const DUNGEON_THEME_ART = {
     ...33200000233..
     .....3333333....`,
 
+  // blue block raised, the Crown Dungeon (UNCMP_GFXH_AGES_3d) — Ages tileset $3a (the Crown Dungeon), metatile $0e
+  tgBlueUp: `
+    1111111111111111
+    1113333333333111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113000000003111
+    1113222222223111
+    1113222222223111
+    1113222222223111
+    1113222222223111
+    1113333333333111
+    1111111111111111
+    1111111111111111`,
+
+  // red block lowered, the same — Ages tileset $3a (the Crown Dungeon), metatile $0f
+  tgRedDown: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0001111111111000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001111111111000
+    0000000000000000
+    0000000000000000`,
+
+  // blue block lowered (UNCMP_GFXH_AGES_3f) — Ages tileset $3a (the Crown Dungeon), metatile $0e
+  tgBlueDown: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0001111111111000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001000000001000
+    0001111111111000
+    0000000000000000
+    0000000000000000`,
+
+  // red block raised, the same — Ages tileset $3a (the Crown Dungeon), metatile $0f
+  tgRedUp: `
+    1111111111111111
+    1113333333333111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113111111113111
+    1113000000003111
+    1113222222223111
+    1113222222223111
+    1113222222223111
+    1113222222223111
+    1113333333333111
+    1111111111111111
+    1111111111111111`,
+
   // the magenta block, Mermaid's Cave (rooms $52e, $530) — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $1d
   uStatue: `
     2222222222222222
@@ -48891,6 +49058,10 @@ const DUNGEON_THEME_PALETTES = {
   uFloorAlt: ['#94b5ad', '#5a7384', '#5a7384', '#5a7384'],
   uBlock: ['#b54a9c', '#6b0052', '#000000', '#000000'],
   uPot: ['#9cb584', '#5a6b84', '#5a7318', '#000000'],
+  tgBlueUp: ['#ffff8c', '#1884ff', '#004284', '#000000'],
+  tgRedDown: ['#ff0829', '#6b0000', '#6b0000', '#6b0000'],
+  tgBlueDown: ['#1884ff', '#004284', '#004284', '#004284'],
+  tgRedUp: ['#ffff8c', '#ff0829', '#6b0000', '#000000'],
   uStatue: ['#b54a9c', '#6b0052', '#000000', '#000000'],
   uStairsUp: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   uStairsDown: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
@@ -54358,6 +54529,21 @@ function installCoreTiles() {
     // only, needed no new art and reads as the room's own masonry going under.
     dCoralBar: { tide: ['dWallCoral', 'dWallCoral', 'dWaterD'] },
 
+    // THE RED AND BLUE BLOCKS (S205), Oracle of Ages' toggle blocks, cut from
+    // its Crown Dungeon by tools/rip-dungeon-themes.py. Raised, a block is a
+    // wall; lowered, it is floor in its own colour — and floor no enemy will
+    // walk onto (NOSPAWN, in every walker's avoid mask), so nothing is
+    // standing on one when it comes up. Which colour stands is the tide's
+    // `toggle` bit, and every tide change flips it: see `resolveTile`.
+    // `a` and `b` in the Spire's legend. tools/check-toggles.mjs proves every
+    // room that places them.
+    dRedUp: { art: ART.tgRedUp, pal: 'tgRedUp', flags: F.SOLID },
+    dRedDown: { art: ART.tgRedDown, pal: 'tgRedDown', flags: F.NOSPAWN },
+    dBlueUp: { art: ART.tgBlueUp, pal: 'tgBlueUp', flags: F.SOLID },
+    dBlueDown: { art: ART.tgBlueDown, pal: 'tgBlueDown', flags: F.NOSPAWN },
+    dToggleRed: { toggle: ['dRedUp', 'dRedDown'] },
+    dToggleBlue: { toggle: ['dBlueDown', 'dBlueUp'] },
+
     // The Cistern's drown-wall is its own grey stone going under, not the
     // outdoor `drownWall` cliff it drew for its whole life at 10x8: the same
     // argument as the Spire's bar and the Keep's lintel. Stone at LOW and MID,
@@ -54881,6 +55067,9 @@ function installLegends() {
   // NOT at the Shrine's shared `dSnarl` — the same argument the Keep's `k`
   // makes, and for the same reason: the shared one is a brown oak ramp.
   registerLegend('dungeonCoral', { '5': 'dCoralBar', 'k': 'dSnarlCoral' }, 'dungeonCoral');
+  // The red and blue blocks (S205): `a` red, `b` blue. Letters, not digits:
+  // they follow the tide's CHANGES, not its level.
+  registerLegend('dungeonCoral', { 'a': 'dToggleRed', 'b': 'dToggleBlue' }, 'dungeonCoral');
   // The Spire is built at Oracle size (S137): its way out is the crypt's lit
   // step between two pillars in the south wall, `(C)`.
   registerLegend('dungeonCoral', { 'C': 'dExitCoral', '(': 'dPillarCoralW', ')': 'dPillarCoralE' }, 'dungeonCoral');
@@ -58940,16 +59129,25 @@ function installDungeonsA() {
       },
       '0,1,1': {
         name: 'The Drip Vault',
+        // THE GAUGES' STEP UP (S205). Three marks: the two wells in the floor
+        // empty, and the basin between the lion masks full. The basin is set
+        // into the masonry three tiles from any floor, so no bite's patch
+        // reaches it and only the sea fills it: the base has to be HIGH. Then
+        // ONE iron has to hold both wells at LOW, and they are four apart — so
+        // it goes in the gap between them, not on either. The Two Gauges
+        // teaches that the held patch has an edge; this room, that it is an
+        // area. tools/check-anchor.mjs proves the iron on any one mark opens
+        // nothing and the basin is the sea's alone.
         map: [
           '###############',
-          '#.............#',
-          '#......3......#',
-          '#.............#',
+          '#....#M3M#....#',
+          '#....#####....#',
+          '#....#####....#',
           '#.............#',
           '#.............D',
+          '#....3...3....#',
           '#.............#',
           '#.............#',
-          '#......3......#',
           '#..pp.........#',
           '#######.#######',
         ],
@@ -58957,17 +59155,17 @@ function installDungeonsA() {
           ['keese', 3, 3],
         ],
         readable: [
-          [12, 4, 'Two marks beside the door: the upper well empty, the lower full.'],
+          [12, 4, 'Three marks beside the door: both wells empty, the basin full.'],
         ],
         puzzle: {
-          condition: (g, r) => g.tide.levelAt(7, 2, r) === 0 && g.tide.levelAt(7, 8, r) === 2,
+          condition: (g, r) => r.def.anchorGauges.marks.every(([x, y, l]) => g.tide.levelAt(x, y, r) === l),
           flag: 'd1_gauges_west',
           reward: {
             openDoors: [[14, 5]],
-            say: 'Both marks read at once. The door gives.',
+            say: 'All three marks read at once. The door gives.',
           },
         },
-        anchorGauges: { a: [7, 2], aLevel: 0, b: [7, 8], bLevel: 2, door: [14, 5], from: [7, 9] },
+        anchorGauges: { marks: [[5, 6, 0], [9, 6, 0], [7, 1, 2]], door: [14, 5], from: [7, 9] },
       },
       '0,2,1': {
         name: 'Bosskey Vault',
@@ -59198,41 +59396,47 @@ function installDungeonsA() {
       },
       '0,3,4': {
         name: 'Rising Chamber',
-        // The switch pair opens the shutter in the north wall and spawns the
-        // floor-0 Small Key — the one that answers the Stair Coil's door in
-        // this room's west wall. Each block sits beside its plate with floor
-        // behind to push from. The barnacle is a fixed hazard, never fought.
+        // THE RED AND BLUE BLOCKS (S205), taught. Every tide change swaps
+        // which colour stands. The plate is up past three bands: the wells
+        // (LOW only), the red, the middle row of sluice, the blue and the
+        // drains (MID only). The middle row floods at HIGH, so it allows ONE
+        // press, LOW to MID — and that one press has to drop the blue as it
+        // fills the drains. So the blocks are set in the hall first: LOW with
+        // red down. The plate opens the north shutter and drops the floor-0
+        // Small Key, the one the Stair Coil's door in the west wall wants.
+        // The nooks at either end of the block rows are what keep the
+        // Anchor from stranding you on one; the plate's dais drops off both
+        // ends to the side aisles, one way, so the way back is a hop.
+        // tools/check-toggles.mjs proves it.
         map: [
           '#######D#######',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#..444444444..#',
-          'L..444444444...',
-          '#..444444444..#',
+          '#.<.........>.#',
+          '#.==4444444==.#',
+          '#.=.bbbbbbb.=.#',
+          '#.==1111111==.#',
+          'L.=.aaaaaaa.=..',
+          '#.==3333333==.#',
           '#.............#',
           '#.............#',
           '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['switch', 1, 8],
-          ['block', 2, 8],
-          ['switch', 13, 8],
-          ['block', 12, 8],
-          ['barnacle', 7, 8],
+          ['switch', 7, 1],
+          ['keese', 3, 8],
         ],
+        toggleRoom: { from: [7, 9], to: [7, 1] },
         puzzle: {
           switches: 'all',
           flag: 'd2_034_puzzle',
           reward: {
             openDoors: [[7, 0]],
-            spawn: [['pickup', 7, 3, { kind: 'key' }]],
-            say: 'Water drains out of a niche, and the door lifts.\nSomething small rattles loose with it.',
+            spawn: [['pickup', 9, 1, { kind: 'key' }]],
+            say: 'The door lifts, and something small rattles loose.',
           },
         },
         readable: [
-          [12, 2, 'A rusted plate: "The hole in this floor is a way up when the sea fills it. With the sea out, it\'s only a hole."'],
+          [12, 7, 'Cut in the wall: "Each turn of the tide turns the red and the blue."'],
         ],
       },
       '0,4,4': {
@@ -59626,17 +59830,26 @@ function installDungeonsA() {
         ],
       },
       '1,2,3': {
-        name: 'Drowned Cell',
+        name: 'The Turning Pool',
+        // THE BLOCKS' STEP UP, AND THE ANCHOR'S (S205; it was the Drowned
+        // Cell, a pool with nothing in it). Red stands at the way in and at the
+        // way out. In from the east over the well column at LOW; out north
+        // over the drains at MID; the pool between floods at HIGH, so the
+        // conch gives one press there, and one press always flips the red. The
+        // conch alone cannot. The Anchor holds water and not blocks: hold the
+        // wells (or the pool) and press on round, and the red comes down again
+        // at MID. The blue door on the west is the way back out of the drains.
+        // tools/check-toggles.mjs proves all of it.
         map: [
           '#######.#######',
-          '#.............#',
-          '#....11111....#',
-          '#....11111....#',
-          '#....11111....#',
-          '#....11111....L',
-          '#....11111....#',
-          '#....11111....#',
-          '#.............#',
+          '#....=...=....#',
+          '#....=aaa=....#',
+          '#....=444=....#',
+          '#....b444=....#',
+          '#....=1113a...L',
+          '#....=1113a...#',
+          '#....=1113a...#',
+          '#....=====....#',
           '#.............#',
           '###############',
         ],
@@ -59644,6 +59857,7 @@ function installDungeonsA() {
           ['urchin', 3, 8],
           ['pickup', 12, 1, { kind: 'rupee20' }],
         ],
+        toggleRoom: { from: [13, 5], to: [7, 0], anchor: true },
       },
       '1,2,2': {
         name: 'The Sounding Fork',

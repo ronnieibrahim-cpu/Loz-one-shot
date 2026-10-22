@@ -132,6 +132,10 @@ export function registerTiles(defs) {
       flags: def.flags || 0,
       mask: def.mask == null ? 15 : def.mask,
       tide: def.tide || null,
+      // A RED OR BLUE BLOCK (S205): [the tile at toggle 0, the tile at 1].
+      // See `resolveTile`. Named here: this registrar discards what it does
+      // not name.
+      toggle: def.toggle || null,
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
@@ -334,9 +338,30 @@ export function getTileDef(name) {
   return d;
 }
 
+/**
+ * THE RED AND BLUE BLOCKS (S205): which of the two stands up. Oracle of Ages
+ * keeps one bit, wToggleBlocksState, that an orb flips; in this game the
+ * conch is the orb, and every tide change flips it (`Tide.setLevel`). A tile
+ * with `toggle: [atZero, atOne]` resolves to one of two concrete tiles by
+ * this bit, before its tide is looked at.
+ *
+ * It is module state rather than an argument because every query in the game
+ * reaches tiles through `resolveTile`, and threading a second dimension
+ * through all of them would be a hundred edits for one bit. The running game
+ * keeps it equal to `Tide.toggle` (Tide owns it and sets it here); a checker
+ * sets it explicitly with `setToggleState` before asking a room anything. A
+ * caller asking about a parity other than the live one — the Lens's preview —
+ * passes it as `resolveTile`'s third argument, and `Room.tile` does that when
+ * the tide it is handed carries a `toggle` of its own.
+ */
+let TOGGLE = 0;
+export function setToggleState(p) { TOGGLE = p & 1; }
+export function toggleState() { return TOGGLE; }
+
 /** Resolve a possibly-virtual tile name to its concrete tile at a tide level. */
-export function resolveTile(name, tide) {
-  const d = getTileDef(name);
+export function resolveTile(name, tide, toggle = TOGGLE) {
+  let d = getTileDef(name);
+  if (d.toggle) d = getTileDef(d.toggle[toggle & 1]);
   if (!d.tide) return d;
   const target = d.tide[Math.max(0, Math.min(2, tide))] ?? d.tide[d.tide.length - 1];
   const r = getTileDef(target);
@@ -573,6 +598,13 @@ export function validateTiles() {
       }
       if (d.art) problems.push(`${name}: tide tiles must not define art`);
       if (d.variants) problems.push(`${name}: tide tiles must not declare variants`);
+    } else if (d.toggle) {
+      if (d.toggle.length !== 2) problems.push(`${name}: toggle must have exactly 2 entries`);
+      for (const t of d.toggle) {
+        if (!TILES.has(t)) { problems.push(`${name}: toggle state '${t}' is not registered`); continue; }
+        if (TILES.get(t).toggle || TILES.get(t).tide) problems.push(`${name}: toggle state '${t}' is itself virtual`);
+      }
+      if (d.art) problems.push(`${name}: toggle tiles must not define art`);
     } else if (!d.art && !d.anim) {
       problems.push(`${name}: concrete tile has neither art nor anim`);
     }

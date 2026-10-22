@@ -190,13 +190,13 @@ export const FIGURES = [
     { text: 'Weeping Cistern\n(optional) ↓', at: [7, 9.6], anchor: 'n', size: 12 },
   ] },
   { out: 'd1-drip', src: 'd1-drip-throw-whole', marks: [
-    ...throwAt(1, 7, 6, 7, 4),
-    { ring: [7, 2] }, { text: 'keep EMPTY', at: [8, 2], anchor: 'e', size: 11 },
-    { ring: [7, 8] }, { text: 'must fill', at: [8, 8], anchor: 'e', size: 11 },
+    ...throwAt(1, 7, 8, 7, 6),
+    { ring: [5, 6] }, { ring: [9, 6] }, { text: 'keep BOTH empty', at: [9.6, 7.4], anchor: 'w', size: 11 },
+    { ring: [7, 1] }, { text: 'must fill', at: [10, 1.3], anchor: 'w', size: 11 },
     { ring: [14, 5] }, LOW,
   ] },
   { out: 'd1-drip-open', src: 'd1-drip-open-whole', marks: [
-    { n: 2, at: [11, 2] }, { text: 'conch twice → HIGH', at: [11, 3], anchor: 's', size: 12 },
+    { n: 2, at: [11, 3] }, { text: 'conch → HIGH', at: [11, 4], anchor: 's', size: 12 },
     { path: [[7, 5], [13.8, 5]], w: 5 }, HIGH,
   ] },
   { out: 'd1-bkvault', src: 'd1-bkvault-whole', marks: [
@@ -233,11 +233,16 @@ FIGURES.push(
   ] },
   { out: 'd2-landing', src: 'd2-landing-fairy-whole', marks: [{ ring: [7, 6] }, { text: 'fairy', at: [7, 7], anchor: 's', size: 12 }] },
   { out: 'd2-rising', src: 'd2-rising-whole', marks: [
-    { n: 1, at: [3, 8], off: [0, -14] }, { path: [[3.4, 8], [1.6, 8]], w: 5 },
-    { n: 2, at: [11, 8], off: [0, -14] }, { path: [[10.6, 8], [12.4, 8]], w: 5 },
-    { ring: [7, 8] }, { text: 'Barnacle: can’t be killed,\nkeep away', at: [7, 9.3], anchor: 's', size: 11 },
-    { path: [[12, 7], [12, 3], [7.6, 3]], w: 4, dash: true }, { ring: [7, 3] }, { text: 'key', at: [7, 2], anchor: 'n', size: 12 },
-    { ring: [0, 5] }, { text: 'key door', at: [0.8, 5], anchor: 'e', size: 12 }, MID,
+    { n: 1, at: [6, 8] }, { text: 'LOW, red down', at: [8, 8.4], anchor: 'w', size: 11 },
+    { path: [[7, 8], [7, 4.4]], w: 5 },
+    { n: 2, at: [9, 4], off: [0, -14] }, { text: 'conch ONCE', at: [9.6, 4.4], anchor: 'w', size: 11 },
+    { path: [[7, 4], [7, 1.4]], w: 5 }, { ring: [7, 1] },
+    { path: [[3, 1], [1, 1], [1, 5]], w: 4, dash: true },
+    { ring: [0, 5] }, { text: 'key door', at: [0.8, 6], anchor: 'w', size: 12 }, LOW,
+  ] },
+  { out: 'd2-turning', src: 'd2-turning-whole', marks: [
+    { box: [9, 4, 13, 8] }, { text: 'Anchor holds\nthe wells', at: [12, 9.2], anchor: 's', size: 11 },
+    { path: [[13, 5], [9, 5], [7, 5], [7, 0.4]], w: 5 }, MID,
   ] },
   { out: 'd2-sealed', src: 'd2-sealed-whole', marks: [
     { ring: [2, 1] }, { text: 'stand above the chest,\nface down, press A', at: [3, 1], anchor: 'e', size: 12 },
@@ -282,7 +287,7 @@ const chestFrom = (tx, ty, side) => {
 };
 FIGURES.push(
   { out: 'ow-leg3', scale: 1, map: { rooms: ow(range(1, 15), range(5, 8)) }, marks: [
-    { trail: { from: 448, to: 483, every: 8 }, w: 3 },
+    { trail: { from: 456, to: 491, every: 8 }, w: 3 },
     { n: 1, at: [2, 7, 8, 2] }, { n: 2, at: [1, 8, 4, 2] },
   ] },
   { out: 'ow3-bomb', src: 'ow3-causeway-whole', marks: [
@@ -350,7 +355,7 @@ FIGURES.push(
   { out: 'd3-bogmaw', src: 'd3-bogmaw-whole', marks: [{ ring: [7, 5], r: 16 }, lbl('Bogmaw', [7, 6.2])] },
   { out: 'd3-roof', src: 'd3-roof-whole', marks: [{ ring: [7, 5] }, lbl('Piece of Heart', [7, 6])] },
   { out: 'd3-drain', src: 'd3-drain-whole', marks: [{ ring: [14, 5] }, lbl('locked: the\nGallery\'s key', [13, 3.6], 'w'),
-    { trail: { from: 681, to: 693, every: 8 }, w: 4 }, { ring: [7, 8] }, lbl('fairy', [7, 9.2], 's'),
+    { trail: { from: 689, to: 701, every: 8 }, w: 4 }, { ring: [7, 8] }, lbl('fairy', [7, 9.2], 's'),
   ] },
   { out: 'd3-soundpool', src: 'd3-soundpool-sink-whole', scale: 2, marks: [
     { ring: [14, 5] }, lbl('plate on the bottom:\nsink onto it', [14, 3.2], 'n'), { ring: [22, 10] }, lbl('opens this door', [21, 9.3], 'w'),
@@ -361,7 +366,7 @@ FIGURES.push(
     { ring: [11, 3] }, lbl('key', [11, 2.2], 'n'),
   ] },
   { out: 'd3-kelp', src: 'd3-kelp-whole', scale: 2, marks: [
-    { trail: { from: 766, to: 772, every: 10 }, w: 4 }, lbl('swim with the current,\nthen sink for the last stretch', [14, 5], 'c'),
+    { trail: { from: 774, to: 780, every: 10 }, w: 4 }, lbl('swim with the current,\nthen sink for the last stretch', [14, 5], 'c'),
   ] },
   { out: 'd3-lockgallery', src: 'd3-lockgallery-whole', marks: [
     { ring: [2, 5] }, lbl('plate: opens the shortcut', [2.8, 5], 'e'), { ring: [7, 0] }, lbl('boss door', [8, 0.3], 'e'),
@@ -371,7 +376,7 @@ FIGURES.push(
 
   // ---------------------------------------------------------- road to D4
   { out: 'ow-leg4', scale: 1, map: { rooms: ow(range(1, 4), range(3, 8)) }, marks: [
-    { trail: { from: 807, to: 838, every: 8 }, w: 3 },
+    { trail: { from: 815, to: 846, every: 8 }, w: 3 },
     { n: 1, at: [3, 4, 9, 4] }, { n: 2, at: [1, 3, 6, 2] },
   ] },
   { out: 'ow4-deepcut', src: 'ow4-deepcut-whole', marks: [{ ring: [8, 4] }, lbl('rockfall: bomb it from the right', [8, 5.2])] },
@@ -457,7 +462,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D5
   { out: 'ow5-noble', src: 'ow5-noble' },
   { out: 'ow-leg5', scale: 1, map: { rooms: ow(range(1, 9), range(3, 7)) }, marks: [
-    { trail: { from: 1100, to: 1122, every: 8 }, w: 3 },
+    { trail: { from: 1108, to: 1130, every: 8 }, w: 3 },
     { n: 1, at: [3, 7, 3, 2] }, { n: 2, at: [5, 4, 4, 3] },
   ] },
 
@@ -533,7 +538,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1640, to: 1662, every: 8 }, w: 3 },
+    { trail: { from: 1648, to: 1670, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 

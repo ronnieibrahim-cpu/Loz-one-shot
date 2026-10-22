@@ -717,16 +717,25 @@ export function installDungeonsA() {
       },
       '0,1,1': {
         name: 'The Drip Vault',
+        // THE GAUGES' STEP UP (S205). Three marks: the two wells in the floor
+        // empty, and the basin between the lion masks full. The basin is set
+        // into the masonry three tiles from any floor, so no bite's patch
+        // reaches it and only the sea fills it: the base has to be HIGH. Then
+        // ONE iron has to hold both wells at LOW, and they are four apart — so
+        // it goes in the gap between them, not on either. The Two Gauges
+        // teaches that the held patch has an edge; this room, that it is an
+        // area. tools/check-anchor.mjs proves the iron on any one mark opens
+        // nothing and the basin is the sea's alone.
         map: [
           '###############',
-          '#.............#',
-          '#......3......#',
-          '#.............#',
+          '#....#M3M#....#',
+          '#....#####....#',
+          '#....#####....#',
           '#.............#',
           '#.............D',
+          '#....3...3....#',
           '#.............#',
           '#.............#',
-          '#......3......#',
           '#..pp.........#',
           '#######.#######',
         ],
@@ -734,17 +743,17 @@ export function installDungeonsA() {
           ['keese', 3, 3],
         ],
         readable: [
-          [12, 4, 'Two marks beside the door: the upper well empty, the lower full.'],
+          [12, 4, 'Three marks beside the door: both wells empty, the basin full.'],
         ],
         puzzle: {
-          condition: (g, r) => g.tide.levelAt(7, 2, r) === 0 && g.tide.levelAt(7, 8, r) === 2,
+          condition: (g, r) => r.def.anchorGauges.marks.every(([x, y, l]) => g.tide.levelAt(x, y, r) === l),
           flag: 'd1_gauges_west',
           reward: {
             openDoors: [[14, 5]],
-            say: 'Both marks read at once. The door gives.',
+            say: 'All three marks read at once. The door gives.',
           },
         },
-        anchorGauges: { a: [7, 2], aLevel: 0, b: [7, 8], bLevel: 2, door: [14, 5], from: [7, 9] },
+        anchorGauges: { marks: [[5, 6, 0], [9, 6, 0], [7, 1, 2]], door: [14, 5], from: [7, 9] },
       },
       '0,2,1': {
         name: 'Bosskey Vault',
@@ -975,41 +984,47 @@ export function installDungeonsA() {
       },
       '0,3,4': {
         name: 'Rising Chamber',
-        // The switch pair opens the shutter in the north wall and spawns the
-        // floor-0 Small Key — the one that answers the Stair Coil's door in
-        // this room's west wall. Each block sits beside its plate with floor
-        // behind to push from. The barnacle is a fixed hazard, never fought.
+        // THE RED AND BLUE BLOCKS (S205), taught. Every tide change swaps
+        // which colour stands. The plate is up past three bands: the wells
+        // (LOW only), the red, the middle row of sluice, the blue and the
+        // drains (MID only). The middle row floods at HIGH, so it allows ONE
+        // press, LOW to MID — and that one press has to drop the blue as it
+        // fills the drains. So the blocks are set in the hall first: LOW with
+        // red down. The plate opens the north shutter and drops the floor-0
+        // Small Key, the one the Stair Coil's door in the west wall wants.
+        // The nooks at either end of the block rows are what keep the
+        // Anchor from stranding you on one; the plate's dais drops off both
+        // ends to the side aisles, one way, so the way back is a hop.
+        // tools/check-toggles.mjs proves it.
         map: [
           '#######D#######',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#..444444444..#',
-          'L..444444444...',
-          '#..444444444..#',
+          '#.<.........>.#',
+          '#.==4444444==.#',
+          '#.=.bbbbbbb.=.#',
+          '#.==1111111==.#',
+          'L.=.aaaaaaa.=..',
+          '#.==3333333==.#',
           '#.............#',
           '#.............#',
           '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['switch', 1, 8],
-          ['block', 2, 8],
-          ['switch', 13, 8],
-          ['block', 12, 8],
-          ['barnacle', 7, 8],
+          ['switch', 7, 1],
+          ['keese', 3, 8],
         ],
+        toggleRoom: { from: [7, 9], to: [7, 1] },
         puzzle: {
           switches: 'all',
           flag: 'd2_034_puzzle',
           reward: {
             openDoors: [[7, 0]],
-            spawn: [['pickup', 7, 3, { kind: 'key' }]],
-            say: 'Water drains out of a niche, and the door lifts.\nSomething small rattles loose with it.',
+            spawn: [['pickup', 9, 1, { kind: 'key' }]],
+            say: 'The door lifts, and something small rattles loose.',
           },
         },
         readable: [
-          [12, 2, 'A rusted plate: "The hole in this floor is a way up when the sea fills it. With the sea out, it\'s only a hole."'],
+          [12, 7, 'Cut in the wall: "Each turn of the tide turns the red and the blue."'],
         ],
       },
       '0,4,4': {
@@ -1403,17 +1418,26 @@ export function installDungeonsA() {
         ],
       },
       '1,2,3': {
-        name: 'Drowned Cell',
+        name: 'The Turning Pool',
+        // THE BLOCKS' STEP UP, AND THE ANCHOR'S (S205; it was the Drowned
+        // Cell, a pool with nothing in it). Red stands at the way in and at the
+        // way out. In from the east over the well column at LOW; out north
+        // over the drains at MID; the pool between floods at HIGH, so the
+        // conch gives one press there, and one press always flips the red. The
+        // conch alone cannot. The Anchor holds water and not blocks: hold the
+        // wells (or the pool) and press on round, and the red comes down again
+        // at MID. The blue door on the west is the way back out of the drains.
+        // tools/check-toggles.mjs proves all of it.
         map: [
           '#######.#######',
-          '#.............#',
-          '#....11111....#',
-          '#....11111....#',
-          '#....11111....#',
-          '#....11111....L',
-          '#....11111....#',
-          '#....11111....#',
-          '#.............#',
+          '#....=...=....#',
+          '#....=aaa=....#',
+          '#....=444=....#',
+          '#....b444=....#',
+          '#....=1113a...L',
+          '#....=1113a...#',
+          '#....=1113a...#',
+          '#....=====....#',
           '#.............#',
           '###############',
         ],
@@ -1421,6 +1445,7 @@ export function installDungeonsA() {
           ['urchin', 3, 8],
           ['pickup', 12, 1, { kind: 'rupee20' }],
         ],
+        toggleRoom: { from: [13, 5], to: [7, 0], anchor: true },
       },
       '1,2,2': {
         name: 'The Sounding Fork',

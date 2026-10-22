@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
+import { F, resolveTile, toggleState, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -233,7 +233,8 @@ export class Room {
   /** Concrete tile definition at the given tide level or field. */
   tile(tx, ty, tide) {
     if (!this.inBounds(tx, ty)) return getTileDef('void');
-    const d = resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
+    const d = resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty),
+      tide && typeof tide === 'object' && tide.toggle != null ? tide.toggle : toggleState());
     const s = this._floorSub;
     return s && s[d.name] ? s[d.name] : d;
   }

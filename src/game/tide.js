@@ -28,7 +28,7 @@
 // water while collision uses the new — it looks wrong and nothing fails.
 
 import { offscreen } from '../core/screen.js';
-import { F } from '../world/tileset.js';
+import { F, setToggleState } from '../world/tileset.js';
 import { TIDE_SWEEP_FRAMES } from '../data/feel.js';
 
 /**
@@ -68,6 +68,20 @@ export class Tide {
     this.overrides = [];
     this.stamp = 0;
     this._nextId = 1;
+    // THE RED AND BLUE BLOCKS (S205): 0 while the red stand up, 1 while the
+    // blue do. Every tide change flips it — the conch is Ages' orb — and a
+    // level set `instant` (a save restored, a room pinning its sea, a boss
+    // between phases) does not, because nothing visibly moved. Saved in
+    // `progress.toggle`. See `resolveTile`.
+    this.toggle = 0;
+  }
+
+  /** Set the blocks' state outright: a new game, a load. */
+  setToggle(p) {
+    this.toggle = p & 1;
+    setToggleState(this.toggle);
+    if (this.game && this.game.progress) this.game.progress.toggle = this.toggle;
+    this.touch();
   }
 
   get busy() { return this.sweep > 0; }
@@ -220,9 +234,14 @@ export class Tide {
    */
   viewAt(base) {
     const self = this;
+    // The blocks flip once per step, so the view `steps` presses ahead has
+    // them flipped `steps` times: the Lens's next tide shows them swapped.
+    const steps = ((base - this.level) % TIDE_COUNT + TIDE_COUNT) % TIDE_COUNT;
+    const toggle = this.toggle ^ (steps & 1);
     return {
       level: base,
-      stamp: this.stamp + ':' + base,
+      toggle,
+      stamp: this.stamp + ':' + base + ':' + toggle,
       levelAt(tx, ty, room) { return self.resolve(base, tx, ty, room); },
     };
   }
@@ -362,6 +381,11 @@ export class Tide {
 
     this.level = next;
     if (g.progress) g.progress.tide = next;
+    if (!instant) {
+      this.toggle ^= 1;
+      setToggleState(this.toggle);
+      if (g.progress) g.progress.toggle = this.toggle;
+    }
     this.touch();
     for (const fn of this.listeners) fn(next, this.prevLevel, g);
     if (g.onTideChanged) g.onTideChanged(next, this.prevLevel);

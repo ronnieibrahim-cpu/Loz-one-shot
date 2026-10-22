@@ -1,27 +1,30 @@
-# Next session (S205) — the puzzle pass continues
+# Next session (S206) — the puzzle pass continues in D3
 
 ## Read first
 - CLAUDE.md, all of it.
 - docs/briefs/PUZZLE-PASS.md (the plan, the audit and the order).
-- docs/NEXT-SESSION.md S204 and S203; docs/HANDOFF.md lessons (top ten);
-  docs/DUNGEON-STATUS.md "S204: THE PUZZLE PASS BEGINS".
+- docs/NEXT-SESSION.md S205 and S204; docs/HANDOFF.md lessons (top ten);
+  docs/DUNGEON-STATUS.md "S205" and "S204".
 
 ## State
-- S204: the human asked for top-notch dungeon puzzles and approved every
-  Ages/Seasons puzzle kind with a tide twist, one dungeon at a time. D1 has
-  three real puzzles now: the Switch Room and the Weeping Cistern (real block
-  puzzles, check-blocks) and the Sunken Hall (three plates, the one in
-  ankle-deep water is right, check-tideplates).
+- S204: D1's Switch Room, Weeping Cistern (check-blocks) and Sunken Hall
+  (check-tideplates).
+- S205: D1's Drip Vault (three marks, one Anchor between two wells;
+  check-anchor `marks`); D2's red and blue blocks, flipped by every tide
+  change (check-toggles, tools/lib/toggle-flood.mjs): the Rising Chamber and
+  the Turning Pool (was the Drowned Cell).
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- Next in the plan: D1's Drip Vault (a step up from the Two Gauges), then D2:
-  red/blue blocks that swap on every tide change (the Lens shows the next
-  state), the Rising Chamber's one-push room replaced, one new room. Mock each
-  room beside the cartridge room it borrows from (tools/oneshot/oracle-study
-  renders them) and show the human before building.
-- Every new kind gets its own prover, written first; every room change
-  re-times the robot (sweep the next boss's entry wait if a fight moves).
+- Next in the plan: D3, kinds E and G. E: torches that burn out, and a rising
+  sea puts out any torch it reaches (Ages' timed flames). G: a key from above
+  (Seasons' Explorer's Crypt) / holes that open only at LOW. Replace the
+  Sunken Vestry's one-push room (1,1,3). Mock each room beside the cartridge
+  room it borrows from (tools/oneshot/oracle-study renders them; the S205
+  mocks show the side-by-side) and show the human before building.
+- Every new kind gets its own prover, written first, with a `--mock` mode to
+  design against; every room change re-times the robot (sweep the next
+  boss's entry wait if a fight moves: Bogmaw and Gloomtide are the thin ones).
 - New lines follow the rule in src/data/story.js's header.
 
 ## Done means

@@ -99,6 +99,9 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     coin: null,
     // world state
     tide: 1,
+    // Which of the red and blue blocks stand up (S205): 0 red, 1 blue. Every
+    // tide change flips it; see Tide.toggle.
+    toggle: 0,
     // position
     // WASHED ASHORE (S158). A new game opens on the Fishing Stones below
     // Tidewatch, holding nothing, as Seasons opens on Link lying in Holodrum's
