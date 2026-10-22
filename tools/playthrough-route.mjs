@@ -846,7 +846,10 @@ export const ROUTE = [
   // upstream moves (see LEDGER S48/S50 for the method). S150 re-swept it
   // with the retreat options: 150 + open-floor diagonal retreat wins on 18/24
   // (240 also wins, on 15; 180 loses).
-  ['wait', 150],
+  // S203: a fairy now waits under his door and the run takes it, so the
+  // entry frame moved. Swept 30-270: 192-234 all win, on 1-8/24 (the fight
+  // is the game's hardest; see DUNGEON-STATUS S203); 150 loses. 204.
+  ['wait', 204],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
@@ -1253,7 +1256,10 @@ export const ROUTE = [
   // loses Gloomtide on 6/28. Swept 20-100: 50-60 all beat Bogmaw on 12-14/28
   // and Gloomtide after them; 54 leaves him on 12/28 (the rest 6), and with
   // 54 Gloomtide's own wait wins across 44-58. 54.
-  ['wait', 54],
+  // S203 again (Anemos's fairy moved D2's clock): only 20, 24 and 28-42
+  // beat Bogmaw (13/28 at 20 and 24, 1-2 above); with 24, Gloomtide's wait
+  // wins across 40-60 (52 on 18/28). 24. THIN: 22 loses.
+  ['wait', 24],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
