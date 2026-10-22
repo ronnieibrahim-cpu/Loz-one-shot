@@ -138,6 +138,8 @@ export function installLegends() {
     'V': 'saltVane',        // region gate: only the Resonance Rod rings it
     'Z': 'cliffCrackedCaveMarble',  // a bombable crack with a cave behind it (S191)
     '9': 'drownWallSalt',   // a pan wall the high sea covers (S166)
+    '1': 'saltPool', '2': 'saltPool',  // pans that dry to salt crust at LOW (S203)
+    '3': 'saltShoal',       // salt flat that floods only at HIGH (S203)
     '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
 
