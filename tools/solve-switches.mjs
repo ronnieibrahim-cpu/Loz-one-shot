@@ -84,7 +84,10 @@ const rooms = await page.evaluate(() => {
   const out = [];
   for (const [mapId, m] of window.__MAPS) {
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
-      if (def.puzzle && def.puzzle.switches) out.push({ mapId, key, name: def.name });
+      // A REAL BLOCK PUZZLE (`blockRoom`, S204) is searched push by push,
+      // with the sea and the Anchor, by tools/check-blocks.mjs; one push per
+      // block is exactly what it is built to refuse.
+      if (def.puzzle && def.puzzle.switches && !def.blockRoom) out.push({ mapId, key, name: def.name });
     }
   }
   return out;

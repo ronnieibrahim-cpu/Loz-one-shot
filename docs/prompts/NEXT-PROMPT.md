@@ -1,23 +1,27 @@
-# Next session (S204) — after the last boxy regions and the dungeon comparison
+# Next session (S205) — the puzzle pass continues
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S203 and S202; docs/HANDOFF.md lessons (top ten);
-  docs/DUNGEON-STATUS.md "S203: THE SIX COMPARED".
+- docs/briefs/PUZZLE-PASS.md (the plan, the audit and the order).
+- docs/NEXT-SESSION.md S204 and S203; docs/HANDOFF.md lessons (top ten);
+  docs/DUNGEON-STATUS.md "S204: THE PUZZLE PASS BEGINS".
 
 ## State
-- S203: regions B (dark shore), C (Salt Pans' edges) and G (coast strips)
-  redrawn; abyss and salt pools dry to their own ground at LOW. The six
-  dungeons compared; a fairy under Anemos's door; the Two Weights' and the
-  Ebb Cell's signs say which tide.
+- S204: the human asked for top-notch dungeon puzzles and approved every
+  Ages/Seasons puzzle kind with a tide twist, one dungeon at a time. D1 has
+  three real puzzles now: the Switch Room and the Weeping Cistern (real block
+  puzzles, check-blocks) and the Sunken Hall (three plates, the one in
+  ankle-deep water is right, check-tideplates).
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- Ask the human what to do next before building anything. Candidates:
-  Anemos's fight itself (still the game's hardest: arena or pattern only);
-  Wyverna too easy for D4 (left by the human for later); the Salt Pans'
-  middle 6..8 x 0..2 (straight wall bands the edges no longer have);
-  rotation (h) fairness or (i) a play pass. Show the overworld picture.
+- Next in the plan: D1's Drip Vault (a step up from the Two Gauges), then D2:
+  red/blue blocks that swap on every tide change (the Lens shows the next
+  state), the Rising Chamber's one-push room replaced, one new room. Mock each
+  room beside the cartridge room it borrows from (tools/oneshot/oracle-study
+  renders them) and show the human before building.
+- Every new kind gets its own prover, written first; every room change
+  re-times the robot (sweep the next boss's entry wait if a fight moves).
 - New lines follow the rule in src/data/story.js's header.
 
 ## Done means

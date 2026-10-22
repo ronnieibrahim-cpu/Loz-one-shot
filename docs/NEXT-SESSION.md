@@ -1,3 +1,55 @@
+## S204 — the puzzle pass begins: three real puzzles in the Grotto
+
+Branch claude/oracle-tides-s204-76y1pz, off main at a882a59 (S203).
+
+### The human's choices this session
+- Shown the overworld again (only the Salt Pans' middle still boxy). Chose
+  instead: "Make sure the puzzles in the dungeons are top notch quality."
+- Shown the audit (docs/briefs/PUZZLE-PASS.md): eight one-push block rooms,
+  copied rooms (D5's one-stake rooms, D4's wheel rooms, D1's two gauges),
+  signs that state the answer, a thin D2, one sign that lies (Three Heights).
+- Asked to "parse through Oracle of Ages too" and shown every puzzle kind
+  Ages and Seasons have that we lack, each with a tide twist. Chose ALL of
+  them "plus more", and all four fixes. Plan approved: one dungeon at a time,
+  D1 first, every room mocked beside the cartridge room first.
+- Approved the Switch Room mock, then the Sunken Hall mock as described
+  (with the carving).
+
+### Built
+- D1 Switch Room 0,4,4: two repeat-push blocks (`once: false`), two plates
+  in one-tile pockets of a block dais; the west mouth a well (block crosses at
+  LOW), the east a drain (open hole at LOW, block goes down it; shallow at
+  MID). `puzzle.blocks` so Link standing on a plate does not count.
+- D1 Weeping Cistern 0,1,3 (optional, rupee20): one block pushed along a
+  walled lane of four wells then two drains, no dry tile between — the Anchor
+  holds the wells at LOW while the conch raises the drains.
+- D1 Sunken Hall 0,3,5 (the hub, fairy): three plates in three corner pools
+  (`3` well, `1` sluice, `2` basin), ankle-deep at LOW, MID, HIGH in turn.
+  Right while ankle-deep (latches); dry = two keese and every plate back up;
+  deep = cannot be pressed. Carving: "Ankle-deep, or not at all."
+- tools/check-blocks.mjs (new): BFS in the engine over block places, sea and
+  Anchor; pushes are PushBlock.push + its own slide. tools/check-tideplates.mjs
+  (new). solve-switches skips `blockRoom` rooms. Both in CLAUDE.md's table.
+- The robot re-routed through all three (tide directives), the picture guide
+  re-shot (remap-guide HEAD, then the D1 shots set by hand), GUIDE.md text.
+- Reference renders: tools/oneshot/oracle-study (ORACLE_STUDY=<dir>) renders
+  any Seasons/Ages room; `room_img(group, room)` in render.py for one room.
+
+### The robot
+- The Grotto's new rooms moved the clock: Anemos lost at the old 204 wait.
+  Swept 30-270 by 6; wins scattered, and run to the end only 198 and 246 also
+  survived D3's bosses. 246 chosen. The d1-descent replay was re-recorded
+  (it walks the Sunken Hall).
+
+### Not done / found
+- docs/guide's d4-easttank-key picture: capture MISSes it ("until never held
+  by step 1035"), as it apparently has since S194; the old picture stays.
+
+### NEXT (S205)
+- Continue docs/briefs/PUZZLE-PASS.md's order: D1's Drip Vault step up, then
+  D2 (red/blue blocks swapped by the tide; one new room), mocking each room
+  beside the cartridge's first.
+
 ## S203 — three boxy regions redrawn; the six dungeons compared
 
 Branch claude/oracle-tides-s203-zz4fc6, off main at eaa750d (S202).

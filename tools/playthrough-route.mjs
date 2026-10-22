@@ -212,18 +212,25 @@ export const ROUTE = [
   ['loot', 700],
 
   // ---------------------------------------------------------------- d1 0,3,5
-  // The Sunken Hall, the hub. Each block sits one tile south of its plate;
-  // stand below it and push north. Both down is the fairy.
+  // The Sunken Hall, the hub. Since S204 three plates in three pools
+  // (check-tideplates): each pressed while its own pool is ankle-deep — the
+  // well at LOW, the sluice at MID, the basin at HIGH. All three is the fairy.
   ['travel', 3, 5, 2000],
   ['fight', 1800],
   ['dialogue', 200],
   ['loot', 500],
-  ['goto', 2, 5, 400],
-  ['hold', ['up'], 100],
-  ['goto', 12, 5, 500],
-  ['hold', ['up'], 100],
+  ['goto', 7, 4, 500],
+  ['goto', 3, 2, 500],
+  ['goto', 5, 4, 300],
+  ['tide', 1, 140, 600],
+  ['goto', 11, 2, 500],
+  ['goto', 9, 4, 300],
+  ['tide', 2, 140, 600],
+  ['goto', 3, 8, 600],
+  ['goto', 5, 6, 300],
   ['dialogue', 300],
   ['loot', 600],
+  ['tide', 0, 140, 600],
 
   // West wing: the Dungeon Map, in a chest behind three blocks (S179: in a
   // chest, as Seasons keeps its map), opened from the open east side.
@@ -261,18 +268,34 @@ export const ROUTE = [
   ['loot', 600],
 
   // ---------------------------------------------------------------- d1 0,4,4
-  // East to the Switch Room, for the SECOND key: the Sunken Hall's puzzle one
-  // room over, each block pushed north onto its plate.
+  // East to the Switch Room, for the SECOND key. Since S204 a real block
+  // puzzle (check-blocks): the north block down two and east two into the
+  // west pocket over the well at LOW, then at MID the south block up two and
+  // west two into the east pocket over the drain. One push per hold.
   ['travel', 3, 4, 2000],
   ['travel', 4, 4, 2000],
   ['fight', 1400],
   ['loot', 500],
-  ['goto', 4, 5, 400],
-  ['hold', ['up'], 100],
-  ['goto', 10, 5, 500],
-  ['hold', ['up'], 100],
+  ['goto', 4, 2, 500],
+  ['hold', ['down'], 30], ['wait', 40],
+  ['goto', 4, 3, 300],
+  ['hold', ['down'], 30], ['wait', 40],
+  ['goto', 3, 5, 500],
+  ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 4, 5, 300],
+  ['hold', ['right'], 30], ['wait', 40],
+  ['tide', 1, 140, 600],
+  ['goto', 10, 8, 600],
+  ['hold', ['up'], 30], ['wait', 40],
+  ['goto', 10, 7, 300],
+  ['hold', ['up'], 30], ['wait', 40],
+  ['goto', 11, 5, 500],
+  ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 10, 5, 300],
+  ['hold', ['left'], 30], ['wait', 40],
   ['dialogue', 300],
   ['loot', 600],
+  ['tide', 0, 140, 600],
 
   // Back in the Tide Gallery. Spend the first key on the north door: walk
   // into it until it stops you, then open it.
@@ -849,7 +872,11 @@ export const ROUTE = [
   // S203: a fairy now waits under his door and the run takes it, so the
   // entry frame moved. Swept 30-270: 192-234 all win, on 1-8/24 (the fight
   // is the game's hardest; see DUNGEON-STATUS S203); 150 loses. 204.
-  ['wait', 204],
+  // S204: the Grotto's three new puzzles moved the clock again. Swept 30-270
+  // by 6: wins scattered (30, 60, 90, 96, 126, 150, 162-168, 198, 210-216,
+  // 234, 246-252, 270); run to the end, only 198 and 246 also survive D3's
+  // bosses. 246 (252 wins Anemos too).
+  ['wait', 246],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.

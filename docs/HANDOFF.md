@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Every switch room was one push, by a rule written as a fix (S204).** "A
+  push block moves exactly one tile, ever" was set down to stop keys being
+  unearnable, and from then on every block puzzle was a block seated beside
+  its plate. Seasons' $10-$12 blocks stay pushable (pushableTiles.s); ours do
+  with `once: false`. A real block room also needs `puzzle.blocks`, or Link
+  standing on one plate does a block's job and halves the puzzle.
+- **A sed pattern with dots in it is a wildcard (S204).** Swapping one room
+  row with `sed s/'.....3...4....#'/` rewrote three other D1 rooms whose rows
+  matched. Edit room grids with an exact-string replace (python `str.replace`
+  with a count assert), never a regex.
+
 - **A fairy before a boss moves every fight after it (S203).** The robot
   takes the pickup, so it reaches the door a few frames later, and a boss
   whose timers run off the absolute frame (Anemos) re-rolls — and so does
