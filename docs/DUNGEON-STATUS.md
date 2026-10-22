@@ -41,6 +41,22 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S204: THE PUZZLE PASS BEGINS — the plan is docs/briefs/PUZZLE-PASS.md
+
+The human asked for "top notch" puzzles; shown the audit (eight one-push
+rooms, copied rooms, signs that solve, a thin D2), then every puzzle kind Ages
+and Seasons have that we lack, and chose all of them, plus more, plus all the
+fixes. One dungeon at a time, D1 first, each room mocked beside the cartridge.
+
+Built so far: D1's **Switch Room** (0,4,4) is a two-block, two-sea block
+puzzle and the optional **Weeping Cistern** (0,1,3) its step up, a block
+pushed the length of the gate primitive with the Anchor holding the wells.
+Both proved by the new `tools/check-blocks.mjs`. The **Sunken Hall**
+(0,3,5) is kind H: three plates in three pools, each right only while its
+pool is ankle-deep (LOW, MID, HIGH), a wrong one loosing two keese and
+resetting the rest (`tools/check-tideplates.mjs`). Still to do in D1: the
+Drip Vault made a step up from the Two Gauges.
+
 ## S203: THE SIX COMPARED (rotation (g), pass 1) — the write-up, nothing changed yet
 
 Read off one real run (`check-playthrough`, seed 20260806, after S203's

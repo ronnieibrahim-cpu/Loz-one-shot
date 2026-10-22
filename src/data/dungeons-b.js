@@ -1764,7 +1764,7 @@ export function installDungeonsB() {
           ['jellyfish', 7, 5],
         ],
         readable: [
-          [2, 9, 'Scratched low, where the water reaches it: "Three tides. One way through."'],
+          [2, 9, 'Scratched low, where the water reaches it: "Each pool here does something different at each tide. Watch them!"'],
         ],
       },
       '1,2,4': {

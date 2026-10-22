@@ -58237,7 +58237,10 @@ __define("data/dungeons-a.js", function (__exports, __require) {
 // the tile either side of the seam opens together (`Game.openDoorAt`), so the
 // far side is never stone.
 //
-// A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER. `PushBlock` takes `once: true` by
+// A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER — UNLESS IT SAYS `once: false`
+// (S204: Seasons' own $10-$12 blocks stay pushable, and Ages builds rooms on
+// them; a room built on those declares `blockRoom` and check-blocks.mjs
+// searches it). Otherwise `PushBlock` takes `once: true` by
 // default and sets `moved` when its single slide lands, so a block placed two
 // tiles from the switch it is meant to cover can never reach it. Every `block`
 // in a `switches` puzzle is therefore seated orthogonally ADJACENT to its
@@ -58247,6 +58250,7 @@ __define("data/dungeons-a.js", function (__exports, __require) {
 // rewards a Small Key, so it silently cost the dungeon a key.
 
 const { registerMap } = __require("world/maps.js");
+const { F } = __require("world/tileset.js");
 
 function installDungeonsA() {
 
@@ -58419,30 +58423,59 @@ function installDungeonsA() {
       },
       '0,3,5': {
         name: 'Sunken Hall',
+        // PICK THE RIGHT ONE (S204, docs/briefs/PUZZLE-PASS.md kind H). Seasons'
+        // Ancient Ruins has a button that is right or wrong on a coin flip
+        // (scriptHelper.s D6getRandomButtonResult) and lets ropes loose when
+        // it is wrong. Here the sea decides, and you can see it: each plate
+        // stands in its own pool, a well (`3`, ankle-deep at LOW), a sluice
+        // (`1`, at MID) and a basin (`2`, at HIGH), so at every sea exactly
+        // one plate is in wading water. Pressed there it stays down; pressed
+        // dry it lets two keese loose and every plate comes back up. All
+        // three down is the fairy. The pools sit in three corners, clear of
+        // the hub's four doors, so the hall crosses as it always did.
+        // `tools/check-tideplates.mjs` proves it in the engine.
         map: [
           '#######.#######',
-          '#..q.......q..#',
+          '#.333.....111.#',
+          '#.333.....111.#',
+          '#.333.....111.#',
           '#.............#',
+          '...............',
           '#.............#',
-          '#...11...11...#',
-          '....11...11....',
-          '#...11...11...#',
-          '#.............#',
-          '#.............#',
-          '#..q.......q..#',
+          '#.222.........#',
+          '#.222.........#',
+          '#.222.........#',
           '#######.#######',
         ],
         entities: [
           ['zol', 7, 3],
-          ['crab', 3, 7],
-          ['switch', 2, 3],
-          ['switch', 12, 3],
-          ['block', 2, 4],
-          ['block', 12, 4],
+          ['crab', 11, 7],
+          ['switch', 3, 2],
+          ['switch', 11, 2],
+          ['switch', 3, 8],
         ],
+        readable: [
+          [13, 9, 'Scratched by the pools: "Ankle-deep, or not at all."'],
+        ],
+        tidePlates: { plates: [[3, 2, 0], [11, 2, 1], [3, 8, 2]], loose: [[7, 2], [7, 8]] },
+        script: {
+          onEvent(game, name, sw) {
+            const room = game.room;
+            if (name !== 'switch' || !sw || !sw.pressed || room._puzzleDone) return;
+            const tx = Math.floor(sw.cx / 16), ty = Math.floor(sw.cy / 16);
+            const f = room.flagsAt(tx, ty, game.tide);
+            if ((f & F.WATER) && !(f & F.DEEP)) { sw.hold = false; return; }
+            for (const e of game.entities) {
+              if (e !== sw && e.hold === false && e.spriteName && 'pressed' in e) { e.hold = true; e.pressed = false; }
+            }
+            game.applyReward({ spawn: room.def.tidePlates.loose.map(([x, y]) => ['keese', x, y]), sfx: 'deny' });
+          },
+        },
         puzzle: {
-          switches: 'all',
           flag: 'd1_035_puzzle',
+          condition: (g, r) => r.def.tidePlates.plates.every(([x, y]) =>
+            g.entities.some(e => 'pressed' in e && e.pressed && e.hold === false
+              && Math.floor(e.cx / 16) === x && Math.floor(e.cy / 16) === y)),
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'fairy' }]],
             say: 'A light comes up out of the water.',
@@ -58548,27 +58581,39 @@ function installDungeonsA() {
       },
       '0,4,4': {
         name: 'Switch Room',
+        // THE FIRST REAL BLOCK PUZZLE (S204, docs/briefs/PUZZLE-PASS.md A).
+        // Ages' Crown Dungeon builds rooms on blocks pushed many times; this
+        // is ours, with the sea in it. Each plate sits in a one-tile pocket of
+        // the dais, and each pocket has ONE mouth: the west a well (`3`,
+        // shallow only at LOW), the east a drain (`4`, an open hole at LOW
+        // that a block goes down, shallow at MID). A block crosses shallow
+        // water and refuses deep, so no single sea fills both pockets: push
+        // one in at LOW, sound the conch, push the other in at MID. Drop one
+        // down the drain and the room comes back when you leave.
+        // `tools/check-blocks.mjs` searches it in the engine.
         map: [
           '###############',
           '#.............#',
-          '#..=.=...=.=..#',
-          '#..=.=...=.=..#',
+          '#.U.........U.#',
           '#.............#',
-          '..............#',
+          '#....=====....#',
+          '.....3.=.4....#',
+          '#....=====....#',
           '#.............#',
-          '#...=.....=...#',
-          '#.............#',
+          '#.U.........U.#',
           '#.............#',
           '###############',
         ],
         entities: [
-          ['switch', 4, 3],
-          ['switch', 10, 3],
-          ['block', 4, 4],
-          ['block', 10, 4],
+          ['switch', 6, 5],
+          ['switch', 8, 5],
+          ['block', 4, 3, { once: false }],
+          ['block', 10, 7, { once: false }],
         ],
+        blockRoom: { pockets: [[6, 5], [8, 5]], seas: [0, 1] },
         puzzle: {
           switches: 'all',
+          blocks: [[6, 5], [8, 5]],
           flag: 'd1_switches',
           // The heart alongside the key is a deliberate, GUARANTEED heal —
           // see FEEL-SPEC.md's health-economy entry.
@@ -58857,31 +58902,35 @@ function installDungeonsA() {
       },
       '0,1,3': {
         name: 'Weeping Cistern',
-        // Three plates and two blocks: the blocks hold two, and the third is
-        // where you stand.
+        // THE BLOCK PUZZLE'S STEP UP (S204): the Switch Room's two bands laid
+        // end to end in one lane, the gate primitive above with a block in
+        // it. The block crosses the four wells only at LOW and the drains only
+        // at MID, and there is no dry tile between them to change the sea
+        // from — so the Anchor holds the wells at LOW while the conch raises
+        // the drains, and Link walks the held wells behind the block. Without
+        // it the block sits on the last well and Link cannot stand behind it.
         map: [
           '#######.#######',
           '#.............#',
           '#.............#',
           '#.............#',
+          '#..========...#',
+          '#..333344.=...#',
+          '#..========...#',
           '#.............#',
-          '#....11111....#',
-          '#....11111....#',
-          '#....11111....#',
           '#.............#',
           '#.............#',
           '###############',
         ],
         entities: [
           ['crab', 7, 9],
-          ['switch', 3, 2],
-          ['switch', 11, 2],
-          ['switch', 7, 8],
-          ['block', 3, 3],
-          ['block', 11, 3],
+          ['switch', 9, 5],
+          ['block', 2, 2, { once: false }],
         ],
+        blockRoom: { door: [7, 0], pockets: [[9, 5]], seas: [0, 1], anchor: { at: [4, 5], from: [2, 5], level: 0 } },
         puzzle: {
           switches: 'all',
+          blocks: [[9, 5]],
           flag: 'd1_013_puzzle',
           reward: {
             spawn: [['pickup', 7, 3, { kind: 'rupee20' }]],
@@ -63830,7 +63879,7 @@ function installDungeonsB() {
           ['jellyfish', 7, 5],
         ],
         readable: [
-          [2, 9, 'Scratched low, where the water reaches it: "Three tides. One way through."'],
+          [2, 9, 'Scratched low, where the water reaches it: "Each pool here does something different at each tide. Watch them!"'],
         ],
       },
       '1,2,4': {

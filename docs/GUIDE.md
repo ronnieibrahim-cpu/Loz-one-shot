@@ -346,13 +346,13 @@ is the first fight in the game and the game knows it.
 `keese`. That blank is the scrimshander's raw material; you now have one charm
 commission banked. Back east, then north.
 
-**Sunken Hall** (`d1/0,3,5`) — the hub. Two floor switches at (1,2) and (8,2),
-two push blocks at (1,3) and (8,3), sitting directly beneath them. Push each
-block up one tile onto its switch. A **fairy** rises out of the water. A push
-block in this game moves **exactly one tile, ever**, so if you shove one the
-wrong way it is gone — but every block in the game is seated adjacent to the
-switch it is meant to cover, so "push it one square toward the switch" is always
-the answer.
+**Sunken Hall** (`d1/0,3,5`) — the hub. Since S204 three floor switches, each
+in its own 3x3 pool in a corner: a well at (3,2) (ankle-deep at LOW), a sluice
+at (11,2) (at MID) and a basin at (3,8) (at HIGH). A switch pressed in
+ankle-deep water stays down; pressed dry it lets two `keese` loose and every
+switch pops back up; under deep water it cannot be pressed. Press the three in
+turn at LOW, MID and HIGH and a **fairy** rises out of the water. Sound back to
+LOW before moving on.
 
 - **West:** Map Alcove (`d1/0,2,5`) — the **Dungeon Map**.
 - **East:** Chartstone Alcove (`d1/0,4,5`) — a chest with the **Chartstone**,
@@ -365,9 +365,14 @@ yet; the two rooms either side hold both.
 **Crab Pit** (`d1/0,2,4`), west. Three crabs, all of them shielded frontally.
 Clear the room and **Small Key 1** clatters onto the stone.
 
-**Switch Room** (`d1/0,4,4`), east. Two switches at (2,2) and (7,2), two blocks
-directly below them at (2,3) and (7,3). Push both up. **Small Key 2** and a
-heart drop.
+**Switch Room** (`d1/0,4,4`), east. A real block puzzle (S204): two switches
+in one-tile pockets of a block dais, (6,5) and (8,5). The west pocket's only
+mouth is a well (shallow at LOW only), the east pocket's a drain (an open hole
+at LOW, shallow at MID). Blocks here move any number of times, cross shallow
+water, refuse deep water and fall down an open drain. At LOW push the block at
+(4,3) down two and right two into the west pocket; sound MID and push the block
+at (10,7) up two and left two into the east pocket. **Small Key 2** and a
+heart drop. A block lost down the drain comes back when you re-enter.
 
 Take the locked door in the Tide Gallery north.
 
@@ -471,8 +476,13 @@ emptied well.
 
 **Cistern Turn** (`d1/0,1,2`) — a `zol` and a `crab`, nothing else.
 
-**Weeping Cistern** (`d1/0,1,3`). Two switches at (1,1) and (8,1), blocks below
-them at (1,2) and (8,2). Push both up for a `rupee20`.
+**Weeping Cistern** (`d1/0,1,3`). The block puzzle's step up (S204): one
+switch at the end of a walled lane, (9,5), behind four wells (3..6,5) and two
+drains (7..8,5) with no dry tile between them. Push the block at (2,2) down
+three into the lane mouth. At LOW, stand at (2,5) and throw the **Anchor**
+right: it holds the four wells at LOW. Sound MID: the drains fill, the held
+wells stay shallow, and you push the block the length of the lane onto the
+switch, walking behind it. A `rupee20`.
 
 **The Drip Vault** (`d1/0,1,1`). The second gauge room, arranged vertically: the
 door at (8,3) wants the **upper well at (4,1) drained** and the **lower well at
@@ -1613,7 +1623,7 @@ optional — bring the Kilnshell into the Keep.
 **West Crypt** (`d6/1,2,4`). A wheel at (5,4): blow it with the Bellows at MID
 for a fairy.
 
-**Three Heights** (`d6/1,3,4`). *"Three tides. One way through."* Spend a key
+**Three Heights** (`d6/1,3,4`). *"Each pool here does something different at each tide. Watch them!"* (S204: it used to promise "one way through", and the walk round them is free) Spend a key
 on the north door. **Keep Lock** (`d6/1,3,3`) behind it: a `darknut` and a
 `stalfos`. Spend a key on its **east** door.
 

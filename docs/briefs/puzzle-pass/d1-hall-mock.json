@@ -1,0 +1,17 @@
+{"legend":"dungeonGrotto","rooms":{"hall":[
+"#######.#######",
+"#.333.....111.#",
+"#.333.....111.#",
+"#.333.....111.#",
+"#.............#",
+"...............",
+"#.............#",
+"#.222.........#",
+"#.222.........#",
+"#.222.........#",
+"#######.#######"]},
+"shots":[
+{"room":"hall","tide":0,"out":"hall-low.png","entities":[["switch",3,2,{"hold":false}],["switch",11,2,{"hold":false}],["switch",3,8,{"hold":false}]]},
+{"room":"hall","tide":1,"out":"hall-mid.png","entities":[["switch",3,2,{"hold":false}],["switch",11,2,{"hold":false}],["switch",3,8,{"hold":false}]]},
+{"room":"hall","tide":2,"out":"hall-high.png","entities":[["switch",3,2,{"hold":false}],["switch",11,2,{"hold":false}],["switch",3,8,{"hold":false}]]}
+]}
