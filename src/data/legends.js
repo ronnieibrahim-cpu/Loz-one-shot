@@ -154,6 +154,8 @@ export function installLegends() {
     'u': 'cliffAbyssCove',  // cliff until the lighthouse is lit, then a cave mouth
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
+    '1': 'rockPool',        // a rock pool: dark stone at LOW, not a beach (S203)
+    '9': 'drownWallAbyss',  // a low wall the high sea covers, in the shore's stone (S203)
   }, 'base');
 
   // ---- coral: the reef city ---------------------------------------------

@@ -2382,6 +2382,8 @@ export function installCoreTiles() {
     // so at low and mid it is indistinguishable from one, and only high water
     // shows which walls are low enough to swim over. The Lens reads it early.
     drownWallSalt: { tide: ['cliffMarble', 'cliffMarble', 'waterD'] },
+    // The dark shore's own (S203): the same stone as every cliff round it.
+    drownWallAbyss: { tide: ['cliffAbyss', 'cliffAbyss', 'waterD'] },
     tideGrass: { tide: ['grass', 'grass', 'waterS'] },
     mudflat: { tide: ['mud', 'waterS', 'waterD'] },
     abyssHole: { tide: ['waterD', 'waterAbyss', 'waterAbyss'] },
