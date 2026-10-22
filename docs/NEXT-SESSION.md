@@ -35,6 +35,12 @@ Branch claude/oracle-tides-s204-76y1pz, off main at a882a59 (S203).
 - Reference renders: tools/oneshot/oracle-study (ORACLE_STUDY=<dir>) renders
   any Seasons/Ages room; `room_img(group, room)` in render.py for one room.
 
+### The robot
+- The Grotto's new rooms moved the clock: Anemos lost at the old 204 wait.
+  Swept 30-270 by 6; wins scattered, and run to the end only 198 and 246 also
+  survived D3's bosses. 246 chosen. The d1-descent replay was re-recorded
+  (it walks the Sunken Hall).
+
 ### Not done / found
 - docs/guide's d4-easttank-key picture: capture MISSes it ("until never held
   by step 1035"), as it apparently has since S194; the old picture stays.
