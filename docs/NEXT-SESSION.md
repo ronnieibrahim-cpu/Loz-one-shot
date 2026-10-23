@@ -1,3 +1,54 @@
+## S206 — the Sanctum's torches that burn out, and a key from above
+
+Branch claude/oracle-tides-bogwater-sanctum-v2aqkz, off main at f31ad37 (S205).
+
+### The human's choices this session
+- Shown three mocks beside Seasons (docs/briefs/puzzle-pass/s206-*.png): the
+  Vestry beside the Explorer's Crypt's four-torch room ($4e) and Snake's
+  Remains' Agunima room ($6a, the timed torches); the key falling to the room
+  below beside Explorer's Crypt $52/$45; the Silt Vault step up. Chose "build
+  all three", and 100 Rupees for the Silt Vault's chest.
+
+### Built
+- TORCHES THAT BURN OUT (kind E): `['torch', x, y, { burn: true }]` burns
+  TORCH_BURN_FRAMES (feel.js, derived: Seasons group4Map6a, PART_DARK_ROOM_
+  HANDLER subid 1 YX $68, counted down every 4th frame: 416) and goes dark.
+  EVERY torch now goes out when the water is over its foot (`Torch.drowned`,
+  shallow or deep, at `tideAt`), cannot be lit there, and is not relit when
+  the sea goes out. A solved torch room stops counting (`burn` false).
+- A KEY FROM ABOVE (kind G): reward `fallKey: [x, y]` spawns a `FallingKey`
+  (objects.js, the picture only; KEY_FALL_FRAMES guessed) that goes down the
+  drop hole under it, or sinks through the flooded shaft; the key itself is
+  the room beneath's `['pickup', x, y, { kind: 'key', needFlag }]`, claimed by
+  `keyDrop: { from, at, flag }`.
+- D3 Sunken Vestry 1,1,3: closet (NW, torches 1,1 and 3,1) behind a `9` plug
+  (new `dDrownBog`, the Lair's brick, deep at HIGH); sluice pool (torches 1,9
+  and 3,9); the shaft 7,5; an alcove NE with the stair from the crypt, left by
+  its ledge. `flameRoom`, `shaftRoom: { lands: [[7, 5]] }`, puzzle flag
+  d3_vestry, reward fallKey. A carving on the urn states the rule.
+- D3 Vestry Crypt 0,1,3 (new): the key at 7,5, a keese and a crab, stair up.
+- D3 Silt Vault 1,1,4 (optional): sluice torch 2,2; island torch 10,5 on a `2`
+  in a ring of drains THREE wide (`4`, now `dDrainBog`: the Lair's hole art,
+  same flags as dDrain; it restyles the Drain Weir too); chest 5,8, 100
+  Rupees, flag d3_siltvault. `flameRoom.anchor: true`.
+- Kilnshell: set down facing masonry, it now goes at Link's feet instead of
+  inside the wall (it lit torches through walls).
+- Reward pickups (`reward.spawn`) carry a save key: a solved room no longer
+  hands its key out again after a reload (15 rooms had it).
+- tools/check-flames.mjs + tools/lib/flame-flood.mjs; tools/check-keydrop.mjs
+  (new, CLAUDE.md table). check-flames' throw table throws the shell for
+  real from every standing pixel (6 px grid) at every sea: it is what found
+  the Silt Vault's two-wide ring crossable.
+- Robot: Vestry steps in playthrough-route.mjs and playthroughs/d3-run.mjs;
+  check-playthrough 49/49 first try, Bogmaw and Gloomtide still won at the
+  old waits. Guide: remap-guide HEAD, d3-vestry re-shot, texts in guide.html
+  and GUIDE.md.
+
+### NEXT (S207)
+- PUZZLE-PASS.md order step 5: D and G in D4 (the rolling colour cube; the
+  crumbling floor), and the Cistern Floor's one-push room; the wheel rooms
+  each given a twist or swapped. Mock beside the cartridge first.
+
 ## S205 — the Drip Vault steps up; red and blue blocks in the Coral Spire
 
 Branch claude/oracle-tides-puzzle-pass-ygf9fr, off main at 2b5d777 (S204).

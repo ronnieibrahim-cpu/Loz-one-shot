@@ -1759,6 +1759,17 @@ export const WHEEL_SPIN_BEAT = 4;
  *  dungeon animation group $18's first entry, which copies the flame tiles
  *  over the lit torch, TILEINDEX_LIT_TORCH $09), `.db $0f` per frame. */
 export const TORCH_FLAME_FRAMES = 15;
+/** f — how long a torch that burns out stays lit (S206, the Sunken Vestry).
+ *  derived from the cartridge: Seasons' Snake's Remains room $6a
+ *  (objects/seasons/mainData.s group4Map6aObjectData, `obj_Part $08 $01 $68`:
+ *  PART_DARK_ROOM_HANDLER subid 1, whose YX byte is the burn time) gives each
+ *  PART_LIGHTABLE_TORCH counter2 = $68, and lightableTorch.s @subid1State3
+ *  counts it down once every 4 frames (wFrameCounter & 3). $68 * 4. */
+export const TORCH_BURN_FRAMES = 0x68 * 4;
+/** f — how long a key dropped from the ceiling takes to come down (S206).
+ *  guessed; Seasons' INTERAC_TREASURE falls in from above the screen and this
+ *  is about what it looks like, not a number read off the cartridge. */
+export const KEY_FALL_FRAMES = 40;
 /** f — one full turn of the lighthouse lamp on the Drowned Shore (S200): the
  *  beam swings out to the east, back through the glass and out to the west in
  *  this many frames. guessed: slow enough to read as a lamp turning rather

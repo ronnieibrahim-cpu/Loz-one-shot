@@ -3120,6 +3120,18 @@ export function installCoreTiles() {
       anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
     },
     dShaftBog: { tide: ['dHoleBog', 'dShaftWaterBog', 'dShaftWaterBog'] },
+    // The Sanctum's DRAIN (S206): `dDrain`'s three states to the bit — an open
+    // pit at LOW, shallow at MID, deep at HIGH — drawn in the Lair's own hole
+    // rather than the shared grey pit. A plain pit, not a shaft: nothing
+    // beneath it, so it carries F.PIT and not F.DROP.
+    dPitBog: {
+      art: ART.bHole, pal: 'bHole', flags: F.PIT, family: 'bogPit',
+      lip: { n: 'dPitBogN', s: 'dPitBogS', ns: 'dPitBogNS' },
+    },
+    dPitBogN: { art: ART.bHoleN, pal: 'bHoleN', flags: F.PIT, family: 'bogPit' },
+    dPitBogS: { art: ART.bHoleS, pal: 'bHoleS', flags: F.PIT, family: 'bogPit' },
+    dPitBogNS: { art: ART.bHoleNS, pal: 'bHoleNS', flags: F.PIT, family: 'bogPit' },
+    dDrainBog: { tide: ['dPitBog', 'dWaterS', 'dWaterD'] },
     // THE SANCTUM'S ONE-WAY LEDGES (S181). A Seasons dungeon has no ledge
     // tile of its own: it jumps Link off the edge of a raised floor drawn with
     // its WALL RING's own runs — $b0 (the north run) down, $b1 (east) left,
@@ -3465,6 +3477,9 @@ export function installCoreTiles() {
     // And the Shrine's, for the same reason: its own stone, not a cliff.
     dDrownWood: { tide: ['dWallWood', 'dWallWood', 'dWaterD'] },
     dDrownAbyss: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
+    // And the Sanctum's (S206), for the Sunken Vestry's dais: the Lair's own
+    // brick going under at HIGH.
+    dDrownBog: { tide: ['dWallBog', 'dWallBog', 'dWaterD'] },
 
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted

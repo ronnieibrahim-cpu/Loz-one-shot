@@ -67,8 +67,15 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    (`tools/check-toggles.mjs`): the Rising Chamber 0,3,4 (one forced press in
    the sluice row) and the Turning Pool 1,2,3, which replaced the empty
    Drowned Cell (red in and red out; the Anchor holds water, not blocks).
-4. NEXT: E and G in D3 (Sunken Vestry; a key from above).
-5. D and G in D4 (Cistern Floor; the crumbling floor); the wheel rooms each
+4. **S206, DONE: E and G in D3.** The Sunken Vestry 1,1,3: four torches
+   that burn out (TORCH_BURN_FRAMES, Seasons' Snake's Remains $6a), the sea
+   putting out any it reaches — the closet pair at HIGH, the pool pair at LOW
+   (`check-flames.mjs`); its key falls down the hole to the new Vestry Crypt
+   0,1,3 (`check-keydrop.mjs`, Seasons' Explorer's Crypt 52/45). The Silt
+   Vault 1,1,4 is the step up: pool (LOW) and island (MID), the Anchor holds
+   one. Pictures `docs/briefs/puzzle-pass/s206-*.png`.
+5. NEXT: D and G in D4 (see below).
+   D and G in D4 (Cistern Floor; the crumbling floor); the wheel rooms each
    given a twist or swapped.
 6. C and F in D5 (Sunken Bracken; the one-stake copies).
 7. A hard, with ice, in D6 (Drain Court, the Hold).

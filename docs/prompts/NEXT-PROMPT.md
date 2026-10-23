@@ -1,30 +1,31 @@
-# Next session (S206) — the puzzle pass continues in D3
+# Next session (S207) — the puzzle pass continues in D4
 
 ## Read first
 - CLAUDE.md, all of it.
 - docs/briefs/PUZZLE-PASS.md (the plan, the audit and the order).
-- docs/NEXT-SESSION.md S205 and S204; docs/HANDOFF.md lessons (top ten);
-  docs/DUNGEON-STATUS.md "S205" and "S204".
+- docs/NEXT-SESSION.md S206 and S205; docs/HANDOFF.md lessons (top ten);
+  docs/DUNGEON-STATUS.md "S206" and "S205".
 
 ## State
-- S204: D1's Switch Room, Weeping Cistern (check-blocks) and Sunken Hall
-  (check-tideplates).
-- S205: D1's Drip Vault (three marks, one Anchor between two wells;
-  check-anchor `marks`); D2's red and blue blocks, flipped by every tide
-  change (check-toggles, tools/lib/toggle-flood.mjs): the Rising Chamber and
-  the Turning Pool (was the Drowned Cell).
+- S204: D1's Switch Room, Weeping Cistern, Sunken Hall.
+- S205: D1's Drip Vault; D2's red and blue blocks (Rising Chamber, Turning Pool).
+- S206: D3's torches that burn out and drown (Sunken Vestry; the Silt Vault
+  with the Anchor; check-flames) and the key from above (the Vestry Crypt;
+  check-keydrop). Reward keys no longer come back after a reload.
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- Next in the plan: D3, kinds E and G. E: torches that burn out, and a rising
-  sea puts out any torch it reaches (Ages' timed flames). G: a key from above
-  (Seasons' Explorer's Crypt) / holes that open only at LOW. Replace the
-  Sunken Vestry's one-push room (1,1,3). Mock each room beside the cartridge
-  room it borrows from (tools/oneshot/oracle-study renders them; the S205
-  mocks show the side-by-side) and show the human before building.
-- Every new kind gets its own prover, written first, with a `--mock` mode to
-  design against; every room change re-times the robot (sweep the next
-  boss's entry wait if a fight moves: Bogmaw and Gloomtide are the thin ones).
+- Next in the plan: D4, kinds D and G. D: Ages' rolling colour cube (at HIGH
+  it floats and will not tip; the Bellows can roll it from afar). G: the
+  crumbling floor (Seasons' Snake's Remains floor trap) that drops you into
+  the sea at HIGH. Replace the Cistern Floor's one-push room (0,4,4), and give
+  the nine "stand here and pump" wheel rooms each a twist, or swap some.
+  Mock each room beside the cartridge room it borrows from
+  (tools/oneshot/oracle-study renders them; the S206 sheets show the layout)
+  and show the human before building.
+- Every new kind gets its own prover, written first, with a `--mock` mode;
+  every room change re-times the robot (sweep the next boss's entry wait if a
+  fight moves: Wyverna's and the D3 pair are the ones to watch).
 - New lines follow the rule in src/data/story.js's header.
 
 ## Done means

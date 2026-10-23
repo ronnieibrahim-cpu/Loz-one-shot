@@ -347,15 +347,16 @@ FIGURES.push(
     { path: [[14, 5], [0.4, 5]], w: 5 }, lbl('walk the FLOOR west\n(the surface current pushes east)', [7, 7.4], 's'),
   ] },
   { out: 'd3-vestry', src: 'd3-vestry-whole', marks: [
-    { n: 1, at: [11, 2], off: [0, -14] }, { path: [[12.4, 2], [10.4, 2]], w: 5 },
-    { n: 2, at: [3, 2], off: [0, -14] }, { path: [[1.6, 2], [3.6, 2]], w: 5 },
+    { n: 1, at: [2, 3], off: [14, 0] }, lbl('HIGH: swim in, light', [5.2, 2], 'e'),
+    { n: 2, at: [2, 7], off: [14, 0] }, lbl('then LOW: light the pool', [4.2, 8], 'e'),
+    { ring: [7, 5] }, lbl('the key falls down here', [7, 6.2], 's'),
     { ring: [7, 0] }, lbl('key door', [8, 0.3], 'e'),
   ] },
   { out: 'd3-drain-gallery', src: 'd3-drain-gallery-whole', marks: [...chestFrom(7, 4, 'down'), lbl('Small Key', [7, 3.2], 'n')] },
   { out: 'd3-bogmaw', src: 'd3-bogmaw-whole', marks: [{ ring: [7, 5], r: 16 }, lbl('Bogmaw', [7, 6.2])] },
   { out: 'd3-roof', src: 'd3-roof-whole', marks: [{ ring: [7, 5] }, lbl('Piece of Heart', [7, 6])] },
   { out: 'd3-drain', src: 'd3-drain-whole', marks: [{ ring: [14, 5] }, lbl('locked: the\nGallery\'s key', [13, 3.6], 'w'),
-    { trail: { from: 689, to: 701, every: 8 }, w: 4 }, { ring: [7, 8] }, lbl('fairy', [7, 9.2], 's'),
+    { trail: { from: 708, to: 720, every: 8 }, w: 4 }, { ring: [7, 8] }, lbl('fairy', [7, 9.2], 's'),
   ] },
   { out: 'd3-soundpool', src: 'd3-soundpool-sink-whole', scale: 2, marks: [
     { ring: [14, 5] }, lbl('plate on the bottom:\nsink onto it', [14, 3.2], 'n'), { ring: [22, 10] }, lbl('opens this door', [21, 9.3], 'w'),
@@ -366,7 +367,7 @@ FIGURES.push(
     { ring: [11, 3] }, lbl('key', [11, 2.2], 'n'),
   ] },
   { out: 'd3-kelp', src: 'd3-kelp-whole', scale: 2, marks: [
-    { trail: { from: 774, to: 780, every: 10 }, w: 4 }, lbl('swim with the current,\nthen sink for the last stretch', [14, 5], 'c'),
+    { trail: { from: 793, to: 799, every: 10 }, w: 4 }, lbl('swim with the current,\nthen sink for the last stretch', [14, 5], 'c'),
   ] },
   { out: 'd3-lockgallery', src: 'd3-lockgallery-whole', marks: [
     { ring: [2, 5] }, lbl('plate: opens the shortcut', [2.8, 5], 'e'), { ring: [7, 0] }, lbl('boss door', [8, 0.3], 'e'),
@@ -376,7 +377,7 @@ FIGURES.push(
 
   // ---------------------------------------------------------- road to D4
   { out: 'ow-leg4', scale: 1, map: { rooms: ow(range(1, 4), range(3, 8)) }, marks: [
-    { trail: { from: 815, to: 846, every: 8 }, w: 3 },
+    { trail: { from: 834, to: 865, every: 8 }, w: 3 },
     { n: 1, at: [3, 4, 9, 4] }, { n: 2, at: [1, 3, 6, 2] },
   ] },
   { out: 'ow4-deepcut', src: 'ow4-deepcut-whole', marks: [{ ring: [8, 4] }, lbl('rockfall: bomb it from the right', [8, 5.2])] },
@@ -462,7 +463,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D5
   { out: 'ow5-noble', src: 'ow5-noble' },
   { out: 'ow-leg5', scale: 1, map: { rooms: ow(range(1, 9), range(3, 7)) }, marks: [
-    { trail: { from: 1108, to: 1130, every: 8 }, w: 3 },
+    { trail: { from: 1127, to: 1149, every: 8 }, w: 3 },
     { n: 1, at: [3, 7, 3, 2] }, { n: 2, at: [5, 4, 4, 3] },
   ] },
 
@@ -538,7 +539,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1648, to: 1670, every: 8 }, w: 3 },
+    { trail: { from: 1667, to: 1689, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 

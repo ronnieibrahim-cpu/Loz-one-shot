@@ -883,10 +883,27 @@ Cleats are. **Sink and walk.**
 the floor west to (0,3). Bare on purpose — there is nowhere to stand in a
 torrent room, which is the point.
 
-**Sunken Vestry** (`d3/1,1,3`). Switches at (2,2) and (7,2), blocks below them.
-**Small Key 3**.
+**Sunken Vestry** (`d3/1,1,3`). Four torches that burn out (about seven
+seconds each), and the sea puts out any torch it reaches. Two are in the
+closet in the north-west corner, behind a brick plug the sea covers at HIGH;
+two stand in the sluice pool below it, dry only at LOW. Sound HIGH, swim over
+the plug to (2,2), face up and set the Kilnshell down between the closet's
+torches (leave it there: it keeps them lit). Swim out, sound LOW, stand at
+(2,7) in the dry pool facing down and press the Kilnshell twice (the first
+press takes it back from the closet, the second sets it between the pool's
+torches). With all four burning the key drops down the hole at (7,5).
+Walk into the hole at LOW to follow it.
 
-**Silt Vault** (`d3/1,1,4`), south — a `rupee20`.
+**Vestry Crypt** (`d3/0,1,3`), under the Vestry. You land on **Small Key 3**.
+A keese and a crab. The stair at (13,1) goes back up into the Vestry's
+walled alcove; hop off its ledge.
+
+**Silt Vault** (`d3/1,1,4`), south of the Vestry, optional. A torch in the
+sluice pool (dry only at LOW) and one on an island in the drains (holes at
+LOW, over your head at HIGH: wade out at MID). The conch alone never has both
+burning. At LOW light the pool torch, throw the Anchor into the pool's corner
+(it keeps the pool LOW), sound MID, wade to the island and light it. The
+chest at (5,8) rises: 100 Rupees.
 
 **Bogmaw Hall** (`d3/1,2,2`), north. No lock on this one.
 
