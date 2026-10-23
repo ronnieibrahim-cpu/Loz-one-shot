@@ -3132,6 +3132,17 @@ const WHEEL_SPIN_BEAT = 4;
  *  dungeon animation group $18's first entry, which copies the flame tiles
  *  over the lit torch, TILEINDEX_LIT_TORCH $09), `.db $0f` per frame. */
 const TORCH_FLAME_FRAMES = 15;
+/** f — how long a torch that burns out stays lit (S206, the Sunken Vestry).
+ *  derived from the cartridge: Seasons' Snake's Remains room $6a
+ *  (objects/seasons/mainData.s group4Map6aObjectData, `obj_Part $08 $01 $68`:
+ *  PART_DARK_ROOM_HANDLER subid 1, whose YX byte is the burn time) gives each
+ *  PART_LIGHTABLE_TORCH counter2 = $68, and lightableTorch.s @subid1State3
+ *  counts it down once every 4 frames (wFrameCounter & 3). $68 * 4. */
+const TORCH_BURN_FRAMES = 0x68 * 4;
+/** f — how long a key dropped from the ceiling takes to come down (S206).
+ *  guessed; Seasons' INTERAC_TREASURE falls in from above the screen and this
+ *  is about what it looks like, not a number read off the cartridge. */
+const KEY_FALL_FRAMES = 40;
 /** f — one full turn of the lighthouse lamp on the Drowned Shore (S200): the
  *  beam swings out to the east, back through the glass and out to the west in
  *  this many frames. guessed: slow enough to read as a lamp turning rather
@@ -4313,6 +4324,8 @@ __exports["TORRENT_PUSH"] = TORRENT_PUSH;
 __exports["TORRENT_ANIM_RATE"] = TORRENT_ANIM_RATE;
 __exports["WHEEL_SPIN_BEAT"] = WHEEL_SPIN_BEAT;
 __exports["TORCH_FLAME_FRAMES"] = TORCH_FLAME_FRAMES;
+__exports["TORCH_BURN_FRAMES"] = TORCH_BURN_FRAMES;
+__exports["KEY_FALL_FRAMES"] = KEY_FALL_FRAMES;
 __exports["LIGHTHOUSE_TURN_FRAMES"] = LIGHTHOUSE_TURN_FRAMES;
 __exports["RIPTIDE_ANIM_RATE"] = RIPTIDE_ANIM_RATE;
 __exports["WHIRLPOOL_ANIM_RATE"] = WHIRLPOOL_ANIM_RATE;
@@ -18928,7 +18941,7 @@ __define("game/items.js", function (__exports, __require) {
 const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags, overHole, dropIntoHole, beltUnder } = __require("game/entity.js");
 const { Projectile, fire } = __require("game/projectile.js");
 const { Explosion } = __require("game/effects.js");
-const { F } = __require("world/tileset.js");
+const { F, transformFor } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
@@ -19021,6 +19034,9 @@ defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
 // thing every item here negotiates with) without turning "light a torch" into a
 // route puzzle the player has to solve before they can use their own item.
 // --------------------------------------------------------------------------
+
+// Only masonry turns a set-down shell back (water, ledges and bushes do not).
+const KILNSHELL_WALL_CAPS = { swim: true, jumping: true, cutting: true };
 
 class Kilnshell extends Entity {
   constructor(x, y, o = {}) {
@@ -20211,9 +20227,18 @@ const ITEMS = {
       }
       // Set it on the tile the player is facing, so it can be put against a
       // torch or into a pool without standing in either.
+      // NOT INTO A WALL (S206): set against masonry it used to stand inside
+      // it and burn, lighting a torch on the far side of the wall — the
+      // Sunken Vestry's closet torch from the room outside. Facing a wall,
+      // it is set down at Link's own feet; facing something that burns (the
+      // drift-tangle), into it, as ever.
       const [dx, dy] = DIR_VEC[p.dir] || [0, 1];
-      const tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
       const room = game.room;
+      let tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
+      if (room && room.inBounds(tx, ty) && room.solidAt(tx * TILE + 8, ty * TILE + 8, game.tide, KILNSHELL_WALL_CAPS)
+        && !transformFor(room.baseName(tx, ty), 'fire')) {
+        tx -= dx; ty -= dy;
+      }
       const ok = room && room.inBounds(tx, ty);
       const x = ok ? tx * TILE : Math.round(p.x);
       const y = ok ? ty * TILE : Math.round(p.y);
@@ -23282,7 +23307,7 @@ const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
@@ -24757,21 +24782,91 @@ class Torch extends Entity {
     this.lit = !!o.lit;
     this.group = o.group || 'default';
     this.flammable = true;
+    // A TORCH THAT BURNS OUT (S206): Seasons' PART_LIGHTABLE_TORCH subid 1,
+    // lit for TORCH_BURN_FRAMES and then dark again. `burn: true` in the
+    // room data; `left` counts down while it burns. A solved room's torches
+    // stop counting (Game.checkPuzzle sets `burn` false).
+    this.burn = !!o.burn;
+    this.left = 0;
+  }
+  /**
+   * THE SEA PUTS A TORCH OUT (S206). Standing on a tide tile, a torch is
+   * dark while the water is over its foot, shallow or deep, and cannot be
+   * lit there; the sea going out again does not light it. Asked of the tile
+   * under the torch's middle at the level there (`tideAt`), so an Anchor
+   * holding a pool low keeps its torch burning while the room's sea rises.
+   */
+  drowned(game) {
+    const room = game.room;
+    if (!room) return false;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    if (!room.inBounds(tx, ty)) return false;
+    return !!(room.flagsAt(tx, ty, tideAt(game, this)) & (F.WATER | F.DEEP));
   }
   ignite(game) {
-    if (this.lit) return false;
+    if (this.lit || this.drowned(game)) return false;
     this.lit = true;
+    this.left = TORCH_BURN_FRAMES;
     game.audio.sfx('fire');
     game.onTorchLit(this);
     return true;
+  }
+  /** Gone dark: burnt out, or the sea reached it. */
+  douse(game, wet) {
+    this.lit = false;
+    if (wet) {
+      game.spawnEffect('splash', this.x, this.y - 4);
+      game.audio.sfx('splash');
+    }
   }
   spriteName() {
     if (!this.lit) return 'o_torch';
     return 'o_torch_lit' + (Math.floor(this.frame / TORCH_FLAME_FRAMES) % TORCH_FLAME_COUNT);
   }
-  update() { this.frame++; }
+  update(game) {
+    this.frame++;
+    if (!this.lit) return;
+    if (this.drowned(game)) { this.douse(game, true); return; }
+    if (this.burn && --this.left <= 0) this.douse(game, false);
+  }
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
+
+// A KEY FROM ABOVE (S206, Seasons' Explorer's Crypt: explorersCryptScript_
+// dropKeyDownAFloor). A puzzle's key drops from the ceiling onto a drop hole
+// and goes on down: it is spawned in the room beneath, at the same cell, by
+// that room's own entity (`needFlag` on the puzzle's flag), and this is only
+// its picture on the way. Down an open hole it goes as Seasons sends a thing
+// down one (INTERAC_FALLDOWNHOLE); into a flooded shaft it sinks with a
+// splash, as Link does when he sinks with the Cleats. Nothing here can be
+// picked up. A room reward `fallKey: [tx, ty]` spawns one
+// (Game.applyReward); tools/check-keydrop.mjs proves every one.
+class FallingKey extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 3, y: 4, w: 10, h: 10 };
+    this.sprite = 'p_key';
+    this.pal = null;
+    this.harmless = true;
+    this.shadow = true;
+    this.t = 0;
+    this.h0 = o.height || 96;
+  }
+  update(game) {
+    this.t++;
+    this.z = Math.round(this.h0 * Math.max(0, 1 - this.t / KEY_FALL_FRAMES));
+    if (this.t < KEY_FALL_FRAMES) return;
+    const room = game.room;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    const f = room && room.inBounds(tx, ty) ? room.flagsAt(tx, ty, game.tide) : 0;
+    if (f & F.PIT) { dropIntoHole(game, this); return; }
+    this.remove = true;
+    game.spawnEffect('splash', this.x, this.y - 4);
+    game.audio.sfx('splash');
+  }
+}
+defineEntity('fallingKey', (x, y, o) => new FallingKey(x, y, o));
 
 // THE LIGHTHOUSE LAMP (S200): Seasons' own torch on the lamp-room floor, and
 // a torch in every way but two. It takes fire only once the keeper has all
@@ -25316,6 +25411,7 @@ __exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
 __exports["FloorSwitch"] = FloorSwitch;
 __exports["Torch"] = Torch;
+__exports["FallingKey"] = FallingKey;
 __exports["Lamp"] = Lamp;
 __exports["Beam"] = Beam;
 __exports["Essence"] = Essence;
@@ -37024,7 +37120,7 @@ class Game {
       // The flag and the door were remembered and the flames were not, so a
       // player walked back into a dark room whose door their fire had opened.
       // Lit in place, without `ignite`: no crackle, and no second solve.
-      if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) t.lit = true;
+      if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) { t.lit = true; t.burn = false; }
       this.applyReward(pz.reward, true);
       return;
     }
@@ -37061,6 +37157,9 @@ class Game {
     if (pz.condition && !pz.condition(this, room)) return;
 
     room._puzzleDone = true;
+    // Torches that burn out burn on once they have answered (S206), as a
+    // solved torch room comes back lit.
+    if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) t.burn = false;
     // Anything in the room waiting on this puzzle's flag (`needFlag`) comes
     // out now, as a chest rises in Seasons when the last torch is lit — and,
     // being one of the room's own entities, it is remembered opened.
@@ -37093,8 +37192,23 @@ class Game {
       }
     }
     if (reward.spawn) {
-      for (const s of reward.spawn) spawnEntity(this, s[0], s[1], s[2], s[3] || {});
+      // A PRIZE TAKEN STAYS TAKEN (S206). A solved room pays its reward again,
+      // silently, the first time it is built in a session — after the game is
+      // reloaded — and a key it handed out used to lie there again, one more
+      // per reload. A pickup a reward spawns carries a save key of its own, as
+      // a room's placed pickups do (spawnSpec), and is not spawned once taken.
+      reward.spawn.forEach((s, i) => {
+        const o = { ...(s[3] || {}) };
+        if (s[0] === 'pickup') {
+          o.saveKey = `${this.mapId}:${room.key}:reward${i}`;
+          if (this.progress.secrets[o.saveKey]) return;
+        }
+        spawnEntity(this, s[0], s[1], s[2], o);
+      });
     }
+    // A key from above (S206): seen falling once, on the solve; the key
+    // itself is the room beneath's to hold (objects.js FallingKey).
+    if (reward.fallKey && !silent) spawnEntity(this, 'fallingKey', reward.fallKey[0], reward.fallKey[1], {});
     if (!silent) {
       // A reward that changes the room — a door opened, a tile swapped, a prize
       // released — is the discovery moment `secret` was written for. A reward
@@ -37102,7 +37216,7 @@ class Game {
       const opened = (reward.openDoors && reward.openDoors.length)
         || (reward.openDoorsIn && reward.openDoorsIn.length) || reward.reveal
         || (reward.tiles && reward.tiles.length)
-        || (reward.spawn && reward.spawn.length);
+        || (reward.spawn && reward.spawn.length) || reward.fallKey;
       if (reward.sfx) this.audio.sfx(reward.sfx);
       else if (opened) this.audio.jingle('secret');
       else this.audio.sfx('puzzle');
@@ -54207,6 +54321,18 @@ function installCoreTiles() {
       anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13,
     },
     dShaftBog: { tide: ['dHoleBog', 'dShaftWaterBog', 'dShaftWaterBog'] },
+    // The Sanctum's DRAIN (S206): `dDrain`'s three states to the bit — an open
+    // pit at LOW, shallow at MID, deep at HIGH — drawn in the Lair's own hole
+    // rather than the shared grey pit. A plain pit, not a shaft: nothing
+    // beneath it, so it carries F.PIT and not F.DROP.
+    dPitBog: {
+      art: ART.bHole, pal: 'bHole', flags: F.PIT, family: 'bogPit',
+      lip: { n: 'dPitBogN', s: 'dPitBogS', ns: 'dPitBogNS' },
+    },
+    dPitBogN: { art: ART.bHoleN, pal: 'bHoleN', flags: F.PIT, family: 'bogPit' },
+    dPitBogS: { art: ART.bHoleS, pal: 'bHoleS', flags: F.PIT, family: 'bogPit' },
+    dPitBogNS: { art: ART.bHoleNS, pal: 'bHoleNS', flags: F.PIT, family: 'bogPit' },
+    dDrainBog: { tide: ['dPitBog', 'dWaterS', 'dWaterD'] },
     // THE SANCTUM'S ONE-WAY LEDGES (S181). A Seasons dungeon has no ledge
     // tile of its own: it jumps Link off the edge of a raised floor drawn with
     // its WALL RING's own runs — $b0 (the north run) down, $b1 (east) left,
@@ -54552,6 +54678,9 @@ function installCoreTiles() {
     // And the Shrine's, for the same reason: its own stone, not a cliff.
     dDrownWood: { tide: ['dWallWood', 'dWallWood', 'dWaterD'] },
     dDrownAbyss: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
+    // And the Sanctum's (S206), for the Sunken Vestry's dais: the Lair's own
+    // brick going under at HIGH.
+    dDrownBog: { tide: ['dWallBog', 'dWallBog', 'dWaterD'] },
 
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
@@ -55044,7 +55173,7 @@ function installLegends() {
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
   // The Sanctum is built at Oracle size (S139): its way out is the Moth's
   // Lair's lit step between two green pillars in the south wall, `(C)`.
-  registerLegend('dungeonBog', { 'C': 'dExitBog', '(': 'dPillarBogW', ')': 'dPillarBogE' }, 'dungeonBog');
+  registerLegend('dungeonBog', { 'C': 'dExitBog', '(': 'dPillarBogW', ')': 'dPillarBogE', '9': 'dDrownBog' }, 'dungeonBog');
   // Its drop hole and cracked floor (S181). `5` is the SHAFT — a hole at LOW,
   // flooded above it — and a digit because it is a tide tile; `5` is the
   // outdoor `channel`, which no indoor room places (the Spire's and the
@@ -55052,7 +55181,7 @@ function installLegends() {
   // cracked floor in the bottom of a sluice pool; `8` is the outdoor
   // `tideRock`, which no Sanctum room places, and `K` is free in the shared
   // legend.
-  registerLegend('dungeonBog', { '5': 'dShaftBog', 'K': 'dCrackBog', '8': 'dCrackPoolBog' }, 'dungeonBog');
+  registerLegend('dungeonBog', { '5': 'dShaftBog', 'K': 'dCrackBog', '8': 'dCrackPoolBog', '4': 'dDrainBog' }, 'dungeonBog');
   // Its ledges are the Lair's own wall runs (S181; see `dLedgeBogS`).
   registerLegend('dungeonBog', { '_': 'dLedgeBogS', '>': 'dLedgeBogE', '<': 'dLedgeBogW', '"': 'dLedgeBogN' }, 'dungeonBog');
   // The Coral Spire needs two tiles no other dungeon has, for the Reefseed
@@ -60373,56 +60502,89 @@ function installDungeonsA() {
       },
       '1,1,3': {
         name: 'Sunken Vestry',
-        // Two blocks, two plates, and each block is pushed sideways toward the
-        // middle of the room rather than up, the way the Sluice Cell's are.
+        // S206 (the puzzle pass, kind E): FOUR TORCHES THAT BURN OUT, and the
+        // sea puts out any torch it reaches. Seasons' Explorer's Crypt sets
+        // four torches round its Poe room; its Snake's Remains lets them burn
+        // TORCH_BURN_FRAMES. Two stand in a closet in the north-west corner,
+        // walled in and plugged with the Lair's own brick that the sea covers
+        // at HIGH (`9`); two stand in the sluice pool beneath it, dry only at
+        // LOW. So the closet is lit at HIGH, the sea let out (HIGH -> LOW is
+        // one press), and the pool lit before the closet burns down. Lit the
+        // other way round, the rising sea puts the pool out.
+        //
+        // KIND G: the key comes from above. When all four burn, it drops from
+        // the ceiling into the hole in the middle of the floor and on down to
+        // the Vestry Crypt (Seasons' Explorer's Crypt: dropKeyDownAFloor). The
+        // hole is open at LOW; above it, the Cleats sink through it. The
+        // crypt's stair comes up into the alcove in the north-east corner,
+        // left by its ledge, so it is never a way down.
         map: [
           '#######L#######',
+          '#...#......#./#',
+          '#...#......#..#',
+          '##9##......#__#',
           '#.............#',
+          '#......5......D',
           '#.............#',
-          '#.............#',
-          '#....11111....#',
-          '#....11111....D',
-          '#....11111....#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
+          '#111.........U#',
+          '#111..........#',
+          '#111..........#',
           '#######.#######',
         ],
+        warps: [stair3(13, 1, P3(0, 1, 3, 13, 2, 'down'))],
         entities: [
-          ['switch', 4, 2],
-          ['switch', 10, 2],
-          ['block', 3, 2],
-          ['block', 11, 2],
-          ['urchin', 7, 8],
+          ['torch', 1, 1, { burn: true }],
+          ['torch', 3, 1, { burn: true }],
+          ['torch', 1, 9, { burn: true }],
+          ['torch', 3, 9, { burn: true }],
+          ['urchin', 9, 7],
         ],
+        flameRoom: { from: [[13, 5], [7, 9], [7, 1]], lights: [[0, 1, 2], [0, 1, 2], [0], [0]] },
+        shaftRoom: { lands: [[7, 5]] },
         puzzle: {
-          switches: 'all',
+          torches: 'all',
           flag: 'd3_vestry',
-          reward: {
-            spawn: [['pickup', 7, 2, { kind: 'key' }]],
-            say: 'Stone settles into stone.',
-          },
+          reward: { fallKey: [7, 5], say: 'Something fell down the hole!' },
         },
+        readable: [
+          [13, 7, 'Cut in the urn: "The sea puts out every flame it reaches."'],
+        ],
       },
       '1,1,4': {
         name: 'Silt Vault',
+        // S206 (kind E, the step up): a torch in a sluice pool, dry only at
+        // LOW, and one on an island in the drains, which are holes at LOW and
+        // over your head at HIGH, so the island is waded to at MID alone —
+        // three wide all round, because a shell thrown from two away hits
+        // the torch and comes down on the island beside it.
+        // No one sea lights both, and the conch cannot hold one while it
+        // moves to the other: the Anchor thrown into the pool keeps it LOW
+        // while the room goes to MID. The chest rises when both burn.
         map: [
           '#######.#######',
           '#.............#',
-          '#.............#',
-          '#....33333....#',
-          '#....33333....#',
-          '#.............#',
-          '#.p.........p.#',
-          '#.............#',
-          '#.............#',
+          '#.111..4444444#',
+          '#.111..4444444#',
+          '#.111..4444444#',
+          '#......4442444#',
+          '#......4444444#',
+          '#......4444444#',
+          '#......4444444#',
           '#.............#',
           '###############',
         ],
         entities: [
-          ['pickup', 7, 7, { kind: 'rupee20' }],
-          ['keese', 10, 2],
+          ['torch', 2, 2, { burn: true }],
+          ['torch', 10, 5, { burn: true }],
+          ['chest', 5, 8, { rupees: 100, needFlag: 'd3_siltvault' }],
+          ['keese', 12, 9],
         ],
+        flameRoom: { from: [[7, 1]], lights: [[0], [1]], anchor: true },
+        puzzle: {
+          torches: 'all',
+          flag: 'd3_siltvault',
+          reward: { reveal: true, say: 'Both flames burn at once!' },
+        },
       },
       '1,2,2': {
         name: 'Bogmaw Hall',
@@ -61015,6 +61177,32 @@ function installDungeonsA() {
         readable: [
           [2, 1, 'Cut in the urn: "No water gets in here. Any fire here came down from above, dry."'],
         ],
+      },
+      '0,1,3': {
+        name: 'Vestry Crypt',
+        // S206: under the Sunken Vestry, where its key comes down (kind G).
+        // The only way in is the hole in the Vestry's floor; the stair goes
+        // back up into the Vestry's walled alcove.
+        map: [
+          '###############',
+          '#............S#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.....3.3.....#',
+          '#.............#',
+          '#.....3.3.....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair3(13, 1, P3(1, 1, 3, 13, 2, 'down'))],
+        entities: [
+          ['pickup', 7, 5, { kind: 'key', needFlag: 'd3_vestry' }],
+          ['keese', 3, 6],
+          ['crab', 11, 4],
+        ],
+        keyDrop: { from: '1,1,3', at: [7, 5], flag: 'd3_vestry' },
       },
       '0,4,4': {
         name: 'The Reed Undercroft',

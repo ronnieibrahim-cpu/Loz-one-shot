@@ -24,7 +24,8 @@ import {
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
-  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, LIGHTHOUSE_TURN_FRAMES,
+  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
+  LIGHTHOUSE_TURN_FRAMES,
   FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG,
   BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
 } from '../data/feel.js';
@@ -1502,21 +1503,91 @@ export class Torch extends Entity {
     this.lit = !!o.lit;
     this.group = o.group || 'default';
     this.flammable = true;
+    // A TORCH THAT BURNS OUT (S206): Seasons' PART_LIGHTABLE_TORCH subid 1,
+    // lit for TORCH_BURN_FRAMES and then dark again. `burn: true` in the
+    // room data; `left` counts down while it burns. A solved room's torches
+    // stop counting (Game.checkPuzzle sets `burn` false).
+    this.burn = !!o.burn;
+    this.left = 0;
+  }
+  /**
+   * THE SEA PUTS A TORCH OUT (S206). Standing on a tide tile, a torch is
+   * dark while the water is over its foot, shallow or deep, and cannot be
+   * lit there; the sea going out again does not light it. Asked of the tile
+   * under the torch's middle at the level there (`tideAt`), so an Anchor
+   * holding a pool low keeps its torch burning while the room's sea rises.
+   */
+  drowned(game) {
+    const room = game.room;
+    if (!room) return false;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    if (!room.inBounds(tx, ty)) return false;
+    return !!(room.flagsAt(tx, ty, tideAt(game, this)) & (F.WATER | F.DEEP));
   }
   ignite(game) {
-    if (this.lit) return false;
+    if (this.lit || this.drowned(game)) return false;
     this.lit = true;
+    this.left = TORCH_BURN_FRAMES;
     game.audio.sfx('fire');
     game.onTorchLit(this);
     return true;
+  }
+  /** Gone dark: burnt out, or the sea reached it. */
+  douse(game, wet) {
+    this.lit = false;
+    if (wet) {
+      game.spawnEffect('splash', this.x, this.y - 4);
+      game.audio.sfx('splash');
+    }
   }
   spriteName() {
     if (!this.lit) return 'o_torch';
     return 'o_torch_lit' + (Math.floor(this.frame / TORCH_FLAME_FRAMES) % TORCH_FLAME_COUNT);
   }
-  update() { this.frame++; }
+  update(game) {
+    this.frame++;
+    if (!this.lit) return;
+    if (this.drowned(game)) { this.douse(game, true); return; }
+    if (this.burn && --this.left <= 0) this.douse(game, false);
+  }
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
+
+// A KEY FROM ABOVE (S206, Seasons' Explorer's Crypt: explorersCryptScript_
+// dropKeyDownAFloor). A puzzle's key drops from the ceiling onto a drop hole
+// and goes on down: it is spawned in the room beneath, at the same cell, by
+// that room's own entity (`needFlag` on the puzzle's flag), and this is only
+// its picture on the way. Down an open hole it goes as Seasons sends a thing
+// down one (INTERAC_FALLDOWNHOLE); into a flooded shaft it sinks with a
+// splash, as Link does when he sinks with the Cleats. Nothing here can be
+// picked up. A room reward `fallKey: [tx, ty]` spawns one
+// (Game.applyReward); tools/check-keydrop.mjs proves every one.
+export class FallingKey extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 3, y: 4, w: 10, h: 10 };
+    this.sprite = 'p_key';
+    this.pal = null;
+    this.harmless = true;
+    this.shadow = true;
+    this.t = 0;
+    this.h0 = o.height || 96;
+  }
+  update(game) {
+    this.t++;
+    this.z = Math.round(this.h0 * Math.max(0, 1 - this.t / KEY_FALL_FRAMES));
+    if (this.t < KEY_FALL_FRAMES) return;
+    const room = game.room;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    const f = room && room.inBounds(tx, ty) ? room.flagsAt(tx, ty, game.tide) : 0;
+    if (f & F.PIT) { dropIntoHole(game, this); return; }
+    this.remove = true;
+    game.spawnEffect('splash', this.x, this.y - 4);
+    game.audio.sfx('splash');
+  }
+}
+defineEntity('fallingKey', (x, y, o) => new FallingKey(x, y, o));
 
 // THE LIGHTHOUSE LAMP (S200): Seasons' own torch on the lamp-room floor, and
 // a torch in every way but two. It takes fire only once the keeper has all

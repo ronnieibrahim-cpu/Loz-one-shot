@@ -1335,7 +1335,7 @@ export class Game {
       // The flag and the door were remembered and the flames were not, so a
       // player walked back into a dark room whose door their fire had opened.
       // Lit in place, without `ignite`: no crackle, and no second solve.
-      if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) t.lit = true;
+      if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) { t.lit = true; t.burn = false; }
       this.applyReward(pz.reward, true);
       return;
     }
@@ -1372,6 +1372,9 @@ export class Game {
     if (pz.condition && !pz.condition(this, room)) return;
 
     room._puzzleDone = true;
+    // Torches that burn out burn on once they have answered (S206), as a
+    // solved torch room comes back lit.
+    if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) t.burn = false;
     // Anything in the room waiting on this puzzle's flag (`needFlag`) comes
     // out now, as a chest rises in Seasons when the last torch is lit — and,
     // being one of the room's own entities, it is remembered opened.
@@ -1404,8 +1407,23 @@ export class Game {
       }
     }
     if (reward.spawn) {
-      for (const s of reward.spawn) spawnEntity(this, s[0], s[1], s[2], s[3] || {});
+      // A PRIZE TAKEN STAYS TAKEN (S206). A solved room pays its reward again,
+      // silently, the first time it is built in a session — after the game is
+      // reloaded — and a key it handed out used to lie there again, one more
+      // per reload. A pickup a reward spawns carries a save key of its own, as
+      // a room's placed pickups do (spawnSpec), and is not spawned once taken.
+      reward.spawn.forEach((s, i) => {
+        const o = { ...(s[3] || {}) };
+        if (s[0] === 'pickup') {
+          o.saveKey = `${this.mapId}:${room.key}:reward${i}`;
+          if (this.progress.secrets[o.saveKey]) return;
+        }
+        spawnEntity(this, s[0], s[1], s[2], o);
+      });
     }
+    // A key from above (S206): seen falling once, on the solve; the key
+    // itself is the room beneath's to hold (objects.js FallingKey).
+    if (reward.fallKey && !silent) spawnEntity(this, 'fallingKey', reward.fallKey[0], reward.fallKey[1], {});
     if (!silent) {
       // A reward that changes the room — a door opened, a tile swapped, a prize
       // released — is the discovery moment `secret` was written for. A reward
@@ -1413,7 +1431,7 @@ export class Game {
       const opened = (reward.openDoors && reward.openDoors.length)
         || (reward.openDoorsIn && reward.openDoorsIn.length) || reward.reveal
         || (reward.tiles && reward.tiles.length)
-        || (reward.spawn && reward.spawn.length);
+        || (reward.spawn && reward.spawn.length) || reward.fallKey;
       if (reward.sfx) this.audio.sfx(reward.sfx);
       else if (opened) this.audio.jingle('secret');
       else this.audio.sfx('puzzle');

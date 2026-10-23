@@ -1961,56 +1961,89 @@ export function installDungeonsA() {
       },
       '1,1,3': {
         name: 'Sunken Vestry',
-        // Two blocks, two plates, and each block is pushed sideways toward the
-        // middle of the room rather than up, the way the Sluice Cell's are.
+        // S206 (the puzzle pass, kind E): FOUR TORCHES THAT BURN OUT, and the
+        // sea puts out any torch it reaches. Seasons' Explorer's Crypt sets
+        // four torches round its Poe room; its Snake's Remains lets them burn
+        // TORCH_BURN_FRAMES. Two stand in a closet in the north-west corner,
+        // walled in and plugged with the Lair's own brick that the sea covers
+        // at HIGH (`9`); two stand in the sluice pool beneath it, dry only at
+        // LOW. So the closet is lit at HIGH, the sea let out (HIGH -> LOW is
+        // one press), and the pool lit before the closet burns down. Lit the
+        // other way round, the rising sea puts the pool out.
+        //
+        // KIND G: the key comes from above. When all four burn, it drops from
+        // the ceiling into the hole in the middle of the floor and on down to
+        // the Vestry Crypt (Seasons' Explorer's Crypt: dropKeyDownAFloor). The
+        // hole is open at LOW; above it, the Cleats sink through it. The
+        // crypt's stair comes up into the alcove in the north-east corner,
+        // left by its ledge, so it is never a way down.
         map: [
           '#######L#######',
+          '#...#......#./#',
+          '#...#......#..#',
+          '##9##......#__#',
           '#.............#',
+          '#......5......D',
           '#.............#',
-          '#.............#',
-          '#....11111....#',
-          '#....11111....D',
-          '#....11111....#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
+          '#111.........U#',
+          '#111..........#',
+          '#111..........#',
           '#######.#######',
         ],
+        warps: [stair3(13, 1, P3(0, 1, 3, 13, 2, 'down'))],
         entities: [
-          ['switch', 4, 2],
-          ['switch', 10, 2],
-          ['block', 3, 2],
-          ['block', 11, 2],
-          ['urchin', 7, 8],
+          ['torch', 1, 1, { burn: true }],
+          ['torch', 3, 1, { burn: true }],
+          ['torch', 1, 9, { burn: true }],
+          ['torch', 3, 9, { burn: true }],
+          ['urchin', 9, 7],
         ],
+        flameRoom: { from: [[13, 5], [7, 9], [7, 1]], lights: [[0, 1, 2], [0, 1, 2], [0], [0]] },
+        shaftRoom: { lands: [[7, 5]] },
         puzzle: {
-          switches: 'all',
+          torches: 'all',
           flag: 'd3_vestry',
-          reward: {
-            spawn: [['pickup', 7, 2, { kind: 'key' }]],
-            say: 'Stone settles into stone.',
-          },
+          reward: { fallKey: [7, 5], say: 'Something fell down the hole!' },
         },
+        readable: [
+          [13, 7, 'Cut in the urn: "The sea puts out every flame it reaches."'],
+        ],
       },
       '1,1,4': {
         name: 'Silt Vault',
+        // S206 (kind E, the step up): a torch in a sluice pool, dry only at
+        // LOW, and one on an island in the drains, which are holes at LOW and
+        // over your head at HIGH, so the island is waded to at MID alone —
+        // three wide all round, because a shell thrown from two away hits
+        // the torch and comes down on the island beside it.
+        // No one sea lights both, and the conch cannot hold one while it
+        // moves to the other: the Anchor thrown into the pool keeps it LOW
+        // while the room goes to MID. The chest rises when both burn.
         map: [
           '#######.#######',
           '#.............#',
-          '#.............#',
-          '#....33333....#',
-          '#....33333....#',
-          '#.............#',
-          '#.p.........p.#',
-          '#.............#',
-          '#.............#',
+          '#.111..4444444#',
+          '#.111..4444444#',
+          '#.111..4444444#',
+          '#......4442444#',
+          '#......4444444#',
+          '#......4444444#',
+          '#......4444444#',
           '#.............#',
           '###############',
         ],
         entities: [
-          ['pickup', 7, 7, { kind: 'rupee20' }],
-          ['keese', 10, 2],
+          ['torch', 2, 2, { burn: true }],
+          ['torch', 10, 5, { burn: true }],
+          ['chest', 5, 8, { rupees: 100, needFlag: 'd3_siltvault' }],
+          ['keese', 12, 9],
         ],
+        flameRoom: { from: [[7, 1]], lights: [[0], [1]], anchor: true },
+        puzzle: {
+          torches: 'all',
+          flag: 'd3_siltvault',
+          reward: { reveal: true, say: 'Both flames burn at once!' },
+        },
       },
       '1,2,2': {
         name: 'Bogmaw Hall',
@@ -2603,6 +2636,32 @@ export function installDungeonsA() {
         readable: [
           [2, 1, 'Cut in the urn: "No water gets in here. Any fire here came down from above, dry."'],
         ],
+      },
+      '0,1,3': {
+        name: 'Vestry Crypt',
+        // S206: under the Sunken Vestry, where its key comes down (kind G).
+        // The only way in is the hole in the Vestry's floor; the stair goes
+        // back up into the Vestry's walled alcove.
+        map: [
+          '###############',
+          '#............S#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.....3.3.....#',
+          '#.............#',
+          '#.....3.3.....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        warps: [stair3(13, 1, P3(1, 1, 3, 13, 2, 'down'))],
+        entities: [
+          ['pickup', 7, 5, { kind: 'key', needFlag: 'd3_vestry' }],
+          ['keese', 3, 6],
+          ['crab', 11, 4],
+        ],
+        keyDrop: { from: '1,1,3', at: [7, 5], flag: 'd3_vestry' },
       },
       '0,4,4': {
         name: 'The Reed Undercroft',

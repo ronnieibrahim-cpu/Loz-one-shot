@@ -447,6 +447,30 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A Kilnshell set against a wall stood inside it and burned (S206).** The
+  item put the shell on the faced tile with no question asked, so Link
+  facing the Vestry closet's wall from outside lit the torch on the far side
+  through the brick. It is set at his feet now when the faced tile is
+  masonry (KILNSHELL_WALL_CAPS). Any "fire only reaches it from inside" room
+  needs this, and check-flames' model uses the same rule.
+- **A thrown shell stops on the torch it hits and lights it (S206).** The
+  Silt Vault's island torch was ringed by holes two wide and a throw from
+  the rim flew into the solid torch, dropped onto the island beside it and
+  burned there: lit at LOW, puzzle gone. The ring is three wide. Only the
+  engine's real throws found it (check-flames' throw table); the model's
+  set-down rule never would have.
+- **A puzzle key spawned by `reward.spawn` came back on every reload
+  (S206, fixed).** Rooms are cached for the page's life, so in one session a
+  solved room is never paid twice; but after a reload its first build re-pays
+  the reward silently, and a spawned pickup had no save key, so the key lay
+  there again — one more Small Key per reload, in fifteen rooms. Reward
+  pickups carry `<map>:<room>:reward<i>` now; check-keydrop's clause 5.
+- **The model's searches must not carry the Anchor and the lit torches at
+  once unless asked (S206).** The first check-flames ran a no-trap search
+  from every state with both, millions of states each, and never finished.
+  Reachability ignores lighting; the no-trap check ignores the Anchor (it
+  can always be recalled).
+
 - **A forced press is the whole of a toggle puzzle, and a free tile kills it
   (S205).** Every tide change flips the red and blue blocks, so a room can
   only force an order through tiles where the conch may be pressed ONCE

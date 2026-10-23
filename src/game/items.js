@@ -17,7 +17,7 @@ import {
 } from './entity.js';
 import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
-import { F } from '../world/tileset.js';
+import { F, transformFor } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { hasItem, itemLevel, addBombs, addReefseeds, addBottles } from './progress.js';
 import { TIDE_COUNT } from './tide.js';
@@ -127,6 +127,9 @@ defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
 // thing every item here negotiates with) without turning "light a torch" into a
 // route puzzle the player has to solve before they can use their own item.
 // --------------------------------------------------------------------------
+
+// Only masonry turns a set-down shell back (water, ledges and bushes do not).
+const KILNSHELL_WALL_CAPS = { swim: true, jumping: true, cutting: true };
 
 export class Kilnshell extends Entity {
   constructor(x, y, o = {}) {
@@ -1317,9 +1320,18 @@ export const ITEMS = {
       }
       // Set it on the tile the player is facing, so it can be put against a
       // torch or into a pool without standing in either.
+      // NOT INTO A WALL (S206): set against masonry it used to stand inside
+      // it and burn, lighting a torch on the far side of the wall — the
+      // Sunken Vestry's closet torch from the room outside. Facing a wall,
+      // it is set down at Link's own feet; facing something that burns (the
+      // drift-tangle), into it, as ever.
       const [dx, dy] = DIR_VEC[p.dir] || [0, 1];
-      const tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
       const room = game.room;
+      let tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
+      if (room && room.inBounds(tx, ty) && room.solidAt(tx * TILE + 8, ty * TILE + 8, game.tide, KILNSHELL_WALL_CAPS)
+        && !transformFor(room.baseName(tx, ty), 'fire')) {
+        tx -= dx; ty -= dy;
+      }
       const ok = room && room.inBounds(tx, ty);
       const x = ok ? tx * TILE : Math.round(p.x);
       const y = ok ? ty * TILE : Math.round(p.y);

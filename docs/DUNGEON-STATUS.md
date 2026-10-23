@@ -41,6 +41,19 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S206: THE SANCTUM'S TORCHES THAT BURN OUT, AND A KEY FROM ABOVE
+
+D3's **Sunken Vestry** (1,1,3) is no longer a one-push room: four torches
+that burn out (Seasons' TORCH_BURN_FRAMES, 416) and go dark when the sea
+reaches them — two in a closet you swim into at HIGH, two in a sluice pool
+dry only at LOW; light the closet at HIGH, let the sea out, light the pool.
+Its key then falls down the hole in the floor to the new **Vestry Crypt**
+(0,1,3), Seasons' Explorer's Crypt's key from above; the crypt's stair comes
+back up into a walled alcove. The optional **Silt Vault** (1,1,4) is the step
+up: a pool torch (LOW only) and an island torch (MID only), the Anchor holding
+the pool while the sea rises; 100 Rupees. `tools/check-flames.mjs`,
+`tools/check-keydrop.mjs`. D3 now has no one-push room.
+
 ## S205: THE DRIP VAULT AND THE CORAL SPIRE'S RED AND BLUE BLOCKS
 
 D1's **Drip Vault** (0,1,1) is the Two Gauges' step up: three marks, one out

@@ -1222,16 +1222,44 @@ export const ROUTE = [
   ['wait', 90],
 
   // ---------------------------------------------------------------- d3 1,1,3
-  // The Sunken Vestry, and the second Small Key: each block goes one tile
-  // sideways toward the middle, onto its plate.
-  ['goto', 12, 2, 900],
-  ['hold', ['left'], 40],
-  ['goto', 2, 2, 900],
-  ['hold', ['right'], 40],
+  // The Sunken Vestry, and the second Small Key (S206): four torches that
+  // burn out. At HIGH, swim over the brick plug into the closet and set the
+  // shell down between its two torches; leave it burning there (it keeps
+  // them lit), swim out, and let the sea go out to LOW. In the dry pool, the
+  // first press takes the shell back from the closet and the second sets it
+  // between the pool's two torches: the closet's are still burning, and the
+  // key falls down the hole in the middle of the floor.
+  ['equip', 'conch', 'B', 400],
+  ['tide', 2, 140, 900],
+  ['goto', 2, 4, 900],
+  ['hold', ['up'], 40],
+  ['goto', 2, 2, 600],
+  ['equip', 'kilnshell', 'B', 400],
+  ['hold', ['up'], 4],
+  ['use', 'kilnshell', 1, 30],
+  ['goto', 2, 4, 600],
+  ['equip', 'conch', 'B', 400],
+  ['tide', 0, 140, 900],
+  ['goto', 2, 7, 600],
+  ['equip', 'kilnshell', 'B', 400],
+  ['hold', ['down'], 4],
+  ['use', 'kilnshell', 2, 20],
+  ['dialogue', 400],
+  ['wait', 60],
+
+  // ---------------------------------------------------------------- d3 0,1,3
+  // After it, down the hole (open at LOW) into the Vestry Crypt: the key is
+  // where he lands. Up the stair into the Vestry's alcove, and off its ledge.
+  ['goto', 7, 4, 600],
+  ['hold', ['down'], 40],
+  ['wait', 120],
   ['dialogue', 300],
-  ['goto', 7, 3, 600],
+  ['loot', 600],
+  ['goto', 13, 2, 900],
   ['hold', ['up'], 30],
-  ['loot', 900],
+  ['wait', 60],
+  ['hold', ['down'], 30],
+  ['equip', 'cleats', 'B', 400],
 
   // ---------------------------------------------------------------- d3 1,1,2
   // The Drain Gallery, through the key door in the Vestry's north wall. The

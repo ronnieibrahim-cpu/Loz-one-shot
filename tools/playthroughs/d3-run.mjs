@@ -61,7 +61,7 @@ export const D3_RUN = [
   ['goto', 24, 5, 1500], ['wait', 20], ['dialogue', 300],
   ['soles', 'swim', 240], ['goto', 2, 5, 1500], ['exit', 'left', 300], ['wait', 60],
   // the Undertow Cellar's fight; the Root Cellar; the Silt Stair up; the Weir,
-  // and the sea back to LOW for the Vestry's blocks
+  // and the sea back to LOW
   ['fight', 3000, 1200],
   ['travel', 2, 4, 2000], ['travel', 2, 5, 2000], ['goto', 12, 9, 900], ['hold', ['up'], 30], ['wait', 90],
   ['goto', 13, 8, 300], ['hold', ['up'], 40], ['wait', 30],
@@ -72,9 +72,17 @@ export const D3_RUN = [
   ['equip', 'cleats', 'B', 400],
   ['goto', 5, 5, 600], ['soles', 'sink', 240], ['hold', ['left'], 200], ['wait', 60],
   ['soles', 'sink', 240], ['hold', ['left'], 420], ['wait', 90],
-  // the Sunken Vestry's blocks: the third key
-  ['goto', 12, 2, 900], ['hold', ['left'], 40], ['goto', 2, 2, 900], ['hold', ['right'], 40],
-  ['dialogue', 300], ['goto', 7, 3, 600], ['hold', ['up'], 30], ['loot', 900],
+  // the Sunken Vestry's torches (S206): the closet at HIGH, the pool at LOW;
+  // the third key falls down the hole into the Vestry Crypt, and back up
+  ['equip', 'conch', 'B', 400], ['tide', 2, 140, 900],
+  ['goto', 2, 4, 900], ['hold', ['up'], 40], ['goto', 2, 2, 600],
+  ['equip', 'kilnshell', 'B', 400], ['hold', ['up'], 4], ['use', 'kilnshell', 1, 30],
+  ['goto', 2, 4, 600], ['equip', 'conch', 'B', 400], ['tide', 0, 140, 900],
+  ['goto', 2, 7, 600], ['equip', 'kilnshell', 'B', 400], ['hold', ['down'], 4], ['use', 'kilnshell', 2, 20],
+  ['dialogue', 400], ['wait', 60],
+  ['goto', 7, 4, 600], ['hold', ['down'], 40], ['wait', 120], ['dialogue', 300], ['fight', 3000, 1200],
+  ['goto', 13, 2, 900], ['hold', ['up'], 30], ['wait', 60], ['hold', ['down'], 30],
+  ['equip', 'cleats', 'B', 400],
   // the third key in the Drain Gallery's door; the fourth key in its chest
   ['goto', 7, 1, 900], ['hold', ['up'], 20], ['tap', 'a', 30], ['hold', ['up'], 60], ['wait', 60],
   ['goto', 7, 5, 900], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
