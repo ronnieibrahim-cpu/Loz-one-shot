@@ -1,3 +1,61 @@
+## S207 — the Cistern's colour cube, and the floor that falls into the sea
+
+Branch claude/oracle-tides-s207-puzzles-hy3flv, off main at 6b064df (S206).
+
+### The human's choices this session
+- Shown three mocks beside Ages and Seasons (docs/briefs/puzzle-pass/
+  s207-floor.png, -gauge.png, -vault.png; spec s207-d4-mock.json): the
+  Cistern Floor beside Ages' Spirit's Grave $420 and Skull Dungeon $490; the
+  Cistern Gauge beside Mermaid's Cave $521; the Spill Vault beside Ages'
+  Skull Dungeon $478 (cube and cracks) and Seasons' Dancing Dragon $573 (the
+  floor that falls). Chose "build all three". The two optional wheel rooms
+  still copied (the Gull Roost; the Siphon Stair's upper wheel): NEXT session.
+
+### Built
+- THE COLOUR CUBE (kind D): `['cube', x, y, { o }]`, objects.js ColourCube
+  (a PushBlock, so tryPushBlock finds it). Ages' rules from coloredCube.s:
+  three colours on opposite faces, six orientations, a push rolls it a square
+  (the cartridge's own roll animation: three 4-frame steps of 4 px, then
+  centred), into a hole it falls and comes back to its start
+  (CUBE_RETURN_FRAMES). Ours: MOVED ONTO DEEP WATER IT FLOATS — no tip, and it
+  drifts on (CUBE_DRIFT_SPEED) until the next square is not deep (grounds,
+  tipping once) or will not take it. No pushing while swimming. The Bellows'
+  gust rolls it after CUBE_GUST_FRAMES of wind (`onGust`); the cone is the
+  sea a level lower, so at MID a well under the wind is wading water.
+  Spots: tiles dSpotRed/Yellow/Blue (`a`/`y`/`b` in the Cistern legend,
+  tiledef `cubeSpot`, Ages' toggle floor $ad-$af from Mermaid's Cave present,
+  `ages:3b`). Puzzle `cube: true`: every spot has a resting cube showing its
+  colour; a solved room comes back with the cube on its spot.
+- THE FLOOR THAT FALLS (kind G): `dCrackCistern` (`K`, the Dragon's own
+  cracked floor $4d, `xCrack`) breaks into `dBreachCistern` — the Dragon's
+  hole at LOW and MID, deep water at HIGH — under Link stood still on it
+  (CRACK_BREAK_FRAMES, as in D3) or the cube resting on it (CUBE_CRACK_FRAMES,
+  Ages' $0a). `crackResets`: not saved; `Room.mendCracks` puts them back when
+  the room is left.
+- Art: tools/rip-cube.py -> src/data/sprites-cube.js (new generated file,
+  CLAUDE.md table, check-rippers); assets/cube/ (oracles-disasm 21c924a).
+  rip-dungeon-themes: xCrack, cSpotRed/Yellow/Blue.
+- D4 Cistern Floor 0,4,4 (main, Small Key 2): a channel through two wells to
+  the blue spot; roll one well at LOW, float the other at MID.
+- D4 Cistern Gauge 0,2,2 (main, Small Key 3; was a wheel): the cube on a U
+  channel in a field of holes, blown round from the rim: LOW, MID, HIGH.
+- D4 Spill Vault 0,1,5 (main, the Long Race's key, now in a chest that rises
+  at 13,9): lane and pool at LOW; the cracked bridge broken into sea at HIGH;
+  it sails over onto the spot.
+- tools/check-cube.mjs + tools/lib/cube-flood.mjs (new; CLAUDE.md table).
+  check-shafts skips cracks that mend (they are check-cube's).
+  dungeon-strands baseline: the Gauge's channel (the cube's, not Link's).
+- Robot: directives `['cube', dir, 'gust'?]` and `['crack', x, y]` in
+  actor-runtime; route through all three; check-playthrough 49/49 first try,
+  THE END, never died — Wyverna and every later boss won at the old waits.
+- Guide: remap-guide HEAD, D4 floor/gauge shots re-timed, new d4-spill
+  figure, texts in guide.html.
+
+### NEXT (S208)
+- The two copied optional wheel rooms (Gull Roost 0,6,5; the Siphon Stair's
+  upper wheel 0,0,1): a twist each, mocked first. Then PUZZLE-PASS.md order
+  step 6: C and F in D5.
+
 ## S206 — the Sanctum's torches that burn out, and a key from above
 
 Branch claude/oracle-tides-bogwater-sanctum-v2aqkz, off main at f31ad37 (S205).
