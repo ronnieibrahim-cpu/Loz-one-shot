@@ -68,7 +68,9 @@ for (const [mapId, m] of MAPS) {
       // at every sea, not a shaft: tools/check-canopy.mjs is its checker.
       const drop = /^dKnotHole/.test(room.baseName(x, y)) ? [] : at(F.DROP);
       if (drop.length) SHAFTS.push({ mapId, key, x, y, m, room, drop, hole: at(F.DROP | F.PIT), deep: at(F.DROP | F.DEEP) });
-      const crack = [0, 1, 2].filter(t => room.tile(x, y, t).crack);
+      // A crack that mends with the room (S207, the Cistern's cube rooms)
+      // breaks into the sea, not a shaft: tools/check-cube.mjs proves it.
+      const crack = [0, 1, 2].filter(t => room.tile(x, y, t).crack && !room.tile(x, y, t).crackResets);
       if (crack.length) CRACKS.push({ mapId, key, x, y, m, room, levels: crack });
     }
   }

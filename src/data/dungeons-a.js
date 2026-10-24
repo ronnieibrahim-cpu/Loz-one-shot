@@ -3005,43 +3005,50 @@ export function installDungeonsA() {
       '0,4,4': {
         name: 'The Cistern Floor',
         // Three screens wide: it owns 5,4 and 6,4 as well as its own, so
-        // nothing else may be keyed there. Two wells run the height of it —
-        // wading at LOW, swimming above — with an island between them, so
-        // more room is literally more sea to cross.
+        // nothing else may be keyed there.
+        //
+        // S207, THE COLOUR CUBE TAUGHT (docs/briefs/PUZZLE-PASS.md kind D; Ages'
+        // Spirit's Grave room $420, one cube rolled to one spot). Until S207 this
+        // was a block seated beside its plate. The cube runs along a channel
+        // walled by the Dragon's holes, through two wells and onto the blue
+        // spot; every square it tips over changes the colour on top, and a
+        // well it crosses at MID or HIGH it floats over without tipping. From
+        // the gap in the fence the dry squares tip it an even number of times,
+        // so blue comes up only if it rolls through ONE well (at LOW) and
+        // floats over the other. Past the spot, the sump: pushed into it at LOW
+        // it falls and the room puts it back to start again.
         size: [3, 1],
         map: [
           '#############################################',
-          '#........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
-          '.........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
-          '#........33333333333.....33333333333........#',
+          '#==OOOOOOOOOOOOOO==.........................#',
+          '#=....333...333b0==.........................#',
+          '#=.OOOOOOO.OOOOOO==.........................#',
+          '#=.=======.========.........................#',
+          '..........................3333333333........#',
+          '#.........................3333333333........#',
+          '#.........................3333333333........#',
+          '#.........................3333333333........#',
+          '#...........................................#',
           '#######.##############.######################',
         ],
+        cubeRoom: { from: [7, 9], seas: [0, 1] },
         entities: [
-          // Two plates and one block, at opposite ends of the hall: the block
-          // holds the west plate and you have to be standing on the east one.
-          // The dungeon's own idea, rehearsed before the item that makes it —
-          // you cannot be in two places, so something else has to hold.
-          ['switch', 2, 2],
-          ['switch', 41, 8],
-          ['block', 3, 2],
-          ['jellyfish', 14, 4],
-          ['urchin', 30, 6],
+          ['cube', 3, 2, { o: 0 }],
+          ['jellyfish', 30, 6],
+          ['urchin', 38, 3],
           ['keese', 22, 2],
         ],
         puzzle: {
-          switches: 'all',
+          cube: true,
           flag: 'd4_floor',
           reward: {
             spawn: [['pickup', 22, 5, { kind: 'key' }]],
             say: 'A grating opens in the middle of the floor.',
           },
         },
+        readable: [
+          [3, 4, 'Cut into the fence: "Rolled, it turns over. Afloat, it doesn\'t."'],
+        ],
       },
       '0,3,4': {
         name: 'Barnacle Cell',
@@ -3185,51 +3192,39 @@ export function installDungeonsA() {
       },
       '0,2,2': {
         name: 'Cistern Gauge',
-        // SILL 3, a sump shelf again, and the variation is the approach: the
-        // shelf is at the end of a flooded gallery you swim DOWN rather than a
-        // ledge you swim UP to, and what it pays out is a key rather than a
-        // door. The dry square at 5,4 is close enough to see the wheel from
-        // and too far to blow it — the reach is three.
+        // S207, THE BELLOWS ROLL IT FROM AFAR (kind D; Ages' Mermaid's Cave room
+        // $521, one cube among spots in a field of holes). Until S207 this was
+        // sill 3, the Squall Loft's sump shelf a second time. The cube stands on
+        // a channel ringed by the Dragon's holes, so no hand reaches behind it:
+        // the gust shoves it a square at a time from the rim, and on deep water
+        // it sails to the far end. The cone is the sea a level lower under it,
+        // so at MID the first square under the wind is wading water — it tips
+        // there before it sails — and at HIGH it sails from the start. Blue
+        // comes up on the spot only with the sea changed between the legs.
         map: [
           '#######.#######',
           '#.............#',
-          '#.............#',
-          '#.............#',
-          '#####.........#',
-          '#3OO.0.........',
-          '#####0........#',
-          '#.......3333..#',
-          '#.......3333..#',
+          '#.OOOOOOOOOOO.#',
+          '#.O.3333333.O.#',
+          '#.OOOOOOOOO3O.#',
+          '#.OOOOOOOOO3O..',
+          '#.OOOOOOOOO3O.#',
+          '#.Ob3333333.O.#',
+          '#.OOOOOOOOOOO.#',
           '#.............#',
           '#######D#######',
         ],
-        bellowsRoom: {
-          wheel: [1, 5], stand: [4, 5], face: 'left', at: 1, gives: 'key',
-        },
+        cubeRoom: { from: [7, 9], seas: [0, 1, 2], bellows: true },
         entities: [
-          ['wheel', 1, 5, { needTurns: 40 }],
-          ['jellyfish', 10, 8],
-          ['keese', 11, 2],
+          ['cube', 3, 3, { o: 0 }],
+          ['keese', 11, 1],
         ],
-        script: {
-          // A SCRIPT-SPAWNED PICKUP EXISTS ONLY IN THE FRAME IT WAS RELEASED
-          // IN. Swim out without collecting this key and it is gone, with the
-          // wheel still open and nothing left that can ever release it again —
-          // a soft lock three rooms from the Boss Key, invisible to every
-          // checker in the repo because they all reason about the room rather
-          // than about leaving it. So the wheel sets a flag, the key carries a
-          // save key of its own, and entering the room puts it back if it was
-          // released and never picked up.
-          onEnter(game) {
-            if (game.progress.flags.d4GaugeWheel && !game.progress.secrets.d4GaugeKey) {
-              game.spawnPickup(64, 80, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
-            }
-          },
-          onEvent(game, name, data) {
-            if (name !== 'valve' || !data || !data.open) return;
-            game.progress.flags.d4GaugeWheel = true;
-            if (game.progress.secrets.d4GaugeKey) return;
-            game.spawnPickup(64, 80, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
+        puzzle: {
+          cube: true,
+          flag: 'd4_gauge',
+          reward: {
+            spawn: [['pickup', 7, 1, { kind: 'key' }]],
+            say: 'A key drops onto the walk.',
           },
         },
       },
@@ -3527,22 +3522,43 @@ export function installDungeonsA() {
       },
       '0,1,5': {
         name: 'Spill Vault',
+        // S207, THE FLOOR THAT FALLS INTO THE SEA (kind G with D; Ages' Skull
+        // Dungeon room $478, where the cube falls through a cracked floor, and
+        // Seasons' Dancing Dragon room $573, whose floor falls away). The key
+        // to the Long Race used to sit in a chest here; now the chest rises
+        // when the cube rests on the blue spot. The way there is a bridge of
+        // cracked floor over the sea under the Cistern: a crack gives way
+        // under the cube once it settles, and under Link once he stands still
+        // on it, into a hole at LOW and MID — the cube falls and starts again —
+        // and into deep water at HIGH, where it floats. Rolled over the bridge
+        // it would tip at every crack; broken into sea first, it sails over
+        // without turning. Blue wants the pool rolled at LOW and the bridge
+        // sailed at HIGH (the square before the bridge tips it once more, so
+        // the bridge's tips are what decide). The cracks mend when the room
+        // is left.
         map: [
           '###############',
           '#.............#',
-          '#.U.........U.#',
-          '#.............#',
-          '#....,,,,,....#',
-          'D....,,,,,....#',
-          '#....,,,,,....#',
-          '#.............#',
-          '#.U.........U.#',
+          '#.OOOOOOO.OOO.#',
+          '#....333..OOO.#',
+          '#.OOOOOOO.OOO.#',
+          'D.OOOOOOOKOOO.#',
+          '#.OOOOOOOKOOO.#',
+          '#.OOOOOOOKOOO.#',
+          '#.OOOOOOObOOO.#',
           '#.............#',
           '###############',
         ],
+        cubeRoom: { from: [1, 5], seas: [0, 1, 2], cracks: true },
         entities: [
-          ['chest', 7, 5, { pickup: 'key' }],
+          ['cube', 2, 3, { o: 0 }],
+          ['chest', 13, 9, { pickup: 'key', needFlag: 'd4_spillVault' }],
         ],
+        puzzle: {
+          cube: true,
+          flag: 'd4_spillVault',
+          reward: { say: 'A chest rises in the corner.' },
+        },
       },
 
       // ---------------------------------------------- optional rooms (S143)

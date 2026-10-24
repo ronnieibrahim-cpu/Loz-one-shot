@@ -447,6 +447,25 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Along one axis a colour cube's top colour forgets everything but the last
+  segment's parity (S207).** If the last stretch before the spot tips it an
+  odd number of times, the top is the colour that was on that axis's side
+  whatever happened before, so two different routes land the same colour and
+  the puzzle collapses. Design so the deciding segment is the one with an
+  EVEN count in the intended answer (the Spill Vault's extra square before
+  the bridge), and let `check-cube.mjs --mock` say which combinations solve.
+- **A float that lands at the far bank leaves Link in the water behind it
+  (S207).** A cube drifts until it grounds, and the square behind it is the
+  well he would push from — deep, and nobody pushes while swimming. Either
+  the drift ends ON the spot (the Cistern Floor) or the room expects a press
+  to bring the sea down after it; the model counted three presses before this
+  was seen.
+- **`s.index(marker)` for the END of a block finds the first match in the
+  file, not the first after the start (S207).** Replacing the Spill Vault up
+  to "optional rooms (S143)" matched D3's copy of that comment 1,200 lines
+  earlier and duplicated half the file. Search for the end from the start's
+  index (`s.index(end, a)`), and assert end > start.
+
 - **A Kilnshell set against a wall stood inside it and burned (S206).** The
   item put the shell on the faced tile with no question asked, so Link
   facing the Vestry closet's wall from outside lit the torch on the far side

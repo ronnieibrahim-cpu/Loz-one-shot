@@ -41,6 +41,19 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S207: THE CISTERN'S COLOUR CUBE, AND THE FLOOR THAT FALLS INTO THE SEA
+
+D4's **Cistern Floor** (0,4,4) is no longer a one-push room: Ages' rolling
+colour cube, rolled through one well at LOW and floated over the other at MID
+onto the blue spot (a cube on deep water does not tip). The **Cistern Gauge**
+(0,2,2) swaps its wheel for the cube on a channel ringed by holes, blown round
+from the rim with the Bellows at LOW, MID and HIGH. The **Spill Vault**
+(0,1,5) puts a cracked bridge between the cube and its spot: the cracks give
+way into the sea (a hole at LOW and MID, deep water at HIGH), and broken
+first, the bridge carries it over without a tip. `tools/check-cube.mjs`.
+D4 now has no one-push room; the Gull Roost and the Siphon Stair's upper
+wheel are the last copied sills.
+
 ## S206: THE SANCTUM'S TORCHES THAT BURN OUT, AND A KEY FROM ABOVE
 
 D3's **Sunken Vestry** (1,1,3) is no longer a one-push room: four torches

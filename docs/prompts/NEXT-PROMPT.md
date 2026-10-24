@@ -1,32 +1,28 @@
-# Next session (S207) — the puzzle pass continues in D4
+# Next session (S208) — the puzzle pass: the last two sills, then D5
 
 ## Read first
 - CLAUDE.md, all of it.
 - docs/briefs/PUZZLE-PASS.md (the plan, the audit and the order).
-- docs/NEXT-SESSION.md S206 and S205; docs/HANDOFF.md lessons (top ten);
-  docs/DUNGEON-STATUS.md "S206" and "S205".
+- docs/NEXT-SESSION.md S207 and S206; docs/HANDOFF.md lessons (top ten);
+  docs/DUNGEON-STATUS.md "S207" and "S206".
 
 ## State
-- S204: D1's Switch Room, Weeping Cistern, Sunken Hall.
-- S205: D1's Drip Vault; D2's red and blue blocks (Rising Chamber, Turning Pool).
-- S206: D3's torches that burn out and drown (Sunken Vestry; the Silt Vault
-  with the Anchor; check-flames) and the key from above (the Vestry Crypt;
-  check-keydrop). Reward keys no longer come back after a reload.
+- S204-S206: D1, D2, D3 done (blocks, plates, toggles, torches, key drop).
+- S207: D4's colour cube (Cistern Floor, Cistern Gauge, Spill Vault) and the
+  floor that falls into the sea; check-cube. No one-push room left in D4.
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- Next in the plan: D4, kinds D and G. D: Ages' rolling colour cube (at HIGH
-  it floats and will not tip; the Bellows can roll it from afar). G: the
-  crumbling floor (Seasons' Snake's Remains floor trap) that drops you into
-  the sea at HIGH. Replace the Cistern Floor's one-push room (0,4,4), and give
-  the nine "stand here and pump" wheel rooms each a twist, or swap some.
-  Mock each room beside the cartridge room it borrows from
-  (tools/oneshot/oracle-study renders them; the S206 sheets show the layout)
-  and show the human before building.
-- Every new kind gets its own prover, written first, with a `--mock` mode;
-  every room change re-times the robot (sweep the next boss's entry wait if a
-  fight moves: Wyverna's and the D3 pair are the ones to watch).
-- New lines follow the rule in src/data/story.js's header.
+- First the two optional wheel rooms that are still copies (the human's S207
+  choice): the Gull Roost 0,6,5 and the Siphon Stair's upper wheel 0,0,1. A
+  twist each (the cube, the falling floor, or something new), mocked beside
+  the cartridge room first.
+- Then PUZZLE-PASS.md step 6: C and F in D5 — the colour floor every tile the
+  sea covers flips, and statues that copy you and will not enter water;
+  replace the Sunken Bracken's one-push room and the one-stake copies.
+- Every new kind gets its own prover, written first, with `--mock`; every
+  room change re-times the robot (sweep the next boss's wait if a fight
+  moves). New lines follow the rule in src/data/story.js's header.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

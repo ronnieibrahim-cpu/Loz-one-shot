@@ -59,3 +59,11 @@ overworld redraw). The route had not moved since S190, so nothing was
 remapped; two fight shots were re-timed by a scan (Gloomtide's opening blow
 and the Tideshade mid-fight). New: the "Secret caves" section and its ten
 `sc-*` figures, with three LOW-tide stills for the sea-rock caves.
+
+## S207: the Cistern's cube rooms
+
+The Cistern Floor, the Spill Vault and the Cistern Gauge are colour-cube rooms
+now. The route grew by 48 directives; `node tools/oneshot/remap-guide.mjs
+HEAD` moved the numbers, then the D4 floor, spill and gauge shots were set
+by hand and a `d4-spill` figure added. `d2-glass-lens` and `d4-easttank-key`
+still MISS, as before, and keep their old pictures.

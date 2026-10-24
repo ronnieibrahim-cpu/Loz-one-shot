@@ -4,7 +4,7 @@
 import {
   Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC, overHole, dropIntoHole,
 } from './entity.js';
-import { F } from '../world/tileset.js';
+import { F, getTileDef } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { FP_ONE, sp } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
@@ -25,11 +25,12 @@ import {
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
-  LIGHTHOUSE_TURN_FRAMES,
+  LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES,
   FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG,
   BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
+import { CUBE_FRAMES, CUBE_ANIMS, CUBE_PUSH_ANIM, CUBE_TOP } from '../data/sprites-cube.js';
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
  *  a tile of the Seasons dungeon the map is built from (tools/rip-objects.py). */
@@ -1417,6 +1418,185 @@ export class PushBlock extends Entity {
   }
 }
 defineEntity('block', (x, y, o) => new PushBlock(x, y, o));
+
+/**
+ * ORACLE OF AGES' ROLLING COLOUR CUBE (S207, docs/briefs/PUZZLE-PASS.md kind D;
+ * object_code/ages/interactions/coloredCube.s). Three colours, each on two
+ * opposite faces; pushed a square it tips over, so the colour on top changes
+ * (orientations and rolls straight from the cartridge's tables, sprites-cube.js).
+ * Pushed into a hole it falls, and the room puts it back where it started.
+ *
+ * The sea is ours. A CUBE MOVED ONTO DEEP WATER FLOATS: it does not tip, so its
+ * colour holds, and it drifts on the way it was going until the next square is
+ * not deep (it grounds there, tipping once) or will not take it (it stops
+ * afloat). Link cannot push it while he is swimming. The Squall Bellows'
+ * gust rolls it from as far off as the cone reaches (CUBE_GUST_FRAMES), and
+ * the cone is a real override in the tide field, so what is "deep" under the
+ * wind is one level shallower — the cube the wind moves over a pool at MID
+ * may ground and tip where a push would have floated it.
+ *
+ * Resting on a cracked floor (`crack`) for CUBE_CRACK_FRAMES, the floor gives
+ * way under it (Ages' own rule): the Cistern's cracks break into the sea, a
+ * hole at LOW and MID — it falls — and deep water at HIGH — it floats there.
+ *
+ * `tools/check-cube.mjs` proves the rooms; tools/lib/cube-flood.mjs is the
+ * model it searches with these same rules.
+ */
+export const CUBE_CAPS = { jumping: false, swim: true, cutting: false };
+/** The room's colour spots, [{ x, y, colour }], read off its tiles. */
+export function cubeSpots(room) {
+  const out = [];
+  for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
+    const d = getTileDef(room.baseName(x, y));
+    if (d && d.cubeSpot != null) out.push({ x, y, colour: d.cubeSpot });
+  }
+  return out;
+}
+const CUBE_DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];   // Ages' order: up, right, down, left
+export class ColourCube extends PushBlock {
+  constructor(x, y, o = {}) {
+    super(x, y, { ...o, once: false });
+    this.o = o.o | 0;
+    this.home = { x, y, o: this.o };
+    this.anim = null;         // a roll: { a, i, t }
+    this.drift = null;        // { dx, dy, fx, fy }
+    this.gustT = 0; this._gusted = false;
+    this.crackT = 0;
+    this.gone = 0;            // frames until it comes back from a hole
+  }
+
+  get busy() { return !!(this.anim || this.drift || this.slide || this.gone); }
+  get top() { return CUBE_TOP[this.o]; }
+  get tx() { return Math.round(this.x / TILE); }
+  get ty() { return Math.round(this.y / TILE); }
+
+  push(game, dx, dy) {
+    if (this.busy) return false;
+    if (game.player && game.player.inDeep) return false;   // no footing to push from
+    return this.move(game, dx, dy);
+  }
+
+  onGust(game, dx, dy) {
+    this._gusted = true;
+    if (this.busy) return;
+    if (++this.gustT < CUBE_GUST_FRAMES) return;
+    this.gustT = 0;
+    this.move(game, dx, dy);
+  }
+
+  /** Will the square (dx, dy) on take it? */
+  canEnter(game, dx, dy) {
+    const room = game.room;
+    const nx = this.tx + dx, ny = this.ty + dy;
+    if (!room.inBounds(nx, ny)) return false;
+    if (room.flagsAt(nx, ny, game.tide) & (F.STAIRS | F.WARP | F.DOOR)) return false;
+    if (!canOccupy(game, this, nx * TILE, ny * TILE, CUBE_CAPS)) return false;
+    for (const e of game.entities) {
+      if (e !== this && (e.solid || e === game.player) && !e.dead
+        && Math.abs(e.x - nx * TILE) < 12 && Math.abs(e.y - ny * TILE) < 12) return false;
+    }
+    return true;
+  }
+
+  move(game, dx, dy) {
+    if (!this.canEnter(game, dx, dy)) return false;
+    const nx = this.tx + dx, ny = this.ty + dy;
+    this.crackT = 0;
+    if (game.room.flagsAt(nx, ny, game.tide) & F.DEEP) {
+      this.drift = { dx, dy, fx: sp(nx * TILE), fy: sp(ny * TILE) };
+    } else {
+      const dir = CUBE_DIRS.findIndex(([a, b]) => a === dx && b === dy);
+      this.anim = { a: CUBE_PUSH_ANIM[this.o][dir], i: 0, t: 0, nx, ny };
+    }
+    game.audio.sfx('push');
+    return true;
+  }
+
+  update(game) {
+    if (!this._gusted) this.gustT = 0;
+    this._gusted = false;
+    if (this.gone) {
+      if (--this.gone === 0) {
+        this.fx = sp(this.home.x); this.fy = sp(this.home.y); this.o = this.home.o;
+        this.hidden = false; this.solid = true;
+        game.spawnEffect('puff', this.x, this.y);
+      }
+      return;
+    }
+    if (this.anim) { this.roll(game); return; }
+    if (this.drift) {
+      const d = this.drift;
+      this.fx += Math.sign(d.fx - this.fx) * Math.min(CUBE_DRIFT_SPEED, Math.abs(d.fx - this.fx));
+      this.fy += Math.sign(d.fy - this.fy) * Math.min(CUBE_DRIFT_SPEED, Math.abs(d.fy - this.fy));
+      if (this.fx !== d.fx || this.fy !== d.fy) return;
+      this.drift = null;
+      if (this.landed(game)) this.move(game, d.dx, d.dy);   // afloat: carry on
+      return;
+    }
+    // At rest. The sea going out from under it can open a hole.
+    if (overHole(game, this)) { this.fall(game); return; }
+    const def = game.room.tile(this.tx, this.ty, game.tide);
+    if (def.crack) {
+      if (++this.crackT >= CUBE_CRACK_FRAMES) {
+        this.crackT = 0;
+        game.breakCrack(this.tx, this.ty);
+        if (overHole(game, this)) this.fall(game);
+      }
+    } else this.crackT = 0;
+  }
+
+  /** One frame of a roll, as the cartridge animates it: each step moves it
+   *  four pixels (animParameter 2-5), the last ends it in a new orientation
+   *  and centres it on its square. */
+  roll(game) {
+    const r = this.anim, steps = CUBE_ANIMS[r.a];
+    if (r.t === 0) {
+      const p = steps[r.i][2];
+      if (p & 0x80) {
+        this.o = p & 0x7f;
+        this.fx = sp(r.nx * TILE); this.fy = sp(r.ny * TILE);
+        this.anim = null;
+        game.audio.sfx('push');
+        this.landed(game);
+        return;
+      }
+      if (p >= 2 && p <= 8) {
+        const [dx, dy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][(p - 2) >> 1];
+        this.fx += dx * 4 * FP_ONE; this.fy += dy * 4 * FP_ONE;
+      }
+    }
+    if (++r.t >= steps[r.i][0]) { r.t = 0; r.i++; }
+  }
+
+  /** Arrived on a square. True if it is afloat (so a drift carries on). */
+  landed(game) {
+    if (overHole(game, this)) { this.fall(game); return false; }
+    game.onBlockLanded(this);
+    return !!(game.room.flagsAt(this.tx, this.ty, game.tide) & F.DEEP);
+  }
+
+  fall(game) {
+    game.spawnEffect('hole', this.x, this.y);
+    game.audio.sfx('fallInHole');
+    this.anim = null; this.drift = null;
+    this.hidden = true; this.solid = false;
+    this.gone = CUBE_RETURN_FRAMES;
+  }
+
+  /** The cube showing `colour` on top at rest on (tx, ty)? */
+  restsOn(tx, ty, colour) {
+    return !this.busy && !this.hidden && this.tx === tx && this.ty === ty && this.top === colour;
+  }
+
+  draw(ctx, game, ox, oy) {
+    if (this.hidden) return;
+    const f = this.anim ? CUBE_ANIMS[this.anim.a][Math.min(this.anim.i, 3)][1] : this.o;
+    for (const [art, px, py, flipX, flipY, pal] of CUBE_FRAMES[f]) {
+      sprites.draw(ctx, art, ox + this.x + px, oy + this.y + py, { pal, flipX: !!flipX, flipY: !!flipY });
+    }
+  }
+}
+defineEntity('cube', (x, y, o) => new ColourCube(x, y, o));
 
 export class FloorSwitch extends Entity {
   constructor(x, y, o = {}) {

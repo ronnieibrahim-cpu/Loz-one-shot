@@ -2969,6 +2969,18 @@ export function installCoreTiles() {
     dSumpCistern: { tide: ['dHoleCistern', 'dWaterD', 'dWaterD'] },
     dDrainCistern: { tide: ['dHoleCistern', 'dWaterS', 'dWaterD'] },
     dSpikePoolCistern: { tide: ['dSpikeCistern', 'dSpikeCistern', 'dWaterD'] },
+    // S207: THE FLOOR THAT GIVES WAY (kind G, docs/briefs/PUZZLE-PASS.md).
+    // The Dragon's own cracked floor; what it breaks into is the sea under
+    // the Cistern — the Dragon's hole at LOW and MID, deep water at HIGH. So
+    // whatever the floor drops at HIGH drops into the sea, and floats.
+    dBreachCistern: { tide: ['dHoleCistern', 'dHoleCistern', 'dWaterD'] },
+    dCrackCistern: { art: ART.xCrack, pal: 'xCrack', crack: 'dBreachCistern', crackResets: true },
+    // S207: THE COLOUR CUBE'S SPOTS (kind D), Ages' red, yellow and blue
+    // floor: plain floor to everything, and the place a cube must come to
+    // rest showing that colour on top (`cubeRoom`, objects.js ColourCube).
+    dSpotRed: { art: ART.cSpotRed, pal: 'cSpotRed', cubeSpot: 0 },
+    dSpotYellow: { art: ART.cSpotYellow, pal: 'cSpotYellow', cubeSpot: 1 },
+    dSpotBlue: { art: ART.cSpotBlue, pal: 'cSpotBlue', cubeSpot: 2 },
     // S184: THE SLUICE GATES of the Sealed Cistern, one in the north wall of
     // each tank on 2F: the Dragon's own shutter, shut, until the wheel over
     // it on 3F is turned (`openFlag`, `Game.applyStoryGates`), and then the

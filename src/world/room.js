@@ -281,6 +281,14 @@ export class Room {
     if (any) this.invalidate();
   }
 
+  /** Mend the cracks a visit broke that come back (S207, `crackResets`). */
+  mendCracks() {
+    if (!this.broken || !this.broken.length) return;
+    for (const [tx, ty] of this.broken) this.override[ty * this.tw + tx] = null;
+    this.broken = [];
+    this.invalidate();
+  }
+
   clearTile(tx, ty) {
     if (!this.inBounds(tx, ty)) return;
     this.override[ty * this.tw + tx] = null;

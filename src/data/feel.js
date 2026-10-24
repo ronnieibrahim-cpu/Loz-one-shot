@@ -1766,6 +1766,23 @@ export const TORCH_FLAME_FRAMES = 15;
  *  PART_LIGHTABLE_TORCH counter2 = $68, and lightableTorch.s @subid1State3
  *  counts it down once every 4 frames (wFrameCounter & 3). $68 * 4. */
 export const TORCH_BURN_FRAMES = 0x68 * 4;
+/** f — how long the colour cube rests on a cracked floor before the floor
+ *  gives way under it (S207, kind G). derived from the cartridge: Oracle of
+ *  Ages' coloredCube.s @state0/@finishMovement set counter2 = $0a, and
+ *  @state1 asks TILEINDEX_CRACKED_FLOOR when it runs out. */
+export const CUBE_CRACK_FRAMES = 0x0a;
+/** f — how long the Squall Bellows must blow on the colour cube before it
+ *  rolls (S207). guessed: Ages has no wind, so this is the cube's own push
+ *  count (coloredCube.s counter1 $14, Link leaning on it) given to the gust. */
+export const CUBE_GUST_FRAMES = 0x14;
+/** subpx/f — a floating cube's drift across deep water (S207). guessed: Ages'
+ *  cube never floats; this is a block slide twice over (BLOCK_SLIDE_SPEED),
+ *  so a pool is crossed briskly without outrunning the eye. */
+export const CUBE_DRIFT_SPEED = 256;
+/** f — from a cube going down a hole to the room setting it back where it
+ *  started (S207). guessed: Ages deletes it until the room is entered again;
+ *  ours comes back after the fall picture (INTERAC_FALLDOWNHOLE, 32 frames). */
+export const CUBE_RETURN_FRAMES = 40;
 /** f — how long a key dropped from the ceiling takes to come down (S206).
  *  guessed; Seasons' INTERAC_TREASURE falls in from above the screen and this
  *  is about what it looks like, not a number read off the cartridge. */

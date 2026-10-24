@@ -1673,22 +1673,23 @@ export const ROUTE = [
   ['wait', 60],
 
   // ---------------------------------------------------------------- d4 0,4,4
-  // THE CISTERN FLOOR, AND THE SECOND KEY. Three screens of water with a plate
-  // at each end: the block holds the western one and you have to be standing
-  // on the eastern one, forty tiles away. NOTHING IS FOUGHT UNTIL THE SEA IS
-  // DOWN — at LOW both wells are wading water rather than a swim.
+  // THE CISTERN FLOOR, AND THE SECOND KEY (S207): the colour cube, taught. It
+  // runs along a channel through two wells to the blue spot; rolled through
+  // the first well at LOW (it tips at every square) and floated over the
+  // second at MID (it drifts across without turning), blue comes up on the
+  // spot. THE CUBE GOES FIRST: a `fight` is a roam, and the swordsman chasing
+  // a keese into the channel would lean on it.
   ['travel', 4, 4, 5000],
   ['tide', 0, 140, 600],
-  // THE BLOCK IS PUSHED BEFORE ANYTHING IS FOUGHT: a `fight` is a roam, and
-  // the swordsman chasing a keese shoves the block off its own row on the way.
-  ['goto', 4, 2, 900],
-  ['hold', ['left'], 60],
-  ['fight', 6000, 1500],
-  ['goto', 41, 8, 2500],
-  ['wait', 60],
+  ...[2, 3, 4, 5, 6, 7, 8, 9].flatMap(x => [['goto', x, 2, 900], ['cube', 'right']]),
+  ['tide', 1, 140, 600],
+  ['goto', 10, 2, 900],
+  ['cube', 'right'],
   ['dialogue', 400],
-  // The key drops on the island in the middle, twenty tiles back: walked to
-  // first, because a loot sweep gives up on a drop it cannot reach in 200.
+  ['tide', 0, 140, 600],
+  ['fight', 6000, 1500],
+  // The key drops in the middle of the floor: walked to first, because a
+  // loot sweep gives up on a drop it cannot reach in 200.
   ['goto', 22, 6, 1500],
   ['loot', 1500],
 
@@ -1761,11 +1762,26 @@ export const ROUTE = [
   ['goto', 13, 16, 2000],
   ['exit', 'right', 300],
   ['wait', 60],
-  ['goto', 8, 5, 900],
-  ['hold', ['left'], 6],
+  // THE SPILL VAULT (S207): the floor that falls into the sea. The cube is
+  // rolled along its lane and through the pool at LOW, onto the corner; at
+  // HIGH the bridge of cracked floor is broken into sea by standing on it,
+  // from the spot's end (he drops in and swims to the next); then from the
+  // north rim the cube is tipped onto the square before the bridge and
+  // shoved off it, and it sails the broken bridge onto the blue spot.
+  ['tide', 0, 140, 600],
+  ...[1, 2, 3, 4, 5, 6, 7].flatMap(x => [['goto', x, 3, 900], ['cube', 'right']]),
+  ['tide', 2, 140, 900],
+  ['crack', 9, 7], ['crack', 9, 6], ['crack', 9, 5],
+  ['goto', 9, 2, 2000],
+  ['cube', 'down'],
+  ['goto', 9, 3, 600],
+  ['cube', 'down'],
+  ['dialogue', 400],
+  // The chest rises in the south-east corner and pops its key above itself.
+  ['goto', 13, 8, 1500],
+  ['hold', ['down'], 6],
   ['tap', 'a', 40],
   ['dialogue', 600],
-  // A small-key chest pops the key out above itself: it is a drop to collect.
   ['wait', 30],
   ['loot', 600],
   ['travel', 0, 4, 4000],
@@ -1788,20 +1804,23 @@ export const ROUTE = [
   ['travel', 2, 2, 4000],
 
   // ---------------------------------------------------------------- d4 0,2,2
-  // SILL 3 — THE CISTERN GAUGE, a sump shelf again and back at MID. What it
-  // pays out is the third Small Key, and the key is a SCRIPT SPAWN: the room
-  // puts it back on re-entry if it was released and never picked up, so the
-  // loot call here is belt and braces rather than the only chance at it.
+  // THE CISTERN GAUGE (S207): the cube on a channel ringed by holes, blown
+  // along from the rim. At LOW the wind tips it one square; at MID it tips
+  // once more under the cone and then sails the rest of the channel; at HIGH
+  // it sails down the far side and home onto the blue spot. The third Small
+  // Key drops onto the north walk.
   ['fight', 4000, 1500],
-  ['tide', 1, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 4, 5, 1200],
-  ['bellows', 1, 5, 3000],
-  // The key pops up off the shelf a few pixels, clear of a player standing
-  // still, and a sweep issued inside its grab delay gives up on it.
-  ['wait', 30],
-  ['loot', 1500],
+  ['tide', 0, 140, 600],
+  ['goto', 1, 4, 1200], ['cube', 'right', 'gust'],
+  ['tide', 1, 140, 600],
+  ['goto', 1, 4, 1200], ['cube', 'right', 'gust'],
+  ['tide', 2, 140, 600],
+  ['goto', 10, 1, 1200], ['cube', 'down', 'gust'],
+  ['goto', 13, 8, 1200], ['cube', 'left', 'gust'],
   ['dialogue', 400],
+  ['goto', 7, 1, 1200],
+  ['loot', 1500],
   ['equip', 'sword', 'A', 400],
 
   // ---------------------------------------------------------------- d4 0,2,1

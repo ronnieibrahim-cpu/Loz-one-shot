@@ -74,9 +74,15 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    0,1,3 (`check-keydrop.mjs`, Seasons' Explorer's Crypt 52/45). The Silt
    Vault 1,1,4 is the step up: pool (LOW) and island (MID), the Anchor holds
    one. Pictures `docs/briefs/puzzle-pass/s206-*.png`.
-5. NEXT: D and G in D4 (see below).
-   D and G in D4 (Cistern Floor; the crumbling floor); the wheel rooms each
-   given a twist or swapped.
+5. **S207, DONE: D and G in D4.** The Cistern Floor 0,4,4 (the colour cube:
+   roll one well at LOW, float the other), the Cistern Gauge 0,2,2 (was a
+   wheel: the cube blown round a channel in a field of holes) and the Spill
+   Vault 0,1,5 (a cracked bridge that falls into the sea: hole at LOW and MID,
+   deep water at HIGH) — `check-cube.mjs`. Pictures
+   `docs/briefs/puzzle-pass/s207-*.png`. The cone's wind is the sea a level
+   lower, so at MID the gust tips the cube where it would float.
+5b. NEXT: the last two copied sills (the Gull Roost 0,6,5; the Siphon Stair's
+   upper wheel 0,0,1), a twist each — the human's S207 choice.
 6. C and F in D5 (Sunken Bracken; the one-stake copies).
 7. A hard, with ice, in D6 (Drain Court, the Hold).
 8. Signs: full words only where an item is first taught.
