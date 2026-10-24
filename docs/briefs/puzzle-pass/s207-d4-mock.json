@@ -1,0 +1,250 @@
+{
+"legend": "dungeonCistern",
+"rooms": {
+"floor": [
+"#############################################",
+"#==OOOOOOOOOOOOOO==.........................#",
+"#=....333...333b0==.........................#",
+"#=.OOOOOOO.OOOOOO==.........................#",
+"#=.=======.========.........................#",
+"..........................3333333333........#",
+"#.........................3333333333........#",
+"#.........................3333333333........#",
+"#.........................3333333333........#",
+"#...........................................#",
+"#######.##############.######################"
+],
+"gauge": [
+"###############",
+"#.............#",
+"#.OOOOOOOOOOO.#",
+"#.O.3333333.O.#",
+"#.OOOOOOOOO3O.#",
+"#.OOOOOOOOO3O.#",
+"#.OOOOOOOOO3O.#",
+"#.Ob3333333.O.#",
+"#.OOOOOOOOOOO.#",
+"#.............#",
+"#######D#######"
+],
+"vault": [
+"###############",
+"#.............#",
+"#.OOOOOOO.OOO.#",
+"#....333..OOO.#",
+"#.OOOOOOOKOOO.#",
+"D.OOOOOOOKOOO.#",
+"#.OOOOOOOKOOO.#",
+"#.OOOOOO..bOO.#",
+"#.OOOOOO.OOOO.#",
+"#.............#",
+"###############"
+]
+},
+"shots": [
+{
+"room": "floor",
+"tide": 0,
+"out": "floor-low.png",
+"link": {
+"tx": 5,
+"ty": 2,
+"dir": "right"
+},
+"cube": [
+6,
+2,
+3
+],
+"entities": [
+[
+"jellyfish",
+30,
+6
+],
+[
+"keese",
+22,
+7
+]
+]
+},
+{
+"room": "floor",
+"tide": 1,
+"out": "floor-mid.png",
+"link": {
+"tx": 11,
+"ty": 2,
+"dir": "right"
+},
+"cube": [
+15,
+2,
+3
+],
+"entities": [
+[
+"jellyfish",
+30,
+6
+]
+]
+},
+{
+"room": "gauge",
+"tide": 0,
+"out": "gauge-low.png",
+"link": {
+"tx": 1,
+"ty": 3,
+"dir": "right",
+"bellows": true
+},
+"overrides": [
+{
+"tx": 1,
+"ty": 3,
+"r": 3,
+"delta": -1,
+"shape": "cone",
+"dx": 1,
+"dy": 0
+}
+],
+"cube": [
+4,
+3,
+3
+]
+},
+{
+"room": "gauge",
+"tide": 1,
+"out": "gauge-mid.png",
+"link": {
+"tx": 1,
+"ty": 3,
+"dir": "right",
+"bellows": true
+},
+"overrides": [
+{
+"tx": 1,
+"ty": 3,
+"r": 3,
+"delta": -1,
+"shape": "cone",
+"dx": 1,
+"dy": 0
+}
+],
+"cube": [
+11,
+3,
+0
+]
+},
+{
+"room": "gauge",
+"tide": 2,
+"out": "gauge-high.png",
+"link": {
+"tx": 13,
+"ty": 7,
+"dir": "left",
+"bellows": true
+},
+"overrides": [
+{
+"tx": 13,
+"ty": 7,
+"r": 3,
+"delta": -1,
+"shape": "cone",
+"dx": -1,
+"dy": 0
+}
+],
+"cube": [
+3,
+7,
+4
+]
+},
+{
+"room": "vault",
+"tide": 0,
+"out": "vault-low.png",
+"link": {
+"tx": 8,
+"ty": 3,
+"dir": "right"
+},
+"cube": [
+9,
+3,
+0
+]
+},
+{
+"room": "vault",
+"tide": 2,
+"out": "vault-high.png",
+"link": {
+"tx": 9,
+"ty": 5,
+"dir": "down"
+},
+"tiles": [
+[
+9,
+4,
+"dBreachCistern"
+],
+[
+9,
+5,
+"dBreachCistern"
+]
+],
+"cube": [
+9,
+4,
+1
+]
+},
+{
+"room": "vault",
+"tide": 2,
+"out": "vault-high2.png",
+"link": {
+"tx": 8,
+"ty": 7,
+"dir": "right"
+},
+"tiles": [
+[
+9,
+4,
+"dBreachCistern"
+],
+[
+9,
+5,
+"dBreachCistern"
+],
+[
+9,
+6,
+"dBreachCistern"
+]
+],
+"cube": [
+10,
+7,
+3
+]
+}
+]
+}

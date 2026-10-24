@@ -351,6 +351,12 @@ export function installLegends() {
     '^': 'dSpikeCistern', 'O': 'dHoleCistern', '0': 'dSumpCistern', '4': 'dDrainCistern',
     '5': 'dSpikePoolCistern',
   }, 'dungeonCistern');
+  // S207: the floor that gives way into the sea (`dCrackCistern`). `K` is free
+  // in the shared legend; the Sanctum's own `K` is on its own legend.
+  registerLegend('dungeonCistern', { 'K': 'dCrackCistern' }, 'dungeonCistern');
+  // S207: the colour cube's spots, red `a`, yellow `y`, blue `b` — letters
+  // the shared legend does not name (the Spire's `a`/`b` are its own).
+  registerLegend('dungeonCistern', { 'a': 'dSpotRed', 'y': 'dSpotYellow', 'b': 'dSpotBlue' }, 'dungeonCistern');
   // S184: the three sluice gates in the Sealed Cistern's tank walls, one per
   // tank (`H` west, `J` float, `Q` east), each opened by its own wheel on 3F.
   // None of the three is in the shared legend.

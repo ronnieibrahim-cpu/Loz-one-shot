@@ -95,6 +95,9 @@ SHEETS = {
     # no whirlpool at all. `@k` renders the tileset with every animation at its
     # k-th step, which is how a whirlpool's four frames are each one pick.
     'mermaid': 'ages:3d',
+    # THE COLOUR CUBE'S SPOTS (S207): Mermaid's Cave's present half ($3b),
+    # the room ($521) where one cube visits three coloured floor spots.
+    'mermaidNow': 'ages:3b',
     'whirl0': 'ages:5f@0',
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
@@ -125,7 +128,8 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:39': "the Poison Moth's Lair", 'meta:3a': 'the Dancing Dragon Dungeon',
               'meta:3c': 'the Ancient Ruins', 'meta:42': "the Sword & Shield Maze, fire half",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
-              'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon'}
+              'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon',
+              'ages:3b': "Mermaid's Cave, the present"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -750,6 +754,16 @@ PICKS = [
     # `dPit` until now; the Dragon's hole is plain black.
     meta('xSpike', 0x60, 'the spike floor, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('xHole', 0xf4, 'the hole, the Dancing Dragon Dungeon', 'dragonMeta'),
+    # THE CISTERN'S FLOOR THAT GIVES WAY (S207): TILEINDEX_CRACKED_FLOOR $4d
+    # in the Dragon's own tileset, the floor of room $573 that falls away
+    # behind you (d4HolesFloortrapRoom.s).
+    meta('xCrack', 0x4d, 'the cracked floor, the Dancing Dragon Dungeon', 'dragonMeta'),
+    # THE COLOUR CUBE'S SPOTS (S207): Ages' TILEINDEX_RED/YELLOW/BLUE_TOGGLE_
+    # FLOOR $ad-$af, the floor a cube must come to rest on showing that colour
+    # (miscPuzzles.s subid $02, Mermaid's Cave room $521).
+    meta('cSpotRed', 0xad, 'the red spot, Mermaid\'s Cave', 'mermaidNow'),
+    meta('cSpotYellow', 0xae, 'the yellow spot, Mermaid\'s Cave', 'mermaidNow'),
+    meta('cSpotBlue', 0xaf, 'the blue spot, Mermaid\'s Cave', 'mermaidNow'),
     meta('xStairsUp', 0x44, 'the stair up, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('xStairsDown', 0x45, 'the stair down, the Dancing Dragon Dungeon', 'dragonMeta'),
     meta('rStairsUp', 0x44, 'the stair up, the Ancient Ruins', 'ruinsMeta'),

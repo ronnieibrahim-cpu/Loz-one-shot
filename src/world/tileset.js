@@ -212,6 +212,9 @@ export function registerTiles(defs) {
       // THE CRACKED FLOOR (S181): the tile it gives way into, after Link has
       // stood on it CRACK_BREAK_FRAMES (Player.updateCrack, Game.breakCrack).
       crack: def.crack || null,
+      // THE COLOUR CUBE'S SPOT (S207): 0 red, 1 yellow, 2 blue — the colour a
+      // cube must show on top resting here (objects.js ColourCube).
+      cubeSpot: def.cubeSpot != null ? def.cubeSpot : null,
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
