@@ -24,9 +24,12 @@
 // A state is (cube tile, orientation, sea, which plates are done, which
 // cracks are broken, where Link can be — the canonical tile of his region).
 // Walking is the engine's own `tileWalkable` (tools/lib/collision.mjs) with
-// the cube a wall; Link may push from any tile he can be on, swimming
-// included, and blows only from one he is not swimming on (the item's own
-// rule, Player.updateBellows). The cone is the engine's own footprint
+// the cube a wall; Link pushes and blows only from a tile he is not swimming
+// on (ColourCube.push, Player.updateBellows). A cube moved onto deep water
+// drifts on the way it was going until the next square is not deep (it
+// grounds there, tipping) or will not take it; and Link standing still on a
+// crack breaks it, falling (back to the room's way in) or dropping into the
+// sea, as the sea there decides. The cone is the engine's own footprint
 // (Tide.prototype.covers, stone stopping the wind). A conch press is one step
 // round LOW -> MID -> HIGH -> LOW.
 //
@@ -55,6 +58,10 @@ export const CUBE_CAPS = { jumping: false, swim: true, cutting: false };
  *   bellows    may the gust be used
  *   fixedSea   0..2: the water never moves (a what-if)
  *   noFloat    deep water does not stop the tip (a what-if)
+ *   noCrack    cracks never give way (a what-if)
+ *   noStand    Link never breaks a crack himself (a what-if)
+ *   entry      where a fall puts Link back (default: `from`)
+ *   visit      called with every state the search reaches
  *   solids     [[x, y]] tiles to treat as walls (other entities)
  */
 export function makeCubeModel(room, cube, plates, opts = {}) {
@@ -160,7 +167,7 @@ export function makeCubeModel(room, cube, plates, opts = {}) {
     if (!(f & F.DEEP) || opts.noFloat) o = dx ? ROLL_EW[o] : ROLL_NS[o];
     // Come to rest on a crack: it gives way under the cube.
     const i = crackIx.get(nx + ',' + ny);
-    if (i !== undefined && !(broken & (1 << i))) {
+    if (i !== undefined && !opts.noCrack && !(broken & (1 << i))) {
       broken |= 1 << i;
       const g = fl(nx, ny, sea(s), broken);
       if (g & F.PIT) return { fell: true, broken };
@@ -228,7 +235,7 @@ export function makeCubeModel(room, cube, plates, opts = {}) {
     // Stand on a crack until it gives way: at a sea where the break is a
     // hole he falls (and the room puts him back at its way in, `from`);
     // where it is the sea he drops into it and swims.
-    for (const c of opts.noStand ? [] : cracks) {
+    for (const c of opts.noStand || opts.noCrack ? [] : cracks) {
       const i = crackIx.get(c.x + ',' + c.y);
       if (s.broken & (1 << i) || !reach.has(c.y * W + c.x)) continue;
       const broken = s.broken | (1 << i);
@@ -297,7 +304,35 @@ export function makeCubeModel(room, cube, plates, opts = {}) {
     return null;
   }
 
-  return { solve, region, cracks, walk, shove, ALL };
+  /**
+   * Can Link get back to `to` from state s — walking, or within `depth`
+   * moves of the cube or presses (he may have to shove it out of a doorway)?
+   */
+  function canLeave(s, to, depth = 4) {
+    const tk = to[1] * W + to[0];
+    let front = [s];
+    const seen = new Set();
+    for (let d = 0; d <= depth; d++) {
+      const next = [];
+      for (const t of front) {
+        const reach = region([t.lx, t.ly], t);
+        if (reach.has(tk)) return true;
+        const k = key(t, reach);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        if (d === depth) continue;
+        for (const [n, , act] of moves(t, reach)) {
+          const at = act.from || [t.lx, t.ly];
+          if (!walk(at[0], at[1], sea(n), n.broken)) continue;
+          next.push({ ...n, lx: at[0], ly: at[1] });
+        }
+      }
+      front = next;
+    }
+    return false;
+  }
+
+  return { solve, region, cracks, walk, shove, canLeave, ALL };
 }
 
 /** A solution as words. */

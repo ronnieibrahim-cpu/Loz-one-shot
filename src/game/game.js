@@ -39,7 +39,8 @@ import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } from './entity.js';
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
-import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
+import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots } from './objects.js';
+import { CUBE_TOP } from '../data/sprites-cube.js';
 import { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } from './items.js';
 import { spawnRecordedChunks, chunkAtHome } from './chunk.js';
 import {
@@ -257,7 +258,7 @@ export class Game {
     // stake room for the rest of the session. A stake dropped from the Canopy
     // is written into the save (`plantFromAbove`) and `restoreRoomState`
     // puts it back on the way in.
-    if (this.room && this.room !== r) this.room.clearGrown();
+    if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); }
     this.room = r;
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
@@ -1089,7 +1090,10 @@ export class Game {
     const def = room.tile(tx, ty, this.tide);
     if (!def || !def.crack) return false;
     room.setTile(tx, ty, def.crack);
-    this.persistTile(tx, ty, def.crack);
+    // A cube room's cracks mend when the room is left (S207), so it can
+    // always be tried again; the Sanctum's stay broken for good.
+    if (def.crackResets) (room.broken = room.broken || []).push([tx, ty]);
+    else this.persistTile(tx, ty, def.crack);
     // The cartridge's own SND_RUMBLE, as the keyhole's door uses it.
     this.audio.sfx('doorRumble');
     this.roomEvent('tile', { tx, ty, action: 'crack' });
@@ -1336,6 +1340,11 @@ export class Game {
       // player walked back into a dark room whose door their fire had opened.
       // Lit in place, without `ignite`: no crackle, and no second solve.
       if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) { t.lit = true; t.burn = false; }
+      // A solved cube room comes back with the cube on its spot (S207).
+      if (pz.cube) {
+        const spot = cubeSpots(room)[0], c = this.entities.find(e => e instanceof ColourCube);
+        if (spot && c) { c.fx = sp(spot.x * TILE); c.fy = sp(spot.y * TILE); c.o = CUBE_TOP.indexOf(spot.colour); }
+      }
       this.applyReward(pz.reward, true);
       return;
     }
@@ -1368,6 +1377,12 @@ export class Game {
       const ok = pz.blocks.every(([tx, ty]) =>
         bs.some(b => Math.round(b.x / TILE) === tx && Math.round(b.y / TILE) === ty));
       if (!ok) return;
+    }
+    // THE COLOUR CUBE (S207): every spot has a cube at rest on it showing the
+    // spot's colour on top.
+    if (pz.cube) {
+      const cubes = this.entities.filter(e => e instanceof ColourCube);
+      if (!cubeSpots(room).every(s => cubes.some(c => c.restsOn(s.x, s.y, s.colour)))) return;
     }
     if (pz.condition && !pz.condition(this, room)) return;
 

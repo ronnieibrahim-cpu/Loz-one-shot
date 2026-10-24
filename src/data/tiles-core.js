@@ -2974,7 +2974,7 @@ export function installCoreTiles() {
     // the Cistern — the Dragon's hole at LOW and MID, deep water at HIGH. So
     // whatever the floor drops at HIGH drops into the sea, and floats.
     dBreachCistern: { tide: ['dHoleCistern', 'dHoleCistern', 'dWaterD'] },
-    dCrackCistern: { art: ART.xCrack, pal: 'xCrack', crack: 'dBreachCistern' },
+    dCrackCistern: { art: ART.xCrack, pal: 'xCrack', crack: 'dBreachCistern', crackResets: true },
     // S207: THE COLOUR CUBE'S SPOTS (kind D), Ages' red, yellow and blue
     // floor: plain floor to everything, and the place a cube must come to
     // rest showing that colour on top (`cubeRoom`, objects.js ColourCube).

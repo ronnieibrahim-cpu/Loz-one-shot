@@ -2951,6 +2951,52 @@ export async function installRuntime() {
   }
 
   /**
+   * MOVE THE COLOUR CUBE ONE GO (S207, objects.js ColourCube).
+   *
+   *   ['cube', 'right']          lean on it from the tile behind it
+   *   ['cube', 'down', 'gust']   blow on it with the Squall Bellows, facing down
+   *
+   * Verifies rather than predicts, as `bellows` does: it presses until the
+   * cube itself starts to move, lets go, and waits for it to come to rest —
+   * however far a drift across deep water carries it, or back at its start
+   * if it went down a hole. The gust presses the item a frame before the
+   * direction, so the warmup turns Link on the spot instead of walking him
+   * off the rim into a hole.
+   */
+  function* dCube(dir, how, maxF) {
+    const g = window.__game;
+    const budget = maxF || 600;
+    const cube = () => g.entities.find(e => typeof e.restsOn === 'function' && !e.remove);
+    const c = cube();
+    if (!c) throw new Error('cube: no colour cube in this room');
+    const b = how === 'gust' ? slotBit('bellows') : 0;
+    if (how === 'gust' && !b) throw new Error('cube: the Squall Bellows are on no button');
+    let f = 0;
+    for (; f < budget && !c.busy; f++) yield b && f < 2 ? b : (b | BIT[dir]);
+    if (!c.busy) {
+      throw new Error(`cube: it would not ${how || 'push'} ${dir} from ${playerTile(g.player).tx},`
+        + `${playerTile(g.player).ty} (cube ${c.tx},${c.ty}, sea ${g.tide.level})`);
+    }
+    for (; f < budget && c.busy; f++) yield 0;
+    yield* dDialogueClear(60);
+  }
+
+  /**
+   * STAND ON A CRACK UNTIL IT GIVES WAY (S207): `['crack', tx, ty]`. Walks
+   * there and stands still until the tile is no longer a crack — a hole he
+   * falls down at LOW and MID, the sea he drops into at HIGH.
+   */
+  function* dCrack(tx, ty, maxF) {
+    const g = window.__game;
+    const isCrack = () => !!g.room.tile(tx, ty, g.tide).crack;
+    if (!isCrack()) return;
+    yield* dGoto(tx, ty);
+    for (let f = 0; f < (maxF || 240) && isCrack(); f++) yield 0;
+    if (isCrack()) throw new Error(`crack: ${tx},${ty} did not give way`);
+    for (let f = 0; f < 20; f++) yield 0;
+  }
+
+  /**
    * DRIVE A CORAL STAKE — the verb the Drowned Wood Shrine is made of.
    *
    *   ['reefseed', tx, ty]   grow a coral pillar on tile (tx, ty)
@@ -3401,6 +3447,8 @@ export async function installRuntime() {
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
+      else if (kind === 'cube') yield* dCube(a[0], a[1], a[2]);
+      else if (kind === 'crack') yield* dCrack(a[0], a[1], a[2]);
       else if (kind === 'board') yield* dBoard(a[0], a[1], a[2]);
       else if (kind === 'alight') yield* dAlight(a[0], a[1], a[2], a[3]);
       else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);

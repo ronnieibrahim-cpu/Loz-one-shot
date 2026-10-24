@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+"""Oracle of Ages' rolling colour cube (INTERAC_COLORED_CUBE), cut from the
+cartridge's own sprite graphics, OAM layouts, animations and palettes (S207).
+
+    python3 tools/rip-cube.py          writes src/data/sprites-cube.js
+
+Read from assets/cube/oracles-disasm/ages/ (copied from Stewmath's
+oracles-disasm, commit 21c924a):
+
+  interactionData.s        $19 -> object gfx $77 (spr_colored_cube), tile base
+                           $00, palette 5
+  spr_colored_cube.png     the 8x16 sprite tiles, two-bit
+  interactionAnimations.s  interaction19Animations (30 animations: 0-5 the six
+                           resting orientations, 6-29 the rolls) and
+                           interaction19OamDataPointers
+  interactionOamData.s     each frame's sprites: y, x, tile, flags
+  paletteData.s            standardSpritePaletteData (palette 5) and PALH_89's
+                           paletteData5908/5910 (palettes 6 and 7)
+  coloredCube.s            @animations (which roll a push in each direction
+                           plays from each orientation) and @colors (the top
+                           colour of each orientation)
+
+A sprite's palette is the object's palette XOR the OAM entry's flags & 7 (as
+tools/rip-effects.py reads them); flags $20 and $40 flip it. Each frame is
+emitted as its list of 8x16 pieces, every piece one palette, so nothing is
+quantised: the cube's faces are three palettes laid side by side.
+"""
+import os
+import re
+
+from PIL import Image
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = os.path.join(ROOT, 'assets', 'cube', 'oracles-disasm', 'ages')
+OUT = os.path.join(ROOT, 'src', 'data', 'sprites-cube.js')
+
+
+def text(name):
+    with open(os.path.join(SRC, name)) as f:
+        return f.read()
+
+
+def label_body(src, label):
+    """The lines after `label:` up to the next label."""
+    m = re.search(r'^' + re.escape(label) + r':.*?\n(.*?)(?=^\w+:)', src, re.S | re.M)
+    assert m, label
+    return m.group(1)
+
+
+def dbs(body):
+    out = []
+    for line in body.split('\n'):
+        line = line.split(';')[0].strip()
+        if line.startswith('.db'):
+            out.append([int(v.strip().lstrip('$'), 16) for v in line[3:].split()])
+    return out
+
+
+def dws(body):
+    return [l.split()[1] for l in body.split('\n') if l.strip().startswith('.dw')]
+
+
+def rgb(line):
+    v = [int(x.lstrip('$'), 16) for x in line.split()[1:4]]
+    return tuple(c * 255 // 31 for c in v)
+
+
+def palettes():
+    pd = text('paletteData.s')
+    std = [rgb(l) for l in label_body(pd, 'standardSpritePaletteData').split('\n') if 'm_RGB16' in l]
+    out = {5: std[20:24]}
+    for k, lab in ((6, 'paletteData5908'), (7, 'paletteData5910')):
+        out[k] = [rgb(l) for l in label_body(pd, lab).split('\n') if 'm_RGB16' in l][:4]
+    return out
+
+
+def build():
+    idata = text('interactionData.s')
+    m = re.search(r'/\* \$19 \*/ m_InteractionData \$(\w+) \$(\w+) \$(\w+)', idata)
+    gfx, base, b2 = (int(v, 16) for v in m.groups())
+    assert gfx == 0x77, 'the cube is not object gfx $77'
+    obj_pal = (b2 >> 4) & 7
+
+    anims_src = text('interactionAnimations.s')
+    anim_labels = dws(label_body(anims_src, 'interaction19Animations'))
+    oam_labels = dws(label_body(anims_src, 'interaction19OamDataPointers'))
+    anims = []
+    for lab in anim_labels:
+        anims.append([tuple(r) for r in dbs(label_body(anims_src, lab))])
+
+    oam_src = text('interactionOamData.s')
+    frames = {}
+    for a in anims:
+        for _, frame, _ in a:
+            k = frame // 2
+            if k in frames:
+                continue
+            rows = dbs(label_body(oam_src, oam_labels[k]))
+            n = rows[0][0]
+            pieces = []
+            for y, x, tile, flags in rows[1:1 + n]:
+                # Relative to the cell the object's middle sits in: an entry at
+                # y=8, x=0 is the cell's own top-left.
+                py = (y - 256 if y >= 128 else y) - 8
+                px = x - 256 if x >= 128 else x
+                pieces.append((tile + base, px, py, bool(flags & 0x20), bool(flags & 0x40), obj_pal ^ (flags & 7)))
+            frames[k] = pieces
+
+    img = Image.open(os.path.join(SRC, 'spr_colored_cube.png'))
+    px = img.load()
+    tiles = {}
+    for pieces in frames.values():
+        for tile, *_ in pieces:
+            col = tile // 2
+            if col in tiles:
+                continue
+            tiles[col] = [''.join('.' if px[col * 8 + x, y] == 0 else str(px[col * 8 + x, y])
+                                  for x in range(8)) for y in range(16)]
+
+    cc = text('coloredCube.s')
+    push = dbs(cc.split('@animations:')[1].split('\n\n')[0])
+    colours = dbs(cc.split('@colors:')[1].split('\n\n')[0])[0]
+    return tiles, palettes(), frames, anims, push, colours
+
+
+HEADER = '''// Oracle of Ages' rolling colour cube (INTERAC_COLORED_CUBE), cut from the
+// cartridge's own sprite graphics, OAM layouts, animations and palettes.
+//
+// Generated by tools/rip-cube.py — edit that, not this file.
+// Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
+// commit 21c924a), assets/cube/oracles-disasm/ages/: spr_colored_cube.png,
+// interactionAnimations.s, interactionOamData.s, interactionData.s,
+// paletteData.s and object_code coloredCube.s. Credit: the oracles-disasm
+// project and its contributors; the artwork is Nintendo's and Capcom's. This
+// is fan-work art only.
+//
+// A frame is a list of 8x16 pieces [art, x, y, flipX, flipY, palette], x and
+// y from the top-left of the cell the cube stands in. An animation is a list
+// of [frames held, frame, parameter] (Interaction.animParameter: 2-5 moves it
+// four pixels up/right/down/left, bit 7 ends the roll in orientation & $7f).
+'''
+
+
+def emit(tiles, pals, frames, anims, push, colours):
+    out = HEADER.split('\n') + ["import { sprites } from '../gfx/art.js';",
+                                "import { registerPalettes } from '../gfx/palettes.js';", '',
+                                'const CUBE_ART = {']
+    for col in sorted(tiles):
+        out.append('  // extracted — pulled straight off the source graphics named in this file\'s own header, by this ripper.')
+        out.append(f"  o_cube_{col * 2:02x}: {{ pal: 'cube5', art: `")
+        out += ['    ' + r for r in tiles[col]]
+        out[-1] += '` },'
+    out.append('};')
+    out.append('')
+    out.append('const CUBE_PALETTES = {')
+    for k in sorted(pals):
+        out.append(f"  cube{k}: [{', '.join(repr('#%02x%02x%02x' % c) for c in pals[k])}],")
+    out.append('};')
+    out.append('')
+    out.append('/** Frame (OAM index) -> its pieces. */')
+    out.append('export const CUBE_FRAMES = {')
+    for k in sorted(frames):
+        ps = ', '.join(f"['o_cube_{t:02x}', {x}, {y}, {int(fx)}, {int(fy)}, 'cube{p}']" for t, x, y, fx, fy, p in frames[k])
+        out.append(f'  {k}: [{ps}],')
+    out.append('};')
+    out.append('')
+    out.append('/** Interaction19 animations: 0-5 rest in each orientation, 6-29 roll. */')
+    out.append('export const CUBE_ANIMS = [')
+    for a in anims:
+        out.append('  [' + ', '.join(f'[{d}, {f // 2}, {p}]' for d, f, p in a) + '],')
+    out.append('];')
+    out.append('')
+    out.append('/** coloredCube.s @animations: [orientation][up, right, down, left] -> animation. */')
+    out.append('export const CUBE_PUSH_ANIM = [' + ', '.join('[' + ', '.join(str(v) for v in r) + ']' for r in push) + '];')
+    out.append('')
+    out.append('/** coloredCube.s @colors: the top colour of each orientation (0 red, 1 yellow, 2 blue). */')
+    out.append('export const CUBE_TOP = [' + ', '.join(str(v) for v in colours) + '];')
+    out += ['', 'export function installCubeSprites() {',
+            '  registerPalettes(CUBE_PALETTES);',
+            "  sprites.add(CUBE_ART, 'cube5');", '}', '']
+    with open(OUT, 'w') as f:
+        f.write('\n'.join(out))
+
+
+if __name__ == '__main__':
+    t, p, f, a, pu, c = build()
+    emit(t, p, f, a, pu, c)
+    print('rip-cube: wrote', len(t), 'tiles,', len(f), 'frames,', len(a), 'animations ->', os.path.relpath(OUT, ROOT))

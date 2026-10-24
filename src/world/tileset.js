@@ -215,6 +215,10 @@ export function registerTiles(defs) {
       // THE COLOUR CUBE'S SPOT (S207): 0 red, 1 yellow, 2 blue — the colour a
       // cube must show on top resting here (objects.js ColourCube).
       cubeSpot: def.cubeSpot != null ? def.cubeSpot : null,
+      // A CRACK THAT COMES BACK (S207): broken, it is not written to the save,
+      // and leaving the room mends it (`Room.mendCracks`), as a cube room
+      // resets in Ages when it is entered again.
+      crackResets: !!def.crackResets,
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom

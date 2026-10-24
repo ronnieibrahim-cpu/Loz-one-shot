@@ -32,6 +32,7 @@ import { installKeySprites, KEY_ART } from './sprites-keys.js';
 import { installTreasureSprites, TREASURE_ART } from './sprites-treasures.js';
 import { installEffectSprites, EFFECT_ART } from './sprites-effects.js';
 import { installObjectSprites, OBJECT_ART as OBJECT_RIPPED_ART } from './sprites-objects.js';
+import { installCubeSprites } from './sprites-cube.js';
 import { installMakuSprites, MAKU_SPRITE_ART } from './tiles-maku.js';
 
 // Background tile art: validated at 16x16.
@@ -115,6 +116,7 @@ export function installData() {
   // The same for chests, the sign, torches, push blocks and floor buttons
   // (tools/rip-objects.py): room tiles on the cartridge, entities here.
   installObjectSprites();
+  installCubeSprites();
   // The Maku Tree's face, off the same panel as her grove.
   installMakuSprites();
   installEnemies();
