@@ -782,6 +782,55 @@ export async function installRuntime() {
     }
   }
 
+  /**
+   * SKATE (S209): a goto for Seasons' ice, `['goto', tx, ty, maxF, 'skate']`.
+   * The walking goto steers every frame and on ice that only ever circles the
+   * tile (a slide keeps its speed and turns a step at a time). This moves one
+   * axis at a time from a standstill — pressed from rest the slide takes the
+   * d-pad's heading outright — lets go when the slide would carry him the
+   * rest of the way, and stops before the next leg. Waypoints are the
+   * walking path's, so it goes round what stands in the way.
+   */
+  function* dSkate(tx, ty, maxF) {
+    const g = window.__game;
+    const step = feel.ICE_STEP_FRAMES, acc = feel.ICE_ACCEL;
+    // How far a slide at speed v (subpx/f) runs on once let go, in px.
+    const coast = (v) => { let d = 0; for (let k = v; k > 0; k -= acc) d += k * step; return d / 256; };
+    const path = findPath(g, g.player, playerTile(g.player), { tx, ty });
+    if (!path) return;
+    // Corners of the path only: a straight run is one leg.
+    const legs = [];
+    for (let i = 0; i < path.length; i++) {
+      const a = path[i - 1] || playerTile(g.player), b = path[i], c = path[i + 1];
+      if (!c || (c.tx - b.tx !== b.tx - a.tx) || (c.ty - b.ty !== b.ty - a.ty)) legs.push(b);
+    }
+    let f = 0;
+    const budget = maxF || 900;
+    const still = () => !g.player.ice || g.player.ice.speed <= 0;
+    for (const w of legs) {
+      for (const ax of ['x', 'y']) {
+        const want = (ax === 'x' ? w.tx : w.ty) * TILE;
+        for (let tries = 0; tries < 12 && f < budget; tries++) {
+          for (; f < budget && !still(); f++) yield 0;
+          const err = want - g.player[ax];
+          if (Math.abs(err) <= 1) break;
+          const bit = ax === 'x' ? (err > 0 ? BIT.right : BIT.left) : (err > 0 ? BIT.down : BIT.up);
+          let moved = false;
+          for (; f < budget; f++) {
+            const rest = (want - g.player[ax]) * Math.sign(err);
+            const v = g.player.ice ? g.player.ice.speed : 0;
+            if (rest <= 0 || (v > 0 && rest <= coast(v) + 0.5)) break;
+            if (!g.player.ice) { moved = true; }
+            yield bit;
+            if (g.player.ice && g.player.ice.speed > 0) moved = true;
+          }
+          if (!moved) { yield bit; f++; }
+        }
+      }
+    }
+    for (; f < budget && !still(); f++) yield 0;
+  }
+
   function* dGoto(tx, ty, maxF) {
     const g = window.__game;
     let path = null, wi = 0, sinceReplan = 1e9, sinceProgress = 0;
@@ -2982,6 +3031,32 @@ export async function installRuntime() {
   }
 
   /**
+   * SHOVE AN ICE BLOCK (S209, objects.js IceBlock): `['ice', 'right']`.
+   * Leans on the block in front of Link until one starts to slide, lets go,
+   * and waits for every ice block to come to rest — however far the slide
+   * runs, or down a hole.
+   */
+  function* dIce(dir, maxF) {
+    const g = window.__game;
+    const budget = maxF || 600;
+    const blocks = () => g.entities.filter(e => e.isIceBlock && !e.remove);
+    if (!blocks().length) throw new Error('ice: no ice block in this room');
+    const moving = () => blocks().some(e => e.slide);
+    // On ice, come to a stop first: pressed from a standstill the slide sets
+    // its heading outright, straight into the block.
+    let f = 0;
+    for (; f < 120 && g.player.ice && g.player.ice.speed > 0; f++) yield 0;
+    for (; f < budget && !moving(); f++) yield BIT[dir];
+    if (!moving()) {
+      throw new Error(`ice: no block would slide ${dir} from ${playerTile(g.player).tx},`
+        + `${playerTile(g.player).ty} (sea ${g.tide.level})`);
+    }
+    for (; f < budget && moving(); f++) yield 0;
+    for (let n = 0; n < 8; n++) yield 0;
+    yield* dDialogueClear(60);
+  }
+
+  /**
    * STAND ON A CRACK UNTIL IT GIVES WAY (S207): `['crack', tx, ty]`. Walks
    * there and stands still until the tile is no longer a crack — a hole he
    * falls down at LOW and MID, the sea he drops into at HIGH.
@@ -3428,7 +3503,7 @@ export async function installRuntime() {
       if (kind === 'wait') yield* dWait(a[0]);
       else if (kind === 'hold') yield* dHold(a[0], a[1]);
       else if (kind === 'tap') yield* dTap(a[0], a[1]);
-      else if (kind === 'goto') yield* dGoto(a[0], a[1], a[2]);
+      else if (kind === 'goto') yield* (a[3] === 'skate' ? dSkate(a[0], a[1], a[2]) : dGoto(a[0], a[1], a[2]));
       else if (kind === 'exit') yield* dExit(a[0], a[1]);
       else if (kind === 'fight') yield* dFight(a[0], a[1], a[2]);
       else if (kind === 'dialogue') yield* dDialogue(a[0], a[1]);
@@ -3448,6 +3523,7 @@ export async function installRuntime() {
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
       else if (kind === 'cube') yield* dCube(a[0], a[1], a[2]);
+      else if (kind === 'ice') yield* dIce(a[0], a[1]);
       else if (kind === 'crack') yield* dCrack(a[0], a[1], a[2]);
       else if (kind === 'board') yield* dBoard(a[0], a[1], a[2]);
       else if (kind === 'alight') yield* dAlight(a[0], a[1], a[2], a[3]);

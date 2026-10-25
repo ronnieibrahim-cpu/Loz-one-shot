@@ -41,6 +41,21 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S209: THE KEEP'S ICE BLOCKS
+
+The Abyssal Keep's last one-push room is gone. The **Drain Court** (1,4,5)
+holds Seasons' sliding ice block — shoved, it slides until something stops it
+— and the sea decides each stretch: the drain swallows it at LOW and catches
+it at MID, the drowned wall stops it until HIGH floats it over, the well
+catches it at LOW, and only a floating block crosses the sump into the plate's
+alcove. Four shoves, MID, HIGH, LOW, MID, for Small Key 2 (the beamos is
+gone). New and optional in the Hold, through the Rime Landing's north door:
+the **Rime Gauge** (0,6,2), Seasons' $586 in the Hold's ice — two ice blocks,
+two plates past sumps, and one row that reads the sea (dips that catch at
+HIGH, a well at LOW, a stopper under the sea at HIGH); each block is the
+other's stopper and the conch goes round twice. A blank for the scrimshander.
+`tools/check-iceblocks.mjs`. D1-D6 now have no one-push room.
+
 ## S208: THE LAST COPIED SILLS, AND THE SHRINE'S STATUES AND TIDE FLOOR
 
 D4's two optional wheel rooms that were still copies are colour-cube rooms:

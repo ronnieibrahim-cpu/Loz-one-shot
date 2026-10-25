@@ -3313,6 +3313,17 @@ export function installCoreTiles() {
     dHoleAbyssIceS: { art: ART.holdHoleS, pal: 'holdHoleS', flags: F.PIT, family: 'pitIce' },
     dHoleAbyssIceNS: { art: ART.holdHoleNS, pal: 'holdHoleNS', flags: F.PIT, family: 'pitIce' },
     dHoleAbyssIceOne: { art: ART.holdHoleOne, pal: 'holdHoleOne', flags: F.PIT, family: 'pitIce' },
+    // The Hold's tide tiles (S209, the ice blocks' gauge): the shared ones
+    // stand Keep flagstone or a black pit in the ice, so the Hold has its own —
+    // ice where they are dry (the basin's dip is the Hold's cobble, so it
+    // can be seen before the sea finds it), its own hole where they are open,
+    // and Seasons' magenta stopper block ($1d) where the sea covers stone only
+    // at HIGH.
+    dSluiceIce: { tide: ['dIceAbyss', 'dWaterS', 'dWaterD'] },
+    dBasinIce: { tide: ['dFloorAbyssIce', 'dFloorAbyssIce', 'dWaterS'] },
+    dSumpIce: { tide: ['dHoleAbyssIce', 'dWaterD', 'dWaterD'] },
+    dDrainIce: { tide: ['dHoleAbyssIce', 'dWaterS', 'dWaterD'] },
+    dDrownIce: { tide: ['dBlockAbyssIce', 'dBlockAbyssIce', 'dWaterD'] },
     kRingTL: { art: ART.kRingTL, pal: 'kRingTL', flags: F.SOLID },
     kRingTR: { art: ART.kRingTR, pal: 'kRingTR', flags: F.SOLID },
     kRingBL: { art: ART.kRingBL, pal: 'kRingBL', flags: F.SOLID },

@@ -447,6 +447,28 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Link could not push anything while standing on ice (S209).** The ice
+  path in Player.update (`updateIce`) moved him and returned before the walk
+  path's `tryPush`, so in the Hold every block was immovable from the ice it
+  stood on, which is the whole of Seasons' $586. It pushes now. Any new way
+  of moving needs the push call too.
+- **The robot's walking goto circles a tile on ice and never arrives (S209).**
+  It steers every frame and a slide keeps its speed and turns a step at a
+  time. `['goto', x, y, f, 'skate']` moves one axis at a time from a
+  standstill and lets go when the coast would carry him the rest; `['ice',
+  dir]` waits for him to stop before it leans.
+- **A sliding block can come to rest in front of the only door (S209).**
+  Every square next to the ring is where a slide toward it stops, so a door
+  on an open edge is always a trap square; two blocks jammed against each
+  other along the bottom row shut the first Rime Gauge. Three urns in front of
+  the door (Ages' $49e rings its door with holes) and the model's no-trap
+  clause found and proved it. A chest that waits on the puzzle's flag is not
+  in the room while it is solved; counting it as a wall made a trap that is
+  not there.
+- **Searching for `'      },\n'` finds a deeper `'        },\n'` first (S209).**
+  The sign meant for the Drain Court went inside its puzzle. Search for the
+  closing line with its exact indentation, anchored on the line before.
+
 - **If walking flips a colour tile, walking can make any pattern (S208).**
   The first tide-floor draft flipped tiles under Link's feet as well as under
   the rising sea; the model found every room solvable on foot, because a

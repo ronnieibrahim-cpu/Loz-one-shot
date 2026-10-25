@@ -1737,30 +1737,39 @@ export function installDungeonsB() {
       },
       '1,4,5': {
         name: 'Drain Court',
+        // THE ICE BLOCK (S209, docs/briefs/PUZZLE-PASS.md step 7): Seasons'
+        // sliding block, and the sea decides where each push ends. The plate
+        // is in the alcove at 7,1 past a sump only a floating block crosses.
+        // MID: west, the drain catches it (at LOW it swallows it). HIGH:
+        // north, it floats over the drowned wall to the urn. LOW: east, the
+        // well catches it. MID: north over the sump onto the plate.
+        // tools/check-iceblocks.mjs proves it.
         map: [
           '###############',
+          '#######.#######',
+          '#...U.#0#.U...#',
+          '#...1..3......#',
+          '#.............#',
+          '....9.........#',
           '#.............#',
           '#.............#',
-          '#.............#',
-          '#....4...4....#',
-          '.....4...4....#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
+          '#...4.........#',
           '#.............#',
           '#######.#######',
         ],
+        iceRoom: { from: [0, 5], seas: [0, 1, 2] },
         entities: [
-          ['switch', 2, 2],
-          ['switch', 12, 8],
-          ['block', 2, 3],
-          ['beamos', 11, 2],
+          ['iceblock', 12, 8],
+          ['switch', 7, 1],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[7, 1]],
           flag: 'd6_drain',
           reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
         },
+        readable: [
+          [4, 2, 'Scratched on the urn: "Ice runs till something stops it. So does shallow water!"'],
+        ],
       },
       '1,3,4': {
         name: 'Three Heights',
@@ -2355,7 +2364,7 @@ export function installDungeonsB() {
         // ice across the room to cross to anywhere, a fight on it, and three
         // chunks on a dais the way the maze's room $84 keeps one in an alcove.
         map: [
-          '###############',
+          '###########.###',
           '#.....=...=...#',
           '......=...=...#',
           '#.....==.==...#',
@@ -2383,6 +2392,44 @@ export function installDungeonsB() {
         readable: [
           [12, 8, 'Scratched in the frost: "Down here the sea\nonly ever sets things down."'],
         ],
+      },
+      '0,6,2': {
+        name: 'The Rime Gauge',
+        legend: 'dungeonAbyssIce',
+        // THE ICE BLOCKS' HARD ROOM (S209, docs/briefs/PUZZLE-PASS.md step
+        // 7; Seasons' room $586, three ice blocks into an alcove). Two blocks,
+        // two plates past sump necks only a floating block crosses, and one row
+        // that reads the sea like a gauge: the dips at either end catch a block
+        // only at HIGH, the well only at LOW, and the stopper at 8,4 is under
+        // the sea only at HIGH. Each block is the other's stopper, and the
+        // conch goes round twice. Optional: a blank for the scrimshander.
+        // The urns guard the door, so no block can come to rest in front of it.
+        map: [
+          '###############',
+          '#iiii#.#.#iiii#',
+          '#iiii#0#0#iiii#',
+          '#iiiiiiiiiiiii#',
+          '#i2iii3i9iii2i#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiUUUi#',
+          '#iiiiiiiiiiiii#',
+          '###########.###',
+        ],
+        iceRoom: { from: [11, 9], seas: [0, 1, 2] },
+        entities: [
+          ['iceblock', 2, 6],
+          ['iceblock', 12, 6],
+          ['switch', 6, 1],
+          ['switch', 8, 1],
+          ['chest', 13, 9, { pickup: 'blank', needFlag: 'd6_gauge' }],
+        ],
+        puzzle: {
+          blocks: [[6, 1], [8, 1]],
+          flag: 'd6_gauge',
+          reward: { say: 'Something settles by the door.' },
+        },
       },
       '0,5,3': {
         name: 'The Sounding Floor',

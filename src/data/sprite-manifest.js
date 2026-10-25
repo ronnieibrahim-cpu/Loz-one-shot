@@ -99,7 +99,7 @@ export const REQUIRED_SPRITES = {
   objectsRipped: [
     'o_chest', 'o_chest_open', 'o_chestbig', 'o_chestbig_open', 'o_sign',
     'o_torch', ...seq('o_torch_lit', 4),
-    'o_block', 'o_switch_up', 'o_switch_down',
+    'o_block', 'o_switch_up', 'o_switch_down', 'o_iceblock',
     ...['grotto', 'coral', 'bog', 'cistern', 'wood', 'abyss', 'salt', 'eyrie', 'palace'].flatMap(t =>
       ['o_block_' + t, 'o_switch_up_' + t, 'o_switch_down_' + t]),
   ],

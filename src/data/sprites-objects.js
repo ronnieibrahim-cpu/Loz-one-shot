@@ -46,6 +46,7 @@
 //   o_switch_up_palace: TILEINDEX_BUTTON $0c, Ages' Mermaid's Cave, the sunken past, floor keyed out
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
+//   o_iceblock: TILEINDEX_PUSHABLE_ICE_BLOCK $2f, the Sword & Shield Maze, ice half
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
 
 import { sprites } from '../gfx/art.js';
@@ -753,6 +754,24 @@ export const OBJECT_ART = {
     3222223332222330
     3333333333333300` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_iceblock: { pal: 'o_iceblock', art: `
+    2222222222222222
+    2000000000000002
+    2022101210010112
+    2012110111001012
+    2011211011100102
+    2011111100110012
+    2001111110011002
+    2010111121001102
+    2000000000000002
+    3110111101111113
+    3122022220222213
+    3012202222022213
+    3101220222202213
+    3120122022220213
+    3122012202222013
+    3333333333333333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_block: { pal: 'o_block_grotto', art: `
     3333333333333333
     3112222222222223
@@ -831,6 +850,7 @@ const OBJECT_PALETTES = {
   o_block_palace: ['#decee7', '#b54a9c', '#6b0052', '#000000'],
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
+  o_iceblock: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
 };
 
 export function installObjectSprites() {

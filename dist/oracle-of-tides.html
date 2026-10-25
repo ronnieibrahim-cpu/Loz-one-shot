@@ -4081,6 +4081,12 @@ const ICE_TURN_STEPS = 32;
  *  (1 px apart). guessed: Seasons never floats one (it splashes away); ours
  *  floats, and bobs at the pace a buoy on the overworld sea would. */
 const CHUNK_BOB_FRAMES = 24;
+
+/** subpx/f — an ice block's slide once pushed (S209, objects.js IceBlock).
+ *  derived from the cartridge: oracles-disasm object_code/common/interactions/
+ *  pushblock.s state 2, which Seasons gives tile $2f (pushableTiles.s var34
+ *  bit 1): SPEED_1c0, 1.75 px a frame, from the first frame to the clink. */
+const ICE_BLOCK_SPEED = 448;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4556,6 +4562,7 @@ __exports["ICE_STEP_FRAMES"] = ICE_STEP_FRAMES;
 __exports["ICE_ACCEL"] = ICE_ACCEL;
 __exports["ICE_TURN_STEPS"] = ICE_TURN_STEPS;
 __exports["CHUNK_BOB_FRAMES"] = CHUNK_BOB_FRAMES;
+__exports["ICE_BLOCK_SPEED"] = ICE_BLOCK_SPEED;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -21127,6 +21134,10 @@ class Player extends Entity {
     this.animT++;
     this.pushing = (dx || dy) ? ((res.hitX && dx !== 0) || (res.hitY && dy !== 0)) : false;
     this.againstWall = game.input.down(this.dir) && this.facingWall(game);
+    // He shoves from the ice as from the floor (S209): Seasons' $586 is all
+    // ice, and its blocks are pushed from it.
+    if (this.pushing) this.tryPush(game, dx, dy);
+    else this._pushT = 0;
     if (this.pushing) game.doorwayPull(this, dx, dy, res);
   }
 
@@ -22567,6 +22578,7 @@ __define("data/sprites-objects.js", function (__exports, __require) {
 //   o_switch_up_palace: TILEINDEX_BUTTON $0c, Ages' Mermaid's Cave, the sunken past, floor keyed out
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
+//   o_iceblock: TILEINDEX_PUSHABLE_ICE_BLOCK $2f, the Sword & Shield Maze, ice half
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
 
 const { sprites } = __require("gfx/art.js");
@@ -23274,6 +23286,24 @@ const OBJECT_ART = {
     3222223332222330
     3333333333333300` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_iceblock: { pal: 'o_iceblock', art: `
+    2222222222222222
+    2000000000000002
+    2022101210010112
+    2012110111001012
+    2011211011100102
+    2011111100110012
+    2001111110011002
+    2010111121001102
+    2000000000000002
+    3110111101111113
+    3122022220222213
+    3012202222022213
+    3101220222202213
+    3120122022220213
+    3122012202222013
+    3333333333333333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_block: { pal: 'o_block_grotto', art: `
     3333333333333333
     3112222222222223
@@ -23352,6 +23382,7 @@ const OBJECT_PALETTES = {
   o_block_palace: ['#decee7', '#b54a9c', '#6b0052', '#000000'],
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
+  o_iceblock: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
 };
 
 function installObjectSprites() {
@@ -23756,7 +23787,7 @@ const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 const { CUBE_FRAMES, CUBE_ANIMS, CUBE_PUSH_ANIM, CUBE_TOP } = __require("data/sprites-cube.js");
 
@@ -25159,6 +25190,112 @@ defineEntity('block', (x, y, o) => new PushBlock(x, y, o));
  * (`puzzle.blocks`). tools/check-statues.mjs proves the rooms.
  */
 const STATUE_AVOID = F.PIT | F.HAZARD | F.WATER | F.DEEP | F.WHIRL;
+
+/**
+ * THE ICE BLOCK'S SEA (S209, IceBlock below): what it does on sliding into a
+ * square with these flags. A hole takes it down; wading water catches it;
+ * anything else — dry floor, ice, deep water it floats over — it slides on.
+ * The one rule, read by the engine and by tools/lib/iceblock-flood.mjs.
+ */
+function iceBlockMeets(flags) {
+  if (flags & (F.PIT | F.WHIRL)) return 'fall';
+  if ((flags & F.WATER) && !(flags & F.DEEP)) return 'stop';
+  return 'on';
+}
+/** What the ice block is to the room's collision: it floats, it does not hop. */
+const ICE_BLOCK_CAPS = { jumping: false, swim: true, cutting: false };
+/** The ring is the room's wall to an ice block: it never slides out of a doorway. */
+function iceBlockInRing(room, tx, ty) {
+  return tx > 0 && ty > 0 && tx < room.tw - 1 && ty < room.th - 1;
+}
+
+/**
+ * SEASONS' ICE BLOCK (S209, docs/briefs/PUZZLE-PASS.md step 7): tile $2f in
+ * the Sword & Shield Maze, which pushblock.s (state 2) slides at SPEED_1c0
+ * until the square ahead will not take it, then clinks — room $586 asks for
+ * three of them in an alcove. It moves any number of times.
+ *
+ * The sea is ours, square by square (`iceBlockMeets`): a hole takes it down
+ * (it comes back with the room), wading water catches it in the first shallow
+ * square, and deep water it floats over and slides on. So the conch decides
+ * where a push ends. Link pushes it only with his feet under him. Left resting
+ * on a square the sea opens into a hole, it goes down. A solved room comes
+ * back with every block on its plate. tools/check-iceblocks.mjs proves the
+ * rooms; tools/lib/iceblock-flood.mjs is its model.
+ */
+class IceBlock extends PushBlock {
+  constructor(x, y, o = {}) {
+    super(x, y, { ...o, once: false });
+    this.frame = 0;
+    this.isIceBlock = true;
+  }
+
+  spriteName() { return this.sprite || 'o_iceblock'; }
+
+  tilePos() { return [Math.round(this.x / TILE), Math.round(this.y / TILE)]; }
+
+  /** Will the square (tx, ty) take it? The ring, the terrain, anything solid, Link. */
+  takes(game, tx, ty) {
+    if (!iceBlockInRing(game.room, tx, ty)) return false;
+    const nx = tx * TILE, ny = ty * TILE;
+    if (!canOccupy(game, this, nx, ny, ICE_BLOCK_CAPS)) return false;
+    for (const e of game.entities) {
+      if (e !== this && e.solid && !e.dead && !e.remove && !e.carried
+        && Math.abs(e.x - nx) < 12 && Math.abs(e.y - ny) < 12) return false;
+    }
+    const p = game.player;
+    return !(p && Math.abs(p.x - nx) < 14 && Math.abs(p.y - ny) < 14);
+  }
+
+  push(game, dx, dy) {
+    if (this.slide || this.remove) return false;
+    const p = game.player;
+    if (p && (p.inDeep || p.underwater)) return false;   // no footing to shove from
+    const [tx, ty] = this.tilePos();
+    if (!this.takes(game, tx + dx, ty + dy)) return false;
+    this.slide = { fx: sp((tx + dx) * TILE), fy: sp((ty + dy) * TILE), dx, dy };
+    game.audio.sfx('push');
+    return true;
+  }
+
+  update(game) {
+    this.frame++;
+    if (!this.slide) {
+      // The sea moves under a resting block: a square gone to a hole takes it.
+      const [tx, ty] = this.tilePos(), room = game.room;
+      if (room && room.inBounds(tx, ty)
+        && iceBlockMeets(room.flagsAt(tx, ty, game.tide)) === 'fall') dropIntoHole(game, this);
+      return;
+    }
+    const s = this.slide;
+    this.fx += Math.sign(s.fx - this.fx) * Math.min(ICE_BLOCK_SPEED, Math.abs(s.fx - this.fx));
+    this.fy += Math.sign(s.fy - this.fy) * Math.min(ICE_BLOCK_SPEED, Math.abs(s.fy - this.fy));
+    if (this.fx !== s.fx || this.fy !== s.fy) return;
+    // Square by square: what the sea has made of the one it has reached.
+    const [tx, ty] = this.tilePos();
+    const m = iceBlockMeets(game.room.flagsAt(tx, ty, game.tide));
+    if (m === 'fall') { this.slide = null; dropIntoHole(game, this); return; }
+    if (m === 'on' && this.takes(game, tx + s.dx, ty + s.dy)) {
+      s.fx = sp((tx + s.dx) * TILE); s.fy = sp((ty + s.dy) * TILE);
+      return;
+    }
+    this.slide = null;
+    this.moved = true;
+    // Caught by the water it splashes; stopped dead, it clinks.
+    if (m === 'stop') game.audio.sfx('splash');
+    else game.audio.sfx('block');
+    game.onBlockLanded(this);
+  }
+
+  draw(ctx, game, ox, oy) {
+    // Afloat, it bobs as the Hold's chunks do.
+    const [tx, ty] = this.tilePos(), room = game.room;
+    const afloat = !this.slide && room && room.inBounds(tx, ty) && (room.flagsAt(tx, ty, game.tide) & F.DEEP);
+    const bob = afloat && Math.floor(this.frame / CHUNK_BOB_FRAMES) % 2 ? 1 : 0;
+    super.draw(ctx, game, ox, oy + bob);
+  }
+}
+defineEntity('iceblock', (x, y, o) => new IceBlock(x, y, o));
 class Statue extends PushBlock {
   constructor(x, y, o = {}) {
     super(x, y, { ...o, once: false });
@@ -26081,6 +26218,10 @@ __exports["MakuTree"] = MakuTree;
 __exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
 __exports["STATUE_AVOID"] = STATUE_AVOID;
+__exports["iceBlockMeets"] = iceBlockMeets;
+__exports["ICE_BLOCK_CAPS"] = ICE_BLOCK_CAPS;
+__exports["iceBlockInRing"] = iceBlockInRing;
+__exports["IceBlock"] = IceBlock;
 __exports["Statue"] = Statue;
 __exports["CUBE_CAPS"] = CUBE_CAPS;
 __exports["cubeSpots"] = cubeSpots;
@@ -36521,7 +36662,7 @@ const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } = __require("game/entity.js");
 const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
-const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots } = __require("game/objects.js");
+const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots, IceBlock } = __require("game/objects.js");
 const { CUBE_TOP } = __require("data/sprites-cube.js");
 const { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } = __require("game/items.js");
 const { spawnRecordedChunks, chunkAtHome } = __require("game/chunk.js");
@@ -37836,6 +37977,11 @@ class Game {
       if (pz.cube) {
         const spot = cubeSpots(room)[0], c = this.entities.find(e => e instanceof ColourCube);
         if (spot && c) { c.fx = sp(spot.x * TILE); c.fy = sp(spot.y * TILE); c.o = CUBE_TOP.indexOf(spot.colour); }
+      }
+      // A solved ice block room comes back with its blocks on the plates (S209).
+      if (pz.blocks) {
+        const ice = this.entities.filter(e => e instanceof IceBlock);
+        pz.blocks.forEach(([tx, ty], i) => { if (ice[i]) { ice[i].fx = sp(tx * TILE); ice[i].fy = sp(ty * TILE); } });
       }
       this.applyReward(pz.reward, true);
       return;
@@ -55337,6 +55483,17 @@ function installCoreTiles() {
     dHoleAbyssIceS: { art: ART.holdHoleS, pal: 'holdHoleS', flags: F.PIT, family: 'pitIce' },
     dHoleAbyssIceNS: { art: ART.holdHoleNS, pal: 'holdHoleNS', flags: F.PIT, family: 'pitIce' },
     dHoleAbyssIceOne: { art: ART.holdHoleOne, pal: 'holdHoleOne', flags: F.PIT, family: 'pitIce' },
+    // The Hold's tide tiles (S209, the ice blocks' gauge): the shared ones
+    // stand Keep flagstone or a black pit in the ice, so the Hold has its own —
+    // ice where they are dry (the basin's dip is the Hold's cobble, so it
+    // can be seen before the sea finds it), its own hole where they are open,
+    // and Seasons' magenta stopper block ($1d) where the sea covers stone only
+    // at HIGH.
+    dSluiceIce: { tide: ['dIceAbyss', 'dWaterS', 'dWaterD'] },
+    dBasinIce: { tide: ['dFloorAbyssIce', 'dFloorAbyssIce', 'dWaterS'] },
+    dSumpIce: { tide: ['dHoleAbyssIce', 'dWaterD', 'dWaterD'] },
+    dDrainIce: { tide: ['dHoleAbyssIce', 'dWaterS', 'dWaterD'] },
+    dDrownIce: { tide: ['dBlockAbyssIce', 'dBlockAbyssIce', 'dWaterD'] },
     kRingTL: { art: ART.kRingTL, pal: 'kRingTL', flags: F.SOLID },
     kRingTR: { art: ART.kRingTR, pal: 'kRingTR', flags: F.SOLID },
     kRingBL: { art: ART.kRingBL, pal: 'kRingBL', flags: F.SOLID },
@@ -56198,6 +56355,12 @@ function installLegends() {
   // ring that marks the cell under a shaft, `O` its own hole.
   theme('dungeonAbyssIce', 'dFloorAbyssIce', 'dFloorAbyssIceAlt', 'dWallAbyssIce', 'dWallAbyssIceX', 'dBlockAbyssIce', 'dUrnAbyssIce');
   registerLegend('dungeonAbyssIce', { 'i': 'dIceAbyss', 'O': 'dHoleAbyssIce' }, 'dungeonAbyssIce');
+  // The Hold's own tide digits (S209): `1` and `2` are ice when dry, `0` and
+  // `4` its own hole when open, `9` the magenta stopper the sea covers at HIGH.
+  // `3` (shallow, deep, deep) is the shared well: it is water at every sea.
+  registerLegend('dungeonAbyssIce', {
+    '0': 'dSumpIce', '1': 'dSluiceIce', '2': 'dBasinIce', '4': 'dDrainIce', '9': 'dDrownIce',
+  }, 'dungeonAbyssIce');
   // Each main dungeon's own stairs (S164), as the Palace's: `/` goes down
   // (or back along the same floor), `S` goes up. `S` is the shared legend's
   // `riptideS`, which no main dungeon room places.
@@ -65141,30 +65304,39 @@ function installDungeonsB() {
       },
       '1,4,5': {
         name: 'Drain Court',
+        // THE ICE BLOCK (S209, docs/briefs/PUZZLE-PASS.md step 7): Seasons'
+        // sliding block, and the sea decides where each push ends. The plate
+        // is in the alcove at 7,1 past a sump only a floating block crosses.
+        // MID: west, the drain catches it (at LOW it swallows it). HIGH:
+        // north, it floats over the drowned wall to the urn. LOW: east, the
+        // well catches it. MID: north over the sump onto the plate.
+        // tools/check-iceblocks.mjs proves it.
         map: [
           '###############',
+          '#######.#######',
+          '#...U.#0#.U...#',
+          '#...1..3......#',
+          '#.............#',
+          '....9.........#',
           '#.............#',
           '#.............#',
-          '#.............#',
-          '#....4...4....#',
-          '.....4...4....#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
+          '#...4.........#',
           '#.............#',
           '#######.#######',
         ],
+        iceRoom: { from: [0, 5], seas: [0, 1, 2] },
         entities: [
-          ['switch', 2, 2],
-          ['switch', 12, 8],
-          ['block', 2, 3],
-          ['beamos', 11, 2],
+          ['iceblock', 12, 8],
+          ['switch', 7, 1],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[7, 1]],
           flag: 'd6_drain',
           reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
         },
+        readable: [
+          [4, 2, 'Scratched on the urn: "Ice runs till something stops it. So does shallow water!"'],
+        ],
       },
       '1,3,4': {
         name: 'Three Heights',
@@ -65759,7 +65931,7 @@ function installDungeonsB() {
         // ice across the room to cross to anywhere, a fight on it, and three
         // chunks on a dais the way the maze's room $84 keeps one in an alcove.
         map: [
-          '###############',
+          '###########.###',
           '#.....=...=...#',
           '......=...=...#',
           '#.....==.==...#',
@@ -65787,6 +65959,44 @@ function installDungeonsB() {
         readable: [
           [12, 8, 'Scratched in the frost: "Down here the sea\nonly ever sets things down."'],
         ],
+      },
+      '0,6,2': {
+        name: 'The Rime Gauge',
+        legend: 'dungeonAbyssIce',
+        // THE ICE BLOCKS' HARD ROOM (S209, docs/briefs/PUZZLE-PASS.md step
+        // 7; Seasons' room $586, three ice blocks into an alcove). Two blocks,
+        // two plates past sump necks only a floating block crosses, and one row
+        // that reads the sea like a gauge: the dips at either end catch a block
+        // only at HIGH, the well only at LOW, and the stopper at 8,4 is under
+        // the sea only at HIGH. Each block is the other's stopper, and the
+        // conch goes round twice. Optional: a blank for the scrimshander.
+        // The urns guard the door, so no block can come to rest in front of it.
+        map: [
+          '###############',
+          '#iiii#.#.#iiii#',
+          '#iiii#0#0#iiii#',
+          '#iiiiiiiiiiiii#',
+          '#i2iii3i9iii2i#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiiiii#',
+          '#iiiiiiiiiUUUi#',
+          '#iiiiiiiiiiiii#',
+          '###########.###',
+        ],
+        iceRoom: { from: [11, 9], seas: [0, 1, 2] },
+        entities: [
+          ['iceblock', 2, 6],
+          ['iceblock', 12, 6],
+          ['switch', 6, 1],
+          ['switch', 8, 1],
+          ['chest', 13, 9, { pickup: 'blank', needFlag: 'd6_gauge' }],
+        ],
+        puzzle: {
+          blocks: [[6, 1], [8, 1]],
+          flag: 'd6_gauge',
+          reward: { say: 'Something settles by the door.' },
+        },
       },
       '0,5,3': {
         name: 'The Sounding Floor',
