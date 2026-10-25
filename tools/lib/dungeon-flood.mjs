@@ -220,6 +220,11 @@ export function floodDungeon(mapId, opts = {}) {
       const [sx0, sy0] = def.reefseedRoom.snarl;
       puzzleOwner.set(`${rk}:${sx0},${sy0}`, rk);
     }
+    // A snarl cut from a stake grown inside a ford (S210, check-fords.mjs).
+    if (def.fordRoom && def.fordRoom.cut) {
+      const [sx0, sy0] = def.fordRoom.cut;
+      puzzleOwner.set(`${rk}:${sx0},${sy0}`, rk);
+    }
   }
   for (const [k, own] of [...puzzleOwner]) {
     const [rk0, xy0] = k.split(':');

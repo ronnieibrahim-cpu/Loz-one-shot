@@ -447,6 +447,29 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An ice block crossing a plate paid the room out (S210).** `checkPuzzle`
+  rounded every block to its nearest tile, so a slide passing over the plate
+  counted as standing on it for a frame: the first Drowned Garden run
+  "solved" with the block in the water past the plate. A sliding ice block is
+  ignored now; a stone block's one-tile slide still counts (changing that
+  re-timed the run before D5 and killed it at Bogmaw).
+- **A push block hung over the hole the sea opened under it (S210).** Only
+  the ice block dropped when a drain went to a pit beneath it. Every resting
+  PushBlock does now (`overHole` in its update), and comes back with the room.
+- **A seed carries two tiles from the middle of Link's tile and three from
+  its edge (S210, after S187).** The ford model takes every landing but costs
+  an off-centre throw double, so the solution it hands the robot is a throw
+  from where `sow` stands him. A model that only knew the three-tile throw
+  planned the Root Ford's stake from the bank, and from the middle of that
+  tile it falls short, into the drain.
+- **A trap search three moves deep called the Seedwarden's Ferry a trap
+  (S210).** Standing on the far stake behind the block at LOW, the way out is
+  push, push, and two presses round to HIGH. `fordRoom.trapDepth` says how
+  deep to look; set it from the longest honest way out, never to hide one.
+- **`pgrep -f`/`pkill -f` with the pattern in the same command kills the
+  command (S208, again in S210).** Kill by a pid taken from `ps`, or let a
+  background job finish.
+
 - **Link could not push anything while standing on ice (S209).** The ice
   path in Player.update (`updateIce`) moved him and returned before the walk
   path's `tryPush`, so in the Hold every block was immovable from the ice it

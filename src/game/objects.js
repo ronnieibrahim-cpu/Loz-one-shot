@@ -1405,7 +1405,13 @@ export class PushBlock extends Entity {
   }
 
   update(game) {
-    if (!this.slide) return;
+    if (!this.slide) {
+      // The sea goes out from under a resting block (S210): a square gone to
+      // a hole takes it, as it takes the ice block, and the room puts it back.
+      // Before this a block left on a drain at MID hung over the pit at LOW.
+      if (!this.remove && overHole(game, this)) dropIntoHole(game, this);
+      return;
+    }
     const step = BLOCK_SLIDE_SPEED;   // Seasons' half a pixel a frame
     this.fx += Math.sign(this.slide.fx - this.fx) * step;
     this.fy += Math.sign(this.slide.fy - this.fy) * step;

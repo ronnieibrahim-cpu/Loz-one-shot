@@ -1,0 +1,776 @@
+{
+ "legend": "dungeonWood",
+ "rooms": {
+  "rootford": [
+   "#######.#######",
+   "#.............#",
+   "#.U.........U.#",
+   "#.............#",
+   "#..000000000..#",
+   "#..000..4.00..#",
+   "#..000..W000..#",
+   "#..00000.000..#",
+   "#..000000000..#",
+   "#.U.........U.#",
+   "###############"
+  ],
+  "longford": [
+   "###############",
+   "#..........#..#",
+   "#..........#..#",
+   "#..........#..#",
+   "#.....##.#.#..#",
+   "L....#WW.#.#..L",
+   "#######k####..#",
+   "#.###.#.......#",
+   "##...#........#",
+   "#S............#",
+   "###############"
+  ],
+  "ferry": [
+   "###############",
+   "###############",
+   "#...W......####",
+   "####5##########",
+   "#.............#",
+   "#..............",
+   "#..#########..#",
+   "#.#........#..#",
+   "#.#.######.#..#",
+   "#.............#",
+   "#######D#######"
+  ],
+  "seedwarden": [
+   "##############################",
+   "#............................#",
+   "#..U........U.....U..........#",
+   "#............................#",
+   "########.#####################",
+   "#........####.#...............",
+   "#......#...WW4#..............#",
+   "#.......#####.#..............#",
+   "#............................#",
+   "#....U.........U.......U.....#",
+   "##############################"
+  ],
+  "garden": [
+   "###############",
+   "##########W####",
+   "####.....#.#..#",
+   "####.....#.#..#",
+   "####.....#.#..#",
+   "####..........D",
+   "####.....#.#..#",
+   "####.....#.#..#",
+   "####.....72#..#",
+   "####....##....#",
+   "#######.#######"
+  ]
+ },
+ "claims": {
+  "rootford": {
+   "from": [
+    7,
+    0
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "stakes": [
+    [
+     8,
+     6
+    ]
+   ],
+   "blocks": [
+    [
+     7,
+     6
+    ]
+   ],
+   "plates": [
+    {
+     "x": 9,
+     "y": 5
+    }
+   ],
+   "without": []
+  },
+  "longford": {
+   "from": [
+    1,
+    5
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "stakes": [
+    [
+     6,
+     5
+    ],
+    [
+     7,
+     5
+    ]
+   ],
+   "cut": [
+    7,
+    6
+   ],
+   "without": [
+    "pillarSoft"
+   ]
+  },
+  "ferry": {
+   "from": [
+    14,
+    5
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "stakes": [
+    [
+     4,
+     2
+    ]
+   ],
+   "blocks": [
+    [
+     9,
+     7
+    ]
+   ],
+   "statues": [
+    [
+     1,
+     2
+    ]
+   ],
+   "plates": [
+    {
+     "x": 10,
+     "y": 2
+    }
+   ],
+   "without": []
+  },
+  "seedwarden": {
+   "from": [
+    29,
+    5
+   ],
+   "seas": [
+    0,
+    1
+   ],
+   "stakes": [
+    [
+     11,
+     6
+    ],
+    [
+     12,
+     6
+    ]
+   ],
+   "blocks": [
+    [
+     10,
+     6
+    ]
+   ],
+   "plates": [
+    {
+     "x": 13,
+     "y": 5
+    }
+   ],
+   "anchor": {
+    "at": [
+     10,
+     6
+    ],
+    "from": [
+     8,
+     6
+    ],
+    "level": 0
+   },
+   "without": [
+    "noAnchor"
+   ],
+   "trapDepth": 6
+  },
+  "garden": {
+   "legend": "dungeonAbyss",
+   "index": 6,
+   "from": [
+    7,
+    10
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "stakes": [
+    [
+     10,
+     1
+    ]
+   ],
+   "ice": [
+    [
+     8,
+     8
+    ]
+   ],
+   "plates": [
+    {
+     "x": 10,
+     "y": 2
+    }
+   ],
+   "without": [
+    "pillarSoft"
+   ]
+  }
+ },
+ "legends": {
+  "garden": "dungeonAbyss"
+ },
+ "shots": [
+  {
+   "room": "rootford",
+   "out": "rf1.png",
+   "tide": 0,
+   "entities": [
+    [
+     "block",
+     7,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     9,
+     5
+    ]
+   ],
+   "tiles": [],
+   "link": {
+    "tx": 8,
+    "ty": 3,
+    "dir": "down"
+   }
+  },
+  {
+   "room": "rootford",
+   "out": "rf2.png",
+   "tide": 0,
+   "entities": [
+    [
+     "block",
+     8,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     9,
+     5
+    ]
+   ],
+   "tiles": [
+    [
+     8,
+     6,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 6,
+    "ty": 6,
+    "dir": "right"
+   }
+  },
+  {
+   "room": "rootford",
+   "out": "rf3.png",
+   "tide": 1,
+   "entities": [
+    [
+     "block",
+     8,
+     5,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     9,
+     5
+    ]
+   ],
+   "tiles": [
+    [
+     8,
+     6,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 8,
+    "ty": 7,
+    "dir": "up"
+   }
+  },
+  {
+   "room": "rootford",
+   "out": "rf4.png",
+   "tide": 1,
+   "entities": [
+    [
+     "block",
+     9,
+     5,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     9,
+     5
+    ]
+   ],
+   "tiles": [
+    [
+     8,
+     6,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 7,
+    "ty": 5,
+    "dir": "right"
+   }
+  },
+  {
+   "room": "longford",
+   "out": "lf1.png",
+   "tide": 0,
+   "entities": [],
+   "tiles": [],
+   "link": {
+    "tx": 8,
+    "ty": 5,
+    "dir": "left"
+   }
+  },
+  {
+   "room": "longford",
+   "out": "lf2.png",
+   "tide": 1,
+   "entities": [],
+   "tiles": [
+    [
+     6,
+     5,
+     "coralPillar"
+    ],
+    [
+     7,
+     5,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 8,
+    "ty": 5,
+    "dir": "left"
+   }
+  },
+  {
+   "room": "longford",
+   "out": "lf3.png",
+   "tide": 0,
+   "entities": [],
+   "tiles": [
+    [
+     6,
+     5,
+     "coralPillar"
+    ],
+    [
+     7,
+     5,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 7,
+    "ty": 5,
+    "dir": "down"
+   }
+  },
+  {
+   "room": "ferry",
+   "out": "fp1.png",
+   "tide": 2,
+   "entities": [
+    [
+     "block",
+     9,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     1,
+     2
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [],
+   "link": {
+    "tx": 4,
+    "ty": 5,
+    "dir": "up"
+   }
+  },
+  {
+   "room": "ferry",
+   "out": "fp2.png",
+   "tide": 0,
+   "entities": [
+    [
+     "block",
+     5,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     5,
+     2
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [
+    [
+     4,
+     2,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 6,
+    "ty": 7,
+    "dir": "left"
+   }
+  },
+  {
+   "room": "ferry",
+   "out": "fp3.png",
+   "tide": 1,
+   "entities": [
+    [
+     "block",
+     8,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     5,
+     2
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [
+    [
+     4,
+     2,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 7,
+    "ty": 7,
+    "dir": "right"
+   }
+  },
+  {
+   "room": "ferry",
+   "out": "fp4.png",
+   "tide": 1,
+   "entities": [
+    [
+     "block",
+     3,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     10,
+     2
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [
+    [
+     4,
+     2,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 4,
+    "ty": 7,
+    "dir": "left"
+   }
+  },
+  {
+   "room": "seedwarden",
+   "out": "sw1.png",
+   "tide": 0,
+   "entities": [
+    [
+     "block",
+     12,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     13,
+     5
+    ]
+   ],
+   "tiles": [
+    [
+     11,
+     6,
+     "coralPillar"
+    ],
+    [
+     12,
+     6,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 10,
+    "ty": 6,
+    "dir": "right"
+   }
+  },
+  {
+   "room": "seedwarden",
+   "out": "sw2.png",
+   "tide": 1,
+   "entities": [
+    [
+     "block",
+     13,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     13,
+     5
+    ]
+   ],
+   "tiles": [
+    [
+     11,
+     6,
+     "coralPillar"
+    ],
+    [
+     12,
+     6,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 11,
+    "ty": 6,
+    "dir": "right"
+   },
+   "anchor": [
+    10,
+    6,
+    0
+   ]
+  },
+  {
+   "room": "seedwarden",
+   "out": "sw3.png",
+   "tide": 1,
+   "entities": [
+    [
+     "block",
+     13,
+     5,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     13,
+     5
+    ]
+   ],
+   "tiles": [
+    [
+     11,
+     6,
+     "coralPillar"
+    ],
+    [
+     12,
+     6,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 13,
+    "ty": 6,
+    "dir": "up"
+   },
+   "anchor": [
+    10,
+    6,
+    0
+   ]
+  },
+  {
+   "room": "garden",
+   "out": "dg1.png",
+   "tide": 2,
+   "entities": [
+    [
+     "iceblock",
+     8,
+     8
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [],
+   "link": {
+    "tx": 7,
+    "ty": 8,
+    "dir": "right"
+   }
+  },
+  {
+   "room": "garden",
+   "out": "dg2.png",
+   "tide": 1,
+   "entities": [
+    [
+     "iceblock",
+     10,
+     8
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [
+    [
+     10,
+     1,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 10,
+    "ty": 9,
+    "dir": "up"
+   }
+  },
+  {
+   "room": "garden",
+   "out": "dg3.png",
+   "tide": 1,
+   "entities": [
+    [
+     "iceblock",
+     10,
+     2
+    ],
+    [
+     "switch",
+     10,
+     2
+    ]
+   ],
+   "tiles": [
+    [
+     10,
+     1,
+     "coralPillar"
+    ]
+   ],
+   "link": {
+    "tx": 10,
+    "ty": 9,
+    "dir": "up"
+   }
+  }
+ ]
+}

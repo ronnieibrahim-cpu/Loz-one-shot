@@ -41,6 +41,25 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S210: THE STAKE INSIDE OTHER PUZZLES
+
+The last copies in the Shrine and the Keep are gone. A coral pillar is a step
+at LOW, a wall at MID and deep water at HIGH, and until now only the first
+life was ever used. Five rooms now use the others, each its own way: the
+**Root Ford** (0,0,3, main, Small Key 4) takes its block over the stake at LOW
+and onto a drain at MID (at LOW the drain swallows it), from islets in a field
+of sumps you can only reach swimming; the **Long Ford** (0,4,3, main) has a
+square beside the snarl that a throw always flies past, until a first stake,
+a wall at MID, catches the second; the **Ferry Pocket** (0,0,4) walks a mirror
+statue over the stake at LOW and holds it there at MID while the block is
+pushed back; the **Seedwarden's Ferry** (0,5,6) needs its two stakes at LOW and
+the drain past them at MID at once, which is the Anchor's job; and D6's
+**Drowned Garden** (1,4,2) floats Seasons' ice block over the lintel at HIGH and
+stops it on its plate against a stake at MID (a chest of 100 Rupees rises; the
+kelp and its 20 Rupees are gone). `tools/check-fords.mjs`. Engine: a push block
+left on a drain goes down it when the sea goes out; a sliding ice block no
+longer counts as standing on the plate it is crossing.
+
 ## S209: THE KEEP'S ICE BLOCKS
 
 The Abyssal Keep's last one-push room is gone. The **Drain Court** (1,4,5)
