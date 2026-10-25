@@ -492,9 +492,8 @@ FIGURES.push(
     { ring: [4, 1] }, { ring: [1, 1] }, { path: [[3.4, 1], [1.6, 1]], w: 5 }, lbl('blow the wheel from the stand;\nthe Piece of Heart drops below', [4.5, 2.2], 'nw'),
   ] },
   { out: 'd5-sbracken', src: 'd5-sbracken-whole', marks: [
-    { n: 1, at: [4, 1], off: [0, 14] }, { path: [[4.4, 1], [2.6, 1]], w: 5 },
-    { n: 2, at: [10, 9], off: [0, -14] }, { path: [[9.6, 9], [11.4, 9]], w: 5 },
-    { ring: [7, 9] }, lbl('key', [7, 8.2], 'n'),
+    { ring: [12, 2] }, lbl('statue home (LOW)', [11.5, 3.4], 'n'),
+    { ring: [11, 8] }, lbl('block back (MID)', [9.5, 9.4], 'n'), MID,
   ] },
   { out: 'd5-seed-get', src: 'd5-seed-get' },
   { out: 'd5-hollow', src: 'd5-hollow-whole', marks: [lbl('belts carry you east as you cross;\nthe knot-holes drop you back down', [7, 5.6], 'c')] },
@@ -512,7 +511,8 @@ FIGURES.push(
   { out: 'd5-stake-low', src: 'd5-stake1-cut-whole', marks: [
     { n: 2, at: [11, 5], off: [0, -14] }, lbl('at LOW the pillar is ground:\nstand on it and cut the snarl', [10, 6.6]), LOW,
   ] },
-  { out: 'd5-snave', src: 'd5-snave-low-whole', marks: [{ ring: [1, 6] }, lbl('key chest', [1.8, 6.4], 'w')] },
+  { out: 'd5-snave', src: 'd5-snave-low-whole', marks: [{ ring: [11, 2] }, { ring: [8, 4] }, { ring: [1, 8] }, lbl('key chest', [1.8, 8.4], 'w'), MID] },
+  { out: 'd5-bolewalk', src: 'd5-bolewalk-low-whole', marks: [lbl('blocks on the blue tiles, then MID:\nthe sea turns every tile it covers', [7, 9.2], 'c'), LOW] },
   { out: 'd5-knotted', src: 'd5-knotted-2-whole', marks: [lbl('one stake from the bank at HIGH,\nthe second from the first at LOW', [7, 2.4], 'c'), LOW] },
   { out: 'd5-rootford', src: 'd5-rootford-pushed-whole', marks: [
     { ring: [4, 5] }, { ring: [3, 6] }, lbl('block on one plate,\nyou on the other', [3.5, 7.6]), { ring: [3, 2] }, lbl('key', [3, 1.2], 'n'), LOW,
@@ -545,7 +545,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1715, to: 1737, every: 8 }, w: 3 },
+    { trail: { from: 1801, to: 1823, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 

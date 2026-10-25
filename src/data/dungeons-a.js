@@ -3564,23 +3564,27 @@ export function installDungeonsA() {
       // ---------------------------------------------- optional rooms (S143)
       '0,0,1': {
         name: 'The Siphon Stair',
-        // Optional, off the Spill Gate's north door: the Ebb Cell's lesson
-        // asked again, and then the Loft's, in order. The lower cell (enter at
-        // the flood, work at the ebb) opens the gate in the middle wall; the
-        // upper wheel is a sump shelf at MID and opens the alcove with the
-        // charm in it.
+        // Optional, off the Spill Gate's north door. The lower cell asks the
+        // Ebb Cell's lesson again (enter at the flood, work at the ebb) and
+        // opens the gate in the middle wall. The upper half was a second sill
+        // until S208; now it is a colour cube sent up the siphon. Float it
+        // over the pool at MID (no tip), push it up the lane from the sluice
+        // step, and push it into the siphon at HIGH: it rides the sumps all the
+        // way onto the yellow spot. At MID the sluice at the top is only
+        // wading water and it runs aground a square short; rolled over the
+        // pool at LOW it comes up the lane the wrong colour.
         size: [1, 2],
         map: [
           '###############',
-          '#,,,######.OO3#',
-          '#,,,######.####',
-          '#,,,######0####',
-          '##D#######0####',
-          '#.............#',
-          '#.U.........U.#',
-          '#.............#',
-          '#....33333....#',
-          '#.............#',
+          '#,,,###########',
+          '#,,,##..00001y#',
+          '#,,,##..=======',
+          '##D###..=OOOOO#',
+          '#.......=.....#',
+          '#.U.....=..U..#',
+          '#...333.=.....#',
+          '#..OOOO1......#',
+          '#......O......#',
           '#.............#',
           '#.............#',
           '#######D#######',
@@ -3596,60 +3600,68 @@ export function installDungeonsA() {
         ],
         bellowsRoom: [
           { wheel: [13, 18], stand: [10, 18], face: 'right', enter: 2, at: 0, opens: [[7, 12]] },
-          { wheel: [13, 1], stand: [10, 1], face: 'right', at: 1, opens: [[2, 4]], after: [[7, 12]] },
         ],
+        cubeRoom: { from: [7, 11], seas: [0, 1, 2] },
         entities: [
           ['wheel', 13, 18, { needTurns: 40 }],
-          ['wheel', 13, 1, { needTurns: 40 }],
+          ['cube', 3, 7, { o: 0 }],
           ['chest', 2, 2, { charm: 'saltEtched' }],
           ['tektite', 5, 13],
-          ['keese', 11, 7],
-          ['jellyfish', 7, 8],
+          ['keese', 10, 7],
+          ['keese', 4, 10],
         ],
+        puzzle: {
+          cube: true,
+          flag: 'd4_siphon',
+          reward: { openDoors: [[2, 4]], say: 'The alcove door opens.' },
+        },
         script: {
           onEvent(game, name, data) {
             if (name !== 'valve' || !data || !data.open) return;
-            game.applyReward({ openDoors: [data.y >= 11 * 16 ? [7, 12] : [2, 4]] });
+            game.applyReward({ openDoors: [[7, 12]] });
           },
         },
       },
       '0,6,5': {
         name: 'Gull Roost',
-        // Optional, off the Cliffside Cell. Pits and light things over them —
-        // the gust shoves what it can — and at the far end a drown-wall cell
-        // worked at HIGH, whose wheel opens the alcove in the corner.
+        // Optional, off the Cliffside Cell. A wheel worked at HIGH until S208;
+        // now a colour cube sailed across a bay of sumps (Ages' Ancient Tomb's
+        // cube on ice, slid until something stops it). Pushed in from the west
+        // shore at MID it floats to the post; the sluice step under it is only
+        // above water at MID, and from there it goes north to the bay's top.
+        // The last leg is the Bellows' at HIGH from the pier: it sails into the
+        // nook onto the yellow spot. Blown at MID the cone empties the sump
+        // under it and it drops (and comes back to the shore).
         size: [2, 1],
         map: [
           '##############################',
-          '#........................#,,,#',
-          '#.U.OO....OO....OO...U...#,,,#',
-          '#...OO....OO....OO.......#,,,#',
-          '#........................##D##',
-          '.............................#',
-          '#............................#',
-          '#...OO....OO....OO..........##',
-          '#.U.OO....OO....OO...U..#9####',
-          '#.......................9.OO1#',
+          '#................======......#',
+          '#.U..........===.0=====......#',
+          '#............===.00000y=.....#',
+          '#............==0000000==.....#',
+          '.............==0000000==.....#',
+          '#............==0000000=..#D###',
+          '#..............0000=00=..#,,,#',
+          '#.U..........=====11111..#,,,#',
+          '#............==========..#,,,#',
           '##############################',
         ],
-        bellowsRoom: {
-          wheel: [28, 9], stand: [25, 9], face: 'right', at: 2, opens: [[27, 4]],
-        },
+        cubeRoom: { from: [1, 5], seas: [0, 1, 2], bellows: true },
         entities: [
-          ['wheel', 28, 9, { needTurns: 40 }],
-          ['chest', 27, 2, { charm: 'gullsTally' }],
-          ['keese', 7, 2],
-          ['keese', 13, 8],
-          ['keese', 19, 3],
-          ['zol', 14, 5],
+          ['cube', 14, 7, { o: 3 }],
+          ['chest', 27, 8, { charm: 'gullsTally' }],
+          ['keese', 6, 2],
+          ['keese', 9, 8],
+          ['keese', 26, 3],
+          ['zol', 6, 5],
         ],
         readable: [
-          [21, 8, 'Scratched by the cell: "Gulls nest where the wind is. The wheel in the corner only turns when you come in at HIGH tide."'],
+          [2, 8, 'Scratched by the cell: "Gulls go where the wind and the swell take them."'],
         ],
-        script: {
-          onEvent(game, name, data) {
-            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[27, 4]] });
-          },
+        puzzle: {
+          cube: true,
+          flag: 'd4_gullRoost',
+          reward: { openDoors: [[27, 6]], say: 'The alcove door opens.' },
         },
       },
       '0,6,2': {

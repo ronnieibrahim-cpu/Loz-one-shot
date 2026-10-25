@@ -386,6 +386,13 @@ export function installLegends() {
   // one, so naming it here moves nothing outside this dungeon — the same
   // argument every override above makes.
   registerLegend('dungeonWood', { '5': 'dSnag', 'k': 'dSnarl', 'Y': 'dBole' }, 'dungeonWood');
+  // THE TIDE FLOOR (S208): red and blue, `a`/`b` never under the sea,
+  // `c`/`d` under it at MID and HIGH, `f`/`g` under it at HIGH. Letters, not
+  // digits: the colour is the room's to change, as the Spire's `a`/`b` are.
+  registerLegend('dungeonWood', {
+    'a': 'dTileRed', 'b': 'dTileBlue', 'c': 'dTileRedLow', 'd': 'dTileBlueLow',
+    'f': 'dTileRedMid', 'g': 'dTileBlueMid',
+  }, 'dungeonWood');
   // The Shrine is built at Oracle size (S140): its way out is the Ancient
   // Ruins' lit step between two pillars in the south wall, `(C)`.
   registerLegend('dungeonWood', {

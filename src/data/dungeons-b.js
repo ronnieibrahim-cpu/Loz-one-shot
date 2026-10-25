@@ -452,33 +452,43 @@ export function installDungeonsB() {
       },
       '0,4,4': {
         name: 'Sunken Bracken',
+        // THE MIRROR STATUE, taught (S208, PUZZLE-PASS kind F; Seasons'
+        // Unicorn's Cave armos, room $93). The statue in the walled run along
+        // the top cannot be touched; every push of the block moves it a tile
+        // the other way, and it will not step into water. Its plate is at the
+        // run's east end past two gutters (dry only at LOW), and the block's
+        // plate is east of anywhere the block can stand when the statue gets
+        // there — so the block has to come back east, which drags the statue
+        // west, unless the gutter beside it is water: walk it home at LOW,
+        // bring the block back at MID.
         map: [
           '###############',
+          '#...###########',
+          '#...#...1..1.##',
+          '#...###########',
           '#.............#',
-          '#.............#',
-          '#...1111111...#',
-          '#...1111111...#',
           '...............',
-          '#...1111111...#',
-          '#...1111111...#',
+          '#.............#',
+          '#.............#',
           '#.............#',
           '#.............#',
           '#######.#######',
         ],
+        statueRoom: { from: [7, 9], seas: [0, 1] },
         entities: [
-          ['switch', 2, 1],
-          ['switch', 12, 9],
-          ['block', 3, 1],
-          ['block', 11, 9],
-          ['urchin', 7, 4],
+          ['statue', 5, 2],
+          ['block', 9, 7, { once: false }],
+          ['switch', 12, 2],
+          ['switch', 11, 8],
           ['keese', 2, 8],
+          ['keese', 12, 4],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[12, 2], [11, 8]],
           flag: 'd5_bracken2',
           reward: {
             spawn: [['pickup', 7, 9, { kind: 'key' }]],
-            say: 'A grating opens under the far wall.',
+            say: 'A key drops from the statue\'s plinth.',
           },
         },
       },
@@ -731,33 +741,36 @@ export function installDungeonsB() {
       },
       '0,0,6': {
         name: 'The Knot Garden',
-        // GROVE 1 again, entered from above and handed the other way: bank
-        // 5,5, bole 4,5, stake 3,5, snarl 2,5. What is behind the snarl is a
-        // purse, not a way on.
+        // THE TIDE FLOOR, two heights (S208, kind C stepped up). The top row
+        // goes under at MID, the bottom row at HIGH; two red and two blue in
+        // each, and one block. One trip round the tide cannot do it — the
+        // block keeps the sea off one tile per rise — so it is twice round,
+        // the block moved between rises. What it pays is a purse. Until S208
+        // grove 1 again, handed the other way.
         map: [
           '#######.#######',
-          '####..........#',
-          '####..........#',
-          '#.##..........#',
-          '#.#W..........#',
-          '#.kW5.........#',
-          '#.#W..........#',
-          '#.#0..........#',
-          '#.##........U.#',
-          '####..........#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.....cdcd....#',
+          '#.....gfgf....#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
           '###############',
         ],
-        reefseedRoom: {
-          entry: [7, 0],
-          stakes: [
-            { at: [3, 5], from: [5, 5], face: 'left', sea: 2 },
-          ],
-          snarl: [2, 5], cutFrom: [3, 5],
-        },
+        floorRoom: { from: [7, 1], seas: [0, 1, 2] },
         entities: [
-          ['pickup', 1, 4, { kind: 'rupee100' }],
+          ['block', 7, 7, { once: false }],
+          ['chest', 11, 9, { pickup: 'rupee100', needFlag: 'd5_knot' }],
           ['keese', 10, 7],
         ],
+        puzzle: {
+          floor: true,
+          flag: 'd5_knot',
+          reward: { say: 'A chest rises in the corner.' },
+        },
       },
       '0,6,5': {
         name: 'The Bower Spring',
@@ -975,71 +988,80 @@ export function installDungeonsB() {
       },
       '0,2,3': {
         name: 'The Bole Walk',
-        // GROVE 2, the fixture turned through a right angle and pointed north,
-        // and a player who has just learned the First Stake has to notice that
-        // the throw which opens it is now the one aimed away from the door.
+        // THE TIDE FLOOR, taught (S208, PUZZLE-PASS kind C; Ages' red and
+        // blue floor). Every tile the sea covers when the conch raises it
+        // changes colour — all of this floor goes under at MID — except where
+        // a block stands, because the sea cannot get under a block. Ten red
+        // and two blue: the two blocks onto the two blue tiles, one press,
+        // and the floor is blue and the north shutter opens. Until S208 a
+        // grove (grove 2) that asked the First Stake's question again.
         map: [
           '#######.#######',
           '#######.#######',
           '#######.#######',
-          '#######k#######',
-          '#....0WWW0....#',
-          '.......5......L',
+          '#######D#######',
           '#.............#',
-          '#.............#',
+          '......cccc....L',
+          '#.....cdcc....#',
+          '#.....cccd....#',
           '#.............#',
           '#.............#',
           '###############',
         ],
-        reefseedRoom: {
-          entry: [0, 5],
-          stakes: [
-            { at: [7, 4], from: [7, 6], face: 'up', sea: 2 },
-          ],
-          snarl: [7, 3], cutFrom: [7, 4],
-        },
+        floorRoom: { from: [1, 5], seas: [0, 1] },
         entities: [
-          ['tektite', 11, 8],
-          ['keese', 2, 8],
+          ['block', 3, 8, { once: false }],
+          ['block', 11, 8, { once: false }],
+          ['tektite', 12, 4],
+          ['keese', 2, 9],
         ],
+        puzzle: {
+          floor: true,
+          flag: 'd5_bolewalk',
+          reward: { openDoors: [[7, 3]], say: 'The north shutter opens.' },
+        },
       },
       '0,2,2': {
         name: 'The Sunken Nave',
-        // GROVE 3, and the first one where the stake is not on the way to
-        // anywhere: the snarl is set in the wall of a cell that holds a Small
-        // Key, so the room can be walked straight through by a player who
-        // never works out what the pool is for. A chest rather than a script,
-        // because a chest is still there when you come back for it.
+        // TWO MIRROR STATUES, one block (S208, kind F stepped up). Both runs
+        // follow every push; the top statue must cross a gutter dry only at
+        // LOW, and the bottom one must stop on its plate with a gutter east of
+        // it, which only water does. Walk them both four tiles at LOW, sound
+        // the conch, and the top one goes on alone. The shutter in the west
+        // wall opens on the cell with Small Key 3 and the way to the Silt
+        // Cell. Until S208 grove 3, one stake at HIGH.
         map: [
           '###############',
+          '#.###########.#',
+          '#.##...1....#.#',
+          '#.###########.#',
+          '#.##.....1..#.#',
+          '..###########.#',
           '#.#...........#',
-          '#.#...........#',
-          '#.#0..........#',
-          '#.#W..........#',
-          '..kW5.........#',
-          '#.#W..........#',
-          '#.#0..........#',
+          '#.D...........#',
           '#.#...........#',
           '#.#...........#',
           '#######.#######',
         ],
-        reefseedRoom: {
-          entry: [7, 10],
-          stakes: [
-            { at: [3, 5], from: [5, 5], face: 'left', sea: 2 },
-          ],
-          snarl: [2, 5], cutFrom: [3, 5],
-        },
+        statueRoom: { from: [7, 9], seas: [0, 1] },
         entities: [
-          // THE CHEST FACES THE WAY YOU COME, and it has to. `Game.openChest`
-          // drops a `pickup` twelve pixels ABOVE the chest, and the cell is one
-          // tile wide with walls either side: the player stands at 1,5 (in from
-          // the snarl) to open a chest at 1,6, and the key falls on the square
-          // he is standing on.
-          ['chest', 1, 6, { pickup: 'key' }],
-          ['jellyfish', 3, 4],
+          ['statue', 4, 2],
+          ['statue', 4, 4],
+          ['block', 12, 7, { once: false }],
+          ['switch', 11, 2],
+          ['switch', 8, 4],
+          ['switch', 5, 7],
+          // THE CHEST FACES THE WAY YOU COME: opened from 1,7, it drops the
+          // key twelve pixels above itself, on the square he stands on, and
+          // leaves the cell's way north to the Silt Cell clear.
+          ['chest', 1, 8, { pickup: 'key' }],
           ['keese', 10, 8],
         ],
+        puzzle: {
+          blocks: [[11, 2], [8, 4], [5, 7]],
+          flag: 'd5_nave',
+          reward: { openDoors: [[2, 7]], say: 'The shutter in the west wall opens.' },
+        },
       },
       '0,1,2': {
         name: 'Silt Cell',

@@ -79,6 +79,7 @@ OUT = os.path.join(ROOT, 'src', 'data', 'sprites-objects.js')
 CHEST, CHEST_OPENED, SIGN = 0xf1, 0xf0, 0xf2
 UNLIT_TORCH, LIT_TORCH = 0x08, 0x09
 BUTTON, PRESSED_BUTTON, PUSHABLE_BLOCK = 0x0c, 0x0d, 0x1d
+ARMOS_STATUE = 0x25
 
 # Seasons tileset index -> what it is. The dungeon ones are the ones our
 # dungeons are themed on (see the legend comments in tiles-core.js).
@@ -397,6 +398,11 @@ def build():
         assert p2 == p
         put(f'o_switch_down_{suffix}', key_ground(g), p, 'TILEINDEX_PRESSED_BUTTON $0d, the same',
             f'o_switch_{suffix}')
+    # The mirror statue (S208, kind F): Seasons' armos statue, metatile $25 —
+    # the tile INTERAC_D5_REVERSE_MOVING_ARMOS slides in Unicorn's Cave (room
+    # $93) — in the Ancient Ruins' own tileset and colours, the Shrine's kit.
+    g, p = sets[0x3c].metatile(ARMOS_STATUE)
+    put('o_statue_wood', g, p, f'metatile $25 (the armos statue), {TILESETS[0x3c]}')
     for legend, suffix in ALIASES:
         assert suffix in themes.values(), f'{legend} names a suffix nothing cuts'
         themes[legend] = suffix

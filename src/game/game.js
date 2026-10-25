@@ -258,7 +258,7 @@ export class Game {
     // stake room for the rest of the session. A stake dropped from the Canopy
     // is written into the save (`plantFromAbove`) and `restoreRoomState`
     // puts it back on the way in.
-    if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); }
+    if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
@@ -1196,6 +1196,9 @@ export class Game {
       this.player.invuln = Math.max(this.player.invuln || 0, COILBONE_INVULN_FRAMES);
     }
     if (this.room) this.room.invalidate();
+    // THE TIDE FLOOR (S208): the conch's sea turns every tile it newly covers.
+    // Only a real tide change — `instant` is a load or a boss pinning the sea.
+    if (this.room && this.tide.sweep === 1) this.floodFloor(next, prev);
     // The Ferryman's Coin fires on the turn of the tide, not on a button. The
     // swap is DEFERRED rather than done here: this runs while the wave front
     // is still crossing the screen, and warping the player mid-sweep leaves
@@ -1207,6 +1210,32 @@ export class Game {
     // what the scrimshander is for.
     this.tickCarving();
     this.roomEvent('tide', { next, prev });
+  }
+
+  /**
+   * THE TIDE FLOOR (S208, docs/briefs/PUZZLE-PASS.md kind C; Ages' red and
+   * blue floor): every floor tile the sea covered when the base went from
+   * `prev` to `next` — deep there now and not before, read through the field
+   * so the Anchor's held water is left alone — changes colour, unless a block
+   * (or a statue) stands on it: the sea cannot get under it. A solved floor
+   * stays as it is. tools/check-tidefloor.mjs proves the rooms.
+   */
+  floodFloor(next, prev) {
+    const room = this.room;
+    if (!room || room._puzzleDone) return;
+    const t = this.tide, was = t.level;
+    const blocks = [...this.entities, ...this.pendingAdd].filter(e => e instanceof PushBlock && !e.dead && !e.remove);
+    const flips = [];
+    for (let ty = 0; ty < room.th; ty++) for (let tx = 0; tx < room.tw; tx++) {
+      const d = getTileDef(room.baseName(tx, ty));
+      if (!d || !d.floorFlip) continue;
+      if (blocks.some(b => Math.round(b.x / TILE) === tx && Math.round(b.y / TILE) === ty)) continue;
+      t.level = prev; const before = room.flagsAt(tx, ty, t.levelAt(tx, ty, room)) & F.DEEP;
+      t.level = next; const after = room.flagsAt(tx, ty, t.levelAt(tx, ty, room)) & F.DEEP;
+      if (!before && after) flips.push([tx, ty, d.floorFlip]);
+    }
+    t.level = was;
+    for (const [tx, ty, name] of flips) room.setTile(tx, ty, name);
   }
 
   /**
@@ -1340,6 +1369,8 @@ export class Game {
       // player walked back into a dark room whose door their fire had opened.
       // Lit in place, without `ignite`: no crackle, and no second solve.
       if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) { t.lit = true; t.burn = false; }
+      // A solved tide floor comes back blue (S208).
+      if (pz.floor) paintFloorBlue(room);
       // A solved cube room comes back with the cube on its spot (S207).
       if (pz.cube) {
         const spot = cubeSpots(room)[0], c = this.entities.find(e => e instanceof ColourCube);
@@ -1384,6 +1415,8 @@ export class Game {
       const cubes = this.entities.filter(e => e instanceof ColourCube);
       if (!cubeSpots(room).every(s => cubes.some(c => c.restsOn(s.x, s.y, s.colour)))) return;
     }
+    // THE TIDE FLOOR (S208): every tile blue.
+    if (pz.floor && !floorIsBlue(room)) return;
     if (pz.condition && !pz.condition(this, room)) return;
 
     room._puzzleDone = true;
@@ -2780,5 +2813,23 @@ export class Game {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, SCREEN_H - 28, SCREEN_W, 28);
     lines.forEach((l, i) => drawText(ctx, l, 2, SCREEN_H - 27 + i * 9, '#8fa'));
+  }
+}
+
+/** The room's tide floor, every tile of it blue (S208)? */
+export function floorIsBlue(room) {
+  let any = false;
+  for (let ty = 0; ty < room.th; ty++) for (let tx = 0; tx < room.tw; tx++) {
+    const d = getTileDef(room.baseName(tx, ty));
+    if (!d || d.floorColour == null) continue;
+    any = true;
+    if (d.floorColour !== 2) return false;
+  }
+  return any;
+}
+function paintFloorBlue(room) {
+  for (let ty = 0; ty < room.th; ty++) for (let tx = 0; tx < room.tw; tx++) {
+    const d = getTileDef(room.baseName(tx, ty));
+    if (d && d.floorColour === 0) room.setTile(tx, ty, d.floorFlip);
   }
 }

@@ -2981,6 +2981,17 @@ export function installCoreTiles() {
     dSpotRed: { art: ART.cSpotRed, pal: 'cSpotRed', cubeSpot: 0 },
     dSpotYellow: { art: ART.cSpotYellow, pal: 'cSpotYellow', cubeSpot: 1 },
     dSpotBlue: { art: ART.cSpotBlue, pal: 'cSpotBlue', cubeSpot: 2 },
+    // S208: THE TIDE FLOOR (kind C, docs/briefs/PUZZLE-PASS.md), the same
+    // Ages floor in red and blue. Every tile the sea newly covers when the
+    // conch raises it changes colour — unless a block stands on it or the
+    // Anchor holds the water off it (`Game.floodFloor`). Three heights: never
+    // covered, under at MID and HIGH (`Low`), under at HIGH only (`Mid`).
+    dTileRed: { art: ART.cSpotRed, pal: 'cSpotRed', floorFlip: 'dTileBlue', floorColour: 0 },
+    dTileBlue: { art: ART.cSpotBlue, pal: 'cSpotBlue', floorFlip: 'dTileRed', floorColour: 2 },
+    dTileRedLow: { tide: ['dTileRed', 'dWaterD', 'dWaterD'], floorFlip: 'dTileBlueLow', floorColour: 0 },
+    dTileBlueLow: { tide: ['dTileBlue', 'dWaterD', 'dWaterD'], floorFlip: 'dTileRedLow', floorColour: 2 },
+    dTileRedMid: { tide: ['dTileRed', 'dTileRed', 'dWaterD'], floorFlip: 'dTileBlueMid', floorColour: 0 },
+    dTileBlueMid: { tide: ['dTileBlue', 'dTileBlue', 'dWaterD'], floorFlip: 'dTileRedMid', floorColour: 2 },
     // S184: THE SLUICE GATES of the Sealed Cistern, one in the north wall of
     // each tank on 2F: the Dragon's own shutter, shut, until the wheel over
     // it on 3F is turned (`openFlag`, `Game.applyStoryGates`), and then the

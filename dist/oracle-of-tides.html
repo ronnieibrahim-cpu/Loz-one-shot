@@ -10666,6 +10666,10 @@ function registerTiles(defs) {
       // and leaving the room mends it (`Room.mendCracks`), as a cube room
       // resets in Ages when it is entered again.
       crackResets: !!def.crackResets,
+      // THE TIDE FLOOR (S208, kind C): the tile this one becomes when the sea
+      // rising covers it (`Game.floodFloor`), and its colour (0 red, 2 blue).
+      floorFlip: def.floorFlip || null,
+      floorColour: def.floorColour != null ? def.floorColour : null,
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
@@ -11446,6 +11450,19 @@ class Room {
     let any = false;
     for (let i = 0; i < this.override.length; i++) {
       if (this.override[i] === 'coralPillar') { this.override[i] = null; any = true; }
+    }
+    if (any) this.invalidate();
+  }
+
+  /**
+   * Put the tide floor back the way the room was drawn (S208, kind C): an
+   * unsolved floor comes back as it started, as a cube room does in Ages.
+   */
+  resetFloor() {
+    let any = false;
+    for (let i = 0; i < this.override.length; i++) {
+      const d = this.override[i] && getTileDef(this.base[i]);
+      if (d && d.floorColour != null) { this.override[i] = null; any = true; }
     }
     if (any) this.invalidate();
   }
@@ -22549,6 +22566,7 @@ __define("data/sprites-objects.js", function (__exports, __require) {
 //   o_block_palace: TILEINDEX_PUSHABLE_BLOCK $1d, Ages' Mermaid's Cave, the sunken past
 //   o_switch_up_palace: TILEINDEX_BUTTON $0c, Ages' Mermaid's Cave, the sunken past, floor keyed out
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
+//   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
 
 const { sprites } = __require("gfx/art.js");
@@ -23238,6 +23256,24 @@ const OBJECT_ART = {
     ................
     ................` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_statue_wood: { pal: 'o_statue_wood', art: `
+    0033303333033301
+    0032232112322300
+    0003322332233330
+    0000323333230313
+    0003323333230313
+    3333333332233313
+    3111123222332313
+    3131323333223333
+    3111123222123113
+    3111123332223213
+    3131323333333113
+    3111123332223333
+    3111123222222313
+    3131323333333313
+    3222223332222330
+    3333333333333300` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_block: { pal: 'o_block_grotto', art: `
     3333333333333333
     3112222222222223
@@ -23315,6 +23351,7 @@ const OBJECT_PALETTES = {
   o_switch_eyrie: ['#c67bb5', '#944a8c', '#63185a', '#000000'],
   o_block_palace: ['#decee7', '#b54a9c', '#6b0052', '#000000'],
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
+  o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
 };
 
 function installObjectSprites() {
@@ -25090,6 +25127,8 @@ class PushBlock extends Entity {
     }
     this.slide = { fx: sp(nx), fy: sp(ny), dx, dy };
     game.audio.sfx('push');
+    // Every statue in the room steps the other way (S208, Statue below).
+    for (const e of game.entities) if (e instanceof Statue && !e.dead) e.mirror(game, -dx, -dy);
     return true;
   }
 
@@ -25109,6 +25148,46 @@ class PushBlock extends Entity {
   }
 }
 defineEntity('block', (x, y, o) => new PushBlock(x, y, o));
+
+/**
+ * THE MIRROR STATUE (S208, docs/briefs/PUZZLE-PASS.md kind F): Seasons' armos
+ * statue in Unicorn's Cave (object_code/seasons/interactions/
+ * unicornsCaveReverseMovingArmos.s). Link cannot move it; every block he
+ * pushes moves it one tile THE OTHER WAY, if that tile is free — and ours will
+ * not step into water, shallow or deep, a hole or a hazard, so the sea decides
+ * where it holds. It slides as a block does and holds a plate as one does
+ * (`puzzle.blocks`). tools/check-statues.mjs proves the rooms.
+ */
+const STATUE_AVOID = F.PIT | F.HAZARD | F.WATER | F.DEEP | F.WHIRL;
+class Statue extends PushBlock {
+  constructor(x, y, o = {}) {
+    super(x, y, { ...o, once: false });
+  }
+
+  spriteName(game) { return this.sprite || themed('o_statue', game); }
+
+  push() { return false; }
+
+  /** Step (dx, dy) if the tile there will take it. */
+  mirror(game, dx, dy) {
+    if (this.slide) return false;
+    const room = game.room;
+    const nx = this.x + dx * TILE, ny = this.y + dy * TILE;
+    const tx = Math.round(nx / TILE), ty = Math.round(ny / TILE);
+    if (tx < 0 || ty < 0 || tx >= room.tw || ty >= room.th) return false;
+    if (room.flagsAt(tx, ty, game.tide.levelAt(tx, ty, room)) & STATUE_AVOID) return false;
+    if (!canOccupy(game, this, nx, ny, { jumping: false, swim: false })) return false;
+    for (const e of game.entities) {
+      if (e !== this && (e.solid || e === game.player) && !e.dead && !e.remove
+        && Math.abs(e.x - nx) < 12 && Math.abs(e.y - ny) < 12) return false;
+    }
+    const p = game.player;
+    if (p && Math.abs(p.x - nx) < 14 && Math.abs(p.y - ny) < 14) return false;
+    this.slide = { fx: sp(nx), fy: sp(ny), dx, dy };
+    return true;
+  }
+}
+defineEntity('statue', (x, y, o) => new Statue(x, y, o));
 
 /**
  * ORACLE OF AGES' ROLLING COLOUR CUBE (S207, docs/briefs/PUZZLE-PASS.md kind D;
@@ -26001,6 +26080,8 @@ __exports["Trader"] = Trader;
 __exports["MakuTree"] = MakuTree;
 __exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
+__exports["STATUE_AVOID"] = STATUE_AVOID;
+__exports["Statue"] = Statue;
 __exports["CUBE_CAPS"] = CUBE_CAPS;
 __exports["cubeSpots"] = cubeSpots;
 __exports["ColourCube"] = ColourCube;
@@ -36638,7 +36719,7 @@ class Game {
     // stake room for the rest of the session. A stake dropped from the Canopy
     // is written into the save (`plantFromAbove`) and `restoreRoomState`
     // puts it back on the way in.
-    if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); }
+    if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
@@ -37576,6 +37657,9 @@ class Game {
       this.player.invuln = Math.max(this.player.invuln || 0, COILBONE_INVULN_FRAMES);
     }
     if (this.room) this.room.invalidate();
+    // THE TIDE FLOOR (S208): the conch's sea turns every tile it newly covers.
+    // Only a real tide change — `instant` is a load or a boss pinning the sea.
+    if (this.room && this.tide.sweep === 1) this.floodFloor(next, prev);
     // The Ferryman's Coin fires on the turn of the tide, not on a button. The
     // swap is DEFERRED rather than done here: this runs while the wave front
     // is still crossing the screen, and warping the player mid-sweep leaves
@@ -37587,6 +37671,32 @@ class Game {
     // what the scrimshander is for.
     this.tickCarving();
     this.roomEvent('tide', { next, prev });
+  }
+
+  /**
+   * THE TIDE FLOOR (S208, docs/briefs/PUZZLE-PASS.md kind C; Ages' red and
+   * blue floor): every floor tile the sea covered when the base went from
+   * `prev` to `next` — deep there now and not before, read through the field
+   * so the Anchor's held water is left alone — changes colour, unless a block
+   * (or a statue) stands on it: the sea cannot get under it. A solved floor
+   * stays as it is. tools/check-tidefloor.mjs proves the rooms.
+   */
+  floodFloor(next, prev) {
+    const room = this.room;
+    if (!room || room._puzzleDone) return;
+    const t = this.tide, was = t.level;
+    const blocks = [...this.entities, ...this.pendingAdd].filter(e => e instanceof PushBlock && !e.dead && !e.remove);
+    const flips = [];
+    for (let ty = 0; ty < room.th; ty++) for (let tx = 0; tx < room.tw; tx++) {
+      const d = getTileDef(room.baseName(tx, ty));
+      if (!d || !d.floorFlip) continue;
+      if (blocks.some(b => Math.round(b.x / TILE) === tx && Math.round(b.y / TILE) === ty)) continue;
+      t.level = prev; const before = room.flagsAt(tx, ty, t.levelAt(tx, ty, room)) & F.DEEP;
+      t.level = next; const after = room.flagsAt(tx, ty, t.levelAt(tx, ty, room)) & F.DEEP;
+      if (!before && after) flips.push([tx, ty, d.floorFlip]);
+    }
+    t.level = was;
+    for (const [tx, ty, name] of flips) room.setTile(tx, ty, name);
   }
 
   /**
@@ -37720,6 +37830,8 @@ class Game {
       // player walked back into a dark room whose door their fire had opened.
       // Lit in place, without `ignite`: no crackle, and no second solve.
       if (pz.torches != null) for (const t of this.entities) if (t instanceof Torch) { t.lit = true; t.burn = false; }
+      // A solved tide floor comes back blue (S208).
+      if (pz.floor) paintFloorBlue(room);
       // A solved cube room comes back with the cube on its spot (S207).
       if (pz.cube) {
         const spot = cubeSpots(room)[0], c = this.entities.find(e => e instanceof ColourCube);
@@ -37764,6 +37876,8 @@ class Game {
       const cubes = this.entities.filter(e => e instanceof ColourCube);
       if (!cubeSpots(room).every(s => cubes.some(c => c.restsOn(s.x, s.y, s.colour)))) return;
     }
+    // THE TIDE FLOOR (S208): every tile blue.
+    if (pz.floor && !floorIsBlue(room)) return;
     if (pz.condition && !pz.condition(this, room)) return;
 
     room._puzzleDone = true;
@@ -39162,7 +39276,26 @@ class Game {
     lines.forEach((l, i) => drawText(ctx, l, 2, SCREEN_H - 27 + i * 9, '#8fa'));
   }
 }
+
+/** The room's tide floor, every tile of it blue (S208)? */
+function floorIsBlue(room) {
+  let any = false;
+  for (let ty = 0; ty < room.th; ty++) for (let tx = 0; tx < room.tw; tx++) {
+    const d = getTileDef(room.baseName(tx, ty));
+    if (!d || d.floorColour == null) continue;
+    any = true;
+    if (d.floorColour !== 2) return false;
+  }
+  return any;
+}
+function paintFloorBlue(room) {
+  for (let ty = 0; ty < room.th; ty++) for (let tx = 0; tx < room.tw; tx++) {
+    const d = getTileDef(room.baseName(tx, ty));
+    if (d && d.floorColour === 0) room.setTile(tx, ty, d.floorFlip);
+  }
+}
 __exports["Game"] = Game;
+__exports["floorIsBlue"] = floorIsBlue;
 });
 
 /* ===== src/data/tiles-terrain.js ===== */
@@ -54872,6 +55005,17 @@ function installCoreTiles() {
     dSpotRed: { art: ART.cSpotRed, pal: 'cSpotRed', cubeSpot: 0 },
     dSpotYellow: { art: ART.cSpotYellow, pal: 'cSpotYellow', cubeSpot: 1 },
     dSpotBlue: { art: ART.cSpotBlue, pal: 'cSpotBlue', cubeSpot: 2 },
+    // S208: THE TIDE FLOOR (kind C, docs/briefs/PUZZLE-PASS.md), the same
+    // Ages floor in red and blue. Every tile the sea newly covers when the
+    // conch raises it changes colour — unless a block stands on it or the
+    // Anchor holds the water off it (`Game.floodFloor`). Three heights: never
+    // covered, under at MID and HIGH (`Low`), under at HIGH only (`Mid`).
+    dTileRed: { art: ART.cSpotRed, pal: 'cSpotRed', floorFlip: 'dTileBlue', floorColour: 0 },
+    dTileBlue: { art: ART.cSpotBlue, pal: 'cSpotBlue', floorFlip: 'dTileRed', floorColour: 2 },
+    dTileRedLow: { tide: ['dTileRed', 'dWaterD', 'dWaterD'], floorFlip: 'dTileBlueLow', floorColour: 0 },
+    dTileBlueLow: { tide: ['dTileBlue', 'dWaterD', 'dWaterD'], floorFlip: 'dTileRedLow', floorColour: 2 },
+    dTileRedMid: { tide: ['dTileRed', 'dTileRed', 'dWaterD'], floorFlip: 'dTileBlueMid', floorColour: 0 },
+    dTileBlueMid: { tide: ['dTileBlue', 'dTileBlue', 'dWaterD'], floorFlip: 'dTileRedMid', floorColour: 2 },
     // S184: THE SLUICE GATES of the Sealed Cistern, one in the north wall of
     // each tank on 2F: the Dragon's own shutter, shut, until the wheel over
     // it on 3F is turned (`openFlag`, `Game.applyStoryGates`), and then the
@@ -55953,6 +56097,13 @@ function installLegends() {
   // one, so naming it here moves nothing outside this dungeon — the same
   // argument every override above makes.
   registerLegend('dungeonWood', { '5': 'dSnag', 'k': 'dSnarl', 'Y': 'dBole' }, 'dungeonWood');
+  // THE TIDE FLOOR (S208): red and blue, `a`/`b` never under the sea,
+  // `c`/`d` under it at MID and HIGH, `f`/`g` under it at HIGH. Letters, not
+  // digits: the colour is the room's to change, as the Spire's `a`/`b` are.
+  registerLegend('dungeonWood', {
+    'a': 'dTileRed', 'b': 'dTileBlue', 'c': 'dTileRedLow', 'd': 'dTileBlueLow',
+    'f': 'dTileRedMid', 'g': 'dTileBlueMid',
+  }, 'dungeonWood');
   // The Shrine is built at Oracle size (S140): its way out is the Ancient
   // Ruins' lit step between two pillars in the south wall, `(C)`.
   registerLegend('dungeonWood', {
@@ -62813,23 +62964,27 @@ function installDungeonsA() {
       // ---------------------------------------------- optional rooms (S143)
       '0,0,1': {
         name: 'The Siphon Stair',
-        // Optional, off the Spill Gate's north door: the Ebb Cell's lesson
-        // asked again, and then the Loft's, in order. The lower cell (enter at
-        // the flood, work at the ebb) opens the gate in the middle wall; the
-        // upper wheel is a sump shelf at MID and opens the alcove with the
-        // charm in it.
+        // Optional, off the Spill Gate's north door. The lower cell asks the
+        // Ebb Cell's lesson again (enter at the flood, work at the ebb) and
+        // opens the gate in the middle wall. The upper half was a second sill
+        // until S208; now it is a colour cube sent up the siphon. Float it
+        // over the pool at MID (no tip), push it up the lane from the sluice
+        // step, and push it into the siphon at HIGH: it rides the sumps all the
+        // way onto the yellow spot. At MID the sluice at the top is only
+        // wading water and it runs aground a square short; rolled over the
+        // pool at LOW it comes up the lane the wrong colour.
         size: [1, 2],
         map: [
           '###############',
-          '#,,,######.OO3#',
-          '#,,,######.####',
-          '#,,,######0####',
-          '##D#######0####',
-          '#.............#',
-          '#.U.........U.#',
-          '#.............#',
-          '#....33333....#',
-          '#.............#',
+          '#,,,###########',
+          '#,,,##..00001y#',
+          '#,,,##..=======',
+          '##D###..=OOOOO#',
+          '#.......=.....#',
+          '#.U.....=..U..#',
+          '#...333.=.....#',
+          '#..OOOO1......#',
+          '#......O......#',
           '#.............#',
           '#.............#',
           '#######D#######',
@@ -62845,60 +63000,68 @@ function installDungeonsA() {
         ],
         bellowsRoom: [
           { wheel: [13, 18], stand: [10, 18], face: 'right', enter: 2, at: 0, opens: [[7, 12]] },
-          { wheel: [13, 1], stand: [10, 1], face: 'right', at: 1, opens: [[2, 4]], after: [[7, 12]] },
         ],
+        cubeRoom: { from: [7, 11], seas: [0, 1, 2] },
         entities: [
           ['wheel', 13, 18, { needTurns: 40 }],
-          ['wheel', 13, 1, { needTurns: 40 }],
+          ['cube', 3, 7, { o: 0 }],
           ['chest', 2, 2, { charm: 'saltEtched' }],
           ['tektite', 5, 13],
-          ['keese', 11, 7],
-          ['jellyfish', 7, 8],
+          ['keese', 10, 7],
+          ['keese', 4, 10],
         ],
+        puzzle: {
+          cube: true,
+          flag: 'd4_siphon',
+          reward: { openDoors: [[2, 4]], say: 'The alcove door opens.' },
+        },
         script: {
           onEvent(game, name, data) {
             if (name !== 'valve' || !data || !data.open) return;
-            game.applyReward({ openDoors: [data.y >= 11 * 16 ? [7, 12] : [2, 4]] });
+            game.applyReward({ openDoors: [[7, 12]] });
           },
         },
       },
       '0,6,5': {
         name: 'Gull Roost',
-        // Optional, off the Cliffside Cell. Pits and light things over them —
-        // the gust shoves what it can — and at the far end a drown-wall cell
-        // worked at HIGH, whose wheel opens the alcove in the corner.
+        // Optional, off the Cliffside Cell. A wheel worked at HIGH until S208;
+        // now a colour cube sailed across a bay of sumps (Ages' Ancient Tomb's
+        // cube on ice, slid until something stops it). Pushed in from the west
+        // shore at MID it floats to the post; the sluice step under it is only
+        // above water at MID, and from there it goes north to the bay's top.
+        // The last leg is the Bellows' at HIGH from the pier: it sails into the
+        // nook onto the yellow spot. Blown at MID the cone empties the sump
+        // under it and it drops (and comes back to the shore).
         size: [2, 1],
         map: [
           '##############################',
-          '#........................#,,,#',
-          '#.U.OO....OO....OO...U...#,,,#',
-          '#...OO....OO....OO.......#,,,#',
-          '#........................##D##',
-          '.............................#',
-          '#............................#',
-          '#...OO....OO....OO..........##',
-          '#.U.OO....OO....OO...U..#9####',
-          '#.......................9.OO1#',
+          '#................======......#',
+          '#.U..........===.0=====......#',
+          '#............===.00000y=.....#',
+          '#............==0000000==.....#',
+          '.............==0000000==.....#',
+          '#............==0000000=..#D###',
+          '#..............0000=00=..#,,,#',
+          '#.U..........=====11111..#,,,#',
+          '#............==========..#,,,#',
           '##############################',
         ],
-        bellowsRoom: {
-          wheel: [28, 9], stand: [25, 9], face: 'right', at: 2, opens: [[27, 4]],
-        },
+        cubeRoom: { from: [1, 5], seas: [0, 1, 2], bellows: true },
         entities: [
-          ['wheel', 28, 9, { needTurns: 40 }],
-          ['chest', 27, 2, { charm: 'gullsTally' }],
-          ['keese', 7, 2],
-          ['keese', 13, 8],
-          ['keese', 19, 3],
-          ['zol', 14, 5],
+          ['cube', 14, 7, { o: 3 }],
+          ['chest', 27, 8, { charm: 'gullsTally' }],
+          ['keese', 6, 2],
+          ['keese', 9, 8],
+          ['keese', 26, 3],
+          ['zol', 6, 5],
         ],
         readable: [
-          [21, 8, 'Scratched by the cell: "Gulls nest where the wind is. The wheel in the corner only turns when you come in at HIGH tide."'],
+          [2, 8, 'Scratched by the cell: "Gulls go where the wind and the swell take them."'],
         ],
-        script: {
-          onEvent(game, name, data) {
-            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[27, 4]] });
-          },
+        puzzle: {
+          cube: true,
+          flag: 'd4_gullRoost',
+          reward: { openDoors: [[27, 6]], say: 'The alcove door opens.' },
         },
       },
       '0,6,2': {
@@ -63693,33 +63856,43 @@ function installDungeonsB() {
       },
       '0,4,4': {
         name: 'Sunken Bracken',
+        // THE MIRROR STATUE, taught (S208, PUZZLE-PASS kind F; Seasons'
+        // Unicorn's Cave armos, room $93). The statue in the walled run along
+        // the top cannot be touched; every push of the block moves it a tile
+        // the other way, and it will not step into water. Its plate is at the
+        // run's east end past two gutters (dry only at LOW), and the block's
+        // plate is east of anywhere the block can stand when the statue gets
+        // there — so the block has to come back east, which drags the statue
+        // west, unless the gutter beside it is water: walk it home at LOW,
+        // bring the block back at MID.
         map: [
           '###############',
+          '#...###########',
+          '#...#...1..1.##',
+          '#...###########',
           '#.............#',
-          '#.............#',
-          '#...1111111...#',
-          '#...1111111...#',
           '...............',
-          '#...1111111...#',
-          '#...1111111...#',
+          '#.............#',
+          '#.............#',
           '#.............#',
           '#.............#',
           '#######.#######',
         ],
+        statueRoom: { from: [7, 9], seas: [0, 1] },
         entities: [
-          ['switch', 2, 1],
-          ['switch', 12, 9],
-          ['block', 3, 1],
-          ['block', 11, 9],
-          ['urchin', 7, 4],
+          ['statue', 5, 2],
+          ['block', 9, 7, { once: false }],
+          ['switch', 12, 2],
+          ['switch', 11, 8],
           ['keese', 2, 8],
+          ['keese', 12, 4],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[12, 2], [11, 8]],
           flag: 'd5_bracken2',
           reward: {
             spawn: [['pickup', 7, 9, { kind: 'key' }]],
-            say: 'A grating opens under the far wall.',
+            say: 'A key drops from the statue\'s plinth.',
           },
         },
       },
@@ -63972,33 +64145,36 @@ function installDungeonsB() {
       },
       '0,0,6': {
         name: 'The Knot Garden',
-        // GROVE 1 again, entered from above and handed the other way: bank
-        // 5,5, bole 4,5, stake 3,5, snarl 2,5. What is behind the snarl is a
-        // purse, not a way on.
+        // THE TIDE FLOOR, two heights (S208, kind C stepped up). The top row
+        // goes under at MID, the bottom row at HIGH; two red and two blue in
+        // each, and one block. One trip round the tide cannot do it — the
+        // block keeps the sea off one tile per rise — so it is twice round,
+        // the block moved between rises. What it pays is a purse. Until S208
+        // grove 1 again, handed the other way.
         map: [
           '#######.#######',
-          '####..........#',
-          '####..........#',
-          '#.##..........#',
-          '#.#W..........#',
-          '#.kW5.........#',
-          '#.#W..........#',
-          '#.#0..........#',
-          '#.##........U.#',
-          '####..........#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.....cdcd....#',
+          '#.....gfgf....#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
           '###############',
         ],
-        reefseedRoom: {
-          entry: [7, 0],
-          stakes: [
-            { at: [3, 5], from: [5, 5], face: 'left', sea: 2 },
-          ],
-          snarl: [2, 5], cutFrom: [3, 5],
-        },
+        floorRoom: { from: [7, 1], seas: [0, 1, 2] },
         entities: [
-          ['pickup', 1, 4, { kind: 'rupee100' }],
+          ['block', 7, 7, { once: false }],
+          ['chest', 11, 9, { pickup: 'rupee100', needFlag: 'd5_knot' }],
           ['keese', 10, 7],
         ],
+        puzzle: {
+          floor: true,
+          flag: 'd5_knot',
+          reward: { say: 'A chest rises in the corner.' },
+        },
       },
       '0,6,5': {
         name: 'The Bower Spring',
@@ -64216,71 +64392,80 @@ function installDungeonsB() {
       },
       '0,2,3': {
         name: 'The Bole Walk',
-        // GROVE 2, the fixture turned through a right angle and pointed north,
-        // and a player who has just learned the First Stake has to notice that
-        // the throw which opens it is now the one aimed away from the door.
+        // THE TIDE FLOOR, taught (S208, PUZZLE-PASS kind C; Ages' red and
+        // blue floor). Every tile the sea covers when the conch raises it
+        // changes colour — all of this floor goes under at MID — except where
+        // a block stands, because the sea cannot get under a block. Ten red
+        // and two blue: the two blocks onto the two blue tiles, one press,
+        // and the floor is blue and the north shutter opens. Until S208 a
+        // grove (grove 2) that asked the First Stake's question again.
         map: [
           '#######.#######',
           '#######.#######',
           '#######.#######',
-          '#######k#######',
-          '#....0WWW0....#',
-          '.......5......L',
+          '#######D#######',
           '#.............#',
-          '#.............#',
+          '......cccc....L',
+          '#.....cdcc....#',
+          '#.....cccd....#',
           '#.............#',
           '#.............#',
           '###############',
         ],
-        reefseedRoom: {
-          entry: [0, 5],
-          stakes: [
-            { at: [7, 4], from: [7, 6], face: 'up', sea: 2 },
-          ],
-          snarl: [7, 3], cutFrom: [7, 4],
-        },
+        floorRoom: { from: [1, 5], seas: [0, 1] },
         entities: [
-          ['tektite', 11, 8],
-          ['keese', 2, 8],
+          ['block', 3, 8, { once: false }],
+          ['block', 11, 8, { once: false }],
+          ['tektite', 12, 4],
+          ['keese', 2, 9],
         ],
+        puzzle: {
+          floor: true,
+          flag: 'd5_bolewalk',
+          reward: { openDoors: [[7, 3]], say: 'The north shutter opens.' },
+        },
       },
       '0,2,2': {
         name: 'The Sunken Nave',
-        // GROVE 3, and the first one where the stake is not on the way to
-        // anywhere: the snarl is set in the wall of a cell that holds a Small
-        // Key, so the room can be walked straight through by a player who
-        // never works out what the pool is for. A chest rather than a script,
-        // because a chest is still there when you come back for it.
+        // TWO MIRROR STATUES, one block (S208, kind F stepped up). Both runs
+        // follow every push; the top statue must cross a gutter dry only at
+        // LOW, and the bottom one must stop on its plate with a gutter east of
+        // it, which only water does. Walk them both four tiles at LOW, sound
+        // the conch, and the top one goes on alone. The shutter in the west
+        // wall opens on the cell with Small Key 3 and the way to the Silt
+        // Cell. Until S208 grove 3, one stake at HIGH.
         map: [
           '###############',
+          '#.###########.#',
+          '#.##...1....#.#',
+          '#.###########.#',
+          '#.##.....1..#.#',
+          '..###########.#',
           '#.#...........#',
-          '#.#...........#',
-          '#.#0..........#',
-          '#.#W..........#',
-          '..kW5.........#',
-          '#.#W..........#',
-          '#.#0..........#',
+          '#.D...........#',
           '#.#...........#',
           '#.#...........#',
           '#######.#######',
         ],
-        reefseedRoom: {
-          entry: [7, 10],
-          stakes: [
-            { at: [3, 5], from: [5, 5], face: 'left', sea: 2 },
-          ],
-          snarl: [2, 5], cutFrom: [3, 5],
-        },
+        statueRoom: { from: [7, 9], seas: [0, 1] },
         entities: [
-          // THE CHEST FACES THE WAY YOU COME, and it has to. `Game.openChest`
-          // drops a `pickup` twelve pixels ABOVE the chest, and the cell is one
-          // tile wide with walls either side: the player stands at 1,5 (in from
-          // the snarl) to open a chest at 1,6, and the key falls on the square
-          // he is standing on.
-          ['chest', 1, 6, { pickup: 'key' }],
-          ['jellyfish', 3, 4],
+          ['statue', 4, 2],
+          ['statue', 4, 4],
+          ['block', 12, 7, { once: false }],
+          ['switch', 11, 2],
+          ['switch', 8, 4],
+          ['switch', 5, 7],
+          // THE CHEST FACES THE WAY YOU COME: opened from 1,7, it drops the
+          // key twelve pixels above itself, on the square he stands on, and
+          // leaves the cell's way north to the Silt Cell clear.
+          ['chest', 1, 8, { pickup: 'key' }],
           ['keese', 10, 8],
         ],
+        puzzle: {
+          blocks: [[11, 2], [8, 4], [5, 7]],
+          flag: 'd5_nave',
+          reward: { openDoors: [[2, 7]], say: 'The shutter in the west wall opens.' },
+        },
       },
       '0,1,2': {
         name: 'Silt Cell',

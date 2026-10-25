@@ -1399,6 +1399,8 @@ export class PushBlock extends Entity {
     }
     this.slide = { fx: sp(nx), fy: sp(ny), dx, dy };
     game.audio.sfx('push');
+    // Every statue in the room steps the other way (S208, Statue below).
+    for (const e of game.entities) if (e instanceof Statue && !e.dead) e.mirror(game, -dx, -dy);
     return true;
   }
 
@@ -1418,6 +1420,46 @@ export class PushBlock extends Entity {
   }
 }
 defineEntity('block', (x, y, o) => new PushBlock(x, y, o));
+
+/**
+ * THE MIRROR STATUE (S208, docs/briefs/PUZZLE-PASS.md kind F): Seasons' armos
+ * statue in Unicorn's Cave (object_code/seasons/interactions/
+ * unicornsCaveReverseMovingArmos.s). Link cannot move it; every block he
+ * pushes moves it one tile THE OTHER WAY, if that tile is free — and ours will
+ * not step into water, shallow or deep, a hole or a hazard, so the sea decides
+ * where it holds. It slides as a block does and holds a plate as one does
+ * (`puzzle.blocks`). tools/check-statues.mjs proves the rooms.
+ */
+export const STATUE_AVOID = F.PIT | F.HAZARD | F.WATER | F.DEEP | F.WHIRL;
+export class Statue extends PushBlock {
+  constructor(x, y, o = {}) {
+    super(x, y, { ...o, once: false });
+  }
+
+  spriteName(game) { return this.sprite || themed('o_statue', game); }
+
+  push() { return false; }
+
+  /** Step (dx, dy) if the tile there will take it. */
+  mirror(game, dx, dy) {
+    if (this.slide) return false;
+    const room = game.room;
+    const nx = this.x + dx * TILE, ny = this.y + dy * TILE;
+    const tx = Math.round(nx / TILE), ty = Math.round(ny / TILE);
+    if (tx < 0 || ty < 0 || tx >= room.tw || ty >= room.th) return false;
+    if (room.flagsAt(tx, ty, game.tide.levelAt(tx, ty, room)) & STATUE_AVOID) return false;
+    if (!canOccupy(game, this, nx, ny, { jumping: false, swim: false })) return false;
+    for (const e of game.entities) {
+      if (e !== this && (e.solid || e === game.player) && !e.dead && !e.remove
+        && Math.abs(e.x - nx) < 12 && Math.abs(e.y - ny) < 12) return false;
+    }
+    const p = game.player;
+    if (p && Math.abs(p.x - nx) < 14 && Math.abs(p.y - ny) < 14) return false;
+    this.slide = { fx: sp(nx), fy: sp(ny), dx, dy };
+    return true;
+  }
+}
+defineEntity('statue', (x, y, o) => new Statue(x, y, o));
 
 /**
  * ORACLE OF AGES' ROLLING COLOUR CUBE (S207, docs/briefs/PUZZLE-PASS.md kind D;
