@@ -26,7 +26,7 @@ import {
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
   LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES,
-  FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG,
+  FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES,
   BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
@@ -1431,6 +1431,112 @@ defineEntity('block', (x, y, o) => new PushBlock(x, y, o));
  * (`puzzle.blocks`). tools/check-statues.mjs proves the rooms.
  */
 export const STATUE_AVOID = F.PIT | F.HAZARD | F.WATER | F.DEEP | F.WHIRL;
+
+/**
+ * THE ICE BLOCK'S SEA (S209, IceBlock below): what it does on sliding into a
+ * square with these flags. A hole takes it down; wading water catches it;
+ * anything else — dry floor, ice, deep water it floats over — it slides on.
+ * The one rule, read by the engine and by tools/lib/iceblock-flood.mjs.
+ */
+export function iceBlockMeets(flags) {
+  if (flags & (F.PIT | F.WHIRL)) return 'fall';
+  if ((flags & F.WATER) && !(flags & F.DEEP)) return 'stop';
+  return 'on';
+}
+/** What the ice block is to the room's collision: it floats, it does not hop. */
+export const ICE_BLOCK_CAPS = { jumping: false, swim: true, cutting: false };
+/** The ring is the room's wall to an ice block: it never slides out of a doorway. */
+export function iceBlockInRing(room, tx, ty) {
+  return tx > 0 && ty > 0 && tx < room.tw - 1 && ty < room.th - 1;
+}
+
+/**
+ * SEASONS' ICE BLOCK (S209, docs/briefs/PUZZLE-PASS.md step 7): tile $2f in
+ * the Sword & Shield Maze, which pushblock.s (state 2) slides at SPEED_1c0
+ * until the square ahead will not take it, then clinks — room $586 asks for
+ * three of them in an alcove. It moves any number of times.
+ *
+ * The sea is ours, square by square (`iceBlockMeets`): a hole takes it down
+ * (it comes back with the room), wading water catches it in the first shallow
+ * square, and deep water it floats over and slides on. So the conch decides
+ * where a push ends. Link pushes it only with his feet under him. Left resting
+ * on a square the sea opens into a hole, it goes down. A solved room comes
+ * back with every block on its plate. tools/check-iceblocks.mjs proves the
+ * rooms; tools/lib/iceblock-flood.mjs is its model.
+ */
+export class IceBlock extends PushBlock {
+  constructor(x, y, o = {}) {
+    super(x, y, { ...o, once: false });
+    this.frame = 0;
+    this.isIceBlock = true;
+  }
+
+  spriteName() { return this.sprite || 'o_iceblock'; }
+
+  tilePos() { return [Math.round(this.x / TILE), Math.round(this.y / TILE)]; }
+
+  /** Will the square (tx, ty) take it? The ring, the terrain, anything solid, Link. */
+  takes(game, tx, ty) {
+    if (!iceBlockInRing(game.room, tx, ty)) return false;
+    const nx = tx * TILE, ny = ty * TILE;
+    if (!canOccupy(game, this, nx, ny, ICE_BLOCK_CAPS)) return false;
+    for (const e of game.entities) {
+      if (e !== this && e.solid && !e.dead && !e.remove && !e.carried
+        && Math.abs(e.x - nx) < 12 && Math.abs(e.y - ny) < 12) return false;
+    }
+    const p = game.player;
+    return !(p && Math.abs(p.x - nx) < 14 && Math.abs(p.y - ny) < 14);
+  }
+
+  push(game, dx, dy) {
+    if (this.slide || this.remove) return false;
+    const p = game.player;
+    if (p && (p.inDeep || p.underwater)) return false;   // no footing to shove from
+    const [tx, ty] = this.tilePos();
+    if (!this.takes(game, tx + dx, ty + dy)) return false;
+    this.slide = { fx: sp((tx + dx) * TILE), fy: sp((ty + dy) * TILE), dx, dy };
+    game.audio.sfx('push');
+    return true;
+  }
+
+  update(game) {
+    this.frame++;
+    if (!this.slide) {
+      // The sea moves under a resting block: a square gone to a hole takes it.
+      const [tx, ty] = this.tilePos(), room = game.room;
+      if (room && room.inBounds(tx, ty)
+        && iceBlockMeets(room.flagsAt(tx, ty, game.tide)) === 'fall') dropIntoHole(game, this);
+      return;
+    }
+    const s = this.slide;
+    this.fx += Math.sign(s.fx - this.fx) * Math.min(ICE_BLOCK_SPEED, Math.abs(s.fx - this.fx));
+    this.fy += Math.sign(s.fy - this.fy) * Math.min(ICE_BLOCK_SPEED, Math.abs(s.fy - this.fy));
+    if (this.fx !== s.fx || this.fy !== s.fy) return;
+    // Square by square: what the sea has made of the one it has reached.
+    const [tx, ty] = this.tilePos();
+    const m = iceBlockMeets(game.room.flagsAt(tx, ty, game.tide));
+    if (m === 'fall') { this.slide = null; dropIntoHole(game, this); return; }
+    if (m === 'on' && this.takes(game, tx + s.dx, ty + s.dy)) {
+      s.fx = sp((tx + s.dx) * TILE); s.fy = sp((ty + s.dy) * TILE);
+      return;
+    }
+    this.slide = null;
+    this.moved = true;
+    // Caught by the water it splashes; stopped dead, it clinks.
+    if (m === 'stop') game.audio.sfx('splash');
+    else game.audio.sfx('block');
+    game.onBlockLanded(this);
+  }
+
+  draw(ctx, game, ox, oy) {
+    // Afloat, it bobs as the Hold's chunks do.
+    const [tx, ty] = this.tilePos(), room = game.room;
+    const afloat = !this.slide && room && room.inBounds(tx, ty) && (room.flagsAt(tx, ty, game.tide) & F.DEEP);
+    const bob = afloat && Math.floor(this.frame / CHUNK_BOB_FRAMES) % 2 ? 1 : 0;
+    super.draw(ctx, game, ox, oy + bob);
+  }
+}
+defineEntity('iceblock', (x, y, o) => new IceBlock(x, y, o));
 export class Statue extends PushBlock {
   constructor(x, y, o = {}) {
     super(x, y, { ...o, once: false });

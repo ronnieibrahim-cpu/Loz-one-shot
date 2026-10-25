@@ -699,6 +699,10 @@ export class Player extends Entity {
     this.animT++;
     this.pushing = (dx || dy) ? ((res.hitX && dx !== 0) || (res.hitY && dy !== 0)) : false;
     this.againstWall = game.input.down(this.dir) && this.facingWall(game);
+    // He shoves from the ice as from the floor (S209): Seasons' $586 is all
+    // ice, and its blocks are pushed from it.
+    if (this.pushing) this.tryPush(game, dx, dy);
+    else this._pushT = 0;
     if (this.pushing) game.doorwayPull(this, dx, dy, res);
   }
 

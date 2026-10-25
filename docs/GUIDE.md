@@ -1613,7 +1613,7 @@ every `darknut`'s armour for a moment, and that is when the sword gets through.
 | Key | Where | How |
 |---|---|---|
 | 1 | Bone Cell `d6/1,4,6` | Clear the room |
-| 2 | Drain Court `d6/1,4,5` | Block onto the far plate, stand on the near one |
+| 2 | Drain Court `d6/1,4,5` | The ice block onto the plate: four shoves at MID, HIGH, LOW, MID |
 | 3 | Black Kiln `d6/1,4,4` | Light four torches with the Kilnshell |
 | 4 | The Hauling Pit `d6/1,6,2` | Haul it off its pillar at **HIGH** |
 | 5 | The Sounding Floor `d6/0,5,3` (B1) | A chunk thrown down the Slack Water's east well at LOW lands on its plate |
@@ -1643,9 +1643,16 @@ and three torches at (1,1), (13,1) and (1,9). Light all three with the
 
 **Chartstone Crypt** (`d6/1,2,5`), west — the **Chartstone**, and a `darknut`.
 
-**Drain Court** (`d6/1,4,5`), east. Plates at (2,2) and (12,8), one block at
-(2,3), and a `beamos` at (11,2). Push the block **up** onto the far plate and
-stand on the near one. **Small Key 2**.
+**Drain Court** (`d6/1,4,5`), east (S209). One **ice block** at (12,8) and a
+plate in the alcove at (7,1), past a sump (7,2). The ice block slides until
+something stops it; shallow water catches it, deep water it floats over, and
+an open hole swallows it (it comes back when you leave). *"Ice runs till
+something stops it. So does shallow water!"* At **MID** push it **west** from
+(13,8): the drain (4,8) catches it (at LOW it would swallow it). At **HIGH**
+push it **north** from (4,9): it floats over the sunken wall (4,5) to the urn,
+stopping at (4,3). At **LOW** push it **east** from (3,3): the well (7,3)
+catches it. At **MID** push it **north** from (7,4): over the flooded sump onto
+the plate. **Small Key 2**.
 
 **Black Kiln** (`d6/1,4,4`). Four torches at (2,2), (12,2), (2,8) and (12,8),
 a `darknut` between them. Stand beside each, face it and set the Kilnshell
@@ -1727,6 +1734,20 @@ MID.
 
 **The Rime Landing** (`d6/0,6,3`), down the Draw's stair. Ice. A `stalfos`, a
 `zol` and a `keese`; three chunks against the north wall.
+
+**The Rime Gauge** (`d6/0,6,2`), optional, through the Landing's north door
+(S209; Seasons' ice-block room $586). Two **ice blocks** at (2,6) and (12,6);
+two plates in alcoves at (6,1) and (8,1), each past a sump. Everything happens
+on row 4: the dips at (2,4) and (12,4) catch a block only at HIGH, the well
+(6,4) only at LOW, and the pink stopper (8,4) is under the sea only at HIGH.
+From LOW: sound to **HIGH**; push both blocks **north** (from (12,7) and
+(2,7)) into the dips. **LOW**: push the east one **west** from (13,4); the
+stopper holds it at (9,4). **HIGH**: push the west one **east** from (1,4); it
+floats over the well and the stopper and stops against the other, on (8,4).
+Push it **north** from (8,5) onto the plate. Push the other **west** from
+(10,4): over the well, into the west dip. **LOW**: push it **east** from (1,4):
+the well catches it. **MID**: push it **north** from (6,5) onto the plate. A
+**blank** for the scrimshander rises by the door.
 
 **The Rime Hall** (`d6/0,7,2`), east, two screens tall. Lift a chunk from the
 bottom (2,20) and throw it onto the **dark ring** at (13,20). The plate across

@@ -39,7 +39,7 @@ import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } from './entity.js';
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
-import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots } from './objects.js';
+import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots, IceBlock } from './objects.js';
 import { CUBE_TOP } from '../data/sprites-cube.js';
 import { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } from './items.js';
 import { spawnRecordedChunks, chunkAtHome } from './chunk.js';
@@ -1375,6 +1375,11 @@ export class Game {
       if (pz.cube) {
         const spot = cubeSpots(room)[0], c = this.entities.find(e => e instanceof ColourCube);
         if (spot && c) { c.fx = sp(spot.x * TILE); c.fy = sp(spot.y * TILE); c.o = CUBE_TOP.indexOf(spot.colour); }
+      }
+      // A solved ice block room comes back with its blocks on the plates (S209).
+      if (pz.blocks) {
+        const ice = this.entities.filter(e => e instanceof IceBlock);
+        pz.blocks.forEach(([tx, ty], i) => { if (ice[i]) { ice[i].fx = sp(tx * TILE); ice[i].fy = sp(ty * TILE); } });
       }
       this.applyReward(pz.reward, true);
       return;

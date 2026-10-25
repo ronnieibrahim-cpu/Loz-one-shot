@@ -1,3 +1,51 @@
+## S209 — the Keep's ice blocks: the Drain Court and the Rime Gauge
+
+Branch claude/oracle-tides-ice-blocks-aad2do, off main at add1d85 (S208).
+
+### The human's choices this session
+- Shown the Drain Court and a Hold room beside Seasons' Sword & Shield Maze
+  $586 (docs/briefs/puzzle-pass/s209-drain.png, s209-hold.png; spec
+  s209-ice-mock.json): "build" the Drain Court; the Hold room as a NEW
+  OPTIONAL room off the Rime Landing; its prize a charm blank.
+
+### Built
+- THE ICE BLOCK (kind A with ice): objects.js `IceBlock` (`['iceblock', x,
+  y]`, a PushBlock that moves any number of times). Seasons' $2f (pushable
+  Tiles.s var34 bit 1 -> pushblock.s state 2): slides at ICE_BLOCK_SPEED
+  (SPEED_1c0, 1.75 px/f, derived) until the square ahead will not take it,
+  then clinks. Ours, square by square, `iceBlockMeets(flags)`: PIT/WHIRL ->
+  down (comes back with the room), wading water -> caught (splash), deep ->
+  floats on. `iceBlockInRing`: never slides into the ring/doorways. Link in
+  deep water cannot shove it. Resting on a square that the sea opens into a
+  hole, it drops. Afloat it bobs (CHUNK_BOB_FRAMES). A solved room puts the
+  blocks back on `puzzle.blocks` (Game.checkPuzzle). Art: rip-objects.py
+  `o_iceblock`, TILEINDEX_PUSHABLE_ICE_BLOCK $2f in tileset $41.
+- Player.updateIce now calls tryPush (Link could not shove anything from ice).
+- The Hold's own tide digits (legend dungeonAbyssIce): `0` dSumpIce, `1`
+  dSluiceIce, `2` dBasinIce (cobble dip, shallow at HIGH), `4` dDrainIce, `9`
+  dDrownIce (magenta $1d stopper, deep at HIGH). `3` is the shared well.
+- D6 Drain Court 1,4,5 (main, Small Key 2): ice block 12,8, plate 7,1 in an
+  alcove behind a sump 7,2; drain 4,8, drowned wall 4,5, sluice 4,3, well 7,3,
+  urns 4,2/10,2. MID west, HIGH north, LOW east, MID north. Beamos removed.
+  Urn sign "Ice runs till something stops it. So does shallow water!"
+- D6 The Rime Gauge 0,6,2 (new, optional): door at 11,10 <-> the Rime
+  Landing's new north door 11,0. Blocks 2,6 and 12,6; plates 6,1 and 8,1
+  past sumps; row 4 `i2iii3i9iii2i`; urns 10-12,8 guard the door. Chest
+  13,9 (blank, needFlag d6_gauge). 7 presses, 8 pushes.
+- tools/check-iceblocks.mjs + tools/lib/iceblock-flood.mjs (new; CLAUDE.md
+  table, 33 assertions). Actor: `['ice', dir]` and `['goto', x, y, f,
+  'skate']` (an ice-aware goto). shoot-mock takes `legends: {room: legend}`.
+- Robot: the Drain Court's four shoves from MID (route 1836-1848); the run
+  leaves at MID as before. check-playthrough 49/49 first full run, THE END,
+  never died; every D6 boss at the old waits.
+- Guide: remap-guide HEAD, d6 re-captured, d6-drain figure redrawn, texts in
+  guide.html and GUIDE.md (Rime Gauge added).
+
+### NEXT (S210)
+- Left from PUZZLE-PASS step 6: the Long Ford's floor and D6's Drowned
+  Garden (one-stake copies), and the three block-across-pillar rooms (Root
+  Ford, Ferry Pocket, Seedwarden's Ferry). Then step 8, signs.
+
 ## S208 — the last copied sills; the Shrine's mirror statues and tide floor
 
 Branch claude/oracle-tides-s208-pbcoj0, off main at 887fc85 (S207).

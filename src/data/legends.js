@@ -487,6 +487,12 @@ export function installLegends() {
   // ring that marks the cell under a shaft, `O` its own hole.
   theme('dungeonAbyssIce', 'dFloorAbyssIce', 'dFloorAbyssIceAlt', 'dWallAbyssIce', 'dWallAbyssIceX', 'dBlockAbyssIce', 'dUrnAbyssIce');
   registerLegend('dungeonAbyssIce', { 'i': 'dIceAbyss', 'O': 'dHoleAbyssIce' }, 'dungeonAbyssIce');
+  // The Hold's own tide digits (S209): `1` and `2` are ice when dry, `0` and
+  // `4` its own hole when open, `9` the magenta stopper the sea covers at HIGH.
+  // `3` (shallow, deep, deep) is the shared well: it is water at every sea.
+  registerLegend('dungeonAbyssIce', {
+    '0': 'dSumpIce', '1': 'dSluiceIce', '2': 'dBasinIce', '4': 'dDrainIce', '9': 'dDrownIce',
+  }, 'dungeonAbyssIce');
   // Each main dungeon's own stairs (S164), as the Palace's: `/` goes down
   // (or back along the same floor), `S` goes up. `S` is the shared legend's
   // `riptideS`, which no main dungeon room places.

@@ -3006,18 +3006,24 @@ export const ROUTE = [
   ['fight', 7000, 2500, { ring: true }],
   ['loot', 900],
 
-  // KEY 2 — DRAIN COURT. Two switches and one block, which is the room's whole
-  // argument: the block goes on the far switch and the player stands on the
-  // near one. The beamos is a statue and is left alone.
+  // KEY 2 — DRAIN COURT (S209): Seasons' ice block, and the sea decides
+  // where each shove ends (check-iceblocks' plan from MID). West at MID into
+  // the drain; north at HIGH over the drowned wall; east at LOW into the
+  // well; north at MID over the sump onto the plate. The run leaves at MID,
+  // as it came in.
   ['travel', 3, 6, 4000],
   ['travel', 3, 5, 4000],
   ['travel', 4, 5, 4000],
-  ['fight', 3000, 900, { ring: true }],
-  ['goto', 2, 4, 900],
-  ['hold', ['up'], 180],
+  ['equip', 'conch', 'B', 400],
+  ['goto', 13, 8, 900], ['ice', 'left'],
+  ['tide', 2, 140, 900],
+  ['goto', 4, 9, 900], ['ice', 'up'],
+  ['tide', 0, 140, 900],
+  ['goto', 3, 3, 900], ['ice', 'right'],
+  ['tide', 1, 140, 900],
+  ['goto', 7, 4, 900], ['ice', 'up'],
+  ['equip', 'rod', 'B', 400],
   ['wait', 60],
-  ['goto', 12, 8, 900],
-  ['wait', 120],
   ['loot', 900],
 
   // KEY 3 — THE BLACK KILN, AND THE FIRST FIRE ANYTHING IN THIS GAME HAS LIT.

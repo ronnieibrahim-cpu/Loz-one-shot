@@ -80,6 +80,8 @@ CHEST, CHEST_OPENED, SIGN = 0xf1, 0xf0, 0xf2
 UNLIT_TORCH, LIT_TORCH = 0x08, 0x09
 BUTTON, PRESSED_BUTTON, PUSHABLE_BLOCK = 0x0c, 0x0d, 0x1d
 ARMOS_STATUE = 0x25
+# Seasons' pushable ice block (pushableTiles.s: $2f slides, var34 bit 1).
+PUSHABLE_ICE_BLOCK = 0x2f
 
 # Seasons tileset index -> what it is. The dungeon ones are the ones our
 # dungeons are themed on (see the legend comments in tiles-core.js).
@@ -403,6 +405,11 @@ def build():
     # $93) — in the Ancient Ruins' own tileset and colours, the Shrine's kit.
     g, p = sets[0x3c].metatile(ARMOS_STATUE)
     put('o_statue_wood', g, p, f'metatile $25 (the armos statue), {TILESETS[0x3c]}')
+    # The ice block (S209, the Keep's ice blocks): TILEINDEX_PUSHABLE_ICE_BLOCK
+    # $2f, the one pushblock.s slides until it clinks, in the Sword & Shield
+    # Maze's ice half — room $586's three, the Hold's own tileset.
+    g, p = sets[0x41].metatile(PUSHABLE_ICE_BLOCK)
+    put('o_iceblock', g, p, f'TILEINDEX_PUSHABLE_ICE_BLOCK $2f, {TILESETS[0x41]}')
     for legend, suffix in ALIASES:
         assert suffix in themes.values(), f'{legend} names a suffix nothing cuts'
         themes[legend] = suffix

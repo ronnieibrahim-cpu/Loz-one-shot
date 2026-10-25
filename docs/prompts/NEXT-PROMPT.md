@@ -1,25 +1,25 @@
-# Next session (S209) — the puzzle pass: hard blocks with ice in D6
+# Next session (S210) — the puzzle pass: the last copies in D5 and D6
 
 ## Read first
 - CLAUDE.md, all of it.
 - docs/briefs/PUZZLE-PASS.md (the plan, the audit and the order).
-- docs/NEXT-SESSION.md S208 and S207; docs/HANDOFF.md lessons (top ten);
-  docs/DUNGEON-STATUS.md "S208" and "S207".
+- docs/NEXT-SESSION.md S209 and S208; docs/HANDOFF.md lessons (top ten);
+  docs/DUNGEON-STATUS.md "S209" and "S208".
 
 ## State
-- S204-S207: D1-D4 done (blocks, plates, toggles, torches, key drop, cube).
-- S208: the Gull Roost and the Siphon Stair are cube rooms (no copied sill
-  left in D4); D5 has the mirror statue (Sunken Bracken, Sunken Nave) and the
-  tide floor (Bole Walk, Knot Garden); check-statues, check-tidefloor.
+- S204-S208: D1-D5 kinds done (blocks, plates, toggles, torches, key drop,
+  cube, mirror statues, tide floor).
+- S209: Seasons' sliding ice block in D6: the Drain Court (main path) and the
+  new optional Rime Gauge in the Hold; check-iceblocks. No one-push room left.
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- PUZZLE-PASS.md step 7: A hard, with ice, in D6 — the Drain Court 1,4,5
-  (a one-push room) and the Hold; real block puzzles where the ice slides
-  and the sea decides each band. Mock beside the cartridge room first
-  (Seasons' Sword & Shield Maze ice rooms; Ages' Crown Dungeon blocks).
-- If there is room: the last one-stake copies (the Long Ford's floor, D6's
-  Drowned Garden) and the three block-across-pillar rooms.
+- PUZZLE-PASS.md step 6's leftovers: the Long Ford's floor and D6's Drowned
+  Garden (one-stake copies: one stake at HIGH, stand at LOW, cut), and the
+  three block-across-a-pillar rooms (Root Ford, Ferry Pocket, Seedwarden's
+  Ferry). Give each a twist of its own; mock each beside the cartridge room
+  it borrows from and show the human before building.
+- Then step 8: signs give full steps only where an item is first taught.
 - Every new kind gets its own prover, written first, with `--mock`; every
   room change re-times the robot (sweep the next boss's wait if a fight
   moves). New lines follow the rule in src/data/story.js's header.

@@ -96,7 +96,16 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    Pictures `s208-bracken/nave/bole/knot.png`. Left: the Long Ford's floor
    and D6's Drowned Garden (one-stake copies), the three block-across-pillar
    rooms.
-7. A hard, with ice, in D6 (Drain Court, the Hold).
+7. **S209, DONE: A hard, with ice, in D6.** Seasons' sliding ice block
+   ($2f, pushblock.s state 2; room $586), and the sea decides where each push
+   ends: a hole takes it, wading water catches it, deep water it floats over.
+   The Drain Court 1,4,5 (one block, four shoves at MID, HIGH, LOW, MID) and
+   the new optional Rime Gauge 0,6,2 in the Hold (two blocks, each the
+   other's stopper, one row read like a tide gauge; 8 pushes, 7 presses; a
+   blank) — `check-iceblocks.mjs`. Pictures `s209-drain.png`, `s209-hold.png`
+   (spec `s209-ice-mock.json`). Still left from step 6: the Long Ford's floor
+   and D6's Drowned Garden (one-stake copies), the three block-across-pillar
+   rooms.
 8. Signs: full words only where an item is first taught.
 
 Every new room changes the robot's clock (HANDOFF S192/S198/S203): sweep the

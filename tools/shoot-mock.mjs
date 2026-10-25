@@ -9,7 +9,8 @@
 //         anchor?: [tx, ty, level], entities?: [[kind, tx, ty, opts]], out,
 //         overrides?: [{ tx, ty, r, delta, shape, dx, dy }],
 //         link?: { tx, ty, dir, bellows }, tiles?: [[tx, ty, name]], toggle?: 0|1 } ] }
-// A room grid wider or taller than 15x11 is drawn as a room of that many
+// `legends: { room: legend }` gives one room its own legend (S209: the Keep
+// and its Hold in one spec). A room grid wider or taller than 15x11 is drawn as a room of that many
 // screens (a 45-wide grid is a 3x1 room). `overrides` lays tide overrides
 // after the sea is set: a Bellows cone is { shape: 'cone', delta: -1, r: 3,
 // dx, dy } from Link's tile, and a drained basin (S183's D4 mock) is a
@@ -55,7 +56,7 @@ for (const shot of spec.shots) {
     if (!MAPS.get(id)) {
       registerMap({
         id, kind: 'dungeon', name: 'Mock', w: 3, h: 3, floors: 1, cell: [15, 11],
-        legend: spec.legend, tint: 'cave', music: 'dungeon3',
+        legend: (spec.legends && spec.legends[shot.room]) || spec.legend, tint: 'cave', music: 'dungeon3',
         rooms: { '0,0,0': {
           name: shot.room, map: spec.rooms[shot.room], entities: shot.entities || [],
           ...(spec.rooms[shot.room][0].length > 15 || spec.rooms[shot.room].length > 11

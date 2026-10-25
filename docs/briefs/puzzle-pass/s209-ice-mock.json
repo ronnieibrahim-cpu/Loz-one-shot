@@ -1,0 +1,317 @@
+{
+ "legend": "dungeonAbyss",
+ "rooms": {
+  "drain": [
+   "###############",
+   "#######.#######",
+   "#...U.#0#.U...#",
+   "#...1..3......#",
+   "#.............#",
+   "....9.........#",
+   "#.............#",
+   "#.............#",
+   "#...4.........#",
+   "#.............#",
+   "#######.#######"
+  ],
+  "rime": [
+   "###############",
+   "#iiii#.#.#iiii#",
+   "#iiii#0#0#iiii#",
+   "#iiiiiiiiiiiii#",
+   "#i2iii3i9iii2i#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiUUUiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#######.#######"
+  ],
+  "rime2": [
+   "###############",
+   "#iiii#.#.#iiii#",
+   "#iiii#0#0#iiii#",
+   "#iiiiiiiiiiiii#",
+   "#i2iii3i9iii2i#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#######.#######"
+  ],
+  "rime3": [
+   "###############",
+   "#iiii#.#.#iiii#",
+   "#iiii#0#0#iiii#",
+   "#iiiiiiiiiiiii#",
+   "#i2iii3i9iii2i#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiiiii#",
+   "#iiiiiiiiiUUUi#",
+   "#iiiiiiiiiiiii#",
+   "###########.###"
+  ]
+ },
+ "claims": {
+  "drain": {
+   "from": [
+    0,
+    5
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "blocks": [
+    [
+     12,
+     8
+    ]
+   ],
+   "plates": [
+    {
+     "x": 7,
+     "y": 1
+    }
+   ]
+  },
+  "rime": {
+   "legend": "dungeonAbyssIce",
+   "from": [
+    7,
+    9
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "blocks": [
+    [
+     2,
+     6
+    ],
+    [
+     12,
+     6
+    ]
+   ],
+   "plates": [
+    {
+     "x": 6,
+     "y": 1
+    },
+    {
+     "x": 8,
+     "y": 1
+    }
+   ]
+  },
+  "rime2": {
+   "legend": "dungeonAbyssIce",
+   "from": [
+    7,
+    9
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "blocks": [
+    [
+     2,
+     6
+    ],
+    [
+     12,
+     6
+    ]
+   ],
+   "plates": [
+    {
+     "x": 6,
+     "y": 1
+    },
+    {
+     "x": 8,
+     "y": 1
+    }
+   ]
+  },
+  "rime3": {
+   "legend": "dungeonAbyssIce",
+   "from": [
+    11,
+    9
+   ],
+   "seas": [
+    0,
+    1,
+    2
+   ],
+   "blocks": [
+    [
+     2,
+     6
+    ],
+    [
+     12,
+     6
+    ]
+   ],
+   "plates": [
+    {
+     "x": 6,
+     "y": 1
+    },
+    {
+     "x": 8,
+     "y": 1
+    }
+   ]
+  }
+ },
+ "shots": [
+  {
+   "room": "drain",
+   "tide": 0,
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     7,
+     1
+    ]
+   ],
+   "out": "drain-low.png"
+  },
+  {
+   "room": "drain",
+   "tide": 1,
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     7,
+     1
+    ]
+   ],
+   "out": "drain-mid.png"
+  },
+  {
+   "room": "drain",
+   "tide": 2,
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     7,
+     1
+    ]
+   ],
+   "out": "drain-high.png"
+  },
+  {
+   "room": "rime",
+   "tide": 0,
+   "entities": [
+    [
+     "iceblock",
+     2,
+     6
+    ],
+    [
+     "iceblock",
+     12,
+     6
+    ],
+    [
+     "switch",
+     6,
+     1
+    ],
+    [
+     "switch",
+     8,
+     1
+    ]
+   ],
+   "out": "rime-low.png"
+  },
+  {
+   "room": "rime",
+   "tide": 1,
+   "entities": [
+    [
+     "iceblock",
+     2,
+     6
+    ],
+    [
+     "iceblock",
+     12,
+     6
+    ],
+    [
+     "switch",
+     6,
+     1
+    ],
+    [
+     "switch",
+     8,
+     1
+    ]
+   ],
+   "out": "rime-mid.png"
+  },
+  {
+   "room": "rime",
+   "tide": 2,
+   "entities": [
+    [
+     "iceblock",
+     2,
+     6
+    ],
+    [
+     "iceblock",
+     12,
+     6
+    ],
+    [
+     "switch",
+     6,
+     1
+    ],
+    [
+     "switch",
+     8,
+     1
+    ]
+   ],
+   "out": "rime-high.png"
+  }
+ ],
+ "legends": {
+  "rime": "dungeonAbyssIce",
+  "rime2": "dungeonAbyssIce",
+  "rime3": "dungeonAbyssIce"
+ }
+}

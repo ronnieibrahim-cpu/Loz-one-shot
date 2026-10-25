@@ -564,7 +564,10 @@ FIGURES.push(
     { n: 27, at: [3, 2, 7, 6] }, { n: 28, at: [4, 2, 22, 7] }, { n: 29, at: [3, 0, 12, 7] },
   ] },
   { out: 'd6-drain', src: 'd6-drain-done-whole', marks: [
-    { ring: [2, 2] }, lbl('block onto the far plate', [2.8, 1.6], 'e'), { ring: [12, 8] }, lbl('stand on this one', [11.2, 8], 'w'), MID,
+    { ring: [12, 8] }, { path: [[11.4, 8], [4.6, 8]], w: 4 }, lbl('1 MID: the drain catches it', [8, 9.2], 'c'),
+    { path: [[4, 7.4], [4, 3.6]], w: 4 }, lbl('2 HIGH: over the\nsunken wall', [2.2, 6.4], 'c'),
+    { path: [[4.6, 3], [6.4, 3]], w: 4 }, lbl('3 LOW: into the well', [10, 3.2], 'c'),
+    { path: [[7, 2.6], [7, 1.4]], w: 4 }, lbl('4 MID: onto the plate', [10.4, 1.4], 'c'),
   ] },
   { out: 'd6-kiln', src: 'd6-kiln-lit-whole', marks: [
     { ring: [2, 2] }, { ring: [12, 2] }, { ring: [2, 8] }, { ring: [12, 8] }, lbl('light all four torches\nwith the Kilnshell', [7, 5], 'c'),

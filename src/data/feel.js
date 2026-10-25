@@ -2708,3 +2708,9 @@ export const ICE_TURN_STEPS = 32;
  *  (1 px apart). guessed: Seasons never floats one (it splashes away); ours
  *  floats, and bobs at the pace a buoy on the overworld sea would. */
 export const CHUNK_BOB_FRAMES = 24;
+
+/** subpx/f — an ice block's slide once pushed (S209, objects.js IceBlock).
+ *  derived from the cartridge: oracles-disasm object_code/common/interactions/
+ *  pushblock.s state 2, which Seasons gives tile $2f (pushableTiles.s var34
+ *  bit 1): SPEED_1c0, 1.75 px a frame, from the first frame to the clink. */
+export const ICE_BLOCK_SPEED = 448;
