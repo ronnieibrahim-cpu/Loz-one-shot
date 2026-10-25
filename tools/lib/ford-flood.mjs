@@ -267,11 +267,17 @@ export function makeFordModel(room, spec, opts = {}) {
         const x = k % W, y = (k - x) / W;
         if (deepAt(s, x, y)) continue;
         for (const [dx, dy, dir] of DIRS) {
+          const exact = flight(s, x * TILE, y * TILE, dx, dy);
+          const ek = exact ? exact[1] * W + exact[0] : -1;
           for (const l of landings(s, x, y, dx, dy)) {
-            if (seen.has(l) || !stakeSet.has(l) || !grows(s, l) || l === k) continue;
-            seen.add(l);
-            const p = [...s.p, l].sort((a, c) => a - c);
-            yield [{ ...s, p }, 1, { throw: dir, from: [x, y], at: [l % W, (l - l % W) / W] }];
+            if (!stakeSet.has(l) || !grows(s, l) || l === k) continue;
+            // A throw from the middle of the tile, where the robot stands, is
+            // preferred: the same stake from a pixel off-centre costs more.
+            const c = l === ek ? 1 : 2;
+            if (seen.has(l + ':' + c) || seen.has(l + ':1')) continue;
+            seen.add(l + ':' + c);
+            const p = [...s.p, l].sort((a, c2) => a - c2);
+            yield [{ ...s, p }, c, { throw: dir, from: [x, y], at: [l % W, (l - l % W) / W], exact: l === ek }];
           }
         }
       }

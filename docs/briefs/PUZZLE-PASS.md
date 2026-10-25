@@ -106,7 +106,24 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    (spec `s209-ice-mock.json`). Still left from step 6: the Long Ford's floor
    and D6's Drowned Garden (one-stake copies), the three block-across-pillar
    rooms.
-8. Signs: full words only where an item is first taught.
+7b. **S210, DONE: step 6's leftovers — the stake inside other puzzles.**
+   A pillar's other two lives (a wall at MID, deep water at HIGH) put to work
+   by what is round it (`check-fords.mjs`, `tools/lib/ford-flood.mjs`): the
+   Root Ford 0,0,3 (the block over the stake at LOW, onto a drain at MID; the
+   islets are reached swimming, so you go round the tide on one; Seasons'
+   Ancient Ruins $4ab), the Long Ford 0,4,3 (the first stake is a wall at MID
+   and catches the second; Ages' Moonlit Grotto $4a6), the Ferry Pocket 0,0,4
+   (a mirror statue crosses only on the stake, at LOW, and the stake holds it
+   at MID while the block is reset; Seasons' Unicorn's Cave $493), the
+   Seedwarden's Ferry 0,5,6 (two stakes need LOW and the drain past them MID,
+   at once: the Anchor holds the ford; Ages' Jabu-Jabu $553), and D6's
+   Drowned Garden 1,4,2 (Seasons' ice block floats over the lintel at HIGH, a
+   stake past the plate stops it at MID; S&S Maze $586). Pictures
+   `s210-*.png`, spec `s210-fords-mock.json`. No one-stake copy and no
+   block-across-a-pillar copy is left.
+8. Signs: full words only where an item is first taught. **S210, first
+   pass**: eight signs that solved now hint (see NEXT-SESSION S210). Left:
+   a second read of every sign and the NPC hint lines.
 
 Every new room changes the robot's clock (HANDOFF S192/S198/S203): sweep the
 next boss's entry wait after each.

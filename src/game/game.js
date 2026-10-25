@@ -1409,7 +1409,10 @@ export class Game {
       if (lvl !== pz.tide) return;
     }
     if (pz.blocks) {
-      const bs = this.entities.filter(e => e instanceof PushBlock);
+      // An ice block still sliding is not on anything yet (S210: one
+      // crossing a plate on its way past paid the Drowned Garden out). A
+      // stone block's one-tile slide always ends where it is going.
+      const bs = this.entities.filter(e => e instanceof PushBlock && !(e instanceof IceBlock && e.slide));
       const ok = pz.blocks.every(([tx, ty]) =>
         bs.some(b => Math.round(b.x / TILE) === tx && Math.round(b.y / TILE) === ty));
       if (!ok) return;

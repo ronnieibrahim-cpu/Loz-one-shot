@@ -2345,7 +2345,7 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. Push it on at LOW tide! The other switch is on the bottom of the pool. Walk the floor to it."'],
+          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. And a swimmer never touches the bottom!"'],
         ],
       },
 
@@ -3512,7 +3512,7 @@ export function installDungeonsA() {
           ['tektite', 5, 15],
         ],
         readable: [
-          [3, 13, 'Cut beside the cell: "Swim in over the low wall at HIGH tide. Then sound the conch for LOW, and blow on the wheel!"'],
+          [3, 13, 'Cut beside the cell: "The low wall drowns at HIGH tide. The wheel only dries at LOW."'],
         ],
         script: {
           onEvent(game, name, data) {

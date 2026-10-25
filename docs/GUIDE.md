@@ -1300,8 +1300,10 @@ The west shutter (2,7) opens on the cell: the chest at (1,8), opened from
 
 **Grove Crossing** (`d5/0,3,3`). Locked; spend Small Key 3.
 
-**Grove 4 — The Long Ford** (`d5/0,4,3`). Enter at (0,2). **Stand at (4,1), face
-down, at HIGH**; stake at (4,3). Snarl at (4,4), cut from (4,3).
+**Grove 4 — The Long Ford** (`d5/0,4,3`). Enter at (1,5). **Stand in the nook
+at (8,5), face left**: the stake grows at (6,5), against the wall. At MID throw
+again from the nook: it stops on the first stake and grows at (7,5). At LOW
+stand on (7,5) and cut the snarl at (7,6).
 
 **Thornvine** (`d5/0,5,3`), east.
 
@@ -1317,7 +1319,7 @@ down, at HIGH**; stake at (4,3). Snarl at (4,4), cut from (4,3).
 
 **Grove 5 — The Shrine Ford** (`d5/0,4,2`). Two screens wide, and the only grove
 that needs **two stakes at two different seas** — the shrine board says so:
-*"Twice over. The first at HIGH tide, the second at LOW."*
+*"Too far for one throw. Build out to it!"*
 
 1. Enter at (14,7). **Stand at (15,4), face left, at HIGH tide.** Stake lands at
    (13,4).
@@ -1712,7 +1714,7 @@ the Crossed Shafts' first shaft, two floors up. It waits there.
 - The stair at (2,1) goes down to the Hold.
 
 **The Tally Hall** (`d6/1,7,2`), east of the Draw's far bank, two screens tall.
-*"LOW for the ledge. HIGH for the bar. MID for the floor."*
+*Three marks: one for the ledge, one for the bar, one for the floor.*
 
 - **Up to the island:** from **(7,16), face up, at LOW** — land at (7,13).
   **Over the bar:** from **(9,12), face up, at HIGH** — land at (9,9).

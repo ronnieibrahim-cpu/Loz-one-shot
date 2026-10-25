@@ -1,3 +1,69 @@
+## S210 — the stake inside other puzzles: the last copies in D5 and D6
+
+Branch claude/oracle-tides-s210-puzzles-azj3ds, off main at a6ccfac (S209).
+
+### The human's choices this session
+- Shown five rooms beside Seasons' Ancient Ruins $4ab, Ages' Moonlit Grotto
+  $4a6, Seasons' Unicorn's Cave $493, Ages' Jabu-Jabu $553 and the S&S Maze
+  $586 (docs/briefs/puzzle-pass/s210-*.png, spec s210-fords-mock.json):
+  "Build all".
+
+### Built
+- THE KIND: a stake grown inside another puzzle. A pillar is a step at LOW, a
+  wall at MID, deep at HIGH; until now only the step was used. tools/check-
+  fords.mjs + tools/lib/ford-flood.mjs (new; CLAUDE.md table): claims
+  `fordRoom: { from, seas, stakes: [[x,y]], cut?, cutFrom?, anchor?: { at,
+  from, level }, without?: ['pillarSoft'|'noAnchor'|...], trapDepth? }`.
+  Model: blocks/ice/statues, pillars as terrain (resolveTile('coralPillar')),
+  the seed's flight from 15 places in the tile (an off-centre throw costs 2,
+  so the plan uses throws from the middle where `sow` stands), the conch from
+  anywhere in Link's region, the Anchor at one stated place. Engine: plays the
+  plan (sow/hold/ice/anchor/tide), probe room proves the four pillar rules
+  and the block-on-drain drop.
+- D5 Root Ford 0,0,3 (main, Small Key 4): islets in sumps; block 7,6, ford
+  8,6 (W), drain 8,5, plate 9,5 (`puzzle.blocks`). MID swim to 6,6, sow
+  right; round to LOW on the islet; push right; MID: up from 8,7, right from
+  7,5. Sign "The ford wants LOW water. The drain wants more!"
+- D5 Long Ford 0,4,3 (main): rows 4-5 rebuilt: nook 8,5, stake squares 6,5
+  and 7,5, wall 5,5; snarl 7,6 unchanged; notches/Ford Crown untouched. Sow
+  left from 8,5 (any sea), MID sow again, LOW stand on 7,5, cut.
+  `fordRoom.cut` also tells the dungeon flood the snarl opens.
+- D5 Ferry Pocket 0,0,4: statue 1,2 in the north gallery, ford 4,2 (W) over
+  bole 4,3 (stake at HIGH from the bank), plate 10,2; block 9,7 in a walled
+  lane; south door opens on the cellar as before. 4 presses, 13 pushes.
+- D5 Seedwarden's Ferry 0,5,6: block 10,6, stakes 11,6/12,6, drain 13,6,
+  plate 13,5; Anchor at 10,8 (covers both stakes, not the drain) at LOW, MID,
+  push from 11,6 then up from 13,7. Two basins for looks in the east half.
+- D6 Drowned Garden 1,4,2: ice block 8,8 behind the lintel 9,8, dip (basin)
+  10,8, lane x=10 up to the plate 10,2, water 10,1 for the stake; push from
+  the step 10,9. HIGH push, stake, MID push. Chest (100 Rupees, needFlag
+  d6_garden) at 5,2. 12,5 and the east shutter untouched (K5/K6 route unchanged).
+- ENGINE: a resting PushBlock goes down a hole the sea opens under it (it
+  hung over the pit). checkPuzzle ignores a SLIDING ice block (one crossing a
+  plate paid the room). check-iceblocks/check-statues skip fordRoom rooms.
+- Robot: Root Ford and Long Ford re-routed; check-playthrough 49/49 first
+  run, THE END, never died, every boss at the old waits.
+- Guide: remap-guide HEAD; Root Ford/Long Ford texts in guide.html, GUIDE.md;
+  d5-rootford figure redrawn (shot moved to the solved room).
+
+- SIGNS (PUZZLE-PASS step 8, first pass): eight signs outside teaching rooms
+  that spelled out the answer now hint: D3 the sunk-switch well, D4 the cell
+  under the spillway, D5 the Knotted Pool, the Long Root, the Shrine Ford, D6
+  the Tally Hall, the LOW-HIGH-LOW sounding line and the choir stalls.
+  Teaching rooms (First Stake, Slack Water, the Lens, Cleats and Bellows
+  rooms) keep their full words. Guide quotes updated.
+
+### Verified
+Whole table green (check-fords 65; replay 51/51; check-side 78; check-guide
+4); check-playthrough 49/49, THE END, deaths 0. Built; dist committed.
+
+### NEXT (S211)
+- Step 8, second pass: read every remaining dungeon and cave sign against
+  "hint, don't solve" (dungeons-a.js D1/D2 marks and D4 plates especially),
+  and the NPC hint lines in story.js for the same rooms. Then the "More"
+  kinds (eye statues, a bridge held by its plate, slates) — each needs its
+  twist before it is built.
+
 ## S209 — the Keep's ice blocks: the Drain Court and the Rime Gauge
 
 Branch claude/oracle-tides-ice-blocks-aad2do, off main at add1d85 (S208).

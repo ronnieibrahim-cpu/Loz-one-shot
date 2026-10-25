@@ -515,7 +515,8 @@ FIGURES.push(
   { out: 'd5-bolewalk', src: 'd5-bolewalk-low-whole', marks: [lbl('blocks on the blue tiles, then MID:\nthe sea turns every tile it covers', [7, 9.2], 'c'), LOW] },
   { out: 'd5-knotted', src: 'd5-knotted-2-whole', marks: [lbl('one stake from the bank at HIGH,\nthe second from the first at LOW', [7, 2.4], 'c'), LOW] },
   { out: 'd5-rootford', src: 'd5-rootford-pushed-whole', marks: [
-    { ring: [4, 5] }, { ring: [3, 6] }, lbl('block on one plate,\nyou on the other', [3.5, 7.6]), { ring: [3, 2] }, lbl('key', [3, 1.2], 'n'), LOW,
+    { ring: [8, 6] }, lbl('over the stake at LOW,', [8, 9.6], 'c'), { ring: [8, 5] }, lbl('onto the drain at MID', [11.5, 3.2], 'c'),
+    { ring: [3, 2] }, lbl('key', [3, 1.2], 'n'), MID,
   ] },
   { out: 'd5-longford', src: 'd5-longford-low-whole', marks: [{ ring: [13, 5] }, lbl('Thornvine’s door (locked)', [12.2, 5], 'w'), LOW] },
   { out: 'd5-fordcrown', src: 'd5-fordcrown-low-whole', marks: [
@@ -545,7 +546,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1801, to: 1823, every: 8 }, w: 3 },
+    { trail: { from: 1805, to: 1827, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 

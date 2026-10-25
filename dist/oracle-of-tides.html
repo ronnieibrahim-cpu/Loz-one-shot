@@ -25164,7 +25164,13 @@ class PushBlock extends Entity {
   }
 
   update(game) {
-    if (!this.slide) return;
+    if (!this.slide) {
+      // The sea goes out from under a resting block (S210): a square gone to
+      // a hole takes it, as it takes the ice block, and the room puts it back.
+      // Before this a block left on a drain at MID hung over the pit at LOW.
+      if (!this.remove && overHole(game, this)) dropIntoHole(game, this);
+      return;
+    }
     const step = BLOCK_SLIDE_SPEED;   // Seasons' half a pixel a frame
     this.fx += Math.sign(this.slide.fx - this.fx) * step;
     this.fy += Math.sign(this.slide.fy - this.fy) * step;
@@ -38011,7 +38017,10 @@ class Game {
       if (lvl !== pz.tide) return;
     }
     if (pz.blocks) {
-      const bs = this.entities.filter(e => e instanceof PushBlock);
+      // An ice block still sliding is not on anything yet (S210: one
+      // crossing a plate on its way past paid the Drowned Garden out). A
+      // stone block's one-tile slide always ends where it is going.
+      const bs = this.entities.filter(e => e instanceof PushBlock && !(e instanceof IceBlock && e.slide));
       const ok = pz.blocks.every(([tx, ty]) =>
         bs.some(b => Math.round(b.x / TILE) === tx && Math.round(b.y / TILE) === ty));
       if (!ok) return;
@@ -61908,7 +61917,7 @@ function installDungeonsA() {
           },
         },
         readable: [
-          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. Push it on at LOW tide! The other switch is on the bottom of the pool. Walk the floor to it."'],
+          [3, 2, 'Scratched by the well: "A block won\'t go into deep water. And a swimmer never touches the bottom!"'],
         ],
       },
 
@@ -63075,7 +63084,7 @@ function installDungeonsA() {
           ['tektite', 5, 15],
         ],
         readable: [
-          [3, 13, 'Cut beside the cell: "Swim in over the low wall at HIGH tide. Then sound the conch for LOW, and blow on the wheel!"'],
+          [3, 13, 'Cut beside the cell: "The low wall drowns at HIGH tide. The wheel only dries at LOW."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -64181,50 +64190,41 @@ function installDungeonsB() {
           ['keese', 2, 7],
         ],
         readable: [
-          [2, 3, 'Knotted into a rope on the wall: "Throw one from the bank at HIGH tide. Throw the next from the first at LOW."'],
+          [2, 3, 'Knotted into a rope on the wall: "A stake is somewhere to stand. Even one you just grew!"'],
         ],
       },
       '0,0,3': {
         name: 'The Root Ford',
-        // THE BLOCK AND THE PILLAR. The block on the islet has to reach the
-        // plate in the west pocket, and between them is one square of deep
-        // water at 7,5. Grow a stake there — at HIGH, over the drowned bole
-        // from the bank — and the block crosses it at LOW and at no other sea.
-        // The islet and the pocket are cut off from the bank by stone except
-        // through that square, so the way out to them is to swim over the
-        // bole at HIGH and sound the conch round to LOW; the way back is to
-        // sound it round to HIGH and swim.
+        // THE FORD AND THE DRAIN (S210, docs/briefs/PUZZLE-PASS.md step 6;
+        // Seasons' Ancient Ruins $4ab, a block among holes). The block stands
+        // on an islet in a field of sumps, and the plate on another past the
+        // ford (8,6) and the drain (8,5). The block crosses the stake at LOW
+        // and at no other sea; the drain swallows it at LOW and takes it, as
+        // wading water, at MID. The islets are reached by swimming, so the
+        // way to stand on one at LOW is to go round the tide on it. Stake from
+        // the bank; LOW, onto the ford from 6,6; MID, onto the drain from the
+        // south islet; MID, onto the plate. tools/check-fords.mjs proves it.
         map: [
           '#######.#######',
           '#.............#',
           '#.U.........U.#',
           '#.............#',
-          '#######5#######',
-          '###....W..#####',
-          '###...#.....###',
-          '######......###',
-          '######......###',
-          '######....U.###',
+          '#..000000000..#',
+          '#..000..4.00..#',
+          '#..000..W000..#',
+          '#..00000.000..#',
+          '#..000000000..#',
+          '#.U.........U.#',
           '###############',
         ],
-        reefseedRoom: {
-          entry: [7, 0],
-          stakes: [
-            { at: [7, 5], from: [7, 3], face: 'down', sea: 2 },
-          ],
-          block: [8, 5], target: [4, 5], pushFrom: [9, 5],
-        },
+        fordRoom: { from: [7, 1], seas: [0, 1, 2], stakes: [[8, 6]] },
         entities: [
-          ['block', 8, 5, { once: false }],
-          // TWO PLATES, BOTH HELD AT ONCE: one for the block and one for the
-          // player. A plate answers to Link's own feet, so a single one would
-          // be answered by walking onto it and the block would be scenery.
-          ['switch', 4, 5],
-          ['switch', 3, 6],
+          ['block', 7, 6, { once: false }],
+          ['switch', 9, 5],
           ['tektite', 11, 2],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[9, 5]],
           flag: 'd5_rootford',
           reward: {
             spawn: [['pickup', 3, 2, { kind: 'key' }]],
@@ -64232,7 +64232,7 @@ function installDungeonsB() {
           },
         },
         readable: [
-          [12, 3, 'A ferryman\'s mark: "The road is only there when the water isn\'t."'],
+          [12, 3, 'A ferryman\'s mark: "The ford wants LOW water. The drain wants more!"'],
         ],
       },
 
@@ -64247,39 +64247,35 @@ function installDungeonsB() {
       // width of two screens, and a chain that ends in a charm.
       '0,0,4': {
         name: 'The Ferry Pocket',
-        // The Root Ford turned on its side. The stake at 7,5 is thrown from
-        // the east over the bole at HIGH; the block on the north islet
-        // crosses it at LOW onto the plate in the south pocket, and the
-        // plate opens the way down. The islet and pocket are stone-bound but
-        // for that square, so they are reached the Root Ford's way.
+        // THE STATUE'S FORD (S210; Seasons' Unicorn's Cave $93, the reverse
+        // armos). A mirror statue in the north gallery has to reach its plate
+        // (10,2), and the one square of water in its way (4,2) it crosses on
+        // a stake at LOW and on nothing else. The block in the south lane is
+        // too short a run to walk it there in one go: push it back at MID,
+        // and the stake — a wall at MID — holds the statue where it stands.
+        // The stake goes in at HIGH, over the drowned bole from the bank.
         map: [
           '###############',
-          '##########....#',
-          '#######..#..U.#',
-          '#######..#....#',
-          '#######..#....#',
-          '#######W5......',
-          '######..#.....#',
-          '######...#....#',
-          '######...#..U.#',
-          '#######.##....#',
+          '###############',
+          '#...W......####',
+          '####5##########',
+          '#.............#',
+          '#..............',
+          '#..#########..#',
+          '#.#........#..#',
+          '#.#.######.#..#',
+          '#.............#',
           '#######D#######',
         ],
-        reefseedRoom: {
-          entry: [14, 5],
-          stakes: [
-            { at: [7, 5], from: [9, 5], face: 'left', sea: 2 },
-          ],
-          block: [7, 4], target: [7, 7], pushFrom: [7, 3],
-        },
+        fordRoom: { from: [13, 5], seas: [0, 1, 2], stakes: [[4, 2]] },
         entities: [
-          ['block', 7, 4, { once: false }],
-          ['switch', 7, 7],
-          ['switch', 6, 8],
+          ['block', 9, 7, { once: false }],
+          ['statue', 1, 2],
+          ['switch', 10, 2],
           ['tektite', 12, 5],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[10, 2]],
           flag: 'd5_ferrypocket',
           reward: { openDoors: [[7, 10]], say: 'The south door grinds open.' },
         },
@@ -64412,7 +64408,7 @@ function installDungeonsB() {
           ['keese', 3, 15],
         ],
         readable: [
-          [12, 18, 'Cut into the shaft\'s foot: "Once at HIGH tide. Twice at LOW. Then cut!"'],
+          [12, 18, 'Cut into the shaft\'s foot: "Only the first stake is thrown from the bank."'],
         ],
       },
       '0,7,6': {
@@ -64446,39 +64442,39 @@ function installDungeonsB() {
       },
       '0,5,6': {
         name: "The Seedwarden's Ferry",
-        // THE ROOT FORD, TWO SCREENS LONG. The stake at 22,5 goes in at HIGH
-        // over the bole from the bank above; the block on the east islet
-        // crosses it at LOW into the long west hall and has to be pushed the
-        // length of it to the plate at 12,5.
+        // THE ANCHOR HOLDS THE FORD (S210; Ages' Jabu-Jabu's Belly). The block
+        // crosses two stakes (11,6 and 12,6) at LOW, and past them is a drain
+        // (13,6) that swallows it at LOW and takes it only at MID — where the
+        // stakes are walls, and nobody stands on a wall to push. Throw the
+        // Tidewright's Anchor down below the stakes (10,8) at LOW and sound
+        // the conch: the ford stays LOW, the drain fills, and the block goes
+        // over from the near stake and up onto the plate (13,5).
         size: [2, 1],
         map: [
           '##############################',
           '#............................#',
           '#..U........U.....U..........#',
           '#............................#',
-          '######################5####..#',
-          '#.....................W...#...',
-          '#....................#....####',
-          '#....U.........U......#...####',
-          '#.....................#...####',
-          '#.....................########',
+          '########.#####################',
+          '#........####.#...............',
+          '#......#...WW4#.....22222....#',
+          '#.......#####.#.....22222....#',
+          '#............................#',
+          '#....U.........U.......U.....#',
           '##############################',
         ],
-        reefseedRoom: {
-          entry: [29, 5],
-          stakes: [
-            { at: [22, 5], from: [22, 3], face: 'down', sea: 2 },
-          ],
-          block: [23, 5], target: [12, 5], pushFrom: [24, 5],
+        fordRoom: {
+          from: [28, 5], seas: [0, 1], stakes: [[11, 6], [12, 6]], trapDepth: 6,
+          anchor: { at: [10, 8], from: [10, 8], level: 0 }, without: ['noAnchor'],
         },
         entities: [
-          ['block', 23, 5, { once: false }],
-          ['switch', 12, 5],
-          ['switch', 12, 8],
+          ['block', 10, 6, { once: false }],
+          ['switch', 13, 5],
           ['tektite', 8, 2],
+          ['keese', 24, 8],
         ],
         puzzle: {
-          switches: 'all',
+          blocks: [[13, 5]],
           flag: 'd5_seedwarden',
           reward: { spawn: [['chest', 4, 7, { charm: 'anemonesGift' }]], say: 'Something settles at the end of the hall.' },
         },
@@ -64678,11 +64674,9 @@ function installDungeonsB() {
       },
       '0,4,3': {
         name: 'The Long Ford',
-        // GROVE 4, pointed south, and the first with the bank on the far side
-        // of the pool from the door — so the throw has to be set up by walking
-        // round the water rather than by standing where you came in. The snarl
-        // is in the wall across the room; the way on is the south hall and the
-        // east passage up to the door.
+        // GROVE 4, the snarl in the pool's south wall; the way on is the south
+        // hall and the east passage up to the door. Until S210 it was the
+        // First Stake again (one stake at HIGH over a bole, stand at LOW).
         //
         // UNDER THE FORD CROWN (S187). Two notches stand in the south hall's
         // north wall, each a single cell walled in on all four sides with a
@@ -64697,8 +64691,8 @@ function installDungeonsB() {
           '#..........#..#',
           '#..........#..#',
           '#..........#..#',
-          '#......5...#..#',
-          'L....0WWW0.#..L',
+          '#.....##.#.#..#',
+          'L....#WW.#.#..L',
           '#######k####..#',
           '#.###.#.......#',
           '##...#........#',
@@ -64706,14 +64700,13 @@ function installDungeonsB() {
           '###############',
         ],
         warps: [{ x: 1, y: 9, to: { map: 'd5', floor: 1, rx: 4, ry: 3, px: 2 * 16, py: 9 * 16, dir: 'right' } }],
-        reefseedRoom: {
-          // The first floor inside its west door, a key door since S186.
-          entry: [1, 5],
-          stakes: [
-            { at: [7, 5], from: [7, 3], face: 'down', sea: 2 },
-          ],
-          snarl: [7, 6], cutFrom: [7, 5],
-        },
+        // THE STAKE CATCHES THE SEED (S210, docs/briefs/PUZZLE-PASS.md step
+        // 6; Ages' Moonlit Grotto, where walls decide where a seed goes). The
+        // square beside the snarl (7,5) is next to the nook Link throws from
+        // (8,5), and a seed always flies past it, onto 6,5 against the wall.
+        // At MID that first stake is a wall, so the next seed stops dead on
+        // it and drops at 7,5; stand on that at LOW and cut.
+        fordRoom: { from: [1, 5], seas: [0, 1, 2], stakes: [[6, 5], [7, 5]], cut: [7, 6], cutFrom: [7, 5], without: ['pillarSoft'] },
         dropRoom: [
           { from: '1,4,3', hole: [1, 7], plate: [1, 7], seas: [0] },
           { from: '1,4,3', hole: [5, 7], plate: [5, 7], seas: [1] },
@@ -64819,7 +64812,7 @@ function installDungeonsB() {
           reward: { reveal: true, say: 'Three stakes hold the notches down.\nSomething rises in the west hall.' },
         },
         readable: [
-          [33, 5, 'A shrine board, barely legible: "Twice over. The first at HIGH tide, the second at LOW."'],
+          [33, 5, 'A shrine board, barely legible: "Too far for one throw. Build out to it!"'],
         ],
       },
       '0,3,2': {
@@ -65497,43 +65490,47 @@ function installDungeonsB() {
       },
       '1,4,2': {
         name: 'The Drowned Garden',
-        // The Keep's own Reefseed grove, in the Keep's own materials: the bar
-        // across the pool is `7`/`dLintel`, the Keep's masonry, stone at LOW
-        // and MID and open water at HIGH; the kelp is `dSnarlAbyss`. The
-        // fixture is the Shrine's, unchanged: the lintel stops the throw until
-        // HIGH drowns it, the stake is open water at every sea until a pillar
-        // is grown on it, and the snarl sits in the one gap of the wall above.
-        // Cut it and the alcove opens for good — a find, not a need.
+        // GROW YOUR OWN STOPPER (S210, docs/briefs/PUZZLE-PASS.md step 6;
+        // Seasons' Sword & Shield Maze $586). Seasons' ice block slides until
+        // something stops it, and the plate (10,2) is in a lane with nothing
+        // past it but a square of water (10,1). The block starts behind the
+        // Keep's lintel (9,8): at HIGH it floats over it and the dip (10,8)
+        // catches it; then a stake in the water past the plate, and at MID —
+        // the one sea a pillar is a wall — the block pushed up the lane from
+        // the step below (10,9) stops on the plate. At LOW it slides over the
+        // stake, at HIGH it floats over it. Until S210 the Shrine's grove,
+        // copied: one stake at HIGH over the lintel, stand at LOW, cut.
         //
         // S190: a way east into the Weighhouse, a shutter K5's plate opens, and
         // the cell 12,5 under the Crossed Shafts' middle shaft (2F 4,2 12,5):
         // a chunk set down here is hauled up onto the middle island at HIGH.
         map: [
           '###############',
-          '###############',
-          '####........###',
-          '#######k#######',
-          '####.0WWW0....#',
-          '####...7......D',
-          '####..........#',
-          '####........###',
-          '#######.#######',
-          '#######.#######',
+          '##########W####',
+          '####.....#.#..#',
+          '####.....#.#..#',
+          '####.....#.#..#',
+          '####..........D',
+          '####.....#.#..#',
+          '####.....#.#..#',
+          '####.....72#..#',
+          '####....##....#',
           '#######.#######',
         ],
-        reefseedRoom: {
-          entry: [7, 10],
-          stakes: [
-            { at: [7, 4], from: [7, 6], face: 'up', sea: 2 },
-          ],
-          snarl: [7, 3], cutFrom: [7, 4],
-        },
+        fordRoom: { from: [7, 9], seas: [0, 1, 2], stakes: [[10, 1]], without: ['pillarSoft'] },
         entities: [
-          ['keese', 9, 6],
-          ['pickup', 7, 2, { kind: 'rupee20' }],
+          ['iceblock', 8, 8],
+          ['switch', 10, 2],
+          ['chest', 5, 2, { pickup: 'rupee100', needFlag: 'd6_garden' }],
+          ['keese', 6, 6],
         ],
+        puzzle: {
+          blocks: [[10, 2]],
+          flag: 'd6_garden',
+          reward: { reveal: true, say: 'A chest rises in the corner.' },
+        },
         readable: [
-          [5, 6, 'A gardener\'s plate, green with age: "The stone bar drowns at HIGH tide. Plant then, and stand once the sea goes out."'],
+          [4, 7, 'A gardener\'s plate, green with age: "Ice runs on till it meets a wall. Grow one!"'],
         ],
       },
 
@@ -65773,7 +65770,7 @@ function installDungeonsB() {
           ['stalfos', 9, 19],
         ],
         readable: [
-          [2, 18, 'A tally cut in the wall, three marks: "LOW for the ledge. HIGH for the bar. MID for the floor."'],
+          [2, 18, 'A tally cut in the wall, three marks: one for the ledge, one for the bar, one for the floor.'],
         ],
       },
       '1,6,2': {
@@ -66236,7 +66233,7 @@ function installDungeonsB() {
           ['darknut', 4, 8],
         ],
         readable: [
-          [27, 8, 'A sounding line knotted to the wall: "LOW, HIGH, LOW. Count them before you go."'],
+          [27, 8, 'A sounding line knotted to the wall: "Three changes of the sea. Count them before you go."'],
         ],
       },
       '2,0,4': {
@@ -66339,7 +66336,7 @@ function installDungeonsB() {
           ['darknut', 24, 6],
         ],
         readable: [
-          [20, 7, 'Cut under the choir stalls: "Cross at MID tide. At LOW the floor is gone, and at HIGH it\'s over your head."'],
+          [20, 7, 'Cut under the choir stalls: "At LOW the floor is gone. At HIGH it\'s over your head."'],
         ],
       },
       '2,4,5': {

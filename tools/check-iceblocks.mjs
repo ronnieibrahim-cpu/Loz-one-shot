@@ -67,7 +67,8 @@ if (MOCK) {
       const ents = def.entities || [];
       const has = ents.some(e => e[0] === 'iceblock');
       if (!def.iceRoom) {
-        if (has) check(`${mapId} ${key} (${def.name}): holds an ice block and claims it`, false, 'no iceRoom');
+        // An ice block in a stake puzzle is check-fords.mjs's (S210).
+        if (has && !def.fordRoom) check(`${mapId} ${key} (${def.name}): holds an ice block and claims it`, false, 'no iceRoom');
         continue;
       }
       const spec = {

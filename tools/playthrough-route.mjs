@@ -2506,28 +2506,27 @@ export const ROUTE = [
   ['wait', 60],
   ['goto', 7, 9, 900],
   ['exit', 'down', 600],
-  // THE ROOT FORD: the stake at HIGH over the bole, swim out to the islet
-  // and sound the sea round to LOW, then push the block west across the
-  // pillar onto the plate. The key falls on the bank; the way back is HIGH.
+  // THE ROOT FORD (S210): the ford and the drain. Swim out to the west islet
+  // at MID and throw the stake from it; sound the sea round to LOW standing
+  // on the islet and push the block onto the stake; at MID, from the south
+  // islet, up onto the drain (shallow now; at LOW it would swallow it), and
+  // from the islet's top onto the plate. The key falls on the bank; the way
+  // back is HIGH.
   ['fight', 3000, 1200],
   ['equip', 'reefseed', 'A', 400],
-  ['tide', 2, 140, 600],
-  ['reefseed', 7, 5, 900],
-  ['goto', 9, 5, 900],
-  ['tide', 0, 140, 600],
-  // One push per hold: PUSH_DELAY_FRAMES of leaning and a few to spare, not
-  // so long that the lean starts again behind the block and shoves it twice.
-  ['hold', ['left'], 26],
-  ['goto', 8, 5, 400],
-  ['hold', ['left'], 26],
-  ['goto', 7, 5, 400],
-  ['hold', ['left'], 26],
-  ['goto', 6, 5, 400],
-  ['hold', ['left'], 26],
-  // The block holds one plate; Link holds the other.
-  ['goto', 3, 6, 400],
-  ['wait', 60],
   ['tide', 1, 140, 600],
+  ['goto', 6, 6, 900],
+  ['sow', 6, 6, 'right', 400],
+  ['tide', 2, 140, 600],
+  ['tide', 0, 140, 600],
+  // One push per lean: PUSH_DELAY_FRAMES and the slide, not so long that the
+  // lean starts again behind the block and shoves it twice.
+  ['wait', 6], ['hold', ['right'], 40], ['wait', 30],
+  ['tide', 1, 140, 600],
+  ['goto', 8, 7, 900],
+  ['wait', 6], ['hold', ['up'], 40], ['wait', 30],
+  ['goto', 7, 5, 900],
+  ['wait', 6], ['hold', ['right'], 40], ['wait', 30],
   ['tide', 2, 140, 600],
   ['goto', 7, 3, 900],
   ['goto', 3, 2, 900],
@@ -2576,15 +2575,17 @@ export const ROUTE = [
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,4,3
-  // GROVE 4, the Long Ford, pointed south — the bank is on the far side of the
-  // pool from the door, so the throw is set up by walking round the water
-  // rather than by standing where you came in. The snarl is in the wall across
-  // the room, and the way on is the south hall and the east passage.
+  // GROVE 4, the Long Ford (S210): the stake catches the seed. From the nook
+  // a throw flies past the square by the snarl onto the far one; at MID that
+  // stake is a wall, and the next throw stops on it and grows by the snarl.
+  // Stand on it at LOW and cut; the way on is the south hall and the east
+  // passage.
   ['fight', 4000, 1500],
   ['loot', 600],
   ['equip', 'reefseed', 'A', 400],
-  ['tide', 2, 140, 600],
-  ['reefseed', 7, 5, 900],
+  ['sow', 8, 5, 'left', 400],
+  ['tide', 1, 140, 600],
+  ['sow', 8, 5, 'left', 400],
   ['tide', 0, 140, 600],
   ['equip', 'sword', 'A', 400],
   ['goto', 7, 5, 1500],

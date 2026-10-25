@@ -60,7 +60,7 @@ if (MOCK) {
       const ents = def.entities || [];
       const has = ents.some(e => e[0] === 'statue');
       if (!def.statueRoom) {
-        if (has) check(`${mapId} ${key} (${def.name}): holds a statue and claims it`, false, 'no statueRoom');
+        if (has && !def.fordRoom) check(`${mapId} ${key} (${def.name}): holds a statue and claims it`, false, 'no statueRoom');
         continue;
       }
       const spec = {
