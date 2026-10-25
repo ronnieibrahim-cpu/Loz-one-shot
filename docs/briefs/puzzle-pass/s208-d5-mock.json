@@ -1,0 +1,714 @@
+{
+ "legend": "dungeonWood",
+ "rooms": {
+  "bracken": [
+   "###############",
+   "#...###########",
+   "#...#...1..1.##",
+   "#...###########",
+   "#.............#",
+   "...............",
+   "#.............#",
+   "#.............#",
+   "#.............#",
+   "#.............#",
+   "#######.#######"
+  ],
+  "nave": [
+   "###############",
+   "#.###########.#",
+   "#.##...1....#.#",
+   "#.###########.#",
+   "#.##.....1..#.#",
+   "..###########.#",
+   "#.#...........#",
+   "#.D...........#",
+   "#.#...........#",
+   "#.#...........#",
+   "#######.#######"
+  ],
+  "bole": [
+   "#######.#######",
+   "#######.#######",
+   "#######.#######",
+   "#######D#######",
+   "#.............#",
+   "......cccc....L",
+   "#.....cdcc....#",
+   "#.....cccd....#",
+   "#.............#",
+   "#.............#",
+   "###############"
+  ],
+  "knot": [
+   "#######.#######",
+   "#.............#",
+   "#.U.........U.#",
+   "#.............#",
+   "#.....cdcd....#",
+   "#.....gfgf....#",
+   "#.............#",
+   "#.............#",
+   "#.U.........U.#",
+   "#.............#",
+   "###############"
+  ]
+ },
+ "claims": {
+  "bracken": {
+   "from": [
+    7,
+    9
+   ],
+   "blocks": [
+    [
+     9,
+     7
+    ]
+   ],
+   "statues": [
+    [
+     5,
+     2
+    ]
+   ],
+   "plates": [
+    {
+     "x": 12,
+     "y": 2,
+     "by": "statue"
+    },
+    {
+     "x": 11,
+     "y": 8,
+     "by": "block"
+    }
+   ]
+  },
+  "nave": {
+   "from": [
+    7,
+    9
+   ],
+   "blocks": [
+    [
+     12,
+     7
+    ]
+   ],
+   "statues": [
+    [
+     4,
+     2
+    ],
+    [
+     4,
+     4
+    ]
+   ],
+   "plates": [
+    {
+     "x": 11,
+     "y": 2,
+     "by": "statue"
+    },
+    {
+     "x": 8,
+     "y": 4,
+     "by": "statue"
+    },
+    {
+     "x": 5,
+     "y": 7,
+     "by": "block"
+    }
+   ]
+  },
+  "bole": {
+   "from": [
+    1,
+    5
+   ],
+   "blocks": [
+    [
+     3,
+     8
+    ],
+    [
+     11,
+     8
+    ]
+   ]
+  },
+  "knot": {
+   "from": [
+    7,
+    1
+   ],
+   "blocks": [
+    [
+     7,
+     7
+    ]
+   ]
+  }
+ },
+ "shots": [
+  {
+   "room": "bracken",
+   "tide": 0,
+   "out": "br-1.png",
+   "link": {
+    "tx": 8,
+    "ty": 7,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "switch",
+     12,
+     2
+    ],
+    [
+     "switch",
+     11,
+     8
+    ],
+    [
+     "block",
+     9,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     5,
+     2
+    ]
+   ]
+  },
+  {
+   "room": "bracken",
+   "tide": 0,
+   "out": "br-2.png",
+   "link": {
+    "tx": 6,
+    "ty": 7,
+    "dir": "left"
+   },
+   "entities": [
+    [
+     "switch",
+     12,
+     2
+    ],
+    [
+     "switch",
+     11,
+     8
+    ],
+    [
+     "block",
+     5,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     12,
+     2
+    ]
+   ]
+  },
+  {
+   "room": "bracken",
+   "tide": 1,
+   "out": "br-3.png",
+   "link": {
+    "tx": 8,
+    "ty": 7,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "switch",
+     12,
+     2
+    ],
+    [
+     "switch",
+     11,
+     8
+    ],
+    [
+     "block",
+     9,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     12,
+     2
+    ]
+   ]
+  },
+  {
+   "room": "nave",
+   "tide": 0,
+   "out": "nv-1.png",
+   "link": {
+    "tx": 13,
+    "ty": 7,
+    "dir": "left"
+   },
+   "entities": [
+    [
+     "switch",
+     11,
+     2
+    ],
+    [
+     "switch",
+     8,
+     4
+    ],
+    [
+     "switch",
+     5,
+     7
+    ],
+    [
+     "block",
+     12,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     4,
+     2
+    ],
+    [
+     "statue",
+     4,
+     4
+    ]
+   ]
+  },
+  {
+   "room": "nave",
+   "tide": 0,
+   "out": "nv-2.png",
+   "link": {
+    "tx": 9,
+    "ty": 7,
+    "dir": "left"
+   },
+   "entities": [
+    [
+     "switch",
+     11,
+     2
+    ],
+    [
+     "switch",
+     8,
+     4
+    ],
+    [
+     "switch",
+     5,
+     7
+    ],
+    [
+     "block",
+     8,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     8,
+     2
+    ],
+    [
+     "statue",
+     8,
+     4
+    ]
+   ]
+  },
+  {
+   "room": "nave",
+   "tide": 1,
+   "out": "nv-3.png",
+   "link": {
+    "tx": 6,
+    "ty": 7,
+    "dir": "left"
+   },
+   "entities": [
+    [
+     "switch",
+     11,
+     2
+    ],
+    [
+     "switch",
+     8,
+     4
+    ],
+    [
+     "switch",
+     5,
+     7
+    ],
+    [
+     "block",
+     5,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "statue",
+     11,
+     2
+    ],
+    [
+     "statue",
+     8,
+     4
+    ]
+   ]
+  },
+  {
+   "room": "bole",
+   "tide": 0,
+   "out": "bw-1.png",
+   "link": {
+    "tx": 2,
+    "ty": 5,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "block",
+     3,
+     8,
+     {
+      "once": false
+     }
+    ],
+    [
+     "block",
+     11,
+     8,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "bole",
+   "tide": 0,
+   "out": "bw-2.png",
+   "link": {
+    "tx": 5,
+    "ty": 6,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "block",
+     7,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "block",
+     9,
+     7,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "bole",
+   "tide": 1,
+   "out": "bw-3.png",
+   "link": {
+    "tx": 5,
+    "ty": 6,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "block",
+     7,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "block",
+     9,
+     7,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "bole",
+   "tide": 0,
+   "out": "bw-4.png",
+   "link": {
+    "tx": 5,
+    "ty": 6,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "block",
+     7,
+     6,
+     {
+      "once": false
+     }
+    ],
+    [
+     "block",
+     9,
+     7,
+     {
+      "once": false
+     }
+    ]
+   ],
+   "tiles": [
+    [
+     6,
+     5,
+     "dTileBlueLow"
+    ],
+    [
+     6,
+     6,
+     "dTileBlueLow"
+    ],
+    [
+     6,
+     7,
+     "dTileBlueLow"
+    ],
+    [
+     7,
+     5,
+     "dTileBlueLow"
+    ],
+    [
+     7,
+     6,
+     "dTileBlueLow"
+    ],
+    [
+     7,
+     7,
+     "dTileBlueLow"
+    ],
+    [
+     8,
+     5,
+     "dTileBlueLow"
+    ],
+    [
+     8,
+     6,
+     "dTileBlueLow"
+    ],
+    [
+     8,
+     7,
+     "dTileBlueLow"
+    ],
+    [
+     9,
+     5,
+     "dTileBlueLow"
+    ],
+    [
+     9,
+     6,
+     "dTileBlueLow"
+    ],
+    [
+     9,
+     7,
+     "dTileBlueLow"
+    ]
+   ]
+  },
+  {
+   "room": "knot",
+   "tide": 0,
+   "out": "kn-1.png",
+   "link": {
+    "tx": 7,
+    "ty": 6,
+    "dir": "up"
+   },
+   "entities": [
+    [
+     "block",
+     7,
+     7,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "knot",
+   "tide": 0,
+   "out": "kn-2.png",
+   "link": {
+    "tx": 7,
+    "ty": 3,
+    "dir": "down"
+   },
+   "entities": [
+    [
+     "block",
+     6,
+     4,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "knot",
+   "tide": 1,
+   "out": "kn-3.png",
+   "link": {
+    "tx": 5,
+    "ty": 5,
+    "dir": "right"
+   },
+   "entities": [
+    [
+     "block",
+     6,
+     5,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "knot",
+   "tide": 2,
+   "out": "kn-4.png",
+   "link": {
+    "tx": 7,
+    "ty": 7,
+    "dir": "up"
+   },
+   "entities": [
+    [
+     "block",
+     6,
+     5,
+     {
+      "once": false
+     }
+    ]
+   ]
+  },
+  {
+   "room": "knot",
+   "tide": 0,
+   "out": "kn-5.png",
+   "link": {
+    "tx": 7,
+    "ty": 7,
+    "dir": "up"
+   },
+   "entities": [
+    [
+     "block",
+     8,
+     5,
+     {
+      "once": false
+     }
+    ]
+   ],
+   "tiles": [
+    [
+     6,
+     4,
+     "dTileBlueLow"
+    ],
+    [
+     7,
+     4,
+     "dTileBlueLow"
+    ],
+    [
+     8,
+     4,
+     "dTileBlueLow"
+    ],
+    [
+     9,
+     4,
+     "dTileBlueLow"
+    ],
+    [
+     6,
+     5,
+     "dTileBlueMid"
+    ],
+    [
+     7,
+     5,
+     "dTileBlueMid"
+    ],
+    [
+     8,
+     5,
+     "dTileBlueMid"
+    ],
+    [
+     9,
+     5,
+     "dTileBlueMid"
+    ]
+   ]
+  }
+ ]
+}

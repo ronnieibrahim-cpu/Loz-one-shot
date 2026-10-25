@@ -1235,9 +1235,11 @@ every dredging room in Dungeon 6 comfortable.
 **Bower Cell** (`d5/0,5,5`), east again — a `rupee20` at (7,2) and **Heart Piece
 16** at (5,1).
 
-**Coppice Cell** (`d5/0,5,4`) → **Sunken Bracken** (`d5/0,4,4`): switches at
-(2,1) and (7,6), blocks beside them at (3,1) and (6,6). Push each one square onto
-its switch. **Small Key 2**.
+**Coppice Cell** (`d5/0,5,4`) → **Sunken Bracken** (`d5/0,4,4`), the mirror
+statue (S208): every push of the block at (9,7) moves the statue at (5,2) one
+square the other way, and it will not step into water. At LOW push the block
+right three, left seven (the statue crosses the dry gutters to its plate at
+(12,2)); at MID push it back right and down onto (11,8). **Small Key 2**.
 
 **Rootbound Hall** (`d5/0,3,4`) → **Warden's Sill** (`d5/0,2,4`). *"Past this door, you'll have to grow your own floor."* Locked; spend Small Key 2.
 
@@ -1283,13 +1285,16 @@ sound the conch to the sea it says, face the direction it says, and throw.
 face right, at HIGH tide**, and throw. The stake lands at (6,4). Drop to LOW and
 the pillar is ground; the snarl at (7,4) is cut from (6,4).
 
-**Grove 2 — The Bole Walk** (`d5/0,2,3`). Enter at (0,4). **Stand at (4,5), face
-up, at HIGH**; stake at (4,3). Snarl at (4,2), cut from (4,3).
+**The Bole Walk** (`d5/0,2,3`), the tide floor (S208): every red or blue tile the
+rising sea covers changes colour, except under a block. At LOW push the blocks
+onto the two blue tiles (7,6) and (9,7), then sound the conch to MID: all blue,
+and the north shutter (7,3) opens.
 
-**Grove 3 — The Sunken Nave** (`d5/0,2,2`). Enter at (4,7). **Stand at (5,4),
-face left, at HIGH**; stake at (3,4). Snarl at (2,4), cut from (3,4). There is a
-chest at (1,2) in this room with **Small Key 3**, plus a `jellyfish` and a
-`keese`.
+**The Sunken Nave** (`d5/0,2,2`), two mirror statues (S208): push the block at
+(12,7) left four at LOW, then three more at MID — the bottom statue holds on
+(8,4) beside the water, the top one goes on to (11,2), the block ends on (5,7).
+The west shutter (2,7) opens on the cell: the chest at (1,8), opened from
+(1,7), holds **Small Key 3**.
 
 **Silt Cell** (`d5/0,1,2`), west of the Nave — a `rupee20`.
 

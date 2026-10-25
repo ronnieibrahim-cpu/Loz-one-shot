@@ -447,6 +447,25 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **If walking flips a colour tile, walking can make any pattern (S208).**
+  The first tide-floor draft flipped tiles under Link's feet as well as under
+  the rising sea; the model found every room solvable on foot, because a
+  step onto a tile and back onto plain floor flips that one tile alone. The
+  floor turns only where the sea comes in, and a block is the only thing
+  that keeps it off: a puzzle you plan rather than walk.
+- **A gust from the far edge of the cone is a push (S208).** The Gull Roost
+  was meant to need HIGH because at MID the cone drains the sump under the
+  cube's next square. From three tiles back that square is outside the cone,
+  so at MID the gust floated it like a push. Only the near pier (two tiles)
+  works; check what a player can do from one tile further back, and let the
+  model say (`check-cube --mock`).
+- **`pkill -f pattern` in a command kills the command itself (S208).** The
+  shell's own command line contains the pattern. Twice it killed the job it
+  was meant to clear the way for. Kill by pid.
+- **In the Ruins kit a wall of `=` looks exactly like the pushable block
+  (S208).** The first statue mocks fenced the statue's run with them and you
+  could not tell which block moved. Walls are `#`.
+
 - **Along one axis a colour cube's top colour forgets everything but the last
   segment's parity (S207).** If the last stretch before the spot tips it an
   odd number of times, the top is the colour that was on that axis's side

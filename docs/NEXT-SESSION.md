@@ -1,3 +1,63 @@
+## S208 — the last copied sills; the Shrine's mirror statues and tide floor
+
+Branch claude/oracle-tides-s208-pbcoj0, off main at 887fc85 (S207).
+
+### The human's choices this session
+- Shown the two wheel rooms as cube rooms beside Ages' Ancient Tomb $590
+  (cube on ice) and Mermaid's Cave $521 (docs/briefs/puzzle-pass/
+  s208-gull.png, s208-siphon.png; spec s208-wheels-mock.json): "build both".
+- Shown four D5 rooms beside Seasons' Unicorn's Cave $93 (the reverse armos)
+  and Ages' Wing Dungeon $442/$43e (the coloured floor): s208-bracken.png,
+  -nave.png, -bole.png, -knot.png; spec s208-d5-mock.json. "Build all four",
+  knowing it swaps two main-path one-stake groves and the optional Knot
+  Garden for non-seed puzzles.
+
+### Built
+- D4 Gull Roost 0,6,5 (optional, Gull's Tally): wheel gone; cube on a bay of
+  sumps (`0`), a post, a sluice step (`1`, standable only at MID), a pier at
+  16,3. MID: push in from 13,7 (it sails to the post), push north from
+  18,8; HIGH: gust east from 16,3, it sails onto yellow at 22,3. Blown at MID
+  from the near pier the next square is inside the cone (a pit) and it drops.
+  Chest at 27,8 behind door 27,6 (puzzle reward). New sign.
+- D4 Siphon Stair 0,0,1 upper half (optional, Salt-Etched): the upper wheel
+  gone; cube at 3,7, pool `333`, lane x7 with the sluice step 7,8, siphon row
+  2 (`00001y`). MID float, push up, HIGH push right from 6,2. The lower wheel
+  (7,12) stays. A hole at 7,9 stops the cube reaching the open floor.
+- THE MIRROR STATUE (kind F): objects.js `Statue` (a PushBlock Link cannot
+  push; `PushBlock.push` calls `mirror(-dx,-dy)` on every statue; refuses
+  STATUE_AVOID = pit/hazard/water/deep/whirl at levelAt, solids and Link).
+  Art: rip-objects.py `o_statue_wood`, Seasons' armos metatile $25 in the
+  Ancient Ruins tileset ($3c). Plates are `puzzle.blocks` (a statue is a
+  PushBlock); `switch` entities only mark them.
+- THE TIDE FLOOR (kind C): tiles dTileRed/Blue (`a`/`b`, never under),
+  dTileRed/BlueLow (`c`/`d`, under at MID+), dTileRed/BlueMid (`f`/`g`, under
+  at HIGH), Ages' floor art (cSpot*); tiledef fields `floorFlip`,
+  `floorColour` (tileset.js registrar). `Game.floodFloor` on a real (sweep)
+  tide change flips tiles deep now and not before (levelAt, so the Anchor's
+  held water is left), skipping any under a PushBlock; puzzle `floor: true`
+  (`floorIsBlue`); a solved floor is painted blue on re-entry/load; an
+  unsolved one is reset when the room is left (`Room.resetFloor`).
+- D5 Sunken Bracken 0,4,4 (Small Key 2), Sunken Nave 0,2,2 (two statues;
+  shutter 2,7; key chest moved to 1,8, opened from 1,7), Bole Walk 0,2,3
+  (shutter 7,3 replaces the snarl), Knot Garden 0,0,6 (100 Rupees in a chest
+  that rises at 11,9). Their reefseedRoom claims are gone.
+- tools/check-statues.mjs + tools/lib/statue-flood.mjs; tools/check-
+  tidefloor.mjs + tools/lib/tidefloor-flood.mjs (new; CLAUDE.md table).
+  dungeon-strands baseline: the statue runs.
+- Robot: the four rooms' pushes from the checkers' plans (each room starts
+  with ['tide', 0]: the run walks into the Bracken at MID); a fight in the
+  First Stake before the throw (a keese hit ate the seed press). check-
+  playthrough 49/49 first full run, THE END, never died; every boss at the
+  old waits.
+- Guide: remap-guide HEAD; d5-sbracken, d5-snave re-shot, new d5-bolewalk;
+  texts in guide.html and GUIDE.md.
+
+### NEXT (S209)
+- PUZZLE-PASS.md step 7: A hard, with ice, in D6 (the Drain Court, the
+  Hold). Also left from step 6: the Long Ford's floor and D6's Drowned
+  Garden (one-stake copies), and the three block-across-pillar rooms.
+  Then step 8, signs.
+
 ## S207 — the Cistern's colour cube, and the floor that falls into the sea
 
 Branch claude/oracle-tides-s207-puzzles-hy3flv, off main at 6b064df (S206).

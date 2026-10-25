@@ -81,9 +81,21 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    deep water at HIGH) — `check-cube.mjs`. Pictures
    `docs/briefs/puzzle-pass/s207-*.png`. The cone's wind is the sea a level
    lower, so at MID the gust tips the cube where it would float.
-5b. NEXT: the last two copied sills (the Gull Roost 0,6,5; the Siphon Stair's
-   upper wheel 0,0,1), a twist each — the human's S207 choice.
-6. C and F in D5 (Sunken Bracken; the one-stake copies).
+5b. **S208, DONE: the last two copied sills.** The Gull Roost 0,6,5 (the cube
+   sails a bay of sumps: MID pushes, the HIGH gust from the near pier) and the
+   Siphon Stair's upper half 0,0,1 (float the pool at MID, up the siphon at
+   HIGH) — check-cube. Pictures `s208-gull.png`, `s208-siphon.png`.
+6. **S208, DONE: C and F in D5.** F, the mirror statue (Statue: every block
+   push moves it the other way; it will not step into water): the Sunken
+   Bracken 0,4,4 (LOW walks it home, MID holds it while the block goes back)
+   and the Sunken Nave 0,2,2 (two statues, one sea for each) —
+   `check-statues.mjs`. C, the tide floor (every tile the rising sea covers
+   turns, except under a block; walking does NOT turn tiles — that made every
+   pattern walkable): the Bole Walk 0,2,3 (one press) and the Knot Garden
+   0,0,6 (two heights, one block, twice round) — `check-tidefloor.mjs`.
+   Pictures `s208-bracken/nave/bole/knot.png`. Left: the Long Ford's floor
+   and D6's Drowned Garden (one-stake copies), the three block-across-pillar
+   rooms.
 7. A hard, with ice, in D6 (Drain Court, the Hold).
 8. Signs: full words only where an item is first taught.
 

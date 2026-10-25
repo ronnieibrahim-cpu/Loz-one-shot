@@ -2255,19 +2255,35 @@ export const ROUTE = [
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,4,4
-  // The Sunken Bracken: two blocks onto two plates for Small Key 2. Pushed
-  // BEFORE the key is looted and after the room is cleared from the door.
+  // The Sunken Bracken (S208): the mirror statue. The block east three (the
+  // statue held by its wall), west seven at LOW (the statue walks east over
+  // the dry gutters onto its plate), then at MID back east onto the block's
+  // plate while the water beside the statue holds it. check-statues' plan.
   ['fight', 5000, 1800],
   ['loot', 600],
-  ['goto', 4, 1, 1500],
-  ['hold', ['left'], 120],
-  ['wait', 60],
-  ['goto', 10, 9, 1500],
-  ['hold', ['right'], 120],
-  ['wait', 60],
+  ['tide', 0, 140, 600],
+  ['goto', 8, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 9, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 10, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 13, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 12, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 11, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 10, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 9, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 8, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 7, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['tide', 1, 140, 600],
+  ['goto', 4, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 5, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 6, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 7, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 8, 7, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 10, 6, 600], ['hold', ['down'], 30], ['wait', 40],
+  ['goto', 9, 8, 600], ['hold', ['right'], 30], ['wait', 40],
   ['dialogue', 400],
   ['goto', 7, 9, 1500],
   ['loot', 1500],
+  ['tide', 0, 140, 600],
 
   // ---------------------------------------------------------------- d5 0,2,4
   // The Warden's Sill: the second key door, in its west wall. "Past this door
@@ -2398,6 +2414,10 @@ export const ROUTE = [
   //   cut the snarl with the sword, which a swimmer cannot draw.
   //
   // Neither half can be bought at the other's sea. That is the dungeon.
+  //
+  // The keese is swatted first since S208: one that hit him mid-throw ate
+  // the seed press.
+  ['fight', 2500, 900],
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
   ['reefseed', 11, 5, 900],
@@ -2412,48 +2432,48 @@ export const ROUTE = [
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,2,3
-  // GROVE 2, the Bole Walk — the same fixture turned through a right angle and
-  // pointed north, so the throw that opens it is the one aimed away from the
-  // door you came in by. Cleared first: this room is walked through three
+  // The Bole Walk (S208): the tide floor. The two blocks onto the two blue
+  // tiles, one press to MID — every red tile the sea covers turns — and the
+  // north shutter opens. Cleared first: this room is walked through three
   // times.
   ['fight', 2500, 900],
   ['loot', 600],
-  ['equip', 'reefseed', 'A', 400],
-  ['tide', 2, 140, 600],
-  ['reefseed', 7, 4, 900],
   ['tide', 0, 140, 600],
-  ['equip', 'sword', 'A', 400],
+  ['goto', 3, 9, 600], ['hold', ['up'], 30], ['wait', 40],
+  ['goto', 3, 8, 600], ['hold', ['up'], 30], ['wait', 40],
+  ['goto', 2, 6, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 3, 6, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 12, 8, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 4, 6, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 11, 8, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 5, 6, 600], ['hold', ['right'], 30], ['wait', 40],
+  ['goto', 9, 9, 600], ['hold', ['up'], 30], ['wait', 40],
+  ['tide', 1, 140, 600],
+  ['dialogue', 400],
+  ['tide', 0, 140, 600],
   ['goto', 7, 4, 1500],
-  ['wait', 30],
-  ['hold', ['up'], 20],
-  ['tap', 'a', 60],
-  ['wait', 60],
   ['goto', 7, 1, 1500],
   ['hold', ['up'], 90],
 
   // ---------------------------------------------------------------- d5 0,2,2
-  // GROVE 3, the Sunken Nave, where the stake is not on the way to anywhere:
-  // the snarl is set in the wall of a cell holding Small Key 3, and the room
-  // can be walked straight through by anyone who never works out what the pool
-  // is for.
-  //
-  // NOT CLEARED (S145). Its jellyfish swims the channel between the two sumps
-  // at 3,3 and 3,7, which are pits at LOW, and chasing it there dropped Link
-  // into one: two quarter-hearts and a respawn. At HIGH, where the stake is
-  // thrown, it is under the sea and out of the way, and the keese never comes
-  // down to the bank.
+  // The Sunken Nave (S208): two mirror statues and one block. Four pushes
+  // west at LOW walk both statues over their runs; at MID the bottom one is
+  // held on its plate by the gutter east of it and the top one goes on. The
+  // west shutter opens on the cell: Small Key 3 from the chest, opened from
+  // the north.
   ['loot', 600],
-  ['equip', 'reefseed', 'A', 400],
-  ['tide', 2, 140, 600],
-  ['reefseed', 3, 5, 900],
   ['tide', 0, 140, 600],
-  ['equip', 'sword', 'A', 400],
-  ['goto', 3, 5, 1500],
-  ['wait', 30],
-  ['hold', ['left'], 20],
-  ['tap', 'a', 60],
-  ['wait', 60],
-  ['goto', 1, 5, 1500],
+  ['goto', 13, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 12, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 11, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 10, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['tide', 1, 140, 600],
+  ['goto', 9, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 8, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['goto', 7, 7, 600], ['hold', ['left'], 30], ['wait', 40],
+  ['dialogue', 400],
+  ['tide', 0, 140, 600],
+  ['goto', 1, 7, 1500],
   ['wait', 30],
   ['hold', ['down'], 20],
   ['tap', 'a', 60],

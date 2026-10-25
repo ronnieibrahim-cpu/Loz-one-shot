@@ -41,6 +41,24 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S208: THE LAST COPIED SILLS, AND THE SHRINE'S STATUES AND TIDE FLOOR
+
+D4's two optional wheel rooms that were still copies are colour-cube rooms:
+the **Gull Roost** (0,6,5) sails the cube across a bay of sumps (push in and
+north at MID from the sluice step, blow it into the nook at HIGH; at MID the
+wind drains the sump under it) and the **Siphon Stair**'s upper half (0,0,1)
+floats it over the pool at MID and sends it up the siphon at HIGH (MID runs
+it aground a square short). D5 gets two new kinds: the **mirror statue**
+(Seasons' Unicorn's Cave armos; every block push moves it the other way, and
+it will not step into water) in the **Sunken Bracken** (0,4,4, no longer a
+one-push room) and the **Sunken Nave** (0,2,2, two statues); and the **tide
+floor** (Ages' red and blue floor; every tile the rising sea covers turns,
+except under a block) in the **Bole Walk** (0,2,3) and the optional **Knot
+Garden** (0,0,6, two heights, twice round the tide). `tools/check-statues.mjs`,
+`tools/check-tidefloor.mjs`. Three one-stake copies are gone; the First
+Stake still teaches the stake, and the Long Ford's floor and D6's Drowned
+Garden are the copies left.
+
 ## S207: THE CISTERN'S COLOUR CUBE, AND THE FLOOR THAT FALLS INTO THE SEA
 
 D4's **Cistern Floor** (0,4,4) is no longer a one-push room: Ages' rolling

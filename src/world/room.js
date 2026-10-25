@@ -281,6 +281,19 @@ export class Room {
     if (any) this.invalidate();
   }
 
+  /**
+   * Put the tide floor back the way the room was drawn (S208, kind C): an
+   * unsolved floor comes back as it started, as a cube room does in Ages.
+   */
+  resetFloor() {
+    let any = false;
+    for (let i = 0; i < this.override.length; i++) {
+      const d = this.override[i] && getTileDef(this.base[i]);
+      if (d && d.floorColour != null) { this.override[i] = null; any = true; }
+    }
+    if (any) this.invalidate();
+  }
+
   /** Mend the cracks a visit broke that come back (S207, `crackResets`). */
   mendCracks() {
     if (!this.broken || !this.broken.length) return;

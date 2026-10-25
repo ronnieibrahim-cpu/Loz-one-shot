@@ -219,6 +219,10 @@ export function registerTiles(defs) {
       // and leaving the room mends it (`Room.mendCracks`), as a cube room
       // resets in Ages when it is entered again.
       crackResets: !!def.crackResets,
+      // THE TIDE FLOOR (S208, kind C): the tile this one becomes when the sea
+      // rising covers it (`Game.floodFloor`), and its colour (0 red, 2 blue).
+      floorFlip: def.floorFlip || null,
+      floorColour: def.floorColour != null ? def.floorColour : null,
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
