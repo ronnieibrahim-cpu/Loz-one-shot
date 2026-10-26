@@ -41,6 +41,18 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S211: THE EYE HALL AND THE HELD BRIDGE
+
+Thirteen more signs hint instead of solving. The Coral Spire's empty corridor
+before the Lens is now **The Eye Hall** (1,3,4): Seasons' eye-statue loop,
+where every door but the west brings you back in and the way on is the door no
+eye looks at, with eyes that turn at every tide, so no single sea tells you
+(`tools/check-eyes.mjs`). The Grotto's **Tide Gallery** (0,3,4) gains Ages'
+bridge laid plank by plank while its plate is held: the lane's block crosses
+the drain to the plate only at MID, and the chest of 100 Rupees beyond is only
+reachable at LOW (`tools/check-bridges.mjs`). The Keep's slate slots are mocked
+and approved for S212.
+
 ## S210: THE STAKE INSIDE OTHER PUZZLES
 
 The last copies in the Shrine and the Keep are gone. A coral pillar is a step

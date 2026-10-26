@@ -1,3 +1,73 @@
+## S211 — signs that hint; the Eye Hall and the held bridge built, slates mocked
+
+Branch claude/oracle-tides-puzzle-hints-dondfw, off main at 5e48d57 (S210).
+
+### The human's choices this session
+- Signs, second pass (PUZZLE-PASS step 8): shown a before/after list of 13
+  signs that still gave the answer away: "Make all changes". No townsperson
+  line needed changing (each describes a dungeon, none solves a room).
+- The "More" kinds, each twist approved (AskUserQuestion), then each mocked
+  beside its cartridge room (docs/briefs/puzzle-pass/s211-*.png, specs
+  s211-eyes/bridge/slates-mock.json):
+  - Eye statues, eyes turning with the tide: BUILD (Coral Spire).
+  - Held bridge: BLOCK ONLY. The sea holding the plate was dropped because
+    the Grotto's Sunken Hall teaches that a plate under deep water cannot be
+    pressed (FloorSwitch.sunk, S143).
+  - Slates: the Abyssal Keep, before the King; the four slates FISHED UP FROM
+    THE HOLD with the Dredge Line. Mocked and model-checked; NOT BUILT.
+
+### Built
+- SIGNS: 13 rewordings in dungeons-a/b.js (Whelk Hollow, Kelp Locks,
+  Reliquary, Spike Basin, Drowned Sill, Spill Gate, Ebb Cell, the three
+  Sealed Cistern tanks, Root Ford, Drowned Garden, Drowned Stand); GUIDE.md's
+  Drowned Stand quote. Teaching rooms keep full words.
+- THE EYE HALL, d2 1,3,4 (was the empty Spire Concourse, main path to the
+  Lens): Seasons' eye puzzle ($59c). `eyeRoom: { back:'W', exit:'E',
+  statues, passes }`; four statues in wells (`3`), `['eye', x, y, { i }]`
+  (objects.js EyeStatue: the statue tile plus the eyeball sprite moved by
+  EYEBALL_LOOK, a pixel, as the cartridge looks). Passes S, N, E; each pass
+  told only by two seas. Game.checkRoomExit loops every door but `back`
+  (and the exit before the last pass) back into the room; `eyePass` resets on
+  any other entry, a load included. Sign by the west door. The robot: S, N,
+  then E (route after the Anemone Cell); actor `exit` counts a loop.
+- THE HELD BRIDGE, d1 0,3,4 Tide Gallery (main crossroads, optional chest):
+  Ages' extendable bridge ($44c). NW hole `O` (legend dungeonGrotto ->
+  dHoleGrotto, Seasons $f4 in $41) with planks 6..3,1 (dBridgeGrottoH, $6d);
+  ledge (1,1) floor, (2,1)/(2,2) wells, chest (1,2) 100 Rupees; plate 10,7 in
+  a sluice basin; block 3,7 in a walled lane with a drain at 6,7. MID push
+  home, round to LOW, cross. Game.updateBridge: BRIDGE_PLANK_FRAMES (10,
+  derived, extendableBridge.s counter1 $0a), near end down first, far end up
+  first, sfx `plank` = Ages SND_DOORCLOSE (rip-music.py). Re-entry and loads
+  put the bridge up. The dungeon flood treats planks as a puzzle door.
+- ART (all extracted): o_eyestatue (rip-objects, $ee in $3e), o_eyeball0 +
+  EYEBALL_LOOK (rip-effects, INTERAC_STATUE_EYEBALL, new asset files
+  spr_polsvoice_hardhatbeetle_spikedbeetle_beamon.png and statueEyeball.s),
+  gBridgeV/gBridgeH/gHole (rip-dungeon-themes, $41), aSlotN/E/S/W and
+  aSlateN/E/S/W (Ages Ancient Tomb $40: new assets gfx_tileset_ancient_tomb,
+  gfx_tileset_minecart_track, tilesetMappings28). Tiles dSlotN/E/S/W
+  (`slot`, `slotFilled`) and dSlate*, legend dungeonAbyss `n` `u` `[` `]`;
+  registrar learns `slot`, `slotFilled`, `bridge`; validate learns them.
+- CHECKERS (written before the rooms): check-eyes.mjs (29), check-bridges.mjs
+  (13), check-slates.mjs (model only). In CLAUDE.md's table.
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died (see the
+commit). Built; dist committed.
+
+### NEXT (S212)
+- BUILD THE SLATES (approved): the slot room before the King in the Keep
+  (spec s211-slates-mock.json: N high, E low, S mid, W high; slots from the
+  south face of their walls etc.), four slates lying in the Hold, brought up
+  by the Dredge Line (check-hold's `hauls`/`catches` machinery is the model
+  to extend), a `slate` counted item (progress.giveItem, CLAUDE.md trap),
+  pushing into a slot for SLATE_PUSH_FRAMES (10, slateSlot.s var3f $0a,
+  derived), wrong sea says why ("Too high to reach" / "It's under the water,
+  below you"), the last slate opens the stair. Write check-slates' engine
+  clauses 6-7 and its clause 5 for Hold slates (not chests). Re-route the
+  robot; sweep Nereth's waits.
+- Optional: the Lens could show the eyes at the next tide (the Spire's Lens
+  already shows the next tide's red/blue blocks).
+
 ## S210 — the stake inside other puzzles: the last copies in D5 and D6
 
 Branch claude/oracle-tides-s210-puzzles-azj3ds, off main at a6ccfac (S209).

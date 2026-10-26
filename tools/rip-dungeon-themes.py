@@ -98,6 +98,9 @@ SHEETS = {
     # THE COLOUR CUBE'S SPOTS (S207): Mermaid's Cave's present half ($3b),
     # the room ($521) where one cube visits three coloured floor spots.
     'mermaidNow': 'ages:3b',
+    # THE KEEP'S SLATE SLOTS (S211): Ages' Ancient Tomb ($40), the room
+    # ($58a) where four slates go into four slots round the stair down.
+    'tomb': 'ages:40',
     'whirl0': 'ages:5f@0',
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
@@ -129,7 +132,7 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:3c': 'the Ancient Ruins', 'meta:42': "the Sword & Shield Maze, fire half",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
               'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon',
-              'ages:3b': "Mermaid's Cave, the present"}
+              'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb'}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -758,6 +761,25 @@ PICKS = [
     # in the Dragon's own tileset, the floor of room $573 that falls away
     # behind you (d4HolesFloortrapRoom.s).
     meta('xCrack', 0x4d, 'the cracked floor, the Dancing Dragon Dungeon', 'dragonMeta'),
+    # THE GROTTO'S HELD BRIDGE (S211; Ages' INTERAC_EXTENDABLE_BRIDGE,
+    # extendableBridge.s): TILEINDEX_VERTICAL_BRIDGE $6a and _HORIZONTAL_BRIDGE
+    # $6d, the planks it lays one at a time, and the hole $f4 (TILETYPE_HOLE)
+    # they span — in the Sword & Shield Maze's ice half, the Grotto's kit.
+    meta('gBridgeV', 0x6a, 'the bridge, north-south, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('gBridgeH', 0x6d, 'the bridge, east-west, the Sword & Shield Maze (ice)', 'mazeIce'),
+    meta('gHole', 0xf4, 'the hole, the Sword & Shield Maze (ice)', 'mazeIce'),
+    # THE KEEP'S SLATE SLOTS (S211; Ages' INTERAC_SLATE_SLOT, slateSlot.s):
+    # the four empty slots $d0-$d3, one per face of the Ancient Tomb's inner
+    # chamber (room $58a), and TILEINDEX_FILLED_SLATE_1 $d4 onward, what
+    # slateSlot_placeSlate sets each to (subid added).
+    meta('aSlotS', 0xd0, 'the slot, south face, the Ancient Tomb', 'tomb'),
+    meta('aSlotE', 0xd1, 'the slot, east face, the Ancient Tomb', 'tomb'),
+    meta('aSlotN', 0xd2, 'the slot, north face, the Ancient Tomb', 'tomb'),
+    meta('aSlotW', 0xd3, 'the slot, west face, the Ancient Tomb', 'tomb'),
+    meta('aSlateS', 0xd4, 'the filled slot, south face, the Ancient Tomb', 'tomb'),
+    meta('aSlateE', 0xd5, 'the filled slot, east face, the Ancient Tomb', 'tomb'),
+    meta('aSlateN', 0xd6, 'the filled slot, north face, the Ancient Tomb', 'tomb'),
+    meta('aSlateW', 0xd7, 'the filled slot, west face, the Ancient Tomb', 'tomb'),
     # THE COLOUR CUBE'S SPOTS (S207): Ages' TILEINDEX_RED/YELLOW/BLUE_TOGGLE_
     # FLOOR $ad-$af, the floor a cube must come to rest on showing that colour
     # (miscPuzzles.s subid $02, Mermaid's Cave room $521).

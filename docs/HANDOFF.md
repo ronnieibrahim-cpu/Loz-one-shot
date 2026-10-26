@@ -447,6 +447,23 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A tide twist can contradict a rule the same dungeon already taught
+  (S211).** The bridge was approved as "deep water holds the plate", but
+  FloorSwitch.sunk (S143) says a plate under deep water is NOT pressed, and
+  the Grotto's own Sunken Hall teaches exactly that three rooms earlier.
+  Before building a twist, grep the engine for the rule it bends and ask
+  where the player learnt the opposite.
+- **A chest pops its prize a tile ABOVE itself (S211, again after S162).**
+  The first Tide Gallery chest sat against the ring and its rupees settled in
+  the wall; check-placement caught it. Leave the tile above a chest open.
+- **An eye loop never changes the room key (S211).** The actor's `exit`
+  waited for a new room and would have hung; it now also returns on
+  `g._eyeLooped`, which Game.updateTransition sets for a loop.
+- **Running check-rippers alongside other checkers breaks them (S211).** It
+  rewrites the generated files while it compares them, and a checker that
+  imports one mid-write dies on a missing export. The table runner runs it
+  last, alone.
+
 - **An ice block crossing a plate paid the room out (S210).** `checkPuzzle`
   rounded every block to its nearest tile, so a slide passing over the plate
   counted as standing on it for a frame: the first Drowned Garden run

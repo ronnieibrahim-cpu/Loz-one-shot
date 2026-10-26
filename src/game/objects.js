@@ -30,6 +30,7 @@ import {
   BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
+import { EYEBALL_LOOK } from '../data/sprites-effects.js';
 import { CUBE_FRAMES, CUBE_ANIMS, CUBE_PUSH_ANIM, CUBE_TOP } from '../data/sprites-cube.js';
 
 /** `base` in this map's own Seasons colours: a push block or floor button is
@@ -1886,6 +1887,42 @@ export class Torch extends Entity {
   }
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
+
+// THE EYE STATUE (S211, the Coral Spire's eye loop; Seasons' eye puzzle,
+// statueEyeball.s, room $59c): TILEINDEX_EYE_STATUE with an eyeball on it.
+// Ours stand in basins and their eyes float, so each turns with the tide:
+// statue `i` of the room's `eyeRoom` looks `passes[game.eyePass].look[i][sea]`
+// at the sea under it. The cartridge's eye looks by moving a pixel within
+// its tile (EYEBALL_LOOK); it never changes picture. `look: [L, M, H]` in the
+// options stands in for a room that is only a mock.
+const EYE_DIR = { N: 0, E: 2, S: 4, W: 6 };
+export class EyeStatue extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 0, y: 0, w: 16, h: 16 };
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.pal = null;
+    this.eyeIndex = o.i | 0;
+    this.lookTable = o.look || null;
+    this.eyeLook = 'S';
+  }
+  look(game) {
+    const k = game.room && game.room.def.eyeRoom;
+    const row = this.lookTable || (k && k.passes[Math.min(game.eyePass | 0, k.passes.length - 1)].look[this.eyeIndex]);
+    return row ? row[tideAt(game, this)] : 'S';
+  }
+  spriteName() { return 'o_eyestatue'; }
+  update(game) { this.eyeLook = this.look(game); }
+  draw(ctx, game, ox, oy) {
+    super.draw(ctx, game, ox, oy);
+    const [ly, lx] = EYEBALL_LOOK[EYE_DIR[this.look(game)]];
+    sprites.draw(ctx, 'o_eyeball0', ox + this.x + lx - 16, oy + this.y + ly - 16);
+  }
+}
+defineEntity('eye', (x, y, o) => new EyeStatue(x, y, o));
 
 // A KEY FROM ABOVE (S206, Seasons' Explorer's Crypt: explorersCryptScript_
 // dropKeyDownAFloor). A puzzle's key drops from the ceiling onto a drop hole

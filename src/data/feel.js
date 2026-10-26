@@ -2714,3 +2714,9 @@ export const CHUNK_BOB_FRAMES = 24;
  *  pushblock.s state 2, which Seasons gives tile $2f (pushableTiles.s var34
  *  bit 1): SPEED_1c0, 1.75 px a frame, from the first frame to the clink. */
 export const ICE_BLOCK_SPEED = 448;
+
+/** frames — a held bridge lays, or takes up, one plank this often (S211,
+ *  Game.updateBridge). derived from the cartridge: oracles-disasm
+ *  object_code/ages/interactions/extendableBridge.s sets counter1 to $0a
+ *  before each tile it places or removes, state 1 and state 2 alike. */
+export const BRIDGE_PLANK_FRAMES = 10;

@@ -225,6 +225,9 @@ export function floodDungeon(mapId, opts = {}) {
       const [sx0, sy0] = def.fordRoom.cut;
       puzzleOwner.set(`${rk}:${sx0},${sy0}`, rk);
     }
+    // A held bridge's planks (S211, check-bridges.mjs): floor once its room
+    // has been stood in, the way a puzzle door is.
+    for (const [px0, py0] of def.bridgeRoom ? def.bridgeRoom.planks : []) puzzleOwner.set(`${rk}:${px0},${py0}`, rk);
   }
   for (const [k, own] of [...puzzleOwner]) {
     const [rk0, xy0] = k.split(':');

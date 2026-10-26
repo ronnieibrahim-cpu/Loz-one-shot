@@ -740,6 +740,17 @@ export const ROUTE = [
   ['travel', 2, 5, 1200],
   ['loot', 900],
 
+  // ---------------------------------------------------------------- d2 1,3,4
+  // The Eye Hall (S211): the east door only leads on after three right
+  // doors in a row — south, north, then east (the eyes say so; the robot
+  // knows). Each loop door brings him back in at the opposite door.
+  ['travel', 3, 4, 1500],
+  ['goto', 7, 8, 600],
+  ['exit', 'down', 300],
+  ['exit', 'up', 300],
+  ['goto', 13, 5, 600],
+  ['exit', 'right', 300],
+
   // ---------------------------------------------------------------- d2 1,4,4
   // Sealed Cell: the Lens, in the big chest in the north-west corner,
   // opened from above.
@@ -1327,7 +1338,10 @@ export const ROUTE = [
   // S203 again (Anemos's fairy moved D2's clock): only 20, 24 and 28-42
   // beat Bogmaw (13/28 at 20 and 24, 1-2 above); with 24, Gloomtide's wait
   // wins across 40-60 (52 on 18/28). 24. THIN: 22 loses.
-  ['wait', 24],
+  // S211 (the Grotto's held bridge and the Spire's Eye Hall moved the clock):
+  // 24 loses. Swept 10-130 by 4: 34-58 all win untouched (28/28), and 10, 18
+  // too; 14, 22-30 and 62-86 lose. 46, the middle.
+  ['wait', 46],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],

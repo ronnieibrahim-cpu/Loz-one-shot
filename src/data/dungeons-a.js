@@ -306,22 +306,40 @@ export function installDungeonsA() {
         // these two several times over, and they drop `good` for that reason
         // (FEEL-SPEC.md's health-economy entry). The north door is the first
         // key door in the game.
+        //
+        // THE HELD BRIDGE (S211; Ages' extendable bridge, room $44c): the
+        // planks over the north-west hole are down only while the plate in
+        // the basin is held, and Link cannot hold it and cross it at once.
+        // The block is the only other weight, and it only crosses the drain
+        // in its lane at MID (it falls in at LOW and will not go in at HIGH);
+        // the well before the chest is only shallow enough to stand in at LOW.
+        // MID, push it home; LOW, cross (tools/check-bridges.mjs).
         map: [
           '#######L#######',
+          '#.3OOOO.......#',
+          '#.3OOOO.......#',
+          '#OOOOOO.......#',
           '#.............#',
-          '#.............#',
-          '#..33.....33..#',
-          '#..33.....33..#',
           '...............',
-          '#..33.....33..#',
-          '#..33.....33..#',
-          '#.....111.....#',
-          '#.....1.1.....#',
+          '#..####...111.#',
+          '#.....4...111.#',
+          '#..####...111.#',
+          '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['tektite', 7, 3, { drops: 'good' }],
+          ['tektite', 11, 3, { drops: 'good' }],
           ['crab', 3, 5, { drops: 'good' }],
+          ['block', 3, 7],
+          ['switch', 10, 7],
+          ['chest', 1, 2, { pickup: 'rupee100' }],
+        ],
+        bridgeRoom: {
+          from: [7, 9], target: [2, 2], plate: [10, 7], dir: 'H',
+          planks: [[6, 1], [5, 1], [4, 1], [3, 1]], seas: [1, 2, 0],
+        },
+        readable: [
+          [14, 4, 'Cut by the door: "The bridge stands while something keeps its weight on the plate."'],
         ],
       },
       '0,2,4': {
@@ -1134,23 +1152,44 @@ export function installDungeonsA() {
         ],
       },
       '1,3,4': {
-        name: 'Spire Concourse',
+        name: 'The Eye Hall',
+        // THE EYE LOOP (S211; Seasons' eye puzzle, room $59c, statueEyeball.s
+        // and screenTransitionEyePuzzle). The north, east and south doors all
+        // bring you back in here; the way on is the door no eye looks at, and
+        // the eyes stand in wells and turn with every tide, so no one sea
+        // tells you (tools/check-eyes.mjs). Three right in a row and the east
+        // door leads on to the Sealed Cell; the west door always leaves.
         map: [
-          '###############',
-          '#..q.......q..#',
+          '#######.#######',
           '#.............#',
-          '#.............#',
-          '#.............#',
+          '#..333...333..#',
+          '#..333...333..#',
+          '#..333...333..#',
           '...............',
+          '#..333...333..#',
+          '#..333...333..#',
+          '#..333...333..#',
           '#.............#',
-          '#.............#',
-          '#.............#',
-          '#..q.......q..#',
-          '###############',
+          '#######.#######',
         ],
         entities: [
-          ['crab', 3, 3],
-          ['keese', 11, 7],
+          ['eye', 4, 3, { i: 0 }],
+          ['eye', 10, 3, { i: 1 }],
+          ['eye', 4, 7, { i: 2 }],
+          ['eye', 10, 7, { i: 3 }],
+        ],
+        eyeRoom: {
+          back: 'W', exit: 'E',
+          statues: [[4, 3], [10, 3], [4, 7], [10, 7]],
+          // Each statue's eye at LOW, MID and HIGH, pass by pass.
+          passes: [
+            { answer: 'S', look: [['N', 'E', 'W'], ['W', 'W', 'N'], ['N', 'W', 'N'], ['W', 'E', 'W']] },
+            { answer: 'N', look: [['E', 'W', 'S'], ['W', 'E', 'W'], ['E', 'E', 'W'], ['W', 'W', 'S']] },
+            { answer: 'E', look: [['W', 'S', 'S'], ['N', 'W', 'W'], ['W', 'S', 'W'], ['N', 'W', 'S']] },
+          ],
+        },
+        readable: [
+          [0, 4, 'Carved by the door: "Go the way no eye looks. Ask them at more than one tide."'],
         ],
       },
       '1,4,4': {
@@ -1373,7 +1412,7 @@ export function installDungeonsA() {
           ['keese', 3, 3],
         ],
         readable: [
-          [6, 9, 'Scratched into the coral: "The coral bar goes under at HIGH tide. Nothing else in here changes."'],
+          [6, 9, 'Scratched into the coral: "Nothing in here changes with the sea but the coral bar."'],
         ],
         warps: [
           { x: 2, y: 9, to: { map: 'd2', floor: 1, rx: 5, ry: 4, px: 192, py: 112, dir: 'up' } },
@@ -2231,7 +2270,7 @@ export function installDungeonsA() {
         ],
         cleatRoom: { from: [22, 9], to: [0, 5], layers: true },
         readable: [
-          [20, 8, 'A plate on the lock wall: "The current carries a swimmer round to the last gate, and no further. Sink there, and walk the rest."'],
+          [20, 8, 'A plate on the lock wall: "The current only takes a swimmer so far."'],
         ],
       },
       '1,3,2': {
@@ -2634,7 +2673,7 @@ export function installDungeonsA() {
           reward: { reveal: true, say: 'The two flames answer each other.\nSomething rises between them.' },
         },
         readable: [
-          [2, 1, 'Cut in the urn: "No water gets in here. Any fire here came down from above, dry."'],
+          [2, 1, 'Cut in the urn: "Too damp in here to strike a light. Whatever burns here was lit somewhere else."'],
         ],
       },
       '0,1,3': {
@@ -2904,7 +2943,7 @@ export function installDungeonsA() {
           ['keese', 10, 9],
         ],
         readable: [
-          [1, 9, 'Scratched in the basin wall: "The spikes are only safe at HIGH tide, under deep water."'],
+          [1, 9, 'Scratched in the basin wall: "Spikes can\'t reach a swimmer."'],
         ],
       },
       '0,3,5': {
@@ -3182,7 +3221,7 @@ export function installDungeonsA() {
           ['keese', 11, 3],
         ],
         readable: [
-          [3, 2, 'Scratched under the sill: "This wheel is only underwater at HIGH tide."'],
+          [3, 2, 'Scratched under the sill: "The sea only covers this wheel some of the time."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3466,7 +3505,7 @@ export function installDungeonsA() {
           ['keese', 11, 8],
         ],
         readable: [
-          [2, 8, 'A plate over the spillway: "You can only get into the cell below at HIGH tide, and its wheel only turns at LOW."'],
+          [2, 8, 'A plate over the spillway: "The cell below has one way in and one way to work it. They don\'t share a tide."'],
         ],
       },
       '0,0,4': {
@@ -3512,7 +3551,7 @@ export function installDungeonsA() {
           ['tektite', 5, 15],
         ],
         readable: [
-          [3, 13, 'Cut beside the cell: "The low wall drowns at HIGH tide. The wheel only dries at LOW."'],
+          [3, 13, 'Cut beside the cell: "The low wall and the wheel never agree about the sea."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3798,7 +3837,7 @@ export function installDungeonsA() {
           ['float', 7, 3, { race: [5, 5], path: [['wait', 64], ['down', 96], ['wait', 64], ['up', 96], ['loop', 0]] }],
         ],
         readable: [
-          [2, 9, 'Cut over the pit: "Wind alone won\'t stop this float. Drain its channel first."'],
+          [2, 9, 'Cut over the pit: "Wind alone won\'t stop this float."'],
         ],
       },
       '1,4,2': {
@@ -3840,7 +3879,7 @@ export function installDungeonsA() {
           reward: { say: 'A chest rises on the landing.' },
         },
         readable: [
-          [11, 1, 'A plate on the landing: "Blocks won\'t move in deep water. Open the west gate, and this tank drops a level."'],
+          [11, 1, 'A plate on the landing: "Blocks won\'t move in deep water."'],
         ],
       },
       '1,6,2': {
@@ -3880,7 +3919,7 @@ export function installDungeonsA() {
           reward: { openDoors: [[7, 10]], say: 'The south shutter grinds open.' },
         },
         readable: [
-          [2, 2, 'Carved over the well: "Wind lowers the water one level. The gate lowers it another."'],
+          [2, 2, 'Carved over the well: "Wind lowers the water one level. This well needs two."'],
         ],
         script: {
           onEvent(game, name, data) {

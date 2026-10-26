@@ -95,6 +95,9 @@ SFX = [
     # INTERAC_FALLDOWNHOLE plays as a pot, a block or an enemy drops in
     # (fallDownHole.s @fallDownHole). Link's own fall keeps linkFall.
     ('fallInHole', 'ROM_SEASONS'),
+    # A plank of a held bridge going down or coming up (S211): SND_DOORCLOSE,
+    # what Ages' extendableBridge.s plays for each tile it sets.
+    ('doorClose', 'ROM_AGES'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

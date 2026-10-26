@@ -1,0 +1,145 @@
+{
+ "legend": "dungeonAbyss",
+ "rooms": {
+  "slates": [
+   "#######.#######",
+   "#.....111.....#",
+   "#.....111.....#",
+   "#...###n###...#",
+   "#11.#.....#.11#",
+   "#11[#.....#]11#",
+   "#11.#.....#.11#",
+   "#...###u###...#",
+   "#.....111.....#",
+   "#.....111.....#",
+   "#######.#######"
+  ]
+ },
+ "claims": {
+  "slates": {
+   "index": 6,
+   "slates": {
+    "from": [
+     7,
+     9
+    ],
+    "opens": [
+     7,
+     5
+    ],
+    "slots": [
+     {
+      "at": [
+       7,
+       3
+      ],
+      "face": "N",
+      "height": "high"
+     },
+     {
+      "at": [
+       11,
+       5
+      ],
+      "face": "E",
+      "height": "low"
+     },
+     {
+      "at": [
+       7,
+       7
+      ],
+      "face": "S",
+      "height": "mid"
+     },
+     {
+      "at": [
+       3,
+       5
+      ],
+      "face": "W",
+      "height": "high"
+     }
+    ]
+   }
+  }
+ },
+ "shots": [
+  {
+   "room": "slates",
+   "tide": 0,
+   "out": "slates-1.png",
+   "tiles": [
+    [
+     11,
+     5,
+     "dSlateE"
+    ]
+   ],
+   "link": {
+    "tx": 12,
+    "ty": 5,
+    "dir": "left"
+   }
+  },
+  {
+   "room": "slates",
+   "tide": 1,
+   "out": "slates-2.png",
+   "tiles": [
+    [
+     11,
+     5,
+     "dSlateE"
+    ],
+    [
+     7,
+     7,
+     "dSlateS"
+    ]
+   ],
+   "link": {
+    "tx": 7,
+    "ty": 8,
+    "dir": "up"
+   }
+  },
+  {
+   "room": "slates",
+   "tide": 2,
+   "out": "slates-3.png",
+   "tiles": [
+    [
+     11,
+     5,
+     "dSlateE"
+    ],
+    [
+     7,
+     7,
+     "dSlateS"
+    ],
+    [
+     7,
+     3,
+     "dSlateN"
+    ],
+    [
+     3,
+     5,
+     "dSlateW"
+    ],
+    [
+     7,
+     5,
+     "dStairsDownAbyss"
+    ]
+   ],
+   "link": {
+    "tx": 7,
+    "ty": 2,
+    "dir": "down"
+   }
+  }
+ ]
+}

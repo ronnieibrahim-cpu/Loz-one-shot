@@ -51,7 +51,7 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
 | F. Statues that copy you | Seasons Unicorn's Cave (reverse-moving armos) | they will not enter water, so the tide changes where they stop | D5 |
 | G. Key from above / floor that falls | Seasons Explorer's Crypt, Snake's Remains floor trap | holes open only at LOW; the crumbling floor drops you into the sea at HIGH | D3, D4 |
 | H. Pick the right one | Ages D6 levers, Seasons Ancient Ruins buttons | the right one is the one the sea mark points to at this tide; a wrong one lets enemies loose | D1 |
-| More: eye statues (Seasons statueEyeball), a bridge that holds only while its plate is held (Ages D5 extendableBridge), slates into slots (Ages D8) | | each needs its twist before it is built | later |
+| More: eye statues (Seasons statueEyeball), a bridge that holds only while its plate is held (Ages extendableBridge), slates into slots (Ages D8) | | eyes turn with the tide; the block crosses the drain only at MID; each slot's height is a sea | D2, D1, D6 |
 
 ## Order (one or two kinds per session, each mocked, shown, proved, played)
 
@@ -122,8 +122,17 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    `s210-*.png`, spec `s210-fords-mock.json`. No one-stake copy and no
    block-across-a-pillar copy is left.
 8. Signs: full words only where an item is first taught. **S210, first
-   pass**: eight signs that solved now hint (see NEXT-SESSION S210). Left:
-   a second read of every sign and the NPC hint lines.
+   pass**: eight signs that solved now hint (see NEXT-SESSION S210).
+   **S211, DONE, second pass**: 13 more (NEXT-SESSION S211); no NPC line
+   solves a room.
+9. **S211: the "More" kinds.** Eye statues, DONE: the Coral Spire's Eye Hall
+   1,3,4, the eyes turn with the tide (`check-eyes.mjs`, `s211-eyes.png`).
+   Held bridge, DONE: the Grotto's Tide Gallery 0,3,4, a block the only
+   weight, over the drain at MID only (`check-bridges.mjs`,
+   `s211-bridge.png`; the sea does not press a plate, the Sunken Hall's
+   rule). Slates, APPROVED, NOT BUILT: the Keep's slot room before the King,
+   slots at three heights (dry LOW, wading MID, swimming HIGH), the slates
+   fished up from the Hold (`check-slates.mjs` model, `s211-slates.png`).
 
 Every new room changes the robot's clock (HANDOFF S192/S198/S203): sweep the
 next boss's entry wait after each.

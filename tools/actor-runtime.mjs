@@ -922,8 +922,11 @@ export async function installRuntime() {
     const g = window.__game;
     const was = g.mapId + '/' + (g.room ? g.room.key : '');
     const m = BIT[dir] || 0;
+    // An eye loop's door brings him back into the room he left (S211): that
+    // counts as through.
+    g._eyeLooped = false;
     for (let f = 0; f < (maxF || 400); f++) {
-      const now = g.mapId + '/' + (g.room ? g.room.key : '');
+      const now = g.room && g._eyeLooped ? 'looped' : g.mapId + '/' + (g.room ? g.room.key : '');
       // Keep walking for a moment after the room changes. A transition leaves
       // the player a pixel or two inside the new room, still on the seam, and
       // the next directive's first step back toward it re-triggers the exit —
