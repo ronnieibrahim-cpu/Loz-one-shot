@@ -1,27 +1,26 @@
-# Next session (S212) — the Keep's slate slots
+# Next session (S213)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/briefs/PUZZLE-PASS.md (step 9), docs/NEXT-SESSION.md S211 and S209
-  (the Hold), docs/HANDOFF.md lessons (top ten); docs/DUNGEON-STATUS.md "S211".
+- docs/NEXT-SESSION.md S212 and S211; docs/briefs/PUZZLE-PASS.md (every
+  step is now done); docs/HANDOFF.md lessons (top ten); docs/DUNGEON-STATUS.md
+  "S212".
 
 ## State
-- S204-S210: every planned kind built. S211: signs second pass (13 hint
-  now); the Coral Spire's Eye Hall (eye statues that turn with the tide,
-  check-eyes) and the Grotto's held bridge (check-bridges) built.
-- Slates approved and mocked, NOT built: docs/briefs/puzzle-pass/
-  s211-slates.png, spec s211-slates-mock.json, tools/check-slates.mjs (model).
-- Whole table green; check-playthrough 49/49, THE END, never died.
+- S204-S212: the puzzle pass is complete. S212 built the slate slots: the
+  Keep's Stairhead (2,3,1) is Ages' slate room, four slots at three heights
+  (dry LOW, wading MID, swimming HIGH), four slates fished up from the Hold
+  at MID (Slack Water 7,9; Tally Hall 9,1, 3,7, 6,9), the dais sinks and the
+  King's stair stands up. The boss door is in the Keep Gate's north wall.
+- Whole table green; check-playthrough 49/49, THE END, never died; Nereth's
+  entry wait swept 60-130, all won.
 
 ## The task
-- Build the slates (the human's choices, S211): a slot room before the King
-  in the Abyssal Keep, slots at three heights (dry LOW, wading MID, swimming
-  HIGH; the mock's N high, E low, S mid, W high), four slates lying in the
-  Hold and brought up with the Dredge Line, all four open the stair on.
-  Engine: slate as a counted item, lean SLATE_PUSH_FRAMES (Ages slateSlot.s
-  var3f $0a, derived), wrong sea says why. Finish check-slates' engine
-  clauses first. Re-route the robot; sweep Nereth's and the Keep bosses'
-  waits. Show the human the room in the game beside Ages' $58a.
+- Ask the human what comes next. Open questions to put to them: should the
+  Lens show the Eye Hall's next-tide eyes with a bigger tell than the
+  cartridge's one-pixel look (see NEXT-SESSION S212 "Tried and dropped")?
+  Should the inventory show the slate count, as Ages' does? Re-shoot the
+  Keep's guide figures (remap-guide).
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

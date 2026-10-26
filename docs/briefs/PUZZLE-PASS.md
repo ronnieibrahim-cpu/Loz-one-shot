@@ -130,9 +130,9 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
    Held bridge, DONE: the Grotto's Tide Gallery 0,3,4, a block the only
    weight, over the drain at MID only (`check-bridges.mjs`,
    `s211-bridge.png`; the sea does not press a plate, the Sunken Hall's
-   rule). Slates, APPROVED, NOT BUILT: the Keep's slot room before the King,
-   slots at three heights (dry LOW, wading MID, swimming HIGH), the slates
-   fished up from the Hold (`check-slates.mjs` model, `s211-slates.png`).
+   rule). Slates, DONE in S212: the Keep's Stairhead 2,3,1 before the King,
+   slots at three heights (dry LOW, wading MID, swimming HIGH), four slates
+   fished up from the Hold at MID (`check-slates.mjs`, `s212-slates.png`).
 
 Every new room changes the robot's clock (HANDOFF S192/S198/S203): sweep the
 next boss's entry wait after each.

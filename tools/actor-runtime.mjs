@@ -2830,7 +2830,10 @@ export async function installRuntime() {
     // the count goes DOWN when the line brings it home and it is picked up.
     // `'chunk'` (S189) is the Abyssal Keep's: an ice chunk, hauled up a
     // flooded shaft or caught on the line, has come home into his hands.
+    // `'slate'` (S212): a slate has come up a flooded shaft and is in hand.
+    const startSlates = g.progress.slates || 0;
     const done = () => (land ? here() === land
+      : until === 'slate' ? (g.progress.slates || 0) > startSlates
       : until === 'chunk' ? !!(g.player && g.player.carrying && g.player.carrying.chunkId)
       : until === 'haul' ? drops() < startDrops : drops() > startDrops);
     let f = 0;
@@ -3606,6 +3609,9 @@ export async function installRuntime() {
     if (setup.doors) Object.assign(g.progress.doors, setup.doors);
     // Ice chunks already moved (S189), as the save names them (id -> place).
     if (setup.chunks) Object.assign(g.progress.chunks, setup.chunks);
+    // Slates in hand (S212) and secrets already set ('map:room:i' -> true).
+    if (setup.slates != null) g.progress.slates = setup.slates;
+    if (setup.secrets) for (const k of setup.secrets) g.progress.secrets[k] = true;
     if (setup.tide != null) g.tide.setLevel(setup.tide, { instant: true });
     window.__rp.probes = setup.probes || [];
     window.__rp._god = !!setup.godMode;

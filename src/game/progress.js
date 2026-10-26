@@ -67,6 +67,7 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     charmTold: {},
     charmCase: 1,
     blanks: 0,               // uncarved bone, the scrimshander's raw material
+    slates: 0,               // the Abyssal Keep's slates in hand (S212; Ages' wNumSlates)
     carve: null,             // { id, turns } — commissioned, tide turns to go
     // quest
     essences: [],            // dungeon indices whose essence has been claimed

@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The Dredge Line drags far end first, so two shafts in line are one
+  cast (S212).** The first slate shafts stood in the same row as old ones a
+  few tiles apart, and a cast over the old well fished the slate under the
+  new one instead of the chunk (check-hold: 3/4 sides). No two Keep shafts
+  may be in line within a cast (four tiles, five with the Coilrope).
+- **A new well beside a pool is a door for its fish (S212).** A shaft at the
+  pan's edge in the Slack Water let the anglerfry out onto the bottom row; it
+  ate twelve quarter-hearts and K1's thrown chunk, and the plate stayed up.
+  Compare against main with `ROOT=<worktree> node tools/route-prefix.mjs`
+  to tell a new hit from an old one.
+- **`until ! pgrep -f name` waits for itself (S212, the S208 lesson again).**
+  The loop's own command line matches. Run checkers in the foreground with
+  xargs, or background them and wait for the notification.
+
 - **A tide twist can contradict a rule the same dungeon already taught
   (S211).** The bridge was approved as "deep water holds the plate", but
   FloorSwitch.sunk (S143) says a plate under deep water is NOT pressed, and

@@ -3220,6 +3220,11 @@ export const ROUTE = [
   ['tide', 1, 140, 900],
   ['dredge', 11, 3, 'up', 'fish', 2400],
   ['loot', 900],
+  // THREE MORE SLATES (S212), at the same MID: the north bank's three new
+  // shafts are over the Rime Hall's far floor, where no foot goes.
+  ['dredge', 9, 2, 'up', 'slate', 2400],
+  ['dredge', 6, 8, 'down', 'slate', 2400],
+  ['dredge', 3, 6, 'down', 'slate', 2400],
   ['goto', 1, 5, 1500],
   ['exit', 'left', 600],
   // NO SWEEP HERE until the key is home: the sweep walks at every drop in
@@ -3306,6 +3311,12 @@ export const ROUTE = [
   // comes down on 12,3, the cell under the Crossed Shafts' far shaft.
   ['equip', 'dredge', 'A', 400],
   ['tide', 1, 140, 900],
+  // A SLATE (S212), at this MID: the new shaft south of the pan (7,9) is a
+  // flooded well, and the line cast down it brings up the slate lying on
+  // its islet in the Sounding Floor below. Cast on this visit and not the
+  // first: then the anglerfry was still hunting the bottom row, and K1's
+  // chunk and twelve quarter-hearts went to it.
+  ['dredge', 7, 8, 'down', 'slate', 2400],
   ['goto', 7, 1, 900], ['exit', 'up', 600],
   ['dredge', 7, 3, 'down', 'chunk', 2400],
   ['goto', 9, 3, 900], ['hold', ['right'], 2], ['tap', 'a', 30], ['wait', 60],
@@ -3756,18 +3767,32 @@ export const ROUTE = [
   ['equip', 'conch', 'B', 400],
   ['tide', 1, 140, 900],
   ['equip', 'sword', 'A', 400],
-  // North, into the Stairhead: at Oracle size the boss door is in the ring,
-  // so the chamber that held the stairhead fairy is a room of its own at the
-  // foot of the King's stair (S142).
-  ['goto', 7, 1, 1500],
-  ['exit', 'up', 600],
+  // THE GREAT LOCK (S212: in the Keep Gate's north wall now), and north
+  // into the Stairhead.
+  ['goto', 7, 1, 900],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['exit', 'up', 900],
+
+  // THE SLATE SLOTS (S212). Four slates in hand from the Hold; each slot is
+  // cut at a height. MID: the south one, wading. LOW: the east one, dry.
+  // HIGH: the north and west ones, swimming — and the dais sinks.
+  ['goto', 7, 8, 900], ['hold', ['up'], 30], ['dialogue', 300],
+  ['tide', 0, 140, 900],
+  ['goto', 12, 5, 900], ['hold', ['left'], 30], ['dialogue', 300],
+  ['tide', 2, 140, 900],
+  ['goto', 7, 2, 900], ['hold', ['down'], 30], ['dialogue', 300],
+  ['goto', 2, 5, 900], ['hold', ['right'], 30], ['dialogue', 300],
 
   // THE STAIRHEAD FAIRY, drunk at the foot of the stair — the last moment in
-  // the game where a heal is worth anything. The run climbs the stair on a
-  // full bar. The wait is also the King's entry clock (S138: 70..140 all won
-  // from the old doorway; re-read it if the fight turns).
-  ['goto', 2, 5, 900],
+  // the game where a heal is worth anything. The sea goes back to MID on the
+  // dais floor (the King is fought at MID, see above). The wait is also the
+  // King's entry clock (re-read it if the fight turns).
+  ['goto', 12, 2, 900],
   ['loot', 900],
+  ['goto', 7, 6, 900],
+  ['tide', 1, 140, 900],
   // NO RE-ROLL ANY MORE (S144). S142 and S143 walked out of this room and
   // back in, once and then twice, to move the run's stream off a losing
   // King. Every loss read hit by hit was one shape: a summoned darknut walks
@@ -3776,11 +3801,8 @@ export const ROUTE = [
   // that; sampled on the real stream at 0..12 walk-rounds, the King is won
   // 12 of 13 with it and 8 of 13 without.
   ['wait', 95],
-  ['goto', 7, 1, 900],
-  ['hold', ['up'], 24],
-  ['tap', 'a', 30],
-  ['dialogue', 600],
-  ['exit', 'up', 900],
+  ['hold', ['up'], 40],
+  ['wait', 60],
 
   // AND THE KING. `nerethIntro` plays on the way in — the first cutscene in
   // the game that has ever fired inside a real run rather than in a shooter —

@@ -227,11 +227,30 @@ export function haulFromBelow(game, line, tx, ty) {
       if (cid && chunkAtHome(game, cid)) { id = cid; break; }
     }
   }
-  if (!id) return null;
+  if (!id) return slateFromBelow(game, c, tx, ty);
   const chunk = spawnEntity(game, 'icechunk', tx, ty, { id });
   if (!chunk) return null;
   // On the line it is nowhere until it is set down; the save keeps it here,
   // at the shaft, so a save mid-haul finds it at the top of the shaft.
   chunk.record(game, room.floor, room.rx, room.ry, tx, ty);
   return chunk;
+}
+
+/**
+ * A SLATE COMES UP THE SAME WAY (S212). The Keep's slates lie in the Hold on
+ * cells no foot reaches, each as the room below's own `pickup` of kind
+ * `slate`; under a flooded shaft the line hooks it and it comes home as a
+ * pickup carrying the SAME save key, so taking it here is taking it there.
+ * A chunk on the cell comes up first.
+ */
+function slateFromBelow(game, c, tx, ty) {
+  const ents = c.room.def.entities || [];
+  for (let i = 0; i < ents.length; i++) {
+    const e = ents[i];
+    if (e[0] !== 'pickup' || !e[3] || e[3].kind !== 'slate' || e[1] !== c.tx || e[2] !== c.ty) continue;
+    const saveKey = `${game.mapId}:${c.room.key}:${i}`;
+    if (game.progress.secrets[saveKey]) return null;
+    return spawnEntity(game, 'pickup', tx, ty, { kind: 'slate', saveKey });
+  }
+  return null;
 }

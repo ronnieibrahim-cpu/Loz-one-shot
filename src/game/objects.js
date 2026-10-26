@@ -184,6 +184,17 @@ export const PICKUPS = {
       if (!got) g.say('Your case is full.');
     },
   },
+  // THE ABYSSAL KEEP'S SLATES (S212): Ages' TREASURE_SLATE, lying in the
+  // Hold and brought up a flooded shaft by the Dredge Line (chunk.js
+  // haulFromBelow). Counted, as Ages counts wNumSlates; a slot takes one.
+  slate: {
+    sprite: 'p_slate', pal: null, persistent: true,
+    get(g) {
+      g.progress.slates = (g.progress.slates || 0) + 1;
+      g.audio.sfx('key');
+      g.say(`You found a Slate! You have ${g.progress.slates}.`);
+    },
+  },
   heartContainer: {
     sprite: 'p_heartcontainer', pal: null, persistent: true, hold: 2,
     get(g) { addHeartContainer(g.progress); g.audio.jingle('fanfare'); g.say('You got a Heart Container!'); },

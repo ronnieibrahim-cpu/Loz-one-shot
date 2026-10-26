@@ -271,6 +271,9 @@ export class Game {
       for (const [x, y] of r.def.bridgeRoom.planks) r.setTile(x, y, null);
       r._bridge = { laid: 0, t: BRIDGE_PLANK_FRAMES };
     }
+    // The slate slots (S212) are as the save has them: a slate in every slot
+    // the save says, and the dais open once all of them are.
+    if (r.def.slateRoom) this.restoreSlates(r);
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
     // player has only just walked into.
@@ -2322,6 +2325,88 @@ export class Game {
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
+  }
+
+  // ------------------------------------------------------------ slate slots
+  //
+  // THE SLATE SLOTS (S212; Ages' INTERAC_SLATE_SLOT, slateSlot.s and
+  // scriptHelper.s slateSlot_placeSlate, the Ancient Tomb's room $58a). A
+  // room's `slateRoom` names its slots, each cut at a height in a wall: Link
+  // leans on one for SLATE_PUSH_FRAMES holding a slate (Player.tryPush) and it
+  // goes in, SND_DOORCLOSE and the filled-slate tile, as the cartridge does.
+  // OURS: he reaches a `low` slot standing dry, a `mid` one wading and a
+  // `high` one swimming, so the sea decides which slot he can fill. The last
+  // slate sinks the dais walls round `opens` and stands the stair up there.
+  // Each slot is remembered in the save (`<map>:<room>:slot<i>`).
+
+  /** The save key of slot `i` of `room`. */
+  slotKey(room, i) { return `${this.mapId}:${room.key}:slot${i}`; }
+
+  /** Is tx,ty a slate slot of this room (filled or not)? */
+  isSlot(tx, ty) {
+    const k = this.room && this.room.def.slateRoom;
+    return !!(k && k.slots.some(s => s.at[0] === tx && s.at[1] === ty));
+  }
+
+  /** How high the sea has Link: 'low' dry, 'mid' wading, 'high' swimming. */
+  linkHeight() {
+    const p = this.player;
+    if (!p) return 'low';
+    return p.inDeep ? 'high' : p.inShallow ? 'mid' : 'low';
+  }
+
+  /** Leaned on long enough: put a slate in, or say why not. */
+  trySlot(tx, ty) {
+    const room = this.room, k = room && room.def.slateRoom;
+    if (!k) return false;
+    const i = k.slots.findIndex(s => s.at[0] === tx && s.at[1] === ty);
+    if (i < 0 || this.progress.secrets[this.slotKey(room, i)]) return false;
+    const s = k.slots[i];
+    if (this.dialogue.active) return true;
+    if (!(this.progress.slates > 0)) {
+      // TX_5111, the cartridge's own words.
+      this.say('It looks like something fits in this hole.');
+      return true;
+    }
+    const H = ['low', 'mid', 'high'];
+    const have = H.indexOf(this.linkHeight()), want = H.indexOf(s.height);
+    if (this.player && this.player.underwater) { this.say('It\'s up above you, out of the water.'); return true; }
+    if (want > have) { this.audio.sfx('deny'); this.say('Too high to reach!'); return true; }
+    if (want < have) { this.audio.sfx('deny'); this.say('It\'s under the water, below you!'); return true; }
+    this.progress.slates--;
+    this.progress.secrets[this.slotKey(room, i)] = true;
+    room.setTile(tx, ty, getTileDef(room.baseName(tx, ty)).slotFilled);
+    this.audio.sfx('plank');
+    if (k.slots.every((_, j) => this.progress.secrets[this.slotKey(room, j)])) this.openDais(room, true);
+    return true;
+  }
+
+  /** The dais round `opens` sinks and the stair stands up (S212). */
+  openDais(room, live) {
+    const k = room.def.slateRoom;
+    const [x0, y0, x1, y1] = k.dais;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (x !== x0 && x !== x1 && y !== y0 && y !== y1) continue;
+      if (k.slots.some(s => s.at[0] === x && s.at[1] === y)) continue;
+      room.setTile(x, y, k.floor);
+      if (live) this.spawnEffect('puff', x * TILE, y * TILE);
+    }
+    room.setTile(k.opens[0], k.opens[1], k.stair);
+    if (live) { this.audio.jingle('secret'); this.say(k.say || 'The dais sinks into the floor.'); }
+  }
+
+  /** On the way in: the slots and the dais as the save has them. */
+  restoreSlates(room) {
+    const k = room.def.slateRoom;
+    const [x0, y0, x1, y1] = k.dais;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) room.setTile(x, y, null);
+    let all = true;
+    k.slots.forEach((s, i) => {
+      if (this.progress.secrets[this.slotKey(room, i)]) {
+        room.setTile(s.at[0], s.at[1], getTileDef(room.baseName(s.at[0], s.at[1])).slotFilled);
+      } else all = false;
+    });
+    if (all) this.openDais(room, false);
   }
 
   /**
