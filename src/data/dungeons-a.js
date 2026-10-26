@@ -306,22 +306,40 @@ export function installDungeonsA() {
         // these two several times over, and they drop `good` for that reason
         // (FEEL-SPEC.md's health-economy entry). The north door is the first
         // key door in the game.
+        //
+        // THE HELD BRIDGE (S211; Ages' extendable bridge, room $44c): the
+        // planks over the north-west hole are down only while the plate in
+        // the basin is held, and Link cannot hold it and cross it at once.
+        // The block is the only other weight, and it only crosses the drain
+        // in its lane at MID (it falls in at LOW and will not go in at HIGH);
+        // the well before the chest is only shallow enough to stand in at LOW.
+        // MID, push it home; LOW, cross (tools/check-bridges.mjs).
         map: [
           '#######L#######',
+          '#.3OOOO.......#',
+          '#.3OOOO.......#',
+          '#OOOOOO.......#',
           '#.............#',
-          '#.............#',
-          '#..33.....33..#',
-          '#..33.....33..#',
           '...............',
-          '#..33.....33..#',
-          '#..33.....33..#',
-          '#.....111.....#',
-          '#.....1.1.....#',
+          '#..####...111.#',
+          '#.....4...111.#',
+          '#..####...111.#',
+          '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['tektite', 7, 3, { drops: 'good' }],
+          ['tektite', 11, 3, { drops: 'good' }],
           ['crab', 3, 5, { drops: 'good' }],
+          ['block', 3, 7],
+          ['switch', 10, 7],
+          ['chest', 1, 2, { pickup: 'rupee100' }],
+        ],
+        bridgeRoom: {
+          from: [7, 9], target: [2, 2], plate: [10, 7], dir: 'H',
+          planks: [[6, 1], [5, 1], [4, 1], [3, 1]], seas: [1, 2, 0],
+        },
+        readable: [
+          [14, 4, 'Cut by the door: "The bridge stands while something keeps its weight on the plate."'],
         ],
       },
       '0,2,4': {
@@ -1134,23 +1152,44 @@ export function installDungeonsA() {
         ],
       },
       '1,3,4': {
-        name: 'Spire Concourse',
+        name: 'The Eye Hall',
+        // THE EYE LOOP (S211; Seasons' eye puzzle, room $59c, statueEyeball.s
+        // and screenTransitionEyePuzzle). The north, east and south doors all
+        // bring you back in here; the way on is the door no eye looks at, and
+        // the eyes stand in wells and turn with every tide, so no one sea
+        // tells you (tools/check-eyes.mjs). Three right in a row and the east
+        // door leads on to the Sealed Cell; the west door always leaves.
         map: [
-          '###############',
-          '#..q.......q..#',
+          '#######.#######',
           '#.............#',
-          '#.............#',
-          '#.............#',
+          '#..333...333..#',
+          '#..333...333..#',
+          '#..333...333..#',
           '...............',
+          '#..333...333..#',
+          '#..333...333..#',
+          '#..333...333..#',
           '#.............#',
-          '#.............#',
-          '#.............#',
-          '#..q.......q..#',
-          '###############',
+          '#######.#######',
         ],
         entities: [
-          ['crab', 3, 3],
-          ['keese', 11, 7],
+          ['eye', 4, 3, { i: 0 }],
+          ['eye', 10, 3, { i: 1 }],
+          ['eye', 4, 7, { i: 2 }],
+          ['eye', 10, 7, { i: 3 }],
+        ],
+        eyeRoom: {
+          back: 'W', exit: 'E',
+          statues: [[4, 3], [10, 3], [4, 7], [10, 7]],
+          // Each statue's eye at LOW, MID and HIGH, pass by pass.
+          passes: [
+            { answer: 'S', look: [['N', 'E', 'W'], ['W', 'W', 'N'], ['N', 'W', 'N'], ['W', 'E', 'W']] },
+            { answer: 'N', look: [['E', 'W', 'S'], ['W', 'E', 'W'], ['E', 'E', 'W'], ['W', 'W', 'S']] },
+            { answer: 'E', look: [['W', 'S', 'S'], ['N', 'W', 'W'], ['W', 'S', 'W'], ['N', 'W', 'S']] },
+          ],
+        },
+        readable: [
+          [0, 4, 'Carved by the door: "Go the way no eye looks. Ask them at more than one tide."'],
         ],
       },
       '1,4,4': {

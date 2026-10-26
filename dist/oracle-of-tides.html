@@ -1360,6 +1360,15 @@ const SEASONS_MUSIC = {
       [4,2],[2,9],[8,246],[0,45,20],[8,0],[2,2],[8,244],[0,45,20],[7],
     ],
   },
+  // sfx/doorClose.s
+  doorClose: {
+    ch: { 2: 0, 7: 9 },
+    prio: { 2: 10, 7: 10 },
+    events: [
+      [4,1],[2,0],[1,2],[2,6],[0,36,1],[8,15],[0,36,5],[8,0],[7],[10,208],[0,36,2],[10,176],[0,70,1],[0,71,1],[0,84,1],[0,85,1],
+      [0,86,1],[0,87,1],[10,0],[0,0,1],[10,96],[0,36,2],[0,86,2],[0,87,5],[10,32],[0,36,2],[0,86,2],[0,87,5],[7],
+    ],
+  },
 };
 __exports["GB_FREQ"] = GB_FREQ;
 __exports["GB_ENV_WAIT"] = GB_ENV_WAIT;
@@ -4087,6 +4096,12 @@ const CHUNK_BOB_FRAMES = 24;
  *  pushblock.s state 2, which Seasons gives tile $2f (pushableTiles.s var34
  *  bit 1): SPEED_1c0, 1.75 px a frame, from the first frame to the clink. */
 const ICE_BLOCK_SPEED = 448;
+
+/** frames — a held bridge lays, or takes up, one plank this often (S211,
+ *  Game.updateBridge). derived from the cartridge: oracles-disasm
+ *  object_code/ages/interactions/extendableBridge.s sets counter1 to $0a
+ *  before each tile it places or removes, state 1 and state 2 alike. */
+const BRIDGE_PLANK_FRAMES = 10;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4563,6 +4578,7 @@ __exports["ICE_ACCEL"] = ICE_ACCEL;
 __exports["ICE_TURN_STEPS"] = ICE_TURN_STEPS;
 __exports["CHUNK_BOB_FRAMES"] = CHUNK_BOB_FRAMES;
 __exports["ICE_BLOCK_SPEED"] = ICE_BLOCK_SPEED;
+__exports["BRIDGE_PLANK_FRAMES"] = BRIDGE_PLANK_FRAMES;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -37644,7 +37660,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, COILBONE_INVULN_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -37827,6 +37843,16 @@ class Game {
     // puts it back on the way in.
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
+    // The eye loop's count lives only while Link goes round it (S211): any
+    // way into a room but the loop itself starts it over, a load included.
+    this.eyePass = this._eyeLoop ? (this.eyePassNext | 0) : 0;
+    this._eyeLoop = false;
+    // A held bridge is up whenever its room is walked into (S211): the block
+    // that held it is back where it started.
+    if (r.def.bridgeRoom) {
+      for (const [x, y] of r.def.bridgeRoom.planks) r.setTile(x, y, null);
+      r._bridge = { laid: 0, t: BRIDGE_PLANK_FRAMES };
+    }
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
     // player has only just walked into.
@@ -38171,7 +38197,21 @@ class Game {
     else if (dir === 'left') { nx = room.rx - 1; ny = room.ry + sy; }
     else if (dir === 'down') { nx = room.rx + sx; ny = room.ry + room.sh; }
     else { nx = room.rx + sx; ny = room.ry - 1; }
-    if (!hasRoom(this.mapId, room.floor, nx, ny)) return;
+    // THE EYE LOOP (S211; Seasons' screenTransitionEyePuzzle, bank1.s): in a
+    // room with an `eyeRoom`, every door but `back` brings Link into the same
+    // room again. The pass's way on counts; any other door starts over; the
+    // last pass's way on is the exit, and only then does it lead on.
+    let loop = false;
+    const eyes = room.def.eyeRoom;
+    if (eyes) {
+      const side = { right: 'E', left: 'W', down: 'S', up: 'N' }[dir];
+      const n = eyes.passes.length, pass = Math.min(this.eyePass | 0, n - 1);
+      if (side !== eyes.back && !(side === eyes.passes[pass].answer && pass === n - 1)) {
+        this.eyePassNext = side === eyes.passes[pass].answer ? pass + 1 : 0;
+        nx = room.rx; ny = room.ry; loop = true;
+      }
+    }
+    if (!loop && !hasRoom(this.mapId, room.floor, nx, ny)) return;
 
     const next = getRoom(this.mapId, room.floor, nx, ny);
     const endPos = this.entryPos(dir, p, next);
@@ -38187,7 +38227,7 @@ class Game {
       cx: endPos.x + (p.cx - p.x), cy: endPos.y + (p.cy - p.y),
     });
     this.transition = {
-      dir, t: 0, from: this.room, to: next, nx, ny,
+      dir, t: 0, from: this.room, to: next, nx, ny, loop,
       fromCanvas: this.room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
       endPos,
@@ -38263,7 +38303,9 @@ class Game {
     p.fy = t.startFy + Math.round((endFy - t.startFy) * k);
     p.animT++;
     if (t.t >= n) {
+      this._eyeLoop = t.loop;
       this.setRoom(this.room.floor, t.nx, t.ny);
+      if (t.loop) this._eyeLooped = true;
       p.x = t.endPos.x; p.y = t.endPos.y;
       p.lastSafe.x = p.x; p.lastSafe.y = p.y;
       p.reconcileWithTide(this);
@@ -39858,9 +39900,38 @@ class Game {
     // moving under the sweep's snapshot would smear the wipe.
     this.camera.update(this.room, this.player);
 
+    this.updateBridge();
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
+  }
+
+  /**
+   * THE HELD BRIDGE (S211; Ages' INTERAC_EXTENDABLE_BRIDGE). A room's
+   * `bridgeRoom` names a plate and the planks over a hole, near end first.
+   * While the plate is down a plank goes down every BRIDGE_PLANK_FRAMES from
+   * the near end; while it is up they come up again from the far end, each
+   * with SND_DOORCLOSE, as extendableBridge.s lays and lifts them. A plank
+   * coming up under Link leaves him over the hole, and he falls.
+   */
+  updateBridge() {
+    const k = this.room && this.room.def.bridgeRoom;
+    if (!k) return;
+    const r = this.room, b = r._bridge;
+    const held = this.entities.some(e => e instanceof FloorSwitch && e.pressed
+      && Math.floor(e.cx / TILE) === k.plate[0] && Math.floor(e.cy / TILE) === k.plate[1]);
+    const want = held ? k.planks.length : 0;
+    if (b.laid === want) { b.t = BRIDGE_PLANK_FRAMES; return; }
+    if (--b.t > 0) return;
+    b.t = BRIDGE_PLANK_FRAMES;
+    if (held) {
+      const [x, y] = k.planks[b.laid++];
+      r.setTile(x, y, getTileDef(r.baseName(x, y)).bridge[k.dir || 'H']);
+    } else {
+      const [x, y] = k.planks[--b.laid];
+      r.setTile(x, y, null);
+    }
+    this.audio.sfx('plank');
   }
 
   // ------------------------------------------------------- phase-shifted foes
@@ -61074,22 +61145,40 @@ function installDungeonsA() {
         // these two several times over, and they drop `good` for that reason
         // (FEEL-SPEC.md's health-economy entry). The north door is the first
         // key door in the game.
+        //
+        // THE HELD BRIDGE (S211; Ages' extendable bridge, room $44c): the
+        // planks over the north-west hole are down only while the plate in
+        // the basin is held, and Link cannot hold it and cross it at once.
+        // The block is the only other weight, and it only crosses the drain
+        // in its lane at MID (it falls in at LOW and will not go in at HIGH);
+        // the well before the chest is only shallow enough to stand in at LOW.
+        // MID, push it home; LOW, cross (tools/check-bridges.mjs).
         map: [
           '#######L#######',
+          '#.3OOOO.......#',
+          '#.3OOOO.......#',
+          '#OOOOOO.......#',
           '#.............#',
-          '#.............#',
-          '#..33.....33..#',
-          '#..33.....33..#',
           '...............',
-          '#..33.....33..#',
-          '#..33.....33..#',
-          '#.....111.....#',
-          '#.....1.1.....#',
+          '#..####...111.#',
+          '#.....4...111.#',
+          '#..####...111.#',
+          '#.............#',
           '#######.#######',
         ],
         entities: [
-          ['tektite', 7, 3, { drops: 'good' }],
+          ['tektite', 11, 3, { drops: 'good' }],
           ['crab', 3, 5, { drops: 'good' }],
+          ['block', 3, 7],
+          ['switch', 10, 7],
+          ['chest', 1, 2, { pickup: 'rupee100' }],
+        ],
+        bridgeRoom: {
+          from: [7, 9], target: [2, 2], plate: [10, 7], dir: 'H',
+          planks: [[6, 1], [5, 1], [4, 1], [3, 1]], seas: [1, 2, 0],
+        },
+        readable: [
+          [14, 4, 'Cut by the door: "The bridge stands while something keeps its weight on the plate."'],
         ],
       },
       '0,2,4': {
@@ -61902,23 +61991,44 @@ function installDungeonsA() {
         ],
       },
       '1,3,4': {
-        name: 'Spire Concourse',
+        name: 'The Eye Hall',
+        // THE EYE LOOP (S211; Seasons' eye puzzle, room $59c, statueEyeball.s
+        // and screenTransitionEyePuzzle). The north, east and south doors all
+        // bring you back in here; the way on is the door no eye looks at, and
+        // the eyes stand in wells and turn with every tide, so no one sea
+        // tells you (tools/check-eyes.mjs). Three right in a row and the east
+        // door leads on to the Sealed Cell; the west door always leaves.
         map: [
-          '###############',
-          '#..q.......q..#',
+          '#######.#######',
           '#.............#',
-          '#.............#',
-          '#.............#',
+          '#..333...333..#',
+          '#..333...333..#',
+          '#..333...333..#',
           '...............',
+          '#..333...333..#',
+          '#..333...333..#',
+          '#..333...333..#',
           '#.............#',
-          '#.............#',
-          '#.............#',
-          '#..q.......q..#',
-          '###############',
+          '#######.#######',
         ],
         entities: [
-          ['crab', 3, 3],
-          ['keese', 11, 7],
+          ['eye', 4, 3, { i: 0 }],
+          ['eye', 10, 3, { i: 1 }],
+          ['eye', 4, 7, { i: 2 }],
+          ['eye', 10, 7, { i: 3 }],
+        ],
+        eyeRoom: {
+          back: 'W', exit: 'E',
+          statues: [[4, 3], [10, 3], [4, 7], [10, 7]],
+          // Each statue's eye at LOW, MID and HIGH, pass by pass.
+          passes: [
+            { answer: 'S', look: [['N', 'E', 'W'], ['W', 'W', 'N'], ['N', 'W', 'N'], ['W', 'E', 'W']] },
+            { answer: 'N', look: [['E', 'W', 'S'], ['W', 'E', 'W'], ['E', 'E', 'W'], ['W', 'W', 'S']] },
+            { answer: 'E', look: [['W', 'S', 'S'], ['N', 'W', 'W'], ['W', 'S', 'W'], ['N', 'W', 'S']] },
+          ],
+        },
+        readable: [
+          [0, 4, 'Carved by the door: "Go the way no eye looks. Ask them at more than one tide."'],
         ],
       },
       '1,4,4': {
@@ -69470,6 +69580,9 @@ const SFX = {
   // A keyhole's door grinding open: the cartridge's own SND_RUMBLE. The
   // coral pillar and the hauled boulder keep our `rumble`.
   doorRumble: { seasons: 'rumble' },
+  // A held bridge's plank going down or up (S211): SND_DOORCLOSE, which
+  // Ages' extendableBridge.s plays for every tile it sets.
+  plank: { seasons: 'doorClose' },
 
   // The opening's storm (S168): the cartridge's own lightning crack, the
   // wave its ending sea plays, and its wind.

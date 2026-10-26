@@ -132,6 +132,9 @@ const SFX = {
   // A keyhole's door grinding open: the cartridge's own SND_RUMBLE. The
   // coral pillar and the hauled boulder keep our `rumble`.
   doorRumble: { seasons: 'rumble' },
+  // A held bridge's plank going down or up (S211): SND_DOORCLOSE, which
+  // Ages' extendableBridge.s plays for every tile it sets.
+  plank: { seasons: 'doorClose' },
 
   // The opening's storm (S168): the cartridge's own lightning crack, the
   // wave its ending sea plays, and its wind.

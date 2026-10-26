@@ -77,6 +77,7 @@ import {
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
   WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
   COILBONE_INVULN_FRAMES,
+  BRIDGE_PLANK_FRAMES,
 } from '../data/feel.js';
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
@@ -260,6 +261,16 @@ export class Game {
     // puts it back on the way in.
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
+    // The eye loop's count lives only while Link goes round it (S211): any
+    // way into a room but the loop itself starts it over, a load included.
+    this.eyePass = this._eyeLoop ? (this.eyePassNext | 0) : 0;
+    this._eyeLoop = false;
+    // A held bridge is up whenever its room is walked into (S211): the block
+    // that held it is back where it started.
+    if (r.def.bridgeRoom) {
+      for (const [x, y] of r.def.bridgeRoom.planks) r.setTile(x, y, null);
+      r._bridge = { laid: 0, t: BRIDGE_PLANK_FRAMES };
+    }
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
     // player has only just walked into.
@@ -604,7 +615,21 @@ export class Game {
     else if (dir === 'left') { nx = room.rx - 1; ny = room.ry + sy; }
     else if (dir === 'down') { nx = room.rx + sx; ny = room.ry + room.sh; }
     else { nx = room.rx + sx; ny = room.ry - 1; }
-    if (!hasRoom(this.mapId, room.floor, nx, ny)) return;
+    // THE EYE LOOP (S211; Seasons' screenTransitionEyePuzzle, bank1.s): in a
+    // room with an `eyeRoom`, every door but `back` brings Link into the same
+    // room again. The pass's way on counts; any other door starts over; the
+    // last pass's way on is the exit, and only then does it lead on.
+    let loop = false;
+    const eyes = room.def.eyeRoom;
+    if (eyes) {
+      const side = { right: 'E', left: 'W', down: 'S', up: 'N' }[dir];
+      const n = eyes.passes.length, pass = Math.min(this.eyePass | 0, n - 1);
+      if (side !== eyes.back && !(side === eyes.passes[pass].answer && pass === n - 1)) {
+        this.eyePassNext = side === eyes.passes[pass].answer ? pass + 1 : 0;
+        nx = room.rx; ny = room.ry; loop = true;
+      }
+    }
+    if (!loop && !hasRoom(this.mapId, room.floor, nx, ny)) return;
 
     const next = getRoom(this.mapId, room.floor, nx, ny);
     const endPos = this.entryPos(dir, p, next);
@@ -620,7 +645,7 @@ export class Game {
       cx: endPos.x + (p.cx - p.x), cy: endPos.y + (p.cy - p.y),
     });
     this.transition = {
-      dir, t: 0, from: this.room, to: next, nx, ny,
+      dir, t: 0, from: this.room, to: next, nx, ny, loop,
       fromCanvas: this.room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
       endPos,
@@ -696,7 +721,9 @@ export class Game {
     p.fy = t.startFy + Math.round((endFy - t.startFy) * k);
     p.animT++;
     if (t.t >= n) {
+      this._eyeLoop = t.loop;
       this.setRoom(this.room.floor, t.nx, t.ny);
+      if (t.loop) this._eyeLooped = true;
       p.x = t.endPos.x; p.y = t.endPos.y;
       p.lastSafe.x = p.x; p.lastSafe.y = p.y;
       p.reconcileWithTide(this);
@@ -2291,9 +2318,38 @@ export class Game {
     // moving under the sweep's snapshot would smear the wipe.
     this.camera.update(this.room, this.player);
 
+    this.updateBridge();
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
+  }
+
+  /**
+   * THE HELD BRIDGE (S211; Ages' INTERAC_EXTENDABLE_BRIDGE). A room's
+   * `bridgeRoom` names a plate and the planks over a hole, near end first.
+   * While the plate is down a plank goes down every BRIDGE_PLANK_FRAMES from
+   * the near end; while it is up they come up again from the far end, each
+   * with SND_DOORCLOSE, as extendableBridge.s lays and lifts them. A plank
+   * coming up under Link leaves him over the hole, and he falls.
+   */
+  updateBridge() {
+    const k = this.room && this.room.def.bridgeRoom;
+    if (!k) return;
+    const r = this.room, b = r._bridge;
+    const held = this.entities.some(e => e instanceof FloorSwitch && e.pressed
+      && Math.floor(e.cx / TILE) === k.plate[0] && Math.floor(e.cy / TILE) === k.plate[1]);
+    const want = held ? k.planks.length : 0;
+    if (b.laid === want) { b.t = BRIDGE_PLANK_FRAMES; return; }
+    if (--b.t > 0) return;
+    b.t = BRIDGE_PLANK_FRAMES;
+    if (held) {
+      const [x, y] = k.planks[b.laid++];
+      r.setTile(x, y, getTileDef(r.baseName(x, y)).bridge[k.dir || 'H']);
+    } else {
+      const [x, y] = k.planks[--b.laid];
+      r.setTile(x, y, null);
+    }
+    this.audio.sfx('plank');
   }
 
   // ------------------------------------------------------- phase-shifted foes

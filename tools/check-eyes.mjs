@@ -190,6 +190,14 @@ async function engine(c, doors) {
     const DIR = { N: 'up', S: 'down', E: 'right', W: 'left' };
     const out = { eyes: [], walks: [] };
     const calm = () => { g.dialogue.active = false; g.bannerTime = 0; g.cutscene = null; };
+    // A pad that holds what it is told: the real one's edges, no keyboard.
+    const pad = { held: {}, prev: {}, next: {},
+      update() { this.prev = this.held; this.held = { ...this.next }; },
+      down(b) { return !!this.held[b]; }, pressed(b) { return !!this.held[b] && !this.prev[b]; },
+      released(b) { return !this.held[b] && !!this.prev[b]; },
+      anyDir() { return ['up', 'down', 'left', 'right'].some(b => this.held[b]); }, takeExtra() { return null; } };
+    g.input = pad;
+    h.hold = (keys) => { pad.next = keys; };
     // Stand just inside door `from` and hold toward door `to` until the room
     // changes (or 600 frames pass): the real transition, whatever it does.
     const enterAt = (side, lv) => {
@@ -237,7 +245,7 @@ async function engine(c, doors) {
     enterAt(k.back, 0);
     walkOut(k.passes[0].answer);
     const passBefore = g.eyePass;
-    const snap = g.saveGame ? (g.saveGame(), true) : false;
+    const snap = !!g.save; if (snap) g.save();
     if (snap && g.loadGame) g.loadGame(g.slot != null ? g.slot : 0);
     for (let i = 0; i < 30; i++) { h.step(1); calm(); }
     out.reload = { passBefore, passAfter: g.eyePass, snap };

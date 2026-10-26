@@ -360,7 +360,12 @@ LOW before moving on.
   It is this game's Compass and it is worth more than one.
 
 **Tide Gallery** (`d1/0,3,4`), north of the hub. A locked door. You have no key
-yet; the two rooms either side hold both.
+yet; the two rooms either side hold both. In the north-west, a bridge over a
+hole to a chest of **100 Rupees**: its planks are down only while the plate in
+the east basin is held. The block in the lane is the weight, and it only
+crosses the drain at MID (at LOW it falls in, at HIGH it will not go in). Push
+it right to the plate at MID, sound round to LOW (the well before the chest is
+only shallow enough then) and cross.
 
 **Crab Pit** (`d1/0,2,4`), west. Three crabs, all of them shielded frontally.
 Clear the room and **Small Key 1** clatters onto the stone.
@@ -630,8 +635,13 @@ up to floor 1.
 ### Upper floor: the Lens
 
 **Upper Landing** (`d2/1,2,4`) → **Anemone Cell** (`d2/1,2,5`) for a fairy →
-back and east to **Spire Concourse** (`d2/1,3,4`) → east again to **Sealed Cell**
+back and east to **The Eye Hall** (`d2/1,3,4`) → east again to **Sealed Cell**
 (`d2/1,4,4`).
+
+**The Eye Hall** loops: every door but the west one brings you back in. The
+way on is the door no eye statue is looking at, and the eyes turn with every
+tide, so watch them at two seas. South, then north, then east, and the east
+door leads on; the west door starts it over.
 
 The big chest at (2,1) is the **Brineglass Lens**. The pane of green glass in the
 wall shows the room standing a hand deeper in water than it actually is — which

@@ -1,26 +1,27 @@
-# Next session (S211) — the puzzle pass: signs, then the last kinds
+# Next session (S212) — the Keep's slate slots
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/briefs/PUZZLE-PASS.md (the plan, the audit and the order).
-- docs/NEXT-SESSION.md S210 and S209; docs/HANDOFF.md lessons (top ten);
-  docs/DUNGEON-STATUS.md "S210".
+- docs/briefs/PUZZLE-PASS.md (step 9), docs/NEXT-SESSION.md S211 and S209
+  (the Hold), docs/HANDOFF.md lessons (top ten); docs/DUNGEON-STATUS.md "S211".
 
 ## State
-- S204-S209: every new kind built (blocks, plates, toggles, torches, key
-  drop, cube, statues, tide floor, ice).
-- S210: the stake inside other puzzles (check-fords): Root Ford, Long Ford,
-  Ferry Pocket, Seedwarden's Ferry, Drowned Garden. No copy left from step 6.
-  First pass of step 8: eight solving signs now hint.
+- S204-S210: every planned kind built. S211: signs second pass (13 hint
+  now); the Coral Spire's Eye Hall (eye statues that turn with the tide,
+  check-eyes) and the Grotto's held bridge (check-bridges) built.
+- Slates approved and mocked, NOT built: docs/briefs/puzzle-pass/
+  s211-slates.png, spec s211-slates-mock.json, tools/check-slates.mjs (model).
 - Whole table green; check-playthrough 49/49, THE END, never died.
 
 ## The task
-- Step 8, second pass: every dungeon and cave sign, and the NPC hint lines
-  for those rooms, against "hint, don't solve" (full steps only where an
-  item is first taught). Show the human a before/after list first.
-- Then the "More" kinds (eye statues, a bridge held by its plate, slates):
-  each needs its tide twist, a checker written first, and a mock beside the
-  cartridge room before it is built.
+- Build the slates (the human's choices, S211): a slot room before the King
+  in the Abyssal Keep, slots at three heights (dry LOW, wading MID, swimming
+  HIGH; the mock's N high, E low, S mid, W high), four slates lying in the
+  Hold and brought up with the Dredge Line, all four open the stair on.
+  Engine: slate as a counted item, lean SLATE_PUSH_FRAMES (Ages slateSlot.s
+  var3f $0a, derived), wrong sea says why. Finish check-slates' engine
+  clauses first. Re-route the robot; sweep Nereth's and the Keep bosses'
+  waits. Show the human the room in the game beside Ages' $58a.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

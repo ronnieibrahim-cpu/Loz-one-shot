@@ -37,12 +37,16 @@
 //        node tools/check-bridges.mjs --mock spec.json   (model only: spec
 //        { legend, rooms: { name: grid }, claims: { name: { bridge: {...},
 //        blocks: [[x, y]] } } })
-import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import { extname, join, normalize, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom, registerMap } from '../src/world/maps.js';
 import { F } from '../src/world/tileset.js';
 import { tileWalkable, tileSolid, ROUTE_AVOID, capsForDungeonIndex } from './lib/collision.mjs';
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 installData();
 let pass = 0; const fail = [];
 const check = (n, c, d) => c ? (pass++, console.log('  ok   ' + n))
@@ -211,6 +215,105 @@ for (const c of CLAIMS) {
   });
   check(`${tag}: no reachable state shuts Link in (${all.length} states)`, !shut.length,
     shut.slice(0, 2).map(s => JSON.stringify([s.lx, s.ly, s.sea, s.b])).join(' '));
+}
+
+// 7-10, in the engine.
+const BUILT = CLAIMS.filter(c => !c.mock);
+if (BUILT.length) {
+  const { chromium } = await import('playwright');
+  const { installRuntime } = await import('./actor-runtime.mjs');
+  const { BRIDGE_PLANK_FRAMES: N } = await import('../src/data/feel.js');
+  const server = createServer(async (req, res) => {
+    let p = decodeURIComponent(new URL(req.url, 'http://x').pathname); if (p.endsWith('/')) p += 'index.html';
+    const full = join(ROOT, normalize(p)); const st = await stat(full).catch(() => null);
+    if (!st || !st.isFile()) { res.writeHead(404).end(); return; }
+    res.writeHead(200, { 'Content-Type': extname(full) === '.html' ? 'text/html' : 'text/javascript' }); res.end(await readFile(full));
+  });
+  await new Promise(r => server.listen(0, r));
+  const browser = await chromium.launch().catch(() =>
+    chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }));
+  const page = await browser.newPage();
+  const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`http://localhost:${server.address().port}/index.html`);
+  await page.waitForFunction(() => window.__game && window.__harness);
+  await page.evaluate(installRuntime);
+  for (const c of BUILT) {
+    const { k } = c, tag = `${c.mapId} ${c.key} (${c.def.name})`;
+    const [f, rx, ry] = c.key.split(',').map(Number);
+    const room = getRoom(c.mapId, f, rx, ry);
+    const caps = capsForDungeonIndex(c.index);
+    const best = makeBridgeModel(room, k, c.blocks, caps).solve(k.from, 0);
+    const plan = [['wait', 4], ['equip', 'conch', 'B', 400]];
+    for (const st of best.steps) {
+      if (st.conch != null) plan.push(['tide', st.conch, 140, 900]);
+      else plan.push(['goto', st.from[0], st.from[1], 1500], ['wait', 6], ['hold', [st.push], 40], ['wait', 30]);
+    }
+    // Walk the planks to the target, face the chest beside it, open it.
+    const chest = (c.def.entities || []).find(e => e[0] === 'chest');
+    const face = chest[1] < k.target[0] ? 'left' : chest[1] > k.target[0] ? 'right' : chest[2] < k.target[1] ? 'up' : 'down';
+    plan.push(['wait', N * (k.planks.length + 2)], ['goto', k.target[0], k.target[1], 1500], ['wait', 10], ['hold', [face], 20], ['tap', 'a', 40], ['dialogue', 300]);
+    const setup = { seed: 20261026, items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', maxHearts: 24, hearts: 24, tide: 0,
+      enter: [c.mapId, f, rx, ry, k.from[0] * 16, k.from[1] * 16, 'up'] };
+    const r = await page.evaluate(async ([setup, plan, k, chest, N]) => {
+      const g = window.__game, h = window.__harness, out = {};
+      const step = (n) => { for (let i = 0; i < n; i++) { h.step(1); g.dialogue.active = false; g.bannerTime = 0; } };
+      const laid = () => k.planks.map(([x, y]) => g.room.override[y * g.room.tw + x] ? 1 : 0).join('');
+      // 9. the solution, played.
+      window.__rp.beginRecord(setup, plan);
+      for (let i = 0; i < 4; i++) window.__rp.pump(1);
+      for (const e of g.entities) if (e.isEnemy) e.remove = true;
+      g.enemiesOff = true; g.player.invuln = 1e6;
+      try { for (let n = 0; n < 900 && !window.__rp.pump(100).done; n++); } catch (e) { out.err = String(e && e.message || e); }
+      const ch = g.entities.find(e => e.constructor.name === 'Chest' && Math.floor(e.x / 16) === chest[1] && Math.floor(e.y / 16) === chest[2]);
+      out.opened = !!(ch && ch.opened);
+      out.chests = g.entities.filter(e => e.constructor.name === "Chest").map(e => [e.x, e.y, e.opened]); out.dir = g.player.dir; out.trace = window.__rp._trace.slice(-4).map(t => t.kind + "@" + Math.round(t.x) + "," + Math.round(t.y));
+      out.at = [Math.round(g.player.x / 16), Math.round(g.player.y / 16), g.tide.level];
+      // 7. The planks, frame by frame: the block taken off the plate, then put back.
+      const [mid, fl, x, y] = [setup.enter[0], ...setup.enter.slice(1, 4)];
+      g.tide.clearOverrides(); g.tide.setLevel(0, { instant: true });
+      g.enterMap(mid, fl, x, y, 7 * 16, 9 * 16, 'up', { instant: true }); step(2);
+      const blk = g.entities.find(e => e.constructor.name === 'PushBlock');
+      out.atEntry = laid();
+      blk.x = k.plate[0] * 16; blk.y = k.plate[1] * 16; blk.fx = blk.x * 256; blk.fy = blk.y * 256;
+      const seq = []; for (let i = 0; i < N * (k.planks.length + 1); i++) { step(1); seq.push(laid()); }
+      out.down = seq;
+      blk.x = 2 * 16; blk.y = 9 * 16; blk.fx = blk.x * 256; blk.fy = blk.y * 256;
+      const seq2 = []; for (let i = 0; i < N * (k.planks.length + 1); i++) { step(1); seq2.push(laid()); }
+      out.up = seq2;
+      // 8. Link on the far plank when it comes up.
+      blk.x = k.plate[0] * 16; blk.y = k.plate[1] * 16; blk.fx = blk.x * 256; blk.fy = blk.y * 256;
+      step(N * (k.planks.length + 2));
+      const far = k.planks[k.planks.length - 1];
+      g.player.x = far[0] * 16; g.player.y = far[1] * 16; g.player.fx = g.player.x * 256; g.player.fy = g.player.y * 256;
+      g.player.invuln = 0; const hp = g.progress.hearts;
+      blk.x = 2 * 16; blk.y = 9 * 16; blk.fx = blk.x * 256; blk.fy = blk.y * 256;
+      step(N * 2 + 90);
+      out.fell = g.progress.hearts < hp || Math.round(g.player.x / 16) !== far[0] || Math.round(g.player.y / 16) !== far[1];
+      // 10. a save and a load: the block back home, the bridge up.
+      blk.x = k.plate[0] * 16; blk.y = k.plate[1] * 16; blk.fx = blk.x * 256; blk.fy = blk.y * 256;
+      g.player.x = 7 * 16; g.player.y = 9 * 16; g.player.fx = g.player.x * 256; g.player.fy = g.player.y * 256;
+      step(N * (k.planks.length + 2));
+      g.save(); g.loadGame(g.slot != null ? g.slot : 0); step(4);
+      out.reload = laid();
+      return out;
+    }, [setup, plan, k, chest, N]);
+    const n = k.planks.length, none = '0'.repeat(n), all = '1'.repeat(n);
+    check(`${tag}: played in the engine, the solution crosses and opens the chest`, !r.err && r.opened, JSON.stringify({ err: r.err, at: r.at, chests: r.chests, dir: r.dir, trace: r.trace }));
+    check(`${tag}: walked into, the bridge is up`, r.atEntry === none, r.atEntry);
+    const firstDown = r.down.findIndex(v => v !== none);
+    const ordered = r.down.every(v => /^1*0*$/.test(v));
+    const step = r.down.map(v => v.split('').filter(x => x === '1').length);
+    const gaps = []; for (let i = 1; i <= n; i++) gaps.push(step.indexOf(i) - (i > 1 ? step.indexOf(i - 1) : -1));
+    check(`${tag}: held, a plank goes down every ${N} frames from the near end`, ordered && r.down[r.down.length - 1] === all
+      && gaps.every(g => g === N), JSON.stringify({ firstDown, gaps }));
+    const upOrdered = r.up.every(v => /^1*0*$/.test(v));
+    check(`${tag}: let go, they come up from the far end, ${N} frames apart`, upOrdered && r.up[r.up.length - 1] === none,
+      r.up.filter((v, i) => !i || v !== r.up[i - 1]).join(' '));
+    check(`${tag}: Link on the far plank when it comes up falls`, r.fell);
+    check(`${tag}: after a save and a load the bridge is up`, r.reload === none, r.reload);
+  }
+  check('no console errors in the engine half', !errors.length, errors[0]);
+  await browser.close(); server.close();
 }
 
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
