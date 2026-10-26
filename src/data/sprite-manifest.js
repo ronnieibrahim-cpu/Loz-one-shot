@@ -108,7 +108,7 @@ export const REQUIRED_SPRITES = {
   // The rupees, hearts, keys, bombs and map lying in the world, the
   // cartridge's own (S155); they used to be hand-drawn in sprites-world.js.
   treasures: ['p_rupee', 'p_rupee5', 'p_rupee20', 'p_rupee100', 'p_heart', 'p_bomb',
-    'p_heartpiece', 'p_heartcontainer', 'p_key', 'p_bosskey', 'i_map'],
+    'p_heartpiece', 'p_heartcontainer', 'p_key', 'p_bosskey', 'i_map', 'p_slate'],
 
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [

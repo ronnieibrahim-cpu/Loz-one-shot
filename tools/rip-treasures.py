@@ -44,6 +44,9 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets', 'treasures', 'oracles-disasm', 'seasons')
+# Oracle of Ages' own tables and graphics (S212), for what only Ages has.
+SRC_AGES = os.path.join(ROOT, 'assets', 'treasures', 'oracles-disasm', 'ages')
+GAME = {'seasons': SRC, 'ages': SRC_AGES}
 OUT = os.path.join(ROOT, 'src', 'data', 'sprites-treasures.js')
 
 # Our sprite name -> what it is on the cartridge.
@@ -61,13 +64,16 @@ WANT = [
     ('p_key', 'treasure', 0x42, 'TREASURE_OBJECT_SMALL_KEY'),
     ('p_bosskey', 'treasure', 0x43, 'TREASURE_OBJECT_BOSS_KEY'),
     ('i_map', 'treasure', 0x40, 'TREASURE_OBJECT_MAP: the dungeon map'),
+    # S212: the Abyssal Keep's slates are Ages' own (TREASURE_SLATE $4b ->
+    # treasureObjectData.s TREASURE_OBJECT_SLATE_00, interaction $60 subid $50).
+    ('p_slate', 'treasure', 0x50, 'TREASURE_OBJECT_SLATE_00 (Oracle of Ages): an Ancient Tomb slate', 'ages'),
 ]
 
 DROP_PART_GFX = 0x5c   # partData.s, part $01 (PART_ITEM_DROP), b0
 
 
-def lines(name):
-    with open(os.path.join(SRC, name)) as f:
+def lines(name, game='seasons'):
+    with open(os.path.join(GAME[game], name)) as f:
         return f.read().split('\n')
 
 
@@ -99,29 +105,29 @@ def dws(ls, label):
     return out
 
 
-def gfx_file(index):
-    for l in lines('objectGfxHeaders.s'):
+def gfx_file(index, game='seasons'):
+    for l in lines('objectGfxHeaders.s', game):
         m = re.match(r'\s*/\* \$(\w+) \*/ m_ObjectGfxHeader (\w+)', l)
         if m and int(m.group(1), 16) == index:
             return m.group(2) + '.png'
     raise SystemExit(f'gfx header ${index:02x} not found')
 
 
-def treasure(subid):
+def treasure(subid, game='seasons'):
     """(gfx .png, tile, palette, oam entries) of interaction $60 `subid`."""
-    ls = after(lines('interactionData.s'), 'interaction60SubidData')
+    ls = after(lines('interactionData.s', game), 'interaction60SubidData')
     rows = [dbs(l) for l in ls if 'm_InteractionSubidData' in l]
     gfx, tile, b2 = rows[subid]
-    anim = after(lines('interactionAnimations.s'), 'interaction60Animations')
+    anim = after(lines('interactionAnimations.s', game), 'interaction60Animations')
     anims = []
     for l in anim:
         m = re.match(r'\s*\.dw (\w+)', l)
         if not m:
             break
         anims.append(m.group(1))
-    frame = dbs(after(lines('interactionAnimations.s'), anims[b2 & 0x0f])[0])
-    oams = dws(lines('interactionAnimations.s'), 'interaction60OamDataPointers')
-    return gfx_file(gfx), tile, (b2 >> 4) & 7, oam(lines('interactionOamData.s'), oams[frame[1] // 2])
+    frame = dbs(after(lines('interactionAnimations.s', game), anims[b2 & 0x0f])[0])
+    oams = dws(lines('interactionAnimations.s', game), 'interaction60OamDataPointers')
+    return gfx_file(gfx, game), tile, (b2 >> 4) & 7, oam(lines('interactionOamData.s', game), oams[frame[1] // 2])
 
 
 def drop(index):
@@ -144,8 +150,8 @@ def oam(ls, label):
     return [dbs(body[1 + i]) for i in range(n)]
 
 
-def palette(index):
-    ls = lines('paletteData.s')
+def palette(index, game='seasons'):
+    ls = lines('paletteData.s', game)
     start = ls.index('standardSpritePaletteData:') + 1
     cols = []
     for l in ls[start:]:
@@ -156,8 +162,8 @@ def palette(index):
             return [tuple((c << 3) | (c >> 2) for c in rgb) for rgb in cols[index * 4:]]
 
 
-def render(png, tile, pal, entries):
-    im = Image.open(os.path.join(SRC, png))
+def render(png, tile, pal, entries, game='seasons'):
+    im = Image.open(os.path.join(GAME[game], png))
     assert im.mode == 'P', f'{png} is not indexed'
     # A 16x24 canvas: the cell is the top 16 rows; the rest catches a layout
     # that sits lower, and is asserted empty below.
@@ -181,7 +187,7 @@ def render(png, tile, pal, entries):
         shift = low - 15
         assert not any(grid[r] for r in range(shift)), 'sprite taller than its cell'
         grid = grid[shift:] + [[0] * 16 for _ in range(shift)]
-    cols = palette(pal)
+    cols = palette(pal, game)
     lum = {v: 3 * cols[v][0] + 6 * cols[v][1] + cols[v][2] for v in used}
     order = sorted(used, key=lambda v: -lum[v])       # lightest first
     digit = {}
@@ -200,13 +206,14 @@ def render(png, tile, pal, entries):
 
 def build():
     art, pals, notes = {}, {}, []
-    for name, kind, index, why in WANT:
-        png, tile, pal, entries = treasure(index) if kind == 'treasure' else drop(index)
-        rows, ramp = render(png, tile, pal, entries)
+    for name, kind, index, why, *g in WANT:
+        game = g[0] if g else 'seasons'
+        png, tile, pal, entries = treasure(index, game) if kind == 'treasure' else drop(index)
+        rows, ramp = render(png, tile, pal, entries, game)
         assert any(c != '.' for r in rows for c in r), f'{name}: empty sprite'
         art[name] = rows
         pals[name] = ramp
-        notes.append(f'//   {name}: {why} — {png} tile ${tile:02x}, palette {pal}, '
+        notes.append(f'//   {name}: {why} — {game}/{png} tile ${tile:02x}, palette {pal}, '
                      f'{len(entries)} hardware sprite{"s" if len(entries) > 1 else ""}')
     return art, pals, notes
 
@@ -215,7 +222,8 @@ HEADER = '''// The treasures that lie in the world, cut from Oracle of Seasons' 
 //
 // Generated by tools/rip-treasures.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
-// commit 7584d87), assets/treasures/oracles-disasm/seasons/: the item and
+// commit 7584d87), assets/treasures/oracles-disasm/seasons/ (and ages/, S212,
+// for the slate): the item and
 // quest-item sprite graphics, the tables that say which tile, palette and
 // layout each treasure and each enemy drop is drawn with, and the standard
 // sprite palettes. Credit: the oracles-disasm project and its contributors;

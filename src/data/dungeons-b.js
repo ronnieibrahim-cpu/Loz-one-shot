@@ -1985,7 +1985,7 @@ export function installDungeonsB() {
           '####.111111.###',
           '#...........###',
           '#..5.....5..O.#',
-          '#...........###',
+          '#......5....###',
           '###############',
         ],
         buried: [[7, 5, 'heartPiece']],
@@ -2145,15 +2145,15 @@ export function installDungeonsB() {
         size: [1, 2],
         map: [
           '###############',
-          '#.............#',
+          '#........5....#',
           '#..........6..#',
           '#..........1..#',
           '#.............#',
           '..............#',
           '#..........5..#',
-          '#.............#',
+          '#..5..........#',
           '#........q....#',
-          '#.............#',
+          '#.....5.......#',
           '#OOOO7OOO7OOOO#',
           '#OOOOOOOOOOOOO#',
           '#OOOO..q..OOOO#',
@@ -2436,12 +2436,15 @@ export function installDungeonsB() {
           '#ii..OOOOOOOOO#',
           '#ii..OOOOOOOOO#',
           '#ii,.OOOO.OOOO#',
-          '#ii..OOOOOOOOO#',
+          '#ii..OO,OOOOOO#',
           '###############',
         ],
         entities: [
           ['icechunk', 3, 8, { id: 'd6S1' }],
           ['switch', 9, 8, { hold: true }],
+          // A SLATE (S212), on an islet under the Slack Water's south shaft
+          // (7,9): no foot reaches it, the line at MID does.
+          ['pickup', 7, 9, { kind: 'slate' }],
         ],
         holdRoom: {
           plate: [9, 8],
@@ -2465,15 +2468,15 @@ export function installDungeonsB() {
         size: [1, 2],
         map: [
           '###############',
-          '#.............#',
+          '#........,....#',
           '#.............#',
           '#....p...p....#',
           '#.............#',
           '#.............#',
           '#..........,..#',
+          '#..,..........#',
           '#.............#',
-          '#.............#',
-          '#.............#',
+          '#.....,.......#',
           '#OOOOOOOOOOOOO#',
           '#OOOOOOOOOOOOO#',
           '#OOOOOOOOOOOOO#',
@@ -2492,6 +2495,13 @@ export function installDungeonsB() {
           ['icechunk', 2, 20, { id: 'd6R1' }],
           ['icechunk', 3, 20, { id: 'd6R2' }],
           ['stalfos', 9, 19],
+          // THE SLATES (S212), beyond the chasm under the Tally Hall's three
+          // new shafts (9,1, 3,7 and 6,9): no foot crosses, the line at MID
+          // does. No two of the Keep's shafts are in line within a cast, so
+          // a cast over one never drags across another first.
+          ['pickup', 9, 1, { kind: 'slate' }],
+          ['pickup', 3, 7, { kind: 'slate' }],
+          ['pickup', 6, 9, { kind: 'slate' }],
         ],
         holdRoom: {
           plate: [11, 6],
@@ -3039,7 +3049,7 @@ export function installDungeonsB() {
         // in the corner, off both the way in from the south and the way east
         // to the shafts, so it is taken deliberately. It is taken once.
         map: [
-          '#######.#######',
+          '#######B#######',
           '#.............#',
           '#.............#',
           '#.............#',
@@ -3058,27 +3068,54 @@ export function installDungeonsB() {
       },
       '2,3,1': {
         name: 'The Stairhead',
-        // THE ANTECHAMBER, and the fairy in it is behind nothing but the hall
-        // it opens off — it used to stand behind the boss door, in a pocket of
-        // the Keep Gate, and at Oracle size the boss door is in the ring. So it
-        // has a room of its own at the foot of the King's stair, which is where
-        // the Oracle games put the last breath before a boss. `life` keeps it
-        // there while the rest of the floor is walked.
+        // THE SLATE SLOTS (S212, docs/briefs/PUZZLE-PASS.md "More"; Ages'
+        // INTERAC_SLATE_SLOT, the Ancient Tomb's room $58a: four slots round
+        // a walled dais, and the stair down stands up in the middle when all
+        // four hold a slate). OURS: the four slates lie in the Hold and come
+        // up the shafts on the Dredge Line, and each slot is cut at its own
+        // height: the east one Link reaches standing dry (LOW), the south one
+        // wading (MID), the north and west ones swimming (HIGH). The last one
+        // sinks the dais and stands up the King's stair. tools/check-slates.mjs.
+        //
+        // The boss door moved to the south wall with it (S212): the Boss Key
+        // opens the way in here, and the stair is the way on. The fairy is
+        // still the last breath before the King.
         map: [
+          '###############',
+          '#.....111.....#',
+          '#.....111.....#',
+          '#...###n###...#',
+          '#11.#.....#.11#',
+          '#11[#.....#]11#',
+          '#11.#.....#.11#',
+          '#...###u###...#',
+          '#.....111.....#',
+          '#.....111.....#',
           '#######B#######',
-          '#.............#',
-          '#.M.........M.#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#.M.........M.#',
-          '#.............#',
-          '#######.#######',
+        ],
+        slateRoom: {
+          from: [7, 9],
+          opens: [7, 5],
+          dais: [4, 3, 10, 7],
+          floor: 'dFloorAbyss',
+          stair: 'dStairsUpAbyss',
+          say: 'The dais sinks into the floor!\nA stair stands up in the middle.',
+          slots: [
+            { at: [7, 3], face: 'N', height: 'high' },
+            { at: [11, 5], face: 'E', height: 'low' },
+            { at: [7, 7], face: 'S', height: 'mid' },
+            { at: [3, 5], face: 'W', height: 'high' },
+          ],
+        },
+        warps: [
+          // `laid`: the stair stands up here when the last slate goes in.
+          { x: 7, y: 5, laid: 'dStairsUpAbyss', to: { map: 'd6', floor: 2, rx: 3, ry: 0, px: 112, py: 144, dir: 'up' } },
         ],
         entities: [
-          ['pickup', 2, 5, { kind: 'fairy', life: 1e9 }],
+          ['pickup', 12, 2, { kind: 'fairy', life: 1e9 }],
+        ],
+        readable: [
+          [12, 9, 'Four slots, cut at three heights. Under each, a mark like a wave.'],
         ],
       },
       '2,4,2': {
@@ -3181,32 +3218,31 @@ export function installDungeonsB() {
           '####..................########',
           '####.9..............9.########',
           '####..................########',
-          '#######B######################',
+          '##############################',
+        ],
+        // THE KING'S STAIR (S212): he is reached up the Stairhead's slate stair,
+        // and the way back down is a stair in the hall's corner that is there
+        // whenever the hall is walked into with him beaten. Not the moment he
+        // falls: the sixth Essence ends the game, and a stair laid mid-hall
+        // under the last of the fight was walked straight down in a sweep.
+        warps: [
+          { x: 4, y: 9, laid: 'dStairsDownAbyss', to: { map: 'd6', floor: 2, rx: 3, ry: 1, px: 112, py: 96, dir: 'down' } },
         ],
         noTide: true,
         entities: [
           ['nereth', 12, 5],
         ],
         script: {
-          // THE DOOR SHUTS BEHIND YOU, as it does on every Oracle boss. Left
-          // open it was a one-tile pocket in the ring, and a knight Nereth
-          // summons pinned Link in it until he died — the run lost every
-          // entry timing tried while a rig with the door shut won eight in
-          // nine (S142). It shuts once Link is clear of the doorway, is not
-          // saved, and opens again when the King falls.
+          // NO WAY OUT WHILE HE LIVES, as every Oracle boss room shuts its
+          // door. The door that used to shut here was a one-tile pocket in the
+          // ring a summoned knight pinned Link in (S142); since S212 the hall
+          // has no door at all, and the stair down is there once he is beaten.
           onEnter(game, room) {
-            if (game.progress.beaten[game.mapId]) return;
-            const shut = () => {
-              const p = game.player;
-              if (!p || game.room !== room) return;
-              if (p.y > 144) { game.frameLater(10, shut); return; }
-              room.setTile(7, 10, 'dDoorBoss');
-            };
-            game.frameLater(10, shut);
+            if (game.progress.beaten[game.mapId]) room.setTile(4, 9, 'dStairsDownAbyss');
+            else room.setTile(4, 9, null);
           },
           onEvent(game, name) {
             if (name !== 'bossDead') return;
-            game.room.setTile(7, 10, 'dDoorOpen');
             game.spawnPickup(208, 88, 'heartContainer', { grabDelay: 30 });
           },
         },

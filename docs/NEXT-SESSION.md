@@ -1,3 +1,74 @@
+## S212 — the Keep's slate slots built
+
+Branch claude/abyssal-keep-slate-slots-ebi2pw, off main at c1170ec (S211).
+
+### Built
+- THE SLATE SLOTS (approved S211; Ages' INTERAC_SLATE_SLOT, slateSlot.s,
+  room $58a): the Stairhead d6 2,3,1 is the mock room (s211-slates-mock.json):
+  slots N 7,3 high, E 11,5 low, S 7,7 mid, W 3,5 high round a walled dais
+  (4,3)-(10,7); pools `1` at each slot's stand. `slateRoom: { from, opens,
+  dais, floor, stair, say, slots }`. Engine (game.js): `isSlot`, `trySlot`
+  (Player.tryPush counts SLATE_PUSH_FRAMES = 10 on a slot, feel.js, derived
+  from slateSlot.s var3f $0a), `linkHeight` (inDeep high / inShallow mid /
+  dry low), `openDais` (border tiles to floor with puffs, stair at `opens`,
+  jingle 'secret'), `restoreSlates` in setRoom. Saved per slot as
+  secrets['d6:2,3,1:slot<i>']; `progress.slates` is the count (Ages'
+  wNumSlates). Texts: no slate "It looks like something fits in this hole."
+  (TX_5111), "Too high to reach!", "It's under the water, below you!".
+  SND_DOORCLOSE (`plank`) as the slate goes in.
+- THE KING'S STAIR: the boss door moved to the Keep Gate's north wall (Keep
+  Gate 7,0 and Stairhead 7,10 are `B`); the Stairhead's north wall is shut;
+  the dais stair (warp at 7,5, `laid: 'dStairsUpAbyss'`) lands Link at the
+  throne room's old door spot (7,9). The throne room has no door: a stair
+  down at 4,9 (`laid`) is there whenever the hall is entered with Nereth
+  beaten (onEnter). Laid the moment he fell, the robot's post-fight evading
+  walked down it in three of six sweep waits; the sixth Essence ends the
+  game anyway.
+  check-ground skips a warp whose `laid` tile is a stair; walk-dungeons'
+  tide-locked flood seeds from a room's own warps.
+- THE SLATES: `pickup` kind `slate` (objects.js PICKUPS.slate, sprite
+  `p_slate` = Ages TREASURE_OBJECT_SLATE_00, rip-treasures.py now reads Ages
+  too from assets/treasures/oracles-disasm/ages/). Four, in the Hold, on
+  floor no foot reaches, each under a NEW 1F shaft (`5`): Sounding Floor
+  islet 7,9 under the Slack Water's 7,9; the Rime Hall's far floor 9,1, 3,7,
+  6,9 under the Tally Hall's north bank 9,1, 3,7, 6,9 (rings `,` under each).
+  chunk.js `slateFromBelow`: a flooded shaft with no chunk beneath hauls the
+  slate up as a pickup with the Hold entity's own save key.
+- No two Keep shafts are in line within a cast (4-5 tiles): the line drags
+  far end first, so a cast over one shaft fished the slate under the next
+  (check-hold went red; the first placement was moved).
+- check-slates.mjs: clause 5 rewritten for Hold slates (count, unreached,
+  under a shaft, a cast stand the flood reaches), engine 5b (LOW nothing,
+  MID once), 6 (no slate / wrong sea / exactly 10 frames), 7 (dais, stair,
+  save+load, the stair goes on). 45 assertions. Dungeon flood: dais border
+  tiles are a puzzle door of the slot room. Actor: `dredge ... 'slate'`,
+  setup `slates`/`secrets`; try-room prints `slates`.
+- Robot: Slack Water slate on the K6 visit at MID (on the first visit the
+  anglerfry took K1's chunk); three Tally Hall slates after the north-bank
+  cache at MID; Keep Gate boss door, then the slots MID, LOW, HIGH, HIGH,
+  fairy, MID on the dais, wait 95, up the stair.
+- Guide: GUIDE.md and tools/guide/guide.html texts (figures not re-shot).
+- Picture: docs/briefs/puzzle-pass/s212-slates.png (in-game beside $58a).
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died.
+Nereth's entry wait (route index 2303) swept at 60, 75, 85, 95, 105, 115,
+130: THE END at every one.
+
+### Tried and dropped
+- The Lens showing the Eye Hall's eyes at the next tide (S211's optional):
+  built and photographed, but the cartridge's eyeball looks by moving ONE
+  PIXEL (EYEBALL_LOOK), and a faint ghost one pixel off the real eye cannot
+  be told apart under the Lens's wash. Reverted; it would need a bigger tell
+  (an arrow, say), which is a design choice for the human.
+
+### NEXT (S213)
+- Ask the human whether the Lens should show the Eye Hall's next-tide eyes
+  some bigger way (see "Tried and dropped"). Guide figures for the Keep
+  (d6-*) could be re-shot with remap-guide.
+- The slate count is shown only by its pickup line; the inventory could show
+  it, as Ages' does.
+
 ## S211 — signs that hint; the Eye Hall and the held bridge built, slates mocked
 
 Branch claude/oracle-tides-puzzle-hints-dondfw, off main at 5e48d57 (S210).

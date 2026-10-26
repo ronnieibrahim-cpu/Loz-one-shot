@@ -41,6 +41,19 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S212: THE SLATE SLOTS
+
+The Abyssal Keep's **Stairhead** (2,3,1), the last room before the King, is
+Oracle of Ages' slate room: four slots round a walled dais, each cut at its own
+height, so the sea decides which one Link can reach (the east one dry at LOW,
+the south one wading at MID, the north and west ones swimming at HIGH). The
+four slates lie in the Hold on floor no foot reaches, and come up flooded
+shafts on the Dredge Line at MID: one under the Slack Water, three under the
+Tally Hall's north bank. The fourth slate sinks the dais and stands up the
+King's stair; the boss door moved to the Keep Gate's north wall, and the throne
+room's way back is a stair that stands up when Nereth falls
+(`tools/check-slates.mjs`, 45 assertions).
+
 ## S211: THE EYE HALL AND THE HELD BRIDGE
 
 Thirteen more signs hint instead of solving. The Coral Spire's empty corridor

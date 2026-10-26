@@ -36,7 +36,7 @@ import {
   JUMP_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   GAP_HOP_MAX_SPAN,
-  FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
+  FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES,
   CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES,
   LENS_FADE_FRAMES,
   BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
@@ -883,10 +883,16 @@ export class Player extends Entity {
     // else starts the count over (resetPushingAgainstTileCounter).
     if (!this.againstWall || (dx && dy)) { this._pushT = 0; return; }
     this._pushT = (this._pushT || 0) + 1;
-    if (this._pushT < PUSH_DELAY_FRAMES) return;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
     const tx = Math.floor((this.cx + ux * PUSH_PROBE_REACH) / TILE);
     const ty = Math.floor((this.cy + uy * PUSH_PROBE_REACH) / TILE);
+    // A SLATE SLOT (S212) takes Ages' own ten frames, not a block's twenty
+    // (slateSlot.s var3f $0a).
+    if (game.isSlot(tx, ty)) {
+      if (this._pushT >= SLATE_PUSH_FRAMES) { this._pushT = 0; game.trySlot(tx, ty); }
+      return;
+    }
+    if (this._pushT < PUSH_DELAY_FRAMES) return;
     if (game.tryPushBlock(tx, ty, ux, uy)) this._pushT = 0;
   }
 

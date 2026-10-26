@@ -2720,3 +2720,10 @@ export const ICE_BLOCK_SPEED = 448;
  *  object_code/ages/interactions/extendableBridge.s sets counter1 to $0a
  *  before each tile it places or removes, state 1 and state 2 alike. */
 export const BRIDGE_PLANK_FRAMES = 10;
+
+/** frames — Link leans on a slate slot this long, holding a slate, before the
+ *  slate goes in (S212, Game.trySlot). derived from the cartridge:
+ *  oracles-disasm object_code/ages/interactions/slateSlot.s @resetCounter
+ *  sets var3f to $0a, and @state1 counts it down while Link pushes against
+ *  the slot's centre. */
+export const SLATE_PUSH_FRAMES = 10;

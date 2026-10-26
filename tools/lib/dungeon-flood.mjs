@@ -228,6 +228,17 @@ export function floodDungeon(mapId, opts = {}) {
     // A held bridge's planks (S211, check-bridges.mjs): floor once its room
     // has been stood in, the way a puzzle door is.
     for (const [px0, py0] of def.bridgeRoom ? def.bridgeRoom.planks : []) puzzleOwner.set(`${rk}:${px0},${py0}`, rk);
+    // The slate dais (S212, check-slates.mjs): its walls sink once all four
+    // slots are filled, a puzzle solved in its own room. That the slates can
+    // be had is check-slates' clause 5.
+    if (def.slateRoom) {
+      const [x0, y0, x1, y1] = def.slateRoom.dais;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (x !== x0 && x !== x1 && y !== y0 && y !== y1) continue;
+        if (def.slateRoom.slots.some(sl => sl.at[0] === x && sl.at[1] === y)) continue;
+        puzzleOwner.set(`${rk}:${x},${y}`, rk);
+      }
+    }
   }
   for (const [k, own] of [...puzzleOwner]) {
     const [rk0, xy0] = k.split(':');

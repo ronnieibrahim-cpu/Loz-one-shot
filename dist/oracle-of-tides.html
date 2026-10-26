@@ -4102,6 +4102,13 @@ const ICE_BLOCK_SPEED = 448;
  *  object_code/ages/interactions/extendableBridge.s sets counter1 to $0a
  *  before each tile it places or removes, state 1 and state 2 alike. */
 const BRIDGE_PLANK_FRAMES = 10;
+
+/** frames — Link leans on a slate slot this long, holding a slate, before the
+ *  slate goes in (S212, Game.trySlot). derived from the cartridge:
+ *  oracles-disasm object_code/ages/interactions/slateSlot.s @resetCounter
+ *  sets var3f to $0a, and @state1 counts it down while Link pushes against
+ *  the slot's centre. */
+const SLATE_PUSH_FRAMES = 10;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4579,6 +4586,7 @@ __exports["ICE_TURN_STEPS"] = ICE_TURN_STEPS;
 __exports["CHUNK_BOB_FRAMES"] = CHUNK_BOB_FRAMES;
 __exports["ICE_BLOCK_SPEED"] = ICE_BLOCK_SPEED;
 __exports["BRIDGE_PLANK_FRAMES"] = BRIDGE_PLANK_FRAMES;
+__exports["SLATE_PUSH_FRAMES"] = SLATE_PUSH_FRAMES;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -18017,6 +18025,7 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     charmTold: {},
     charmCase: 1,
     blanks: 0,               // uncarved bone, the scrimshander's raw material
+    slates: 0,               // the Abyssal Keep's slates in hand (S212; Ages' wNumSlates)
     carve: null,             // { id, turns } — commissioned, tide turns to go
     // quest
     essences: [],            // dungeon indices whose essence has been claimed
@@ -18991,13 +19000,32 @@ function haulFromBelow(game, line, tx, ty) {
       if (cid && chunkAtHome(game, cid)) { id = cid; break; }
     }
   }
-  if (!id) return null;
+  if (!id) return slateFromBelow(game, c, tx, ty);
   const chunk = spawnEntity(game, 'icechunk', tx, ty, { id });
   if (!chunk) return null;
   // On the line it is nowhere until it is set down; the save keeps it here,
   // at the shaft, so a save mid-haul finds it at the top of the shaft.
   chunk.record(game, room.floor, room.rx, room.ry, tx, ty);
   return chunk;
+}
+
+/**
+ * A SLATE COMES UP THE SAME WAY (S212). The Keep's slates lie in the Hold on
+ * cells no foot reaches, each as the room below's own `pickup` of kind
+ * `slate`; under a flooded shaft the line hooks it and it comes home as a
+ * pickup carrying the SAME save key, so taking it here is taking it there.
+ * A chunk on the cell comes up first.
+ */
+function slateFromBelow(game, c, tx, ty) {
+  const ents = c.room.def.entities || [];
+  for (let i = 0; i < ents.length; i++) {
+    const e = ents[i];
+    if (e[0] !== 'pickup' || !e[3] || e[3].kind !== 'slate' || e[1] !== c.tx || e[2] !== c.ty) continue;
+    const saveKey = `${game.mapId}:${c.room.key}:${i}`;
+    if (game.progress.secrets[saveKey]) return null;
+    return spawnEntity(game, 'pickup', tx, ty, { kind: 'slate', saveKey });
+  }
+  return null;
 }
 __exports["IceChunk"] = IceChunk;
 __exports["spawnRecordedChunks"] = spawnRecordedChunks;
@@ -20508,7 +20536,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, ROD_RING_FRAMES, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED } = __require("data/feel.js");
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
 // (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
@@ -21340,10 +21368,16 @@ class Player extends Entity {
     // else starts the count over (resetPushingAgainstTileCounter).
     if (!this.againstWall || (dx && dy)) { this._pushT = 0; return; }
     this._pushT = (this._pushT || 0) + 1;
-    if (this._pushT < PUSH_DELAY_FRAMES) return;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
     const tx = Math.floor((this.cx + ux * PUSH_PROBE_REACH) / TILE);
     const ty = Math.floor((this.cy + uy * PUSH_PROBE_REACH) / TILE);
+    // A SLATE SLOT (S212) takes Ages' own ten frames, not a block's twenty
+    // (slateSlot.s var3f $0a).
+    if (game.isSlot(tx, ty)) {
+      if (this._pushT >= SLATE_PUSH_FRAMES) { this._pushT = 0; game.trySlot(tx, ty); }
+      return;
+    }
+    if (this._pushT < PUSH_DELAY_FRAMES) return;
     if (game.tryPushBlock(tx, ty, ux, uy)) this._pushT = 0;
   }
 
@@ -24878,6 +24912,17 @@ const PICKUPS = {
       const got = addBottles(g.progress, 1);
       g.audio.sfx(got ? 'rupee' : 'deny');
       if (!got) g.say('Your case is full.');
+    },
+  },
+  // THE ABYSSAL KEEP'S SLATES (S212): Ages' TREASURE_SLATE, lying in the
+  // Hold and brought up a flooded shaft by the Dredge Line (chunk.js
+  // haulFromBelow). Counted, as Ages counts wNumSlates; a slot takes one.
+  slate: {
+    sprite: 'p_slate', pal: null, persistent: true,
+    get(g) {
+      g.progress.slates = (g.progress.slates || 0) + 1;
+      g.audio.sfx('key');
+      g.say(`You found a Slate! You have ${g.progress.slates}.`);
     },
   },
   heartContainer: {
@@ -37853,6 +37898,9 @@ class Game {
       for (const [x, y] of r.def.bridgeRoom.planks) r.setTile(x, y, null);
       r._bridge = { laid: 0, t: BRIDGE_PLANK_FRAMES };
     }
+    // The slate slots (S212) are as the save has them: a slate in every slot
+    // the save says, and the dais open once all of them are.
+    if (r.def.slateRoom) this.restoreSlates(r);
     // A freeze belongs to the hit that caused it and to the room it happened
     // in. Carrying one across a room change would spend it stalling a room the
     // player has only just walked into.
@@ -39904,6 +39952,88 @@ class Game {
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
+  }
+
+  // ------------------------------------------------------------ slate slots
+  //
+  // THE SLATE SLOTS (S212; Ages' INTERAC_SLATE_SLOT, slateSlot.s and
+  // scriptHelper.s slateSlot_placeSlate, the Ancient Tomb's room $58a). A
+  // room's `slateRoom` names its slots, each cut at a height in a wall: Link
+  // leans on one for SLATE_PUSH_FRAMES holding a slate (Player.tryPush) and it
+  // goes in, SND_DOORCLOSE and the filled-slate tile, as the cartridge does.
+  // OURS: he reaches a `low` slot standing dry, a `mid` one wading and a
+  // `high` one swimming, so the sea decides which slot he can fill. The last
+  // slate sinks the dais walls round `opens` and stands the stair up there.
+  // Each slot is remembered in the save (`<map>:<room>:slot<i>`).
+
+  /** The save key of slot `i` of `room`. */
+  slotKey(room, i) { return `${this.mapId}:${room.key}:slot${i}`; }
+
+  /** Is tx,ty a slate slot of this room (filled or not)? */
+  isSlot(tx, ty) {
+    const k = this.room && this.room.def.slateRoom;
+    return !!(k && k.slots.some(s => s.at[0] === tx && s.at[1] === ty));
+  }
+
+  /** How high the sea has Link: 'low' dry, 'mid' wading, 'high' swimming. */
+  linkHeight() {
+    const p = this.player;
+    if (!p) return 'low';
+    return p.inDeep ? 'high' : p.inShallow ? 'mid' : 'low';
+  }
+
+  /** Leaned on long enough: put a slate in, or say why not. */
+  trySlot(tx, ty) {
+    const room = this.room, k = room && room.def.slateRoom;
+    if (!k) return false;
+    const i = k.slots.findIndex(s => s.at[0] === tx && s.at[1] === ty);
+    if (i < 0 || this.progress.secrets[this.slotKey(room, i)]) return false;
+    const s = k.slots[i];
+    if (this.dialogue.active) return true;
+    if (!(this.progress.slates > 0)) {
+      // TX_5111, the cartridge's own words.
+      this.say('It looks like something fits in this hole.');
+      return true;
+    }
+    const H = ['low', 'mid', 'high'];
+    const have = H.indexOf(this.linkHeight()), want = H.indexOf(s.height);
+    if (this.player && this.player.underwater) { this.say('It\'s up above you, out of the water.'); return true; }
+    if (want > have) { this.audio.sfx('deny'); this.say('Too high to reach!'); return true; }
+    if (want < have) { this.audio.sfx('deny'); this.say('It\'s under the water, below you!'); return true; }
+    this.progress.slates--;
+    this.progress.secrets[this.slotKey(room, i)] = true;
+    room.setTile(tx, ty, getTileDef(room.baseName(tx, ty)).slotFilled);
+    this.audio.sfx('plank');
+    if (k.slots.every((_, j) => this.progress.secrets[this.slotKey(room, j)])) this.openDais(room, true);
+    return true;
+  }
+
+  /** The dais round `opens` sinks and the stair stands up (S212). */
+  openDais(room, live) {
+    const k = room.def.slateRoom;
+    const [x0, y0, x1, y1] = k.dais;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (x !== x0 && x !== x1 && y !== y0 && y !== y1) continue;
+      if (k.slots.some(s => s.at[0] === x && s.at[1] === y)) continue;
+      room.setTile(x, y, k.floor);
+      if (live) this.spawnEffect('puff', x * TILE, y * TILE);
+    }
+    room.setTile(k.opens[0], k.opens[1], k.stair);
+    if (live) { this.audio.jingle('secret'); this.say(k.say || 'The dais sinks into the floor.'); }
+  }
+
+  /** On the way in: the slots and the dais as the save has them. */
+  restoreSlates(room) {
+    const k = room.def.slateRoom;
+    const [x0, y0, x1, y1] = k.dais;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) room.setTile(x, y, null);
+    let all = true;
+    k.slots.forEach((s, i) => {
+      if (this.progress.secrets[this.slotKey(room, i)]) {
+        room.setTile(s.at[0], s.at[1], getTileDef(room.baseName(s.at[0], s.at[1])).slotFilled);
+      } else all = false;
+    });
+    if (all) this.openDais(room, false);
   }
 
   /**
@@ -66867,7 +66997,7 @@ function installDungeonsB() {
           '####.111111.###',
           '#...........###',
           '#..5.....5..O.#',
-          '#...........###',
+          '#......5....###',
           '###############',
         ],
         buried: [[7, 5, 'heartPiece']],
@@ -67027,15 +67157,15 @@ function installDungeonsB() {
         size: [1, 2],
         map: [
           '###############',
-          '#.............#',
+          '#........5....#',
           '#..........6..#',
           '#..........1..#',
           '#.............#',
           '..............#',
           '#..........5..#',
-          '#.............#',
+          '#..5..........#',
           '#........q....#',
-          '#.............#',
+          '#.....5.......#',
           '#OOOO7OOO7OOOO#',
           '#OOOOOOOOOOOOO#',
           '#OOOO..q..OOOO#',
@@ -67318,12 +67448,15 @@ function installDungeonsB() {
           '#ii..OOOOOOOOO#',
           '#ii..OOOOOOOOO#',
           '#ii,.OOOO.OOOO#',
-          '#ii..OOOOOOOOO#',
+          '#ii..OO,OOOOOO#',
           '###############',
         ],
         entities: [
           ['icechunk', 3, 8, { id: 'd6S1' }],
           ['switch', 9, 8, { hold: true }],
+          // A SLATE (S212), on an islet under the Slack Water's south shaft
+          // (7,9): no foot reaches it, the line at MID does.
+          ['pickup', 7, 9, { kind: 'slate' }],
         ],
         holdRoom: {
           plate: [9, 8],
@@ -67347,15 +67480,15 @@ function installDungeonsB() {
         size: [1, 2],
         map: [
           '###############',
-          '#.............#',
+          '#........,....#',
           '#.............#',
           '#....p...p....#',
           '#.............#',
           '#.............#',
           '#..........,..#',
+          '#..,..........#',
           '#.............#',
-          '#.............#',
-          '#.............#',
+          '#.....,.......#',
           '#OOOOOOOOOOOOO#',
           '#OOOOOOOOOOOOO#',
           '#OOOOOOOOOOOOO#',
@@ -67374,6 +67507,13 @@ function installDungeonsB() {
           ['icechunk', 2, 20, { id: 'd6R1' }],
           ['icechunk', 3, 20, { id: 'd6R2' }],
           ['stalfos', 9, 19],
+          // THE SLATES (S212), beyond the chasm under the Tally Hall's three
+          // new shafts (9,1, 3,7 and 6,9): no foot crosses, the line at MID
+          // does. No two of the Keep's shafts are in line within a cast, so
+          // a cast over one never drags across another first.
+          ['pickup', 9, 1, { kind: 'slate' }],
+          ['pickup', 3, 7, { kind: 'slate' }],
+          ['pickup', 6, 9, { kind: 'slate' }],
         ],
         holdRoom: {
           plate: [11, 6],
@@ -67921,7 +68061,7 @@ function installDungeonsB() {
         // in the corner, off both the way in from the south and the way east
         // to the shafts, so it is taken deliberately. It is taken once.
         map: [
-          '#######.#######',
+          '#######B#######',
           '#.............#',
           '#.............#',
           '#.............#',
@@ -67940,27 +68080,54 @@ function installDungeonsB() {
       },
       '2,3,1': {
         name: 'The Stairhead',
-        // THE ANTECHAMBER, and the fairy in it is behind nothing but the hall
-        // it opens off — it used to stand behind the boss door, in a pocket of
-        // the Keep Gate, and at Oracle size the boss door is in the ring. So it
-        // has a room of its own at the foot of the King's stair, which is where
-        // the Oracle games put the last breath before a boss. `life` keeps it
-        // there while the rest of the floor is walked.
+        // THE SLATE SLOTS (S212, docs/briefs/PUZZLE-PASS.md "More"; Ages'
+        // INTERAC_SLATE_SLOT, the Ancient Tomb's room $58a: four slots round
+        // a walled dais, and the stair down stands up in the middle when all
+        // four hold a slate). OURS: the four slates lie in the Hold and come
+        // up the shafts on the Dredge Line, and each slot is cut at its own
+        // height: the east one Link reaches standing dry (LOW), the south one
+        // wading (MID), the north and west ones swimming (HIGH). The last one
+        // sinks the dais and stands up the King's stair. tools/check-slates.mjs.
+        //
+        // The boss door moved to the south wall with it (S212): the Boss Key
+        // opens the way in here, and the stair is the way on. The fairy is
+        // still the last breath before the King.
         map: [
+          '###############',
+          '#.....111.....#',
+          '#.....111.....#',
+          '#...###n###...#',
+          '#11.#.....#.11#',
+          '#11[#.....#]11#',
+          '#11.#.....#.11#',
+          '#...###u###...#',
+          '#.....111.....#',
+          '#.....111.....#',
           '#######B#######',
-          '#.............#',
-          '#.M.........M.#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#.............#',
-          '#.M.........M.#',
-          '#.............#',
-          '#######.#######',
+        ],
+        slateRoom: {
+          from: [7, 9],
+          opens: [7, 5],
+          dais: [4, 3, 10, 7],
+          floor: 'dFloorAbyss',
+          stair: 'dStairsUpAbyss',
+          say: 'The dais sinks into the floor!\nA stair stands up in the middle.',
+          slots: [
+            { at: [7, 3], face: 'N', height: 'high' },
+            { at: [11, 5], face: 'E', height: 'low' },
+            { at: [7, 7], face: 'S', height: 'mid' },
+            { at: [3, 5], face: 'W', height: 'high' },
+          ],
+        },
+        warps: [
+          // `laid`: the stair stands up here when the last slate goes in.
+          { x: 7, y: 5, laid: 'dStairsUpAbyss', to: { map: 'd6', floor: 2, rx: 3, ry: 0, px: 112, py: 144, dir: 'up' } },
         ],
         entities: [
-          ['pickup', 2, 5, { kind: 'fairy', life: 1e9 }],
+          ['pickup', 12, 2, { kind: 'fairy', life: 1e9 }],
+        ],
+        readable: [
+          [12, 9, 'Four slots, cut at three heights. Under each, a mark like a wave.'],
         ],
       },
       '2,4,2': {
@@ -68063,32 +68230,31 @@ function installDungeonsB() {
           '####..................########',
           '####.9..............9.########',
           '####..................########',
-          '#######B######################',
+          '##############################',
+        ],
+        // THE KING'S STAIR (S212): he is reached up the Stairhead's slate stair,
+        // and the way back down is a stair in the hall's corner that is there
+        // whenever the hall is walked into with him beaten. Not the moment he
+        // falls: the sixth Essence ends the game, and a stair laid mid-hall
+        // under the last of the fight was walked straight down in a sweep.
+        warps: [
+          { x: 4, y: 9, laid: 'dStairsDownAbyss', to: { map: 'd6', floor: 2, rx: 3, ry: 1, px: 112, py: 96, dir: 'down' } },
         ],
         noTide: true,
         entities: [
           ['nereth', 12, 5],
         ],
         script: {
-          // THE DOOR SHUTS BEHIND YOU, as it does on every Oracle boss. Left
-          // open it was a one-tile pocket in the ring, and a knight Nereth
-          // summons pinned Link in it until he died — the run lost every
-          // entry timing tried while a rig with the door shut won eight in
-          // nine (S142). It shuts once Link is clear of the doorway, is not
-          // saved, and opens again when the King falls.
+          // NO WAY OUT WHILE HE LIVES, as every Oracle boss room shuts its
+          // door. The door that used to shut here was a one-tile pocket in the
+          // ring a summoned knight pinned Link in (S142); since S212 the hall
+          // has no door at all, and the stair down is there once he is beaten.
           onEnter(game, room) {
-            if (game.progress.beaten[game.mapId]) return;
-            const shut = () => {
-              const p = game.player;
-              if (!p || game.room !== room) return;
-              if (p.y > 144) { game.frameLater(10, shut); return; }
-              room.setTile(7, 10, 'dDoorBoss');
-            };
-            game.frameLater(10, shut);
+            if (game.progress.beaten[game.mapId]) room.setTile(4, 9, 'dStairsDownAbyss');
+            else room.setTile(4, 9, null);
           },
           onEvent(game, name) {
             if (name !== 'bossDead') return;
-            game.room.setTile(7, 10, 'dDoorOpen');
             game.spawnPickup(208, 88, 'heartContainer', { grabDelay: 30 });
           },
         },
@@ -78030,7 +78196,8 @@ __define("data/sprites-treasures.js", function (__exports, __require) {
 //
 // Generated by tools/rip-treasures.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
-// commit 7584d87), assets/treasures/oracles-disasm/seasons/: the item and
+// commit 7584d87), assets/treasures/oracles-disasm/seasons/ (and ages/, S212,
+// for the slate): the item and
 // quest-item sprite graphics, the tables that say which tile, palette and
 // layout each treasure and each enemy drop is drawn with, and the standard
 // sprite palettes. Credit: the oracles-disasm project and its contributors;
@@ -78039,17 +78206,18 @@ __define("data/sprites-treasures.js", function (__exports, __require) {
 // Each sprite carries its own colours: draw sites must NOT pass a palette.
 //
 // Built from:
-//   p_rupee: ITEM_DROP_1_RUPEE: the green one-rupee gem — spr_common_items.png tile $04, palette 0, 1 hardware sprite
-//   p_rupee5: ITEM_DROP_5_RUPEES: the red five — spr_common_items.png tile $06, palette 5, 1 hardware sprite
-//   p_rupee20: TREASURE_OBJECT_RUPEES_03, twenty rupees — spr_common_items.png tile $06, palette 4, 1 hardware sprite
-//   p_rupee100: TREASURE_OBJECT_RUPEES_05, a hundred rupees — spr_common_items.png tile $06, palette 5, 1 hardware sprite
-//   p_heart: ITEM_DROP_HEART: a recovery heart — spr_common_items.png tile $02, palette 5, 1 hardware sprite
-//   p_bomb: ITEM_DROP_BOMBS — spr_common_items.png tile $10, palette 4, 1 hardware sprite
-//   p_heartpiece: TREASURE_OBJECT_HEART_PIECE — spr_quest_items_5.png tile $10, palette 2, 2 hardware sprites
-//   p_heartcontainer: TREASURE_OBJECT_HEART_CONTAINER — spr_quest_items_5.png tile $12, palette 5, 2 hardware sprites
-//   p_key: TREASURE_OBJECT_SMALL_KEY — spr_map_compass_keys.png tile $0c, palette 5, 1 hardware sprite
-//   p_bosskey: TREASURE_OBJECT_BOSS_KEY — spr_map_compass_keys.png tile $08, palette 5, 2 hardware sprites
-//   i_map: TREASURE_OBJECT_MAP: the dungeon map — spr_map_compass_keys.png tile $00, palette 3, 2 hardware sprites
+//   p_rupee: ITEM_DROP_1_RUPEE: the green one-rupee gem — seasons/spr_common_items.png tile $04, palette 0, 1 hardware sprite
+//   p_rupee5: ITEM_DROP_5_RUPEES: the red five — seasons/spr_common_items.png tile $06, palette 5, 1 hardware sprite
+//   p_rupee20: TREASURE_OBJECT_RUPEES_03, twenty rupees — seasons/spr_common_items.png tile $06, palette 4, 1 hardware sprite
+//   p_rupee100: TREASURE_OBJECT_RUPEES_05, a hundred rupees — seasons/spr_common_items.png tile $06, palette 5, 1 hardware sprite
+//   p_heart: ITEM_DROP_HEART: a recovery heart — seasons/spr_common_items.png tile $02, palette 5, 1 hardware sprite
+//   p_bomb: ITEM_DROP_BOMBS — seasons/spr_common_items.png tile $10, palette 4, 1 hardware sprite
+//   p_heartpiece: TREASURE_OBJECT_HEART_PIECE — seasons/spr_quest_items_5.png tile $10, palette 2, 2 hardware sprites
+//   p_heartcontainer: TREASURE_OBJECT_HEART_CONTAINER — seasons/spr_quest_items_5.png tile $12, palette 5, 2 hardware sprites
+//   p_key: TREASURE_OBJECT_SMALL_KEY — seasons/spr_map_compass_keys.png tile $0c, palette 5, 1 hardware sprite
+//   p_bosskey: TREASURE_OBJECT_BOSS_KEY — seasons/spr_map_compass_keys.png tile $08, palette 5, 2 hardware sprites
+//   i_map: TREASURE_OBJECT_MAP: the dungeon map — seasons/spr_map_compass_keys.png tile $00, palette 3, 2 hardware sprites
+//   p_slate: TREASURE_OBJECT_SLATE_00 (Oracle of Ages): an Ancient Tomb slate — ages/spr_rollingplatform_d8stuff.png tile $1c, palette 3, 1 hardware sprite
 
 const { sprites } = __require("gfx/art.js");
 const { registerPalettes } = __require("gfx/palettes.js");
@@ -78253,6 +78421,24 @@ const TREASURE_ART = {
     .333......33333.
     ................
     ................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  p_slate: { pal: 'p_slate', art: `
+    ................
+    ................
+    .....3333333....
+    ....30000003....
+    ....31111113....
+    ....31333313....
+    ....31033013....
+    ....31100113....
+    ....31333313....
+    ....31300313....
+    ....31011013....
+    ....33333333....
+    ................
+    ................
+    ................
+    ................` },
 };
 
 const TREASURE_PALETTES = {
@@ -78267,6 +78453,7 @@ const TREASURE_PALETTES = {
   p_key: ['#ffb531', '#de0000', '#de0000', '#000000'],
   p_bosskey: ['#ffb531', '#de0000', '#de0000', '#000000'],
   i_map: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  p_slate: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
 };
 
 function installTreasureSprites() {

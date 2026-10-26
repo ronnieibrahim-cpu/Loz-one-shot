@@ -261,6 +261,12 @@ const locked = await page.evaluate((ids) => {
             if (walk(room, ix, iy, t) && !seen.has(k)) { seen.add(k); q.push([ix, iy]); }
           }
         }
+        // A stair in the room is a way in too (S212: the throne room has no
+        // door, only the stair down that the King's stair arrives beside).
+        for (const w of def.warps || []) {
+          const k = w.x + ',' + w.y;
+          if (walk(room, w.x, w.y, t) && !seen.has(k)) { seen.add(k); q.push([w.x, w.y]); }
+        }
         while (q.length) {
           const [x, y] = q.pop();
           for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {

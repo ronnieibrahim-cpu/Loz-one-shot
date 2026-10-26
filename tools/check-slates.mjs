@@ -22,22 +22,35 @@
 //      wading for mid, swimming for high), so exactly one sea fills it;
 //   4. between them the slots need more than one sea;
 //   5. for a room in a dungeon: the dungeon holds exactly as many slates as
-//      the room has slots, each reached by the dungeon flood.
+//      the room has slots (S212: `pickup`s of kind `slate` in the Hold), each
+//      lying on a cell no foot reaches (the dungeon flood never stands on
+//      it), under a Keep shaft one floor up whose side the flood does stand
+//      on — the Dredge Line is the only way to it.
 // And, in the engine, for a built room:
+//   5b. each slate: the line cast over its shaft at LOW (a dry hole) brings
+//      nothing; at MID (flooded) it brings the slate up and into the count,
+//      and a second cast brings nothing;
 //   6. leaning on a slot at its sea for SLATE_PUSH_FRAMES puts a slate in,
 //      and one frame short does not; at another sea it says why and keeps the
 //      slate; with no slate it says so;
-//   7. the last slate opens `opens`; a save and a load keeps every slate in.
+//   7. the last slate sinks the dais and stands the stair up at `opens`, and
+//      the stair goes on; a save and a load keeps every slate in and the dais
+//      down.
 //
 // Usage: node tools/check-slates.mjs
 //        node tools/check-slates.mjs --mock spec.json   (model only: spec
 //        { legend, rooms: { name: grid }, claims: { name: { slates: {...} } } })
-import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import { extname, join, normalize, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { installData } from '../src/data/index.js';
-import { MAPS, getRoom, registerMap } from '../src/world/maps.js';
+import { MAPS, getRoom, registerMap, cellBeneath } from '../src/world/maps.js';
+import { floodDungeon } from './lib/dungeon-flood.mjs';
 import { F, getTileDef } from '../src/world/tileset.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './lib/collision.mjs';
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 installData();
 let pass = 0; const fail = [];
 const check = (n, c, d) => c ? (pass++, console.log('  ok   ' + n))
@@ -51,6 +64,38 @@ export function heightAt(room, x, y, lv) {
   if (f & F.DEEP) return 'high';
   if (f & F.WATER) return 'mid';
   return 'low';
+}
+
+/** Every slate lying in `mapId` (a `pickup` of kind `slate`), the shaft one
+ *  floor above it, and a tile beside that shaft to cast from. */
+function slatesOf(mapId) {
+  const m = MAPS.get(mapId), out = [];
+  const fl = floodDungeon(mapId);
+  for (const [rk, def] of Object.entries(m.roomDefs)) {
+    for (const e of def.entities || []) {
+      if (e[0] !== 'pickup' || !e[3] || e[3].kind !== 'slate') continue;
+      out.push({ rk, x: e[1], y: e[2], shaft: null, cast: null });
+    }
+  }
+  for (const [rk, def] of Object.entries(m.roomDefs)) {
+    const [f, rx, ry] = rk.split(',').map(Number);
+    const room = getRoom(mapId, f, rx, ry);
+    for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
+      if (![0, 1, 2].some(lv => room.tile(x, y, lv).shaft)) continue;
+      const c = cellBeneath(mapId, room, x, y);
+      if (!c) continue;
+      const sl = out.find(s => s.rk === c.room.key && s.x === c.tx && s.y === c.ty);
+      if (!sl) continue;
+      sl.shaft = { rk, x, y };
+      for (const [face, [dx, dy]] of Object.entries(FACE)) {
+        const sx = x - dx, sy = y - dy;
+        if (fl.seen.has(`${rk}:${sx},${sy}`) && tileWalkable(room, sx, sy, 1, capsForDungeonIndex(m.dungeon.index), ROUTE_AVOID)) {
+          sl.cast = { x: sx, y: sy, dir: { N: 'up', S: 'down', E: 'right', W: 'left' }[face] }; break;
+        }
+      }
+    }
+  }
+  return out;
 }
 
 const MOCK = process.argv.includes('--mock') ? process.argv[process.argv.indexOf('--mock') + 1] : null;
@@ -114,10 +159,142 @@ for (const c of CLAIMS) {
   console.log(`       ${tag}: ` + k.slots.map((s, i) => `${s.face}=${seaOf[i].map(l => SEA[l]).join('')}`).join(' '));
   // 5.
   if (!c.mock) {
-    let n = 0;
-    for (const def of Object.values(c.map.roomDefs)) for (const e of def.entities || []) if (e[0] === 'chest' && e[3] && e[3].item === 'slate') n++;
-    check(`${tag}: the dungeon holds as many slates as there are slots (${n} of ${k.slots.length})`, n === k.slots.length);
+    const slates = slatesOf(c.mapId);
+    check(`${tag}: the dungeon holds as many slates as there are slots (${slates.length} of ${k.slots.length})`, slates.length === k.slots.length);
+    const fl = floodDungeon(c.mapId);
+    for (const sl of slates) {
+      const st = `${sl.rk} ${sl.x},${sl.y}`;
+      check(`${tag}: slate at ${st} lies where no foot reaches`, !fl.seen.has(`${sl.rk}:${sl.x},${sl.y}`));
+      check(`${tag}: slate at ${st} lies under a Keep shaft`, !!sl.shaft, 'nothing above it');
+      if (sl.shaft) check(`${tag}: slate at ${st}: the flood stands beside its shaft (${sl.shaft.rk} ${sl.shaft.x},${sl.shaft.y})`, !!sl.cast);
+    }
+    c.slates = slates;
   }
+}
+
+// 5b, 6, 7, in the engine.
+const BUILT = CLAIMS.filter(c => !c.mock);
+if (BUILT.length) {
+  const { chromium } = await import('playwright');
+  const { installRuntime } = await import('./actor-runtime.mjs');
+  const { SLATE_PUSH_FRAMES: N } = await import('../src/data/feel.js');
+  const server = createServer(async (req, res) => {
+    let p = decodeURIComponent(new URL(req.url, 'http://x').pathname); if (p.endsWith('/')) p += 'index.html';
+    const full = join(ROOT, normalize(p)); const st = await stat(full).catch(() => null);
+    if (!st || !st.isFile()) { res.writeHead(404).end(); return; }
+    res.writeHead(200, { 'Content-Type': extname(full) === '.html' ? 'text/html' : 'text/javascript' }); res.end(await readFile(full));
+  });
+  await new Promise(r => server.listen(0, r));
+  const browser = await chromium.launch().catch(() =>
+    chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }));
+  const page = await browser.newPage();
+  const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`http://localhost:${server.address().port}/index.html`);
+  await page.waitForFunction(() => window.__game && window.__harness);
+  await page.evaluate(installRuntime);
+  const run = (setup, plan) => page.evaluate(async ([setup, plan]) => {
+    const g = window.__game;
+    window.__rp.beginRecord(setup, plan);
+    for (let i = 0; i < 4; i++) window.__rp.pump(1);
+    for (const e of g.entities) if (e.isEnemy) e.remove = true;
+    g.enemiesOff = true; g.player.invuln = 1e6;
+    let err = null;
+    try { for (let n = 0; n < 900 && !window.__rp.pump(100).done; n++); } catch (e) { err = String(e && e.message || e); }
+    return { err, slates: g.progress.slates || 0, room: g.mapId + ' ' + g.room.key, tide: g.tide.level };
+  }, [setup, plan]);
+  const base = { seed: 20261026, items: { sword: 1, conch: 1, dredge: 1, cleats: 2 }, equipA: 'dredge', equipB: 'conch',
+    maxHearts: 40, hearts: 40, bossKey: 'd6' };
+  for (const c of BUILT) {
+    const { k } = c, tag = `${c.mapId} ${c.key} (${c.def.name})`;
+    // 5b. Each slate comes up its shaft at MID, and not at LOW.
+    for (const sl of c.slates || []) {
+      if (!sl.cast) continue;
+      const [f, rx, ry] = sl.shaft.rk.split(',').map(Number);
+      const enter = [c.mapId, f, rx, ry, sl.cast.x * 16, sl.cast.y * 16, sl.cast.dir];
+      const low = await run({ ...base, tide: 0, slates: 0, enter }, [['dredge', sl.cast.x, sl.cast.y, sl.cast.dir, 'slate', 400]]);
+      const mid = await run({ ...base, tide: 1, slates: 0, enter }, [['dredge', sl.cast.x, sl.cast.y, sl.cast.dir, 'slate', 1200],
+        ['dredge', sl.cast.x, sl.cast.y, sl.cast.dir, 'slate', 400]]);
+      const st = `${sl.rk} ${sl.x},${sl.y}`;
+      check(`${tag}: slate at ${st}: cast over its dry shaft at LOW, nothing comes up`, !low.err && low.slates === 0, JSON.stringify(low));
+      check(`${tag}: slate at ${st}: cast over its flooded shaft at MID, it comes up, once`, !mid.err && mid.slates === 1, JSON.stringify(mid));
+    }
+    // 6. Each slot, leaned on frame by frame.
+    const [f, rx, ry] = c.key.split(',').map(Number);
+    const HI = { low: 0, mid: 1, high: 2 };
+    const DIR = { N: 'down', S: 'up', E: 'left', W: 'right' };
+    const r = await page.evaluate(async ([setup, k, N, HI, DIR, FACE]) => {
+      const g = window.__game, h = window.__harness, out = [];
+      window.__rp.beginRecord(setup, [['wait', 2]]);
+      for (let i = 0; i < 4; i++) window.__rp.pump(1);
+      const p = g.player;
+      const said = () => { const t = g.dialogue.active ? String(g.dialogue.pages ? g.dialogue.pages.join(' ') : g.dialogue.text || '') : ''; return t; };
+      const lean = (s, lv, slates, frames) => {
+        g.tide.clearOverrides(); g.tide.setLevel(lv, { instant: true });
+        g.progress.slates = slates; g.dialogue.active = false;
+        const [dx, dy] = FACE[s.face];
+        const sx = s.at[0] + dx, sy = s.at[1] + dy;
+        p.x = sx * 16; p.y = sy * 16; p.fx = p.x * 256; p.fy = p.y * 256; p._pushT = 0;
+        const inp = g.input, upd = inp.update, d = DIR[s.face];
+        inp.update = function () { for (const b of Object.keys(this.held)) { this.prev[b] = this.held[b]; this.held[b] = b === d; } };
+        const before = g.room.baseName(s.at[0], s.at[1]);
+        let fillAt = -1, firstPush = -1, text = '';
+        for (let i = 0; i < frames; i++) {
+          h.step(1);
+          if (firstPush < 0 && p._pushT > 0) firstPush = i;
+          if (fillAt < 0 && g.room.tile(s.at[0], s.at[1], lv).name !== g.room.baseTile?.(s.at[0], s.at[1])?.name
+            && g.room.override[s.at[1] * g.room.tw + s.at[0]]) fillAt = i;
+          if (!text && g.dialogue.active) text = JSON.stringify(g.dialogue.pages || g.dialogue.lines || g.dialogue.text || '');
+          if (fillAt >= 0 || text) break;
+        }
+        inp.update = upd; h.step(1); g.dialogue.active = false;
+        return { firstPush, fillAt, text, slates: g.progress.slates, before };
+      };
+      for (const s of k.slots) {
+        const lv = HI[s.height];
+        // A slot can be leaned on short of its frames: the first frame he
+        // pushes is frame 1 of the count.
+        const o = { s };
+        o.none = lean(s, lv, 0, 120);
+        o.wrong = [0, 1, 2].filter(l => l !== lv).map(l => ({ lv: l, ...lean(s, l, 1, 120) }));
+        o.right = lean(s, lv, 1, 120);
+        out.push(o);
+      }
+      // 7. All filled: the dais is down and the stair is up.
+      out.stair = g.room.tile(k.opens[0], k.opens[1], 0).name;
+      out.dais = (() => { const [x0, y0, x1, y1] = k.dais; const bad = [];
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+          if (x !== x0 && x !== x1 && y !== y0 && y !== y1) continue;
+          if (k.slots.some(s => s.at[0] === x && s.at[1] === y)) continue;
+          if (g.room.flagsAt(x, y, 0) & 1) bad.push(x + ',' + y);
+        } return bad; })();
+      g.save(); g.loadGame(g.slot != null ? g.slot : 0); for (let i = 0; i < 4; i++) { h.step(1); g.dialogue.active = false; }
+      out.reload = { stair: g.room.tile(k.opens[0], k.opens[1], 0).name,
+        filled: k.slots.map(s => !!g.room.override[s.at[1] * g.room.tw + s.at[0]]), room: g.room.key };
+      return { slots: out.map(o => ({ ...o, s: undefined })), stair: out.stair, dais: out.dais, reload: out.reload };
+    }, [{ ...base, tide: 0, slates: 0, enter: [c.mapId, f, rx, ry, k.from[0] * 16, k.from[1] * 16, 'up'] }, k, N, HI, DIR, FACE]);
+    k.slots.forEach((s, i) => {
+      const o = r.slots[i];
+      check(`${tag}: slot ${i} (${s.face}, ${s.height}): with no slate it says something fits`,
+        o.none.fillAt < 0 && /fits/.test(o.none.text), JSON.stringify(o.none));
+      check(`${tag}: slot ${i}: at the other seas it says why and keeps the slate`,
+        o.wrong.every(w => w.fillAt < 0 && w.slates === 1 && /high|under|above/i.test(w.text)), JSON.stringify(o.wrong));
+      check(`${tag}: slot ${i}: at its sea the slate goes in after exactly ${N} frames of leaning`,
+        o.right.fillAt >= 0 && o.right.fillAt - o.right.firstPush + 1 === N && o.right.slates === 0, JSON.stringify(o.right));
+    });
+    check(`${tag}: the last slate sinks the dais`, r.dais.length === 0, r.dais.join(' '));
+    check(`${tag}: and stands the stair up at ${k.opens}`, /Stairs/.test(r.stair), r.stair);
+    check(`${tag}: after a save and a load every slot holds its slate and the stair stands`,
+      r.reload.filled.every(Boolean) && /Stairs/.test(r.reload.stair), JSON.stringify(r.reload));
+    // 7b. The stair goes on.
+    const w = (c.def.warps || []).find(w => w.x === k.opens[0] && w.y === k.opens[1]);
+    const secrets = k.slots.map((_, i) => `${c.mapId}:${c.key}:slot${i}`);
+    const up = await run({ ...base, tide: 0, slates: 0, secrets, enter: [c.mapId, f, rx, ry, k.from[0] * 16, k.from[1] * 16, 'up'] },
+      [['goto', k.opens[0], k.opens[1] + 1, 1500], ['hold', ['up'], 40], ['wait', 60]]);
+    const to = w && `${w.to.map} ${w.to.floor},${w.to.rx},${w.to.ry}`;
+    check(`${tag}: the stair takes Link on (${to})`, !!w && up.room === to, JSON.stringify(up));
+  }
+  check('no console errors in the engine half', !errors.length, errors[0]);
+  await browser.close(); server.close();
 }
 
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);

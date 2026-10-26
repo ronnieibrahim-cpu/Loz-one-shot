@@ -23,3 +23,9 @@ cartridge does and writes `src/data/sprites-treasures.js` (S155);
 | `itemDrop.s` | `object_code/common/parts/` | each enemy drop's tile and palette |
 | `partAnimations.s`, `partOamData.s` | `data/seasons/` | how a drop is laid out |
 | `paletteData.s` | `data/seasons/` | the standard sprite palettes |
+
+`oracles-disasm/ages/` (S212) holds the same five tables from `data/ages/` and
+`spr_rollingplatform_d8stuff.png` from `gfx_compressible/ages/`, for the one
+treasure only Oracle of Ages has: the Ancient Tomb's slate
+(`TREASURE_OBJECT_SLATE_00`, interaction $60 subid $50), which is the Abyssal
+Keep's `p_slate`.

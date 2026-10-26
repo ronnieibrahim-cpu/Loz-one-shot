@@ -1900,8 +1900,28 @@ A `beamos` at (14,2) covers the first island and a `keese` the second.
 > LOW: sound the conch up as soon as you land, and again every time it dries the
 > room.
 
-Take the Boss Key back to Keep Gate. **The Stairhead** (`d6/2,3,1`), north, has
-a last fairy; the boss door is in its north wall.
+Take the Boss Key back to Keep Gate: the boss door is in its **north** wall.
+
+**The Stairhead** (`d6/2,3,1`), the slate slots (Oracle of Ages' Ancient Tomb
+room). Four slots are cut round a walled dais, each at its own height, and each
+takes one of the Keep's four **slates** (see below). Lean on a slot holding a
+slate and it goes in, but only if the sea has you level with it:
+
+- **East slot** (11,5), from (12,5): **LOW**, standing dry.
+- **South slot** (7,7), from (7,8): **MID**, wading.
+- **North slot** (7,3), from (7,2), and **west slot** (3,5), from (2,5):
+  **HIGH**, swimming.
+
+At the wrong sea Link says the slot is too high or under the water. The fourth
+slate sinks the dais and stands up **the King's stair** at (7,5). A last fairy
+at (12,2).
+
+**The four slates** lie in the Hold, on floor no foot reaches, each under a
+shaft upstairs. At **MID** the shaft is a flooded well: cast the Dredge Line
+over it and the slate comes up. **The Slack Water** (`d6/1,5,3`): from (7,8),
+face down, over the shaft at (7,9). **The Tally Hall** (`d6/1,7,2`), north
+bank: from (9,2) face up over (9,1); from (6,8) face down over (6,9); from
+(3,6) face down over (3,7).
 
 ## 17. Nereth, the Drowned King
 

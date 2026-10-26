@@ -136,6 +136,9 @@ for (const [mapId, m] of MAPS) {
       // warp, and once it does its tile carries F.WARP like any other.
       const laid = w.needFlag && (def.puzzle?.reward?.tiles || []).find(([x, y]) => x === w.x && y === w.y);
       if (laid && def.puzzle.flag === w.needFlag && (getTileDef(laid[2])?.flags & F.WARP)) continue;
+      // A stair the room stands up itself later (S212, `laid`: the slate
+      // dais's stair, the throne room's stair down when the King falls).
+      if (w.laid && (getTileDef(w.laid)?.flags & F.WARP)) continue;
       for (const tide of [0, 1, 2]) {
         // `q` is the quad set asking to cover; any name that is not this
         // cell's own asks the general question, which is the one that matters.
