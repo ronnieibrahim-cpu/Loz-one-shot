@@ -1373,7 +1373,7 @@ export function installDungeonsA() {
           ['keese', 3, 3],
         ],
         readable: [
-          [6, 9, 'Scratched into the coral: "The coral bar goes under at HIGH tide. Nothing else in here changes."'],
+          [6, 9, 'Scratched into the coral: "Nothing in here changes with the sea but the coral bar."'],
         ],
         warps: [
           { x: 2, y: 9, to: { map: 'd2', floor: 1, rx: 5, ry: 4, px: 192, py: 112, dir: 'up' } },
@@ -2231,7 +2231,7 @@ export function installDungeonsA() {
         ],
         cleatRoom: { from: [22, 9], to: [0, 5], layers: true },
         readable: [
-          [20, 8, 'A plate on the lock wall: "The current carries a swimmer round to the last gate, and no further. Sink there, and walk the rest."'],
+          [20, 8, 'A plate on the lock wall: "The current only takes a swimmer so far."'],
         ],
       },
       '1,3,2': {
@@ -2634,7 +2634,7 @@ export function installDungeonsA() {
           reward: { reveal: true, say: 'The two flames answer each other.\nSomething rises between them.' },
         },
         readable: [
-          [2, 1, 'Cut in the urn: "No water gets in here. Any fire here came down from above, dry."'],
+          [2, 1, 'Cut in the urn: "Too damp in here to strike a light. Whatever burns here was lit somewhere else."'],
         ],
       },
       '0,1,3': {
@@ -2904,7 +2904,7 @@ export function installDungeonsA() {
           ['keese', 10, 9],
         ],
         readable: [
-          [1, 9, 'Scratched in the basin wall: "The spikes are only safe at HIGH tide, under deep water."'],
+          [1, 9, 'Scratched in the basin wall: "Spikes can\'t reach a swimmer."'],
         ],
       },
       '0,3,5': {
@@ -3182,7 +3182,7 @@ export function installDungeonsA() {
           ['keese', 11, 3],
         ],
         readable: [
-          [3, 2, 'Scratched under the sill: "This wheel is only underwater at HIGH tide."'],
+          [3, 2, 'Scratched under the sill: "The sea only covers this wheel some of the time."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3466,7 +3466,7 @@ export function installDungeonsA() {
           ['keese', 11, 8],
         ],
         readable: [
-          [2, 8, 'A plate over the spillway: "You can only get into the cell below at HIGH tide, and its wheel only turns at LOW."'],
+          [2, 8, 'A plate over the spillway: "The cell below has one way in and one way to work it. They don\'t share a tide."'],
         ],
       },
       '0,0,4': {
@@ -3512,7 +3512,7 @@ export function installDungeonsA() {
           ['tektite', 5, 15],
         ],
         readable: [
-          [3, 13, 'Cut beside the cell: "The low wall drowns at HIGH tide. The wheel only dries at LOW."'],
+          [3, 13, 'Cut beside the cell: "The low wall and the wheel never agree about the sea."'],
         ],
         script: {
           onEvent(game, name, data) {
@@ -3798,7 +3798,7 @@ export function installDungeonsA() {
           ['float', 7, 3, { race: [5, 5], path: [['wait', 64], ['down', 96], ['wait', 64], ['up', 96], ['loop', 0]] }],
         ],
         readable: [
-          [2, 9, 'Cut over the pit: "Wind alone won\'t stop this float. Drain its channel first."'],
+          [2, 9, 'Cut over the pit: "Wind alone won\'t stop this float."'],
         ],
       },
       '1,4,2': {
@@ -3840,7 +3840,7 @@ export function installDungeonsA() {
           reward: { say: 'A chest rises on the landing.' },
         },
         readable: [
-          [11, 1, 'A plate on the landing: "Blocks won\'t move in deep water. Open the west gate, and this tank drops a level."'],
+          [11, 1, 'A plate on the landing: "Blocks won\'t move in deep water."'],
         ],
       },
       '1,6,2': {
@@ -3880,7 +3880,7 @@ export function installDungeonsA() {
           reward: { openDoors: [[7, 10]], say: 'The south shutter grinds open.' },
         },
         readable: [
-          [2, 2, 'Carved over the well: "Wind lowers the water one level. The gate lowers it another."'],
+          [2, 2, 'Carved over the well: "Wind lowers the water one level. This well needs two."'],
         ],
         script: {
           onEvent(game, name, data) {

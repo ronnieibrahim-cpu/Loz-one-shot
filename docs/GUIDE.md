@@ -1818,7 +1818,7 @@ the Lens to see which); two `rupee20` beyond.
 
 ### The crossings
 
-**The Drowned Stand** (`d6/2,3,4`). *"This ledge is only a ledge at LOW tide. Stand on it while you can."*
+**The Drowned Stand** (`d6/2,3,4`). *"This ledge won't wait for you. Stand on it while you can."*
 
 - **Cross:** from **(8,7), face up, at LOW**, cast at the post at (8,3); land at
   (8,4). **Back:** from (9,4), face down, at LOW.

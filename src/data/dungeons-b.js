@@ -656,7 +656,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [12, 3, 'A ferryman\'s mark: "The ford wants LOW water. The drain wants more!"'],
+          [12, 3, 'A ferryman\'s mark: "The ford and the drain never want the same sea."'],
         ],
       },
 
@@ -1954,7 +1954,7 @@ export function installDungeonsB() {
           reward: { reveal: true, say: 'A chest rises in the corner.' },
         },
         readable: [
-          [4, 7, 'A gardener\'s plate, green with age: "Ice runs on till it meets a wall. Grow one!"'],
+          [4, 7, 'A gardener\'s plate, green with age: "Ice runs on till it meets a wall. Not every wall is stone."'],
         ],
       },
 
@@ -2931,7 +2931,7 @@ export function installDungeonsB() {
           ['anglerfry', 6, 7],
         ],
         readable: [
-          [4, 4, 'Cut into the coping: "This ledge is only a ledge at LOW tide. Stand on it while you can."'],
+          [4, 4, 'Cut into the coping: "This ledge won\'t wait for you. Stand on it while you can."'],
         ],
       },
       '2,3,3': {
