@@ -223,6 +223,12 @@ export function registerTiles(defs) {
       // rising covers it (`Game.floodFloor`), and its colour (0 red, 2 blue).
       floorFlip: def.floorFlip || null,
       floorColour: def.floorColour != null ? def.floorColour : null,
+      // A SLATE SLOT (S211, Ages' slateSlot.s): the face it is leaned on from
+      // ('N'/'E'/'S'/'W') and the tile it becomes with a slate in it.
+      slot: def.slot || null,
+      slotFilled: def.slotFilled || null,
+      // A HOLE A HELD BRIDGE SPANS (S211): its planks, `{ H, V }`.
+      bridge: def.bridge || null,
       // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
       // (n), below (s) or both is not of this tile's `family` — Seasons' drop
       // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom

@@ -47,6 +47,7 @@
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
 //   o_iceblock: TILEINDEX_PUSHABLE_ICE_BLOCK $2f, the Sword & Shield Maze, ice half
+//   o_eyestatue: TILEINDEX_EYE_STATUE $ee, the Explorer's Crypt
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
 
 import { sprites } from '../gfx/art.js';
@@ -772,6 +773,24 @@ export const OBJECT_ART = {
     3122012202222013
     3333333333333333` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_eyestatue: { pal: 'o_eyestatue', art: `
+    2332333333332332
+    3013211011123103
+    3112100111112113
+    3212100111112123
+    3332112222112333
+    2321123333211232
+    3211331001331123
+    3012310000132103
+    3212310000132123
+    2331231001321332
+    3233223333223323
+    3033322332233303
+    3133311331133313
+    3013333333333103
+    3310001001000133
+    3333333333333333` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_block: { pal: 'o_block_grotto', art: `
     3333333333333333
     3112222222222223
@@ -851,6 +870,7 @@ const OBJECT_PALETTES = {
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
   o_iceblock: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
+  o_eyestatue: ['#ffff8c', '#cea518', '#635200', '#000000'],
 };
 
 export function installObjectSprites() {

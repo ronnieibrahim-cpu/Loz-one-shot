@@ -82,6 +82,9 @@ BUTTON, PRESSED_BUTTON, PUSHABLE_BLOCK = 0x0c, 0x0d, 0x1d
 ARMOS_STATUE = 0x25
 # Seasons' pushable ice block (pushableTiles.s: $2f slides, var34 bit 1).
 PUSHABLE_ICE_BLOCK = 0x2f
+# The eye statue (S211): TILEINDEX_EYE_STATUE $ee, dungeons only; the eyeballs
+# of INTERAC_STATUE_EYEBALL spawn on it (statueEyeball.s @spawnChildren).
+EYE_STATUE = 0xee
 
 # Seasons tileset index -> what it is. The dungeon ones are the ones our
 # dungeons are themed on (see the legend comments in tiles-core.js).
@@ -410,6 +413,11 @@ def build():
     # Maze's ice half — room $586's three, the Hold's own tileset.
     g, p = sets[0x41].metatile(PUSHABLE_ICE_BLOCK)
     put('o_iceblock', g, p, f'TILEINDEX_PUSHABLE_ICE_BLOCK $2f, {TILESETS[0x41]}')
+    # The eye statue (S211, the Coral Spire's eye loop): TILEINDEX_EYE_STATUE
+    # $ee, the statue Seasons' eye puzzle (room $59c) sets its eyeballs on, in
+    # the Explorer's Crypt's own tileset and colours, the Spire's kit.
+    g, p = sets[0x3e].metatile(EYE_STATUE)
+    put('o_eyestatue', g, p, f'TILEINDEX_EYE_STATUE $ee, {TILESETS[0x3e]}')
     for legend, suffix in ALIASES:
         assert suffix in themes.values(), f'{legend} names a suffix nothing cuts'
         themes[legend] = suffix

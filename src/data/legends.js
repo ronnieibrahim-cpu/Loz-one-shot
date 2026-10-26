@@ -304,6 +304,8 @@ export function installLegends() {
   theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto',  'dUrnGrotto');
   // The Grotto is built at Oracle size, and its way out is a gap in the ring.
   registerLegend('dungeonGrotto', { 'C': 'dExitGrotto' }, 'dungeonGrotto');
+  // The held bridge's hole (S211): the Grotto's own, black, not the shared navy `dPit`.
+  registerLegend('dungeonGrotto', { 'O': 'dHoleGrotto' }, 'dungeonGrotto');
   theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
   // The Sanctum is built at Oracle size (S139): its way out is the Moth's
@@ -476,6 +478,9 @@ export function installLegends() {
   // The Keep is built at Oracle size (S142): its way out is a gap in the ring,
   // as the Grotto's is — the Sword & Shield Maze has no lit step to cut.
   registerLegend('dungeonAbyss', { 'C': 'dExitAbyss', '9': 'dDrownAbyss' }, 'dungeonAbyss');
+  // The slate chamber's four slots (S211), named by the face they are leaned
+  // on from: `n` north, `u` south, `[` west, `]` east.
+  registerLegend('dungeonAbyss', { 'n': 'dSlotN', 'u': 'dSlotS', '[': 'dSlotW', ']': 'dSlotE' }, 'dungeonAbyss');
   // THE KEEP'S SHAFTS (S189): `5` is a 1F shaft, a hole at LOW and flooded
   // above (`dShaftAbyss`); a digit because it is a tide tile, and the outdoor
   // `channel` no room of the Keep places.

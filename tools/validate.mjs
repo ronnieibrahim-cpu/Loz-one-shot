@@ -209,6 +209,10 @@ for (const [name, d] of TILES) {
     // A story gate becomes its `openTo` when its flag is set (S184, the
     // Cistern's sluice gates: `Game.applyStoryGates`).
     if (d.openTo) reachable.add(d.openTo);
+    // A slate slot becomes its filled self (S211), and a hole the planks of
+    // its held bridge (`bridge: { H, V }`).
+    if (d.slotFilled) reachable.add(d.slotFilled);
+    if (d.bridge) for (const t of Object.values(d.bridge)) reachable.add(t);
   }
   for (const [, rules] of TRANSFORMS) {
     for (const [k, v] of Object.entries(rules)) {
@@ -251,6 +255,10 @@ for (const [name, d] of TILES) {
     if (d.crack) reachable.add(d.crack);
     // A story gate or keyhole becomes its `openTo` in play (Game.applyStoryGates).
     if (d.openTo) reachable.add(d.openTo);
+    // A slate slot becomes its filled self (S211), and a hole the planks of
+    // its held bridge (`bridge: { H, V }`).
+    if (d.slotFilled) reachable.add(d.slotFilled);
+    if (d.bridge) for (const t of Object.values(d.bridge)) reachable.add(t);
     // A ground fringe is reached through `edgePairs` — a map of a neighbour's
     // MATERIAL to that pair's 12 mask keys (see installGroundFringes in
     // tiles-core.js). Without this the 204 fringe tiles all read as unreachable

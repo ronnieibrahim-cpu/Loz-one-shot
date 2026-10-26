@@ -32,6 +32,9 @@ gfx header GFXH_COMMON_SPRITES), and says exactly how to draw each:
     from the same tables, so it is cut here rather than by a second copy.
   * THE ICE CHUNK (S189) is interaction $68, INTERAC_D8_GRABBABLE_ICE, from
     spr_pedestal_ice in standard sprite palette 4: the Abyssal Keep's Hold.
+  * THE EYEBALL (S211) is interaction $e2, INTERAC_STATUE_EYEBALL, from
+    spr_polsvoice_hardhatbeetle_spikedbeetle_beamon: the Coral Spire's eye
+    statues, with the pixel it moves to look (statueEyeball.s).
   * THE BLAST is ITEM_BOMB's animation 1 (itemAnimations.s, item03Animations)
     through item03OamDataPointers (itemOamData.s), with the tile base and oam
     flags itemInitializeBombExplosion (bombs.s) loads when the fuse ends.
@@ -266,6 +269,39 @@ def chunk():
     return b1 & 0x7f, (b2 >> 4) & 7, [(h, oam(io, ptrs[k])) for h, k in seq]
 
 
+def eyeball():
+    """INTERAC_STATUE_EYEBALL (S211): the eye on Seasons' eye statue
+    (statueEyeball.s). interactionData $e2 is gfx header $72
+    (spr_polsvoice_hardhatbeetle_spikedbeetle_beamon, objectGfxHeaders.s), tile
+    base $1e, and $04 — standard sprite palette 0, VRAM bank 0, animation 4.
+    The eye puzzle's eyes (subid 4) never change animation: they look by
+    moving the object a pixel within its tile (@lowPositionValues, emitted as
+    EYEBALL_LOOK), so this is one picture."""
+    for l in lines('interactionData.s'):
+        m = re.search(r'/\* \$e2 \*/ m_InteractionData \$(\w+) \$(\w+) \$(\w+)', l)
+        if m:
+            gfx, b1, b2 = (int(m.group(k), 16) for k in (1, 2, 3))
+            break
+    assert gfx == 0x72, 'the eyeball is not on spr_polsvoice_hardhatbeetle_spikedbeetle_beamon'
+    assert not b2 & 0x80, 'the eyeball is not in VRAM bank 0'
+    ia = lines('interactionAnimations.s')
+    anim = dws(ia, 'interactione2Animations')[b2 & 0x0f]
+    ptrs = dws(ia, 'interactione2OamDataPointers')
+    seq = sequence(ia, anim)
+    io = lines('interactionOamData.s')
+    return b1 & 0x7f, (b2 >> 4) & 7, [(h, oam(io, ptrs[k])) for h, k in seq]
+
+
+def eyeball_look():
+    """@lowPositionValues: the low nibbles of the eye's y and x for each of the
+    eight directions it can face (0 up, then clockwise), within its tile."""
+    ls = lines('statueEyeball.s')
+    i = next(k for k, l in enumerate(ls) if l.startswith('@lowPositionValues:'))
+    rows = [dbs(l) for l in ls[i + 1:] if l.strip().startswith('.db')][:8]
+    assert len(rows) == 8 and all(len(r) == 2 for r in rows)
+    return rows
+
+
 def build():
     art, pals, notes = {}, {}, []
 
@@ -294,6 +330,7 @@ def build():
     cut('fx_boom', blast())
     cut('o_float', platform(), sheet='spr_dungeon_sprites.png')
     cut('o_icechunk', chunk(), sheet='spr_pedestal_ice.png')
+    cut('o_eyeball', eyeball(), sheet='spr_polsvoice_hardhatbeetle_spikedbeetle_beamon.png')
     return art, pals, notes
 
 
@@ -307,7 +344,7 @@ HEADER = '''// The smoke puffs, the fall into a hole, the bomb blast, the moving
 // commit 21c924a; the tables are identical there) and spr_pedestal_ice (the
 // ice chunk, the same commit), the tables that lay out
 // INTERAC_PUFF, INTERAC_FALLDOWNHOLE, INTERAC_MOVING_PLATFORM,
-// INTERAC_D8_GRABBABLE_ICE,
+// INTERAC_D8_GRABBABLE_ICE, INTERAC_STATUE_EYEBALL (S211, with statueEyeball.s),
 // PART_ENEMY_DESTROYED and the exploding ITEM_BOMB, and the standard sprite
 // palettes. Credit: the oracles-disasm project and its contributors; the
 // artwork is Nintendo's and Capcom's. This is fan-work art only.
@@ -338,6 +375,11 @@ def emit(art, pals, notes):
     for name in pals:
         out.append(f"  {name}: [{', '.join(repr(c) for c in pals[name])}],")
     out.append('};')
+    look = eyeball_look()
+    out += ['', '// The eye statue\'s eye (S211), statueEyeball.s @lowPositionValues: for each',
+            '// of the eight ways it can face (0 up, then clockwise), the low nibbles of',
+            '// its y and x within its tile. The eye puzzle looks with these alone.',
+            'export const EYEBALL_LOOK = [' + ', '.join(f'[{y}, {x}]' for y, x in look) + '];']
     out += ['', 'export function installEffectSprites() {',
             '  registerPalettes(EFFECT_PALETTES);',
             "  sprites.add(EFFECT_ART, 'ui');", '}', '']

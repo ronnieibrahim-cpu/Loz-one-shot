@@ -2812,6 +2812,18 @@ export function installCoreTiles() {
     // through, the way the source leaves every dungeon: floor, carrying the
     // warp. The ring draws its jambs either side of it (`Room.ringArt`).
     dExitGrotto: { art: ART.gFloor, pal: 'gFloor', flags: F.WARP },
+    // THE HELD BRIDGE (S211; Ages' INTERAC_EXTENDABLE_BRIDGE): the hole it
+    // spans, and its planks, laid one at a time while its plate is held
+    // (Game.updateBridges) and taken up again from the far end when it is not.
+    dHoleGrotto: { art: ART.gHole, pal: 'gHole', flags: F.PIT, bridge: { H: 'dBridgeGrottoH', V: 'dBridgeGrottoV' } },
+    dBridgeGrottoV: { art: ART.gBridgeV, pal: 'gBridgeV' },
+    dBridgeGrottoH: { art: ART.gBridgeH, pal: 'gBridgeH' },
+    // THE SLATE SLOTS (S211; Ages' Ancient Tomb, room $58a): one per face of
+    // the Keep's slate chamber, and each with its slate in.
+    ...Object.fromEntries(['N', 'E', 'S', 'W'].flatMap(f => [
+      ['dSlot' + f, { art: ART['aSlot' + f], pal: 'aSlot' + f, flags: F.SOLID, slot: f, slotFilled: 'dSlate' + f }],
+      ['dSlate' + f, { art: ART['aSlate' + f], pal: 'aSlate' + f, flags: F.SOLID }],
+    ])),
     // The ring's pieces, as tiles, so `palFor` finds each one's own palette.
     // Never placed by a legend: `Room.ringArt` names them.
     gRingTL: { art: ART.gRingTL, pal: 'gRingTL', flags: F.SOLID },
