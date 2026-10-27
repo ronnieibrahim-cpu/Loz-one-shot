@@ -358,7 +358,7 @@ export const ROUTE_SHOTS = [
   { id: 'd6-nereth-c', after: 2305, plus: 1500 },
   { id: 'd6-nereth-d', after: 2305, plus: 2200 },
   { id: 'd6-essence', after: 2310, plus: 30 },
-  { id: 'd6-end', after: 2312, plus: 0, until: "g.mode === 'theend'", by: 2313 },
+  { id: 'd6-end', after: 2312, plus: 40, until: "g.mode === 'theend'", by: 2313 },
 ];
 
 const D1 = ['3,7','3,6','2,6','3,5','2,5','4,5','3,4','2,4','4,4','3,3','2,3','3,2','4,2','5,2','5,1','4,1','5,3','4,3','2,2','1,2','1,3','1,1','2,1','3,1'];

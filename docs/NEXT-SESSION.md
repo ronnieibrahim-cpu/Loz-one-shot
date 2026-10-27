@@ -46,7 +46,7 @@ Branch claude/oracle-tides-puzzle-followup-w9dbpi, off main at d86d11b (S212).
   roll needs the frames).
 
 ### Verified
-See the commit: whole table green; check-playthrough to THE END, never died.
+Whole table green (67 tools incl. check-credits 22/22); check-playthrough 49/49, THE END, never died; test.mjs 139/139; check-rippers 47/47 alone. Guide d6-end re-shot (the sunset, `plus: 40` past the fade in).
 
 ### Tried and dropped / not taken
 - Seasons' credits story cards (Din's troupe, Onox...) — Seasons' story.
