@@ -132,6 +132,19 @@ export const REQUIRED_SPRITES = {
     'npc_villager', 'npc_villager2', 'npc_fisher', 'npc_child', 'npc_elder',
     'npc_shopkeeper', 'npc_farore_0', 'npc_farore_1', 'npc_farore_book', 'npc_maku', 'maku_face', 'npc_zelda',
     'npc_nereth',
+    // Seasons' walking townsfolk (S214, rip-npcs.py WALKERS): two frames a
+    // way, down, up and right, for the people in the credits' scenes.
+    'npc_walk_boy_d0', 'npc_walk_boy_d1', 'npc_walk_boy_u0', 'npc_walk_boy_u1',
+    'npc_walk_boy_s0', 'npc_walk_boy_s1', 'npc_walk_lad_d0', 'npc_walk_lad_d1',
+    'npc_walk_lad_u0', 'npc_walk_lad_u1', 'npc_walk_lad_s0', 'npc_walk_lad_s1',
+    'npc_walk_oldman_d0', 'npc_walk_oldman_d1', 'npc_walk_oldman_u0',
+    'npc_walk_oldman_u1', 'npc_walk_oldman_s0', 'npc_walk_oldman_s1',
+    'npc_walk_mayor_d0', 'npc_walk_mayor_d1', 'npc_walk_mayor_u0',
+    'npc_walk_mayor_u1', 'npc_walk_mayor_s0', 'npc_walk_mayor_s1',
+    'npc_walk_hunter_d0', 'npc_walk_hunter_d1', 'npc_walk_hunter_u0',
+    'npc_walk_hunter_u1', 'npc_walk_hunter_s0', 'npc_walk_hunter_s1',
+    'npc_walk_holly_d0', 'npc_walk_holly_d1', 'npc_walk_holly_u0',
+    'npc_walk_holly_u1', 'npc_walk_holly_s0', 'npc_walk_holly_s1'
   ],
 
   // ---- pack: sprites-races.js ------------------------------------------

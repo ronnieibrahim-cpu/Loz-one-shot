@@ -1176,6 +1176,12 @@ export const CREDITS_LINE_SPACING = 20;
  *  stage2 state7 steps SCY by one each time $cbb3 counts down from 4. */
 export const CREDITS_SKY_STEP_FRAMES = 4;
 
+/** f — each of a walking townsperson's two frames is held this long in the
+ *  credits' scenes. derived: the shared four-way walk of Seasons' townsfolk
+ *  (interaction3eAnimations, interactionAnimation51d5f/51d87/51d97/51da7)
+ *  holds each frame $10. */
+export const CREDITS_WALK_FRAME_FRAMES = 16;
+
 // THE LOW-HEALTH PULSE.
 //
 // The game had no low-health warning at all — the one piece of feedback in

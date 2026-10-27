@@ -2558,6 +2558,12 @@ const CREDITS_LINE_SPACING = 20;
  *  stage2 state7 steps SCY by one each time $cbb3 counts down from 4. */
 const CREDITS_SKY_STEP_FRAMES = 4;
 
+/** f — each of a walking townsperson's two frames is held this long in the
+ *  credits' scenes. derived: the shared four-way walk of Seasons' townsfolk
+ *  (interaction3eAnimations, interactionAnimation51d5f/51d87/51d97/51da7)
+ *  holds each frame $10. */
+const CREDITS_WALK_FRAME_FRAMES = 16;
+
 // THE LOW-HEALTH PULSE.
 //
 // The game had no low-health warning at all — the one piece of feedback in
@@ -4303,6 +4309,7 @@ __exports["CREDITS_PAN_SPEED"] = CREDITS_PAN_SPEED;
 __exports["CREDITS_TEXT_SPEED"] = CREDITS_TEXT_SPEED;
 __exports["CREDITS_LINE_SPACING"] = CREDITS_LINE_SPACING;
 __exports["CREDITS_SKY_STEP_FRAMES"] = CREDITS_SKY_STEP_FRAMES;
+__exports["CREDITS_WALK_FRAME_FRAMES"] = CREDITS_WALK_FRAME_FRAMES;
 __exports["LOW_HEART_DIVISOR"] = LOW_HEART_DIVISOR;
 __exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
 __exports["TEXT_FRAMES_PER_CHAR"] = TEXT_FRAMES_PER_CHAR;
@@ -31066,25 +31073,81 @@ __define("data/credits.js", function (__exports, __require) {
 // lettering (A-Z . · - ~ and the drawn digits), 20 to a line at most; `c` is
 // the cyan ink Seasons gives a heading, `w` the white of a name, and an empty
 // line is a gap. The last roll runs over the sky as it scrolls to the forest.
+//
+// A scene's `cast` is who is about the place (S214, the human's choice: "yes,
+// walking about"), as Seasons' credits scenes load a list of people of their
+// own for each place (endgameCutscenes.s stage1, getEntryFromObjectTable1)
+// rather than the room's usual ones. Each is [screen, tx, ty, who, opts]:
+// `screen` 0 or 1 of the pair, the tile on that screen, and `who` either one of
+// Seasons' walking townsfolk (`walk:<name>`, src/data/sprites-npcs.js
+// npc_walk_*) or the sprite of one of our own peoples as their room has them.
+// `opts` are an NPC's own: `wander`, `dir`, `frames`.
+//
+// Eight places from the village out to the Keep (S214: "add more"), the
+// names split into shorter rolls between them; the lines are S213's.
+
+// The frames our own peoples walk in, as their rooms give them.
+const SALTER = { down: ['npc_salter_d'], up: ['npc_salter_u'], side: ['npc_salter_s'] };
+const BRINE = { down: ['npc_brine_d'], up: ['npc_brine_u'] };
+const REEFKIN = { down: ['npc_reefkin_d'], up: ['npc_reefkin_u'], side: ['npc_reefkin_r'] };
 
 const CREDITS_ROLL = [
-  { scene: [0, 4, 7] },          // Tidewatch Village
+  { scene: [0, 4, 7], cast: [         // Tidewatch Village
+    [0, 8, 4, 'npc_salter_d', { frames: SALTER }],
+    [0, 3, 6, 'walk:boy', { wander: true }],
+    [1, 2, 5, 'walk:lad', { wander: true, dir: 'left' }],
+    [1, 6, 5, 'walk:mayor', { wander: true }],
+  ] },
   { names: [
-    ['c', 'ORACLE OF TIDES'], [],
-    ['c', 'MADE BY'], ['w', 'RONNIE'], [],
+    ['c', 'ORACLE OF TIDES'],
+  ] },
+  { scene: [0, 6, 7], cast: [         // Tidewatch Square
+    [0, 6, 6, 'npc_brine_d', { frames: BRINE, wander: true }],
+    [0, 3, 5, 'walk:holly', { wander: true }],
+    [1, 3, 5, 'walk:oldman', { wander: true, dir: 'left' }],
+    [1, 7, 5, 'walk:hunter', { wander: true }],
+  ] },
+  { names: [
+    ['c', 'MADE BY'], ['w', 'RONNIE'],
+  ] },
+  { scene: [0, 4, 9], cast: [         // the Fishing Stones
+    [0, 2, 2, 'npc_fisher', {}],
+    [1, 4, 2, 'walk:boy', { wander: true }],
+  ] },
+  { names: [
     ['c', 'WITH'], ['w', 'CLAUDE'],
   ] },
-  { scene: [0, 4, 9] },          // the Fishing Stones
+  { scene: [0, 4, 5], cast: [         // Bog Trees and the Wood Heart
+    [1, 2, 2, 'npc_hood_blue', {}],
+    [1, 5, 4, 'walk:oldman', { wander: true }],
+  ] },
   { names: [
-    ['c', 'GRAPHICS RIPPED BY'], ['w', 'MISTER MIKE'], ['w', 'TRAILSDEGAMER'], ['w', 'TAILS585'], [],
+    ['c', 'GRAPHICS RIPPED BY'], ['w', 'MISTER MIKE'], ['w', 'TRAILSDEGAMER'], ['w', 'TAILS585'],
+  ] },
+  { scene: [0, 12, 5], cast: [        // Coral Hollow
+    [0, 4, 3, 'npc_reefkin_d', { frames: REEFKIN }],
+    [1, 4, 3, 'npc_reefkin_d', { frames: REEFKIN, wander: true }],
+  ] },
+  { names: [
     ['c', 'FOUND AT THE'], ['w', 'SPRITERS RESOURCE'],
   ] },
-  { scene: [0, 12, 8] },         // Sandpiper Row
-  { names: [
-    ['c', 'THE CARTRIDGES'], ['c', 'TAKEN APART BY'], ['w', 'STEWMATH'], ['w', 'AND THE'],
-    ['w', 'ORACLES-DISASM'], ['w', 'CONTRIBUTORS'],
+  { scene: [0, 12, 8], cast: [        // Sandpiper Row
+    [0, 5, 5, 'npc_fisher', { wander: true }],
+    [0, 5, 3, 'walk:lad', { wander: true }],
+    [1, 8, 3, 'npc_hood_blue', {}],
+    [1, 3, 5, 'walk:holly', { wander: true, dir: 'left' }],
   ] },
-  { scene: [0, 1, 0] },          // the Gate of the Keep
+  { names: [
+    ['c', 'THE CARTRIDGES'], ['c', 'TAKEN APART BY'], ['w', 'STEWMATH'],
+  ] },
+  { scene: [0, 15, 9], cast: [        // Sunken Cove
+    [0, 8, 2, 'npc_fisher', {}],
+    [1, 4, 3, 'walk:hunter', { wander: true }],
+  ] },
+  { names: [
+    ['w', 'AND THE'], ['w', 'ORACLES-DISASM'], ['w', 'CONTRIBUTORS'],
+  ] },
+  { scene: [0, 1, 0] },               // the Gate of the Keep
   { names: [
     ['c', 'AFTER'], ['w', 'THE LEGEND OF ZELDA'], ['w', 'ORACLE OF SEASONS'], ['w', 'ORACLE OF AGES'], [],
     ['c', 'BY'], ['w', 'NINTENDO'], ['w', 'CAPCOM'], [], [],
@@ -31138,16 +31201,26 @@ __define("game/credits.js", function (__exports, __require) {
 // sky, the lettering and the sunset are the cartridge's (tools/rip-ending.py),
 // and the digits it never drew are src/data/sprites-credits-drawn.js.
 //
-// Nothing here consumes randomness or touches the world: the scenes are drawn
-// straight from the room data, with no entities and no player, so the roll
-// plays the same whatever the run left behind in the throne room.
+// Nothing here consumes the game's randomness or touches the world: the
+// scenes are drawn straight from the room data, with no player and none of
+// the room's own entities, so the roll plays the same whatever the run left
+// behind in the throne room. The people about each place (a scene's `cast`,
+// S214) live on a STAGE of their own, one per screen: the screen's room, the
+// game's sea, the cast as the only entities and a stream of their own drawn
+// from the part's place in the roll, which is everything `NPC.update` and
+// `moveEntity` ask a game for. They walk with the engine's own collision
+// against the screen they stand on, and nothing they do reaches the run.
 
 const { CREDITS_ROLL } = __require("data/credits.js");
 const { CREDITS_GLYPHS, CREDITS_INKS } = __require("data/screens-ending.js");
 const { CREDITS_DIGITS, CREDITS_DIGIT_TOP } = __require("data/sprites-credits-drawn.js");
-const { CREDITS_FADE, CREDITS_SCENE_FRAMES, CREDITS_PAN_SPEED, CREDITS_TEXT_SPEED, CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES } = __require("data/feel.js");
+const { CREDITS_FADE, CREDITS_SCENE_FRAMES, CREDITS_PAN_SPEED, CREDITS_TEXT_SPEED, CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES, CREDITS_WALK_FRAME_FRAMES } = __require("data/feel.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 const { getRoom } = __require("world/maps.js");
+const { NPC } = __require("game/objects.js");
+const { Stream, hash32 } = __require("core/rng.js");
+const { TILE } = __require("core/screen.js");
+const { F } = __require("world/tileset.js");
 
 const W = 160, H = 144, GLYPH_W = 8, GLYPH_H = 16;
 const SKY_H = 256;
@@ -31190,6 +31263,44 @@ function drawCreditsLine(ctx, text, ink, y) {
   }
 }
 
+/** What a credits townsperson will not stand in. */
+const DRY_LAND = F.WATER | F.DEEP | F.PIT | F.HAZARD;
+
+/** A walking townsperson's frames: Seasons' two a way (rip-npcs.py WALKERS). */
+function walkFrames(who) {
+  const f = d => [0, 1].map(i => `npc_walk_${who}_${d}${i}`);
+  return { down: f('d'), up: f('u'), side: f('s') };
+}
+
+/**
+ * The stage one screen of a scene is played on: what `NPC.update`,
+ * `moveEntity` and `canOccupy` read off a game, and only that. `part` and
+ * `screen` seed its stream, so a scene walks the same way every time.
+ */
+function creditsStage(game, part, screen, room) {
+  const stage = {
+    room, tide: game.tide, entities: [], frame: 0,
+    rng: new Stream(hash32('credits', part, screen), `credits:${part}:${screen}`),
+    dialogue: { active: false },
+    addEntity(e) { this.entities.push(e); return e; },
+  };
+  const cast = CREDITS_ROLL[part].cast || [];
+  for (const [at, tx, ty, who, opts] of cast) {
+    if (at !== screen) continue;
+    const walker = who.startsWith('walk:') ? who.slice(5) : null;
+    const o = walker
+      ? { ...opts, sprite: `npc_walk_${walker}_d0`, frames: walkFrames(walker), rate: CREDITS_WALK_FRAME_FRAMES }
+      : { ...opts, sprite: who };
+    const e = new NPC(tx * TILE, ty * TILE, o);
+    e.type = 'npc';
+    // Seasons' townsfolk keep to dry ground; ours would wade into a pond
+    // (an NPC refuses nothing a player can walk). `canOccupy` reads this.
+    e.avoidFlags = DRY_LAND;
+    stage.addEntity(e);
+  }
+  return stage;
+}
+
 /** Frames one part of the roll runs between its fade in and its fade out. */
 function partLength(part) {
   if (part.scene) return CREDITS_SCENE_FRAMES;
@@ -31204,6 +31315,21 @@ class Credits {
     this.part = 0;
     this.t = 0;              // frames into the part, the fade in included
     this.sky = 0;            // px the sky has scrolled down
+    this.stages = null;      // the scene's two screens' people, [left, right]
+    this.stagePart = -1;
+  }
+
+  /** The two stages of the current scene, built the first time it is asked. */
+  sceneStages() {
+    const part = CREDITS_ROLL[this.part];
+    if (!part || !part.scene) return null;
+    if (this.stagePart !== this.part) {
+      const [floor, rx, ry] = part.scene;
+      this.stages = [0, 1].map(dx =>
+        creditsStage(this.game, this.part, dx, getRoom('overworld', floor, rx + dx, ry)));
+      this.stagePart = this.part;
+    }
+    return this.stages;
   }
 
   get done() { return this.part >= CREDITS_ROLL.length; }
@@ -31214,6 +31340,13 @@ class Credits {
     const part = CREDITS_ROLL[this.part];
     const [fin, hold, fout] = [CREDITS_FADE[2], CREDITS_FADE[1], CREDITS_FADE[0]];
     this.t++;
+    const stages = this.sceneStages();
+    if (stages) {
+      for (const st of stages) {
+        st.frame++;
+        for (const e of st.entities) e.update(st);
+      }
+    }
     const run = this.t - fin;
     if (part.sky && run > 0 && run % CREDITS_SKY_STEP_FRAMES === 0) {
       this.sky = Math.min(SKY_H - H, this.sky + 1);
@@ -31257,6 +31390,7 @@ class Credits {
     const pan = Math.min(W, Math.floor(run * CREDITS_PAN_SPEED));
     const above = !!getRoom('overworld', floor, rx, ry - 1);
     const top = above ? 16 : 0;
+    const stages = this.sceneStages();
     for (const dx of [0, 1]) {
       for (const dy of above ? [-1, 0] : [0, 1]) {
         const room = getRoom('overworld', floor, rx + dx, ry + dy);
@@ -31264,6 +31398,13 @@ class Credits {
         const ox = dx * W - pan, oy = top + dy * room.ph;
         ctx.drawImage(room.render(tide, frame), ox, oy);
         room.drawAnim(ctx, ox, oy, tide, frame);
+        // The people stand between the ground and what overhangs it, as
+        // Game.drawScene draws a room's entities.
+        if (dy === 0 && stages) {
+          const st = stages[dx];
+          const list = st.entities.slice().sort((a, b) => (a.y + a.h) - (b.y + b.h));
+          for (const e of list) e.draw(ctx, st, ox, oy);
+        }
         room.drawOver(ctx, ox, oy, tide, frame);
       }
     }
@@ -31282,6 +31423,7 @@ class Credits {
   }
 }
 __exports["drawCreditsLine"] = drawCreditsLine;
+__exports["creditsStage"] = creditsStage;
 __exports["Credits"] = Credits;
 });
 
@@ -74204,6 +74346,12 @@ __define("data/sprites-npcs.js", function (__exports, __require) {
 // animation and palette) out of Stewmath's oracles-disasm
 // (github.com/Stewmath/oracles-disasm, commit 21c924a); credit to that
 // project and its contributors.
+//
+// So are the walking townsfolk (npc_walk_*, S214): Seasons' own people
+// who walk (spr_boy, spr_ruul_wiseman, spr_oldshopkeeper_gardener_villager,
+// spr_zelda_1), each in its
+// interaction's tile base and palette, in the shared four-way walk of
+// interaction3eOamDataPointers, from the same disassembly.
 
 const { sprites } = __require("gfx/art.js");
 const { registerPalettes } = __require("gfx/palettes.js");
@@ -74390,6 +74538,654 @@ const NPC_ART = {
     ...2111100002...
     ...2222222222...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_boy_d0: { pal: 'npc_walk_boy_d0', art: `
+    ................
+    ................
+    .....333333.....
+    ....33333333....
+    ..33333300333...
+    .3003333003303..
+    .3003000000303..
+    .3000003003003..
+    ..33000300303...
+    ....310000033...
+    ...33333333003..
+    ..300333333003..
+    ..30031111333...
+    ...333331113....
+    ....300033333...
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_boy_d1: { pal: 'npc_walk_boy_d1', art: `
+    ................
+    ................
+    .....333333.....
+    ....33333333....
+    ...33300333333..
+    ..3033003333003.
+    ..3030000003003.
+    ..3003003000003.
+    ...30300300033..
+    ...330000013....
+    ..30033333333...
+    ..300333333003..
+    ...33311113003..
+    ....311133333...
+    ...333330003....
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_boy_s0: { pal: 'npc_walk_boy_s0', art: `
+    ................
+    ................
+    ......333333....
+    .....33333333...
+    ....333333033...
+    ...3003333033...
+    ...300330003....
+    ...3000003033...
+    ....310003003...
+    .....310000333..
+    .....333333003..
+    ....3333300303..
+    ....311130033...
+    ....3333333.....
+    .....30003......
+    ....3333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_boy_s1: { pal: 'npc_walk_boy_s1', art: `
+    ................
+    ................
+    ................
+    ......333333....
+    .....33333333...
+    ....333333033...
+    ...3003333033...
+    ...300330003....
+    ...3000003033...
+    ....330003003...
+    .....333333333..
+    ...33333330003..
+    ..30311133003...
+    ..30031113333...
+    ...30033331003..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_boy_u0: { pal: 'npc_walk_boy_u0', art: `
+    ................
+    ................
+    .....333333.....
+    ....33333333....
+    ..333333333333..
+    .30033333333003.
+    .30033333333003.
+    .30033333333003.
+    ..330033330033..
+    ...330000003....
+    ..30133333333...
+    ..303333333303..
+    ...33111113303..
+    ....311133333...
+    ...3333300033...
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_boy_u1: { pal: 'npc_walk_boy_u1', art: `
+    ................
+    ................
+    .....333333.....
+    ....33333333....
+    ..333333333333..
+    .30033333333003.
+    .30033333333003.
+    .30033333333003.
+    ..330033330033..
+    ....300000033...
+    ...33333333103..
+    ..303333333303..
+    ..30331111133...
+    ...333331113....
+    ...3300033333...
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_holly_d0: { pal: 'npc_walk_holly_d0', art: `
+    ......3333......
+    ..333311113333..
+    .30131100113103.
+    .31311113111313.
+    .31311133311313.
+    ..333333033333..
+    ..313030030313..
+    ..3300300300313.
+    .313300000033113
+    3113330000333113
+    3133133333313313
+    3130300300300313
+    313031000130033.
+    .3131111111333..
+    ..33000011113...
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_holly_d1: { pal: 'npc_walk_holly_d1', art: `
+    ......3333......
+    ..333311113333..
+    .30131100113103.
+    .31311131111313.
+    .31311333111313.
+    ..333330333333..
+    ..313030030313..
+    .3130030030033..
+    311330000003313.
+    3113330000333113
+    3133133333313313
+    3130030030030313
+    .330031000130313
+    ..3331111111313.
+    ...31111000033..
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_holly_s0: { pal: 'npc_walk_holly_s0', art: `
+    ......33333.....
+    ....333111133...
+    ...31013111003..
+    ...311031113103.
+    ...311131133313.
+    ...333313330333.
+    ...3111130303...
+    ..311133303003..
+    ..311310000003..
+    .311313110003...
+    .31111333333....
+    .3111333003.....
+    .3311313003.....
+    .3333111333.....
+    ..3311111113....
+    ...333333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_holly_s1: { pal: 'npc_walk_holly_s1', art: `
+    ................
+    ......333333....
+    ....333111113...
+    ...310131110033.
+    ...3110311131013
+    ...3111311333313
+    ..3133313330333.
+    ..31111130303...
+    .3111133303003..
+    31111310000003..
+    3111313110003...
+    311113333333....
+    33113313003.....
+    333311130033....
+    .331111133113...
+    ..33333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_holly_u0: { pal: 'npc_walk_holly_u0', art: `
+    ......3333......
+    ..333311113333..
+    .30131111113103.
+    .31311000011313.
+    .31310000001313.
+    ..311011110113..
+    ..311111111113..
+    .3111111111113..
+    311111111111113.
+    3111111111111113
+    3111111111111113
+    3111111111111113
+    .311111111111113
+    ..3311111111113.
+    ..313331111133..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_holly_u1: { pal: 'npc_walk_holly_u1', art: `
+    ......3333......
+    ..333311113333..
+    .30131111113103.
+    .31311000011313.
+    .31310000001313.
+    ..311011110113..
+    ..311111111113..
+    ..3111111111113.
+    .311111111111113
+    3111111111111113
+    3111111111111113
+    3111111111111113
+    311111111111113.
+    .3111111111133..
+    ..331111133313..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_hunter_d0: { pal: 'npc_walk_hunter_d0', art: `
+    ......3333......
+    .....300003.....
+    ....30000003....
+    ..3300000000333.
+    .303030003003003
+    .301003030001003
+    .300000000000013
+    ..3003000300033.
+    ..310033300013..
+    ...3100000013...
+    ..31333333333...
+    ..313000300313..
+    ...33003300313..
+    ...3333300333...
+    ..300033330003..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_hunter_d1: { pal: 'npc_walk_hunter_d1', art: `
+    ......3333......
+    .....300003.....
+    ....30000003....
+    .3330000000033..
+    300300300030303.
+    300100030300103.
+    310000000000003.
+    .3300030003003..
+    ..310003330013..
+    ...3100000013...
+    ...33333333313..
+    ..313003000313..
+    ..31300330033...
+    ...3330033333...
+    ..300033330003..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_hunter_s0: { pal: 'npc_walk_hunter_s0', art: `
+    ......3333......
+    ....3300003.....
+    ...300000003....
+    ..33330000003...
+    ..30003000303...
+    ..300010000303..
+    ..300000000003..
+    ...33000003003..
+    ....3000000333..
+    ....333300003...
+    ....311133333...
+    ....3111303003..
+    .....311300303..
+    .....33330003...
+    ....30000333....
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_hunter_s1: { pal: 'npc_walk_hunter_s1', art: `
+    ......3333......
+    ....3300003.....
+    ...3000000033...
+    ..33300000003...
+    .3000300300303..
+    .3000100030303..
+    .3000000000003..
+    ..330000300003..
+    ...3000003333...
+    ....333000003...
+    ....3113333333..
+    ....31111300303.
+    .....3111300303.
+    .....3333303003.
+    ....3000033333..
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_hunter_u0: { pal: 'npc_walk_hunter_u0', art: `
+    ......3333......
+    .....300003.....
+    ....30000003....
+    ..330000000033..
+    .30030000000303.
+    .30010000000003.
+    .31000000000013.
+    ..330000000003..
+    .313000111003...
+    .3113300003333..
+    .31111333311113.
+    ..3111111111113.
+    ...30000000003..
+    ...3333333333...
+    ..300033330003..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_hunter_u1: { pal: 'npc_walk_hunter_u1', art: `
+    ......3333......
+    .....300003.....
+    ....30000003....
+    ..330000000033..
+    .30300000003003.
+    .30000000001003.
+    .31000000000013.
+    ..300000000033..
+    ...300111000313.
+    ..3333000033113.
+    .31111333311113.
+    .3111111111113..
+    ..30000000003...
+    ...3333333333...
+    ..300033330003..
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_lad_d0: { pal: 'npc_walk_lad_d0', art: `
+    ..........3.....
+    ...........3.3..
+    ......333333.3..
+    ....333333333...
+    ...3333333333...
+    .3333330003333..
+    ..3330000003103.
+    ...303000300003.
+    ...30030300033..
+    ...330000003....
+    ..30030300333...
+    ..300333333003..
+    ...33311113003..
+    ....311133333...
+    ...333330003....
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_lad_d1: { pal: 'npc_walk_lad_d1', art: `
+    .....3..........
+    ..3.3...........
+    ..3.333333......
+    ...333333333....
+    ...3333333333...
+    ..3333000333333.
+    .3013000000333..
+    .300003000303...
+    ..33000303003...
+    ....300000033...
+    ...33300303003..
+    ..300333333003..
+    ..30031111333...
+    ...333331113....
+    ....300033333...
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_lad_s0: { pal: 'npc_walk_lad_s0', art: `
+    .....3..........
+    ..3.3...........
+    ..3.3333333.....
+    ...3333333333...
+    ...333333333333.
+    ...33333003333..
+    ..3001300003....
+    ..30000030033...
+    ...3300003003...
+    ....33000003....
+    .....333333.....
+    ....31333003....
+    ....31133003....
+    ....3333333.....
+    .....30003......
+    ....3333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_lad_s1: { pal: 'npc_walk_lad_s1', art: `
+    ................
+    ......3.........
+    ...3.3..........
+    ...3.3333333....
+    ....3333333333..
+    ....333333333333
+    ....33333003333.
+    ...3001300003...
+    ...30000030033..
+    ....3300003003..
+    .....33333333...
+    ....333333003...
+    ...3331133003...
+    ...3033113333...
+    ...31003331003..
+    ...33333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_lad_u0: { pal: 'npc_walk_lad_u0', art: `
+    .....3..........
+    ..3.3...........
+    ..3.333333......
+    ...333333333....
+    ...3333333333...
+    ..3333333333333.
+    .3013333333103..
+    .3001133311003..
+    ..33011111033...
+    ...33000003.....
+    ..30133333333...
+    ..303311113303..
+    ...33111113303..
+    ....311133333...
+    ...3333300033...
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_lad_u1: { pal: 'npc_walk_lad_u1', art: `
+    ..........3.....
+    ...........3.3..
+    ......333333.3..
+    ....333333333...
+    ...3333333333...
+    .3333333333333..
+    ..3013333333103.
+    ..3001133311003.
+    ...33011111033..
+    .....30000033...
+    ...33333333103..
+    ..303311113303..
+    ..30331111133...
+    ...333331113....
+    ...3300033333...
+    ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_mayor_d0: { pal: 'npc_walk_mayor_d0', art: `
+    .....3333333....
+    ....300000333...
+    ...30000000333..
+    ..330000000333..
+    .30303000300303.
+    .30303330300303.
+    .33031001003013.
+    ..333111133303..
+    ..333333333303..
+    ..3333303330313.
+    .30330000033113.
+    .30313333300313.
+    ..331100030033..
+    ...3333111333...
+    ..300013333333..
+    ...333333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_mayor_d1: { pal: 'npc_walk_mayor_d1', art: `
+    ....3333333.....
+    ...333000003....
+    ..33300000003...
+    ..333000000033..
+    .30300300030303.
+    .30300303330303.
+    .31030010013033.
+    ..303331111333..
+    ..303333333333..
+    .3130333033333..
+    .31133000003303.
+    .31300333331303.
+    ..330030001133..
+    ...3331113333...
+    ..333333310003..
+    ....333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_mayor_s0: { pal: 'npc_walk_mayor_s0', art: `
+    ....33333333....
+    ...3333300003...
+    ..333330000003..
+    ..333330000003..
+    ..300300300303..
+    ..300300300333..
+    ..3100030010013.
+    ...3000333111133
+    ...3000333333333
+    ...330003330333.
+    ..311333000013..
+    ..31130033333...
+    ..311300311113..
+    ...33333333333..
+    ....31000013....
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_mayor_s1: { pal: 'npc_walk_mayor_s1', art: `
+    ................
+    ....33333333....
+    ...3333300003...
+    ..333330000003..
+    ..333330000003..
+    ..300300300303..
+    ..300300300333..
+    ..3100030010013.
+    ...3000333111133
+    ...3300333333333
+    ..3113333330333.
+    ..311130030013..
+    ..33113003333...
+    .3033333333333..
+    .3000003310003..
+    .3333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_mayor_u0: { pal: 'npc_walk_mayor_u0', art: `
+    .....333333.....
+    ....30000003....
+    ...3000000003...
+    ..333000000333..
+    .30333333333303.
+    .30333333333303.
+    .31333333333313.
+    ..303333333303..
+    ..310333333013..
+    .303300000033...
+    .3031333333133..
+    ..3311111111303.
+    ...310011101303.
+    ..333330001333..
+    ..330003333333..
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_mayor_u1: { pal: 'npc_walk_mayor_u1', art: `
+    .....333333.....
+    ....30000003....
+    ...3000000003...
+    ..333000000333..
+    .30333333333303.
+    .30333333333303.
+    .31333333333313.
+    ..303333333303..
+    ..310333333013..
+    ...330000003303.
+    ..3313333331303.
+    .3031111111133..
+    .303101110013...
+    ..333100033333..
+    ..333333300033..
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_oldman_d0: { pal: 'npc_walk_oldman_d0', art: `
+    ......3333......
+    .....311113.....
+    ....31100113....
+    ...3111001113...
+    ...3111331113...
+    ..311133331113..
+    ..3113311331133.
+    .331131001311313
+    3131333003331313
+    3133300330033113
+    311300000000313.
+    .3113100001333..
+    ..333000000313..
+    ..3113000031113.
+    .33110300300113.
+    .33333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_oldman_d1: { pal: 'npc_walk_oldman_d1', art: `
+    ......3333......
+    .....311113.....
+    ....31100113....
+    ...3111001113...
+    ...3111331113...
+    ..311133331113..
+    .3311331133113..
+    313113100131133.
+    3131333003331313
+    3113300330033313
+    .313000000003113
+    ..3331000013113.
+    ..313000000333..
+    .3111300003113..
+    .31100300301133.
+    .33333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_oldman_s0: { pal: 'npc_walk_oldman_s0', art: `
+    .........333333.
+    .......330000003
+    ......3111111033
+    .....31111111333
+    ....31111111333.
+    ....33311111333.
+    ...311111113303.
+    ...3113311133003
+    ..31131133300333
+    ..31311111130003
+    ..33011111130003
+    ...3003111330003
+    ...311133313003.
+    ...311111113303.
+    ..311111111333..
+    ..33333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_oldman_s1: { pal: 'npc_walk_oldman_s1', art: `
+    ................
+    .........333333.
+    .......330000003
+    ......3111111033
+    .....31111111333
+    ....31111111333.
+    ....33311111333.
+    ...311111113303.
+    ...3113331133003
+    ..31131113330333
+    ..31311111113003
+    ..33011111113003
+    ...3001311130003
+    ..3111113333003.
+    .31111111111303.
+    .3333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_oldman_u0: { pal: 'npc_walk_oldman_u0', art: `
+    ......3333......
+    .....310013.....
+    ....31100113....
+    ...3111011113...
+    ...3111111113...
+    ..313111111313..
+    ..313111113313..
+    ..3113111311313.
+    .313111111131113
+    3111311111313113
+    3111031113103113
+    311300333000313.
+    .3131000000133..
+    ..331111111113..
+    .33111111111113.
+    .33333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  npc_walk_oldman_u1: { pal: 'npc_walk_oldman_u1', art: `
+    ......3333......
+    .....310013.....
+    ....31100113....
+    ...3111101113...
+    ...3111111113...
+    ..313111111313..
+    ..313311111313..
+    .3131131113113..
+    311131111111313.
+    3113131111131113
+    3113013111301113
+    .313000333003113
+    ..3310000001313.
+    ..311111111133..
+    .31111111111133.
+    .33333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_zelda: { pal: 'npc_zelda', art: `
     2122112212112...
     2112112020211222
@@ -74421,6 +75217,42 @@ const NPC_ART_PALETTES = {
   npc_shopkeeper: ['#ffd38c', '#1882ff', '#000000', '#000000'],
   npc_villager: ['#ffd38c', '#ff0829', '#000000', '#000000'],
   npc_villager2: ['#ffd38c', '#ff0829', '#000000', '#000000'],
+  npc_walk_boy_d0: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_boy_d1: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_boy_s0: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_boy_s1: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_boy_u0: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_boy_u1: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_holly_d0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_holly_d1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_holly_s0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_holly_s1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_holly_u0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_holly_u1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_hunter_d0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  npc_walk_hunter_d1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  npc_walk_hunter_s0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  npc_walk_hunter_s1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  npc_walk_hunter_u0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  npc_walk_hunter_u1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  npc_walk_lad_d0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_lad_d1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_lad_s0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_lad_s1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_lad_u0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_lad_u1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_mayor_d0: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_mayor_d1: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_mayor_s0: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_mayor_s1: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_mayor_u0: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_mayor_u1: ['#ffd68c', '#1884ff', '#1884ff', '#000000'],
+  npc_walk_oldman_d0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_oldman_d1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_oldman_s0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_oldman_s1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_oldman_u0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  npc_walk_oldman_u1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   npc_zelda: ['#ffd38c', '#ff0829', '#000000', '#000000'],
 };
 

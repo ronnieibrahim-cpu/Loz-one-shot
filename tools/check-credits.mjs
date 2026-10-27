@@ -7,7 +7,11 @@
 //   2. every line fits the screen (20 letters) and every character in it is
 //      in the cartridge's lettering or among the drawn digits — a missing
 //      one would simply not be drawn, a gap nobody notices;
-//   3. the ink is a heading's or a name's.
+//   3. the ink is a heading's or a name's;
+//   8. (S214) every one of a scene's people is a sprite the game has, in all
+//      its frames, and stands where the engine's own `canOccupy` (and the
+//      NPC's `terrainOk`, if it has one) lets it stand on its screen at every
+//      sea, with the rest of the scene's people about it.
 // In the engine:
 //   4. the ending's last beat goes to the credits, not straight to THE END;
 //   5. the roll plays every part in order and hands over to THE END, inside a
@@ -15,7 +19,10 @@
 //   6. while a scene is up nothing in the world moves (the player is not
 //      drawn and the frame count is all that advances);
 //   7. THE END is the cartridge's sunset, holds THE_END_HOLD_FRAMES against a
-//      button, and then A goes to the title; the save says the game is finished.
+//      button, and then A goes to the title; the save says the game is finished;
+//   9. (S214) in each scene everyone who wanders does walk, and stays on the
+//      screen; the scene walks the same way twice; and the roll draws nothing
+//      from the game's own random stream.
 //
 // Usage: node tools/check-credits.mjs
 
@@ -42,7 +49,7 @@ check('every character in the roll is in the lettering or the drawn digits', !ba
 const long = lines.filter(([, t]) => t.length > 20);
 check('every line fits the screen (20 letters)', !long.length, JSON.stringify(long));
 check('every line is a heading (c) or a name (w)', lines.every(([k]) => k === 'c' || k === 'w'));
-check('the roll alternates a place and names, four of each', CREDITS_ROLL.length === 8
+check('the roll alternates a place and names, eight of each', CREDITS_ROLL.length === 16
   && CREDITS_ROLL.every((p, i) => (i % 2 ? !!p.names : !!p.scene)));
 check('only the last roll scrolls the sky', CREDITS_ROLL.filter(p => p.sky).length === 1 && CREDITS_ROLL.at(-1).sky);
 
@@ -73,6 +80,52 @@ const r = await page.evaluate(async (roll) => {
     fill: (!!getRoom('overworld', f, x, y - 1) && !!getRoom('overworld', f, x + 1, y - 1))
       || (!!getRoom('overworld', f, x, y + 1) && !!getRoom('overworld', f, x + 1, y + 1)),
   }));
+  // 8, 9. The people of each scene, on the credits' own stages.
+  const { creditsStage } = await import('/src/game/credits.js');
+  const { canOccupy } = await import('/src/game/entity.js');
+  const { sprites } = await import('/src/gfx/art.js');
+  const { CREDITS_SCENE_FRAMES, CREDITS_FADE } = await import('/src/data/feel.js');
+  out.cast = [];
+  const walk = (i, dx, room) => {
+    const st = creditsStage(g, i, dx, room);
+    const start = st.entities.map(e => [e.x, e.y]);
+    const span = CREDITS_SCENE_FRAMES + CREDITS_FADE[0] + CREDITS_FADE[1] + CREDITS_FADE[2];
+    let off = false;
+    for (let f = 0; f < span; f++) {
+      st.frame++;
+      for (const e of st.entities) {
+        e.update(st);
+        const r = e.rect();
+        if (r.x < 0 || r.y < 0 || r.x + r.w > room.pw || r.y + r.h > room.ph) off = true;
+      }
+    }
+    return { st, start, end: st.entities.map(e => [e.x, e.y]), off };
+  };
+  CREDITS_ROLL.forEach((p, i) => {
+    if (!p.scene) return;
+    const [f, x, y] = p.scene;
+    for (const dx of [0, 1]) {
+      const room = getRoom('overworld', f, x + dx, y);
+      const st = creditsStage(g, i, dx, room);
+      for (const e of st.entities) {
+        const names = e.frames ? Object.values(e.frames).flat() : [e.sprite];
+        const missing = names.filter(n => !sprites.has(n));
+        const bad = [0, 1, 2].filter(lv => {
+          st.tide = lv;
+          return !canOccupy(st, e, e.x, e.y) || (e.terrainOk && !e.terrainOk(st, e.x, e.y));
+        });
+        out.cast.push({ at: `${p.scene} screen ${dx} (${e.x / 16},${e.y / 16}) ${e.sprite}`, missing, bad });
+      }
+      const a = walk(i, dx, room), b = walk(i, dx, room);
+      const moved = a.st.entities.map((e, k) => !e.wander || a.start[k].join() !== a.end[k].join());
+      out.walks = out.walks || [];
+      out.walks.push({ at: `${p.scene} screen ${dx}`, n: a.st.entities.length,
+        allWalk: moved.every(Boolean), off: a.off, who: a.st.entities.map((e, k) => e.sprite + (moved[k] ? "" : "!")).join(" "), same: a.end.join(';') === b.end.join(';') });
+    }
+  });
+  const { rng } = await import('/src/core/rng.js');
+  out.drawsBefore = rng.draws;
+
   // 4. The ending's last beat, played on its own.
   g.mode = 'play'; g.dialogue.active = false;
   g.startCutscene('ending');
@@ -83,13 +136,15 @@ const r = await page.evaluate(async (roll) => {
   g.input._raw.a = false;
   out.afterEnding = g.mode;
   // 5, 6.
+  out.drawsStart = rng.draws;
   const seen = []; let frames = 0;
   const px = g.player ? [g.player.x, g.player.y] : null;
-  while (g.mode === 'credits' && frames < 8000) {
+  while (g.mode === 'credits' && frames < 12000) {
     if (!seen.includes(g.credits.part)) seen.push(g.credits.part);
     h.step(1); frames++;
   }
   out.seen = seen; out.frames = frames; out.mode = g.mode;
+  out.drawsCredits = rng.draws;
   out.playerStill = !px || (g.player.x === px[0] && g.player.y === px[1]);
   // 7. Past the fade in from white, still inside the hold.
   for (let i = 0; i < 30; i++) h.step(1);
@@ -110,9 +165,19 @@ for (const s of r.scenes) {
   check(`scene ${s.at}: two screens side by side`, s.pair);
   check(`scene ${s.at}: a row of screens above or below fills the top strip`, s.fill);
 }
+for (const c of r.cast) {
+  check(`${c.at}: every frame is a sprite the game has`, !c.missing.length, c.missing.join());
+  check(`${c.at}: stands where the engine lets it at every sea`, !c.bad.length, 'not at ' + c.bad.join());
+}
+for (const w of r.walks.filter(w => w.n)) {
+  check(`${w.at}: everyone who wanders walks, and stays on the screen`, w.allWalk && !w.off, w.who + (w.off ? " off" : ""));
+  check(`${w.at}: walks the same way twice`, w.same);
+}
+check('the roll draws nothing from the game\'s random stream', r.drawsCredits === r.drawsStart,
+  `${r.drawsStart} -> ${r.drawsCredits}`);
 check('the ending\'s last beat goes to the credits', r.afterEnding === 'credits', r.afterEnding);
 check(`the roll plays every part in order (${r.seen.join(',')})`, r.seen.join() === CREDITS_ROLL.map((_, i) => i).join());
-check(`and hands over to THE END (${r.frames} frames)`, r.mode === 'theend' && r.frames < 8000, r.mode);
+check(`and hands over to THE END (${r.frames} frames)`, r.mode === 'theend' && r.frames < 12000, r.mode);
 check('nothing in the world moves under the roll', r.playerStill);
 check('THE END is the cartridge\'s sunset (orange in the middle)', r.sunset[0] > 150 && r.sunset[2] < 120, JSON.stringify(r.sunset));
 check('a button straight away does not leave THE END', r.earlyA === 'theend', r.earlyA);
