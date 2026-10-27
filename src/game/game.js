@@ -31,7 +31,7 @@ import { Input } from '../core/input.js';
 import { audio } from '../core/audio.js';
 import { tiles as tileSheet, sprites } from '../gfx/art.js';
 import { TINTS } from '../gfx/palettes.js';
-import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
+import { drawText, textWidth } from '../gfx/font.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } from '../world/maps.js';
@@ -57,6 +57,7 @@ import { ERRANDS } from '../data/errands.js';
 import { keyByFlag, keyFor, migrateKeys } from '../data/keys.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
 import { Title } from './title.js';
+import { Credits } from './credits.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
 import { sp } from '../core/fixed.js';
@@ -69,7 +70,7 @@ import {
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
   DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES,
-  GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
+  GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
   LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
@@ -1994,6 +1995,19 @@ export class Game {
     this.save();
   }
 
+  /**
+   * THE CREDITS (S213), between the ending's last line and THE END: Seasons'
+   * staff roll with our places and names (src/game/credits.js). The run is
+   * saved as it starts, so a player who switches off during the roll has
+   * still finished the game; the roll then hands over to THE END.
+   */
+  enterCredits() {
+    this.mode = 'credits';
+    this.credits = new Credits(this);
+    this.dialogue.active = false;
+    this.save();
+  }
+
   startGaleWarp() {
     const spots = [{ name: 'Tidewatch Village', map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64 }];
     for (const m of MAPS.values()) {
@@ -2208,6 +2222,9 @@ export class Game {
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
+      case 'credits':
+        if (this.credits.update()) { this.credits = null; this.enterTheEnd(); }
+        return;
       case 'theend':
         this.endTime++;
         if (this.endTime > THE_END_HOLD_FRAMES
@@ -2230,7 +2247,7 @@ export class Game {
         if (this.cutscene) {
           const done = this.cutscene.update();
           if (done && this._theEnd) {
-            this._theEnd = false; this.cutscene = null; this.enterTheEnd();
+            this._theEnd = false; this.cutscene = null; this.enterCredits();
             return;
           }
           if (done) {
@@ -2694,12 +2711,18 @@ export class Game {
   draw() {
     const ctx = this.ctx;
     if (this.mode === 'title') { this.title.draw(ctx); return; }
+    if (this.mode === 'credits') {
+      this.credits.draw(ctx);
+      const w = this.credits.whiteness();
+      if (w > 0) this.screen.fade(w, true);
+      return;
+    }
     if (this.mode === 'theend') {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-      drawTextCentered(ctx, 'The Legend of Zelda', SCREEN_W / 2, 48, '#f8f8f8');
-      drawTextCentered(ctx, 'Oracle of Tides', SCREEN_W / 2, 60, '#f8f8f8');
-      drawTextCentered(ctx, 'THE END', SCREEN_W / 2, 84, '#f8d850');
+      // Seasons' own sunset (GFXH_CREDITS_THE_END), coming in from the
+      // credits' white (stage3 state0, fadeinFromWhiteWithDelay).
+      drawScreen(ctx, 'creditsTheEnd', 0, 0);
+      const fin = CREDITS_FADE[2];
+      if (this.endTime < fin) this.screen.fade(1 - this.endTime / fin, true);
       return;
     }
 

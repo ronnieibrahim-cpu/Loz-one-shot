@@ -1147,6 +1147,35 @@ export const GAMEOVER_PICK_FRAMES = 30;
  *  the A that closed the ending's last line cannot also skip the card. guessed. */
 export const THE_END_HOLD_FRAMES = 90;
 
+// THE CREDITS (S213). Seasons' staff roll (code/seasons/cutscenes/
+// endgameCutscenes.s): places of the world between rolls of names in its
+// own lettering over its own sky, then the THE END sunset (tools/rip-ending.py).
+
+/** [f, f, f] — between one part of the credits and the next: out to white,
+ *  white, back in. derived: the credits go part to part by fadeoutToWhite and
+ *  fadeinFromWhite, the calls the stairs use, whose timing STAIRS_FADE measured. */
+export const CREDITS_FADE = [27, 31, 27];
+
+/** f — how long one of our places is held in the credits while it pans.
+ *  guessed (Seasons' scenes run until their characters finish walking). */
+export const CREDITS_SCENE_FRAMES = 320;
+
+/** px/f — a place pans sideways at this speed while it is held. guessed. */
+export const CREDITS_PAN_SPEED = 0.5;
+
+/** px/f — the names rise up the screen at this speed. derived:
+ *  creditsTextVertical.s gives each line SPEED_80, half of Link's SPEED_100. */
+export const CREDITS_TEXT_SPEED = 0.5;
+
+/** px — from one line of names to the next. guessed (Seasons spaces its
+ *  lines by a table of spawn delays, creditsTextVertical.s @data_66bc). */
+export const CREDITS_LINE_SPACING = 20;
+
+/** f — the sky behind the last roll of names moves down one pixel every this
+ *  many frames until it reaches the forest. derived: endgameCutscenes.s
+ *  stage2 state7 steps SCY by one each time $cbb3 counts down from 4. */
+export const CREDITS_SKY_STEP_FRAMES = 4;
+
 // THE LOW-HEALTH PULSE.
 //
 // The game had no low-health warning at all — the one piece of feedback in
