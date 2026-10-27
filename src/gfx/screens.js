@@ -11,8 +11,9 @@ import { SAVE_SCREENS } from '../data/screens-save.js';
 import { MENU_SCREENS } from '../data/screens-menu.js';
 import { MAP_SCREENS } from '../data/screens-map.js';
 import { MAP_DRAWN } from '../data/sprites-map-drawn.js';
+import { ENDING_SCREENS } from '../data/screens-ending.js';
 
-const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS, ...SAVE_SCREENS, ...MENU_SCREENS, ...MAP_SCREENS, ...MAP_DRAWN };
+const ALL = { ...SEASONS_SCREENS, ...INTRO_SCREENS, ...SAVE_SCREENS, ...MENU_SCREENS, ...MAP_SCREENS, ...MAP_DRAWN, ...ENDING_SCREENS };
 
 const KEYS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const cache = new Map();

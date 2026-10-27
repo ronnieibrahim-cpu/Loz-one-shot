@@ -35,7 +35,8 @@
 //      slate; with no slate it says so;
 //   7. the last slate sinks the dais and stands the stair up at `opens`, and
 //      the stair goes on; a save and a load keeps every slate in and the dais
-//      down.
+//      down;
+//   8. the inventory's second page shows the slates in hand, as Ages does.
 //
 // Usage: node tools/check-slates.mjs
 //        node tools/check-slates.mjs --mock spec.json   (model only: spec
@@ -293,6 +294,20 @@ if (BUILT.length) {
     const to = w && `${w.to.map} ${w.to.floor},${w.to.rx},${w.to.ry}`;
     check(`${tag}: the stair takes Link on (${to})`, !!w && up.room === to, JSON.stringify(up));
   }
+  // 8. The inventory counts them as Ages does (S213): TREASURE_SLATE's place
+  // on page 2, the tablet and "x" and the count, while any are in hand.
+  const inv = await page.evaluate(() => {
+    const g = window.__game, out = {};
+    for (const n of [0, 1, 4]) {
+      g.progress.slates = n;
+      const t = g.menu.treasures[9];
+      out[n] = t && { icon: t.icon, times: t.times };
+    }
+    return out;
+  });
+  check('the inventory shows the slates in hand on page 2, as "x" and a count',
+    inv[1] && inv[1].icon === 'p_slate' && inv[1].times === 1 && inv[4] && inv[4].times === 4, JSON.stringify(inv));
+  check('and nothing there with none in hand', inv[0] == null, JSON.stringify(inv));
   check('no console errors in the engine half', !errors.length, errors[0]);
   await browser.close(); server.close();
 }

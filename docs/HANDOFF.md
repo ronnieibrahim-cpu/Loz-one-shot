@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A guide shot's `plus` counts on from the shot before it (S213).**
+  capture.mjs pumps from wherever the last shot left the run, so a scan of
+  `plus` values listed after the real shot all land on the same late frame.
+  Put the scan shots BEFORE the real one, as small steps.
+- **remap-guide follows directives, not rooms (S213).** When a door moves
+  (the Keep's boss door went from the Stairhead to the Keep Gate), the
+  remapped shot lands a room early and still renders. Read each moved shot's
+  room name in the capture log.
+- **The input's `held` is rewritten from `_raw` every frame (S213).** A
+  checker that sets `g.input.held.a` presses nothing; set `g.input._raw.a`.
+
 - **The Dredge Line drags far end first, so two shafts in line are one
   cast (S212).** The first slate shafts stood in the same row as old ones a
   few tiles apart, and a cast over the old well fished the slate under the

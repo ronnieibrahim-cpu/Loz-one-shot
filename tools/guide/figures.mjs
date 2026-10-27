@@ -287,7 +287,7 @@ const chestFrom = (tx, ty, side) => {
 };
 FIGURES.push(
   { out: 'ow-leg3', scale: 1, map: { rooms: ow(range(1, 15), range(5, 8)) }, marks: [
-    { trail: { from: 456, to: 491, every: 8 }, w: 3 },
+    { trail: { from: 462, to: 497, every: 8 }, w: 3 },
     { n: 1, at: [2, 7, 8, 2] }, { n: 2, at: [1, 8, 4, 2] },
   ] },
   { out: 'ow3-bomb', src: 'ow3-causeway-whole', marks: [
@@ -356,7 +356,7 @@ FIGURES.push(
   { out: 'd3-bogmaw', src: 'd3-bogmaw-whole', marks: [{ ring: [7, 5], r: 16 }, lbl('Bogmaw', [7, 6.2])] },
   { out: 'd3-roof', src: 'd3-roof-whole', marks: [{ ring: [7, 5] }, lbl('Piece of Heart', [7, 6])] },
   { out: 'd3-drain', src: 'd3-drain-whole', marks: [{ ring: [14, 5] }, lbl('locked: the\nGallery\'s key', [13, 3.6], 'w'),
-    { trail: { from: 708, to: 720, every: 8 }, w: 4 }, { ring: [7, 8] }, lbl('fairy', [7, 9.2], 's'),
+    { trail: { from: 714, to: 726, every: 8 }, w: 4 }, { ring: [7, 8] }, lbl('fairy', [7, 9.2], 's'),
   ] },
   { out: 'd3-soundpool', src: 'd3-soundpool-sink-whole', scale: 2, marks: [
     { ring: [14, 5] }, lbl('plate on the bottom:\nsink onto it', [14, 3.2], 'n'), { ring: [22, 10] }, lbl('opens this door', [21, 9.3], 'w'),
@@ -367,7 +367,7 @@ FIGURES.push(
     { ring: [11, 3] }, lbl('key', [11, 2.2], 'n'),
   ] },
   { out: 'd3-kelp', src: 'd3-kelp-whole', scale: 2, marks: [
-    { trail: { from: 793, to: 799, every: 10 }, w: 4 }, lbl('swim with the current,\nthen sink for the last stretch', [14, 5], 'c'),
+    { trail: { from: 799, to: 805, every: 10 }, w: 4 }, lbl('swim with the current,\nthen sink for the last stretch', [14, 5], 'c'),
   ] },
   { out: 'd3-lockgallery', src: 'd3-lockgallery-whole', marks: [
     { ring: [2, 5] }, lbl('plate: opens the shortcut', [2.8, 5], 'e'), { ring: [7, 0] }, lbl('boss door', [8, 0.3], 'e'),
@@ -377,7 +377,7 @@ FIGURES.push(
 
   // ---------------------------------------------------------- road to D4
   { out: 'ow-leg4', scale: 1, map: { rooms: ow(range(1, 4), range(3, 8)) }, marks: [
-    { trail: { from: 834, to: 865, every: 8 }, w: 3 },
+    { trail: { from: 840, to: 871, every: 8 }, w: 3 },
     { n: 1, at: [3, 4, 9, 4] }, { n: 2, at: [1, 3, 6, 2] },
   ] },
   { out: 'ow4-deepcut', src: 'ow4-deepcut-whole', marks: [{ ring: [8, 4] }, lbl('rockfall: bomb it from the right', [8, 5.2])] },
@@ -469,7 +469,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D5
   { out: 'ow5-noble', src: 'ow5-noble' },
   { out: 'ow-leg5', scale: 1, map: { rooms: ow(range(1, 9), range(3, 7)) }, marks: [
-    { trail: { from: 1175, to: 1197, every: 8 }, w: 3 },
+    { trail: { from: 1181, to: 1203, every: 8 }, w: 3 },
     { n: 1, at: [3, 7, 3, 2] }, { n: 2, at: [5, 4, 4, 3] },
   ] },
 
@@ -546,7 +546,7 @@ FIGURES.push(
   // ---------------------------------------------------------- road to D6
   { out: 'ow6-rod', src: 'ow6-rod' },
   { out: 'ow-leg6', scale: 1, map: { rooms: ow(range(1, 4), range(0, 7)) }, marks: [
-    { trail: { from: 1805, to: 1827, every: 8 }, w: 3 },
+    { trail: { from: 1811, to: 1833, every: 8 }, w: 3 },
     { n: 1, at: [4, 7, 4, 1] }, { n: 2, at: [3, 4, 9, 4] }, { n: 3, at: [1, 0, 4, 3] },
   ] },
 
@@ -602,6 +602,15 @@ FIGURES.push(
     { ring: [27, 3] }, { ring: [23, 1] }, lbl('the Weighhouse\'s chunk, onto the far plate', [24, 6.4], 'c', 14), { ring: [21, 5] }, lbl('Boss Key', [21, 7], 's', 14), HIGH,
   ] },
   { out: 'd6-brinehulk', src: 'd6-brinehulk-fight' },
+  { out: 'd6-tally-slate', src: 'd6-tally-slate-whole', marks: [
+    { ring: [9, 1] }, { ring: [3, 7] }, { ring: [6, 9] }, lbl('MID: cast down each new well\nand a slate comes up', [7, 4.6], 'c'), MID,
+  ] },
+  { out: 'd6-stairhead', src: 'd6-stairhead-whole', marks: [
+    { ring: [7, 3] }, lbl('HIGH', [7, 1.6], 'c'), { ring: [3, 5] }, lbl('HIGH', [1.6, 5], 'c'),
+    { ring: [11, 5] }, lbl('LOW', [13.4, 5], 'c'), { ring: [7, 7] }, lbl('MID', [9, 8], 'c'),
+  ] },
+  { out: 'd6-slot-low', src: 'd6-slot-low-whole', marks: [lbl('dry at LOW: the east slot\nis level with you', [7, 9.4], 'c'), LOW] },
+  { out: 'd6-dais', src: 'd6-dais-whole', marks: [{ ring: [7, 5] }, lbl('the King\'s stair', [10, 6.3], 'c')] },
   { out: 'd6-nereth-intro', src: 'd6-nereth-intro' },
   { out: 'd6-nereth-a', src: 'd6-nereth-a' },
   { out: 'd6-nereth-b', src: 'd6-nereth-b' },

@@ -3832,7 +3832,7 @@ export const ROUTE = [
   // it the way a player does: every page turned as it comes, until the game
   // holds its THE END card (S138 — `dialogue` + `wait` only ever got there on
   // timing).
-  ['ending', 8000],
+  ['ending', 14000],
   ['wait', 120],
 ];
 

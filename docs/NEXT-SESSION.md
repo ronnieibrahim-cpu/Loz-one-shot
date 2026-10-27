@@ -1,3 +1,64 @@
+## S213 — the slate count, the guide's Keep re-shot, the staff roll
+
+Branch claude/oracle-tides-puzzle-followup-w9dbpi, off main at d86d11b (S212).
+
+### The human's choices this session
+- The Lens in the Eye Hall: LEAVE IT (no bigger tell than the cartridge's
+  one-pixel look).
+- The slate count on the inventory: YES, like Ages.
+- What next: a fresh look-through against the originals. Its one real gap was
+  the ending (a plain text card); the human chose a Seasons-style CREDITS ROLL:
+  our places instead of Seasons' four story cards (those are Seasons' story),
+  credited as RONNIE with Claude, the ending's own tune playing on (not
+  Seasons' credits music), and digits drawn to match the lettering (Tails585).
+
+### Built
+- SLATE COUNT: menu.js `treasures` place 9 (Ages' TREASURE_SLATE place $3d,
+  end of the middle row): icon `p_slate` (the same tablet as Ages' inventory
+  icon $ec, spr_quest_items_3 column 12, palette 3) with `times` drawn as
+  `hud_x` + one digit (drawTreasureExtraTiles @val04). Only while slates > 0.
+  check-slates clause 8 (47 assertions).
+- GUIDE: remap-guide 3ae9f8b; whole run re-captured; d6-stairhead / nereth
+  set by hand (the remap put them a room early: the boss door moved); new
+  figures d6-tally-slate, d6-stairhead, d6-slot-low, d6-dais; Slack Water slate
+  in the text; Tideshade and late-Nereth fight shots re-timed (both showed an
+  empty room). `plus` counts on from the shot before (cumulative pump), so a
+  timing scan is a run of small `plus` steps placed BEFORE the real shot.
+  docs/guide/README.md S213.
+- THE STAFF ROLL (src/game/credits.js, src/data/credits.js): after the
+  ending's last line, Game.enterCredits (mode 'credits', saved) plays four
+  parts of each: a place (two overworld screens panned at CREDITS_PAN_SPEED for
+  CREDITS_SCENE_FRAMES, the row above/below filling the top 16 px; Tidewatch
+  0,4,7, Fishing Stones 0,4,9, Sandpiper Row 0,12,8, Gate of the Keep 0,1,0)
+  and a roll of names in Seasons' credits lettering rising at
+  CREDITS_TEXT_SPEED over Seasons' credits sky (the last roll scrolls the sky
+  to the forest, one px per CREDITS_SKY_STEP_FRAMES); parts joined by
+  CREDITS_FADE white fades; then 'theend' draws Seasons' THE END sunset
+  (fading in from white) and holds as before. The old "THE END" text beat is
+  gone from the ending cutscene. About 4320 frames.
+- ART: tools/rip-ending.py -> src/data/screens-ending.js (creditsSky 160x256,
+  creditsTheEnd, creditsFontW/C, CREDITS_GLYPHS 'A-Z.·-~', CREDITS_INKS) from
+  assets/ending/oracles-disasm/seasons/ (README; GFXH_CREDITS_SCROLL +
+  PALH_SEASONS_a0, GFXH_CREDITS_THE_END + PALH_SEASONS_a9). Digits 0-9 DRAWN
+  to match in src/data/sprites-credits-drawn.js (shown to the human).
+  check-rippers covers rip-ending.
+- tools/check-credits.mjs (22 assertions). Route: `['ending', 14000]` (the
+  roll needs the frames).
+
+### Verified
+Whole table green (67 tools incl. check-credits 22/22); check-playthrough 49/49, THE END, never died; test.mjs 139/139; check-rippers 47/47 alone. Guide d6-end re-shot (the sunset, `plus: 40` past the fade in).
+
+### Tried and dropped / not taken
+- Seasons' credits story cards (Din's troupe, Onox...) — Seasons' story.
+- Seasons' credits music — the human chose our ending tune.
+
+### NEXT (S214)
+- Ask the human how the roll feels now they have seen it (pace, which places,
+  the lines). Seasons' scenes have people walking in them; ours are empty
+  landscapes panning — townsfolk could be drawn in (a design question).
+- Other look-through candidates were checked and are faithful (the Keep's
+  flat orange rock is the Sword & Shield Maze's own).
+
 ## S212 — the Keep's slate slots built
 
 Branch claude/abyssal-keep-slate-slots-ebi2pw, off main at c1170ec (S211).

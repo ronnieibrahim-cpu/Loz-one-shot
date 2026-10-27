@@ -67,3 +67,15 @@ now. The route grew by 48 directives; `node tools/oneshot/remap-guide.mjs
 HEAD` moved the numbers, then the D4 floor, spill and gauge shots were set
 by hand and a `d4-spill` figure added. `d2-glass-lens` and `d4-easttank-key`
 still MISS, as before, and keep their old pictures.
+
+## S213: the Keep re-shot after the slates
+
+`node tools/oneshot/remap-guide.mjs 3ae9f8b` (where the numbers were last
+right, S210) moved the numbers over S211-S212's 26 new directives; then the
+whole run was re-captured. The Stairhead and Nereth shots were set by hand (the
+boss door moved to the Keep Gate, so the remap put them a room early), and four
+figures are new: `d6-tally-slate`, `d6-stairhead`, `d6-slot-low`, `d6-dais`.
+Two fight shots were re-timed by a scan: the Tideshade (`plus` counts on from
+the shot before it, so a scan is a run of small `plus` steps) and Nereth's
+later phase, because the fight is now over before the old 900 frames.
+`d2-glass-lens` and `d4-easttank-key` still MISS and keep their old pictures.
