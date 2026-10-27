@@ -28755,8 +28755,9 @@ class Menu {
   /**
    * Page 2's treasures, by place: the six dungeon keys held (the first five
    * across the top row, the sixth starting the second), the Coastwise Chain's
-   * object in hand, and the scrimshaw — the charms owned and the blanks
-   * carried. Each `{ icon, pal?, count?, name, desc }`, or null where there
+   * object in hand, the scrimshaw — the charms owned and the blanks
+   * carried — and the Keep's slates in hand. Each `{ icon, pal?, count?,
+   * times?, name, desc }`, or null where there
    * is nothing. Seasons gives every treasure a fixed place; so does this.
    */
   get treasures() {
@@ -28775,6 +28776,16 @@ class Menu {
         icon: 'i_charm', pal: 'i_charm', count: p.blanks || 0,
         name: `Scrimshaw ${owned}/${CHARM_COUNT}`,
         desc: `Blanks carried: ${p.blanks || 0}.${carving}`,
+      };
+    }
+    // The Abyssal Keep's slates (S213), where Ages keeps TREASURE_SLATE: the
+    // last place of the middle row ($3d in subscreen1TreasureData), its icon
+    // the same Ancient Tomb tablet ($ec, palette 3) the Hold's pickup is
+    // drawn with, and the count as "x" and one digit (display mode $04).
+    if (p.slates > 0) {
+      out[9] = {
+        icon: 'p_slate', times: p.slates, name: 'Slates',
+        desc: 'Ancient tablets. They fit the slots before the King\'s stair.',
       };
     }
     return out;
@@ -29130,6 +29141,12 @@ class Menu {
         const n = Math.max(0, Math.min(99, t.count));
         sprites.draw(ctx, 'hud_d' + Math.floor(n / 10), x + 8, y + 8);
         sprites.draw(ctx, 'hud_d' + (n % 10), x + 16, y + 8);
+      }
+      if (t.times != null) {
+        // drawTreasureExtraTiles @val04: the 'x' where a count's tens would
+        // be and the one digit after it.
+        sprites.draw(ctx, 'hud_x', x + 8, y + 8);
+        sprites.draw(ctx, 'hud_d' + Math.max(0, Math.min(9, t.times)), x + 16, y + 8);
       }
     });
 
