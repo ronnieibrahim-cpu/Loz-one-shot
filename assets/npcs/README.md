@@ -17,3 +17,9 @@ and standard sprite palette 0 (the tables are read from
 |---|---|---|
 | `spr_farore_ralph.png` | `gfx_compressible/seasons/` | Farore, both frames of her sway |
 | `spr_springflower_makuleaf_farorebook.png` | `gfx_compressible/seasons/` | Farore's book on her desk (INTERAC $1c, object gfx $51, S168) |
+| `spr_boy.png`, `spr_ruul_wiseman.png`, `spr_oldshopkeeper_gardener_villager.png` | `gfx_compressible/seasons/` | the walking townsfolk in the credits' scenes (S214): the boy ($3e, base $10, palette 1) and the lad ($bc, base $00), the wise old man ($38, base $10) and the mayor ($24, base $00, palette 1), the treasure hunter ($39, palette 2) |
+| `spr_zelda_1.png` | `gfx_compressible/common/` | the walking townsfolk: Holly ($70, base $00) |
+
+The walkers all use the four-way walk Seasons' townsfolk share,
+`interaction3eOamDataPointers` (two frames each up, right, down, left, each held
+$10), read from `assets/effects/oracles-disasm/seasons/`; `rip-npcs.py` WALKERS.

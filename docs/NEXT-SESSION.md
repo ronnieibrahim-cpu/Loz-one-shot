@@ -1,3 +1,51 @@
+## S214 — the credits get more places and their people
+
+Branch claude/oracle-tides-credits-feedback-ha8dtt, off main at f4325a3 (S213).
+
+### The human's choices this session
+- Shown the S213 roll as a clip with its music: PACE just right; PLACES add
+  more; TOWNSFOLK yes, walking about (as Seasons' scenes have people); the
+  LINES are fine (unchanged — S214 only splits them into more rolls).
+
+### Built
+- WALKING TOWNSFOLK from the cartridge (tools/rip-npcs.py WALKERS ->
+  src/data/sprites-npcs.js npc_walk_<who>_<d|u|s><0|1>): boy ($3e subid $10,
+  spr_boy base $10 pal 1), lad ($bc, spr_boy $00), oldman ($38,
+  spr_ruul_wiseman $10), mayor ($24, $00 pal 1), hunter ($39,
+  spr_oldshopkeeper_gardener_villager pal 2), holly ($70, spr_zelda_1). All in
+  the shared four-way walk interaction3eOamDataPointers (up, right, down,
+  left; right kept as _s, left mirrored). The flooded house girl and the
+  fountain lady were tried and dropped: their tile bases run past their own
+  PNG (they borrow tiles from another header). PNGs in assets/npcs (README).
+  Sprite manifest has them. CREDITS_WALK_FRAME_FRAMES = 16 (derived, $10).
+- THE ROLL (src/data/credits.js): eight places — Tidewatch Village 0,4,7,
+  Tidewatch Square 0,6,7, Fishing Stones 0,4,9, Bog Trees/Wood Heart 0,4,5,
+  Coral Hollow 0,12,5, Sandpiper Row 0,12,8, Sunken Cove 0,15,9, Gate of the
+  Keep 0,1,0 (empty) — and eight rolls (the S213 lines split; the last, AFTER
+  ... BY NINTENDO CAPCOM ... THANKS FOR PLAYING, stays long so the sky still
+  reaches the forest). Each scene's `cast`: [screen, tx, ty, who, opts], `who`
+  `walk:<name>` or one of our peoples' sprites (salter, brine, reefkin,
+  hood, fisher), as Seasons loads a cast per scene (getEntryFromObjectTable1).
+- src/game/credits.js `creditsStage`: one private stage per screen (the room,
+  the game's sea, the cast, a Stream from hash32('credits', part, screen),
+  dialogue off) — what NPC.update/moveEntity/canOccupy read. Real NPCs, real
+  collision, nothing reaches the run. Cast carry `avoidFlags = DRY_LAND`
+  (water, deep, pit, hazard): an NPC otherwise wades into ponds.
+- About 7280 frames of roll now (was ~4320): ~2 minutes.
+- check-credits 97 assertions: every cast frame exists; each stands where
+  canOccupy lets it at every sea; wanderers walk and stay on screen; the same
+  twice; the roll draws nothing from the game's rng; bound 12000 frames.
+
+### Verified
+(see the commit message)
+
+### Not done / candidates
+- Our towns' own wanderers still have one still picture and wade into water;
+  they could be given the walking townsfolk (a design question — they are our
+  peoples, not Seasons' villagers).
+- The short rolls leave the sky empty for a few seconds each; if the human
+  finds it slow, CREDITS_TEXT_SPEED or fewer/longer rolls.
+
 ## S213 — the slate count, the guide's Keep re-shot, the staff roll
 
 Branch claude/oracle-tides-puzzle-followup-w9dbpi, off main at d86d11b (S212).

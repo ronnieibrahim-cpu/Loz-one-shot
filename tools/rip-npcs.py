@@ -120,32 +120,87 @@ def cartridge_npc(interaction, gfx):
     pi = (b2 >> 4) & 7
     pal = [tuple((c << 3) | (c >> 2) for c in rgb) for rgb in cols[pi * 4:pi * 4 + 4]]
     im = Image.open(os.path.join(NPC_GFX, gfx))
-    per_row = im.size[0] // 8
     out, seen = [], set()
     for k in seq:
         if k in seen:
             continue
         seen.add(k)
-        body = [l for l in _after(io, ptrs[k]) if l.strip()]
-        entries = [_dbs(body[1 + i]) for i in range(_dbs(body[0])[0])]
-        grid = [[0] * 16 for _ in range(16)]
-        for y, x, t, f in reversed(entries):
-            spr = ((b1 + t) & 0xff) // 2
-            col, row = spr % per_row, spr // per_row
-            for yy in range(16):
-                for xx in range(8):
-                    sx = 7 - xx if f & 0x20 else xx
-                    sy = 15 - yy if f & 0x40 else yy
-                    v = im.getpixel((col * 8 + sx, row * 16 + sy))
-                    if v:
-                        grid[y - 8 + yy][x + xx] = v
-        used = sorted({v for r in grid for v in r if v},
-                      key=lambda v: -(3 * pal[v][0] + 6 * pal[v][1] + pal[v][2]))
-        digit = dict(zip(used, '013' if len(used) == 3 else '03'))
-        inks = {d: '#%02x%02x%02x' % pal[v] for v, d in digit.items()}
-        mid = inks.get('1', inks['0'])
-        ramp = [inks['0'], mid, mid, inks['3']]
-        out.append(([''.join(digit[v] if v else '.' for v in r) for r in grid], ramp))
+        out.append(_oam_cell(io, ptrs[k], b1, im, pal))
+    return out
+
+
+def _sprite_palette(pi):
+    """Standard sprite palette `pi`, as 8-bit RGB."""
+    pl = _lines('paletteData.s')
+    start = pl.index('standardSpritePaletteData:') + 1
+    cols = []
+    for l in pl[start:]:
+        m = re.search(r'm_RGB16 \$(\w+) \$(\w+) \$(\w+)', l)
+        if m:
+            cols.append(tuple(int(m.group(k), 16) for k in (1, 2, 3)))
+    return [tuple((c << 3) | (c >> 2) for c in rgb) for rgb in cols[pi * 4:pi * 4 + 4]]
+
+
+def _oam_cell(io, ptr, b1, im, pal):
+    """(rows, ramp): one oam frame drawn into a 16x16 cell, the object's
+    position at (8, 8), with its own colours quantised light to dark."""
+    per_row = im.size[0] // 8
+    body = [l for l in _after(io, ptr) if l.strip()]
+    entries = [_dbs(body[1 + i]) for i in range(_dbs(body[0])[0])]
+    grid = [[0] * 16 for _ in range(16)]
+    for y, x, t, f in reversed(entries):
+        spr = ((b1 + t) & 0xff) // 2
+        col, row = spr % per_row, spr // per_row
+        for yy in range(16):
+            for xx in range(8):
+                sx = 7 - xx if f & 0x20 else xx
+                sy = 15 - yy if f & 0x40 else yy
+                v = im.getpixel((col * 8 + sx, row * 16 + sy))
+                if v:
+                    grid[y - 8 + yy][x + xx] = v
+    used = sorted({v for r in grid for v in r if v},
+                  key=lambda v: -(3 * pal[v][0] + 6 * pal[v][1] + pal[v][2]))
+    digit = dict(zip(used, '013' if len(used) == 3 else '03'))
+    inks = {d: '#%02x%02x%02x' % pal[v] for v, d in digit.items()}
+    mid = inks.get('1', inks['0'])
+    ramp = [inks['0'], mid, mid, inks['3']]
+    return [''.join(digit[v] if v else '.' for v in r) for r in grid], ramp
+
+
+# THE WALKING TOWNSFOLK (S214), for the credits' scenes, where Seasons has its
+# people going about the place. Seasons' townsfolk that walk all share one
+# oam layout, interaction3eOamDataPointers (INTERAC_MISC_BOY_NPCS and others):
+# eight frames, two a direction, in the cartridge's order up, right, down,
+# left, the second of each pair being the first's tiles swapped and mirrored
+# (or, sideways, the other foot). Right is the left frames mirrored, so only
+# up, down and right are kept: `_s` faces right and the engine mirrors it.
+# Each is a cartridge interaction's own graphics, tile base and palette
+# (interactionData.s; the graphics header named in objectGfxHeaders.s):
+#   name      INTERAC                           gfx header                    base pal
+WALKERS = {
+    'boy':    ('spr_boy.png', 0x10, 1),                              # $3e subid $10, Horon Village boy
+    'lad':    ('spr_boy.png', 0x00, 0),                              # $bc
+    'oldman': ('spr_ruul_wiseman.png', 0x10, 0),                     # $38, the wise old man
+    'mayor':  ('spr_ruul_wiseman.png', 0x00, 1),                     # $24, the mayor's house
+    'hunter': ('spr_oldshopkeeper_gardener_villager.png', 0x00, 2),  # $39, the treasure hunter
+    'holly':  ('spr_zelda_1.png', 0x00, 0),                          # $70, Holly
+}
+WALK_FRAMES = {'u': (0, 1), 's': (2, 3), 'd': (4, 5)}
+
+
+def cartridge_walkers():
+    """{sprite name: (rows, ramp)}: npc_walk_<who>_<u|d|s><0|1>."""
+    from PIL import Image
+    anims = _lines('interactionAnimations.s')
+    ptrs = _dws(anims, 'interaction3eOamDataPointers')
+    io = _lines('interactionOamData.s')
+    out = {}
+    for who, (gfx, b1, pi) in WALKERS.items():
+        im = Image.open(os.path.join(NPC_GFX, gfx))
+        pal = _sprite_palette(pi)
+        for d, ks in WALK_FRAMES.items():
+            for i, k in enumerate(ks):
+                out['npc_walk_%s_%s%d' % (who, d, i)] = _oam_cell(io, ptrs[k], b1, im, pal)
     return out
 
 
@@ -178,6 +233,9 @@ def main():
     for rows, ramp in cartridge_npc(0x1c, 'spr_springflower_makuleaf_farorebook.png'):
         art['npc_farore_book'] = rows
         pals['npc_farore_book'] = ramp
+    for name, (rows, ramp) in cartridge_walkers().items():
+        art[name] = rows
+        pals[name] = ramp
     art = dict(sorted(art.items()))
     pals = {k: pals[k] for k in art}
 
@@ -197,6 +255,12 @@ def main():
         "// animation and palette) out of Stewmath's oracles-disasm",
         '// (github.com/Stewmath/oracles-disasm, commit 21c924a); credit to that',
         '// project and its contributors.',
+        '//',
+        "// So are the walking townsfolk (npc_walk_*, S214): Seasons' own people",
+        "// who walk (spr_boy, spr_ruul_wiseman, spr_oldshopkeeper_gardener_villager,",
+        "// spr_zelda_1), each in its",
+        "// interaction's tile base and palette, in the shared four-way walk of",
+        '// interaction3eOamDataPointers, from the same disassembly.',
     ])
     emit_module('src/data/sprites-npcs.js', header, art, pals,
                 'NPC_ART', 'installNpcSprites', 'npc')

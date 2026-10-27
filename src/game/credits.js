@@ -8,19 +8,29 @@
 // sky, the lettering and the sunset are the cartridge's (tools/rip-ending.py),
 // and the digits it never drew are src/data/sprites-credits-drawn.js.
 //
-// Nothing here consumes randomness or touches the world: the scenes are drawn
-// straight from the room data, with no entities and no player, so the roll
-// plays the same whatever the run left behind in the throne room.
+// Nothing here consumes the game's randomness or touches the world: the
+// scenes are drawn straight from the room data, with no player and none of
+// the room's own entities, so the roll plays the same whatever the run left
+// behind in the throne room. The people about each place (a scene's `cast`,
+// S214) live on a STAGE of their own, one per screen: the screen's room, the
+// game's sea, the cast as the only entities and a stream of their own drawn
+// from the part's place in the roll, which is everything `NPC.update` and
+// `moveEntity` ask a game for. They walk with the engine's own collision
+// against the screen they stand on, and nothing they do reaches the run.
 
 import { CREDITS_ROLL } from '../data/credits.js';
 import { CREDITS_GLYPHS, CREDITS_INKS } from '../data/screens-ending.js';
 import { CREDITS_DIGITS, CREDITS_DIGIT_TOP } from '../data/sprites-credits-drawn.js';
 import {
   CREDITS_FADE, CREDITS_SCENE_FRAMES, CREDITS_PAN_SPEED, CREDITS_TEXT_SPEED,
-  CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES,
+  CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES, CREDITS_WALK_FRAME_FRAMES,
 } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 import { getRoom } from '../world/maps.js';
+import { NPC } from './objects.js';
+import { Stream, hash32 } from '../core/rng.js';
+import { TILE } from '../core/screen.js';
+import { F } from '../world/tileset.js';
 
 const W = 160, H = 144, GLYPH_W = 8, GLYPH_H = 16;
 const SKY_H = 256;
@@ -63,6 +73,44 @@ export function drawCreditsLine(ctx, text, ink, y) {
   }
 }
 
+/** What a credits townsperson will not stand in. */
+const DRY_LAND = F.WATER | F.DEEP | F.PIT | F.HAZARD;
+
+/** A walking townsperson's frames: Seasons' two a way (rip-npcs.py WALKERS). */
+function walkFrames(who) {
+  const f = d => [0, 1].map(i => `npc_walk_${who}_${d}${i}`);
+  return { down: f('d'), up: f('u'), side: f('s') };
+}
+
+/**
+ * The stage one screen of a scene is played on: what `NPC.update`,
+ * `moveEntity` and `canOccupy` read off a game, and only that. `part` and
+ * `screen` seed its stream, so a scene walks the same way every time.
+ */
+export function creditsStage(game, part, screen, room) {
+  const stage = {
+    room, tide: game.tide, entities: [], frame: 0,
+    rng: new Stream(hash32('credits', part, screen), `credits:${part}:${screen}`),
+    dialogue: { active: false },
+    addEntity(e) { this.entities.push(e); return e; },
+  };
+  const cast = CREDITS_ROLL[part].cast || [];
+  for (const [at, tx, ty, who, opts] of cast) {
+    if (at !== screen) continue;
+    const walker = who.startsWith('walk:') ? who.slice(5) : null;
+    const o = walker
+      ? { ...opts, sprite: `npc_walk_${walker}_d0`, frames: walkFrames(walker), rate: CREDITS_WALK_FRAME_FRAMES }
+      : { ...opts, sprite: who };
+    const e = new NPC(tx * TILE, ty * TILE, o);
+    e.type = 'npc';
+    // Seasons' townsfolk keep to dry ground; ours would wade into a pond
+    // (an NPC refuses nothing a player can walk). `canOccupy` reads this.
+    e.avoidFlags = DRY_LAND;
+    stage.addEntity(e);
+  }
+  return stage;
+}
+
 /** Frames one part of the roll runs between its fade in and its fade out. */
 function partLength(part) {
   if (part.scene) return CREDITS_SCENE_FRAMES;
@@ -77,6 +125,21 @@ export class Credits {
     this.part = 0;
     this.t = 0;              // frames into the part, the fade in included
     this.sky = 0;            // px the sky has scrolled down
+    this.stages = null;      // the scene's two screens' people, [left, right]
+    this.stagePart = -1;
+  }
+
+  /** The two stages of the current scene, built the first time it is asked. */
+  sceneStages() {
+    const part = CREDITS_ROLL[this.part];
+    if (!part || !part.scene) return null;
+    if (this.stagePart !== this.part) {
+      const [floor, rx, ry] = part.scene;
+      this.stages = [0, 1].map(dx =>
+        creditsStage(this.game, this.part, dx, getRoom('overworld', floor, rx + dx, ry)));
+      this.stagePart = this.part;
+    }
+    return this.stages;
   }
 
   get done() { return this.part >= CREDITS_ROLL.length; }
@@ -87,6 +150,13 @@ export class Credits {
     const part = CREDITS_ROLL[this.part];
     const [fin, hold, fout] = [CREDITS_FADE[2], CREDITS_FADE[1], CREDITS_FADE[0]];
     this.t++;
+    const stages = this.sceneStages();
+    if (stages) {
+      for (const st of stages) {
+        st.frame++;
+        for (const e of st.entities) e.update(st);
+      }
+    }
     const run = this.t - fin;
     if (part.sky && run > 0 && run % CREDITS_SKY_STEP_FRAMES === 0) {
       this.sky = Math.min(SKY_H - H, this.sky + 1);
@@ -130,6 +200,7 @@ export class Credits {
     const pan = Math.min(W, Math.floor(run * CREDITS_PAN_SPEED));
     const above = !!getRoom('overworld', floor, rx, ry - 1);
     const top = above ? 16 : 0;
+    const stages = this.sceneStages();
     for (const dx of [0, 1]) {
       for (const dy of above ? [-1, 0] : [0, 1]) {
         const room = getRoom('overworld', floor, rx + dx, ry + dy);
@@ -137,6 +208,13 @@ export class Credits {
         const ox = dx * W - pan, oy = top + dy * room.ph;
         ctx.drawImage(room.render(tide, frame), ox, oy);
         room.drawAnim(ctx, ox, oy, tide, frame);
+        // The people stand between the ground and what overhangs it, as
+        // Game.drawScene draws a room's entities.
+        if (dy === 0 && stages) {
+          const st = stages[dx];
+          const list = st.entities.slice().sort((a, b) => (a.y + a.h) - (b.y + b.h));
+          for (const e of list) e.draw(ctx, st, ox, oy);
+        }
         room.drawOver(ctx, ox, oy, tide, frame);
       }
     }

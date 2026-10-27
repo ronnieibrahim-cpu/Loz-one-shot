@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An NPC refuses nothing a player can walk (S214).** A townsperson set to
+  wander walks straight into shallow water and stands in a pond; `NPC` has no
+  `avoidFlags`. The credits' townsfolk carry `DRY_LAND` (src/game/credits.js),
+  and `canOccupy` honours it. The towns' own wanderers do not yet.
+- **A Seasons sprite sheet holds only its own tiles (S214).** An
+  interaction's tile base can point past the end of its graphics header's
+  PNG (the flooded house girl, base $16 in a 15-tile file; the fountain lady
+  in a 7-tile one): those NPCs borrow tiles loaded by another header, so the
+  four-way walk cannot be cut from that file alone. rip-npcs.py WALKERS takes
+  only townsfolk whose whole walk is in their own file.
+- **A short roll of names still takes a whole screen to cross (S214).** A
+  roll's length is the screen's height plus its lines, so splitting four rolls
+  into eight adds ~320 frames each; the last roll must stay long or the sky
+  stops short of the forest.
+
 - **A guide shot's `plus` counts on from the shot before it (S213).**
   capture.mjs pumps from wherever the last shot left the run, so a scan of
   `plus` values listed after the real shot all land on the same late frame.
