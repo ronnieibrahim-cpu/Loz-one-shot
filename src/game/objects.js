@@ -20,7 +20,7 @@ import { FLOAT_DIRS } from './float-path.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN,
   PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES,
-  NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
+  NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
@@ -483,8 +483,25 @@ defineEntity('chest', (x, y, o) => new Chest(x, y, o));
 // NPC / sign
 // --------------------------------------------------------------------------
 
+/** A walking townsperson's frames: Seasons' two a way (rip-npcs.py WALKERS). */
+export function walkFrames(who) {
+  const f = d => [0, 1].map(i => `npc_walk_${who}_${d}${i}`);
+  return { down: f('d'), up: f('u'), side: f('s') };
+}
+
+/** What a townsperson who wanders will not walk into (S214, the human's
+ *  choice): Seasons' townsfolk keep to dry ground, and an NPC otherwise
+ *  refuses nothing a player can walk, so it waded into ponds. */
+export const DRY_LAND = F.WATER | F.DEEP | F.PIT | F.HAZARD;
+
 export class NPC extends Entity {
   constructor(x, y, o = {}) {
+    // `walk: '<who>'` (S214): one of Seasons' walking townsfolk, in its own
+    // four-way walk, instead of a `sprite` and `frames`.
+    if (o.walk) {
+      o = { ...o, sprite: `npc_walk_${o.walk}_d0`, frames: walkFrames(o.walk),
+        rate: TOWNSFOLK_WALK_FRAME_FRAMES };
+    }
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 2, y: 5, w: 12, h: 10 };
@@ -527,6 +544,7 @@ export class NPC extends Entity {
     this.afterFlag = o.afterFlag || null;
     this.dir = o.dir || 'down';
     this.wander = !!o.wander;
+    if (this.wander) this.avoidFlags = DRY_LAND;
     this.rate = o.rate || 22;
     this.faceOnTalk = o.faceOnTalk !== false;
     this.onTalk = o.onTalk || null;

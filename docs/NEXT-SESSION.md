@@ -39,10 +39,19 @@ Branch claude/oracle-tides-credits-feedback-ha8dtt, off main at f4325a3 (S213).
 ### Verified
 Whole table green (71 tools incl. check-credits 97/97, test.mjs); check-playthrough 49/49, THE END, never died; check-rippers 47/47 alone; check-build OK.
 
+### Then: the towns' wanderers walk (the human: "walking people in towns",
+"swap all three", "dry land only")
+- `walk: '<who>'` on any NPC spec (objects.js NPC; `walkFrames`) gives it a
+  cartridge walker's sprite, frames and TOWNSFOLK_WALK_FRAME_FRAMES (renamed
+  from CREDITS_WALK_FRAME_FRAMES). Village East's wanderer is now the lad
+  (was npc_child, the blue cap), Palisade Row's Holly (was npc_villager2),
+  Sandpiper Row's the boy (was npc_fisher — the SAME sheet picture, now
+  walking). Every NPC with `wander` carries `avoidFlags = DRY_LAND` (exported
+  from objects.js; credits.js uses it for its whole cast).
+- Tidewatch Square's brine wanderer keeps its two pictures (our people; the
+  races sheet has no walk for it) and keeps to dry land too.
+
 ### Not done / candidates
-- Our towns' own wanderers still have one still picture and wade into water;
-  they could be given the walking townsfolk (a design question — they are our
-  peoples, not Seasons' villagers).
 - The short rolls leave the sky empty for a few seconds each; if the human
   finds it slow, CREDITS_TEXT_SPEED or fewer/longer rolls.
 

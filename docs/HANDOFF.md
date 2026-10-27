@@ -449,8 +449,8 @@ BEFORE checking a file out for isolation, not after.**
 
 - **An NPC refuses nothing a player can walk (S214).** A townsperson set to
   wander walks straight into shallow water and stands in a pond; `NPC` has no
-  `avoidFlags`. The credits' townsfolk carry `DRY_LAND` (src/game/credits.js),
-  and `canOccupy` honours it. The towns' own wanderers do not yet.
+  `avoidFlags`. Every wanderer now carries `DRY_LAND` (src/game/objects.js),
+  and `canOccupy` honours it.
 - **A Seasons sprite sheet holds only its own tiles (S214).** An
   interaction's tile base can point past the end of its graphics header's
   PNG (the flooded house girl, base $16 in a 15-tile file; the fountain lady

@@ -1940,7 +1940,7 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 8, 3, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
+      ['npc', 8, 3, { walk: 'lad', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
     ],
   },
   '0,9,7': {
@@ -2307,7 +2307,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 5, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
-      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2,
+      ['npc', 5, 5, { walk: 'boy', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2,
         // The Coral Key, once the first Essence is in (S154).
         beat: { scene: 'coralKey', need: 1, flag: 'keyD2' } }],
     ],
@@ -3132,7 +3132,7 @@ const rooms = {
     ],
     entities: [
       // Wenna. Until the player holds a blade, she says where one is (S158).
-      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3,
+      ['npc', 1, 6, { walk: 'holly', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3,
         beat: { scene: 'bladeHint', flag: 'heardBlade', unlessItem: 'sword' } }],
     ],
   },
