@@ -37,7 +37,7 @@ Branch claude/oracle-tides-credits-feedback-ha8dtt, off main at f4325a3 (S213).
   twice; the roll draws nothing from the game's rng; bound 12000 frames.
 
 ### Verified
-(see the commit message)
+Whole table green (71 tools incl. check-credits 97/97, test.mjs); check-playthrough 49/49, THE END, never died; check-rippers 47/47 alone; check-build OK.
 
 ### Not done / candidates
 - Our towns' own wanderers still have one still picture and wade into water;
