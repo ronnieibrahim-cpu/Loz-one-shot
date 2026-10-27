@@ -23,14 +23,13 @@ import { CREDITS_GLYPHS, CREDITS_INKS } from '../data/screens-ending.js';
 import { CREDITS_DIGITS, CREDITS_DIGIT_TOP } from '../data/sprites-credits-drawn.js';
 import {
   CREDITS_FADE, CREDITS_SCENE_FRAMES, CREDITS_PAN_SPEED, CREDITS_TEXT_SPEED,
-  CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES, CREDITS_WALK_FRAME_FRAMES,
+  CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES,
 } from '../data/feel.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 import { getRoom } from '../world/maps.js';
-import { NPC } from './objects.js';
+import { NPC, DRY_LAND } from './objects.js';
 import { Stream, hash32 } from '../core/rng.js';
 import { TILE } from '../core/screen.js';
-import { F } from '../world/tileset.js';
 
 const W = 160, H = 144, GLYPH_W = 8, GLYPH_H = 16;
 const SKY_H = 256;
@@ -73,15 +72,6 @@ export function drawCreditsLine(ctx, text, ink, y) {
   }
 }
 
-/** What a credits townsperson will not stand in. */
-const DRY_LAND = F.WATER | F.DEEP | F.PIT | F.HAZARD;
-
-/** A walking townsperson's frames: Seasons' two a way (rip-npcs.py WALKERS). */
-function walkFrames(who) {
-  const f = d => [0, 1].map(i => `npc_walk_${who}_${d}${i}`);
-  return { down: f('d'), up: f('u'), side: f('s') };
-}
-
 /**
  * The stage one screen of a scene is played on: what `NPC.update`,
  * `moveEntity` and `canOccupy` read off a game, and only that. `part` and
@@ -98,13 +88,10 @@ export function creditsStage(game, part, screen, room) {
   for (const [at, tx, ty, who, opts] of cast) {
     if (at !== screen) continue;
     const walker = who.startsWith('walk:') ? who.slice(5) : null;
-    const o = walker
-      ? { ...opts, sprite: `npc_walk_${walker}_d0`, frames: walkFrames(walker), rate: CREDITS_WALK_FRAME_FRAMES }
-      : { ...opts, sprite: who };
+    const o = walker ? { ...opts, walk: walker } : { ...opts, sprite: who };
     const e = new NPC(tx * TILE, ty * TILE, o);
     e.type = 'npc';
-    // Seasons' townsfolk keep to dry ground; ours would wade into a pond
-    // (an NPC refuses nothing a player can walk). `canOccupy` reads this.
+    // Those who stand keep to dry ground too, as a wanderer does.
     e.avoidFlags = DRY_LAND;
     stage.addEntity(e);
   }

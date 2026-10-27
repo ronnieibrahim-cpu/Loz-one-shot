@@ -8,7 +8,9 @@
 - S214: the credits roll now has eight places (village to the Keep), each
   with people walking about — Seasons' own walking townsfolk cut from the
   cartridge plus our peoples — and the S213 lines split into eight rolls.
-  tools/check-credits.mjs 97 assertions.
+  tools/check-credits.mjs 97 assertions. The towns' three wanderers are
+  now cartridge walkers (`walk:` on an NPC) and every wanderer keeps to dry
+  land.
 - Whole table green; check-playthrough to THE END, never died.
 
 ## The task
