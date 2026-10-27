@@ -2558,11 +2558,11 @@ const CREDITS_LINE_SPACING = 20;
  *  stage2 state7 steps SCY by one each time $cbb3 counts down from 4. */
 const CREDITS_SKY_STEP_FRAMES = 4;
 
-/** f — each of a walking townsperson's two frames is held this long in the
- *  credits' scenes. derived: the shared four-way walk of Seasons' townsfolk
+/** f — each of a walking townsperson's two frames is held this long (the
+ *  towns' wanderers and the credits' people, S214). derived: the shared four-way walk of Seasons' townsfolk
  *  (interaction3eAnimations, interactionAnimation51d5f/51d87/51d97/51da7)
  *  holds each frame $10. */
-const CREDITS_WALK_FRAME_FRAMES = 16;
+const TOWNSFOLK_WALK_FRAME_FRAMES = 16;
 
 // THE LOW-HEALTH PULSE.
 //
@@ -4309,7 +4309,7 @@ __exports["CREDITS_PAN_SPEED"] = CREDITS_PAN_SPEED;
 __exports["CREDITS_TEXT_SPEED"] = CREDITS_TEXT_SPEED;
 __exports["CREDITS_LINE_SPACING"] = CREDITS_LINE_SPACING;
 __exports["CREDITS_SKY_STEP_FRAMES"] = CREDITS_SKY_STEP_FRAMES;
-__exports["CREDITS_WALK_FRAME_FRAMES"] = CREDITS_WALK_FRAME_FRAMES;
+__exports["TOWNSFOLK_WALK_FRAME_FRAMES"] = TOWNSFOLK_WALK_FRAME_FRAMES;
 __exports["LOW_HEART_DIVISOR"] = LOW_HEART_DIVISOR;
 __exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
 __exports["TEXT_FRAMES_PER_CHAR"] = TEXT_FRAMES_PER_CHAR;
@@ -16405,7 +16405,7 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 8, 3, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
+      ['npc', 8, 3, { walk: 'lad', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
     ],
   },
   '0,9,7': {
@@ -16772,7 +16772,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 5, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
-      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2,
+      ['npc', 5, 5, { walk: 'boy', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2,
         // The Coral Key, once the first Essence is in (S154).
         beat: { scene: 'coralKey', need: 1, flag: 'keyD2' } }],
     ],
@@ -17597,7 +17597,7 @@ const rooms = {
     ],
     entities: [
       // Wenna. Until the player holds a blade, she says where one is (S158).
-      ['npc', 1, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3,
+      ['npc', 1, 6, { walk: 'holly', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3,
         beat: { scene: 'bladeHint', flag: 'heardBlade', unlessItem: 'sword' } }],
     ],
   },
@@ -25275,7 +25275,7 @@ const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 const { EYEBALL_LOOK } = __require("data/sprites-effects.js");
 const { CUBE_FRAMES, CUBE_ANIMS, CUBE_PUSH_ANIM, CUBE_TOP } = __require("data/sprites-cube.js");
@@ -25730,8 +25730,25 @@ defineEntity('chest', (x, y, o) => new Chest(x, y, o));
 // NPC / sign
 // --------------------------------------------------------------------------
 
+/** A walking townsperson's frames: Seasons' two a way (rip-npcs.py WALKERS). */
+function walkFrames(who) {
+  const f = d => [0, 1].map(i => `npc_walk_${who}_${d}${i}`);
+  return { down: f('d'), up: f('u'), side: f('s') };
+}
+
+/** What a townsperson who wanders will not walk into (S214, the human's
+ *  choice): Seasons' townsfolk keep to dry ground, and an NPC otherwise
+ *  refuses nothing a player can walk, so it waded into ponds. */
+const DRY_LAND = F.WATER | F.DEEP | F.PIT | F.HAZARD;
+
 class NPC extends Entity {
   constructor(x, y, o = {}) {
+    // `walk: '<who>'` (S214): one of Seasons' walking townsfolk, in its own
+    // four-way walk, instead of a `sprite` and `frames`.
+    if (o.walk) {
+      o = { ...o, sprite: `npc_walk_${o.walk}_d0`, frames: walkFrames(o.walk),
+        rate: TOWNSFOLK_WALK_FRAME_FRAMES };
+    }
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 2, y: 5, w: 12, h: 10 };
@@ -25774,6 +25791,7 @@ class NPC extends Entity {
     this.afterFlag = o.afterFlag || null;
     this.dir = o.dir || 'down';
     this.wander = !!o.wander;
+    if (this.wander) this.avoidFlags = DRY_LAND;
     this.rate = o.rate || 22;
     this.faceOnTalk = o.faceOnTalk !== false;
     this.onTalk = o.onTalk || null;
@@ -27746,6 +27764,8 @@ __exports["rollDropTable"] = rollDropTable;
 __exports["Pickup"] = Pickup;
 __exports["TreeSnag"] = TreeSnag;
 __exports["Chest"] = Chest;
+__exports["walkFrames"] = walkFrames;
+__exports["DRY_LAND"] = DRY_LAND;
 __exports["NPC"] = NPC;
 __exports["Racer"] = Racer;
 __exports["RaceGoal"] = RaceGoal;
@@ -31214,13 +31234,12 @@ __define("game/credits.js", function (__exports, __require) {
 const { CREDITS_ROLL } = __require("data/credits.js");
 const { CREDITS_GLYPHS, CREDITS_INKS } = __require("data/screens-ending.js");
 const { CREDITS_DIGITS, CREDITS_DIGIT_TOP } = __require("data/sprites-credits-drawn.js");
-const { CREDITS_FADE, CREDITS_SCENE_FRAMES, CREDITS_PAN_SPEED, CREDITS_TEXT_SPEED, CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES, CREDITS_WALK_FRAME_FRAMES } = __require("data/feel.js");
+const { CREDITS_FADE, CREDITS_SCENE_FRAMES, CREDITS_PAN_SPEED, CREDITS_TEXT_SPEED, CREDITS_LINE_SPACING, CREDITS_SKY_STEP_FRAMES } = __require("data/feel.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 const { getRoom } = __require("world/maps.js");
-const { NPC } = __require("game/objects.js");
+const { NPC, DRY_LAND } = __require("game/objects.js");
 const { Stream, hash32 } = __require("core/rng.js");
 const { TILE } = __require("core/screen.js");
-const { F } = __require("world/tileset.js");
 
 const W = 160, H = 144, GLYPH_W = 8, GLYPH_H = 16;
 const SKY_H = 256;
@@ -31263,15 +31282,6 @@ function drawCreditsLine(ctx, text, ink, y) {
   }
 }
 
-/** What a credits townsperson will not stand in. */
-const DRY_LAND = F.WATER | F.DEEP | F.PIT | F.HAZARD;
-
-/** A walking townsperson's frames: Seasons' two a way (rip-npcs.py WALKERS). */
-function walkFrames(who) {
-  const f = d => [0, 1].map(i => `npc_walk_${who}_${d}${i}`);
-  return { down: f('d'), up: f('u'), side: f('s') };
-}
-
 /**
  * The stage one screen of a scene is played on: what `NPC.update`,
  * `moveEntity` and `canOccupy` read off a game, and only that. `part` and
@@ -31288,13 +31298,10 @@ function creditsStage(game, part, screen, room) {
   for (const [at, tx, ty, who, opts] of cast) {
     if (at !== screen) continue;
     const walker = who.startsWith('walk:') ? who.slice(5) : null;
-    const o = walker
-      ? { ...opts, sprite: `npc_walk_${walker}_d0`, frames: walkFrames(walker), rate: CREDITS_WALK_FRAME_FRAMES }
-      : { ...opts, sprite: who };
+    const o = walker ? { ...opts, walk: walker } : { ...opts, sprite: who };
     const e = new NPC(tx * TILE, ty * TILE, o);
     e.type = 'npc';
-    // Seasons' townsfolk keep to dry ground; ours would wade into a pond
-    // (an NPC refuses nothing a player can walk). `canOccupy` reads this.
+    // Those who stand keep to dry ground too, as a wanderer does.
     e.avoidFlags = DRY_LAND;
     stage.addEntity(e);
   }
