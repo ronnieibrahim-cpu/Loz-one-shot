@@ -151,7 +151,7 @@ export const DIALOGUE = {
   diveThanks: 'All five casks, and dry inside! I was saving this for the day they came back. Here!',
   raceAsk: 'Race you to Pip on the sandbar past the Fishing Stones! The sand path only shows at LOW tide. Ready? GO!',
   raceBusy: 'Why are you still here? RUN!',
-  raceWin: 'Pip: You made it! Nobody beats the tide like that. Here, you earned it!',
+  raceWin: 'You made it! Nobody beats the tide like that. Here, you earned it!',
   raceLose: 'Too slow! The tide would\'ve had you. Come back and try again.',
   // The bell-buoy echo (S201), Sunken Cove.
   buoyAsk: 'Each buoy rings its own note. I\'ll play a tune, and you ring it back with your Rod. Careful, it rings every buoy near you!',
@@ -162,7 +162,7 @@ export const DIALOGUE = {
   buoyNext2: 'Last one! It ends with the whole bay ringing at once.',
   buoyWin: 'That\'s the old tune, every note! Have my spare seed bag. It holds twice as many.',
   buoyWinAgain: 'Still in tune. Here, for your trouble.',
-  raceGoalWait: 'Pip: This is the finish! Talk to my friend on South Bluff to start the race.',
+  raceGoalWait: 'This is the finish! Talk to my friend on South Bluff to start the race.',
   ledgerAsk: 'The wind blew my ledger out the window! Every debt on the coast is in it. Try the South Sands.',
   ledgerThanks: 'My ledger! Wet, but I can still read it. Here. Now I owe you, and that\'s written down too!',
   kiteAsk: 'My kite\'s stuck up a tree in the hollow past the bluff! It\'s too high to reach. You\'d need a big gust of wind.',
@@ -230,28 +230,28 @@ const CUTSCENES = {
 
   // The fisherman on the Fishing Stones, the first person spoken to.
   wakeBeach: [
-    { say: 'Fisherman: Whoa, easy there! The tide washed you up on my stones with the driftwood. You\'re the first piece that ever sat up!' },
-    { say: 'Fisherman: This is Thalassia. Tidewatch Village is up the path. For a year now, the sea\'s been coming and going as it pleases.' },
-    { say: 'Fisherman: And you\'ve got nothing on you! Go up to the village and find old Wenna by the palisade. If there\'s a blade anywhere on this coast, she\'ll know.' },
+    { say: 'Whoa, easy there! The tide washed you up on my stones with the driftwood. You\'re the first piece that ever sat up!' },
+    { say: 'This is Thalassia. Tidewatch Village is up the path. For a year now, the sea\'s been coming and going as it pleases.' },
+    { say: 'And you\'ve got nothing on you! Go up to the village and find old Wenna by the palisade. If there\'s a blade anywhere on this coast, she\'ll know.' },
     { flag: 'metFisher' },
   ],
 
   // Wenna at the palisade: where the first blade is.
   bladeHint: [
-    { say: 'Wenna: Washed up, are you? You\'ve got that look.' },
-    { say: 'Wenna: A blade... My grandfather built boats. When the sea went strange, he hid his best blade in a hollow under the bluff at Gull Sands, and walled it up.' },
-    { say: 'Wenna: Take the shore road past the Fishing Stones, then go east along the sand. His door is stubborn. Push on it till it moves!' },
+    { say: 'Washed up, are you? You\'ve got that look.' },
+    { say: 'A blade... My grandfather built boats. When the sea went strange, he hid his best blade in a hollow under the bluff at Gull Sands, and walled it up.' },
+    { say: 'Take the shore road past the Fishing Stones, then go east along the sand. His door is stubborn. Push on it till it moves!' },
     { flag: 'heardBlade' },
   ],
 
   // Farore, in her shrine on Tern Point: the Moon Conch.
   faroreConch: [
-    { say: 'Farore: There you are! I watched the tide bring you in. I\'m Farore, the Oracle of Secrets... though I don\'t have many left.' },
-    { say: 'Farore: Nereth, the Drowned King, broke the Tide Bell into six Essences and hid them in the drowned places of this land. Without the Bell, the sea rises and falls as he likes.' },
-    { say: 'Farore: When the Bell broke, this washed up on my steps. It hasn\'t stopped humming since. I think it was waiting for you.' },
+    { say: 'There you are! I watched the tide bring you in. I\'m Farore, the Oracle of Secrets... though I don\'t have many left.' },
+    { say: 'Nereth, the Drowned King, broke the Tide Bell into six Essences and hid them in the drowned places of this land. Without the Bell, the sea rises and falls as he likes.' },
+    { say: 'When the Bell broke, this washed up on my steps. It hasn\'t stopped humming since. I think it was waiting for you.' },
     { present: { item: 'conch', level: 1 } },
-    { say: 'Farore: Sound it and the tide will answer: LOW, then MID, then HIGH, and around again. Try it outside, where the sea can hear it.' },
-    { say: 'Farore: The Tidewash Grotto is east, out on the Shallows. The Maku Tree keeps its key, in her hollow at the top of the village square. Go and see her!' },
+    { say: 'Sound it and the tide will answer: LOW, then MID, then HIGH, and around again. Try it outside, where the sea can hear it.' },
+    { say: 'The Tidewash Grotto is east, out on the Shallows. The Maku Tree keeps its key, in her hollow at the top of the village square. Go and see her!' },
     { flag: 'gotConch' },
   ],
 
@@ -270,7 +270,8 @@ const CUTSCENES = {
     { show: { art: ['p_essence1_0', 'p_essence1_1'], scale: 3, pal: 'essence1' }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
     { say: 'The Essence settles against the conch. The two of them hum together, like old friends.' },
     { say: 'Back in the village, the Maku Tree opens one eye.' },
-    { say: 'Farore: That\'s one! The fisherman at Sandpiper Row knows the reef better than anyone. Go and see him.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s one! The fisherman at Sandpiper Row knows the reef better than anyone. Go and see him.' },
     { music: 'overworld' },
   ],
   essence2: [
@@ -278,17 +279,19 @@ const CUTSCENES = {
     { show: { art: ['p_essence2_0', 'p_essence2_1'], scale: 3, pal: 'essence2' }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
     { say: 'The reef goes quiet. Every fish in the Spire turns to face the same way, all at once.' },
     { shake: 30 },
-    { say: 'Far out at sea, something huge notices it\'s being taken apart.' },
-    { say: 'Nereth: ...Two shards. The little wader has busy hands.' },
-    { say: 'Farore: That\'s two! The Sanctum in the marsh is next, but it\'s locked. The old man in the village square was there when they locked it. Ask him!' },
+    { say: 'Far out at sea, the Drowned King notices he\'s being taken apart.' },
+    { say: '...Two shards. The little wader has busy hands.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s two! The Sanctum in the marsh is next, but it\'s locked. The old man in the village square was there when they locked it. Ask him!' },
     { music: 'overworld' },
   ],
   essence3: [
     { music: null },
     { show: { art: ['p_essence3_0', 'p_essence3_1'], scale: 3, pal: 'essence3' }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
     { say: 'The marsh drains a little, and stays put. It hasn\'t held still in a year.' },
-    { say: 'Farore: That\'s three! The sea is starting to behave. Keep going!' },
-    { say: 'Farore: The Cistern up on the Kell is locked too. The Salters got their water from it. Ask the Salter down by the village well.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s three! The sea is starting to behave. Keep going!' },
+    { say: 'The Cistern up on the Kell is locked too. The Salters got their water from it. Ask the Salter down by the village well.' },
     { music: 'overworld' },
   ],
   essence4: [
@@ -296,9 +299,10 @@ const CUTSCENES = {
     { show: { art: ['p_essence4_0', 'p_essence4_1'], scale: 3, pal: 'essence4' }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
     { say: 'That\'s half the Bell. The conch has gone warm, and it stays warm.' },
     { shake: 40 },
-    { say: 'Nereth: Half?! HALF?! Then come to the Keep, wader, and bring my Bell. I\'ll take it back at the door.' },
-    { say: 'Farore: He\'s scared. That\'s new... and it might not be good news.' },
-    { say: 'Farore: The digger in the village square has been itching to dig for a week. Go and see him!' },
+    { say: 'Half?! HALF?! Then come to the Keep, wader, and bring my Bell. I\'ll take it back at the door.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'He\'s scared. That\'s new... and it might not be good news.' },
+    { say: 'The digger in the village square has been itching to dig for a week. Go and see him!' },
     { music: 'overworld' },
   ],
   essence5: [
@@ -307,7 +311,8 @@ const CUTSCENES = {
     { say: 'The flooded wood lets out a long breath, as if it had held it for a hundred years.' },
     { shake: 60 },
     { say: 'Every whirlpool between here and the Abyss stops, and starts spinning the other way.' },
-    { say: 'Farore: That\'s five! The last one is in Nereth\'s hands. Go and see the Maku Tree first. Humour an old plant!' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s five! The last one is in Nereth\'s hands. Go and see the Maku Tree first. Humour an old plant!' },
     { music: 'overworld' },
   ],
   essence6: [
@@ -321,33 +326,33 @@ const CUTSCENES = {
   // ---- the dungeon keys (S154), one story beat each -----------------------
   // THE CORAL KEY: Sandpiper Row's fisherman, once the first Essence is in.
   coralKey: [
-    { say: 'Fisherman: You made it out of the Grotto! And dry, too. Nobody stays dry this year.' },
-    { say: 'Fisherman: My father used to dive in the Coral Spire. When the sea went strange, the divers locked it up, and he kept the key in his tackle box.' },
-    { say: 'Fisherman: The reef\'s north of here, past the gap. Take the key. The sea listens to you now!' },
+    { say: 'You made it out of the Grotto! And dry, too. Nobody stays dry this year.' },
+    { say: 'My father used to dive in the Coral Spire. When the sea went strange, the divers locked it up, and he kept the key in his tackle box.' },
+    { say: 'The reef\'s north of here, past the gap. Take the key. The sea listens to you now!' },
     { do: (g) => g.presentKey('d2') },
   ],
 
   // THE PEAT KEY: the old man in the village square, at two Essences.
   peatKey: [
-    { say: 'Old man: Two Essences, and you\'ve still got all your fingers! Sit down a moment. No, stand. You\'re wet.' },
-    { say: 'Old man: When the bog rose over the Sanctum, we locked its door to keep the marsh out of the village. I turned the key myself.' },
-    { say: 'Old man: Head west, past the cracked cliff. You can walk the bog at LOW tide. Here, take the key!' },
+    { say: 'Two Essences, and you\'ve still got all your fingers! Sit down a moment. No, stand. You\'re wet.' },
+    { say: 'When the bog rose over the Sanctum, we locked its door to keep the marsh out of the village. I turned the key myself.' },
+    { say: 'Head west, past the cracked cliff. You can walk the bog at LOW tide. Here, take the key!' },
     { do: (g) => g.presentKey('d3') },
   ],
 
   // THE CISTERN KEY: the Salter on Village Shore, at three Essences.
   cisternKey: [
-    { say: 'Salter: Three Essences! The pans felt that. The brine ran the right way for a whole hour!' },
-    { say: 'Salter: Our water used to come from the Cistern on the Kell. When the sea got into it, we locked the gate and kept the key.' },
-    { say: 'Salter: Go north through the Deep Cut, then west along the cliffs. Here\'s the key. Bring our water back if you can!' },
+    { say: 'Three Essences! The pans felt that. The brine ran the right way for a whole hour!' },
+    { say: 'Our water used to come from the Cistern on the Kell. When the sea got into it, we locked the gate and kept the key.' },
+    { say: 'Go north through the Deep Cut, then west along the cliffs. Here\'s the key. Bring our water back if you can!' },
     { do: (g) => g.presentKey('d4') },
   ],
 
   // THE MOSS KEY: the village digger, at four Essences.
   mossKey: [
-    { say: 'Digger: Four Essences! The sea finally told me where to dig. Right here!' },
+    { say: 'Four Essences! The sea finally told me where to dig. Right here!' },
     { shake: 30, sfx: 'rumble' },
-    { say: 'Digger: A key, all grown over with moss! It must be for the Shrine in the Drowned Wood. Take the wood road north of the village.' },
+    { say: 'A key, all grown over with moss! It must be for the Shrine in the Drowned Wood. Take the wood road north of the village.' },
     { do: (g) => g.presentKey('d5') },
   ],
 
@@ -356,30 +361,30 @@ const CUTSCENES = {
   // tree's `beat` plays this the first time she is spoken to; the last step
   // hands the key over the way every item is handed over, held overhead.
   makuKey: [
-    { say: 'Maku Tree: Hoo... hoo? A boy with a blade on his back! I\'ve been asleep a long time, child. Something in the sea woke me up.' },
-    { say: 'Maku Tree: When the sea went wrong, the village locked up the Tidewash Grotto and gave me the key to keep. Here, you take it.' },
+    { say: 'Hoo... hoo? A boy with a blade on his back! I\'ve been asleep a long time, child. Something in the sea woke me up.' },
+    { say: 'When the sea went wrong, the village locked up the Tidewash Grotto and gave me the key to keep. Here, you take it.' },
     { key: 'd1' },
-    { say: 'Maku Tree: The Grotto is east, out on the Shallows. But the key\'s no use while the sea covers the sandbar. Farore has a piece of the Bell, in her shrine on Tern Point, down the south shore. Go and see her!' },
+    { say: 'The Grotto is east, out on the Shallows. But the key\'s no use while the sea covers the sandbar. Farore has a piece of the Bell, in her shrine on Tern Point, down the south shore. Go and see her!' },
   ],
 
   makuSatchel: [
-    { say: 'Maku Tree: Hoo hoo! One Essence, and my roots can feel the Bell again!' },
-    { say: 'Maku Tree: Take this Rod. It was cut from the Tide Bell itself.' },
+    { say: 'Hoo hoo! One Essence, and my roots can feel the Bell again!' },
+    { say: 'Take this Rod. It was cut from the Tide Bell itself.' },
     // Held overhead to Seasons' item jingle, as every other handover is.
     { present: { item: 'rod', level: 1 } },
-    { say: 'Maku Tree: Bring me five Essences, Link, and I\'ll open the road to the Abyssal Keep. Then I\'m going back to sleep!' },
+    { say: 'Bring me five Essences, Link, and I\'ll open the road to the Abyssal Keep. Then I\'m going back to sleep!' },
   ],
   makuMaster: [
     { music: null },
-    { say: 'Maku Tree: Five Essences! The sixth is in Nereth\'s crown. And you\'re soaked through. I like that!' },
+    { say: 'Five Essences! The sixth is in Nereth\'s crown. And you\'re soaked through. I like that!' },
     { shake: 50 },
-    { say: 'Maku Tree: My roots reach all the way down to the Keep. I\'ve been growing them for a hundred years, just for this.' },
-    { say: 'Maku Tree: Take this with you. Someone left it here long ago. They thought they\'d be back for it, too.' },
+    { say: 'My roots reach all the way down to the Keep. I\'ve been growing them for a hundred years, just for this.' },
+    { say: 'Take this with you. Someone left it here long ago. They thought they\'d be back for it, too.' },
     { present: { item: 'sword', level: 3 } },
     // THE SIXTH KEY (S154). The seal on the road down the Kell is a keyhole,
     // and this is what fits it.
-    { say: 'Maku Tree: And this! When Nereth broke the Bell, its clapper rolled into my roots. He never came looking for it.' },
-    { say: 'Maku Tree: The seal on the road down the Kell was made with the Bell. It\'ll open for the clapper. Go on down, Link. And come back up! People always forget that part.' },
+    { say: 'And this! When Nereth broke the Bell, its clapper rolled into my roots. He never came looking for it.' },
+    { say: 'The seal on the road down the Kell was made with the Bell. It\'ll open for the clapper. Go on down, Link. And come back up! People always forget that part.' },
     { flag: 'makuOpenedKeep' },
     { flag: 'keyD6' },
     { music: 'overworld' },
@@ -393,11 +398,11 @@ const CUTSCENES = {
     { fade: 'in' },
     { show: { art: 'boss_nereth_0', scale: 2, rise: false },
       text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
-    { say: 'Nereth: So you came down. Everything sinks in the end.' },
-    { say: 'Nereth: I didn\'t break the Bell to be cruel, wader. For a thousand years the sea was told what to do. Nobody ever asked it.' },
-    { say: 'Nereth: Now it does as it likes. Which means, as I like!' },
+    { say: 'So you came down. Everything sinks in the end.' },
+    { say: 'I didn\'t break the Bell to be cruel, wader. For a thousand years the sea was told what to do. Nobody ever asked it.' },
+    { say: 'Now it does as it likes. Which means, as I like!' },
     { shake: 60 },
-    { say: 'Nereth: Go on, blow your little shell. Let\'s see whose sea this is!' },
+    { say: 'Go on, blow your little shell. Let\'s see whose sea this is!' },
     { music: 'finalBoss' },
   ],
   ending: [
@@ -410,9 +415,10 @@ const CUTSCENES = {
     { say: 'The Bell rings once, deep under the water. You can\'t hear it, but you can feel it.' },
     { tide: 1 },
     { say: 'The sea goes out. Then it comes back in. Then out again, right on time.' },
-    { say: 'Farore: Listen to that. Boring, isn\'t it? It took six Essences and a Drowned King to make the sea boring again!' },
-    { say: 'Farore: The village is already arguing about where to build the new pier. That\'s how you know it worked!' },
-    { say: 'Farore: I\'m the Oracle of Secrets, Link, and I\'m all out. Go home. Take the boat at LOW tide.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'Listen to that. Boring, isn\'t it? It took six Essences and a Drowned King to make the sea boring again!' },
+    { say: 'The village is already arguing about where to build the new pier. That\'s how you know it worked!' },
+    { say: 'I\'m the Oracle of Secrets, Link, and I\'m all out. Go home. Take the boat at LOW tide.' },
     { text: 'Thalassia keeps its shape.\nThe pier goes back where the pier goes.\nThe Maku Tree sleeps.', frames: 260 },
     { flag: 'finishedGame' },
     // THE GAME DOES NOT RESUME AFTER THE END. It used to: the scene let go,

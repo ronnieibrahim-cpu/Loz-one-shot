@@ -48,7 +48,7 @@ import {
   itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag,
   OVERWORLD_RESPAWN_DISTANCE, reefseedBase,
 } from './progress.js';
-import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
+import { drawHud, drawAreaBanner } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu, invalidateWorldMap } from './menu.js';
 import { Camera } from './camera.js';
@@ -2755,7 +2755,8 @@ export class Game {
 
     drawHud(ctx, this);
     if (!this.veiled()) drawAreaBanner(ctx, this);
-    if (this.boss && !this.boss.dead) drawBossBar(ctx, this);
+    // No boss health bar (S215): Seasons never shows one; a boss tells you
+    // it is hurt by flashing and by how it fights.
     if (this.race) this.drawRaceClock(ctx);
     this.dialogue.draw(ctx);
 
