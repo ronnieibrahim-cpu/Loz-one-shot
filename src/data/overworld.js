@@ -3918,7 +3918,7 @@ function installHouses() {
     'ANNNNwwNNB',
     'Wbsb.vvgoE',
     'Wd.d.....E',
-    'W___.....E',
+    'Wiii.....E',
     'Wrrr...s.E',
     'Woor...()E',
     'Woor....sE',

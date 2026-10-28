@@ -533,7 +533,7 @@ export function installLegends() {
   registerLegend('houseWood', {
     'A': 'hwTL', 'N': 'hwN', 'B': 'hwTR', 'W': 'hwW', 'E': 'hwE', 'C': 'hwBL', 'S': 'hwS', 'D': 'hwBR',
     '[': 'hwDoorW', ']': 'hwDoorE', 'k': 'hwClock',
-    '.': 'hwFloor', 'r': 'hwRug', '_': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
+    '.': 'hwFloor', 'r': 'hwRug', 'i': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
     'b': 'hwBedT', 'd': 'hwBedB', 'w': 'hwWardT', 'v': 'hwWardB', 'h': 'hwShelfT', 'j': 'hwShelfB',
     '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwBarrel',
     'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard',

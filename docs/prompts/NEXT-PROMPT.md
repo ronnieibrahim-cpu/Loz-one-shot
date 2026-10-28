@@ -1,21 +1,22 @@
-# Next session (S215)
+# Next session (S216)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S214 and S213; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S215 and S214; docs/HANDOFF.md lessons (top ten).
 
 ## State
-- S214: the credits roll now has eight places (village to the Keep), each
-  with people walking about — Seasons' own walking townsfolk cut from the
-  cartridge plus our peoples — and the S213 lines split into eight rolls.
-  tools/check-credits.mjs 97 assertions. The towns' three wanderers are
-  now cartridge walkers (`walk:` on an NPC) and every wanderer keeps to dry
-  land.
-- Whole table green; check-playthrough to THE END, never died.
+- S215 look-through: the boss health bar is gone; story lines no longer
+  start with the speaker's name; the shop, three homes and the lighthouse are
+  Seasons' own Horon houses (tileset $2c, `hw*`, legend `houseWood`), the
+  shop's stock standing on the counter in its own colours.
+- The human said LEAVE our text box and our place-name label. Do not re-ask.
+- Whole table green; check-playthrough 49/49 to THE END, never died — but
+  its low-water mark is 2/48 in d6/2,2,5 (see NEXT-SESSION S215).
 
 ## The task
-- Ask the human how the new roll with its people feels, then what comes next
-  (S214 ended by asking; carry their answer if they gave one).
+- Ask the human how the new houses look in play and whether the story reads
+  well without names; then carry on the look-through against the originals
+  (candidates in NEXT-SESSION S215), asking before bigger changes.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

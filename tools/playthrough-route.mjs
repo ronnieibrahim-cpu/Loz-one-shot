@@ -3380,6 +3380,13 @@ export const ROUTE = [
   // a leg that re-equipped for a puzzle.
   ['equip', 'sword', 'A', 400],
   ['tide', 0, 140, 900],
+  // S215: THE KEESE IN THIS ROOM IS KILLED FIRST. The shade draws on the
+  // game's own stream, which moves on events, not frames, so a wait before
+  // the door changes nothing (swept 4 to 52: the same fight every time). The
+  // houses' new doorways and the shorter story text shifted that stream, and
+  // the shade took 9 quarter-hearts instead of 3, which left too few for the
+  // wizzrobe room two doors on. One more kill here and both are survivable.
+  ['fight', 900, 300],
   ['travel', 4, 5, 4000],
   // S150: swept six option sets; `reachSwing` with `breakContact` wins on 35
   // of 44, the plain `breakContact` on 14.

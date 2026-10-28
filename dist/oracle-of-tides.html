@@ -11123,6 +11123,10 @@ function registerTiles(defs) {
       // picture cut into stacked layers — the Maku grove — where the layer
       // underneath is part of the same artwork and not the region's ground.
       underExact: !!def.underExact,
+      // The tile this one is the lower layer of (S215, the houses: a Seasons
+      // metatile mixing two palettes, cut as two). Not a ground; just the
+      // rest of that tile's picture.
+      layerOf: def.layerOf || null,
       pal: def.pal || 'stone',
       flags: def.flags || 0,
       mask: def.mask == null ? 15 : def.mask,
@@ -18196,35 +18200,43 @@ function installHouses() {
     kind: 'interior',
     name: 'Tidewatch Shop',
     w: 1, h: 1, floors: 1,
-    legend: 'house', music: 'shop', tint: 'cave', scroll: false,
+    legend: 'houseWood', music: 'shop', scroll: false,
     rooms: {
       '0,0,0': {
+        // Seasons' own shop (S215): layout group 4 room $af, the counter
+        // across the room with the stock on it and the shopkeeper behind.
         map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#....o...#',
-          '##########',
+          'ANNNkNNNNB',
+          'W.m,,,,,,E',
+          'W.m,,,,,,E',
+          'Wg=======E',
+          'Wg.c.....E',
+          'Wg.x.....E',
+          'W......ssE',
+          'CSSS[]SSSD',
         ],
         entities: [
           // His errand (S155): the ledger, lost on the South Sands, for a
           // Piece of Heart. He talks shop again once it is home.
-          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
+          // Behind the counter, spoken to across it.
+          ['npc', 4, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
             errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
-          ['shopItem', 4, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield' }],
-          ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
-          ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
-          ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
-          ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
+          // The stock stands on the counter, as Seasons stands it; the tile in
+          // front of the shopkeeper is left clear so he can be spoken to.
+          ['shopItem', 3, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
+          ['shopItem', 5, 3, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
+          ['shopItem', 6, 3, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
+          ['shopItem', 7, 3, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
+          ['shopItem', 8, 3, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
         ],
         // Out of the shop's door and back onto the yard in front of it. The
         // shop moved east when the village became two screens — its door is
         // the middle cell of its front row on `0,5,7`, at 4,4 — so this lands
         // one tile below it, on 0,5,7 rather than on the square.
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } }],
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } },
+        ],
       },
     },
   });
@@ -18301,24 +18313,21 @@ function installHouses() {
   // The three houses the town kit opened. Each is one room with somebody in
   // it, because a door that opens onto nothing is worse than a door that does
   // not open — the shuttered house exists for the buildings we do not furnish.
-  const home = (id, name, music, entities, back) => registerMap({
+  //
+  // Each is one of Seasons' own Horon houses (S215), furniture and all; `map`
+  // names which. The way out is the cartridge's doorway in the south wall.
+  const home = (id, name, music, entities, back, map) => registerMap({
     id, kind: 'interior', name,
     w: 1, h: 1, floors: 1,
-    legend: 'house', music, tint: 'cave', scroll: false,
+    legend: 'houseWood', music, scroll: false,
     rooms: {
       '0,0,0': {
-        map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#....o...#',
-          '##########',
-        ],
+        map,
         entities,
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } }],
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } },
+        ],
       },
     },
   });
@@ -18366,14 +18375,24 @@ function installHouses() {
   home('houseHearth', 'A Village House', 'house', [
     // Her errand (S155): the jar of bog water left at Bog Head's spring, for
     // a hundred rupees. The only errand that pays in rupees.
-    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
+    ['npc', 4, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
       errand: { need: 'foundBogWater', prize: 'rupee100', flag: 'bogwaterDone', ask: 'bogwaterAsk', thanks: 'bogwaterThanks' } }],
     // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
     // Heart found under the doorstep in the flood.
-    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
+    ['npc', 6, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
       errand: { need: 'foundKite', prize: 'heartPiece', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
-  ], { rx: 4, ry: 7, px: 32, py: 88 });
+  ], { rx: 4, ry: 7, px: 32, py: 88 }, [
+    // Seasons' room $80: two beds, a wardrobe, a rug and a table.
+    'ANNNNwwNNB',
+    'Wbsb.vvgoE',
+    'Wd.d.....E',
+    'Wiii.....E',
+    'Wrrr...s.E',
+    'Woor...()E',
+    'Woor....sE',
+    'CSSS[]SSSD',
+  ]);
 
   // Ossa opens the Coastwise Chain and closes it. Both of her deals live on one
   // entity, which is what the trader's `deals` list is for: the chain's stage
@@ -18388,7 +18407,17 @@ function installHouses() {
         { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd' },
       ],
     }],
-  ], { rx: 4, ry: 8, px: 48, py: 88 });
+  ], { rx: 4, ry: 8, px: 48, py: 88 }, [
+    // Seasons' room $90: the fireplace in the north wall.
+    'ANNfFfNwwB',
+    'WbrlLltvvE',
+    'Wdr......E',
+    'Wrr...s..E',
+    'W.....().E',
+    'W......s.E',
+    'W........E',
+    'CSSS[]SSSD',
+  ]);
 
   // THE LIGHTHOUSE (S200, the dark lighthouse quest). Two floors: the
   // keeper's room at the foot of the stair, and the lamp room above it. He
@@ -18399,18 +18428,20 @@ function installHouses() {
   registerMap({
     id: 'lighthouse', kind: 'interior', name: 'The Lighthouse',
     w: 1, h: 1, floors: 2,
-    legend: 'house', music: 'house', tint: 'cave', scroll: false,
+    // Seasons' house pieces (S215), its keeper's room furnished as theirs
+    // are, with the stair up in the corner where '/' stood.
+    legend: 'houseWood', music: 'house', scroll: false,
     rooms: {
       '0,0,0': {
         map: [
-          '##########',
-          '#.......p#',
-          '#.......p#',
-          '#........#',
-          '#........#',
-          '#.......p#',
-          '#/...o...#',
-          '##########',
+          'ANNNNNNNwB',
+          'Woo.....vE',
+          'W........E',
+          'W.....().E',
+          'W......s.E',
+          'W.......oE',
+          'Wu......oE',
+          'CSSS[]SSSD',
         ],
         entities: [
           ['npc', 4, 2, { sprite: 'npc_elder', dialogue: 'keeperLight', after: 'keeperAfter', afterFlag: 'lighthouseLit',
@@ -18418,20 +18449,21 @@ function installHouses() {
               ask: 'keeperAsk', partial: 'keeperPartial', thanks: 'keeperThanks' } }],
         ],
         warps: [
-          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
           { x: 1, y: 6, to: { map: 'lighthouse', floor: 1, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
         ],
       },
       '1,0,0': {
         map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#/.......#',
-          '##########',
+          'ANNNNNNNNB',
+          'Wq......qE',
+          'W........E',
+          'W........E',
+          'W........E',
+          'W........E',
+          'Wn.......E',
+          'CSSSSSSSSD',
         ],
         entities: [
           ['lamp', 4.5, 3, { dialogue: 'lampLit' }],
@@ -18447,7 +18479,17 @@ function installHouses() {
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
-  ], { rx: 12, ry: 8, px: 32, py: 88 });
+  ], { rx: 12, ry: 8, px: 32, py: 88 }, [
+    // Seasons' room $a4: a wall of dressers and wardrobes, a table on a rug.
+    'AhhhhhhhhB',
+    'WvvjvjjvjE',
+    'W..rrrr..E',
+    'W..r()r..E',
+    'W..rrrr..E',
+    'Wbx......E',
+    'Wd.......E',
+    'CSSS[]SSSD',
+  ]);
 }
 
 function installOverworld() {
@@ -26171,6 +26213,8 @@ class ShopItem extends Entity {
     this.saveKey = o.saveKey || null;
     this.once = o.once !== false;      // most stock is one-per-save
     this.sold = false;
+    // On the shop counter (S215), as Seasons stands its stock.
+    this.perched = !!o.perched;
     this.depth = -3;
   }
 
@@ -26247,9 +26291,13 @@ class ShopItem extends Entity {
 
   draw(ctx, game, ox, oy) {
     if (this.sold) return;
-    const bob = Math.round(Math.sin(this.frame * 0.06) * 1);
-    sprites.draw(ctx, this.icon, ox + this.x, oy + this.y + bob,
-      { pal: (this.item && ITEMS[this.item] && ITEMS[this.item].pal) || 'ui' });
+    // Still, in its own colours (S215). It used to bob, and every piece of
+    // stock was drawn in the menu's grey 'ui' palette, so a bomb, a heart and
+    // a bottle on sale were three grey shapes; Seasons' stock sits still in
+    // the colours it has anywhere else.
+    const pal = this.item ? (ITEMS[this.item] && ITEMS[this.item].pal) || undefined
+      : this.pickup ? (PICKUPS[this.pickup] || PICKUPS.rupee1).pal || undefined : 'ui';
+    sprites.draw(ctx, this.icon, ox + this.x, oy + this.y, pal ? { pal } : undefined);
     // The tag shows what it will actually cost, so a charm that makes things
     // cheaper is visible from across the shop rather than at the till.
     drawText(ctx, String(game.shopPrice(this.price)),
@@ -28026,25 +28074,10 @@ function drawAreaBanner(ctx, game) {
   drawTextCentered(ctx, game.bannerText, SCREEN_W / 2, y + 3, '#f8f8e8');
   ctx.globalAlpha = 1;
 }
-
-/** Boss health bar, drawn along the bottom of the playfield. */
-function drawBossBar(ctx, game) {
-  const b = game.boss;
-  if (!b || b.dead) return;
-  const w = 96, x = Math.round((SCREEN_W - w) / 2), y = 138;
-  ctx.fillStyle = '#080c10';
-  ctx.fillRect(x - 1, y - 1, w + 2, 6);
-  const frac = Math.max(0, b.hp / b.maxHp);
-  ctx.fillStyle = '#982030';
-  ctx.fillRect(x, y, w, 4);
-  ctx.fillStyle = frac > 0.35 ? '#e04858' : '#f8b820';
-  ctx.fillRect(x, y, Math.round(w * frac), 4);
-}
 __exports["hudLayout"] = hudLayout;
 __exports["drawHud"] = drawHud;
 __exports["drawItemExtra"] = drawItemExtra;
 __exports["drawAreaBanner"] = drawAreaBanner;
-__exports["drawBossBar"] = drawBossBar;
 });
 
 /* ===== src/game/dialogue.js ===== */
@@ -38602,7 +38635,7 @@ const { CUBE_TOP } = __require("data/sprites-cube.js");
 const { ThrownObject, ITEMS, itemName, itemIcon, REEFSEED_PLANT_BLOCK } = __require("game/items.js");
 const { spawnRecordedChunks, chunkAtHome } = __require("game/chunk.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE, reefseedBase } = __require("game/progress.js");
-const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
+const { drawHud, drawAreaBanner } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu, invalidateWorldMap } = __require("game/menu.js");
 const { Camera } = __require("game/camera.js");
@@ -41291,7 +41324,8 @@ class Game {
 
     drawHud(ctx, this);
     if (!this.veiled()) drawAreaBanner(ctx, this);
-    if (this.boss && !this.boss.dead) drawBossBar(ctx, this);
+    // No boss health bar (S215): Seasons never shows one; a boss tells you
+    // it is hurt by flashing and by how it fights.
     if (this.race) this.drawRaceClock(ctx);
     this.dialogue.draw(ctx);
 
@@ -52183,6 +52217,918 @@ const DUNGEON_THEME_ART = {
     1113111311132233
     3333333333333311`,
 
+  // wall corner, north-west, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $b8
+  hwTL: `
+    2011111111111111
+    0201111111111111
+    1020000000000000
+    1103222222222222
+    1102322222222222
+    1102233333333333
+    1102232111121111
+    1102231211121111
+    1102231132222222
+    1102231123222222
+    1102231123333333
+    1102231122331111
+    1102232222313222
+    1102231122312333
+    1102231122312331
+    1102231122312313`,
+
+  // wall, north, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $b0
+  hwN: `
+    1111111111111111
+    1111111111111111
+    0000000000000000
+    2222222222222222
+    2222222222222222
+    3333333333333333
+    1112111111121111
+    1112111111121111
+    2222222222222222
+    2222222222222222
+    3333333333333333
+    1111111111111111
+    2222222222222222
+    3333333333333333
+    1111111211111112
+    3333333333333333`,
+
+  // wall corner, north-east, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $b9
+  hwTR: `
+    1111111111111102
+    1111111111111020
+    0000000000000201
+    2222222222223011
+    2222222222232011
+    3333333333322011
+    1111211112322011
+    1111211121322011
+    2222222311322011
+    2222223211322011
+    3333333211322011
+    1111332211322011
+    2223132222322011
+    3332132211322011
+    1332132211322011
+    3132132211322011`,
+
+  // wall, west, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $b3
+  hwW: `
+    1102231122312323
+    1102231122312313
+    1102231122312313
+    1102231122312313
+    1102232222312313
+    1102231122312313
+    1102231122312313
+    1102231122312313
+    1102231122312323
+    1102231122312313
+    1102231122312313
+    1102231122312313
+    1102232222312313
+    1102231122312313
+    1102231122312313
+    1102231122312313`,
+
+  // wall, east, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $b1
+  hwE: `
+    3232132211322011
+    3132132211322011
+    3132132211322011
+    3132132211322011
+    3132132222322011
+    3132132211322011
+    3132132211322011
+    3132132211322011
+    3232132211322011
+    3132132211322011
+    3132132211322011
+    3132132211322011
+    3132132222322011
+    3132132211322011
+    3132132211322011
+    3132132211322011`,
+
+  // wall corner, south-west, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $ba
+  hwBL: `
+    1102231122312313
+    1102231122312331
+    1102231122312333
+    1102232222313222
+    1102231122331111
+    1102231123333333
+    1102231123222222
+    1102231132222222
+    1102231211121111
+    1102232111121111
+    1102233333333333
+    1102322222222222
+    1103222222222222
+    1020000000000000
+    0201111111111111
+    2011111111111111`,
+
+  // wall, south, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $b2
+  hwS: `
+    3333333333333333
+    1111111211111112
+    3333333333333333
+    2222222222222222
+    1111111111111111
+    3333333333333333
+    2222222222222222
+    2222222222222222
+    1112111111121111
+    1112111111121111
+    3333333333333333
+    2222222222222222
+    2222222222222222
+    0000000000000000
+    1111111111111111
+    1111111111111111`,
+
+  // wall corner, south-east, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $bb
+  hwBR: `
+    3132132211322011
+    1332132211322011
+    3332132211322011
+    2223132222322011
+    1111332211322011
+    3333333211322011
+    2222223211322011
+    2222222311322011
+    1111211121322011
+    1111211112322011
+    3333333333322011
+    2222222222232011
+    2222222222223011
+    0000000000000201
+    1111111111111020
+    1111111111111102`,
+
+  // the doorway in the south wall, west half, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $e0
+  hwDoorW: `
+    ........11111111
+    ........11111111
+    ........11111111
+    ........11111111
+    ........11111222
+    ........11111111
+    ........00000000
+    ........22222222
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // the doorway in the south wall, west half, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $e0
+  hwDoorWU: `
+    33333332........
+    33211123........
+    32121103........
+    32122103........
+    32222103........
+    32121003........
+    32221113........
+    32212103........
+    3222210311111010
+    3222200311010101
+    3221210310101010
+    3221210301010101
+    3222210310100000
+    3200001301000000
+    2012210300000000
+    2121121210000000`,
+
+  // the doorway in the south wall, east half, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $e1
+  hwDoorE: `
+    11111111........
+    11111111........
+    11111221........
+    11111111........
+    11111111........
+    11111111........
+    00000000........
+    22222222........
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // the doorway in the south wall, east half, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $e1
+  hwDoorEU: `
+    ........23333333
+    ........32111233
+    ........30112123
+    ........30122123
+    ........30122223
+    ........30012123
+    ........31112223
+    ........30121223
+    1011111130122223
+    0101011130022223
+    1010101030121223
+    0101010130121223
+    0000001030122223
+    0000000131000023
+    0000000030122102
+    0000000121211212`,
+
+  // the clock on the north wall, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $df
+  hwClock: `
+    1111333331111111
+    1113211123111111
+    0131100011310000
+    2311333331132222
+    3213100013123222
+    3131003001313333
+    3130003000313111
+    3130333000313111
+    3131000001313222
+    2313100013132222
+    3331333331333333
+    1113111113111111
+    2222333322222222
+    3333333333333333
+    1111111211111112
+    3333333333333333`,
+
+  // plank floor, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $a0
+  hwFloor: `
+    1111111111111111
+    1111111111111111
+    1221111111111111
+    1111111111111111
+    1111111122211111
+    1111111111111111
+    0000000000000000
+    2222222222222222
+    1122211111111111
+    1111111111111111
+    1111111111111111
+    1111111111112211
+    1111111111111111
+    1111111111111111
+    0000000222000000
+    2222222222222222`,
+
+  // the green rug, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $a1
+  hwRug: `
+    1111111100100100
+    1000000100100100
+    1111111100100100
+    1000000100100100
+    1000000100100100
+    1111111100100100
+    1000000100100100
+    1111111100100100
+    0010010011111111
+    0010010010000001
+    0010010011111111
+    0010010010000001
+    0010010010000001
+    0010010011111111
+    0010010010000001
+    0010010011111111`,
+
+  // the floor behind the shop counter, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $a6
+  hwBack: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the shop counter, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $e8
+  hwCounter: `
+    2222222222222222
+    2111111221111112
+    2111111221111112
+    2111111221111112
+    2111111221111112
+    2111111221111112
+    2000000220000002
+    2222222222222222
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // the shop counter, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $e8
+  hwCounterU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    1122211111111111
+    1111111111111111
+    1111111111111111
+    1111111111112211
+    1111111111111111
+    1111111111111111
+    0000000222000000
+    2222222222222222`,
+
+  // bed, head, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $5e
+  hwBedT: `
+    1333333333333333
+    3301111111111133
+    3012222222222113
+    3122222222222213
+    3122333333332213
+    3333100000013333
+    3003100000013003
+    3113333333333113
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // bed, head, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $5e
+  hwBedTU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    3321000000001233
+    3100000000000013
+    3100000000000013
+    3111111000000113
+    3110000000000013
+    3100000000000013
+    3100000000000013
+    3100000000000013`,
+
+  // bed, foot, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $5f
+  hwBedB: `
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    3110000000000113
+    3111111111111113
+    3211111111111123
+    3333333333333333
+    1322222222222231
+    1333333333333331`,
+
+  // wardrobe, top, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $58
+  hwWardT: `
+    2222222222222222
+    2100000000000012
+    2000000000000002
+    2000000000000002
+    2000000000000002
+    2011111111111102
+    2111111111111112
+    2122222222222212
+    2120000000000212
+    2121111221111212
+    2121111001111212
+    2122222222222212
+    2120000000000212
+    2121111221111212
+    2121111001111212
+    2122222222222212`,
+
+  // wardrobe, foot, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $59
+  hwWardB: `
+    2120000000000212
+    2121111221111212
+    2121111001111212
+    2122222222222212
+    2120000000000212
+    2121111221111212
+    2121111001111212
+    2122222222222212
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // wardrobe, foot, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $59
+  hwWardBU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    1122211111111111
+    1111111111111111
+    1111111111111111
+    1111111111112211
+    1111111111111111
+    1111111111111111
+    0000000222000000
+    2222222222222222`,
+
+  // dresser, top, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $5a
+  hwShelfT: `
+    3333333333333333
+    3200000000000023
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3022222222222203
+    3222222222222223
+    3233333333333323
+    3233333333311323
+    3231133333300323
+    3230030322311323
+    3231130322311323
+    3231130322311323
+    3233333333333323
+    3200000000000223
+    3233333333333323`,
+
+  // dresser, foot, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $5b
+  hwShelfB: `
+    3231133333333323
+    3230033333311323
+    3231132230300323
+    3231132230311323
+    3231132230311323
+    3233333333333323
+    3220000000000023
+    3233333333333323
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // dresser, foot, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $5b
+  hwShelfBU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    1111111111122211
+    1111111111111111
+    1111111111111111
+    1122111111111111
+    1111111111111111
+    1111111111111111
+    0000002220000000
+    2222222222222222`,
+
+  // table, west half, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $89
+  hwTableW: `
+    1333333333333333
+    3222212212222222
+    3221122122221122
+    3212221222222112
+    3212222111122221
+    3221122222212222
+    3222212222221112
+    3112221112222221
+    3221222221222222
+    3122122222122222
+    3211101111101111
+    3222222222222222
+    2333333333333333
+    2233332222222222
+    2233332222222222
+    2222222222222222`,
+
+  // table, east half, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $8a
+  hwTableE: `
+    3333333333333331
+    1222222222222223
+    2222112222221123
+    2222211222222113
+    1112222111122223
+    2221222222212223
+    2222111222221113
+    1222222112222223
+    2122222221222223
+    2212222222122213
+    1110111111101123
+    2222222222222223
+    3333333333333332
+    2222222222333322
+    2222222222333322
+    2222222222222222`,
+
+  // stool, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $88
+  hwStool: `
+    1111111111111111
+    1113333113333111
+    1130000330000311
+    1300022000220031
+    1300202222002031
+    1230200000002031
+    1230200232020331
+    2300200000020322
+    1302002222002031
+    1302222000220031
+    1330000333000331
+    1323333222333231
+    1320222222222231
+    1232222333222321
+    1123333212333211
+    2222222222222222`,
+
+  // chair, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $5d
+  hwChair: `
+    1111111111333311
+    1111111113300311
+    1111111130300311
+    1111111300300311
+    3333333300300333
+    3000000300300303
+    3000000300333303
+    3000000303222303
+    3000000332222303
+    3000000322222303
+    3000000333333303
+    3000000000000003
+    3222222222222223
+    3333333333333333
+    3223223223223223
+    3333333333333333`,
+
+  // little table, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $8b
+  hwBox: `
+    1333333333333331
+    3222212222222223
+    3221122122221123
+    3212221222222113
+    3212222111122223
+    3221122222212223
+    3222212222221113
+    3112221112222223
+    3221222221222223
+    3122122222122213
+    3211101111101123
+    3222222222222223
+    2333333333333332
+    2233332222333322
+    2233332222333322
+    2222222222222222`,
+
+  // barrel, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $10
+  hwBarrel: `
+    1111113333311111
+    1111130000031111
+    1111300222003111
+    1113302333203311
+    1132302333203231
+    1132300333003231
+    1322320000023223
+    1322232000232223
+    1322223333322223
+    1332220000022233
+    1323222000222323
+    1320332222233023
+    1130003333300031
+    1132000000000231
+    1113320000023311
+    1111133333331111`,
+
+  // green jar, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $86
+  hwJar: `
+    1333333333333331
+    3321111111111233
+    3211222112221123
+    3221111111111223
+    3212212222122123
+    3212212222122123
+    3111111111111113
+    3112222112222113
+    3121222112221213
+    3211111111111123
+    3321100000011233
+    3232222332222323
+    3322130110312233
+    3233333333333323
+    3323211331123233
+    1333333333333331`,
+
+  // the shop cabinet, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $9c
+  hwCabinet: `
+    2333333323333333
+    2000000320000003
+    2021110320211103
+    2021110320211103
+    2021110320211103
+    2022220320222203
+    2000000320000003
+    2222222222222222
+    2333333323333333
+    2000000320000003
+    2021110320211103
+    2021110320211103
+    2021110320211103
+    2022220320222203
+    2000000320000003
+    2222222222222222`,
+
+  // fireplace, top corner, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $80
+  hwHearthT: `
+    3113222222223113
+    3113222222223113
+    3113222222223113
+    3113222222223113
+    3112222222222113
+    3111222222221113
+    3111111111111113
+    3211111111111123
+    3321111111111233
+    3332222222222333
+    3233333333333323
+    3223111111113223
+    3223100000113223
+    3223101111213223
+    3223101111213223
+    3323112222213233`,
+
+  // fireplace, top middle, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $83
+  hwHearthTM: `
+    3232222222222323
+    3213333333333123
+    3220112011201223
+    3321112111211233
+    3213333333333123
+    3321201120112233
+    3331211121112333
+    1233333333333321
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // fireplace, top middle, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $83
+  hwHearthTMU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0111111111111110
+    1000000000000001`,
+
+  // fireplace, foot corner, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $81
+  hwHearthB: `
+    3232222222222323
+    3213333333333123
+    3220112011201223
+    3321112111211233
+    3213333333333123
+    3321201120112233
+    3331211121112333
+    1233333333333321
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // fireplace, foot corner, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $81
+  hwHearthBU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    1122211111111111
+    1111111111111111
+    1111111111111111
+    1111111111112211
+    1111111111111111
+    1111111111111111
+    0000000222000000
+    2222222222222222`,
+
+  // fireplace, the fire, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $82
+  hwHearthBM: `
+    2222222222222222
+    2000000000000002
+    3333333333333333
+    2111111111111112
+    3333333333333333
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // fireplace, the fire, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $82
+  hwHearthBMU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    1122211111111111
+    1111111111111111
+    1111111111111111
+    1111111111112211
+    1111111111111111
+    1111111111111111
+    0000000222000000
+    2222222222222222`,
+
+  // the stair up, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $44
+  hwStairsUp: `
+    2222222222333333
+    2000000000311113
+    2011113333311113
+    2011113111311113
+    2033333111311113
+    2031113111311113
+    2031113111300003
+    2031113111333333
+    2031113000333333
+    2031113333333333
+    2030003333333333
+    2033333333333333
+    2033333333333333
+    2011111111111112
+    2000000000000002
+    2222222222222222`,
+
+  // the stair down, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $45
+  hwStairsDown: `
+    2222222222222222
+    2000000000000002
+    2032222223333302
+    2032222223000302
+    2033333333000302
+    2033333333000302
+    2033331113000302
+    2033331113000302
+    2033331113000302
+    2032231113000302
+    2032231113000302
+    2032231113000302
+    2032231113000302
+    2033333333333302
+    2000000000000002
+    2222222222222222`,
+
+  // crate, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $1c
+  hwCrate: `
+    0222222222222220
+    2000000000000002
+    2102000000002012
+    2000000000000002
+    2111111111111112
+    2000000000000002
+    2102000000002012
+    2000000000000002
+    2111111111111112
+    2000000000000002
+    2102000000002012
+    2000000000000002
+    2222222222222222
+    2112112112112112
+    2112112112112112
+    0222222222222220`,
+
+  // the rug's border at the foot of the beds, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $92
+  hwRugEdge: `
+    1111111111111111
+    1111111111111111
+    1221111111111111
+    1111111111111111
+    1111111122211111
+    1111111111111111
+    0000000000000000
+    2222222222222222
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // the rug's border at the foot of the beds, Horon Village's houses, the quarters in its other palette — Seasons tileset $2c (Horon Village's houses), metatile $92
+  hwRugEdgeU: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    2222222222222222
+    2000000320000003
+    2022220320222203
+    2021110320211103
+    2021110320211103
+    2021110320211103
+    2000000320000003
+    2333333323333333`,
+
+  // cupboard, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $8c
+  hwCupboard: `
+    1333333333333331
+    3322111111112233
+    3212333333331123
+    3103122212213013
+    3103212211123013
+    3103211112223013
+    3103212122113013
+    3103122211123013
+    3112333333332113
+    3221111111111223
+    3321100000011233
+    3233333333333323
+    3222111111112223
+    3222111111112333
+    3322111111112333
+    1133333333333311`,
+
 };
 
 // The four colours each tile has on the cartridge, lightest first. These ARE
@@ -52575,6 +53521,54 @@ const DUNGEON_THEME_PALETTES = {
   frDeskW: ['#f7f7f7', '#8c5ace', '#632984', '#000000'],
   frDesk: ['#f7f7f7', '#8c5ace', '#632984', '#000000'],
   frDeskE: ['#f7f7f7', '#8c5ace', '#632984', '#000000'],
+  hwTL: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwN: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwTR: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwW: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwE: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwBL: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwS: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwBR: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwDoorW: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwDoorWU: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwDoorE: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwDoorEU: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwClock: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwFloor: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwRug: ['#7b9c6b', '#5a6b4a', '#5a6b4a', '#5a6b4a'],
+  hwBack: ['#ffff8c', '#ffff8c', '#ffff8c', '#ffff8c'],
+  hwCounter: ['#f7f7f7', '#7394ad', '#395a84', '#395a84'],
+  hwCounterU: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwBedT: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwBedTU: ['#f7f7f7', '#7394ad', '#395a84', '#000000'],
+  hwBedB: ['#f7f7f7', '#7394ad', '#395a84', '#000000'],
+  hwWardT: ['#e79400', '#844210', '#000000', '#000000'],
+  hwWardB: ['#e79400', '#844210', '#000000', '#000000'],
+  hwWardBU: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwShelfT: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwShelfB: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwShelfBU: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwTableW: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwTableE: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwStool: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwChair: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwBox: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwBarrel: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwJar: ['#ffff8c', '#7b9c6b', '#5a6b4a', '#000000'],
+  hwCabinet: ['#ffff8c', '#7b9c6b', '#5a6b4a', '#000000'],
+  hwHearthT: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwHearthTM: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwHearthTMU: ['#844210', '#000000', '#000000', '#000000'],
+  hwHearthB: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
+  hwHearthBU: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwHearthBM: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwHearthBMU: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwStairsUp: ['#ffff8c', '#94a55a', '#526b39', '#000000'],
+  hwStairsDown: ['#ffff8c', '#94a55a', '#526b39', '#000000'],
+  hwCrate: ['#bd944a', '#634a10', '#000000', '#000000'],
+  hwRugEdge: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
+  hwRugEdgeU: ['#ffd68c', '#9463d6', '#6b318c', '#000000'],
+  hwCupboard: ['#f7f7f7', '#7394ad', '#395a84', '#000000'],
 };
 
 function installDungeonThemePalettes() {
@@ -55951,6 +56945,29 @@ const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palac
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
 
+// The houses' tiledefs (S215). `layered` names the pieces cut as two layers.
+function house() {
+  const out = {};
+  const put = (n, def = {}) => {
+    const name = 'hw' + n;
+    if (ART[name + 'U']) {
+      out[name + 'U'] = { art: ART[name + 'U'], pal: name + 'U', layerOf: name };
+      Object.assign(def, { underArt: name + 'U', underExact: true });
+    }
+    out[name] = { art: ART[name], pal: name, ...def };
+  };
+  for (const n of ['TL', 'N', 'TR', 'W', 'E', 'BL', 'S', 'BR', 'Clock', 'BedT', 'BedB', 'WardT', 'WardB',
+    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Barrel', 'Jar', 'Cabinet', 'HearthT',
+    'HearthTM', 'HearthB', 'HearthBM', 'Crate', 'Cupboard']) put(n, { flags: F.SOLID });
+  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back']) put(n);
+  put('DoorW', { flags: F.WARP });
+  put('DoorE', { flags: F.WARP });
+  put('Counter', { flags: F.SOLID, counter: true });
+  put('StairsUp', { flags: F.WARP | F.STAIRS });
+  put('StairsDown', { flags: F.WARP | F.STAIRS });
+  return out;
+}
+
 /**
  * One whole Oracle kit for theme `T`, from the picks prefixed `P` (S160).
  * Every piece names its own extracted palette, so the kit is the cartridge's
@@ -57710,6 +58727,12 @@ function installCoreTiles() {
     frRug: { art: ART.frRug, pal: 'frRug' },
     frDoor: { art: ART.frDoor, pal: 'frDoor', flags: F.WARP },
     ...Object.fromEntries(['DeskW', 'Desk', 'DeskE'].map(n => ['fr' + n, { art: ART['fr' + n], pal: 'fr' + n, flags: F.SOLID, counter: true }])),
+    // THE HOUSES (S215): Oracle of Seasons' own, every piece cut from its
+    // tileset $2c, the indoors of Horon Village (rip-dungeon-themes.py,
+    // `hw*`). A piece whose metatile mixes two palettes is two exact layers:
+    // `hwX` over `hwXU`, so neither is squeezed into four colours. The shop
+    // counter is a COUNTER, spoken across, as Farore's desk is.
+    ...house(),
     // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
     // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
     // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile
@@ -58729,6 +59752,17 @@ function installLegends() {
     'C': 'frRingBL', 'S': 'frRingS', 'D': 'frRingBR', '[': 'frJambSW', 'o': 'frDoor', ']': 'frJambSE',
     '.': 'frFloor', 'c': 'frCarpet', 'r': 'frRug', 'P': 'frPillarT', 'p': 'frPillarB',
     '(': 'frDeskW', '=': 'frDesk', ')': 'frDeskE',
+  });
+  // Seasons' houses (S215): see tiles-core.js `house()`.
+  registerLegend('houseWood', {
+    'A': 'hwTL', 'N': 'hwN', 'B': 'hwTR', 'W': 'hwW', 'E': 'hwE', 'C': 'hwBL', 'S': 'hwS', 'D': 'hwBR',
+    '[': 'hwDoorW', ']': 'hwDoorE', 'k': 'hwClock',
+    '.': 'hwFloor', 'r': 'hwRug', 'i': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
+    'b': 'hwBedT', 'd': 'hwBedB', 'w': 'hwWardT', 'v': 'hwWardB', 'h': 'hwShelfT', 'j': 'hwShelfB',
+    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwBarrel',
+    'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard',
+    'f': 'hwHearthT', 'F': 'hwHearthTM', 'l': 'hwHearthB', 'L': 'hwHearthBM',
+    'u': 'hwStairsUp', 'n': 'hwStairsDown',
   });
   registerLegend('house', {
     ' ': 'void',
@@ -70254,7 +71288,7 @@ const DIALOGUE = {
   diveThanks: 'All five casks, and dry inside! I was saving this for the day they came back. Here!',
   raceAsk: 'Race you to Pip on the sandbar past the Fishing Stones! The sand path only shows at LOW tide. Ready? GO!',
   raceBusy: 'Why are you still here? RUN!',
-  raceWin: 'Pip: You made it! Nobody beats the tide like that. Here, you earned it!',
+  raceWin: 'You made it! Nobody beats the tide like that. Here, you earned it!',
   raceLose: 'Too slow! The tide would\'ve had you. Come back and try again.',
   // The bell-buoy echo (S201), Sunken Cove.
   buoyAsk: 'Each buoy rings its own note. I\'ll play a tune, and you ring it back with your Rod. Careful, it rings every buoy near you!',
@@ -70265,7 +71299,7 @@ const DIALOGUE = {
   buoyNext2: 'Last one! It ends with the whole bay ringing at once.',
   buoyWin: 'That\'s the old tune, every note! Have my spare seed bag. It holds twice as many.',
   buoyWinAgain: 'Still in tune. Here, for your trouble.',
-  raceGoalWait: 'Pip: This is the finish! Talk to my friend on South Bluff to start the race.',
+  raceGoalWait: 'This is the finish! Talk to my friend on South Bluff to start the race.',
   ledgerAsk: 'The wind blew my ledger out the window! Every debt on the coast is in it. Try the South Sands.',
   ledgerThanks: 'My ledger! Wet, but I can still read it. Here. Now I owe you, and that\'s written down too!',
   kiteAsk: 'My kite\'s stuck up a tree in the hollow past the bluff! It\'s too high to reach. You\'d need a big gust of wind.',
@@ -70333,28 +71367,28 @@ const CUTSCENES = {
 
   // The fisherman on the Fishing Stones, the first person spoken to.
   wakeBeach: [
-    { say: 'Fisherman: Whoa, easy there! The tide washed you up on my stones with the driftwood. You\'re the first piece that ever sat up!' },
-    { say: 'Fisherman: This is Thalassia. Tidewatch Village is up the path. For a year now, the sea\'s been coming and going as it pleases.' },
-    { say: 'Fisherman: And you\'ve got nothing on you! Go up to the village and find old Wenna by the palisade. If there\'s a blade anywhere on this coast, she\'ll know.' },
+    { say: 'Whoa, easy there! The tide washed you up on my stones with the driftwood. You\'re the first piece that ever sat up!' },
+    { say: 'This is Thalassia. Tidewatch Village is up the path. For a year now, the sea\'s been coming and going as it pleases.' },
+    { say: 'And you\'ve got nothing on you! Go up to the village and find old Wenna by the palisade. If there\'s a blade anywhere on this coast, she\'ll know.' },
     { flag: 'metFisher' },
   ],
 
   // Wenna at the palisade: where the first blade is.
   bladeHint: [
-    { say: 'Wenna: Washed up, are you? You\'ve got that look.' },
-    { say: 'Wenna: A blade... My grandfather built boats. When the sea went strange, he hid his best blade in a hollow under the bluff at Gull Sands, and walled it up.' },
-    { say: 'Wenna: Take the shore road past the Fishing Stones, then go east along the sand. His door is stubborn. Push on it till it moves!' },
+    { say: 'Washed up, are you? You\'ve got that look.' },
+    { say: 'A blade... My grandfather built boats. When the sea went strange, he hid his best blade in a hollow under the bluff at Gull Sands, and walled it up.' },
+    { say: 'Take the shore road past the Fishing Stones, then go east along the sand. His door is stubborn. Push on it till it moves!' },
     { flag: 'heardBlade' },
   ],
 
   // Farore, in her shrine on Tern Point: the Moon Conch.
   faroreConch: [
-    { say: 'Farore: There you are! I watched the tide bring you in. I\'m Farore, the Oracle of Secrets... though I don\'t have many left.' },
-    { say: 'Farore: Nereth, the Drowned King, broke the Tide Bell into six Essences and hid them in the drowned places of this land. Without the Bell, the sea rises and falls as he likes.' },
-    { say: 'Farore: When the Bell broke, this washed up on my steps. It hasn\'t stopped humming since. I think it was waiting for you.' },
+    { say: 'There you are! I watched the tide bring you in. I\'m Farore, the Oracle of Secrets... though I don\'t have many left.' },
+    { say: 'Nereth, the Drowned King, broke the Tide Bell into six Essences and hid them in the drowned places of this land. Without the Bell, the sea rises and falls as he likes.' },
+    { say: 'When the Bell broke, this washed up on my steps. It hasn\'t stopped humming since. I think it was waiting for you.' },
     { present: { item: 'conch', level: 1 } },
-    { say: 'Farore: Sound it and the tide will answer: LOW, then MID, then HIGH, and around again. Try it outside, where the sea can hear it.' },
-    { say: 'Farore: The Tidewash Grotto is east, out on the Shallows. The Maku Tree keeps its key, in her hollow at the top of the village square. Go and see her!' },
+    { say: 'Sound it and the tide will answer: LOW, then MID, then HIGH, and around again. Try it outside, where the sea can hear it.' },
+    { say: 'The Tidewash Grotto is east, out on the Shallows. The Maku Tree keeps its key, in her hollow at the top of the village square. Go and see her!' },
     { flag: 'gotConch' },
   ],
 
@@ -70373,7 +71407,8 @@ const CUTSCENES = {
     { show: { art: ['p_essence1_0', 'p_essence1_1'], scale: 3, pal: 'essence1' }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
     { say: 'The Essence settles against the conch. The two of them hum together, like old friends.' },
     { say: 'Back in the village, the Maku Tree opens one eye.' },
-    { say: 'Farore: That\'s one! The fisherman at Sandpiper Row knows the reef better than anyone. Go and see him.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s one! The fisherman at Sandpiper Row knows the reef better than anyone. Go and see him.' },
     { music: 'overworld' },
   ],
   essence2: [
@@ -70381,17 +71416,19 @@ const CUTSCENES = {
     { show: { art: ['p_essence2_0', 'p_essence2_1'], scale: 3, pal: 'essence2' }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
     { say: 'The reef goes quiet. Every fish in the Spire turns to face the same way, all at once.' },
     { shake: 30 },
-    { say: 'Far out at sea, something huge notices it\'s being taken apart.' },
-    { say: 'Nereth: ...Two shards. The little wader has busy hands.' },
-    { say: 'Farore: That\'s two! The Sanctum in the marsh is next, but it\'s locked. The old man in the village square was there when they locked it. Ask him!' },
+    { say: 'Far out at sea, the Drowned King notices he\'s being taken apart.' },
+    { say: '...Two shards. The little wader has busy hands.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s two! The Sanctum in the marsh is next, but it\'s locked. The old man in the village square was there when they locked it. Ask him!' },
     { music: 'overworld' },
   ],
   essence3: [
     { music: null },
     { show: { art: ['p_essence3_0', 'p_essence3_1'], scale: 3, pal: 'essence3' }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
     { say: 'The marsh drains a little, and stays put. It hasn\'t held still in a year.' },
-    { say: 'Farore: That\'s three! The sea is starting to behave. Keep going!' },
-    { say: 'Farore: The Cistern up on the Kell is locked too. The Salters got their water from it. Ask the Salter down by the village well.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s three! The sea is starting to behave. Keep going!' },
+    { say: 'The Cistern up on the Kell is locked too. The Salters got their water from it. Ask the Salter down by the village well.' },
     { music: 'overworld' },
   ],
   essence4: [
@@ -70399,9 +71436,10 @@ const CUTSCENES = {
     { show: { art: ['p_essence4_0', 'p_essence4_1'], scale: 3, pal: 'essence4' }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
     { say: 'That\'s half the Bell. The conch has gone warm, and it stays warm.' },
     { shake: 40 },
-    { say: 'Nereth: Half?! HALF?! Then come to the Keep, wader, and bring my Bell. I\'ll take it back at the door.' },
-    { say: 'Farore: He\'s scared. That\'s new... and it might not be good news.' },
-    { say: 'Farore: The digger in the village square has been itching to dig for a week. Go and see him!' },
+    { say: 'Half?! HALF?! Then come to the Keep, wader, and bring my Bell. I\'ll take it back at the door.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'He\'s scared. That\'s new... and it might not be good news.' },
+    { say: 'The digger in the village square has been itching to dig for a week. Go and see him!' },
     { music: 'overworld' },
   ],
   essence5: [
@@ -70410,7 +71448,8 @@ const CUTSCENES = {
     { say: 'The flooded wood lets out a long breath, as if it had held it for a hundred years.' },
     { shake: 60 },
     { say: 'Every whirlpool between here and the Abyss stops, and starts spinning the other way.' },
-    { say: 'Farore: That\'s five! The last one is in Nereth\'s hands. Go and see the Maku Tree first. Humour an old plant!' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'That\'s five! The last one is in Nereth\'s hands. Go and see the Maku Tree first. Humour an old plant!' },
     { music: 'overworld' },
   ],
   essence6: [
@@ -70424,33 +71463,33 @@ const CUTSCENES = {
   // ---- the dungeon keys (S154), one story beat each -----------------------
   // THE CORAL KEY: Sandpiper Row's fisherman, once the first Essence is in.
   coralKey: [
-    { say: 'Fisherman: You made it out of the Grotto! And dry, too. Nobody stays dry this year.' },
-    { say: 'Fisherman: My father used to dive in the Coral Spire. When the sea went strange, the divers locked it up, and he kept the key in his tackle box.' },
-    { say: 'Fisherman: The reef\'s north of here, past the gap. Take the key. The sea listens to you now!' },
+    { say: 'You made it out of the Grotto! And dry, too. Nobody stays dry this year.' },
+    { say: 'My father used to dive in the Coral Spire. When the sea went strange, the divers locked it up, and he kept the key in his tackle box.' },
+    { say: 'The reef\'s north of here, past the gap. Take the key. The sea listens to you now!' },
     { do: (g) => g.presentKey('d2') },
   ],
 
   // THE PEAT KEY: the old man in the village square, at two Essences.
   peatKey: [
-    { say: 'Old man: Two Essences, and you\'ve still got all your fingers! Sit down a moment. No, stand. You\'re wet.' },
-    { say: 'Old man: When the bog rose over the Sanctum, we locked its door to keep the marsh out of the village. I turned the key myself.' },
-    { say: 'Old man: Head west, past the cracked cliff. You can walk the bog at LOW tide. Here, take the key!' },
+    { say: 'Two Essences, and you\'ve still got all your fingers! Sit down a moment. No, stand. You\'re wet.' },
+    { say: 'When the bog rose over the Sanctum, we locked its door to keep the marsh out of the village. I turned the key myself.' },
+    { say: 'Head west, past the cracked cliff. You can walk the bog at LOW tide. Here, take the key!' },
     { do: (g) => g.presentKey('d3') },
   ],
 
   // THE CISTERN KEY: the Salter on Village Shore, at three Essences.
   cisternKey: [
-    { say: 'Salter: Three Essences! The pans felt that. The brine ran the right way for a whole hour!' },
-    { say: 'Salter: Our water used to come from the Cistern on the Kell. When the sea got into it, we locked the gate and kept the key.' },
-    { say: 'Salter: Go north through the Deep Cut, then west along the cliffs. Here\'s the key. Bring our water back if you can!' },
+    { say: 'Three Essences! The pans felt that. The brine ran the right way for a whole hour!' },
+    { say: 'Our water used to come from the Cistern on the Kell. When the sea got into it, we locked the gate and kept the key.' },
+    { say: 'Go north through the Deep Cut, then west along the cliffs. Here\'s the key. Bring our water back if you can!' },
     { do: (g) => g.presentKey('d4') },
   ],
 
   // THE MOSS KEY: the village digger, at four Essences.
   mossKey: [
-    { say: 'Digger: Four Essences! The sea finally told me where to dig. Right here!' },
+    { say: 'Four Essences! The sea finally told me where to dig. Right here!' },
     { shake: 30, sfx: 'rumble' },
-    { say: 'Digger: A key, all grown over with moss! It must be for the Shrine in the Drowned Wood. Take the wood road north of the village.' },
+    { say: 'A key, all grown over with moss! It must be for the Shrine in the Drowned Wood. Take the wood road north of the village.' },
     { do: (g) => g.presentKey('d5') },
   ],
 
@@ -70459,30 +71498,30 @@ const CUTSCENES = {
   // tree's `beat` plays this the first time she is spoken to; the last step
   // hands the key over the way every item is handed over, held overhead.
   makuKey: [
-    { say: 'Maku Tree: Hoo... hoo? A boy with a blade on his back! I\'ve been asleep a long time, child. Something in the sea woke me up.' },
-    { say: 'Maku Tree: When the sea went wrong, the village locked up the Tidewash Grotto and gave me the key to keep. Here, you take it.' },
+    { say: 'Hoo... hoo? A boy with a blade on his back! I\'ve been asleep a long time, child. Something in the sea woke me up.' },
+    { say: 'When the sea went wrong, the village locked up the Tidewash Grotto and gave me the key to keep. Here, you take it.' },
     { key: 'd1' },
-    { say: 'Maku Tree: The Grotto is east, out on the Shallows. But the key\'s no use while the sea covers the sandbar. Farore has a piece of the Bell, in her shrine on Tern Point, down the south shore. Go and see her!' },
+    { say: 'The Grotto is east, out on the Shallows. But the key\'s no use while the sea covers the sandbar. Farore has a piece of the Bell, in her shrine on Tern Point, down the south shore. Go and see her!' },
   ],
 
   makuSatchel: [
-    { say: 'Maku Tree: Hoo hoo! One Essence, and my roots can feel the Bell again!' },
-    { say: 'Maku Tree: Take this Rod. It was cut from the Tide Bell itself.' },
+    { say: 'Hoo hoo! One Essence, and my roots can feel the Bell again!' },
+    { say: 'Take this Rod. It was cut from the Tide Bell itself.' },
     // Held overhead to Seasons' item jingle, as every other handover is.
     { present: { item: 'rod', level: 1 } },
-    { say: 'Maku Tree: Bring me five Essences, Link, and I\'ll open the road to the Abyssal Keep. Then I\'m going back to sleep!' },
+    { say: 'Bring me five Essences, Link, and I\'ll open the road to the Abyssal Keep. Then I\'m going back to sleep!' },
   ],
   makuMaster: [
     { music: null },
-    { say: 'Maku Tree: Five Essences! The sixth is in Nereth\'s crown. And you\'re soaked through. I like that!' },
+    { say: 'Five Essences! The sixth is in Nereth\'s crown. And you\'re soaked through. I like that!' },
     { shake: 50 },
-    { say: 'Maku Tree: My roots reach all the way down to the Keep. I\'ve been growing them for a hundred years, just for this.' },
-    { say: 'Maku Tree: Take this with you. Someone left it here long ago. They thought they\'d be back for it, too.' },
+    { say: 'My roots reach all the way down to the Keep. I\'ve been growing them for a hundred years, just for this.' },
+    { say: 'Take this with you. Someone left it here long ago. They thought they\'d be back for it, too.' },
     { present: { item: 'sword', level: 3 } },
     // THE SIXTH KEY (S154). The seal on the road down the Kell is a keyhole,
     // and this is what fits it.
-    { say: 'Maku Tree: And this! When Nereth broke the Bell, its clapper rolled into my roots. He never came looking for it.' },
-    { say: 'Maku Tree: The seal on the road down the Kell was made with the Bell. It\'ll open for the clapper. Go on down, Link. And come back up! People always forget that part.' },
+    { say: 'And this! When Nereth broke the Bell, its clapper rolled into my roots. He never came looking for it.' },
+    { say: 'The seal on the road down the Kell was made with the Bell. It\'ll open for the clapper. Go on down, Link. And come back up! People always forget that part.' },
     { flag: 'makuOpenedKeep' },
     { flag: 'keyD6' },
     { music: 'overworld' },
@@ -70496,11 +71535,11 @@ const CUTSCENES = {
     { fade: 'in' },
     { show: { art: 'boss_nereth_0', scale: 2, rise: false },
       text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
-    { say: 'Nereth: So you came down. Everything sinks in the end.' },
-    { say: 'Nereth: I didn\'t break the Bell to be cruel, wader. For a thousand years the sea was told what to do. Nobody ever asked it.' },
-    { say: 'Nereth: Now it does as it likes. Which means, as I like!' },
+    { say: 'So you came down. Everything sinks in the end.' },
+    { say: 'I didn\'t break the Bell to be cruel, wader. For a thousand years the sea was told what to do. Nobody ever asked it.' },
+    { say: 'Now it does as it likes. Which means, as I like!' },
     { shake: 60 },
-    { say: 'Nereth: Go on, blow your little shell. Let\'s see whose sea this is!' },
+    { say: 'Go on, blow your little shell. Let\'s see whose sea this is!' },
     { music: 'finalBoss' },
   ],
   ending: [
@@ -70513,9 +71552,10 @@ const CUTSCENES = {
     { say: 'The Bell rings once, deep under the water. You can\'t hear it, but you can feel it.' },
     { tide: 1 },
     { say: 'The sea goes out. Then it comes back in. Then out again, right on time.' },
-    { say: 'Farore: Listen to that. Boring, isn\'t it? It took six Essences and a Drowned King to make the sea boring again!' },
-    { say: 'Farore: The village is already arguing about where to build the new pier. That\'s how you know it worked!' },
-    { say: 'Farore: I\'m the Oracle of Secrets, Link, and I\'m all out. Go home. Take the boat at LOW tide.' },
+    { say: 'The conch hums, and Farore\'s voice comes out of it.' },
+    { say: 'Listen to that. Boring, isn\'t it? It took six Essences and a Drowned King to make the sea boring again!' },
+    { say: 'The village is already arguing about where to build the new pier. That\'s how you know it worked!' },
+    { say: 'I\'m the Oracle of Secrets, Link, and I\'m all out. Go home. Take the boat at LOW tide.' },
     { text: 'Thalassia keeps its shape.\nThe pier goes back where the pier goes.\nThe Maku Tree sleeps.', frames: 260 },
     { flag: 'finishedGame' },
     // THE GAME DOES NOT RESUME AFTER THE END. It used to: the scene let go,
