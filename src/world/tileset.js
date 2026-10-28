@@ -128,6 +128,10 @@ export function registerTiles(defs) {
       // picture cut into stacked layers — the Maku grove — where the layer
       // underneath is part of the same artwork and not the region's ground.
       underExact: !!def.underExact,
+      // The tile this one is the lower layer of (S215, the houses: a Seasons
+      // metatile mixing two palettes, cut as two). Not a ground; just the
+      // rest of that tile's picture.
+      layerOf: def.layerOf || null,
       pal: def.pal || 'stone',
       flags: def.flags || 0,
       mask: def.mask == null ? 15 : def.mask,

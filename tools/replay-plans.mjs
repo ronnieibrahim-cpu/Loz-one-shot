@@ -141,8 +141,10 @@ export const PLANS = {
       // plus that overshoot does not fit in sixty.
       ['hold', ['up'], 90],
       ['wait', 40],
-      // Inside the shop, and out again through its own door on the floor.
-      ['goto', 5, 5, 300],
+      // Inside the shop, and out again through its doorway in the south wall
+      // (S215: Seasons' own shop, the way out a tile lower than the old
+      // door on the floor, so the walk starts from 5,6).
+      ['goto', 5, 6, 300],
       // Twenty-four frames, not sixty: the door lands the player at 72,88,
       // which is two tiles from the yard's south edge, and a longer hold walks
       // him out of the village and fires a third transition.

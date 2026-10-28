@@ -220,17 +220,3 @@ export function drawAreaBanner(ctx, game) {
   drawTextCentered(ctx, game.bannerText, SCREEN_W / 2, y + 3, '#f8f8e8');
   ctx.globalAlpha = 1;
 }
-
-/** Boss health bar, drawn along the bottom of the playfield. */
-export function drawBossBar(ctx, game) {
-  const b = game.boss;
-  if (!b || b.dead) return;
-  const w = 96, x = Math.round((SCREEN_W - w) / 2), y = 138;
-  ctx.fillStyle = '#080c10';
-  ctx.fillRect(x - 1, y - 1, w + 2, 6);
-  const frac = Math.max(0, b.hp / b.maxHp);
-  ctx.fillStyle = '#982030';
-  ctx.fillRect(x, y, w, 4);
-  ctx.fillStyle = frac > 0.35 ? '#e04858' : '#f8b820';
-  ctx.fillRect(x, y, Math.round(w * frac), 4);
-}

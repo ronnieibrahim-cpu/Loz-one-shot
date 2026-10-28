@@ -1,3 +1,68 @@
+## S215 — a look-through: no boss bar, no speaker names, Seasons' own houses
+
+Branch claude/oracle-tides-credits-towns-e8blux, off main at 67f3db8 (S214).
+
+### The human's choices this session
+- S214's credits (eight places, walking townsfolk): FEEL RIGHT, leave them.
+  The towns' three walkers: GOOD as they are.
+- What next: ANOTHER LOOK-THROUGH against the originals. Asked and answered:
+  - The text box (Seasons: two lines of 16 in its own fixed-width font, a
+    plain black band 144x40 at y 24 or 96): LEAVE OURS. Do not re-ask.
+  - The place label on every map change (Seasons: only a dungeon, in the
+    text box, "Level N / name", waits for A): LEAVE OURS. Do not re-ask.
+  - The boss health bar (Seasons has none): TAKE IT OUT. Done.
+  - Speaker names before story lines ("Farore: ..."): DROP THEM. Done.
+  - The five interiors (grey stone boxes): REBUILD FROM SEASONS' HOUSES. Done.
+
+### Built
+- No boss bar: hud.js `drawBossBar` gone, game.js no longer calls it.
+- Story text: 49 cutscene `say` lines and Pip's two race lines lose their
+  "Name: " prefix. Off-screen speakers get a line of their own: "The conch
+  hums, and Farore's voice comes out of it." before Farore's first line in
+  essence1-5 (essence4: before "He's scared") and the ending; essence2's
+  narration now names "the Drowned King" before Nereth speaks.
+- THE HOUSES: Seasons tileset $2c (Horon's indoors). rip-dungeon-themes.py
+  sheet `house` = `meta:2c`, picks `hw*` (walls/corners, the south doorway
+  e0/e1, clock df, plank floor a0, rug a1, rug border 92, behind-counter a6,
+  counter e8, beds 5e/5f, wardrobe 58/59, dresser 5a/5b, table 89/8a, stool
+  88, chair 5d, little table 8b, barrel 10, jar 86, cabinet 9c, fireplace
+  80/83/81/82, stairs 44/45, crate 1c, cupboard 8c). NEW PICK OPTION
+  `quarters=[...]`: a metatile mixing two palettes is cut as two picks, `hwX`
+  (some quarters) over `hwXU` (the rest), the tiledef `underArt` +
+  `underExact`, the lower one `layerOf: 'hwX'` (new registrar field;
+  check-ground skips such layers). tiles-core.js `house()`; legend
+  `houseWood` (legends.js). Furniture SOLID; doorway F.WARP; counter SOLID +
+  `counter` (spoken across, as Farore's desk).
+- Rooms (overworld.js): houseShop = Seasons $af (counter row 3, shopkeeper
+  4,2 behind it, stock perched on the counter at 3,5,6,7,8 row 3; 4,3 left
+  clear to talk across). home() takes a grid: houseHearth = $80 (wife 4,2,
+  child 6,4), houseNets = $90 (fireplace), houseSandpiper = $a4. Lighthouse
+  floor 0 furnished, stair up `u` at 1,6; floor 1 crates, stair down `n`.
+  Every house's way out is the doorway at 4,7/5,7 (two warps each).
+- ShopItem: `perched` option; drawn still and in its own palette (it bobbed,
+  and every piece of stock was drawn in the grey 'ui' palette).
+- Route: shop heart at 6,4; house exits `goto 5,6` + `exit down`; D6: a
+  `fight` before the Tideshade (see Verified). Replay village-shop-door
+  re-recorded (its walk out starts at 5,6).
+- assets/objects/README.md: the house section.
+
+### Verified
+Whole table green (67 tools incl. walk-dungeons 32/32, replay 51/51,
+check-ground 8/8, check-exits 370/370, check-towns 162/162, check-side 78/78);
+check-playthrough 49/49, THE END, never died; check-build OK; check-rippers
+last, alone.
+- MARGIN WARNING: the run's low-water mark is now 2/48 quarter-hearts in
+  d6/2,2,5 (S214: 5). The Tideshade draws on the global stream, which moves
+  on events not frames, so waits before it change nothing; the keese kill in
+  2,3,5 was what moved it. If the run dies there, sweep with route-prefix
+  INSERT a different event (a kill, a pot) rather than a wait.
+
+### Not done / candidates
+- Other look-through items not yet raised: Seasons shop stock stands still
+  with its price in the cartridge's digits (ours: our font); Seasons houses
+  have liftable pots ($10-$13 are solid barrels here — check the cartridge).
+- The guide's shop/house/boss shots still show the old rooms and the bar.
+
 ## S214 — the credits get more places and their people
 
 Branch claude/oracle-tides-credits-feedback-ha8dtt, off main at f4325a3 (S213).

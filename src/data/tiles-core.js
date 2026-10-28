@@ -1460,6 +1460,29 @@ const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palac
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
 
+// The houses' tiledefs (S215). `layered` names the pieces cut as two layers.
+function house() {
+  const out = {};
+  const put = (n, def = {}) => {
+    const name = 'hw' + n;
+    if (ART[name + 'U']) {
+      out[name + 'U'] = { art: ART[name + 'U'], pal: name + 'U', layerOf: name };
+      Object.assign(def, { underArt: name + 'U', underExact: true });
+    }
+    out[name] = { art: ART[name], pal: name, ...def };
+  };
+  for (const n of ['TL', 'N', 'TR', 'W', 'E', 'BL', 'S', 'BR', 'Clock', 'BedT', 'BedB', 'WardT', 'WardB',
+    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Barrel', 'Jar', 'Cabinet', 'HearthT',
+    'HearthTM', 'HearthB', 'HearthBM', 'Crate', 'Cupboard']) put(n, { flags: F.SOLID });
+  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back']) put(n);
+  put('DoorW', { flags: F.WARP });
+  put('DoorE', { flags: F.WARP });
+  put('Counter', { flags: F.SOLID, counter: true });
+  put('StairsUp', { flags: F.WARP | F.STAIRS });
+  put('StairsDown', { flags: F.WARP | F.STAIRS });
+  return out;
+}
+
 /**
  * One whole Oracle kit for theme `T`, from the picks prefixed `P` (S160).
  * Every piece names its own extracted palette, so the kit is the cartridge's
@@ -3219,6 +3242,12 @@ export function installCoreTiles() {
     frRug: { art: ART.frRug, pal: 'frRug' },
     frDoor: { art: ART.frDoor, pal: 'frDoor', flags: F.WARP },
     ...Object.fromEntries(['DeskW', 'Desk', 'DeskE'].map(n => ['fr' + n, { art: ART['fr' + n], pal: 'fr' + n, flags: F.SOLID, counter: true }])),
+    // THE HOUSES (S215): Oracle of Seasons' own, every piece cut from its
+    // tileset $2c, the indoors of Horon Village (rip-dungeon-themes.py,
+    // `hw*`). A piece whose metatile mixes two palettes is two exact layers:
+    // `hwX` over `hwXU`, so neither is squeezed into four colours. The shop
+    // counter is a COUNTER, spoken across, as Farore's desk is.
+    ...house(),
     // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
     // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
     // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile
