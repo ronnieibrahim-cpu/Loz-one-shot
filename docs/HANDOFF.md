@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Seasons' small-room layout groups 0-3 are the overworld's four SEASONS,
+  not its interiors (S215).** `rooms/seasons/small/room01xx`, `02xx` and `03xx`
+  are summer, autumn and winter Holodrum, which is why drawing them with the
+  indoor tileset came out as scrambled furniture. The houses are layout group
+  4 (`room0480`-`04bf`), and the active-group tileset table for groups 1-3 is
+  one shared file (`group1Tilesets.bin`). Farore's room is the large-room
+  group 5. Know which LAYOUT group before drawing anything.
+- **A Seasons metatile can mix two palettes; cut it as two picks (S215).**
+  Quantising a bed or a counter to four colours loses three; instead
+  `rip-dungeon-themes.py` takes `quarters=[...]` per pick and the tiledef
+  stacks them (`underArt` + `underExact`, the lower one marked `layerOf`, which
+  `check-ground` reads). The registrar names `layerOf` — the liftLevel trap.
+- **Moving a doorway moves the robot's route (S215).** The route left every
+  house with `goto 5,6` because the old exit tile WAS 5,6; a door in the wall
+  needs `goto 5,6` then `exit down`. The playthrough found it by trading with
+  Ossa and then standing in her house for ever.
 - **An NPC refuses nothing a player can walk (S214).** A townsperson set to
   wander walks straight into shallow water and stands in a pond; `NPC` has no
   `avoidFlags`. Every wanderer now carries `DRY_LAND` (src/game/objects.js),

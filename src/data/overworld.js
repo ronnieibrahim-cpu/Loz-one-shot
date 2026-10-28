@@ -3731,35 +3731,43 @@ function installHouses() {
     kind: 'interior',
     name: 'Tidewatch Shop',
     w: 1, h: 1, floors: 1,
-    legend: 'house', music: 'shop', tint: 'cave', scroll: false,
+    legend: 'houseWood', music: 'shop', scroll: false,
     rooms: {
       '0,0,0': {
+        // Seasons' own shop (S215): layout group 4 room $af, the counter
+        // across the room with the stock on it and the shopkeeper behind.
         map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#....o...#',
-          '##########',
+          'ANNNkNNNNB',
+          'W.m,,,,,,E',
+          'W.m,,,,,,E',
+          'Wg=======E',
+          'Wg.c.....E',
+          'Wg.x.....E',
+          'W......ssE',
+          'CSSS[]SSSD',
         ],
         entities: [
           // His errand (S155): the ledger, lost on the South Sands, for a
           // Piece of Heart. He talks shop again once it is home.
-          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
+          // Behind the counter, spoken to across it.
+          ['npc', 4, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
             errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
-          ['shopItem', 4, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield' }],
-          ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
-          ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
-          ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
-          ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
+          // The stock stands on the counter, as Seasons stands it; the tile in
+          // front of the shopkeeper is left clear so he can be spoken to.
+          ['shopItem', 3, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
+          ['shopItem', 5, 3, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
+          ['shopItem', 6, 3, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
+          ['shopItem', 7, 3, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
+          ['shopItem', 8, 3, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
         ],
         // Out of the shop's door and back onto the yard in front of it. The
         // shop moved east when the village became two screens — its door is
         // the middle cell of its front row on `0,5,7`, at 4,4 — so this lands
         // one tile below it, on 0,5,7 rather than on the square.
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } }],
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 32, py: 88, dir: 'down' } },
+        ],
       },
     },
   });
@@ -3836,24 +3844,21 @@ function installHouses() {
   // The three houses the town kit opened. Each is one room with somebody in
   // it, because a door that opens onto nothing is worse than a door that does
   // not open — the shuttered house exists for the buildings we do not furnish.
-  const home = (id, name, music, entities, back) => registerMap({
+  //
+  // Each is one of Seasons' own Horon houses (S215), furniture and all; `map`
+  // names which. The way out is the cartridge's doorway in the south wall.
+  const home = (id, name, music, entities, back, map) => registerMap({
     id, kind: 'interior', name,
     w: 1, h: 1, floors: 1,
-    legend: 'house', music, tint: 'cave', scroll: false,
+    legend: 'houseWood', music, scroll: false,
     rooms: {
       '0,0,0': {
-        map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#....o...#',
-          '##########',
-        ],
+        map,
         entities,
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } }],
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } },
+        ],
       },
     },
   });
@@ -3901,14 +3906,24 @@ function installHouses() {
   home('houseHearth', 'A Village House', 'house', [
     // Her errand (S155): the jar of bog water left at Bog Head's spring, for
     // a hundred rupees. The only errand that pays in rupees.
-    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
+    ['npc', 4, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
       errand: { need: 'foundBogWater', prize: 'rupee100', flag: 'bogwaterDone', ask: 'bogwaterAsk', thanks: 'bogwaterThanks' } }],
     // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
     // Heart found under the doorstep in the flood.
-    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
+    ['npc', 6, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
       errand: { need: 'foundKite', prize: 'heartPiece', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
-  ], { rx: 4, ry: 7, px: 32, py: 88 });
+  ], { rx: 4, ry: 7, px: 32, py: 88 }, [
+    // Seasons' room $80: two beds, a wardrobe, a rug and a table.
+    'ANNNNwwNNB',
+    'Wbsb.vvgoE',
+    'Wd.d.....E',
+    'W___.....E',
+    'Wrrr...s.E',
+    'Woor...()E',
+    'Woor....sE',
+    'CSSS[]SSSD',
+  ]);
 
   // Ossa opens the Coastwise Chain and closes it. Both of her deals live on one
   // entity, which is what the trader's `deals` list is for: the chain's stage
@@ -3923,7 +3938,17 @@ function installHouses() {
         { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd' },
       ],
     }],
-  ], { rx: 4, ry: 8, px: 48, py: 88 });
+  ], { rx: 4, ry: 8, px: 48, py: 88 }, [
+    // Seasons' room $90: the fireplace in the north wall.
+    'ANNfFfNwwB',
+    'WbrlLltvvE',
+    'Wdr......E',
+    'Wrr...s..E',
+    'W.....().E',
+    'W......s.E',
+    'W........E',
+    'CSSS[]SSSD',
+  ]);
 
   // THE LIGHTHOUSE (S200, the dark lighthouse quest). Two floors: the
   // keeper's room at the foot of the stair, and the lamp room above it. He
@@ -3934,18 +3959,20 @@ function installHouses() {
   registerMap({
     id: 'lighthouse', kind: 'interior', name: 'The Lighthouse',
     w: 1, h: 1, floors: 2,
-    legend: 'house', music: 'house', tint: 'cave', scroll: false,
+    // Seasons' house pieces (S215), its keeper's room furnished as theirs
+    // are, with the stair up in the corner where '/' stood.
+    legend: 'houseWood', music: 'house', scroll: false,
     rooms: {
       '0,0,0': {
         map: [
-          '##########',
-          '#.......p#',
-          '#.......p#',
-          '#........#',
-          '#........#',
-          '#.......p#',
-          '#/...o...#',
-          '##########',
+          'ANNNNNNNwB',
+          'Woo.....vE',
+          'W........E',
+          'W.....().E',
+          'W......s.E',
+          'W.......oE',
+          'Wu......oE',
+          'CSSS[]SSSD',
         ],
         entities: [
           ['npc', 4, 2, { sprite: 'npc_elder', dialogue: 'keeperLight', after: 'keeperAfter', afterFlag: 'lighthouseLit',
@@ -3953,20 +3980,21 @@ function installHouses() {
               ask: 'keeperAsk', partial: 'keeperPartial', thanks: 'keeperThanks' } }],
         ],
         warps: [
-          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 0, px: 24, py: 80, dir: 'down' } },
           { x: 1, y: 6, to: { map: 'lighthouse', floor: 1, rx: 0, ry: 0, px: 32, py: 96, dir: 'right' } },
         ],
       },
       '1,0,0': {
         map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#/.......#',
-          '##########',
+          'ANNNNNNNNB',
+          'Wq......qE',
+          'W........E',
+          'W........E',
+          'W........E',
+          'W........E',
+          'Wn.......E',
+          'CSSSSSSSSD',
         ],
         entities: [
           ['lamp', 4.5, 3, { dialogue: 'lampLit' }],
@@ -3982,7 +4010,17 @@ function installHouses() {
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
-  ], { rx: 12, ry: 8, px: 32, py: 88 });
+  ], { rx: 12, ry: 8, px: 32, py: 88 }, [
+    // Seasons' room $a4: a wall of dressers and wardrobes, a table on a rug.
+    'AhhhhhhhhB',
+    'WvvjvjjvjE',
+    'W..rrrr..E',
+    'W..r()r..E',
+    'W..rrrr..E',
+    'Wbx......E',
+    'Wd.......E',
+    'CSSS[]SSSD',
+  ]);
 }
 
 export function installOverworld() {

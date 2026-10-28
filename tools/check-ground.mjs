@@ -93,6 +93,9 @@ for (const [mapId, m] of MAPS) {
         // lack; the ground this rule is about is what shows THROUGH a prop.
         const under = getTileDef(d.underArt);
         if (d.underExact && (under.flags & F.SOLID)) continue;
+        // Nor is the lower half of one tile's own picture (S215, the houses'
+        // two-palette pieces): the tiledef says whose layer it is.
+        if (d.underExact && under.layerOf === d.name) continue;
         const u = room.underGround(d, x, y, tide);
         if (u.flags & F.WET) continue;
         if (pals.has(u.pal)) continue;
@@ -263,10 +266,11 @@ check('no 32x32 object is cut short by plain ground', cut.length === 0,
 // seal, a row of vanes, a cracked rockfall and a grate are all walls in a line
 // on purpose. So are ledges, and so are trees, which are the border of nearly
 // every screen in the game. And so are FENCES (S157): Horon's log palisade
-// and the paling run are lines on purpose; the tiledef says `fence`.
+// and the paling run are lines on purpose; the tiledef says `fence`. And a
+// COUNTER (S215): the shop's runs the width of the room, as Seasons' does.
 const GATEISH = F.RING | F.BOMBABLE | F.VANE | F.HEAVY;
 const decorative = (d) => !!d.underArt && !!(d.flags & F.SOLID) && !d.quad && !d.big
-  && !(d.flags & (F.LEDGE | GATEISH)) && !d.openFlag && !d.fence;
+  && !(d.flags & (F.LEDGE | GATEISH)) && !d.openFlag && !d.fence && !d.counter;
 const lines = [];
 for (const [mapId, m] of MAPS) {
   for (const key of Object.keys(m.roomDefs)) {

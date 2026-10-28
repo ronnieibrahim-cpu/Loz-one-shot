@@ -125,6 +125,11 @@ SHEETS = {
     # FARORE'S ROOM (S168): Seasons tileset $4b, the room she sits in
     # (group 4 room $e8, laid out from layout group 5's room $e8).
     'farore': 'meta:4b',
+    # THE HOUSES (S215): Seasons tileset $2c, the indoors of Horon Village
+    # (GFXH_TILESET_INDOORS, PALH_TILESET_INDOORS_A), whose rooms are layout
+    # group 4's $80-$bf (rooms/seasons/small/room04xx: the shop $af, the
+    # houses $80, $90, $a4, $8d).
+    'house': 'meta:2c',
 }
 META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:41': "the Sword & Shield Maze, ice half", 'meta:3e': "the Explorer's Crypt",
@@ -132,7 +137,8 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:3c': 'the Ancient Ruins', 'meta:42': "the Sword & Shield Maze, fire half",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
               'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon',
-              'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb'}
+              'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb',
+              'meta:2c': "Horon Village's houses"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -880,6 +886,59 @@ PICKS = [
     meta('frDeskW', 0x8e, "her desk, west end, Farore's room", 'farore'),
     meta('frDesk', 0x8d, "her desk, a middle run, Farore's room", 'farore'),
     meta('frDeskE', 0x8f, "her desk, east end, Farore's room", 'farore'),
+    # ---- The houses (S215) ---------------------------------------------------
+    #
+    # Our shop, homes and lighthouse were grey stone boxes. Seasons' houses
+    # are these: a wooden ring, a plank floor, and the furniture, all laid
+    # out in the cartridge's own rooms (see the `house` sheet above).
+    meta('hwTL', 0xb8, "wall corner, north-west, Horon Village's houses", 'house'),
+    meta('hwN', 0xb0, "wall, north, Horon Village's houses", 'house'),
+    meta('hwTR', 0xb9, "wall corner, north-east, Horon Village's houses", 'house'),
+    meta('hwW', 0xb3, "wall, west, Horon Village's houses", 'house'),
+    meta('hwE', 0xb1, "wall, east, Horon Village's houses", 'house'),
+    meta('hwBL', 0xba, "wall corner, south-west, Horon Village's houses", 'house'),
+    meta('hwS', 0xb2, "wall, south, Horon Village's houses", 'house'),
+    meta('hwBR', 0xbb, "wall corner, south-east, Horon Village's houses", 'house'),
+    meta('hwDoorW', 0xe0, "the doorway in the south wall, west half, Horon Village's houses", 'house', quarters=[1]),
+    meta('hwDoorWU', 0xe0, "the doorway in the south wall, west half, Horon Village's houses, the quarters in its other palette", 'house', quarters=[0, 2, 3]),
+    meta('hwDoorE', 0xe1, "the doorway in the south wall, east half, Horon Village's houses", 'house', quarters=[0]),
+    meta('hwDoorEU', 0xe1, "the doorway in the south wall, east half, Horon Village's houses, the quarters in its other palette", 'house', quarters=[1, 2, 3]),
+    meta('hwClock', 0xdf, "the clock on the north wall, Horon Village's houses", 'house'),
+    meta('hwFloor', 0xa0, "plank floor, Horon Village's houses", 'house'),
+    meta('hwRug', 0xa1, "the green rug, Horon Village's houses", 'house'),
+    meta('hwBack', 0xa6, "the floor behind the shop counter, Horon Village's houses", 'house'),
+    meta('hwCounter', 0xe8, "the shop counter, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwCounterU', 0xe8, "the shop counter, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwBedT', 0x5e, "bed, head, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwBedTU', 0x5e, "bed, head, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwBedB', 0x5f, "bed, foot, Horon Village's houses", 'house'),
+    meta('hwWardT', 0x58, "wardrobe, top, Horon Village's houses", 'house'),
+    meta('hwWardB', 0x59, "wardrobe, foot, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwWardBU', 0x59, "wardrobe, foot, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwShelfT', 0x5a, "dresser, top, Horon Village's houses", 'house'),
+    meta('hwShelfB', 0x5b, "dresser, foot, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwShelfBU', 0x5b, "dresser, foot, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwTableW', 0x89, "table, west half, Horon Village's houses", 'house'),
+    meta('hwTableE', 0x8a, "table, east half, Horon Village's houses", 'house'),
+    meta('hwStool', 0x88, "stool, Horon Village's houses", 'house'),
+    meta('hwChair', 0x5d, "chair, Horon Village's houses", 'house'),
+    meta('hwBox', 0x8b, "little table, Horon Village's houses", 'house'),
+    meta('hwBarrel', 0x10, "barrel, Horon Village's houses", 'house'),
+    meta('hwJar', 0x86, "green jar, Horon Village's houses", 'house'),
+    meta('hwCabinet', 0x9c, "the shop cabinet, Horon Village's houses", 'house'),
+    meta('hwHearthT', 0x80, "fireplace, top corner, Horon Village's houses", 'house'),
+    meta('hwHearthTM', 0x83, "fireplace, top middle, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwHearthTMU', 0x83, "fireplace, top middle, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwHearthB', 0x81, "fireplace, foot corner, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwHearthBU', 0x81, "fireplace, foot corner, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwHearthBM', 0x82, "fireplace, the fire, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwHearthBMU', 0x82, "fireplace, the fire, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwStairsUp', 0x44, "the stair up, Horon Village's houses", 'house'),
+    meta('hwStairsDown', 0x45, "the stair down, Horon Village's houses", 'house'),
+    meta('hwCrate', 0x1c, "crate, Horon Village's houses", 'house'),
+    meta('hwRugEdge', 0x92, "the rug's border at the foot of the beds, Horon Village's houses", 'house', quarters=[0, 1]),
+    meta('hwRugEdgeU', 0x92, "the rug's border at the foot of the beds, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
+    meta('hwCupboard', 0x8c, "cupboard, Horon Village's houses", 'house'),
 ]
 
 # Picks that are an OBJECT standing on a floor, not a floor or a wall.
@@ -916,7 +975,9 @@ def quantise(block):
     colours have a total order and every pixel is a direct lookup, so the
     output is byte-identical run to run — which is what check-tilesets asserts.
     """
-    cnt = Counter(p for row in block for p in row)
+    # A pixel of None is outside the pick's `quarters` (S215): it is not a
+    # colour, it is transparent, and it does not take one of the four slots.
+    cnt = Counter(p for row in block for p in row if p is not None)
     ranked = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))
     keep = sorted((c for c, _ in ranked[:4]), key=lambda c: (-lum(c), c))
     # NEAREST IN RGB, NOT IN LUMINANCE. This used to read
@@ -943,7 +1004,7 @@ def quantise(block):
     remap = {c: min(keep, key=lambda k: (sum((a - b) ** 2 for a, b in zip(k, c)), k))
              for c in cnt}
     idx = {c: i for i, c in enumerate(keep)}
-    grid = [''.join(str(idx[remap[p]]) for p in row) for row in block]
+    grid = [''.join('.' if p is None else str(idx[remap[p]]) for p in row) for row in block]
     # PAD TO FOUR. A flat tile can have two or three distinct colours, and
     # gfx/palettes.js registerPalettes() takes ONLY arrays of exactly four and
     # SILENTLY IGNORES anything else — so a three-colour tile registered
@@ -1019,6 +1080,19 @@ def transform(pick, block):
     return block
 
 
+def quarters(pick, block):
+    """Keep only the 8x8 quarters a pick names (`quarters`: 0 TL, 1 TR, 2 BL,
+    3 BR) and make the rest transparent (None). A Seasons metatile draws each
+    quarter in its own palette; one that mixes two is cut as two picks, one
+    per palette, the second drawn exactly beneath the first (`underExact`),
+    so neither is squeezed into four colours (S215, the houses)."""
+    q = pick[4].get('quarters') if len(pick) == 5 and isinstance(pick[4], dict) else None
+    if q is None:
+        return block
+    return [[p if ((y // 8) * 2 + x // 8) in q else None for x, p in enumerate(row)]
+            for y, row in enumerate(block)]
+
+
 def hexc(c):
     return '#%02x%02x%02x' % c
 
@@ -1036,11 +1110,12 @@ def contact_sheet(images, path):
     for i, pick in enumerate(PICKS):
         name, x, y, note, sheet = unpack(pick)
         im = images[sheet]
-        grid, keep = quantise(transform(pick, read(im, x, y)))
+        grid, keep = quantise(quarters(pick, transform(pick, read(im, x, y))))
         q = Image.new('RGB', (16, 16))
         for yy in range(16):
             for xx in range(16):
-                q.putpixel((xx, yy), keep[int(grid[yy][xx])])
+                if grid[yy][xx] != '.':
+                    q.putpixel((xx, yy), keep[int(grid[yy][xx])])
         gx, gy = (i % COLS) * cw, (i // COLS) * ch
         out.paste(im.crop((x, y, x + 16, y + 16)).resize((16 * S, 16 * S), Image.NEAREST), (gx + 4, gy + 2))
         out.paste(q.resize((16 * S, 16 * S), Image.NEAREST), (gx + 4, gy + 4 + 16 * S))
@@ -1063,14 +1138,14 @@ def main():
     arts, pals, lossy = [], [], []
     for pick in PICKS:
         name, x, y, note, sheet = unpack(pick)
-        block = transform(pick, read(images[sheet], x, y))
+        block = quarters(pick, transform(pick, read(images[sheet], x, y)))
         if flipped(pick):
             note += ' (mirrored)'
         if vflipped(pick):
             note += ' (turned over)'
         if rotation(pick):
             note += ' (turned %+d)' % rotation(pick)
-        before = len({p for row in block for p in row})
+        before = len({p for row in block for p in row if p is not None})
         grid, keep = quantise(block)
         if name in KEY_BACKGROUND:
             grid = key_background(grid)

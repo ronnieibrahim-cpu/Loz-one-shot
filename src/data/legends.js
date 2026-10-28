@@ -529,6 +529,17 @@ export function installLegends() {
     '.': 'frFloor', 'c': 'frCarpet', 'r': 'frRug', 'P': 'frPillarT', 'p': 'frPillarB',
     '(': 'frDeskW', '=': 'frDesk', ')': 'frDeskE',
   });
+  // Seasons' houses (S215): see tiles-core.js `house()`.
+  registerLegend('houseWood', {
+    'A': 'hwTL', 'N': 'hwN', 'B': 'hwTR', 'W': 'hwW', 'E': 'hwE', 'C': 'hwBL', 'S': 'hwS', 'D': 'hwBR',
+    '[': 'hwDoorW', ']': 'hwDoorE', 'k': 'hwClock',
+    '.': 'hwFloor', 'r': 'hwRug', '_': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
+    'b': 'hwBedT', 'd': 'hwBedB', 'w': 'hwWardT', 'v': 'hwWardB', 'h': 'hwShelfT', 'j': 'hwShelfB',
+    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwBarrel',
+    'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard',
+    'f': 'hwHearthT', 'F': 'hwHearthTM', 'l': 'hwHearthB', 'L': 'hwHearthBM',
+    'u': 'hwStairsUp', 'n': 'hwStairsDown',
+  });
   registerLegend('house', {
     ' ': 'void',
     '.': 'dFloor', '#': 'dWall', 'p': 'pot', '/': 'dStairs',

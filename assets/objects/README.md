@@ -40,3 +40,16 @@ the tileset at step `k` of its animations — the whirlpool's four frames).
 | `tilesetMappings26.bin`, `tilesetMappings10.bin` | `tileset_layouts/ages/` | Mermaid's Cave (tileset $3d, the sunken past) and the sea floor (tileset $5f, the underwater present) |
 | `gfx_tileset_*.png` | `gfx_compressible/ages/` | the tile graphics |
 | `gfx_animations_{1,2,3}.png` | `gfx/ages/` | the whirlpool's animated tiles |
+
+## The houses (S215)
+
+`tools/rip-dungeon-themes.py` cuts the shop, the homes and the lighthouse
+(`hw*`, legend `houseWood`) out of Seasons tileset **$2c** — the indoors of
+Horon Village: `GFXH_TILESET_INDOORS` (`gfx_tileset_dungeon_standard_1`,
+`gfx_tileset_indoors_1`, `_2`, `gfx_tileset_vases`), `PALH_TILESET_INDOORS_A`,
+layout `$2e` (= `tilesetMappings2d.bin`) — all files already here for
+Farore's room. The rooms themselves were laid out by hand after the
+cartridge's own: `rooms/seasons/small/room04af.bin` (the shop), `room0480`,
+`room0490` and `room04a4` (the homes), read with `group1Tilesets.bin` (groups
+1-3 share it) at the same commit. Those layout files are not copied here: a
+room grid is authored data, not extracted art.

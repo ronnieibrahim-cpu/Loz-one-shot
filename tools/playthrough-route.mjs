@@ -564,11 +564,15 @@ export const ROUTE = [
   ['travel', 5, 7, 8000],
   ['goto', 4, 4, 600],
   ['wait', 60],
-  ['goto', 8, 4, 500],
+  // The heart stands on the counter at 6,3 since the shop became Seasons'
+  // own (S215), and the way out is the doorway in the south wall, a step
+  // below 5,6.
+  ['goto', 6, 4, 500],
   ['hold', ['up'], 6],
   ['tap', 'a', 30],
   ['dialogue', 300],
   ['goto', 5, 6, 500],
+  ['exit', 'down', 200],
   ['exit', 'down', 400],
   ['wait', 60],
   ['travel', 11, 8, 8000],
@@ -2833,13 +2837,13 @@ export const ROUTE = [
   ['travel', 4, 7, 4000], ['loot', 600],
   ['travel', 4, 8, 4000], ['loot', 600],
   // LINK 1 — Ossa the net-mender, indoors off Village Shore. Her door is at
-  // 3,5 and her house's own way out is the tile at 5,6, so stepping onto it
-  // IS the exit: an `exit` directive after it walks out of the village screen
-  // as well and lands the run one screen south of the link it wants next.
+  // 3,5, and her house's way out is the doorway in its south wall (S215,
+  // Seasons' own house): 5,6 then one `exit` down, which stops at the yard.
   ['goto', 3, 4, 900],
   ['wait', 90],
   ['trade', 1, 1200],
   ['goto', 5, 6, 600],
+  ['exit', 'down', 200],
   ['wait', 90],
   // LINK 2 — Pell, on the shore outside her door.
   ['trade', 2, 1200],
@@ -2935,6 +2939,7 @@ export const ROUTE = [
   ['wait', 90],
   ['trade', 11, 1200],
   ['goto', 5, 6, 600],
+  ['exit', 'down', 200],
   ['wait', 90],
   ['travel', 4, 7, 4000], ['loot', 600],
   ['goto', 4, 1, 900],

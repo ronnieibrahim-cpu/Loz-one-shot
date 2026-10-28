@@ -924,6 +924,8 @@ export class ShopItem extends Entity {
     this.saveKey = o.saveKey || null;
     this.once = o.once !== false;      // most stock is one-per-save
     this.sold = false;
+    // On the shop counter (S215), as Seasons stands its stock.
+    this.perched = !!o.perched;
     this.depth = -3;
   }
 
@@ -1000,9 +1002,13 @@ export class ShopItem extends Entity {
 
   draw(ctx, game, ox, oy) {
     if (this.sold) return;
-    const bob = Math.round(Math.sin(this.frame * 0.06) * 1);
-    sprites.draw(ctx, this.icon, ox + this.x, oy + this.y + bob,
-      { pal: (this.item && ITEMS[this.item] && ITEMS[this.item].pal) || 'ui' });
+    // Still, in its own colours (S215). It used to bob, and every piece of
+    // stock was drawn in the menu's grey 'ui' palette, so a bomb, a heart and
+    // a bottle on sale were three grey shapes; Seasons' stock sits still in
+    // the colours it has anywhere else.
+    const pal = this.item ? (ITEMS[this.item] && ITEMS[this.item].pal) || undefined
+      : this.pickup ? (PICKUPS[this.pickup] || PICKUPS.rupee1).pal || undefined : 'ui';
+    sprites.draw(ctx, this.icon, ox + this.x, oy + this.y, pal ? { pal } : undefined);
     // The tag shows what it will actually cost, so a charm that makes things
     // cheaper is visible from across the shop rather than at the till.
     drawText(ctx, String(game.shopPrice(this.price)),
