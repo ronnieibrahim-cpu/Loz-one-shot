@@ -3735,30 +3735,33 @@ function installHouses() {
     rooms: {
       '0,0,0': {
         // Seasons' own shop (S215): layout group 4 room $af, the counter
-        // across the room with the stock on it and the shopkeeper behind.
+        // across the room. Its stock stands BEHIND the counter with the price
+        // above it and the shopkeeper out in front at its west end, as the
+        // cartridge's group1MapafObjectData places them (S216: the shopkeeper
+        // at $48,$28, the stock at y $28; shopItem.s writes each price into the
+        // row of tiles above its item).
         map: [
           'ANNNkNNNNB',
           'W.m,,,,,,E',
           'W.m,,,,,,E',
           'Wg=======E',
           'Wg.c.....E',
-          'Wg.x.....E',
-          'W......ssE',
+          'Wg.x..yyyE',
+          'W.....yssE',
           'CSSS[]SSSD',
         ],
         entities: [
           // His errand (S155): the ledger, lost on the South Sands, for a
           // Piece of Heart. He talks shop again once it is home.
-          // Behind the counter, spoken to across it.
-          ['npc', 4, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
+          ['npc', 2, 4, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
             errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
-          // The stock stands on the counter, as Seasons stands it; the tile in
-          // front of the shopkeeper is left clear so he can be spoken to.
-          ['shopItem', 3, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
-          ['shopItem', 5, 3, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
-          ['shopItem', 6, 3, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
-          ['shopItem', 7, 3, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
-          ['shopItem', 8, 3, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
+          // The stock stands behind the counter, bought across it (Player
+          // .tryContextAction reaches one tile further through a counter).
+          ['shopItem', 4, 2, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
+          ['shopItem', 5, 2, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
+          ['shopItem', 6, 2, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
+          ['shopItem', 7, 2, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
+          ['shopItem', 8, 2, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
         ],
         // Out of the shop's door and back onto the yard in front of it. The
         // shop moved east when the village became two screens — its door is

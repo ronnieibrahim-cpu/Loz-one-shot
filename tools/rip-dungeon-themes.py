@@ -130,6 +130,11 @@ SHEETS = {
     # group 4's $80-$bf (rooms/seasons/small/room04xx: the shop $af, the
     # houses $80, $90, $a4, $8d).
     'house': 'meta:2c',
+    # THE CAVES (S216): Seasons tileset $31 (GFXH_TILESET_CAVE,
+    # PALH_TILESET_CAVE, layout $2f), the spiked rock and speckled floor of
+    # Holodrum's caves (layout group 4's $b7 and $ab; group 5's caves are the
+    # same set as tileset $4f).
+    'cave': 'meta:31',
 }
 META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:41': "the Sword & Shield Maze, ice half", 'meta:3e': "the Explorer's Crypt",
@@ -138,7 +143,7 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
               'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon',
               'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb',
-              'meta:2c': "Horon Village's houses"}
+              'meta:2c': "Horon Village's houses", 'meta:31': "Holodrum's caves"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -923,7 +928,7 @@ PICKS = [
     meta('hwStool', 0x88, "stool, Horon Village's houses", 'house'),
     meta('hwChair', 0x5d, "chair, Horon Village's houses", 'house'),
     meta('hwBox', 0x8b, "little table, Horon Village's houses", 'house'),
-    meta('hwBarrel', 0x10, "barrel, Horon Village's houses", 'house'),
+    meta('hwPot', 0x10, "the pot (TILEINDEX_DUNGEON_POT, 'dungeons, indoors'), Horon Village's houses", 'house'),
     meta('hwJar', 0x86, "green jar, Horon Village's houses", 'house'),
     meta('hwCabinet', 0x9c, "the shop cabinet, Horon Village's houses", 'house'),
     meta('hwHearthT', 0x80, "fireplace, top corner, Horon Village's houses", 'house'),
@@ -939,6 +944,26 @@ PICKS = [
     meta('hwRugEdge', 0x92, "the rug's border at the foot of the beds, Horon Village's houses", 'house', quarters=[0, 1]),
     meta('hwRugEdgeU', 0x92, "the rug's border at the foot of the beds, Horon Village's houses, the quarters in its other palette", 'house', quarters=[2, 3]),
     meta('hwCupboard', 0x8c, "cupboard, Horon Village's houses", 'house'),
+    meta('hwMat', 0xac, "the patterned mat in the shop's corner, Horon Village's houses", 'house'),
+    meta('cvFloor', 0xa0, "speckled floor, Holodrum's caves", 'cave'),
+    meta('cvFloorB', 0xa1, "speckled floor, the busier one, Holodrum's caves", 'cave'),
+    meta('cvFill', 0xa7, "the rock behind the walls, Holodrum's caves", 'cave'),
+    meta('cvN', 0xb0, "wall, north, Holodrum's caves", 'cave'),
+    meta('cvE', 0xb1, "wall, east, Holodrum's caves", 'cave'),
+    meta('cvS', 0xb2, "wall, south, Holodrum's caves", 'cave'),
+    meta('cvW', 0xb3, "wall, west, Holodrum's caves", 'cave'),
+    meta('cvCNW', 0xb4, "wall, the corner of a block whose faces look north and west, Holodrum's caves", 'cave'),
+    meta('cvCNE', 0xb5, "wall, the corner of a block whose faces look north and east, Holodrum's caves", 'cave'),
+    meta('cvCSW', 0xb6, "wall, the corner of a block whose faces look south and west, Holodrum's caves", 'cave'),
+    meta('cvCSE', 0xb7, "wall, the corner of a block whose faces look south and east, Holodrum's caves", 'cave'),
+    meta('cvTL', 0xb8, "wall corner, north-west, Holodrum's caves", 'cave'),
+    meta('cvTR', 0xb9, "wall corner, north-east, Holodrum's caves", 'cave'),
+    meta('cvBL', 0xba, "wall corner, south-west, Holodrum's caves", 'cave'),
+    meta('cvBR', 0xbb, "wall corner, south-east, Holodrum's caves", 'cave'),
+    meta('cvDoor', 0x36, "the way out in the south wall, Holodrum's caves", 'cave'),
+    meta('cvPot', 0x10, "the pot, Holodrum's caves", 'cave'),
+    meta('cvRock', 0x15, "the rock, Holodrum's caves", 'cave'),
+    meta('cvStairsDown', 0x45, "the stair down, Holodrum's caves", 'cave'),
 ]
 
 # Picks that are an OBJECT standing on a floor, not a floor or a wall.

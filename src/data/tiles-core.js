@@ -1472,12 +1472,15 @@ function house() {
     out[name] = { art: ART[name], pal: name, ...def };
   };
   for (const n of ['TL', 'N', 'TR', 'W', 'E', 'BL', 'S', 'BR', 'Clock', 'BedT', 'BedB', 'WardT', 'WardB',
-    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Barrel', 'Jar', 'Cabinet', 'HearthT',
+    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Jar', 'Cabinet', 'HearthT',
     'HearthTM', 'HearthB', 'HearthBM', 'Crate', 'Cupboard']) put(n, { flags: F.SOLID });
-  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back']) put(n);
+  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back', 'Mat']) put(n);
   put('DoorW', { flags: F.WARP });
   put('DoorE', { flags: F.WARP });
   put('Counter', { flags: F.SOLID, counter: true });
+  // Metatile $10 is Seasons' TILEINDEX_DUNGEON_POT ("dungeons, indoors"): the
+  // same pot a dungeon's is, lifted and thrown the same way (S216).
+  put('Pot', { flags: F.SOLID | F.ROCK });
   put('StairsUp', { flags: F.WARP | F.STAIRS });
   put('StairsDown', { flags: F.WARP | F.STAIRS });
   return out;
@@ -3687,6 +3690,7 @@ export function installCoreTiles() {
     rockSandStairs: { lift: 'stairsDown', persist: true },
     rockLawn: { lift: 'hLawn', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    hwPot: { lift: 'hwFloor', drop: 'common' },
     rockCave: { lift: 'rockFloorDk', drop: 'common' },
     potCave: { lift: 'rockFloorDk', drop: 'common' },
     ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),

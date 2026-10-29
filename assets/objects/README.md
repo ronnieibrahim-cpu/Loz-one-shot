@@ -19,7 +19,7 @@ proves the rip reproduces byte for byte.
 | `gfxHeaders.s` | `data/seasons/` | which graphics file lands at which VRAM address |
 | `paletteHeaders.s`, `paletteData.s` | `data/seasons/` | BG palettes 2-7 per tileset, and palette 0 (PALH_0f) |
 | `animationGroups.s`, `animationData.s`, `animationGfxHeaders.s` | `data/seasons/` | the lit torch's four flame frames |
-| `tilesetMappings{00,21,23,24,25,26,27,29,2a}.bin` | `tileset_layouts/seasons/` | the metatile layouts (8 bytes a metatile); 21, 23 and 26 (the Hero's Cave, Snake's Remains, Unicorn's Cave) added in S160 for the three optional dungeons' kits, which `tools/rip-dungeon-themes.py` reads through rip-objects' `Tileset` |
+| `tilesetMappings{00,21,23,24,25,26,27,29,2a,2d,2f}.bin` | `tileset_layouts/seasons/` | the metatile layouts (8 bytes a metatile); 2d the houses (S215), 2f the caves (S216); 21, 23 and 26 (the Hero's Cave, Snake's Remains, Unicorn's Cave) added in S160 for the three optional dungeons' kits, which `tools/rip-dungeon-themes.py` reads through rip-objects' `Tileset` |
 | `gfx_tileset_*.png` | `gfx_compressible/seasons/` | the tile graphics |
 | `gfx_animations_3.png` | `gfx/seasons/` | the flame tiles |
 
@@ -53,3 +53,17 @@ cartridge's own: `rooms/seasons/small/room04af.bin` (the shop), `room0480`,
 `room0490` and `room04a4` (the homes), read with `group1Tilesets.bin` (groups
 1-3 share it) at the same commit. Those layout files are not copied here: a
 room grid is authored data, not extracted art.
+
+## The caves (S216)
+
+`tools/rip-dungeon-themes.py` cuts the caves (`cv*`, legend `cave`) out of
+Seasons tileset **$31** — Holodrum's caves: `GFXH_TILESET_CAVE`
+(`gfx_tileset_dungeon_standard_1`, `gfx_tileset_cave_1`, `_2`,
+`gfx_tileset_cave_replacement`), `PALH_TILESET_CAVE` (`paletteData5880`),
+layout `$2f` (`tilesetMappings2f.bin`). The three graphics files and the
+layout were added in S216, from the same commit as the rest. The walls are
+drawn by their neighbours (`ring.free`, `Room.faceArt`), the way
+`rooms/seasons/small/room04b7.bin` and `room04ab.bin` and group 5's large
+caves lay them out: a spiked run toward every floor, the room's corners at
+its corners, a block's own corners where a wall ends, and plain rock where no
+floor can see it; the way out is `$36` in the south wall.

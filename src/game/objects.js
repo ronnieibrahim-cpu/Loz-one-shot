@@ -924,7 +924,7 @@ export class ShopItem extends Entity {
     this.saveKey = o.saveKey || null;
     this.once = o.once !== false;      // most stock is one-per-save
     this.sold = false;
-    // On the shop counter (S215), as Seasons stands its stock.
+    // Shop stock (S215), drawn still and priced above, as Seasons stands it.
     this.perched = !!o.perched;
     this.depth = -3;
   }
@@ -1011,8 +1011,11 @@ export class ShopItem extends Entity {
     sprites.draw(ctx, this.icon, ox + this.x, oy + this.y, pal ? { pal } : undefined);
     // The tag shows what it will actually cost, so a charm that makes things
     // cheaper is visible from across the shop rather than at the till.
-    drawText(ctx, String(game.shopPrice(this.price)),
-      ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
+    // Perched stock wears it in dark ink on the tiles above, centred, as
+    // Seasons' shopItem.s writes its price; floor stock keeps it beneath.
+    const tag = String(game.shopPrice(this.price));
+    if (this.perched) drawText(ctx, tag, ox + this.x + 8 - tag.length * 4, oy + this.y - 8);
+    else drawText(ctx, tag, ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
   }
 }
 defineEntity('shopItem', (x, y, o) => new ShopItem(x, y, o));
