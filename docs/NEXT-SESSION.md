@@ -28,6 +28,11 @@ Branch claude/oracle-tides-caves-shop-c90sev, off main at a9d576d (S216).
 ### Verified
 Whole table green; check-playthrough 49/49, THE END, never died, 314667
 frames (unchanged), low-water 2; check-rippers last, alone; check-build OK.
+Replay: five recordings re-recorded (d1-sluicegate, d3-undertow,
+d4-drowned-sill, d5-overthrow, tide-steps-split); only the entity count `e`
+moved (shorter splash/clink lives). d5-overthrow's summary camMaxY/camEndY
+also moved 35->39 / 32->36: not asserted by its plan, and stale since before
+S217 (last recorded S185), not caused by the effects.
 
 ### Not done / candidates
 - Still hand-drawn effects: dust, foam, bubble, sparkle, ripple, flame,
