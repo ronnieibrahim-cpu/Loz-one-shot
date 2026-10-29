@@ -388,6 +388,14 @@ export class Room {
         }
       }
     }
+    // A FREE RING (S216, Seasons' caves) is drawn by neighbourhood alone in
+    // a room of any size: every cell of the wall mass asks `faceArt`, the
+    // room's edge counting as more wall, and a cell no floor can see draws the
+    // tile's own art (the plain rock behind the walls).
+    if (d.ring && d.ring.free && this.cw !== 15) {
+      const f = this.faceArt(d, x, y, tide);
+      if (f) return f;
+    }
     if (d.lip) {
       const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
       const n = other(y - 1), s = other(y + 1);
@@ -476,8 +484,10 @@ export class Room {
       return n.ring === R || n.ringWall || !!(n.flags & F.DOOR);
     };
     const n = wall(x, y - 1), s = wall(x, y + 1), w = wall(x - 1, y), e = wall(x + 1, y);
-    if (!s) return R.N;
-    if (!n) return R.S;
+    // Where a wall ENDS, a kit that has them draws the block's own corner
+    // (Seasons' caves, $b4-$b7) rather than running the face to the edge.
+    if (!s) return (R.cSW && !w && e) ? R.cSW : (R.cSE && !e && w) ? R.cSE : R.N;
+    if (!n) return (R.cNW && !w && e) ? R.cNW : (R.cNE && !e && w) ? R.cNE : R.S;
     if (!e) return R.W;
     if (!w) return R.E;
     if (!wall(x + 1, y + 1)) return R.TL;

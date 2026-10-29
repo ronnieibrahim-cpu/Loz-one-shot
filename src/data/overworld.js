@@ -1057,7 +1057,7 @@ const rooms = {
     ],
     // A crack in the foot of the reef cliff: a bomb opens it to Pot Cellar (S193).
     warps: [
-      { x: 6, y: 6, to: { map: 'cave15', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 6, y: 6, to: { map: 'cave15', floor: 0, rx: 0, ry: 0, px: 72, py: 32, dir: 'down' } },
     ],
     entities: [
       ['crab', 4, 3],
@@ -3430,7 +3430,7 @@ const rooms = {
       ['barnacle', 5, 4],
     ],
     warps: [
-      { x: 4, y: 6, to: { map: 'cave10', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 4, y: 6, to: { map: 'cave10', floor: 0, rx: 0, ry: 0, px: 120, py: 32, dir: 'down' } },
     ],
   },
   '0,13,4': {

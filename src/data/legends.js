@@ -508,9 +508,11 @@ export function installLegends() {
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
     ' ': 'void',
-    '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
-    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'potCave', 'o': 'rockCave',
-    '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
+    // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js
+    // cave()). The way out, `C`, is set in the south wall.
+    '.': 'cvFloor', 'g': 'cvFloorB', '#': 'cvWall', '%': 'cvWall',
+    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'cvPot', 'o': 'cvRock',
+    '/': 'cvStairsDown', 'C': 'cvDoor', 'N': 'cvDoorN', 'U': 'cvStairsUp', 'q': 'cvPost', '_': 'ledgeRockDk',
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',

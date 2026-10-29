@@ -964,6 +964,8 @@ PICKS = [
     meta('cvPot', 0x10, "the pot, Holodrum's caves", 'cave'),
     meta('cvRock', 0x15, "the rock, Holodrum's caves", 'cave'),
     meta('cvStairsDown', 0x45, "the stair down, Holodrum's caves", 'cave'),
+    meta('cvStairsUp', 0x44, "the stair up, Holodrum's caves", 'cave'),
+    meta('cvDoorN', 0x34, "the way out in the north wall, Holodrum's caves", 'cave'),
 ]
 
 # Picks that are an OBJECT standing on a floor, not a floor or a wall.

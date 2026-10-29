@@ -1,3 +1,69 @@
+## S216 — the shop the cartridge's way, house pots, Seasons' own caves
+
+Branch claude/oracle-tides-review-5qo8xr, off main at 2d7c4c3 (S215).
+
+### The human's choices this session
+- S215's houses and shop in play: RIGHT, leave them. The story without
+  speaker names: READS WELL, leave it.
+- Shop: the shield's price sat on the stool and the corner mat was missing
+  (fix both: done). Then, shown a mock-up, the cartridge's own ARRANGEMENT:
+  YES — stock behind the counter, price above, shopkeeper out front.
+- House pots liftable with drops, as Seasons' $10 is: YES, keep.
+- Caves (grey stone) rebuilt from Seasons' cave set: YES, all of them,
+  contents unchanged.
+
+### Built
+- SHOP: Seasons' group1MapafObjectData puts the shopkeeper ($46) at y $48 x
+  $28 — in FRONT of the counter at its west end (2,4) — and the stock
+  (INTERAC_SHOP_ITEM) at y $28, behind the counter (row 2). shopItem.s writes
+  each price as BG tiles in the row of tiles above its item ($30+digit: the
+  TEXT FONT, ASCII-indexed at $9000, $20 = space; Seasons palette 3).
+  houseShop: stock at 4..8,2; ShopItem `perched` draws the price centred
+  above in dark ink (our font, as our text box is ours). Bought across the
+  counter (tryContextAction already reaches through `counter`). Mat: pick
+  `hwMat` ($ac), legend `y`, at 6..8,5 and 6,6 as $af lays it.
+- HOUSE POTS: metatile $10 is TILEINDEX_DUNGEON_POT ("dungeons, indoors");
+  pick renamed hwBarrel -> hwPot, F.SOLID|F.ROCK, lifts to hwFloor, drop
+  'common' (houseHearth, lighthouse).
+- CAVES: Seasons tileset $31 (GFXH_TILESET_CAVE, PALH_TILESET_CAVE, layout
+  $2f; group 5's caves are the same set as $4f). Files added to
+  assets/objects/oracles-disasm/seasons (README "The caves"): gfx_tileset_
+  cave_1/_2/_replacement.png, tilesetMappings2f.bin, verified against the
+  pinned commit. Picks `cv*`: floor a0 (a1 scattered 1 in 5), fill a7, walls
+  b0-b3, block corners b4-b7 (cNW cNE cSW cSE), room corners b8-bb, south
+  door $36, north door $34, pot $10, rock $15, stairs $44/$45.
+  tiles-core.js cave(): `cvWall` with `ring.free` — Room.artAt runs faceArt
+  on any room size, the edge counting as wall; faceArt draws a block corner
+  where a wall ends if the kit has c* pieces (dungeon kits unchanged).
+  `cvPost` = the overworld's wooden post (no cave post exists). Push blocks
+  in caves are the Hero's Cave's (rip-objects ALIASES ('cave','salt'); $1d
+  in the cave set is a bush). `tint: 'cave'` removed (it tinted Link).
+- Every cave's way out moved from the floor (5,6) into the south wall
+  (5,7), Seasons' $36. EXCEPT: cave10 Spray Grotto and cave15 Pot Cellar
+  (entered walking DOWN into a crack) leave by a north door ($34; cave10 at
+  8,1, cave15 at 5,1; arrival 120,32 / 72,32), else a player holding down
+  walks straight back out; cave12 Sandglass and cave13 Driftwood (reached by
+  stairs) leave by a stair up ($44, `U`) at 5,6 that Link arrives on.
+- ROUTE: cave exits are `goto 5,7` (onto the door); the door is a tile
+  further than the old floor mouth, so the next wait gives the frames back
+  (Shipwright 90->74, Bluff Grotto 120->104 twice, Reef Hollow's earlier
+  wait 240->229). With that the run is frame-identical to S215's from the
+  first cave on (checked with route-prefix against a worktree of 6da0f6f).
+  A first cut with `exit down` shifted frames and the run died at Gloomtide.
+
+### Verified
+Whole table green (68 tools; walk-dungeons 32/32 re-run alone after a port
+clash in the parallel run; check-side 78/78); check-playthrough 49/49, THE
+END, never died, 314667 frames (the same as S215), low-water 2; check-rippers
+47/47 last, alone; check-build OK.
+
+### Not done / candidates
+- Sandpiper Cottage ($a4) has a purple stool $08 at 5,3 and a side door $31
+  in the east wall that ours leaves out.
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+- Other interiors to compare: Farore's Shrine (extracted), the Maku Tree
+  (extracted); dungeons were rebuilt S137+.
+
 ## S215 — a look-through: no boss bar, no speaker names, Seasons' own houses
 
 Branch claude/oracle-tides-credits-towns-e8blux, off main at 67f3db8 (S214).

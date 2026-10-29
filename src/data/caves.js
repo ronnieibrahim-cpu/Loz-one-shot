@@ -1,5 +1,9 @@
 // Small standalone maps: caves, grottos, house interiors.
 // Each is a one-room (or few-room) map warped into from the overworld.
+//
+// Every cave is drawn in Seasons' own cave set (S216, legend `cave`): spiked
+// rock round a speckled floor, the way out (`C`) set in the south wall below
+// where the overworld's warp stands Link, as Seasons' $36 is.
 
 import { registerMap } from '../world/maps.js';
 
@@ -11,7 +15,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -22,8 +25,8 @@ export function installCaves() {
           '#..o..o..#',
           '#........#',
           '#..p..p..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { rupees: 30 }],
@@ -64,7 +67,7 @@ export function installCaves() {
           }],
         ],
         readable: [[6, 3, 'Cut into the bluff: "Come back with four Essences, and this blade is yours."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
     },
   });
@@ -82,7 +85,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -93,15 +95,15 @@ export function installCaves() {
           '####.#####',
           '#........#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['block', 4, 2],
           ['chest', 6, 1, { big: true, item: 'sword', level: 1 }],
         ],
         readable: [[6, 3, 'Cut into the wall: "Lean on it."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 9, px: 64, py: 40, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 6, ry: 9, px: 64, py: 40, dir: 'down' } }],
       },
     },
   });
@@ -113,7 +115,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -124,8 +125,8 @@ export function installCaves() {
           '#.4444..o#',
           '#.4444...#',
           '#.222....#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['pickup', 3, 3, { kind: 'rupee20' }],
@@ -153,7 +154,7 @@ export function installCaves() {
           // in. All three states of one tile, which is the item in miniature.
           [1, 5, 'Older, and lower down: "A splash of sea lights the lime shell. Too much puts it out."'],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 7, px: 64, py: 64, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 9, ry: 7, px: 64, py: 64, dir: 'down' } }],
       },
     },
   });
@@ -177,7 +178,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -188,8 +188,8 @@ export function installCaves() {
           '#.2222.o.#',
           '#.2222...#',
           '#........#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           // The Bottled Tide's CASE. The bottle forces one tide step in a room
@@ -200,7 +200,7 @@ export function installCaves() {
         ],
         readable: [[7, 3, 'Salt-etched: "A bottle of the sea, kept where the sea can\'t reach it."']],
         warps: [
-          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
           // THE LOWER VAULT (S160), an optional dungeon: the Kilnshell's.
           // See src/data/dungeons-optional.js.
           { x: 7, y: 1, to: { map: 'vault', floor: 0, rx: 1, ry: 2, px: 112, py: 128, dir: 'up' } },
@@ -216,7 +216,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -227,8 +226,8 @@ export function installCaves() {
           '#.5555.p.#',
           '#.5555.H.#',
           '#..q..q..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           // Its Piece of Heart moved to the Wind Shelf's sea cave (S155, side
@@ -237,7 +236,7 @@ export function installCaves() {
         ],
         readable: [[7, 2, 'A palace notice, half finished: "The rest of the palace is underwater. Don\'t go looking!"']],
         warps: [
-          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
           // THE SUNKEN PALACE (S161), an optional dungeon, under a hatch the
           // Bell's Clapper unbolts. See src/data/dungeons-optional.js.
           { x: 7, y: 4, to: { map: 'palace', floor: 1, rx: 1, ry: 2, px: 112, py: 144, dir: 'up' } },
@@ -256,7 +255,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -267,13 +265,13 @@ export function installCaves() {
           '#........#',
           '#..p..p..#',
           '#........#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['pickup', 4, 2, { kind: 'heartPiece' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -289,7 +287,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -301,13 +298,13 @@ export function installCaves() {
           '#..2222..#',
           '#o.......#',
           '#.......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['pickup', 4, 4, { kind: 'heartPiece' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -324,7 +321,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -335,13 +331,13 @@ export function installCaves() {
           '#..p..p..#',
           '#........#',
           '#.o......#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 2, { charm: 'quartermaster' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 3, px: 80, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 6, ry: 3, px: 80, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -352,7 +348,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -364,13 +359,13 @@ export function installCaves() {
           '#.22..22.#',
           '#........#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { rupees: 50 }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 5, px: 80, py: 64, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 7, ry: 5, px: 80, py: 64, dir: 'down' } }],
       },
     },
   });
@@ -383,7 +378,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -394,13 +388,13 @@ export function installCaves() {
           '#........#',
           '#.p....p.#',
           '#........#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'dryKindling' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -413,24 +407,23 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
         map: [
           '##########',
-          '##########',
+          '########N#',
           '#.555555.#',
           '#.55..55.#',
           '#.55..55.#',
           '#........#',
-          '#....C...#',
+          '#........#',
           '##########',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'brineSkin' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 13, ry: 3, px: 64, py: 80, dir: 'down' } }],
+        warps: [{ x: 8, y: 1, to: { map: 'overworld', floor: 0, rx: 13, ry: 3, px: 64, py: 80, dir: 'up' } }],
       },
     },
   });
@@ -443,7 +436,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -454,13 +446,13 @@ export function installCaves() {
           '#........#',
           '#.p....p.#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'chandlersEye' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 4, px: 64, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 14, ry: 4, px: 64, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -473,7 +465,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -484,7 +475,7 @@ export function installCaves() {
           '#........#',
           '#.q....q.#',
           '#........#',
-          '#....C...#',
+          '#....U...#',
           '##########',
         ],
         entities: [
@@ -503,7 +494,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -514,7 +504,7 @@ export function installCaves() {
           '#..p..p..#',
           '#........#',
           '#.o....o.#',
-          '#....C...#',
+          '#....U...#',
           '##########',
         ],
         entities: [
@@ -533,7 +523,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -545,13 +534,13 @@ export function installCaves() {
           '#..2..2..#',
           '#........#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'fishermansRegret' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 9, px: 112, py: 96, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 7, ry: 9, px: 112, py: 96, dir: 'down' } }],
       },
     },
   });
@@ -565,24 +554,23 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
         map: [
           '##########',
-          '##########',
+          '#####N####',
           '#p.p..p.p#',
           '#........#',
           '#.o....o.#',
           '#........#',
-          '#....C...#',
+          '#........#',
           '##########',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'potHauler' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 11, ry: 3, px: 96, py: 80, dir: 'down' } }],
+        warps: [{ x: 5, y: 1, to: { map: 'overworld', floor: 0, rx: 11, ry: 3, px: 96, py: 80, dir: 'up' } }],
       },
     },
   });
@@ -596,7 +584,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -607,8 +594,8 @@ export function installCaves() {
           '#........#',
           '#.o......#',
           '#.......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['giver', 4, 3, {
@@ -616,7 +603,7 @@ export function installCaves() {
             dialogue: 'quarryman', after: 'quarrymanAfter', flag: 'gotBombBag', pickup: 'bombBag',
           }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 5, px: 112, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 5, px: 112, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -630,7 +617,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -642,13 +628,13 @@ export function installCaves() {
           '#........#',
           '#q......q#',
           '#..2..2..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'drownedLantern' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 16, ry: 2, px: 112, py: 80, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 16, ry: 2, px: 112, py: 80, dir: 'down' } }],
       },
     },
   });
@@ -663,7 +649,6 @@ export function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -675,14 +660,14 @@ export function installCaves() {
           '#.o....o.#',
           '#........#',
           '#..p..p..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 3, 3, { charm: 'lamplighter' }],
           ['chest', 6, 3, { rupees: 100 }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
       },
     },
   });
