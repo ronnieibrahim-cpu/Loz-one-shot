@@ -447,6 +447,13 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A missing effect name is silent (S217).** `spawnEffect` on a name not in
+  EFFECTS only warns to the console and draws nothing; ten tile transforms
+  still carry `sfx: 'break'` (a sound, fine), but check an `fx:` name exists
+  before trusting it shows. And a 32x32 ripped cell is not always enough:
+  Seasons' grass leaves fly past it, so rip-effects.py takes a `cell=` per cut
+  and spawnEffectAt centres by the spec's own width.
+
 - **Moving a door a tile moves every frame after it, and the run is frame
   sensitive (S216).** The caves' way out went from the floor into the wall;
   with the route's states identical, the D2 boss still came out different

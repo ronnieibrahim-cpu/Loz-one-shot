@@ -537,7 +537,7 @@ export function installLegends() {
     '[': 'hwDoorW', ']': 'hwDoorE', 'k': 'hwClock',
     '.': 'hwFloor', 'r': 'hwRug', 'i': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
     'b': 'hwBedT', 'd': 'hwBedB', 'w': 'hwWardT', 'v': 'hwWardB', 'h': 'hwShelfT', 'j': 'hwShelfB',
-    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwPot',
+    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'p': 'hwSeat', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwPot',
     'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard', 'y': 'hwMat',
     'f': 'hwHearthT', 'F': 'hwHearthTM', 'l': 'hwHearthB', 'L': 'hwHearthBM',
     'u': 'hwStairsUp', 'n': 'hwStairsDown',

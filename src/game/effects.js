@@ -10,6 +10,7 @@ import {
   DRY_KINDLING_FACTOR,
   PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER,
   HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY,
+  LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS,
 } from '../data/feel.js';
 
 const TILE_SP = sp(16);
@@ -101,11 +102,20 @@ export const EFFECTS = {
     frames: ['fx_kill0', 'fx_kill1', 'fx_kill0', 'fx_kill2', 'fx_kill2', 'fx_kill3', 'fx_kill4'],
     holds: KILL_PUFF_HOLDS, flicker: KILL_PUFF_FLICKER, own: true, w: 32, h: 32, centre: true,
   },
-  spark: { frames: ['fx_spark0', 'fx_spark1', 'fx_spark2'], pal: 'spark', rate: 3 },
-  splash: { frames: ['fx_splash0', 'fx_splash1', 'fx_splash2'], pal: 'water', rate: 5 },
+  // Seasons' little break animations (S217, breakTileDebris.s): `spark` is
+  // INTERAC_CLINK, a blade on something it cannot cut; `splash` is
+  // INTERAC_SPLASH; `cut` is INTERAC_GRASSDEBRIS, the leaves a cut bush or
+  // tuft throws (48x48: they fly further); `shards` is INTERAC_ROCKDEBRIS,
+  // what a pot or a rock breaks into.
+  spark: { frames: ['fx_clink0', 'fx_clink1'], holds: CLINK_HOLDS, own: true, w: 32, h: 32, centre: true },
+  splash: { frames: ['fx_wet0', 'fx_wet1', 'fx_wet2'], holds: SPLASH_HOLDS, own: true, w: 32, h: 32, centre: true },
   ripple: { frames: ['fx_ripple0', 'fx_ripple1'], pal: 'water', rate: 8, loop: true, life: 9999, depth: -5 },
   dust: { frames: ['fx_dust0', 'fx_dust1', 'fx_dust2'], pal: 'sand', rate: 5 },
-  cut: { frames: ['fx_cut0', 'fx_cut1', 'fx_cut2'], pal: 'tree', rate: 4 },
+  cut: {
+    frames: ['fx_leaves0', 'fx_leaves1', 'fx_leaves2', 'fx_leaves3', 'fx_leaves4', 'fx_leaves5', 'fx_leaves6', 'fx_leaves7'],
+    holds: LEAVES_HOLDS, own: true, w: 48, h: 48, centre: true,
+  },
+  shards: { frames: ['fx_shards0', 'fx_shards1', 'fx_shards2', 'fx_shards3'], holds: SHARDS_HOLDS, own: true, w: 32, h: 32, centre: true },
   sparkle: { frames: ['fx_sparkle0', 'fx_sparkle1', 'fx_sparkle2', 'fx_sparkle1'], pal: 'gold', rate: 5 },
   boom: { frames: ['fx_boom0', 'fx_boom1', 'fx_boom0', 'fx_boom2', 'fx_boom3', 'fx_boom4'], holds: EXPLOSION_HOLDS, own: true, w: 32, h: 32 },
   flame: { frames: ['fx_flame0', 'fx_flame1', 'fx_flame2'], pal: 'fire', rate: 6, loop: true, life: 9999 },
@@ -117,8 +127,9 @@ export const EFFECTS = {
 export function spawnEffectAt(game, name, x, y, opts) {
   const spec = EFFECTS[name];
   if (!spec) { console.warn('[fx] unknown effect', name); return null; }
-  // A 32x32 ripped cell is spawned at the 16x16 spot callers name.
-  const c = spec.centre ? 8 : 0;
+  // A ripped cell (32x32, the leaves' 48x48) is spawned centred on the 16x16
+  // spot callers name.
+  const c = spec.centre ? (spec.w - 16) / 2 : 0;
   const e = new Effect(x - c, y - c, spec, opts || {});
   game.addEntity(e);
   return e;

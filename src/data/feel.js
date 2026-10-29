@@ -1639,6 +1639,29 @@ export const PUFF_HOLDS = [6, 8, 4];
  *  animParameter deletes it (fallDownHole.s @state1). 32 frames. */
 export const HOLE_FALL_HOLDS = [8, 12, 12];
 
+/** f[] — how long each frame of the leaves a cut bush or tuft throws is held,
+ *  in the order sprites-effects.js lists `fx_leaves*` (S217). derived from the
+ *  cartridge: oracles-disasm data/seasons/interactionAnimations.s,
+ *  interactionAnimation51b3f (INTERAC_GRASSDEBRIS's animation 0): eight
+ *  frames of 4, then the $ff frame that deletes it (breakTileDebris.s). 32
+ *  frames; ours was a hand-drawn three-frame cut at a guessed 4 each. */
+export const LEAVES_HOLDS = [4, 4, 4, 4, 4, 4, 4, 4];
+
+/** f[] — each frame of a splash, `fx_wet*` (S217). derived from the
+ *  cartridge: interactionAnimation51b78 (INTERAC_SPLASH's animation 0): 4 4 4,
+ *  then $ff. 12 frames; ours was a hand-drawn splash at a guessed 5 each. */
+export const SPLASH_HOLDS = [4, 4, 4];
+
+/** f[] — each frame of what a pot or a rock breaks into, `fx_shards*` (S217).
+ *  derived from the cartridge: interactionAnimation51bcf (INTERAC_ROCKDEBRIS's
+ *  animation 0): 4 4 4 4, then $ff. 16 frames. */
+export const SHARDS_HOLDS = [4, 4, 4, 4];
+
+/** f[] — each frame of a blade's clink, `fx_clink*` (S217). derived from the
+ *  cartridge: interactionAnimation51b84 (INTERAC_CLINK's animation 0): 4 4,
+ *  then $ff. 8 frames; ours was a hand-drawn spark at a guessed 3 each. */
+export const CLINK_HOLDS = [4, 4];
+
 /** sp/f — how fast the falling picture slides to the middle of its hole:
  *  0.375 px/f. derived from the cartridge: fallDownHole.s @interac0f_state0
  *  sets Interaction.speed to SPEED_60 ($60 subpixels a frame), and @state1

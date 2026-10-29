@@ -24,3 +24,16 @@ reproduces byte for byte.
 | `bombs.s` | `object_code/common/items/` | the blast's tile base and oam flags (itemInitializeBombExplosion); the blast's reach per frame |
 | `enemyDestroyed.s` | `object_code/common/parts/` | the kill puff's palette flicker; the drop and room count waiting for its end |
 | `itemDrop.s` | `object_code/common/parts/` | a drop's pop and bounce; the fairy's flight (feel.js reads, not the ripper) |
+
+**S217.** The leaves a cut bush throws (INTERAC_GRASSDEBRIS $00), the splash
+(INTERAC_SPLASH $03), what a pot or rock breaks into (INTERAC_ROCKDEBRIS $06)
+and the sword's clink (INTERAC_CLINK $07) are cut from the same files above —
+`spr_common_sprites.png` and the interaction tables — by `debris()` in
+`tools/rip-effects.py`. They replaced hand-drawn `fx_cut*`, `fx_splash*` and
+`fx_spark*`. Which one Seasons spawns where was read from the disassembly's
+`object_code/common/interactions/breakTileDebris.s` (all thirteen share one
+routine: play animation 0, delete on its $ff frame),
+`data/seasons/tile_properties/breakableTiles.s` (`breakableTileModes`' low
+nibble: 0 for bushes and grass, 6 for pots and rocks), and
+`code/breakableTiles.s` (a thrown pot breaks as its tile would). The leaves
+fly further than 16 px from their centre, so they are cut 48x48.

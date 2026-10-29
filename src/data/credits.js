@@ -69,7 +69,7 @@ export const CREDITS_ROLL = [
     ['c', 'FOUND AT THE'], ['w', 'SPRITERS RESOURCE'],
   ] },
   { scene: [0, 12, 8], cast: [        // Sandpiper Row
-    [0, 5, 5, 'npc_fisher', { wander: true }],
+    [0, 5, 5, 'npc_fisher', {}],   // stands: he has no walk to wander in (S217)
     [0, 5, 3, 'walk:lad', { wander: true }],
     [1, 8, 3, 'npc_hood_blue', {}],
     [1, 3, 5, 'walk:holly', { wander: true, dir: 'left' }],
