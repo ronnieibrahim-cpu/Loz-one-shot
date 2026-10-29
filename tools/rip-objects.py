@@ -120,7 +120,10 @@ THEMES = [
 # A legend that wears a tileset another legend above already cuts, by that
 # one's suffix (S189): the Abyssal Keep's Hold is the Sword & Shield Maze's ice
 # half, $41, whose block and button the Grotto has drawn since S164.
-ALIASES = [('dungeonAbyssIce', 'grotto')]
+# And the caves (S216, legend `cave`): Seasons' cave set has no push block of
+# its own ($1d is its bush), so a cave's block is the Hero's Cave's, the
+# orange one that sits in the cave's colours.
+ALIASES = [('dungeonAbyssIce', 'grotto'), ('cave', 'salt')]
 # A block or button outside those six dungeons draws the Grotto's.
 DEFAULT_THEME = 'grotto'
 

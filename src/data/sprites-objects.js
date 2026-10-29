@@ -65,6 +65,7 @@ export const OBJECT_THEMES = {
   dungeonEyrie: 'eyrie',
   dungeonPalace: 'palace',
   dungeonAbyssIce: 'grotto',
+  cave: 'salt',
 };
 
 export const TORCH_FLAME_COUNT = 4;

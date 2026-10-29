@@ -508,9 +508,11 @@ export function installLegends() {
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
     ' ': 'void',
-    '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
-    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'potCave', 'o': 'rockCave',
-    '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
+    // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js
+    // cave()). The way out, `C`, is set in the south wall.
+    '.': 'cvFloor', 'g': 'cvFloorB', '#': 'cvWall', '%': 'cvWall',
+    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'cvPot', 'o': 'cvRock',
+    '/': 'cvStairsDown', 'C': 'cvDoor', 'N': 'cvDoorN', 'U': 'cvStairsUp', 'q': 'cvPost', '_': 'ledgeRockDk',
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
@@ -535,8 +537,8 @@ export function installLegends() {
     '[': 'hwDoorW', ']': 'hwDoorE', 'k': 'hwClock',
     '.': 'hwFloor', 'r': 'hwRug', 'i': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
     'b': 'hwBedT', 'd': 'hwBedB', 'w': 'hwWardT', 'v': 'hwWardB', 'h': 'hwShelfT', 'j': 'hwShelfB',
-    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwBarrel',
-    'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard',
+    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwPot',
+    'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard', 'y': 'hwMat',
     'f': 'hwHearthT', 'F': 'hwHearthTM', 'l': 'hwHearthB', 'L': 'hwHearthBM',
     'u': 'hwStairsUp', 'n': 'hwStairsDown',
   });

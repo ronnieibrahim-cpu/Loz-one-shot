@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Moving a door a tile moves every frame after it, and the run is frame
+  sensitive (S216).** The caves' way out went from the floor into the wall;
+  with the route's states identical, the D2 boss still came out different
+  and the run died at Gloomtide. Walk onto the door itself (`goto` the door
+  tile) and take the extra frames off the next `wait`: compared with
+  route-prefix against a worktree of the old commit, every frame after it
+  matched, and the playthrough ran the same 314667 frames.
+- **A south door is wrong for a room entered walking down (S216).** A player
+  still holding down walks straight back out. Caves entered down into a crack
+  leave by a north door; caves reached by a stair leave by a stair up that
+  Link arrives standing on (the warp lock holds until he steps off).
+- **Seasons' shop prices are background tiles in the TEXT FONT (S216).**
+  shopItem.s writes $30+digit (font loaded ASCII-indexed at $9000, $20 =
+  space) into the tile row above each item; the stock stands behind the
+  counter and the shopkeeper in front of it (group1MapafObjectData).
+
 - **Seasons' small-room layout groups 0-3 are the overworld's four SEASONS,
   not its interiors (S215).** `rooms/seasons/small/room01xx`, `02xx` and `03xx`
   are summer, autumn and winter Holodrum, which is why drawing them with the

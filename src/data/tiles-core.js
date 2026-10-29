@@ -1472,14 +1472,52 @@ function house() {
     out[name] = { art: ART[name], pal: name, ...def };
   };
   for (const n of ['TL', 'N', 'TR', 'W', 'E', 'BL', 'S', 'BR', 'Clock', 'BedT', 'BedB', 'WardT', 'WardB',
-    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Barrel', 'Jar', 'Cabinet', 'HearthT',
+    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Jar', 'Cabinet', 'HearthT',
     'HearthTM', 'HearthB', 'HearthBM', 'Crate', 'Cupboard']) put(n, { flags: F.SOLID });
-  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back']) put(n);
+  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back', 'Mat']) put(n);
   put('DoorW', { flags: F.WARP });
   put('DoorE', { flags: F.WARP });
   put('Counter', { flags: F.SOLID, counter: true });
+  // Metatile $10 is Seasons' TILEINDEX_DUNGEON_POT ("dungeons, indoors"): the
+  // same pot a dungeon's is, lifted and thrown the same way (S216).
+  put('Pot', { flags: F.SOLID | F.ROCK });
   put('StairsUp', { flags: F.WARP | F.STAIRS });
   put('StairsDown', { flags: F.WARP | F.STAIRS });
+  return out;
+}
+
+/**
+ * SEASONS' CAVES (S216): tileset $31, cut by rip-dungeon-themes.py as `cv*`.
+ * The wall is one tile, `cvWall`, whose free ring draws every cell of a wall
+ * mass from its neighbours (Room.faceArt); its own art is the rock no floor
+ * sees. The way out is $36 set in the south wall, walked onto as a house's
+ * doorway is, and wall to the ring either side of it.
+ */
+function cave() {
+  const own = (n, flags, extra) => ({ art: ART['cv' + n], pal: 'cv' + n, flags, ...extra });
+  const out = {};
+  for (const n of ['N', 'E', 'S', 'W', 'CNW', 'CNE', 'CSW', 'CSE', 'TL', 'TR', 'BL', 'BR']) {
+    out['cv' + n] = own(n, F.SOLID);
+  }
+  out.cvWall = own('Fill', F.SOLID, { ring: {
+    free: true, N: 'cvN', E: 'cvE', S: 'cvS', W: 'cvW', TL: 'cvTL', TR: 'cvTR', BL: 'cvBL', BR: 'cvBR',
+    cNW: 'cvCNW', cNE: 'cvCNE', cSW: 'cvCSW', cSE: 'cvCSE',
+  } });
+  // Seasons scatters the busier floor ($a1) about one cell in five ($b7).
+  out.cvFloor = own('Floor', 0, { variants: ['cvFloorB'], variantOdds: 5 });
+  out.cvFloorB = own('FloorB', 0);
+  out.cvDoor = own('Door', F.WARP, { ringWall: true });
+  // A cave entered walking DOWN (a crack in a cliff seen from above) is left
+  // the way it was entered, by $34 in the north wall; one reached by a stair
+  // is left by the stair up, $44, that Link arrives standing on.
+  out.cvDoorN = own('DoorN', F.WARP, { ringWall: true });
+  out.cvStairsUp = own('StairsUp', F.WARP | F.STAIRS);
+  out.cvPot = own('Pot', F.SOLID | F.ROCK);
+  out.cvRock = own('Rock', F.SOLID | F.ROCK);
+  out.cvStairsDown = own('StairsDown', F.WARP | F.STAIRS);
+  // Seasons' cave set has no mooring post; the overworld's wooden one (`post`)
+  // stands on the cave floor instead.
+  out.cvPost = { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'cvFloor' };
   return out;
 }
 
@@ -3248,6 +3286,7 @@ export function installCoreTiles() {
     // `hwX` over `hwXU`, so neither is squeezed into four colours. The shop
     // counter is a COUNTER, spoken across, as Farore's desk is.
     ...house(),
+    ...cave(),
     // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
     // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
     // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile
@@ -3687,6 +3726,9 @@ export function installCoreTiles() {
     rockSandStairs: { lift: 'stairsDown', persist: true },
     rockLawn: { lift: 'hLawn', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    hwPot: { lift: 'hwFloor', drop: 'common' },
+    cvPot: { lift: 'cvFloor', drop: 'common' },
+    cvRock: { lift: 'cvFloor', drop: 'common' },
     rockCave: { lift: 'rockFloorDk', drop: 'common' },
     potCave: { lift: 'rockFloorDk', drop: 'common' },
     ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),

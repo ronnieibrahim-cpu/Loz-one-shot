@@ -12119,6 +12119,14 @@ class Room {
         }
       }
     }
+    // A FREE RING (S216, Seasons' caves) is drawn by neighbourhood alone in
+    // a room of any size: every cell of the wall mass asks `faceArt`, the
+    // room's edge counting as more wall, and a cell no floor can see draws the
+    // tile's own art (the plain rock behind the walls).
+    if (d.ring && d.ring.free && this.cw !== 15) {
+      const f = this.faceArt(d, x, y, tide);
+      if (f) return f;
+    }
     if (d.lip) {
       const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
       const n = other(y - 1), s = other(y + 1);
@@ -12207,8 +12215,10 @@ class Room {
       return n.ring === R || n.ringWall || !!(n.flags & F.DOOR);
     };
     const n = wall(x, y - 1), s = wall(x, y + 1), w = wall(x - 1, y), e = wall(x + 1, y);
-    if (!s) return R.N;
-    if (!n) return R.S;
+    // Where a wall ENDS, a kit that has them draws the block's own corner
+    // (Seasons' caves, $b4-$b7) rather than running the face to the edge.
+    if (!s) return (R.cSW && !w && e) ? R.cSW : (R.cSE && !e && w) ? R.cSE : R.N;
+    if (!n) return (R.cNW && !w && e) ? R.cNW : (R.cNE && !e && w) ? R.cNE : R.S;
     if (!e) return R.W;
     if (!w) return R.E;
     if (!wall(x + 1, y + 1)) return R.TL;
@@ -15526,7 +15536,7 @@ const rooms = {
     ],
     // A crack in the foot of the reef cliff: a bomb opens it to Pot Cellar (S193).
     warps: [
-      { x: 6, y: 6, to: { map: 'cave15', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 6, y: 6, to: { map: 'cave15', floor: 0, rx: 0, ry: 0, px: 72, py: 32, dir: 'down' } },
     ],
     entities: [
       ['crab', 4, 3],
@@ -17899,7 +17909,7 @@ const rooms = {
       ['barnacle', 5, 4],
     ],
     warps: [
-      { x: 4, y: 6, to: { map: 'cave10', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 4, y: 6, to: { map: 'cave10', floor: 0, rx: 0, ry: 0, px: 120, py: 32, dir: 'down' } },
     ],
   },
   '0,13,4': {
@@ -18204,30 +18214,33 @@ function installHouses() {
     rooms: {
       '0,0,0': {
         // Seasons' own shop (S215): layout group 4 room $af, the counter
-        // across the room with the stock on it and the shopkeeper behind.
+        // across the room. Its stock stands BEHIND the counter with the price
+        // above it and the shopkeeper out in front at its west end, as the
+        // cartridge's group1MapafObjectData places them (S216: the shopkeeper
+        // at $48,$28, the stock at y $28; shopItem.s writes each price into the
+        // row of tiles above its item).
         map: [
           'ANNNkNNNNB',
           'W.m,,,,,,E',
           'W.m,,,,,,E',
           'Wg=======E',
           'Wg.c.....E',
-          'Wg.x.....E',
-          'W......ssE',
+          'Wg.x..yyyE',
+          'W.....yssE',
           'CSSS[]SSSD',
         ],
         entities: [
           // His errand (S155): the ledger, lost on the South Sands, for a
           // Piece of Heart. He talks shop again once it is home.
-          // Behind the counter, spoken to across it.
-          ['npc', 4, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
+          ['npc', 2, 4, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
             errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
-          // The stock stands on the counter, as Seasons stands it; the tile in
-          // front of the shopkeeper is left clear so he can be spoken to.
-          ['shopItem', 3, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
-          ['shopItem', 5, 3, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
-          ['shopItem', 6, 3, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
-          ['shopItem', 7, 3, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
-          ['shopItem', 8, 3, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
+          // The stock stands behind the counter, bought across it (Player
+          // .tryContextAction reaches one tile further through a counter).
+          ['shopItem', 4, 2, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
+          ['shopItem', 5, 2, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
+          ['shopItem', 6, 2, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
+          ['shopItem', 7, 2, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
+          ['shopItem', 8, 2, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
         ],
         // Out of the shop's door and back onto the yard in front of it. The
         // shop moved east when the village became two screens — its door is
@@ -23212,6 +23225,7 @@ const OBJECT_THEMES = {
   dungeonEyrie: 'eyrie',
   dungeonPalace: 'palace',
   dungeonAbyssIce: 'grotto',
+  cave: 'salt',
 };
 
 const TORCH_FLAME_COUNT = 4;
@@ -26213,7 +26227,7 @@ class ShopItem extends Entity {
     this.saveKey = o.saveKey || null;
     this.once = o.once !== false;      // most stock is one-per-save
     this.sold = false;
-    // On the shop counter (S215), as Seasons stands its stock.
+    // Shop stock (S215), drawn still and priced above, as Seasons stands it.
     this.perched = !!o.perched;
     this.depth = -3;
   }
@@ -26300,8 +26314,11 @@ class ShopItem extends Entity {
     sprites.draw(ctx, this.icon, ox + this.x, oy + this.y, pal ? { pal } : undefined);
     // The tag shows what it will actually cost, so a charm that makes things
     // cheaper is visible from across the shop rather than at the till.
-    drawText(ctx, String(game.shopPrice(this.price)),
-      ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
+    // Perched stock wears it in dark ink on the tiles above, centred, as
+    // Seasons' shopItem.s writes its price; floor stock keeps it beneath.
+    const tag = String(game.shopPrice(this.price));
+    if (this.perched) drawText(ctx, tag, ox + this.x + 8 - tag.length * 4, oy + this.y - 8);
+    else drawText(ctx, tag, ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
   }
 }
 defineEntity('shopItem', (x, y, o) => new ShopItem(x, y, o));
@@ -52825,8 +52842,8 @@ const DUNGEON_THEME_ART = {
     2233332222333322
     2222222222222222`,
 
-  // barrel, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $10
-  hwBarrel: `
+  // the pot (TILEINDEX_DUNGEON_POT, 'dungeons, indoors'), Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $10
+  hwPot: `
     1111113333311111
     1111130000031111
     1111300222003111
@@ -53128,6 +53145,424 @@ const DUNGEON_THEME_ART = {
     3222111111112333
     3322111111112333
     1133333333333311`,
+
+  // the patterned mat in the shop's corner, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $ac
+  hwMat: `
+    1111111111111111
+    1000010000100001
+    1000110000110001
+    1001100000011001
+    1011100110011101
+    1110000110000111
+    1000001001000001
+    1000110000110001
+    1000110000110001
+    1000001001000001
+    1110000110000111
+    1011100110011101
+    1001100000011001
+    1000110000110001
+    1000010000100001
+    1111111111111111`,
+
+  // speckled floor, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $a0
+  cvFloor: `
+    0000011000100000
+    0010120300000000
+    0000113300000000
+    0000000000010000
+    0010000000123000
+    0000001000131000
+    0110000000000000
+    1211000110000000
+    1113000121000010
+    0331000111000000
+    0000000000000000
+    0000110000000000
+    0101201000011000
+    0003013000120100
+    0001331000101300
+    0000000000033100`,
+
+  // speckled floor, the busier one, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $a1
+  cvFloorB: `
+    0000011000100000
+    0010120300000000
+    0000113300000000
+    0000000000010000
+    0010000000123000
+    0000001000131000
+    0110000000000000
+    1211000110000000
+    1113000121000010
+    0331000111000000
+    0000000000000000
+    0000110000000000
+    0101201000011000
+    0003013000120100
+    0001331000101300
+    0000000000033100`,
+
+  // the rock behind the walls, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $a7
+  cvFill: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // wall, north, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b0
+  cvN: `
+    0011110000111100
+    0001100100011001
+    1100001211000012
+    2110011221100112
+    2211112222111122
+    3211122232111222
+    3211222232112222
+    3221222232212222
+    3222222332222223
+    1322223113222231
+    1132331111323311
+    1123321111233211
+    1223322212233222
+    2233332222333322
+    2332233223322332
+    3321123333211233`,
+
+  // wall, east, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b1
+  cvE: `
+    3222111322222210
+    3322113222221100
+    2332232222211001
+    1233332222110011
+    1233322211110011
+    2332232221111001
+    3322113222221100
+    3221111333322100
+    3222111322222210
+    3322113222221100
+    2332232222211001
+    1233332222110011
+    1233322211110011
+    2332232221111001
+    3322113222221100
+    3221111333322100`,
+
+  // wall, south, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b2
+  cvS: `
+    3321123333211233
+    2332233223322332
+    2233332222333322
+    1223322212233222
+    1123321111233211
+    1132331111323311
+    1322223113222231
+    3222222332222223
+    3221222232212222
+    3211222232112222
+    3211122232111222
+    2211112222111122
+    2110011221100112
+    1100001211000012
+    0001100100011001
+    0011110000111100`,
+
+  // wall, west, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b3
+  cvW: `
+    0122222231112223
+    0011222223112233
+    1001122222322332
+    1100112222333321
+    1100111122233321
+    1001111222322332
+    0011222223112233
+    0012233331111223
+    0122222231112223
+    0011222223112233
+    1001122222322332
+    1100112222333321
+    1100111122233321
+    1001111222322332
+    0011222223112233
+    0012233331111223`,
+
+  // wall, the corner of a block whose faces look north and west, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b4
+  cvCNW: `
+    2111123333211233
+    1123333223322332
+    1232233222333322
+    1321123222233221
+    1321113211233211
+    1332113211332311
+    2333333213222231
+    3222222332222223
+    3221111322222223
+    3322113222111123
+    2332232221011112
+    1233322221101112
+    1233332221110001
+    2332232221110000
+    3322113222110010
+    3222111332221001`,
+
+  // wall, the corner of a block whose faces look north and east, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b5
+  cvCNE: `
+    3321123333211112
+    2332233223333211
+    2233332223322321
+    1223322223211231
+    1123321123111231
+    1132331123112331
+    1322223123333332
+    3222222332222223
+    3222222231111223
+    3211112223112233
+    2111101222322332
+    2111011222233321
+    1000111222333321
+    0000111222322332
+    0100112223112233
+    1001222331112223`,
+
+  // wall, the corner of a block whose faces look south and west, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b6
+  cvCSW: `
+    3222111332221001
+    3322113222110010
+    2332232221110000
+    1233332221110001
+    1233322221101112
+    2332232221011112
+    3322113222111123
+    3221111322222223
+    3222222332222223
+    2333333213222231
+    1332113211332311
+    1321113211233211
+    1321123222233221
+    1232233222333322
+    1123333223322332
+    2111123333211233`,
+
+  // wall, the corner of a block whose faces look south and east, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b7
+  cvCSE: `
+    1001222331112223
+    0100112223112233
+    0000111222322332
+    1000111222333321
+    2111011222233321
+    2111101222322332
+    3211112223112233
+    3222222231111223
+    3222222332222223
+    1322223123333332
+    1132331123112331
+    1123321123111231
+    1223322223211231
+    2233332223322321
+    2332233223333211
+    3321123333211112`,
+
+  // wall corner, north-west, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b8
+  cvTL: `
+    1110000000111100
+    1110011100011001
+    1100012211000012
+    0000012221100112
+    0000112222111122
+    0111112232111222
+    0112222232112222
+    0122333332212222
+    0122222232222231
+    0011222233223311
+    1001122223332111
+    1100112222332211
+    1100111123233222
+    1001111232223322
+    0011222231222332
+    0012233311122233`,
+
+  // wall corner, north-east, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $b9
+  cvTR: `
+    0011110000000111
+    1001100011100111
+    2100001122100011
+    2110011222100000
+    2211112222110000
+    2221112322111110
+    2222112322222110
+    2222122333332210
+    1322222322222210
+    1133223322221100
+    1112333222211001
+    1122332222110011
+    2223323211110011
+    2233222321111001
+    2332221322221100
+    3322211133322100`,
+
+  // wall corner, south-west, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $ba
+  cvBL: `
+    0012233311122233
+    0011222231222332
+    1001111232223322
+    1100111123233222
+    1100112222332211
+    1001122223332111
+    0011222233223311
+    0122222232222231
+    0122333332212222
+    0112222232112222
+    0111112232111222
+    0000112222111122
+    0000012221100112
+    1100012211000012
+    1110011100011001
+    1110000000111100`,
+
+  // wall corner, south-east, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $bb
+  cvBR: `
+    3322211133322100
+    2332221322221100
+    2233222321111001
+    2223323211110011
+    1122332222110011
+    1112333222211001
+    1133223322221100
+    1322222322222210
+    2222122333332210
+    2222112322222110
+    2221112322111110
+    2211112222110000
+    2110011222100000
+    2100001122100011
+    1001100011100111
+    0011110000000111`,
+
+  // the way out in the south wall, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $36
+  cvDoor: `
+    2100000000000012
+    1211111111111121
+    1122222222222211
+    0112222222222110
+    0012222222222100
+    0222222222222220
+    2122222222222212
+    0112222222222110
+    1122222222222211
+    1122222222222211
+    1122222222222211
+    1122222222222211
+    1122222222222211
+    0112222222222110
+    0012222222222100
+    0012222222222100`,
+
+  // the pot, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $10
+  cvPot: `
+    1111113333311111
+    1111130000031111
+    1111300222003111
+    1113302333203311
+    1132302333203231
+    1132300333003231
+    1322320000023223
+    1322232000232223
+    1332223333322223
+    1332220000022233
+    1323222000222323
+    1320332222233023
+    1130003333300031
+    1132000000000231
+    1113320000023311
+    1111133333331111`,
+
+  // the rock, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $15
+  cvRock: `
+    1111111111111111
+    1111113333311111
+    1111130002231111
+    1111300002223111
+    1113000002222311
+    1130000002222231
+    1300000002222203
+    1320000020222033
+    1322000222020333
+    1322202222203333
+    1322202222203333
+    1322202222203333
+    1322202222203333
+    1132202222203331
+    1113322222223311
+    1111133333331111`,
+
+  // the stair down, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $45
+  cvStairsDown: `
+    2222222222222222
+    2000000000000002
+    2032222223333302
+    2032222223000302
+    2033333333000302
+    2033333333000302
+    2033331113000302
+    2033331113000302
+    2033331113000302
+    2032231113000302
+    2032231113000302
+    2032231113000302
+    2032231113000302
+    2033333333333302
+    2000000000000002
+    2222222222222222`,
+
+  // the stair up, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $44
+  cvStairsUp: `
+    2222222222333333
+    2000000000311113
+    2011113333311113
+    2011113111311113
+    2033333111311113
+    2031113111311113
+    2031113111300003
+    2031113111333333
+    2031113000333333
+    2031113333333333
+    2030003333333333
+    2033333333333333
+    2033333333333333
+    2011111111111112
+    2000000000000002
+    2222222222222222`,
+
+  // the way out in the north wall, Holodrum's caves — Seasons tileset $31 (Holodrum's caves), metatile $34
+  cvDoorN: `
+    0012222222222100
+    0012222222222100
+    0112222222222110
+    1122222222222211
+    1122222222222211
+    1122222222222211
+    1122222222222211
+    1122222222222211
+    0112222222222110
+    2122222222222212
+    0222222222222220
+    0012222222222100
+    0112222222222110
+    1122222222222211
+    1211111111111121
+    2100000000000012`,
 
 };
 
@@ -53553,7 +53988,7 @@ const DUNGEON_THEME_PALETTES = {
   hwStool: ['#e79400', '#94a55a', '#844210', '#000000'],
   hwChair: ['#e79400', '#94a55a', '#844210', '#000000'],
   hwBox: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
-  hwBarrel: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwPot: ['#e79400', '#94a55a', '#844210', '#000000'],
   hwJar: ['#ffff8c', '#7b9c6b', '#5a6b4a', '#000000'],
   hwCabinet: ['#ffff8c', '#7b9c6b', '#5a6b4a', '#000000'],
   hwHearthT: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
@@ -53569,6 +54004,28 @@ const DUNGEON_THEME_PALETTES = {
   hwRugEdge: ['#ffff8c', '#94a55a', '#526b39', '#526b39'],
   hwRugEdgeU: ['#ffd68c', '#9463d6', '#6b318c', '#000000'],
   hwCupboard: ['#f7f7f7', '#7394ad', '#395a84', '#000000'],
+  hwMat: ['#7b9c6b', '#5a6b4a', '#5a6b4a', '#5a6b4a'],
+  cvFloor: ['#9c8463', '#734a4a', '#4a1829', '#000000'],
+  cvFloorB: ['#9c8463', '#734a4a', '#4a1829', '#000000'],
+  cvFill: ['#bd7b00', '#bd7b00', '#bd7b00', '#bd7b00'],
+  cvN: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvE: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvS: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvW: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvCNW: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvCNE: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvCSW: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvCSE: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvTL: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvTR: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvBL: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvBR: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvDoor: ['#bd7b00', '#733100', '#000000', '#000000'],
+  cvPot: ['#ffd68c', '#9c8463', '#843100', '#000000'],
+  cvRock: ['#ffd68c', '#9c8463', '#843100', '#000000'],
+  cvStairsDown: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvStairsUp: ['#e7ad39', '#bd7b00', '#733100', '#000000'],
+  cvDoorN: ['#bd7b00', '#733100', '#000000', '#000000'],
 };
 
 function installDungeonThemePalettes() {
@@ -56957,14 +57414,52 @@ function house() {
     out[name] = { art: ART[name], pal: name, ...def };
   };
   for (const n of ['TL', 'N', 'TR', 'W', 'E', 'BL', 'S', 'BR', 'Clock', 'BedT', 'BedB', 'WardT', 'WardB',
-    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Barrel', 'Jar', 'Cabinet', 'HearthT',
+    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Jar', 'Cabinet', 'HearthT',
     'HearthTM', 'HearthB', 'HearthBM', 'Crate', 'Cupboard']) put(n, { flags: F.SOLID });
-  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back']) put(n);
+  for (const n of ['Floor', 'Rug', 'RugEdge', 'Back', 'Mat']) put(n);
   put('DoorW', { flags: F.WARP });
   put('DoorE', { flags: F.WARP });
   put('Counter', { flags: F.SOLID, counter: true });
+  // Metatile $10 is Seasons' TILEINDEX_DUNGEON_POT ("dungeons, indoors"): the
+  // same pot a dungeon's is, lifted and thrown the same way (S216).
+  put('Pot', { flags: F.SOLID | F.ROCK });
   put('StairsUp', { flags: F.WARP | F.STAIRS });
   put('StairsDown', { flags: F.WARP | F.STAIRS });
+  return out;
+}
+
+/**
+ * SEASONS' CAVES (S216): tileset $31, cut by rip-dungeon-themes.py as `cv*`.
+ * The wall is one tile, `cvWall`, whose free ring draws every cell of a wall
+ * mass from its neighbours (Room.faceArt); its own art is the rock no floor
+ * sees. The way out is $36 set in the south wall, walked onto as a house's
+ * doorway is, and wall to the ring either side of it.
+ */
+function cave() {
+  const own = (n, flags, extra) => ({ art: ART['cv' + n], pal: 'cv' + n, flags, ...extra });
+  const out = {};
+  for (const n of ['N', 'E', 'S', 'W', 'CNW', 'CNE', 'CSW', 'CSE', 'TL', 'TR', 'BL', 'BR']) {
+    out['cv' + n] = own(n, F.SOLID);
+  }
+  out.cvWall = own('Fill', F.SOLID, { ring: {
+    free: true, N: 'cvN', E: 'cvE', S: 'cvS', W: 'cvW', TL: 'cvTL', TR: 'cvTR', BL: 'cvBL', BR: 'cvBR',
+    cNW: 'cvCNW', cNE: 'cvCNE', cSW: 'cvCSW', cSE: 'cvCSE',
+  } });
+  // Seasons scatters the busier floor ($a1) about one cell in five ($b7).
+  out.cvFloor = own('Floor', 0, { variants: ['cvFloorB'], variantOdds: 5 });
+  out.cvFloorB = own('FloorB', 0);
+  out.cvDoor = own('Door', F.WARP, { ringWall: true });
+  // A cave entered walking DOWN (a crack in a cliff seen from above) is left
+  // the way it was entered, by $34 in the north wall; one reached by a stair
+  // is left by the stair up, $44, that Link arrives standing on.
+  out.cvDoorN = own('DoorN', F.WARP, { ringWall: true });
+  out.cvStairsUp = own('StairsUp', F.WARP | F.STAIRS);
+  out.cvPot = own('Pot', F.SOLID | F.ROCK);
+  out.cvRock = own('Rock', F.SOLID | F.ROCK);
+  out.cvStairsDown = own('StairsDown', F.WARP | F.STAIRS);
+  // Seasons' cave set has no mooring post; the overworld's wooden one (`post`)
+  // stands on the cave floor instead.
+  out.cvPost = { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'cvFloor' };
   return out;
 }
 
@@ -58733,6 +59228,7 @@ function installCoreTiles() {
     // `hwX` over `hwXU`, so neither is squeezed into four colours. The shop
     // counter is a COUNTER, spoken across, as Farore's desk is.
     ...house(),
+    ...cave(),
     // THE SUNKEN PALACE'S WATER AND ITS WHIRLPOOL (S161), all Oracle of Ages':
     // Mermaid's Cave's puddle, deep water and hole, and the Ages sea's
     // whirlpool as it is drawn under the sea. The whirlpool is a TIDE tile
@@ -59172,6 +59668,9 @@ function installCoreTiles() {
     rockSandStairs: { lift: 'stairsDown', persist: true },
     rockLawn: { lift: 'hLawn', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    hwPot: { lift: 'hwFloor', drop: 'common' },
+    cvPot: { lift: 'cvFloor', drop: 'common' },
+    cvRock: { lift: 'cvFloor', drop: 'common' },
     rockCave: { lift: 'rockFloorDk', drop: 'common' },
     potCave: { lift: 'rockFloorDk', drop: 'common' },
     ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),
@@ -59732,9 +60231,11 @@ function installLegends() {
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
     ' ': 'void',
-    '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
-    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'potCave', 'o': 'rockCave',
-    '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
+    // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js
+    // cave()). The way out, `C`, is set in the south wall.
+    '.': 'cvFloor', 'g': 'cvFloorB', '#': 'cvWall', '%': 'cvWall',
+    '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'cvPot', 'o': 'cvRock',
+    '/': 'cvStairsDown', 'C': 'cvDoor', 'N': 'cvDoorN', 'U': 'cvStairsUp', 'q': 'cvPost', '_': 'ledgeRockDk',
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
@@ -59759,8 +60260,8 @@ function installLegends() {
     '[': 'hwDoorW', ']': 'hwDoorE', 'k': 'hwClock',
     '.': 'hwFloor', 'r': 'hwRug', 'i': 'hwRugEdge', ',': 'hwBack', '=': 'hwCounter',
     'b': 'hwBedT', 'd': 'hwBedB', 'w': 'hwWardT', 'v': 'hwWardB', 'h': 'hwShelfT', 'j': 'hwShelfB',
-    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwBarrel',
-    'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard',
+    '(': 'hwTableW', ')': 'hwTableE', 's': 'hwStool', 'c': 'hwChair', 'x': 'hwBox', 'o': 'hwPot',
+    'g': 'hwJar', 'm': 'hwCabinet', 'q': 'hwCrate', 't': 'hwCupboard', 'y': 'hwMat',
     'f': 'hwHearthT', 'F': 'hwHearthTM', 'l': 'hwHearthB', 'L': 'hwHearthBM',
     'u': 'hwStairsUp', 'n': 'hwStairsDown',
   });
@@ -59777,6 +60278,10 @@ __exports["installLegends"] = installLegends;
 __define("data/caves.js", function (__exports, __require) {
 // Small standalone maps: caves, grottos, house interiors.
 // Each is a one-room (or few-room) map warped into from the overworld.
+//
+// Every cave is drawn in Seasons' own cave set (S216, legend `cave`): spiked
+// rock round a speckled floor, the way out (`C`) set in the south wall below
+// where the overworld's warp stands Link, as Seasons' $36 is.
 
 const { registerMap } = __require("world/maps.js");
 
@@ -59788,7 +60293,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -59799,8 +60303,8 @@ function installCaves() {
           '#..o..o..#',
           '#........#',
           '#..p..p..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { rupees: 30 }],
@@ -59841,7 +60345,7 @@ function installCaves() {
           }],
         ],
         readable: [[6, 3, 'Cut into the bluff: "Come back with four Essences, and this blade is yours."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
     },
   });
@@ -59859,7 +60363,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -59870,15 +60373,15 @@ function installCaves() {
           '####.#####',
           '#........#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['block', 4, 2],
           ['chest', 6, 1, { big: true, item: 'sword', level: 1 }],
         ],
         readable: [[6, 3, 'Cut into the wall: "Lean on it."']],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 9, px: 64, py: 40, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 6, ry: 9, px: 64, py: 40, dir: 'down' } }],
       },
     },
   });
@@ -59890,7 +60393,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -59901,8 +60403,8 @@ function installCaves() {
           '#.4444..o#',
           '#.4444...#',
           '#.222....#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['pickup', 3, 3, { kind: 'rupee20' }],
@@ -59930,7 +60432,7 @@ function installCaves() {
           // in. All three states of one tile, which is the item in miniature.
           [1, 5, 'Older, and lower down: "A splash of sea lights the lime shell. Too much puts it out."'],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 7, px: 64, py: 64, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 9, ry: 7, px: 64, py: 64, dir: 'down' } }],
       },
     },
   });
@@ -59954,7 +60456,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -59965,8 +60466,8 @@ function installCaves() {
           '#.2222.o.#',
           '#.2222...#',
           '#........#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           // The Bottled Tide's CASE. The bottle forces one tide step in a room
@@ -59977,7 +60478,7 @@ function installCaves() {
         ],
         readable: [[7, 3, 'Salt-etched: "A bottle of the sea, kept where the sea can\'t reach it."']],
         warps: [
-          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 9, ry: 1, px: 48, py: 48, dir: 'down' } },
           // THE LOWER VAULT (S160), an optional dungeon: the Kilnshell's.
           // See src/data/dungeons-optional.js.
           { x: 7, y: 1, to: { map: 'vault', floor: 0, rx: 1, ry: 2, px: 112, py: 128, dir: 'up' } },
@@ -59993,7 +60494,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60004,8 +60504,8 @@ function installCaves() {
           '#.5555.p.#',
           '#.5555.H.#',
           '#..q..q..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           // Its Piece of Heart moved to the Wind Shelf's sea cave (S155, side
@@ -60014,7 +60514,7 @@ function installCaves() {
         ],
         readable: [[7, 2, 'A palace notice, half finished: "The rest of the palace is underwater. Don\'t go looking!"']],
         warps: [
-          { x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 15, ry: 1, px: 64, py: 32, dir: 'down' } },
           // THE SUNKEN PALACE (S161), an optional dungeon, under a hatch the
           // Bell's Clapper unbolts. See src/data/dungeons-optional.js.
           { x: 7, y: 4, to: { map: 'palace', floor: 1, rx: 1, ry: 2, px: 112, py: 144, dir: 'up' } },
@@ -60033,7 +60533,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60044,13 +60543,13 @@ function installCaves() {
           '#........#',
           '#..p..p..#',
           '#........#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['pickup', 4, 2, { kind: 'heartPiece' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -60066,7 +60565,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60078,13 +60576,13 @@ function installCaves() {
           '#..2222..#',
           '#o.......#',
           '#.......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['pickup', 4, 4, { kind: 'heartPiece' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 2, px: 48, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -60101,7 +60599,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60112,13 +60609,13 @@ function installCaves() {
           '#..p..p..#',
           '#........#',
           '#.o......#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 2, { charm: 'quartermaster' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 3, px: 80, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 6, ry: 3, px: 80, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -60129,7 +60626,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60141,13 +60637,13 @@ function installCaves() {
           '#.22..22.#',
           '#........#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { rupees: 50 }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 5, px: 80, py: 64, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 7, ry: 5, px: 80, py: 64, dir: 'down' } }],
       },
     },
   });
@@ -60160,7 +60656,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60171,13 +60666,13 @@ function installCaves() {
           '#........#',
           '#.p....p.#',
           '#........#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'dryKindling' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 1, px: 96, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -60190,24 +60685,23 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
         map: [
           '##########',
-          '##########',
+          '########N#',
           '#.555555.#',
           '#.55..55.#',
           '#.55..55.#',
           '#........#',
-          '#....C...#',
+          '#........#',
           '##########',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'brineSkin' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 13, ry: 3, px: 64, py: 80, dir: 'down' } }],
+        warps: [{ x: 8, y: 1, to: { map: 'overworld', floor: 0, rx: 13, ry: 3, px: 64, py: 80, dir: 'up' } }],
       },
     },
   });
@@ -60220,7 +60714,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60231,13 +60724,13 @@ function installCaves() {
           '#........#',
           '#.p....p.#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'chandlersEye' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 14, ry: 4, px: 64, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 14, ry: 4, px: 64, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -60250,7 +60743,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60261,7 +60753,7 @@ function installCaves() {
           '#........#',
           '#.q....q.#',
           '#........#',
-          '#....C...#',
+          '#....U...#',
           '##########',
         ],
         entities: [
@@ -60280,7 +60772,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60291,7 +60782,7 @@ function installCaves() {
           '#..p..p..#',
           '#........#',
           '#.o....o.#',
-          '#....C...#',
+          '#....U...#',
           '##########',
         ],
         entities: [
@@ -60310,7 +60801,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60322,13 +60812,13 @@ function installCaves() {
           '#..2..2..#',
           '#........#',
           '#o......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'fishermansRegret' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 7, ry: 9, px: 112, py: 96, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 7, ry: 9, px: 112, py: 96, dir: 'down' } }],
       },
     },
   });
@@ -60342,24 +60832,23 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
         map: [
           '##########',
-          '##########',
+          '#####N####',
           '#p.p..p.p#',
           '#........#',
           '#.o....o.#',
           '#........#',
-          '#....C...#',
+          '#........#',
           '##########',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'potHauler' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 11, ry: 3, px: 96, py: 80, dir: 'down' } }],
+        warps: [{ x: 5, y: 1, to: { map: 'overworld', floor: 0, rx: 11, ry: 3, px: 96, py: 80, dir: 'up' } }],
       },
     },
   });
@@ -60373,7 +60862,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60384,8 +60872,8 @@ function installCaves() {
           '#........#',
           '#.o......#',
           '#.......o#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['giver', 4, 3, {
@@ -60393,7 +60881,7 @@ function installCaves() {
             dialogue: 'quarryman', after: 'quarrymanAfter', flag: 'gotBombBag', pickup: 'bombBag',
           }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 5, px: 112, py: 32, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 5, px: 112, py: 32, dir: 'down' } }],
       },
     },
   });
@@ -60407,7 +60895,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60419,13 +60906,13 @@ function installCaves() {
           '#........#',
           '#q......q#',
           '#..2..2..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 4, 3, { charm: 'drownedLantern' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 16, ry: 2, px: 112, py: 80, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 16, ry: 2, px: 112, py: 80, dir: 'down' } }],
       },
     },
   });
@@ -60440,7 +60927,6 @@ function installCaves() {
     w: 1, h: 1, floors: 1,
     legend: 'cave',
     music: 'cave',
-    tint: 'cave',
     scroll: false,
     rooms: {
       '0,0,0': {
@@ -60452,14 +60938,14 @@ function installCaves() {
           '#.o....o.#',
           '#........#',
           '#..p..p..#',
-          '#....C...#',
-          '##########',
+          '#........#',
+          '#####C####',
         ],
         entities: [
           ['chest', 3, 3, { charm: 'lamplighter' }],
           ['chest', 6, 3, { rupees: 100 }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
       },
     },
   });

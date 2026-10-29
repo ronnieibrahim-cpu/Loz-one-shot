@@ -59,8 +59,13 @@ export const ROUTE = [
   ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
-  ['goto', 5, 6, 600],
-  ['wait', 90],
+  // Out by the way out in the south wall (S216: the caves are Seasons' own,
+  // and the door is set in the wall below where Link stands on arriving).
+  // The door is a tile further than the old one on the floor was, so the
+  // waits after the three early caves give those frames back and every
+  // frame after them is the frame it was before (S216).
+  ['goto', 5, 7, 600],
+  ['wait', 74],
   ['travel', 8, 9, 6000],
   ['goto', 4, 4, 900],
   ['wait', 90],
@@ -113,8 +118,8 @@ export const ROUTE = [
   ['dialogue', 300],
   ['loot', 900],
   ['dialogue', 400],
-  ['goto', 5, 6, 400],
-  ['wait', 120],
+  ['goto', 5, 7, 400],
+  ['wait', 104],
   ['dialogue', 300],
 
   // The Reef Hollow, on the way east. Its piece is two tiles into the seafloor
@@ -135,8 +140,8 @@ export const ROUTE = [
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
-  ['wait', 240],
-  ['goto', 5, 6, 400],
+  ['wait', 229],
+  ['goto', 5, 7, 400],
   // S150: no standing about at the door. The crab on the flats walks into a
   // player who waits here, and since contact is the cartridge's 12x12 on
   // Link's middle (and he is invulnerable 34 frames, not 46) it took six of
@@ -2133,8 +2138,8 @@ export const ROUTE = [
   ['dialogue', 900],
   ['loot', 1200],
   ['dialogue', 900],
-  ['goto', 5, 6, 900],
-  ['wait', 120],
+  ['goto', 5, 7, 900],
+  ['wait', 104],
   ['dialogue', 300],
 
   // Out on the overworld again, and north-east across the wood to the Drowned
