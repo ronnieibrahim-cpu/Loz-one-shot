@@ -3913,7 +3913,7 @@ function installHouses() {
       errand: { need: 'foundBogWater', prize: 'rupee100', flag: 'bogwaterDone', ask: 'bogwaterAsk', thanks: 'bogwaterThanks' } }],
     // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
     // Heart found under the doorstep in the flood.
-    ['npc', 6, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
+    ['npc', 6, 4, { walk: 'boy', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
       errand: { need: 'foundKite', prize: 'heartPiece', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 }, [
@@ -4014,11 +4014,12 @@ function installHouses() {
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
   ], { rx: 12, ry: 8, px: 32, py: 88 }, [
-    // Seasons' room $a4: a wall of dressers and wardrobes, a table on a rug.
+    // Seasons' room $a4: a wall of dressers and wardrobes, a table on a rug
+    // with its purple seat ($08) at the east end.
     'AhhhhhhhhB',
     'WvvjvjjvjE',
     'W..rrrr..E',
-    'W..r()r..E',
+    'W..r()p..E',
     'W..rrrr..E',
     'Wbx......E',
     'Wd.......E',

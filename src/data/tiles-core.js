@@ -1472,7 +1472,7 @@ function house() {
     out[name] = { art: ART[name], pal: name, ...def };
   };
   for (const n of ['TL', 'N', 'TR', 'W', 'E', 'BL', 'S', 'BR', 'Clock', 'BedT', 'BedB', 'WardT', 'WardB',
-    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Chair', 'Box', 'Jar', 'Cabinet', 'HearthT',
+    'ShelfT', 'ShelfB', 'TableW', 'TableE', 'Stool', 'Seat', 'Chair', 'Box', 'Jar', 'Cabinet', 'HearthT',
     'HearthTM', 'HearthB', 'HearthBM', 'Crate', 'Cupboard']) put(n, { flags: F.SOLID });
   for (const n of ['Floor', 'Rug', 'RugEdge', 'Back', 'Mat']) put(n);
   put('DoorW', { flags: F.WARP });

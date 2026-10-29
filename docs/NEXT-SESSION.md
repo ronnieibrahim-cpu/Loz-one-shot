@@ -1,3 +1,45 @@
+## S217 — Seasons' own leaves, shards, splash and clink; the cottage's seat
+
+Branch claude/oracle-tides-caves-shop-c90sev, off main at a9d576d (S216).
+
+### The human's choices this session
+- S216's caves and shop in play: RIGHT, leave them both.
+- Sandpiper Cottage's second door ($31 in the east wall of Seasons' $a4):
+  LEAVE IT OUT. Do not re-ask.
+
+### Built
+- EFFECTS (rip-effects.py `debris()`): INTERAC_GRASSDEBRIS $00 -> `fx_leaves*`
+  (48x48, the cell size is now per cut; palette 0 = green grass,
+  wGrassAnimationModifier 0), INTERAC_SPLASH $03 -> `fx_wet*`,
+  INTERAC_ROCKDEBRIS $06 -> `fx_shards*`, INTERAC_CLINK $07 -> `fx_clink*`.
+  effects.js: `cut`, `splash`, `spark` now draw these with holds
+  LEAVES_HOLDS / SPLASH_HOLDS / CLINK_HOLDS (feel.js, derived), new `shards`
+  (SHARDS_HOLDS). spawnEffectAt centres any ripped cell ((w-16)/2). A thrown
+  pot or rock now breaks into shards (it vanished in the puff), or into a
+  splash alone over water (objectReplaceWithAnimationIfOnHazard). The
+  hand-drawn fx_cut/fx_splash/fx_spark are gone from sprites-link.js and the
+  manifest (new `fxHuge` group, 48x48). Every call site keeps its name.
+- Sandpiper Cottage: Seasons' purple seat $08 at 6,3 (pick `hwSeat`, legend
+  `p` in houseWood, SOLID).
+- The hearth house's wandering child slid about on one still picture; it is
+  now Seasons' walking boy (`walk: 'boy'`). The credits' Sandpiper Row
+  fisherman did the same and now stands (he has no walk).
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died, 314667
+frames (unchanged), low-water 2; check-rippers last, alone; check-build OK.
+Replay: five recordings re-recorded (d1-sluicegate, d3-undertow,
+d4-drowned-sill, d5-overthrow, tide-steps-split); only the entity count `e`
+moved (shorter splash/clink lives). d5-overthrow's summary camMaxY/camEndY
+also moved 35->39 / 32->36: not asserted by its plan, and stale since before
+S217 (last recorded S185), not caused by the effects.
+
+### Not done / candidates
+- Still hand-drawn effects: dust, foam, bubble, sparkle, ripple, flame,
+  shine. Seasons has its own dust (Link landing / the Pegasus dust, ITEM_DUST,
+  object_code/common/items/dust.s) and a sparkle (INTERAC_SPARKLE $84).
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+
 ## S216 — the shop the cartridge's way, house pots, Seasons' own caves
 
 Branch claude/oracle-tides-review-5qo8xr, off main at 2d7c4c3 (S215).

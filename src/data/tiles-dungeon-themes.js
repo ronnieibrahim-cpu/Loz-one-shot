@@ -7956,6 +7956,25 @@ export const DUNGEON_THEME_ART = {
     1123333212333211
     2222222222222222`,
 
+  // the purple seat beside the table in room $a4 (S217), Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $08
+  hwSeat: `
+    0333333333333330
+    3300000000000033
+    3000333333330003
+    3003333333333003
+    3003333333333003
+    3003333333333003
+    3003333333333003
+    3000333333330003
+    3100000000000013
+    3310000000000133
+    3233333333333323
+    3221112112111223
+    3221112112111223
+    3332112112112333
+    3113222222223113
+    3323333333333233`,
+
   // chair, Horon Village's houses — Seasons tileset $2c (Horon Village's houses), metatile $5d
   hwChair: `
     1111111111333311
@@ -9138,6 +9157,7 @@ export const DUNGEON_THEME_PALETTES = {
   hwTableW: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
   hwTableE: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
   hwStool: ['#e79400', '#94a55a', '#844210', '#000000'],
+  hwSeat: ['#ffd68c', '#9463d6', '#6b318c', '#000000'],
   hwChair: ['#e79400', '#94a55a', '#844210', '#000000'],
   hwBox: ['#ffff8c', '#bd944a', '#634a10', '#000000'],
   hwPot: ['#e79400', '#94a55a', '#844210', '#000000'],

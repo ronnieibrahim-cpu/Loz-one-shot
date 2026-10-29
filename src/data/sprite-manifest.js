@@ -29,8 +29,7 @@ export const REQUIRED_SPRITES = {
   ],
 
   fx: [
-    ...seq('fx_spark', 3), ...seq('fx_splash', 3),
-    ...seq('fx_ripple', 2), ...seq('fx_dust', 3), ...seq('fx_cut', 3),
+    ...seq('fx_ripple', 2), ...seq('fx_dust', 3),
     ...seq('fx_sparkle', 3), ...seq('fx_flame', 3), ...seq('fx_bubble', 2),
     ...seq('fx_foam', 3), ...seq('fx_shine', 3),
     'shadow',
@@ -41,7 +40,11 @@ export const REQUIRED_SPRITES = {
   // fx_sword_*: the sword's eight pictures, cut from Seasons' spr_swords by
   // tools/rip-link.py, the sword object's position at (16, 16).
   fxBig: [...seq('fx_sword_', 8), ...seq('fx_puff', 3), ...seq('fx_hole', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
-    ...seq('fx_boom', 5), 'o_float0', 'o_icechunk0', 'o_eyeball0'],
+    ...seq('fx_boom', 5), 'o_float0', 'o_icechunk0', 'o_eyeball0',
+    // S217: the clink, the splash and the shards (32x32), and the leaves a cut
+    // bush throws, which fly further and are cut 48x48 (fxHuge).
+    ...seq('fx_clink', 2), ...seq('fx_wet', 3), ...seq('fx_shards', 4)],
+  fxHuge: [...seq('fx_leaves', 8)],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud
   // (tools/rip-hud-tiles.py): the level beside a levelled item, the count
@@ -221,6 +224,7 @@ export function expectedSize(name) {
   const darknut = { darknut_down0: [16, 23], darknut_down1: [16, 25], darknut_up0: [16, 24], darknut_up1: [16, 26] }[name];
   if (darknut) return darknut;
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
+  if (REQUIRED_SPRITES.fxHuge.includes(name)) return [48, 48];
   // A boss assembled from Seasons' own graphics (tools/rip-bosses.py) is drawn
   // at the cartridge's size, not ours: every frame of one boss shares one
   // canvas, stated here by hand so a ripper change that moves it is a failure.

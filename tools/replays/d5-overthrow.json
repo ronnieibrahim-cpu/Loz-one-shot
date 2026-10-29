@@ -46,9 +46,9 @@
   "camMinX": 0,
   "camMaxX": 80,
   "camMinY": 0,
-  "camMaxY": 35,
+  "camMaxY": 39,
   "camEndX": 80,
-  "camEndY": 32,
+  "camEndY": 36,
   "probeNames": "coralPillar|dSnarl"
  },
  "buttons": [
@@ -339,7 +339,7 @@
    "x": 179,
    "y": 80,
    "hp": 10,
-   "e": 3,
+   "e": 2,
    "d": 269,
    "r": "0,1,3",
    "pl": [

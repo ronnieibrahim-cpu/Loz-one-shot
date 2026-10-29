@@ -926,6 +926,7 @@ PICKS = [
     meta('hwTableW', 0x89, "table, west half, Horon Village's houses", 'house'),
     meta('hwTableE', 0x8a, "table, east half, Horon Village's houses", 'house'),
     meta('hwStool', 0x88, "stool, Horon Village's houses", 'house'),
+    meta('hwSeat', 0x08, "the purple seat beside the table in room $a4 (S217), Horon Village's houses", 'house'),
     meta('hwChair', 0x5d, "chair, Horon Village's houses", 'house'),
     meta('hwBox', 0x8b, "little table, Horon Village's houses", 'house'),
     meta('hwPot', 0x10, "the pot (TILEINDEX_DUNGEON_POT, 'dungeons, indoors'), Horon Village's houses", 'house'),

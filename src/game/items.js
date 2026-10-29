@@ -582,10 +582,11 @@ export class ThrownObject extends Entity {
 
   shatter(game) {
     this.remove = true;
-    game.spawnEffect('puff', this.cx - 8, this.cy - 8);
     game.audio.sfx('shatter');
+    // Seasons breaks a pot or a rock into INTERAC_ROCKDEBRIS, or, landing in
+    // water, into a splash instead (objectReplaceWithAnimationIfOnHazard).
     const f = groundFlags(game, this);
-    if (f & F.WET) game.spawnEffect('splash', this.cx - 8, this.cy - 8);
+    game.spawnEffect((f & F.WET) ? 'splash' : 'shards', this.cx - 8, this.cy - 8);
     game.rollDrop(this.cx - 8, this.cy - 8, this.opts.drops || 'none');
   }
 }
