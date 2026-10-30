@@ -361,7 +361,7 @@ export class Pickup extends Entity {
     // up in both hands, as Seasons does (grab mode 2 in its treasure table).
     if (this.spec.hold && !game.itemShow) game.holdUp({ sprite: this.sprite, pal: this.pal }, this.spec.hold);
     this.spec.get(game, this);
-    game.spawnEffect('sparkle', this.x, this.y, { life: 14 });
+    game.spawnEffect('sparkle', this.x, this.y);
   }
 
   draw(ctx, game, ox, oy) {
@@ -754,7 +754,7 @@ export class Buoy extends Entity {
     game.audio.sfx('chime', { pitch: BUOY_PITCH[this.note - 1] || 1 });
     // The bell is two pixels wide: the sparkle is what a player watching the
     // sailor's tune actually sees, the sunken bell's own answer (SunkenBell).
-    game.spawnEffect('sparkle', this.cx - 8, this.cy - 18, { life: BUOY_LIT_FRAMES, pal: 'gold' });
+    game.spawnEffect('sparkle', this.cx - 8, this.cy - 18);
   }
 
   /** Called by ringResonance for every entity in earshot: one stroke may
@@ -2101,7 +2101,7 @@ export class Essence extends Entity {
     if (this.frame % ESSENCE_SPARKLE_EVERY === 0) {
       const s = ESSENCE_SPARKLE_SPREAD / 2;
       game.spawnEffect('sparkle',
-        this.x + game.rng.range(-s, s), this.y + game.rng.range(-s, s), { life: 16 });
+        this.x + game.rng.range(-s, s), this.y + game.rng.range(-s, s));
     }
     if (!this.taken && game.player && this.overlaps(game.player)) {
       this.taken = true;
@@ -2509,7 +2509,7 @@ export class SunkenBell extends Entity {
     for (let i = 1; i <= 4; i++) {
       game.spawnEffect('sparkle',
         this.cx - 8 + (dx / d) * i * 10, this.cy - 8 + (dy / d) * i * 10,
-        { life: BELL_CHIME_FRAMES, pal: 'gold' });
+        { life: BELL_CHIME_FRAMES, loop: true });
     }
   }
 

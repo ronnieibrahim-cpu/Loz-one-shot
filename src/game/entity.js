@@ -52,6 +52,11 @@ export function dirTo(a, b) {
 }
 
 let nextId = 1;
+// A puff, a splash or a twinkle draws its id from a count of its own (S218).
+// An enemy's rhythm is a hash of its id (`every`, enemy.js), so while effects
+// shared the count, taking a landing's dust away moved every enemy made after
+// it and the playthrough lost the Bogwater Sanctum's boss.
+let nextCosmeticId = -1;
 
 /**
  * An enemy's collision area — what the sword must reach and what hurts Link
@@ -108,7 +113,7 @@ export function knockVector(e, dir, from, speed) {
 
 export class Entity {
   constructor(x, y, opts = {}) {
-    this.id = nextId++;
+    this.id = opts.cosmetic ? nextCosmeticId-- : nextId++;
     this.fx = sp(x); this.fy = sp(y); this.fz = 0;
     this.w = 16; this.h = 16;
     this.vx = 0; this.vy = 0;      // sp/f

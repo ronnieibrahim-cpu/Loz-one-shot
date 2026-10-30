@@ -37,3 +37,20 @@ routine: play animation 0, delete on its $ff frame),
 nibble: 0 for bushes and grass, 6 for pots and rocks), and
 `code/breakableTiles.s` (a thrown pot breaks as its tile would). The leaves
 fly further than 16 px from their centre, so they are cut 48x48.
+
+**S218.** The dust (INTERAC_FALLDOWNHOLE subid 1, its animation 1, on the same
+common sprites) and the twinkle (INTERAC_SPARKLE's subid table: gfx header $50,
+tile base $0a, animation 1) are cut by `dust()` and `twinkle()` in
+`tools/rip-effects.py`. They replaced hand-drawn `fx_dust*` and `fx_sparkle*`.
+Added, verbatim from commit 7584d87:
+
+| File | From | Used for |
+|---|---|---|
+| `spr_triforce_sparkle.png` | `gfx_compressible/seasons/` | the twinkle's tiles (objectGfxHeaders.s $50) |
+| `sparkle.s` | `object_code/seasons/interactions/` | which subid draws which palette and how long it lives (reference; the ripper does not read it) |
+| `fallDownHole.s` | `object_code/common/interactions/` | the dust's animation and its every-frame blink (reference) |
+
+The twinkle is drawn in standard sprite palette 3 (orange) where ours was gold
+and 2 (red, subid 1's own) where it was coral: the human's choice. Seasons
+draws no dust when Link lands (link.s plays SND_LAND alone), so the game no
+longer does either.

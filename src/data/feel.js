@@ -1662,6 +1662,19 @@ export const SHARDS_HOLDS = [4, 4, 4, 4];
  *  then $ff. 8 frames; ours was a hand-drawn spark at a guessed 3 each. */
 export const CLINK_HOLDS = [4, 4];
 
+/** f[] — each frame of the dust a thing going fast kicks up, `fx_dust*`
+ *  (S218). derived from the cartridge: interactionAnimation51b78
+ *  (INTERAC_FALLDOWNHOLE's animation 1, the same table as the splash's): 4 4
+ *  4, then $ff. 12 frames, blinking every other one (fallDownHole.s @state2).
+ *  Ours was a hand-drawn sand cloud at a guessed 5 each. */
+export const DUST_HOLDS = [4, 4, 4];
+
+/** f[] — each frame of the twinkle, `fx_twinkle*` (S218). derived from the
+ *  cartridge: interactionAnimation524f0 (INTERAC_SPARKLE's animation 1): 9 9 9
+ *  8, then the $ff frame that deletes it (sparkle.s @runSubid01). 35 frames;
+ *  ours was a hand-drawn star at a guessed 5 each, often cut short. */
+export const TWINKLE_HOLDS = [9, 9, 9, 8];
+
 /** sp/f — how fast the falling picture slides to the middle of its hole:
  *  0.375 px/f. derived from the cartridge: fallDownHole.s @interac0f_state0
  *  sets Interaction.speed to SPEED_60 ($60 subpixels a frame), and @state1
@@ -1952,8 +1965,10 @@ export const REEFSEED_SETTLE_FRAMES = 22;
  *  than a shot, because you are aiming at a tile and not at a creature. */
 export const REEFSEED_THROW_SPEED = 512;
 
-/** f — interval between the sprout's shudders while it grows. guessed. */
-export const REEFSEED_SHUDDER_EVERY = 12;
+/** f — interval between the sprout's shudders while it grows. guessed; 40
+ *  since S218, so each of Seasons' twinkles (35 frames) plays out before the
+ *  next (it was 12, for a 12-frame star). */
+export const REEFSEED_SHUDDER_EVERY = 40;
 
 /** how many Reefseeds a full pouch holds. guessed. */
 export const REEFSEED_CAPACITY = 8;

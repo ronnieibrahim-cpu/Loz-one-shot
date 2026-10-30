@@ -29,8 +29,8 @@ export const REQUIRED_SPRITES = {
   ],
 
   fx: [
-    ...seq('fx_ripple', 2), ...seq('fx_dust', 3),
-    ...seq('fx_sparkle', 3), ...seq('fx_flame', 3), ...seq('fx_bubble', 2),
+    ...seq('fx_ripple', 2),
+    ...seq('fx_flame', 3), ...seq('fx_bubble', 2),
     ...seq('fx_foam', 3), ...seq('fx_shine', 3),
     'shadow',
   ],
@@ -43,7 +43,10 @@ export const REQUIRED_SPRITES = {
     ...seq('fx_boom', 5), 'o_float0', 'o_icechunk0', 'o_eyeball0',
     // S217: the clink, the splash and the shards (32x32), and the leaves a cut
     // bush throws, which fly further and are cut 48x48 (fxHuge).
-    ...seq('fx_clink', 2), ...seq('fx_wet', 3), ...seq('fx_shards', 4)],
+    ...seq('fx_clink', 2), ...seq('fx_wet', 3), ...seq('fx_shards', 4),
+    // S218: Seasons' dust (INTERAC_FALLDOWNHOLE's animation 1) and twinkle
+    // (INTERAC_SPARKLE), orange and red.
+    ...seq('fx_dust', 3), ...seq('fx_twinkle', 4), ...seq('fx_twinkleR', 4)],
   fxHuge: [...seq('fx_leaves', 8)],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud

@@ -864,7 +864,8 @@ export class Player extends Entity {
     if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
     if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
     game.audio.sfx('land');
-    game.spawnEffect((f & F.WET) ? 'splash' : 'dust', this.x, this.y + 4, { life: 12 });
+    // Seasons lands with the sound alone, no dust (link.s, S218); in water it splashes.
+    if (f & F.WET) game.spawnEffect('splash', this.x, this.y + 4, { life: 12 });
   }
 
   tileDefAt(game, tx, ty) {
@@ -1215,8 +1216,8 @@ export class Player extends Entity {
       if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
       if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
       game.audio.sfx('land');
-      if (!(f & F.WET)) game.spawnEffect('dust', this.x, this.y + 4, { life: 12 });
-      else game.spawnEffect('splash', this.x, this.y + 2);
+      // No dust on dry ground: Seasons lands with the sound alone (S218).
+      if (f & F.WET) game.spawnEffect('splash', this.x, this.y + 2);
     }
   }
 
@@ -1754,7 +1755,6 @@ export class Player extends Entity {
     if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
     if (f & F.PIT) { this.beginFall(game, !!(f & F.DROP)); return; }
     if (f & F.WET) { game.spawnEffect('splash', this.x, this.y + 2); return; }
-    game.spawnEffect('dust', this.x, this.y + 4, { life: 12 });
     this.collapsed = DROP_IN_COLLAPSE_FRAMES;
   }
 

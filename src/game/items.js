@@ -699,8 +699,8 @@ export class Anchor extends Entity {
     this.settle = ANCHOR_SETTLE_FRAMES;
     this.x = tx * TILE; this.y = ty * TILE;
     game.audio.sfx((game.room.flagsAt(tx, ty, game.tide) & F.WET) ? 'splash' : 'place');
-    game.spawnEffect((game.room.flagsAt(tx, ty, game.tide) & F.WET) ? 'splash' : 'dust',
-      this.cx - 8, this.cy - 8);
+    // Into water it splashes; on dry ground Seasons would raise no dust (S218).
+    if (game.room.flagsAt(tx, ty, game.tide) & F.WET) game.spawnEffect('splash', this.cx - 8, this.cy - 8);
     if (p) p.reconcileWithTide(game);
     game.roomEvent('anchor', { tx, ty, level });
   }
@@ -851,7 +851,7 @@ export class Reefseed extends Entity {
     }
     this.grow++;
     if (this.grow % REEFSEED_SHUDDER_EVERY === 0) {
-      game.spawnEffect('sparkle', this.x, this.y - 4, { life: 12, pal: 'coral' });
+      game.spawnEffect('sparkleRed', this.x, this.y - 4);
     }
     if (this.grow < REEFSEED_GROW_FRAMES) return;
     this.bloom(game);
@@ -1016,7 +1016,7 @@ export class FerrymanCoin extends Entity {
       return;
     }
     if (this.frame % COIN_GLINT_EVERY === 0) {
-      game.spawnEffect('sparkle', this.x, this.y - 2, { life: 14, pal: 'gold' });
+      game.spawnEffect('sparkle', this.x, this.y - 2);
     }
   }
 
