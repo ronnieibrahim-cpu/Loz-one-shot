@@ -39,7 +39,9 @@ Branch claude/oracle-tides-twinkle-dust-i9xxn0, off main at e6e3d4f (S218).
 ### Verified
 Whole table green; check-playthrough 49/49, THE END, never died, 314417
 frames (unchanged), low-water 5; check-rippers last, alone; check-build OK.
-REPLAY_NOTE
+Replay: d1-descent, d1-sluicegate, d3-undertow, d4-drowned-sill and
+tide-steps-split re-recorded; only the effect count `e` moved (compared field
+by field against the old recordings). Replay 51/51; check-drift OK.
 
 ### Not done / candidates
 - Seasons also draws the splash at the feet of enemies and townsfolk in
