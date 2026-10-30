@@ -258,8 +258,7 @@ const CUTSCENES = {
   // Fallback for any essence index without its own scene.
   essenceGeneric: [
     { music: null },
-    { show: { art: ['p_tidebell_0', 'p_tidebell_1'], scale: 3, pal: 'essence' },
-      text: 'An Essence of the Tide joins the Bell.', frames: 160 },
+    { present: { sprite: 'p_tidebell_0', pal: 'essence', text: 'You got an Essence of the Tide!\nIt joins the Bell.' } },
     { say: 'The roar of the sea goes quiet for a moment. One more piece of the Bell is home.' },
     { music: 'overworld' },
   ],
@@ -267,7 +266,7 @@ const CUTSCENES = {
   // ---- one scene per Essence, each moving the story on --------------------
   essence1: [
     { music: null },
-    { show: { art: ['p_essence1_0', 'p_essence1_1'], scale: 3, pal: 'essence1' }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
+    { present: { sprite: 'p_essence1_0', pal: 'essence1', text: 'You got the Shallow Bell!\nThe first Essence of the Tide.' } },
     { say: 'The Essence settles against the conch. The two of them hum together, like old friends.' },
     { say: 'Back in the village, the Maku Tree opens one eye.' },
     { say: 'The conch hums, and Farore\'s voice comes out of it.' },
@@ -276,7 +275,7 @@ const CUTSCENES = {
   ],
   essence2: [
     { music: null },
-    { show: { art: ['p_essence2_0', 'p_essence2_1'], scale: 3, pal: 'essence2' }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
+    { present: { sprite: 'p_essence2_0', pal: 'essence2', text: 'You got the Coral Bell!\nThe second Essence of the Tide.' } },
     { say: 'The reef goes quiet. Every fish in the Spire turns to face the same way, all at once.' },
     { shake: 30 },
     { say: 'Far out at sea, the Drowned King notices he\'s being taken apart.' },
@@ -287,7 +286,7 @@ const CUTSCENES = {
   ],
   essence3: [
     { music: null },
-    { show: { art: ['p_essence3_0', 'p_essence3_1'], scale: 3, pal: 'essence3' }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
+    { present: { sprite: 'p_essence3_0', pal: 'essence3', text: 'You got the Bog Bell!\nThe third Essence of the Tide.' } },
     { say: 'The marsh drains a little, and stays put. It hasn\'t held still in a year.' },
     { say: 'The conch hums, and Farore\'s voice comes out of it.' },
     { say: 'That\'s three! The sea is starting to behave. Keep going!' },
@@ -296,7 +295,7 @@ const CUTSCENES = {
   ],
   essence4: [
     { music: null },
-    { show: { art: ['p_essence4_0', 'p_essence4_1'], scale: 3, pal: 'essence4' }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
+    { present: { sprite: 'p_essence4_0', pal: 'essence4', text: 'You got the Cliff Bell!\nThe fourth Essence of the Tide.' } },
     { say: 'That\'s half the Bell. The conch has gone warm, and it stays warm.' },
     { shake: 40 },
     { say: 'Half?! HALF?! Then come to the Keep, wader, and bring my Bell. I\'ll take it back at the door.' },
@@ -307,7 +306,7 @@ const CUTSCENES = {
   ],
   essence5: [
     { music: null },
-    { show: { art: ['p_essence5_0', 'p_essence5_1'], scale: 3, pal: 'essence5' }, text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
+    { present: { sprite: 'p_essence5_0', pal: 'essence5', text: 'You got the Drowned Bell!\nThe fifth Essence of the Tide.' } },
     { say: 'The flooded wood lets out a long breath, as if it had held it for a hundred years.' },
     { shake: 60 },
     { say: 'Every whirlpool between here and the Abyss stops, and starts spinning the other way.' },
@@ -317,7 +316,7 @@ const CUTSCENES = {
   ],
   essence6: [
     { music: null },
-    { show: { art: ['p_essence6_0', 'p_essence6_1'], scale: 3, pal: 'essence6' }, text: 'Essence of the Tide\nVI — the Drowned King\'s Bell', frames: 170 },
+    { present: { sprite: 'p_essence6_0', pal: 'essence6', text: 'You got the Drowned King\'s Bell!\nThe last Essence of the Tide.' } },
     { say: 'The last Essence falls from Nereth\'s crown. All six come together in your hands.' },
     { say: 'The Tide Bell is whole again. It\'s smaller than in the stories, and much heavier.' },
     { music: 'overworld' },

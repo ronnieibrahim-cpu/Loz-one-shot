@@ -24,6 +24,9 @@
 //   { despawn: 'entityTypeName' }
 //   { flag: 'sawIntro' }                     set a progress flag
 //   { give: { item: 'sword', level: 1 } }
+//   { present: { item: 'conch', level: 1 } } Link holds it up, the box names it
+//   { present: { sprite, pal, text } }       the same for a thing that is not
+//                                            an item (an Essence)
 //   { text: 'Big centred caption', frames: 120 }
 //   { show: 'p_tidebell_0' }                 hold a sprite up on screen
 //   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150, scale: 3,
@@ -116,7 +119,15 @@ export function runCutscene(game, steps, data = {}) {
     // is. `give` with a `jingle: 'fanfare'` and a `show` card was how the
     // Rod and the Maku sword used to arrive, a different tune and a picture
     // floating in the dark, and nowhere else in the game sounded like that.
-    if (step.present) {
+    if (step.present && step.present.sprite) {
+      // A thing that is not an item, held up the same way (S220: the
+      // Essences, which Seasons has Link hold overhead under an ordinary text
+      // box; ours were a picture blown up three times over a see-through card).
+      const o = step.present;
+      game.holdUp({ sprite: o.sprite, pal: o.pal }, 2);
+      game.say(o.text);
+      presenting = true;
+    } else if (step.present) {
       const { item, level = 1 } = step.present;
       giveItem(game.progress, item, level);
       game.autoEquip(item);
@@ -188,7 +199,11 @@ export function runCutscene(game, steps, data = {}) {
      *  a frame where the sprite is actually up, and pressing A to advance
      *  there would skip the very thing being photographed. Same reason
      *  `Audio.init` takes a context override. Nothing in the game reads it. */
-    shownArt() { return shown && shown.t > 0 ? shown.art[0] : null; },
+    shownArt() {
+      if (shown && shown.t > 0) return shown.art[0];
+      // A thing held up (`present`) is the picture of its beat too.
+      return presenting && game.itemShow && game.itemShow.sprite ? game.itemShow.sprite : null;
+    },
 
     /** The caption the scene is holding up, or null. The same seam as
      *  `shownArt`, and it exists for the same reason one scale up:

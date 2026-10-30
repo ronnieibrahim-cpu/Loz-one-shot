@@ -513,6 +513,7 @@ export class NPC extends Entity {
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
+    this.wades = true;
     // Never stands in a tree's roots, placed or wandering (`canOccupy`).
     this.avoidRoots = true;
     // Standing ON something solid rather than on the floor — Farore's book on

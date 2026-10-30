@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A charm poked into `scrim.active` from a tool lasts one frame (S220).**
+  `Scrimshaw` rebuilds `active` from the equipped cases every update, so a
+  shot of the Wrecker's Eye must re-add it after each step, or it shows
+  nothing and looks like the effect is broken.
+- **A cutscene's picture is not only its `show` step (S220).** The Essences
+  are now held up with `present: { sprite }`; `shownArt()` reports the held
+  sprite too, or shoot-cutscene calls every Essence scene pictureless.
+
 - **Link's swimming pictures already carry their ring of water (S219).** The
   game cropped the bottom off them and drew a hand-made ripple underneath, so
   the ring was cut in half for the project's whole life. Seasons draws Link

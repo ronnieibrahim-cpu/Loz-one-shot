@@ -136,7 +136,7 @@ export class Sheet {
 
   /**
    * Draw art at integer pixel coordinates.
-   * opts: { pal, flipX, flipY, alpha, w, h } — w/h crop the drawn region (top-left anchored).
+   * opts: { pal, flipX, flipY, w, h } — w/h crop the drawn region (top-left anchored).
    *
    * `x` and `y` ARE ALREADY WHOLE PIXELS and this draws exactly where it is
    * told. Entity positions are 8.8 fixed-point with an integer pixel accessor
@@ -155,14 +155,7 @@ export class Sheet {
     const o = opts || {};
     const c = this.bake(name, o.pal, o.flipX, o.flipY);
     if (!c) return;
-    if (o.alpha != null && o.alpha < 1) {
-      const prev = ctx.globalAlpha;
-      ctx.globalAlpha = o.alpha;
-      this._blit(ctx, c, x, y, o);
-      ctx.globalAlpha = prev;
-    } else {
-      this._blit(ctx, c, x, y, o);
-    }
+    this._blit(ctx, c, x, y, o);
   }
 
   _blit(ctx, c, px, py, o) {

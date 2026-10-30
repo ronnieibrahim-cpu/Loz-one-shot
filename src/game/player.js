@@ -457,8 +457,8 @@ export class Player extends Entity {
   // what is hittable. That is deliberate: docs/ITEMS.md and P9's brief both say
   // the Lens is never a gate, so it must not be able to move anything.
   //
-  // All this does is ramp a 0..1 fade. `Game.drawLensGhost` reads it for the
-  // overlay and `Game.updatePhaseShift` reads it to decide whether the enemies
+  // All this does is ramp a 0..1 count. `Game.lensGhostLevel` flickers the
+  // other tide's room while it is above 0, and `Game.updatePhaseShift` reads it to decide whether the enemies
   // that live at the other tide level can be hit.
 
   updateLens(game) {

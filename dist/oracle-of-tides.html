@@ -3172,42 +3172,24 @@ const ESSENCE_SPARKLE_EVERY = 10;
 
 // --- Brineglass Lens -------------------------------------------------------
 
-/** f — how long the ghosted overlay takes to fade in when the Lens is raised,
- *  and out again when it is released. guessed. */
+/** f — how long the Lens takes to come up when raised, and to go down again
+ *  when released; it is up (the other tide flickering in, the other tide's
+ *  enemies seen and hittable) while this count is above 0. guessed. */
 const LENS_FADE_FRAMES = 10;
 
-/** x — peak opacity of the ghosted next-tide terrain drawn over the room.
- *  guessed, but MEASURED AGAINST A ROOM, which is more than it was. D2's forks
- *  ask the Lens the hardest question in the game — three shafts that are the
- *  same `dPit` where you stand and shallow water / a pit / deep water one level
- *  up — and the three previewed tiles were coming out 4-6 units apart in RGB,
- *  which is not a difference a person reads at 160x144. Sampled over the pit
- *  in d2 1,2,2 — regenerate the shot with
- *  `node tools/shoot-rooms.mjs --tide=0 --px=72 --py=88 --lens d2,1,2,2` —
- *  mean RGB of each throat:
- *
- *    ghost   west (wadeable)   middle (pit)   east (drowning)
- *    0.55    (23, 33, 51)      (17, 21, 38)   (19, 27, 48)
- *    0.80    (26, 38, 58)      (17, 21, 38)   (20, 29, 53)
- *    1.00    (28, 40, 60)      (17, 20, 38)   (21, 30, 55)
- *
- *  0.80 buys most of what 1.00 buys and keeps the overlay translucent, which
- *  is what stops it reading as the room having already changed. THE REAL LIMIT
- *  IS NOT THIS NUMBER: shallow water, deep water and a dungeon pit are three
- *  dark blues, so no opacity separates them by much. See docs/ART-BACKLOG.md. */
-const LENS_GHOST_ALPHA = 0.80;
+/** levels ahead — which tide the L1 Lens draws the room at on each frame of
+ *  its cycle (0 = the tide played, 1 = the next). derived (S220): the Game
+ *  Boy shows two things in one place by drawing them on alternate frames, as
+ *  Seasons does its shadows (SHADOW_FLICKER). Replaced a see-through copy of
+ *  the next tide laid over the room at 80% with a 16% tint and a shimmer,
+ *  which no Game Boy can draw; see docs/ART-BACKLOG.md for why opacity never
+ *  told D2's three dark blues apart anyway. */
+const LENS_FLICKER_L1 = [0, 1];
 
-/** x — opacity of the cold wash laid over the whole screen while the Lens is
- *  up, so the preview cannot be mistaken for the room actually changing.
- *  guessed. */
-const LENS_TINT_ALPHA = 0.16;
-
-/** x — opacity a phase-shifted enemy is drawn at while the Lens reveals it.
- *  It is solid enough to aim at, because the Lens makes it hittable. guessed. */
-const LENS_PHASE_ALPHA = 0.8;
-
-/** f — period of the slow shimmer on the ghosted overlay. guessed. */
-const LENS_SHIMMER_FRAMES = 48;
+/** levels ahead — the L2 Lens's cycle: the tide played on every other frame,
+ *  the next tide twice and the far one once in each six, so the nearer
+ *  preview reads the more solid. derived from LENS_FLICKER_L1. */
+const LENS_FLICKER_L2 = [0, 1, 0, 1, 0, 2];
 
 // --- Kelp-Soled Cleats -----------------------------------------------------
 
@@ -3585,15 +3567,10 @@ const BOSUN_FACTOR = 0.5;
  *  it is lit. */
 const LANTERN_RADIUS = 96;
 
-/** f — how often the Wrecker's Eye winks over a hidden thing. guessed; slow
- *  enough to read as a glint rather than a blinking marker. */
+/** f — how often the Wrecker's Eye twinkles over a hidden thing: Seasons'
+ *  twinkle (TWINKLE_HOLDS, 35 frames) once in each. guessed; slow enough to
+ *  read as a glint rather than a blinking marker. */
 const WRECK_GLIMMER_PERIOD = 90;
-
-/** f — how long each wink lasts, inside WRECK_GLIMMER_PERIOD. guessed. */
-const WRECK_GLIMMER_ON = 20;
-
-/** peak opacity of the Wrecker's Eye wink. guessed. */
-const WRECK_GLIMMER_ALPHA = 0.85;
 
 /** essences before the scrimshander cuts you the LOW case. derived from the
  *  eight-dungeon spine, not guessed: two, four and six spread the three
@@ -4488,10 +4465,8 @@ __exports["EXPLOSION_RADII"] = EXPLOSION_RADII;
 __exports["ESSENCE_SPARKLE_SPREAD"] = ESSENCE_SPARKLE_SPREAD;
 __exports["ESSENCE_SPARKLE_EVERY"] = ESSENCE_SPARKLE_EVERY;
 __exports["LENS_FADE_FRAMES"] = LENS_FADE_FRAMES;
-__exports["LENS_GHOST_ALPHA"] = LENS_GHOST_ALPHA;
-__exports["LENS_TINT_ALPHA"] = LENS_TINT_ALPHA;
-__exports["LENS_PHASE_ALPHA"] = LENS_PHASE_ALPHA;
-__exports["LENS_SHIMMER_FRAMES"] = LENS_SHIMMER_FRAMES;
+__exports["LENS_FLICKER_L1"] = LENS_FLICKER_L1;
+__exports["LENS_FLICKER_L2"] = LENS_FLICKER_L2;
 __exports["SINK_SPEED"] = SINK_SPEED;
 __exports["TORRENT_PUSH"] = TORRENT_PUSH;
 __exports["TORRENT_ANIM_RATE"] = TORRENT_ANIM_RATE;
@@ -4571,8 +4546,6 @@ __exports["CARVE_PRICE"] = CARVE_PRICE;
 __exports["BOSUN_FACTOR"] = BOSUN_FACTOR;
 __exports["LANTERN_RADIUS"] = LANTERN_RADIUS;
 __exports["WRECK_GLIMMER_PERIOD"] = WRECK_GLIMMER_PERIOD;
-__exports["WRECK_GLIMMER_ON"] = WRECK_GLIMMER_ON;
-__exports["WRECK_GLIMMER_ALPHA"] = WRECK_GLIMMER_ALPHA;
 __exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
 __exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
 __exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
@@ -6445,7 +6418,7 @@ class Sheet {
 
   /**
    * Draw art at integer pixel coordinates.
-   * opts: { pal, flipX, flipY, alpha, w, h } — w/h crop the drawn region (top-left anchored).
+   * opts: { pal, flipX, flipY, w, h } — w/h crop the drawn region (top-left anchored).
    *
    * `x` and `y` ARE ALREADY WHOLE PIXELS and this draws exactly where it is
    * told. Entity positions are 8.8 fixed-point with an integer pixel accessor
@@ -6464,14 +6437,7 @@ class Sheet {
     const o = opts || {};
     const c = this.bake(name, o.pal, o.flipX, o.flipY);
     if (!c) return;
-    if (o.alpha != null && o.alpha < 1) {
-      const prev = ctx.globalAlpha;
-      ctx.globalAlpha = o.alpha;
-      this._blit(ctx, c, x, y, o);
-      ctx.globalAlpha = prev;
-    } else {
-      this._blit(ctx, c, x, y, o);
-    }
+    this._blit(ctx, c, x, y, o);
   }
 
   _blit(ctx, c, px, py, o) {
@@ -13728,7 +13694,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY, SHADOW_FLICKER } = __require("data/feel.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY, SHADOW_FLICKER, PUDDLE_HOLD } = __require("data/feel.js");
 
 const ENTITY_TYPES = new Map();
 
@@ -13847,6 +13813,9 @@ class Entity {
     this.knockX = 0; this.knockY = 0;
     this.hb = { x: 2, y: 4, w: 12, h: 11 };   // hitbox inset within w/h
     this.shadow = true;
+    // Gets Seasons' splash at its feet when it stands in shallow water
+    // (drawPuddle). Set by the things that walk: enemies on foot, townsfolk.
+    this.wades = false;
     this.depth = 0;          // draw-order tiebreak
     // The tide level this entity genuinely exists at, or null for "always".
     // A phased-out entity is not drawn, not dangerous and not hittable until
@@ -13953,7 +13922,7 @@ class Entity {
     const off = this.drawOffset ? this.drawOffset(game, name) : null;
     sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0) + (off ? off[0] : 0),
       oy + this.y - this.z + (off ? off[1] : 0), {
-      pal, flipX: this.flipX, alpha: this.alpha,
+      pal, flipX: this.flipX,
     });
   }
 
@@ -13965,6 +13934,20 @@ class Entity {
     if (!this.shadow || this.z <= 1) return;
     if ((game.frame + this.id) % SHADOW_FLICKER) return;
     sprites.draw(ctx, 'fx_shadow0', ox + this.x - 8, oy + this.y - 8);
+  }
+
+  // THE SPLASH AT ITS FEET in shallow water (S220): Seasons draws it under
+  // every object that asks for terrain effects (_drawObjectTerrainEffects
+  // @walkingInPuddle) — its enemies on foot and its townsfolk as well as
+  // Link, all in step on the one counter. Where the thing's own feet are
+  // (groundFlags), and only standing: a hop or a bounce is above it.
+  drawPuddle(ctx, game, ox, oy) {
+    if (!this.wades || this.z > 1 || this.dead) return;
+    const f = groundFlags(game, this);
+    if (!(f & F.WATER) || (f & F.DEEP)) return;
+    const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
+    sprites.draw(ctx, 'fx_puddle' + k, ox + this.x + ((this.w - 16) >> 1) - 8,
+      oy + this.y + this.h - 24);
   }
 }
 
@@ -21672,8 +21655,8 @@ class Player extends Entity {
   // what is hittable. That is deliberate: docs/ITEMS.md and P9's brief both say
   // the Lens is never a gate, so it must not be able to move anything.
   //
-  // All this does is ramp a 0..1 fade. `Game.drawLensGhost` reads it for the
-  // overlay and `Game.updatePhaseShift` reads it to decide whether the enemies
+  // All this does is ramp a 0..1 count. `Game.lensGhostLevel` flickers the
+  // other tide's room while it is above 0, and `Game.updatePhaseShift` reads it to decide whether the enemies
   // that live at the other tide level can be hit.
 
   updateLens(game) {
@@ -27404,6 +27387,7 @@ class NPC extends Entity {
     this.solid = true;
     this.harmless = true;
     this.shadow = false;
+    this.wades = true;
     // Never stands in a tree's roots, placed or wandering (`canOccupy`).
     this.avoidRoots = true;
     // Standing ON something solid rather than on the floor — Farore's book on
@@ -29663,21 +29647,19 @@ function drawTideGauge(ctx, game, x) {
   }
 }
 
-/** Transient banner naming the area you just entered. */
+/** Transient banner naming the area you just entered. It comes and goes
+ *  whole, as Seasons' dungeon name box does (S220): it used to fade in and
+ *  out, which the Game Boy cannot draw. */
 function drawAreaBanner(ctx, game) {
   if (game.bannerTime <= 0 || !game.bannerText) return;
-  const t = game.bannerTime;
-  const alpha = t > 90 ? (120 - t) / 30 : Math.min(1, t / 30);
   const w = textWidth(game.bannerText) + 12;
   const x = Math.round((SCREEN_W - w) / 2), y = HUD_H + 8;
-  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
   ctx.fillStyle = '#080c10';
   ctx.fillRect(x, y, w, 13);
   ctx.fillStyle = '#586878';
   ctx.fillRect(x, y, w, 1);
   ctx.fillRect(x, y + 12, w, 1);
   drawTextCentered(ctx, game.bannerText, SCREEN_W / 2, y + 3, '#f8f8e8');
-  ctx.globalAlpha = 1;
 }
 __exports["hudLayout"] = hudLayout;
 __exports["drawHud"] = drawHud;
@@ -38569,6 +38551,8 @@ class Enemy extends Entity {
     this.still = false;
     this.homeX = x; this.homeY = y;
     this.shadow = this.flying;
+    // On foot it splashes in the shallows; a swimmer is drawn in its water.
+    this.wades = !this.flying && this.terrain !== 'water';
     if (spec.z) this.z = spec.z;
     if (spec.init) spec.init(this, null);
   }
@@ -38960,6 +38944,7 @@ class Boss extends Enemy {
     this.hb = spec.hb || { x: 4, y: 8, w: this.w - 8, h: this.h - 12 };
     this.depth = 2;
     this.shadow = false;
+    this.wades = false;
   }
 
   currentPhase() {
@@ -39099,7 +39084,7 @@ class Boss extends Enemy {
     const cy = oy + this.y + hb.y + (hb.h >> 1) - this.z;
     const x = this.flipX ? cx - (rig.w - rig.ax) : cx - rig.ax;
     for (const layer of rig.layers) {
-      sprites.draw(ctx, layer, x, cy - rig.ay, { pal: pal || undefined, flipX: this.flipX, alpha: this.alpha });
+      sprites.draw(ctx, layer, x, cy - rig.ay, { pal: pal || undefined, flipX: this.flipX });
     }
   }
 }
@@ -39891,6 +39876,9 @@ __define("game/cutscene.js", function (__exports, __require) {
 //   { despawn: 'entityTypeName' }
 //   { flag: 'sawIntro' }                     set a progress flag
 //   { give: { item: 'sword', level: 1 } }
+//   { present: { item: 'conch', level: 1 } } Link holds it up, the box names it
+//   { present: { sprite, pal, text } }       the same for a thing that is not
+//                                            an item (an Essence)
 //   { text: 'Big centred caption', frames: 120 }
 //   { show: 'p_tidebell_0' }                 hold a sprite up on screen
 //   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150, scale: 3,
@@ -39979,7 +39967,15 @@ function runCutscene(game, steps, data = {}) {
     // is. `give` with a `jingle: 'fanfare'` and a `show` card was how the
     // Rod and the Maku sword used to arrive, a different tune and a picture
     // floating in the dark, and nowhere else in the game sounded like that.
-    if (step.present) {
+    if (step.present && step.present.sprite) {
+      // A thing that is not an item, held up the same way (S220: the
+      // Essences, which Seasons has Link hold overhead under an ordinary text
+      // box; ours were a picture blown up three times over a see-through card).
+      const o = step.present;
+      game.holdUp({ sprite: o.sprite, pal: o.pal }, 2);
+      game.say(o.text);
+      presenting = true;
+    } else if (step.present) {
       const { item, level = 1 } = step.present;
       giveItem(game.progress, item, level);
       game.autoEquip(item);
@@ -40051,7 +40047,11 @@ function runCutscene(game, steps, data = {}) {
      *  a frame where the sprite is actually up, and pressing A to advance
      *  there would skip the very thing being photographed. Same reason
      *  `Audio.init` takes a context override. Nothing in the game reads it. */
-    shownArt() { return shown && shown.t > 0 ? shown.art[0] : null; },
+    shownArt() {
+      if (shown && shown.t > 0) return shown.art[0];
+      // A thing held up (`present`) is the picture of its beat too.
+      return presenting && game.itemShow && game.itemShow.sprite ? game.itemShow.sprite : null;
+    },
 
     /** The caption the scene is holding up, or null. The same seam as
      *  `shownArt`, and it exists for the same reason one scale up:
@@ -40253,7 +40253,7 @@ const { Credits } = __require("game/credits.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -42674,7 +42674,7 @@ class Game {
       const here = this.tide.level === e.phase;
       e.phasedOut = !here;
       if (here) {
-        if (e._phaseWas) { e.hidden = false; e.harmless = !!e._phaseHarmless; e.alpha = null; }
+        if (e._phaseWas) { e.hidden = false; e.harmless = !!e._phaseHarmless; e.lensGhost = false; }
         e._phaseWas = false;
         continue;
       }
@@ -42682,7 +42682,9 @@ class Game {
       // Never a threat from the other level, Lens or no Lens.
       e.harmless = true;
       e.hidden = !lensUp;
-      e.alpha = lensUp ? LENS_PHASE_ALPHA : null;
+      // Seen through the Lens it flickers with the other tide's room (S220;
+      // it was drawn see-through, which the Game Boy cannot do).
+      e.lensGhost = lensUp;
       // `Entity.hurt` early-returns on invuln, which is how "not hittable" is
       // expressed without every damage source needing to learn about phases.
       // Re-armed every frame so it lapses the instant the Lens comes up.
@@ -42970,7 +42972,12 @@ class Game {
   drawScene(ctx, ox, oy) {
     const room = this.room;
     if (!room) return;
-    const base = room.render(this.tide, this.frame);
+    // The Brineglass Lens (S220): on its frames the other tide's room is
+    // drawn INSTEAD of this one, the Game Boy's way of showing two things in
+    // one place (the shadow's flicker), under everything standing in it.
+    const ghost = this.lensGhostLevel();
+    const base = ghost == null ? room.render(this.tide, this.frame)
+      : room.renderAt(this.tide.viewAt(ghost), this.frame);
 
     if (this.tide.busy) {
       this.tide.drawSweep(ctx, ox, oy, base, () => {
@@ -42983,21 +42990,22 @@ class Game {
     }
 
     ctx.drawImage(base, ox, oy);
-    room.drawAnim(ctx, ox, oy, this.tide, this.frame);
+    // `renderAt` is the whole room, water and all, in one still.
+    if (ghost == null) room.drawAnim(ctx, ox, oy, this.tide, this.frame);
 
     const list = this.entities.slice();
     if (this.player && !list.includes(this.player)) list.push(this.player);
     list.sort((a, b) => (a.depth * 1000 + a.y + a.h) - (b.depth * 1000 + b.y + b.h));
     for (const e of list) { if (e.drawShadow) e.drawShadow(ctx, this, ox, oy); }
     for (const e of list) {
-      if (e.hidden) continue;
+      if (e.hidden || (e.lensGhost && ghost == null)) continue;
       e.draw(ctx, this, ox, oy);
+      if (e.wades) e.drawPuddle(ctx, this, ox, oy);
     }
 
     room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
     if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
-    if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx, ox, oy);
@@ -43017,7 +43025,6 @@ class Game {
   drawWrecksGlimmer(ctx, ox, oy) {
     const room = this.room;
     if (!room) return;
-    ctx.save();
     for (const e of this.entities) {
       if (!(e instanceof Chest) || e.opened) continue;
       this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
@@ -43029,54 +43036,42 @@ class Game {
         this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);
       }
     }
-    ctx.restore();
   }
 
+  // Seasons' own twinkle (INTERAC_SPARKLE, S220), played through once every
+  // WRECK_GLIMMER_PERIOD frames; it was a hand-drawn cross faded in and out,
+  // which the Game Boy cannot draw. Drawn straight off the frame counter, not
+  // spawned, so it adds nothing to the effect count.
   glimmerAt(ctx, cx, cy, phase) {
-    const t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
-    if (t > WRECK_GLIMMER_ON) return;
-    const a = Math.sin(t / WRECK_GLIMMER_ON * Math.PI);
-    ctx.globalAlpha = a * WRECK_GLIMMER_ALPHA;
-    ctx.fillStyle = '#f8f8c0';
-    ctx.fillRect(cx - 1, cy - 4, 2, 8);
-    ctx.fillRect(cx - 4, cy - 1, 8, 2);
-    ctx.globalAlpha = 1;
+    let t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
+    for (let i = 0; i < TWINKLE_HOLDS.length; i++) {
+      if (t < TWINKLE_HOLDS[i]) {
+        sprites.draw(ctx, 'fx_twinkle' + i, cx - 16, cy - 16);
+        return;
+      }
+      t -= TWINKLE_HOLDS[i];
+    }
   }
 
   /**
-   * The Brineglass Lens: the room as it will be at the NEXT tide level, laid
-   * over the room as it is. Drawn ABOVE the entities and above `drawOver`, so
-   * the preview reads as glass held in front of the scene rather than as part
-   * of it — under them it looked like the room had already changed, which is
-   * the one thing the Lens must never seem to say.
+   * The Brineglass Lens: the tide level the room is drawn at THIS frame, or
+   * null for the level actually played. L1 shows the next level on every
+   * other frame; L2 shows both other levels, the next one twice as often, so
+   * the two are told apart by how solid they look (LENS_FLICKER_L2). Drawn
+   * as the room itself, under the entities, on its own frames: the Game Boy
+   * shows two things in one place by flickering them (S220). It was a
+   * see-through copy laid over the screen with a tint.
    *
-   * Nothing here consumes randomness. `draw()` runs at display rate and the
-   * shimmer is a plain function of `frame`, for the same reason the screen
-   * shake uses noise1.
+   * The FIELD at that base, not the bare level (see Tide.viewAt): an anchored
+   * patch is the one part of the room that will not change, and the preview
+   * has to say so. A plain function of `frame`, consuming nothing.
    */
-  drawLensGhost(ctx, ox, oy) {
-    const room = this.room;
-    if (!room) return;
-    const t = this.player.lensT / LENS_FADE_FRAMES;
-    const lv = itemLevel(this.progress, 'lens');
-    // L1 shows the next level. L2 shows both other levels, nearest first, so
-    // the two ghosts are told apart by how solid they are.
-    const levels = [(this.tide.level + 1) % TIDE_COUNT];
-    if (lv >= 2) levels.push((this.tide.level + 2) % TIDE_COUNT);
-
-    const shimmer = 0.88 + 0.12 * Math.sin(this.frame * (Math.PI * 2 / LENS_SHIMMER_FRAMES));
-    ctx.save();
-    ctx.globalAlpha = LENS_TINT_ALPHA * t;
-    ctx.fillStyle = '#a8f0e8';
-    ctx.fillRect(ox, oy, room.pw, room.ph);
-    for (let i = 0; i < levels.length; i++) {
-      ctx.globalAlpha = (LENS_GHOST_ALPHA * t * shimmer) / (i + 1);
-      // The FIELD at that base, not the bare level: an anchored patch is the
-      // one part of the room that will not change, and the preview has to say
-      // so. See Tide.viewAt.
-      ctx.drawImage(room.renderAt(this.tide.viewAt(levels[i]), this.frame), ox, oy);
-    }
-    ctx.restore();
+  lensGhostLevel() {
+    const p = this.player;
+    if (!p || p.lensT <= 0 || !this.room) return null;
+    const cycle = itemLevel(this.progress, 'lens') >= 2 ? LENS_FLICKER_L2 : LENS_FLICKER_L1;
+    const ahead = cycle[this.frame % cycle.length];
+    return ahead ? (this.tide.level + ahead) % TIDE_COUNT : null;
   }
 
   drawTransition(ctx, ox, oy) {
@@ -73490,8 +73485,7 @@ const CUTSCENES = {
   // Fallback for any essence index without its own scene.
   essenceGeneric: [
     { music: null },
-    { show: { art: ['p_tidebell_0', 'p_tidebell_1'], scale: 3, pal: 'essence' },
-      text: 'An Essence of the Tide joins the Bell.', frames: 160 },
+    { present: { sprite: 'p_tidebell_0', pal: 'essence', text: 'You got an Essence of the Tide!\nIt joins the Bell.' } },
     { say: 'The roar of the sea goes quiet for a moment. One more piece of the Bell is home.' },
     { music: 'overworld' },
   ],
@@ -73499,7 +73493,7 @@ const CUTSCENES = {
   // ---- one scene per Essence, each moving the story on --------------------
   essence1: [
     { music: null },
-    { show: { art: ['p_essence1_0', 'p_essence1_1'], scale: 3, pal: 'essence1' }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
+    { present: { sprite: 'p_essence1_0', pal: 'essence1', text: 'You got the Shallow Bell!\nThe first Essence of the Tide.' } },
     { say: 'The Essence settles against the conch. The two of them hum together, like old friends.' },
     { say: 'Back in the village, the Maku Tree opens one eye.' },
     { say: 'The conch hums, and Farore\'s voice comes out of it.' },
@@ -73508,7 +73502,7 @@ const CUTSCENES = {
   ],
   essence2: [
     { music: null },
-    { show: { art: ['p_essence2_0', 'p_essence2_1'], scale: 3, pal: 'essence2' }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
+    { present: { sprite: 'p_essence2_0', pal: 'essence2', text: 'You got the Coral Bell!\nThe second Essence of the Tide.' } },
     { say: 'The reef goes quiet. Every fish in the Spire turns to face the same way, all at once.' },
     { shake: 30 },
     { say: 'Far out at sea, the Drowned King notices he\'s being taken apart.' },
@@ -73519,7 +73513,7 @@ const CUTSCENES = {
   ],
   essence3: [
     { music: null },
-    { show: { art: ['p_essence3_0', 'p_essence3_1'], scale: 3, pal: 'essence3' }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
+    { present: { sprite: 'p_essence3_0', pal: 'essence3', text: 'You got the Bog Bell!\nThe third Essence of the Tide.' } },
     { say: 'The marsh drains a little, and stays put. It hasn\'t held still in a year.' },
     { say: 'The conch hums, and Farore\'s voice comes out of it.' },
     { say: 'That\'s three! The sea is starting to behave. Keep going!' },
@@ -73528,7 +73522,7 @@ const CUTSCENES = {
   ],
   essence4: [
     { music: null },
-    { show: { art: ['p_essence4_0', 'p_essence4_1'], scale: 3, pal: 'essence4' }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
+    { present: { sprite: 'p_essence4_0', pal: 'essence4', text: 'You got the Cliff Bell!\nThe fourth Essence of the Tide.' } },
     { say: 'That\'s half the Bell. The conch has gone warm, and it stays warm.' },
     { shake: 40 },
     { say: 'Half?! HALF?! Then come to the Keep, wader, and bring my Bell. I\'ll take it back at the door.' },
@@ -73539,7 +73533,7 @@ const CUTSCENES = {
   ],
   essence5: [
     { music: null },
-    { show: { art: ['p_essence5_0', 'p_essence5_1'], scale: 3, pal: 'essence5' }, text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
+    { present: { sprite: 'p_essence5_0', pal: 'essence5', text: 'You got the Drowned Bell!\nThe fifth Essence of the Tide.' } },
     { say: 'The flooded wood lets out a long breath, as if it had held it for a hundred years.' },
     { shake: 60 },
     { say: 'Every whirlpool between here and the Abyss stops, and starts spinning the other way.' },
@@ -73549,7 +73543,7 @@ const CUTSCENES = {
   ],
   essence6: [
     { music: null },
-    { show: { art: ['p_essence6_0', 'p_essence6_1'], scale: 3, pal: 'essence6' }, text: 'Essence of the Tide\nVI — the Drowned King\'s Bell', frames: 170 },
+    { present: { sprite: 'p_essence6_0', pal: 'essence6', text: 'You got the Drowned King\'s Bell!\nThe last Essence of the Tide.' } },
     { say: 'The last Essence falls from Nereth\'s crown. All six come together in your hands.' },
     { say: 'The Tide Bell is whole again. It\'s smaller than in the stories, and much heavier.' },
     { music: 'overworld' },

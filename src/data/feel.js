@@ -1790,42 +1790,24 @@ export const ESSENCE_SPARKLE_EVERY = 10;
 
 // --- Brineglass Lens -------------------------------------------------------
 
-/** f — how long the ghosted overlay takes to fade in when the Lens is raised,
- *  and out again when it is released. guessed. */
+/** f — how long the Lens takes to come up when raised, and to go down again
+ *  when released; it is up (the other tide flickering in, the other tide's
+ *  enemies seen and hittable) while this count is above 0. guessed. */
 export const LENS_FADE_FRAMES = 10;
 
-/** x — peak opacity of the ghosted next-tide terrain drawn over the room.
- *  guessed, but MEASURED AGAINST A ROOM, which is more than it was. D2's forks
- *  ask the Lens the hardest question in the game — three shafts that are the
- *  same `dPit` where you stand and shallow water / a pit / deep water one level
- *  up — and the three previewed tiles were coming out 4-6 units apart in RGB,
- *  which is not a difference a person reads at 160x144. Sampled over the pit
- *  in d2 1,2,2 — regenerate the shot with
- *  `node tools/shoot-rooms.mjs --tide=0 --px=72 --py=88 --lens d2,1,2,2` —
- *  mean RGB of each throat:
- *
- *    ghost   west (wadeable)   middle (pit)   east (drowning)
- *    0.55    (23, 33, 51)      (17, 21, 38)   (19, 27, 48)
- *    0.80    (26, 38, 58)      (17, 21, 38)   (20, 29, 53)
- *    1.00    (28, 40, 60)      (17, 20, 38)   (21, 30, 55)
- *
- *  0.80 buys most of what 1.00 buys and keeps the overlay translucent, which
- *  is what stops it reading as the room having already changed. THE REAL LIMIT
- *  IS NOT THIS NUMBER: shallow water, deep water and a dungeon pit are three
- *  dark blues, so no opacity separates them by much. See docs/ART-BACKLOG.md. */
-export const LENS_GHOST_ALPHA = 0.80;
+/** levels ahead — which tide the L1 Lens draws the room at on each frame of
+ *  its cycle (0 = the tide played, 1 = the next). derived (S220): the Game
+ *  Boy shows two things in one place by drawing them on alternate frames, as
+ *  Seasons does its shadows (SHADOW_FLICKER). Replaced a see-through copy of
+ *  the next tide laid over the room at 80% with a 16% tint and a shimmer,
+ *  which no Game Boy can draw; see docs/ART-BACKLOG.md for why opacity never
+ *  told D2's three dark blues apart anyway. */
+export const LENS_FLICKER_L1 = [0, 1];
 
-/** x — opacity of the cold wash laid over the whole screen while the Lens is
- *  up, so the preview cannot be mistaken for the room actually changing.
- *  guessed. */
-export const LENS_TINT_ALPHA = 0.16;
-
-/** x — opacity a phase-shifted enemy is drawn at while the Lens reveals it.
- *  It is solid enough to aim at, because the Lens makes it hittable. guessed. */
-export const LENS_PHASE_ALPHA = 0.8;
-
-/** f — period of the slow shimmer on the ghosted overlay. guessed. */
-export const LENS_SHIMMER_FRAMES = 48;
+/** levels ahead — the L2 Lens's cycle: the tide played on every other frame,
+ *  the next tide twice and the far one once in each six, so the nearer
+ *  preview reads the more solid. derived from LENS_FLICKER_L1. */
+export const LENS_FLICKER_L2 = [0, 1, 0, 1, 0, 2];
 
 // --- Kelp-Soled Cleats -----------------------------------------------------
 
@@ -2203,15 +2185,10 @@ export const BOSUN_FACTOR = 0.5;
  *  it is lit. */
 export const LANTERN_RADIUS = 96;
 
-/** f — how often the Wrecker's Eye winks over a hidden thing. guessed; slow
- *  enough to read as a glint rather than a blinking marker. */
+/** f — how often the Wrecker's Eye twinkles over a hidden thing: Seasons'
+ *  twinkle (TWINKLE_HOLDS, 35 frames) once in each. guessed; slow enough to
+ *  read as a glint rather than a blinking marker. */
 export const WRECK_GLIMMER_PERIOD = 90;
-
-/** f — how long each wink lasts, inside WRECK_GLIMMER_PERIOD. guessed. */
-export const WRECK_GLIMMER_ON = 20;
-
-/** peak opacity of the Wrecker's Eye wink. guessed. */
-export const WRECK_GLIMMER_ALPHA = 0.85;
 
 /** essences before the scrimshander cuts you the LOW case. derived from the
  *  eight-dungeon spine, not guessed: two, four and six spread the three
