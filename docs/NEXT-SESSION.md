@@ -1,3 +1,61 @@
+## S220 — nothing see-through: the Lens flickers, the Essence is held up, splashes at everyone's feet
+
+Branch claude/oracle-tides-polish-s220-3sm7jc, off main at a1eeaa3 (S219).
+
+### The human's choices this session
+- S219's wading splash, whole swimming Link, flickering shadow, rising
+  bubbles and the Rod's eight twinkles in play: ALL RIGHT, leave them.
+- THE LENS: FLICKER (chosen over a cold-blue "vision" palette and over
+  keeping the see-through overlay). Mock pictures were shown first.
+- THE ESSENCE: SEASONS' WAY — Link holds it up over his head under an
+  ordinary text box, instead of the bell blown up three times over a
+  see-through card.
+
+### Built
+- LENS (game.js `lensGhostLevel`): while `player.lensT > 0` the room is drawn
+  at the other tide (`renderAt(tide.viewAt(level))`, a still with its water
+  in it) on its frames of LENS_FLICKER_L1 [0,1] (L2: LENS_FLICKER_L2
+  [0,1,0,1,0,2]) INSTEAD of the room played, under the entities; drawAnim is
+  skipped on those frames. Phased enemies (`e.lensGhost`, set in
+  updatePhaseShift) are drawn only on those frames; they were drawn at 0.8
+  opacity. Removed: drawLensGhost, LENS_GHOST_ALPHA, LENS_TINT_ALPHA,
+  LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES; the `alpha` draw option in art.js,
+  entity.js and enemy.js (nothing draws see-through through sprites.draw now).
+  lensT and LENS_FADE_FRAMES stay: they are when the Lens is UP (gameplay).
+- ESSENCE: cutscene step `{ present: { sprite, pal, text } }` -> holdUp
+  (two hands) + say, waits for the box like `present: { item }`. The six
+  essence scenes and essenceGeneric use it ("You got the Shallow Bell!\nThe
+  first Essence of the Tide."). `shownArt()` reports a held sprite, so
+  shoot-cutscene/watch-cutscenes still see a picture.
+- WRECK GLIMMER (Wrecker's Eye): Seasons' twinkle (fx_twinkle0-3,
+  TWINKLE_HOLDS) once every WRECK_GLIMMER_PERIOD 90, drawn off the frame
+  counter (not spawned: no effect count). WRECK_GLIMMER_ON/ALPHA removed.
+- PLACE-NAME LABEL (hud.js drawAreaBanner): comes and goes whole, no fade.
+- SPLASH AT THE FEET (entity.js `drawPuddle`, `wades`): enemies on foot
+  (not fliers, not swimmers, not bosses) and every NPC get fx_puddle in
+  shallow water when z <= 1, at groundFlags' point, on the same counter as
+  Link's. Drawn only; no new entities.
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died, 313413
+frames (was 314417: the six Essence boxes close on the robot's press where the
+old cards held 150-170 frames each), low-water 5; replay 51/51 with NO
+re-record (nothing drawn-only moves a recording); check-items 100/100 (its
+Lens clause now asks for `lensGhost`, not an opacity); check-rippers last,
+alone, 47/47; check-build OK.
+
+### Not done / candidates
+- Still drawn see-through: the cutscene caption card (cutscene.js, the
+  intro's and ending's title cards, rgba 0.78) and its `dim` scrim; the
+  nerethIntro and ending scenes still blow a picture up 2x/4x (`show` with
+  `scale`), which the Game Boy cannot do. Ask the human (ending/intro are
+  bigger than a fix). drawDarkness's soft circle is see-through too, but no
+  room is `dark` today, so it is never seen.
+- The Lens' next-tide frames are a still (renderAt): the water does not ripple
+  in them. Watch in play whether shallow vs deep reads (ART-BACKLOG).
+- Seasons also draws grass at the feet in tall grass; this game has none.
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+
 ## S219 — no hand-drawn effects left: the splash at the feet, the shadow, the bubble, the ember
 
 Branch claude/oracle-tides-twinkle-dust-i9xxn0, off main at e6e3d4f (S218).
