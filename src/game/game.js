@@ -776,6 +776,11 @@ export class Game {
     if (timing && timing[0] === 0) this.fadeAmount = 1;
   }
   fadeIn() { this.fadeDir = -1; this.fadeAmount = 1; }
+  /** Black at once and held, with no fade down to it: the intro's cards
+   *  stand on it before the beach fades in (S221). */
+  blackOut() {
+    this.fadeDir = 0; this.fadeAmount = 1; this.fadeThen = null; this.fadeTiming = null;
+  }
 
   /** Anything is covering the world: a fade, a held white, the dungeon reveal. */
   veiled() { return !!(this.fadeDir || this.fadeHold > 0 || this.reveal > 0); }
@@ -1619,9 +1624,12 @@ export class Game {
     // Both hands are up: whatever he was working stops, and the Bellows'
     // wind goes with it (its puffs would otherwise hang frozen on his head
     // for as long as the text is open, since nothing updates under a box).
-    if (this.player.stopBellows) this.player.stopBellows(this);
+    // No Link is a scene played on its own (check-credits plays the ending,
+    // which holds the Bell up since S221, with no game started).
+    const p = this.player;
+    if (p && p.stopBellows) p.stopBellows(this);
     for (const e of this.entities) if (e.isEffect && e.spec === EFFECTS.foam) e.remove = true;
-    this.player.frozen = ITEM_PRESENT_FRAMES;
+    if (p) p.frozen = ITEM_PRESENT_FRAMES;
     this.itemShow = Object.assign({ t: ITEM_PRESENT_FRAMES, hands }, show);
   }
 
@@ -2280,7 +2288,7 @@ export class Game {
     // dialogue early-return too: a charm going dark while a text box is open
     // would be a rule the player never sees applied.
     this.scrim.update();
-    if (this.bannerTime > 0 && !this.veiled()) this.bannerTime--;
+    if (this.bannerTime > 0 && !this.veiled() && this.fadeAmount < 1) this.bannerTime--;
     this.tickItemShow();
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
 
@@ -2755,7 +2763,8 @@ export class Game {
     if (this.reveal > 0) this.drawReveal(ctx);
 
     drawHud(ctx, this);
-    if (!this.veiled()) drawAreaBanner(ctx, this);
+    // Nor on a held black (the intro's cards): it waits for the room.
+    if (!this.veiled() && this.fadeAmount < 1) drawAreaBanner(ctx, this);
     // No boss health bar (S215): Seasons never shows one; a boss tells you
     // it is hurt by flashing and by how it fights.
     if (this.race) this.drawRaceClock(ctx);

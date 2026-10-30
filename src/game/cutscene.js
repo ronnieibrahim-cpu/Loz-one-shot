@@ -11,6 +11,8 @@
 // right up until the day somebody used it and found the colon doubled.
 //   { wait: 60 }                             pause n frames
 //   { fade: 'out' } / { fade: 'in' }         screen fade (waits for it)
+//   { fade: 'black' }                        black at once, held until a
+//                                            `fade: 'in'` (the intro's cards)
 //   { white: true, fade: 'out' }             fade to white instead
 //   { music: 'trackName' } / { music: null } change or stop music
 //   { jingle: 'fanfare' }
@@ -29,15 +31,18 @@
 //                                            an item (an Essence)
 //   { text: 'Big centred caption', frames: 120 }
 //   { show: 'p_tidebell_0' }                 hold a sprite up on screen
-//   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150, scale: 3,
-//             rise: true, dim: false, pal: 'tide' } }
+//   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150,
+//             rise: true, pal: 'tide' } }
 //
 // `show` is the one drawing step, and it is the only one this file has ever
 // had beyond a caption box. It holds a sprite (or a two-frame cycle) over the
 // scene for `frames`, optionally drifting upward as it goes. A step may carry
-// BOTH `show` and `text` — the six Essence scenes all want the orb and its
-// title card at the same time — and the step ends when the longer of the two
-// is done.
+// BOTH `show` and `text`, and the step ends when the longer of the two is
+// done. It draws the sprite at its own size over the scene as it stands: the
+// `scale` that blew Nereth up twice and the Bell four times, and the `dim`
+// that darkened the world see-through behind them, went in S221 — the Game
+// Boy can do neither. No scene uses `show` today; a held-up thing is
+// `present`.
 //
 // THERE IS DELIBERATELY NO CAMERA-PAN STEP. It was the obvious second thing to
 // add and it would have been dead code: every room a cutscene plays in is
@@ -158,13 +163,14 @@ export function runCutscene(game, steps, data = {}) {
       const total = Math.max(o.frames || step.frames || CUTSCENE_SHOW_FRAMES,
         step.text ? readFrames(step.text) : 0);
       shown = {
-        art, pal: o.pal || null, scale: Math.max(1, o.scale || 1),
-        x: o.x, y: o.y, rise: o.rise !== false, dim: o.dim !== false,
+        art, pal: o.pal || null,
+        x: o.x, y: o.y, rise: o.rise !== false,
         total, t: total,
       };
     }
     if (step.fade) {
       if (step.fade === 'out') game.fadeOut(null, !!step.white);
+      else if (step.fade === 'black') game.blackOut();
       else game.fadeIn();
     }
     if (step.say) {
@@ -285,15 +291,6 @@ export function runCutscene(game, steps, data = {}) {
         : 0;
 
       if (showing) {
-        // Dim the world behind a held picture, unless the scene says not to.
-        // The caption box has always drawn its own scrim for exactly this
-        // reason; a sprite held over open terrain without one competes with
-        // every tuft of grass behind it and loses. Same alpha as the card, so
-        // the two read as one presentation rather than two overlays.
-        if (shown.dim) {
-          ctx.fillStyle = 'rgba(8,12,16,0.62)';
-          ctx.fillRect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H);
-        }
         const elapsed = shown.total - shown.t;
         const name = shown.art[Math.floor(elapsed / CUTSCENE_SHOW_ANIM_FRAMES) % shown.art.length];
         // A boss frame drawn in layers (its rig, src/game/enemy.js) is flattened
@@ -301,7 +298,7 @@ export function runCutscene(game, steps, data = {}) {
         const rig = bossRig(name);
         const c = rig ? flattenRig(rig) : sprites.bake(name, shown.pal);
         if (c) {
-          const w = c.width * shown.scale, h = c.height * shown.scale;
+          const w = c.width, h = c.height;
           const drift = shown.rise
             ? Math.round(CUTSCENE_SHOW_RISE_PX * (elapsed / Math.max(1, shown.total)))
             : 0;
@@ -309,17 +306,12 @@ export function runCutscene(game, steps, data = {}) {
           const top = HUD_H, bottom = capLines ? capY : SCREEN_H;
           const x = Math.round(shown.x != null ? shown.x : (SCREEN_W - w) / 2);
           const y = Math.round((shown.y != null ? shown.y : top + (bottom - top - h) / 2) - drift);
-          // Integer-scaled blit with smoothing off. `T23` is about PATHS being
-          // anti-aliased; a nearest-neighbour drawImage at an integer scale
-          // stays hard-edged, and the scale is forced to an integer above.
-          const prev = ctx.imageSmoothingEnabled;
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(c, x, y, w, h);
-          ctx.imageSmoothingEnabled = prev;
+          ctx.drawImage(c, x, y);
         }
       }
       if (capLines) {
-        ctx.fillStyle = 'rgba(8,12,16,0.78)';
+        // Solid, as the text box is (S221): it was a see-through scrim.
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, capY, SCREEN_W, capH);
         capLines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, capY + 4 + n * 10, '#f8f8e8'));
       }

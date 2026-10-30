@@ -43,8 +43,10 @@ const named = args.filter(a => !a.startsWith('--'));
 // The intro held Farore's portrait until S158; she is met in person now, and
 // the intro is two title cards (the full pixel-art opening is its own session).
 const WITH_ART = ['essence1', 'essence2', 'essence3', 'essence4', 'essence5',
-                  'essence6', 'essenceGeneric', 'nerethIntro', 'ending'];
-const DIALOGUE_ONLY = ['intro', 'makuSatchel', 'makuMaster', 'tradeKettle'];
+                  'essence6', 'essenceGeneric', 'ending'];
+const DIALOGUE_ONLY = ['intro', 'nerethIntro', 'makuSatchel', 'makuMaster', 'tradeKettle'];
+// nerethIntro held his portrait blown up twice until S221; he is met at his
+// own size in the throne room now.
 
 const server = createServer(async (req, res) => {
   try {

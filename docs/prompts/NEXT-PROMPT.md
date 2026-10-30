@@ -1,31 +1,30 @@
-# Next session (S221)
+# Next session (S222)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S220 and S219; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S221 and S220; docs/HANDOFF.md lessons (top ten).
 
 ## State
-- S220: nothing see-through is left in play. The Brineglass Lens flickers the
-  room with its next tide every other frame (L2: next twice, far once in six);
-  its other-tide enemies flicker with it. Link holds each Essence up over his
-  head under an ordinary text box. The Wrecker's Eye is Seasons' twinkle. The
-  place-name label comes and goes whole. Enemies on foot and townsfolk get
-  Seasons' splash at their feet in shallow water.
+- S221: nothing see-through and nothing blown up is left in play. The
+  opening's two cards are on black and the beach fades in after them; Nereth
+  is met at his own size with no title card; at the ending Link holds the
+  whole Tide Bell up under an ordinary text box; the ending's last card is a
+  solid band.
 - The human said LEAVE: our text box, our place-name label, Sandpiper
   Cottage without its side door; S216's caves and shop; S217's leaves,
   shards, splash and clink; S218's twinkle and no landing dust; S219's
-  wading splash, whole swimming Link, shadow flicker, bubbles, Rod twinkles.
-  Do not re-ask.
-- Whole table green; check-playthrough 49/49 to THE END, never died,
-  313413 frames, low-water 5.
+  wading splash, whole swimming Link, shadow flicker, bubbles, Rod twinkles;
+  S220's Lens flicker, held-up Essences, splashes at others' feet. Do not
+  re-ask.
+- Whole table green; check-playthrough 49/49 to THE END, never died.
 
 ## The task
-- Ask the human how the Lens flicker, the held-up Essence and the splashes
-  at enemies' and townsfolk's feet feel in play.
-- Then carry on the look-through: the cutscene caption card and its dim are
-  still see-through, and the Nereth intro and the ending still blow a
-  picture up 2x/4x (the Game Boy cannot scale). Show pictures and ask before
-  changing the intro or the ending: they are bigger than a fix.
+- Ask the human how the opening on black, meeting Nereth at his own size,
+  the held-up Bell and the solid last card feel in play.
+- Then carry on the look-through against the originals: pick the next thing
+  that a screen of this game shows and Seasons/Ages would draw differently
+  (candidates in NEXT-SESSION.md S221 "Not done"; the guide's stale shots).
+  Show pictures beside the original and ask before any bigger change.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

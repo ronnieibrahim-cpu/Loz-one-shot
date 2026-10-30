@@ -1,3 +1,57 @@
+## S221 — no caption see-through, nothing blown up: the opening on black, Nereth at his own size, the Bell held up
+
+Branch claude/oracle-tides-polish-g345gh, off main at 3862ec8 (S220).
+
+### The human's choices this session
+- S220's Lens flicker, held-up Essences and splashes at enemies' and
+  townsfolk's feet in play: ALL RIGHT, leave them.
+- Shown now-vs-options pictures beside Seasons (its opening card; Din's
+  temple scene, own-size sprites and a plain text box) and chose all four
+  recommendations:
+  1. THE OPENING: both cards on BLACK, then the beach fades in (was a
+     see-through band over the beach, with the place label colliding).
+  2. MEETING NERETH: NO card and no portrait; the throne room fades in with
+     him at his own size and he speaks (was him blown up 2x over a dim, with
+     "The Abyssal Keep / the throne under the sea").
+  3. THE BELL IS WHOLE: Link holds the whole Tide Bell up under an ordinary
+     text box, as with the Essences (was the Bell 4x on black).
+  4. THE ENDING'S LAST CARD: same card, SOLID black band.
+
+### Built
+- cutscene.js: the caption band is solid #000 (was rgba 0.78). `show` lost
+  `scale` and `dim` (the Game Boy can do neither); it draws at its own size,
+  and no scene uses `show` now. New step `{ fade: 'black' }` ->
+  `Game.blackOut()` (black at once and held, no fade down; fadeTiming
+  cleared so the following `fade: 'in'` runs at FADE_RATE).
+- story.js: intro = [music null + fade black, card, card, fade in, flag,
+  music]; nerethIntro's show/text step removed; the ending's fade out / show /
+  fade in replaced by `present: { sprite: 'p_tidebell_0', pal: 'essence',
+  text: 'The Tide Bell is whole.' }`.
+- game.js: the place-name label neither draws nor counts down on a held
+  black (`fadeAmount >= 1`), so it comes up after the intro's fade-in instead
+  of over the cards. `holdUp` tolerates no player (check-credits plays the
+  ending with no game started, and crashed on the new present).
+- shoot-cutscene.mjs: nerethIntro moved to DIALOGUE_ONLY.
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died, 313331
+frames (was 313413: the Nereth card's hold and the Bell's fades are gone),
+low-water 5; replay 51/51 with no re-record; check-credits 97/97 after the
+holdUp guard; check-gates 35/35 (rerun alone after a port clash); test.mjs
+139/139; shoot-cutscene --nereth --ending OK; watch-cutscenes 23 scenes, 0
+faults; check-rippers last, alone, 47/47; check-build OK.
+
+### Not done / candidates
+- Nothing see-through is left in play: what remains with an alpha is
+  debug-only (anchor outline, camera bar, debug text) and drawDarkness's soft
+  circle, which no room uses (no room is `dark`). If a dark room is ever
+  made, that circle must become Seasons' own darkness first.
+- The title opening (intro.js) stretches the sea band as it rises; a Game
+  Boy can do that with a per-line scroll, so it was left.
+- The Lens' next-tide frames are a still (renderAt). Seasons also draws grass
+  at the feet in tall grass; this game has none.
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+
 ## S220 — nothing see-through: the Lens flickers, the Essence is held up, splashes at everyone's feet
 
 Branch claude/oracle-tides-polish-s220-3sm7jc, off main at a1eeaa3 (S219).
