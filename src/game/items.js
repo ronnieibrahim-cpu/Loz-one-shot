@@ -30,7 +30,7 @@ import {
   REEFSEED_SHUDDER_EVERY, BELT_SPEED,
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE,
   DREDGE_FLOP_FRAMES,
-  ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES,
+  ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_COOLDOWN_FRAMES, TWINKLE_HOLDS,
   COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES,
   ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED,
   ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE,
@@ -1061,7 +1061,6 @@ defineEntity('coin', (x, y, o) => new FerrymanCoin(x, y, o));
 export function ringResonance(game, p, level) {
   if (p.rodCool > 0) { game.audio.sfx('deny'); return true; }
   p.rodCool = ROD_COOLDOWN_FRAMES;
-  p.rodRing = ROD_RING_FRAMES;
 
   // The level AT LINK'S OWN TILE, not the base level: standing in a Squall
   // Bellows cone or on an anchored disc really does change how far the note
@@ -1072,7 +1071,17 @@ export function ringResonance(game, p, level) {
   p.rodRange = range;
 
   game.audio.sfx('valve');
-  game.spawnEffect('shine', p.cx - 8, p.cy - 8, { life: ROD_RING_FRAMES });
+  // THE REACH, SEEN (S219, the human's choice): eight of Seasons' twinkles
+  // (INTERAC_SPARKLE, what its Rod of Seasons throws) fly out from Link and
+  // end exactly at the edge of the note, so the tide doubling the range is
+  // something you see. It was a see-through glow and ring, which the Game
+  // Boy cannot draw.
+  const life = TWINKLE_HOLDS.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < 8; k++) {
+    const a = k * Math.PI / 4;
+    game.spawnEffect('sparkle', p.cx - 8, p.cy - 8,
+      { vx: Math.cos(a) * range / life, vy: Math.sin(a) * range / life });
+  }
 
   let any = false;
   const room = game.room;

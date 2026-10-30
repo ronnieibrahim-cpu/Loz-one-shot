@@ -1675,6 +1675,42 @@ export const DUST_HOLDS = [4, 4, 4];
  *  ours was a hand-drawn star at a guessed 5 each, often cut short. */
 export const TWINKLE_HOLDS = [9, 9, 9, 8];
 
+/** f — how long each picture of the splash at a wader's feet, `fx_puddle*`,
+ *  stands (S219). derived from the cartridge: code/bank0.s picks
+ *  puddleAnimationFrames[(wFrameCounter >> 3) & 3] once a frame for everyone
+ *  in shallow water, so 8 frames each, 32 a round, in step for all. Ours was
+ *  Link cut off at the shins and a hand-drawn foam puff every 14 frames. */
+export const PUDDLE_HOLD = 8;
+
+/** f — the shadow of anything in the air is drawn every this many frames
+ *  (S219). derived from the cartridge: _drawObjectTerrainEffects @inAir
+ *  returns when (wFrameCounter xor the object's slot) is even, so on alternate
+ *  frames, each object on its own beat. Ours was a hand-drawn shadow at half
+ *  opacity, which the Game Boy cannot draw. */
+export const SHADOW_FLICKER = 2;
+
+/** f[] — each picture of an ember seed's fire, `fx_ember*` (S219). derived
+ *  from the cartridge: itemAnimation1e818Loop (item20's animation 0 once the
+ *  seed has landed): 2 2 2, looping. The Kilnshell's strike burns with it. */
+export const EMBER_HOLDS = [2, 2, 2];
+
+/** px/f — how fast a bubble rises (S219). derived from the cartridge:
+ *  bubble.s @@state0 sets SPEED_80, half of Link's SPEED_100 walk. */
+export const RISE_BUBBLE_SPEED = 0.5;
+
+/** f — how long a bubble lives, and for how many of its last frames it
+ *  flickers (S219). derived from the cartridge: bubble.s sets counter2 to 180
+ *  and @checkDelete toggles it visible every frame below 60. */
+export const RISE_BUBBLE_LIFE = 180;
+export const RISE_BUBBLE_FLICKER_FRAMES = 60;
+
+/** f — a bubble's wobble (S219). derived from the cartridge: bubble.s turns
+ *  its angle one step of 32 every 4 frames, reversing after 5 turns the first
+ *  time and every 8 after, from a start of up and up to two steps either side. */
+export const RISE_BUBBLE_TURN_EVERY = 4;
+export const RISE_BUBBLE_TURNS_FIRST = 5;
+export const RISE_BUBBLE_TURNS = 8;
+
 /** sp/f — how fast the falling picture slides to the middle of its hole:
  *  0.375 px/f. derived from the cartridge: fallDownHole.s @interac0f_state0
  *  sets Interaction.speed to SPEED_60 ($60 subpixels a frame), and @state1
@@ -1741,8 +1777,6 @@ export const ESSENCE_SPARKLE_SPREAD = 10;
 /** f — interval between an essence's sparkles. guessed. */
 export const ESSENCE_SPARKLE_EVERY = 10;
 
-/** f — interval between foam puffs while wading. guessed. */
-export const WADE_FOAM_EVERY = 14;
 
 // ---------------------------------------------------------------------------
 // The item roster (docs/ITEMS.md)
@@ -1882,8 +1916,11 @@ export const CLEATS_BREATH_FRAMES = 800;
 /** f — how much breath is left when the warning starts. guessed. */
 export const CLEATS_BREATH_WARN_FRAMES = 180;
 
-/** f — interval between bubbles rising off a walker on the seafloor. guessed. */
-export const SINK_BUBBLE_EVERY = 22;
+/** f — the wait between bubbles off a walker on the seafloor is this, plus
+ *  0 to SINK_BUBBLE_SPREAD - 1 more (S219). derived from the cartridge: Ages'
+ *  link.s, swimming under: getRandomNumber & $1f, + 50. Was a guessed 22. */
+export const SINK_BUBBLE_MIN = 50;
+export const SINK_BUBBLE_SPREAD = 32;
 
 /** qh — damage taken when breath runs out and the Cleats float you up on their
  *  own. guessed; the same as being washed ashore, because it is the same kind
@@ -2019,9 +2056,6 @@ export const ROD_RANGE_HIGH = 96;
 /** f — how long armoured metal locks rigid when it is rung. guessed; the brief
  *  says about 90 frames and this is that number until someone plays it. */
 export const ROD_LOCK_FRAMES = 90;
-
-/** f — how long the ring itself lasts on screen. guessed. */
-export const ROD_RING_FRAMES = 26;
 
 /** f — how long the rod cannot be sounded again. guessed; long enough that
  *  holding the button is not a stun-lock. */

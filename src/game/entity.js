@@ -22,6 +22,7 @@ import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
   HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY,
+  SHADOW_FLICKER,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -251,9 +252,14 @@ export class Entity {
     });
   }
 
+  // Seasons' own shadow (S219, terrainEffects.s shadowAnimation), drawn on
+  // alternate frames, each thing on its own beat (_drawObjectTerrainEffects
+  // @inAir) — the Game Boy cannot draw half a shadow, so it flickers one. A
+  // 32x32 cell centred on the middle of the 16x16 spot.
   drawShadow(ctx, game, ox, oy) {
     if (!this.shadow || this.z <= 1) return;
-    sprites.draw(ctx, 'shadow', ox + this.x, oy + this.y + 6, { pal: 'uidark', alpha: 0.5 });
+    if ((game.frame + this.id) % SHADOW_FLICKER) return;
+    sprites.draw(ctx, 'fx_shadow0', ox + this.x - 8, oy + this.y - 8);
   }
 }
 

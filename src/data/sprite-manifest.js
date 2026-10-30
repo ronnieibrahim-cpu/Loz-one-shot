@@ -28,12 +28,7 @@ export const REQUIRED_SPRITES = {
     ...seq('link_fall_', 3), ...seq('link_dig_', 2), 'link_dive', 'link_lie',
   ],
 
-  fx: [
-    ...seq('fx_ripple', 2),
-    ...seq('fx_flame', 3), ...seq('fx_bubble', 2),
-    ...seq('fx_foam', 3), ...seq('fx_shine', 3),
-    'shadow',
-  ],
+  fx: [],
 
   // 32x32 cells cut from Seasons' common sprites (tools/rip-effects.py): the
   // puff, the fall into a hole (S185), the kill puff in both its palettes, and the bomb's blast.
@@ -46,7 +41,10 @@ export const REQUIRED_SPRITES = {
     ...seq('fx_clink', 2), ...seq('fx_wet', 3), ...seq('fx_shards', 4),
     // S218: Seasons' dust (INTERAC_FALLDOWNHOLE's animation 1) and twinkle
     // (INTERAC_SPARKLE), orange and red.
-    ...seq('fx_dust', 3), ...seq('fx_twinkle', 4), ...seq('fx_twinkleR', 4)],
+    ...seq('fx_dust', 3), ...seq('fx_twinkle', 4), ...seq('fx_twinkleR', 4),
+    // S219: the shadow and the splash at a wader's feet (terrainEffects.s),
+    // the bubble (INTERAC_BUBBLE) and an ember seed's fire.
+    'fx_shadow0', ...seq('fx_puddle', 4), 'fx_bubble0', ...seq('fx_ember', 3)],
   fxHuge: [...seq('fx_leaves', 8)],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud

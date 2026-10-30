@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Link's swimming pictures already carry their ring of water (S219).** The
+  game cropped the bottom off them and drew a hand-made ripple underneath, so
+  the ring was cut in half for the project's whole life. Seasons draws Link
+  whole in water, wading or swimming; wading it adds the splash at his feet
+  from data/terrainEffects.s. Look at the source picture before cropping it.
+- **feel.js names are global; the enemies already own the obvious ones
+  (S219).** A new BUBBLE_SPEED for the rising bubble collided with the bubble
+  ENEMY's and the game would not load (a blank page, nothing in the checkers
+  until they time out). Grep feel.js for a name before adding it.
+
 - **An enemy's rhythm was tied to how many puffs had ever been made (S218).**
   `every(e, n)` phases each enemy by a hash of its entity id, and ids came
   from one count that effects shared, so taking the landing dust out of the

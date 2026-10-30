@@ -4,6 +4,7 @@
 
 import { Entity, defineEntity } from './entity.js';
 import { sp } from '../core/fixed.js';
+import { noise2 } from '../core/rng.js';
 import { sprites } from '../gfx/art.js';
 import {
   EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
@@ -11,6 +12,8 @@ import {
   PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER,
   HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY,
   LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS, DUST_HOLDS, TWINKLE_HOLDS,
+  EMBER_HOLDS, RISE_BUBBLE_SPEED, RISE_BUBBLE_LIFE, RISE_BUBBLE_FLICKER_FRAMES,
+  RISE_BUBBLE_TURN_EVERY, RISE_BUBBLE_TURNS_FIRST, RISE_BUBBLE_TURNS,
 } from '../data/feel.js';
 
 const TILE_SP = sp(16);
@@ -30,6 +33,29 @@ function driftIntoHole(e) {
   if (d <= HOLE_FALL_DRIFT_SPEED) { e.fx += dx; e.fy += dy; return; }
   e.fx += Math.round(dx * HOLE_FALL_DRIFT_SPEED / d);
   e.fy += Math.round(dy * HOLE_FALL_DRIFT_SPEED / d);
+}
+
+/**
+ * A bubble drifting up, as INTERAC_BUBBLE's @subid00 moves one (bubble.s): at
+ * RISE_BUBBLE_SPEED along an angle (32 to the turn, 0 straight up) that starts up
+ * to two steps either side of up and turns a step every RISE_BUBBLE_TURN_EVERY
+ * frames, reversing after RISE_BUBBLE_TURNS_FIRST turns and then every
+ * RISE_BUBBLE_TURNS. The cartridge rolls the start and the first way it turns;
+ * this hashes them from the frame it was made on, which consumes nothing.
+ */
+function bubbleRise(e, game) {
+  if (e.frame === 1) {
+    const n = Math.floor((noise2(game.frame, e.fx ^ e.fy) + 1) * 10) % 10;
+    e.angle = (n % 5) - 2;
+    e.turn = n < 5 ? 1 : -1;
+    e.turnsLeft = RISE_BUBBLE_TURNS_FIRST;
+  } else if (e.frame % RISE_BUBBLE_TURN_EVERY === 0) {
+    if (--e.turnsLeft === 0) { e.turnsLeft = RISE_BUBBLE_TURNS; e.turn = -e.turn; }
+    e.angle += e.turn;
+  }
+  const a = e.angle * Math.PI / 16;
+  e.fx += Math.round(Math.sin(a) * sp(RISE_BUBBLE_SPEED));
+  e.fy -= Math.round(Math.cos(a) * sp(RISE_BUBBLE_SPEED));
 }
 
 /** Which step of a held sequence frame `f` falls in (the last once past the end). */
@@ -80,6 +106,9 @@ export class Effect extends Entity {
       const f = Math.max(0, this.frame - 1);
       // A blinking effect is drawn on every other frame, the first included.
       if (this.spec.blink && f % 2) return null;
+      // One that flickers out is drawn on alternate frames once it is near
+      // its end (INTERAC_BUBBLE's last 60).
+      if (this.spec.flickerOut && this.life < this.spec.flickerOut && this.life % 2) return null;
       // A looping one (given a life longer than its sequence) starts over.
       const total = this.holds.reduce((a, b) => a + b, 0);
       const n = this.frames[heldStep(this.holds, this.loop ? f % total : f)];
@@ -114,7 +143,6 @@ export const EFFECTS = {
   // what a pot or a rock breaks into.
   spark: { frames: ['fx_clink0', 'fx_clink1'], holds: CLINK_HOLDS, own: true, w: 32, h: 32, centre: true },
   splash: { frames: ['fx_wet0', 'fx_wet1', 'fx_wet2'], holds: SPLASH_HOLDS, own: true, w: 32, h: 32, centre: true },
-  ripple: { frames: ['fx_ripple0', 'fx_ripple1'], pal: 'water', rate: 8, loop: true, life: 9999, depth: -5 },
   // INTERAC_FALLDOWNHOLE's dust (S218): kicked up by something heavy going
   // fast. Seasons makes none when Link lands; only the sound.
   dust: { frames: ['fx_dust0', 'fx_dust1', 'fx_dust2'], holds: DUST_HOLDS, blink: true, own: true, w: 32, h: 32, centre: true },
@@ -127,10 +155,15 @@ export const EFFECTS = {
   sparkle: { frames: ['fx_twinkle0', 'fx_twinkle1', 'fx_twinkle2', 'fx_twinkle3'], holds: TWINKLE_HOLDS, own: true, w: 32, h: 32, centre: true },
   sparkleRed: { frames: ['fx_twinkleR0', 'fx_twinkleR1', 'fx_twinkleR2', 'fx_twinkleR3'], holds: TWINKLE_HOLDS, own: true, w: 32, h: 32, centre: true },
   boom: { frames: ['fx_boom0', 'fx_boom1', 'fx_boom0', 'fx_boom2', 'fx_boom3', 'fx_boom4'], holds: EXPLOSION_HOLDS, own: true, w: 32, h: 32 },
-  flame: { frames: ['fx_flame0', 'fx_flame1', 'fx_flame2'], pal: 'fire', rate: 6, loop: true, life: 9999 },
-  bubble: { frames: ['fx_bubble0', 'fx_bubble1'], pal: 'water', rate: 8, loop: true },
-  foam: { frames: ['fx_foam0', 'fx_foam1', 'fx_foam2'], pal: 'water', rate: 6 },
-  shine: { frames: ['fx_shine0', 'fx_shine1', 'fx_shine2', 'fx_shine1'], pal: 'essence', rate: 6, loop: true, life: 9999 },
+  // An ember seed's fire (S219, item20's loop): what the Kilnshell's strike
+  // burns with.
+  flame: { frames: ['fx_ember0', 'fx_ember1', 'fx_ember2'], holds: EMBER_HOLDS, loop: true, own: true, w: 32, h: 32, centre: true },
+  // INTERAC_BUBBLE (S219): one picture that drifts up, wobbling, and
+  // flickers out. Spawn it at the swimmer's own 16x16 spot.
+  bubble: {
+    frames: ['fx_bubble0'], holds: [1], loop: true, own: true, w: 32, h: 32, centre: true,
+    life: RISE_BUBBLE_LIFE, flickerOut: RISE_BUBBLE_FLICKER_FRAMES, update: bubbleRise,
+  },
 };
 
 export function spawnEffectAt(game, name, x, y, opts) {

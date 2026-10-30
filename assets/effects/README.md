@@ -54,3 +54,25 @@ The twinkle is drawn in standard sprite palette 3 (orange) where ours was gold
 and 2 (red, subid 1's own) where it was coral: the human's choice. Seasons
 draws no dust when Link lands (link.s plays SND_LAND alone), so the game no
 longer does either.
+
+**S219.** The last hand-drawn effects are gone. Cut by `tools/rip-effects.py`:
+the shadow of anything in the air and the little splash at a wader's feet
+(`terrain()`, from `terrainEffects.s`: raw oam on the common sprites, drawn by
+code/bank0.s `_drawObjectTerrainEffects` — the shadow on alternate frames, the
+splash one picture every 8 frames of the global counter); the bubble
+(`bubble()`, INTERAC_BUBBLE $91, Ages' underwater swimmer's, whose interaction
+data Seasons carries too); and an ember seed's fire (`ember()`, item20's loop
+with the flags and tile base from `seeds.s` @data). Added, verbatim from
+commit 7584d87:
+
+| File | From | Used for |
+|---|---|---|
+| `terrainEffects.s` | `data/` | the shadow and the splash at the feet (read by the ripper) |
+| `bubble.s` | `object_code/common/interactions/` | the bubble's rise, wobble and flicker (reference; feel.js RISE_BUBBLE_*) |
+| `seeds.s` | `object_code/common/items/` | the ember fire's oam flags and tile base (read by the ripper) |
+
+Where no original matches exactly the human chose the nearest (S219): the
+Squall Bellows' gust puffs in Seasons' dust, Nereth's seal glints with the
+twinkle, the Resonance Rod's reach is eight twinkles flying to its edge (the
+Rod of Seasons throws the same twinkle), and Gloomtide's foam and Thalassor's
+whirlpool swirl are Seasons' splash.
