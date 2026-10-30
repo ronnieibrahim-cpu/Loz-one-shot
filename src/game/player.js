@@ -20,7 +20,7 @@ import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
-import { noise1 } from '../core/rng.js';
+import { noise1, noise2 } from '../core/rng.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
@@ -42,10 +42,9 @@ import {
   BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
   BELLOWS_RAFT_SCALE,
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
-  CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
+  CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE,
   CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS,
-  ROD_RING_FRAMES,
-  WADE_FOAM_EVERY,
+  PUDDLE_HOLD,
   PUSH_PROBE_REACH,
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
@@ -138,6 +137,7 @@ export class Player extends Entity {
     this.liftT = 0;
     this.inDeep = false;
     this.inShallow = false;
+    this.bubbleT = 0;          // frames to the next bubble under water
     this.cleatMode = 'swim';      // 'swim' on the surface, 'sink' on the floor
     this.sinkT = 0;               // descent/ascent, counts down; control is off
     this.breath = 0;              // frames of air left on the seafloor
@@ -159,8 +159,7 @@ export class Player extends Entity {
     this.bellowsT = 0;            // frames spent pumping; the cone opens at warmup
     this.bellowsHold = null;      // id of the override this cone laid
     this.rodCool = 0;             // Resonance Rod lock-out
-    this.rodRing = 0;             // frames of the ring still expanding
-    this.rodRange = 0;            // px the last ring reached, for the draw
+    this.rodRange = 0;            // px the last note reached
     this.invincible = false;      // debug / cutscene
     this.frozen = 0;              // cutscene lock
     this.animT = 0;
@@ -195,7 +194,6 @@ export class Player extends Entity {
     if (this.speedBoost > 0) this.speedBoost--;
     if (this.conchTime > 0) this.conchTime--;
     if (this.rodCool > 0) this.rodCool--;
-    if (this.rodRing > 0) this.rodRing--;
     if (this.swordLock > 0) this.swordLock--;
     if (this.clungBy && (this.clungBy.dead || this.clungBy.remove || this.clungBy.aiState !== 'cling'
       || !game.entities.includes(this.clungBy))) this.clungBy = null;
@@ -314,9 +312,6 @@ export class Player extends Entity {
       // Entering the water was audible and leaving it was not, which made the
       // sea sound like something you could only fall into.
       game.audio.sfx('splash', { pitch: 1.2, vol: 0.8 });
-    }
-    if (this.inShallow && this.frame % WADE_FOAM_EVERY === 0) {
-      game.spawnEffect('foam', this.x, this.y + 4, { life: 16 });
     }
     // Remember the last dry, safe spot so a tide change can wash us back to it.
     if (!this.inDeep && !(f & (F.PIT | F.HAZARD))) {
@@ -1344,7 +1339,9 @@ export class Player extends Entity {
     }
 
     if (this.bellowsT % BELLOWS_PUFF_EVERY === 0) {
-      game.spawnEffect('foam', this.cx - 8 + dx * 14, this.cy - 8 + dy * 14, { life: 14 });
+      // Seasons' own dust (S219, the human's choice: the nearest thing the
+      // cartridge has to a gust of air).
+      game.spawnEffect('dust', this.cx - 8 + dx * 14, this.cy - 8 + dy * 14);
       game.audio.sfx('gust');
     }
     this.gust(game, dx, dy);
@@ -1438,9 +1435,15 @@ export class Player extends Entity {
   }
 
   updateBreath(game) {
-    if (!this.underwater) return;
-    if (this.frame % SINK_BUBBLE_EVERY === 0) {
-      game.spawnEffect('bubble', this.x, this.y - 2, { life: 30 });
+    if (!this.underwater) { this.bubbleT = 0; return; }
+    // A bubble now and then, as Ages' link.s lets one go swimming under:
+    // when the count runs out, wait SINK_BUBBLE_MIN and up to
+    // SINK_BUBBLE_SPREAD - 1 more (the cartridge rolls it; this hashes the
+    // frame, which consumes nothing), and let one go.
+    if (--this.bubbleT < 0) {
+      this.bubbleT = SINK_BUBBLE_MIN
+        + Math.floor((noise2(game.frame, 0x0b0b) + 1) / 2 * SINK_BUBBLE_SPREAD);
+      game.spawnEffect('bubble', this.x, this.y);
     }
     // Left standing on dry ground by a falling tide: come back up on your own.
     //
@@ -1874,12 +1877,6 @@ export class Player extends Entity {
     }
     const name = this.spriteName(game);
 
-    // Wading and swimming hide the lower part of the sprite behind the water line.
-    let cropH = null;
-    if (this.underwater || this.sinkT > 0) cropH = null;   // fully below the surface
-    else if (this.inDeep) cropH = 11;
-    else if (this.inShallow && this.z <= 1) cropH = 13;
-
     let ax = 0, ay = 0;
     const dy = oy + this.y - this.z;
 
@@ -1908,32 +1905,23 @@ export class Player extends Entity {
       : phase === 2 ? SWING_LUNGE[this.dir] : null;
     if (lunge) { ax += lunge[0]; ay += lunge[1]; }
 
-    // The wading crop is a water line in room space; inside a taller frame it
-    // sits `ay` lower, because that is how much of the frame is above Link.
-    sprites.draw(ctx, name, ox + this.x + ax, dy + ay,
-      { pal, flipX: this.flipX, h: cropH == null ? null : cropH - ay });
+    // Wading or swimming he is drawn whole, as in Seasons: the swimming
+    // pictures carry their own ring of water, and wading the splash below is
+    // drawn over his feet.
+    sprites.draw(ctx, name, ox + this.x + ax, dy + ay, { pal, flipX: this.flipX });
 
     if (this.shielding) {
       const side = this.dir === 'left' || this.dir === 'right';
       const key = side ? 'side' : this.dir;
       sprites.draw(ctx, 'link_shield_' + key, ox + this.x, dy, { pal: 'ui', flipX: this.flipX });
     }
-    if (this.inDeep && !this.underwater) {
-      sprites.draw(ctx, 'fx_ripple0', ox + this.x, oy + this.y + 6, { pal: 'water' });
-    }
-    // The Resonance Rod's note, drawn as an expanding ring at the radius it
-    // actually reached — so the tide doubling the range is something you SEE
-    // rather than something the manual tells you.
-    if (this.rodRing > 0 && this.rodRange > 0) {
-      const t = 1 - this.rodRing / ROD_RING_FRAMES;
-      ctx.save();
-      ctx.globalAlpha = (1 - t) * 0.9;
-      ctx.strokeStyle = '#ffe8a0';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(ox + this.cx, oy + this.cy, Math.max(1, t * this.rodRange), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+    // THE SPLASH AT HIS FEET in shallow water: Seasons' own
+    // (_drawObjectTerrainEffects @walkingInPuddle), a picture every
+    // PUDDLE_HOLD frames of the one counter, so every wader's is in step. A
+    // 32x32 cell centred on his middle.
+    if (this.inShallow && this.z <= 1) {
+      const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
+      sprites.draw(ctx, 'fx_puddle' + k, ox + this.x - 8, oy + this.y - 8);
     }
   }
 }

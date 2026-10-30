@@ -1,3 +1,57 @@
+## S219 — no hand-drawn effects left: the splash at the feet, the shadow, the bubble, the ember
+
+Branch claude/oracle-tides-twinkle-dust-i9xxn0, off main at e6e3d4f (S218).
+
+### The human's choices this session
+- S218's twinkle and no landing dust in play: BOTH RIGHT, leave them.
+- Keep all five swaps below (wading, swimming, shadow, bubble, ember).
+- Where the originals have no exact match, use the NEAREST original:
+  the Squall Bellows' gust puffs -> Seasons' dust; Nereth's seal glint ->
+  the twinkle; the Resonance Rod's reach -> eight twinkles flying out to its
+  edge (Seasons' Rod of Seasons throws the same twinkle; was a see-through
+  glow and ring); Gloomtide's foam and Thalassor's whirlpool swirl ->
+  Seasons' splash.
+
+### Built
+- rip-effects.py: `terrain()` (data/terrainEffects.s, raw oam on the common
+  sprites) -> `fx_shadow0`, `fx_puddle0-3`; `bubble()` (INTERAC_BUBBLE $91)
+  -> `fx_bubble0`; `ember()` (item20's loop, flags/base from seeds.s @data)
+  -> `fx_ember0-2`. assets/effects gains terrainEffects.s, bubble.s, seeds.s.
+- WADING: Link is drawn whole (no more 3 px crop) with Seasons' splash at
+  his feet, a picture every PUDDLE_HOLD (8) frames of the game counter
+  (player.js draw). The foam puff every 14 frames is gone (WADE_FOAM_EVERY
+  removed).
+- SWIMMING: no crop and no ripple under him; the swim pictures carry their
+  own ring of water.
+- SHADOW (Entity.drawShadow): Seasons' black shadow on alternate frames
+  (SHADOW_FLICKER, each entity on its own beat by id) instead of a
+  hand-drawn one at half opacity.
+- BUBBLE: drifts up at RISE_BUBBLE_SPEED 0.5 wobbling (bubble.s), lives 180,
+  flickers its last 60 (effects.js `bubbleRise`, spec `flickerOut`; the
+  start angle hashed with noise2, consuming nothing). Link under water lets
+  one go every SINK_BUBBLE_MIN 50 + 0..31 frames (Ages' link.s; was 22).
+  NB the enemy already owns BUBBLE_SPEED in feel.js, hence RISE_BUBBLE_*.
+- `flame` (the Kilnshell's strike) is the ember fire, EMBER_HOLDS [2,2,2].
+- Removed: ROD_RING_FRAMES and player.rodRing (rodRange stays: checkers read
+  it); effects `ripple`, `foam`, `shine`; every hand-drawn fx_* and `shadow`
+  in sprites-link.js (FX_ART is now empty) and the manifest's fx group.
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died, 314417
+frames (unchanged), low-water 5; check-rippers last, alone; check-build OK.
+REPLAY_NOTE
+
+### Not done / candidates
+- Seasons also draws the splash at the feet of enemies and townsfolk in
+  shallow water, and grass at the feet in tall grass (this game has no
+  walk-through grass). Only Link gets the splash so far.
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+- Next look-through targets: what is still drawn see-through, which the
+  Game Boy cannot do: the wreck glimmer (game.js WRECK_GLIMMER_ALPHA), the
+  Brineglass Lens' tint and ghosts (LENS_TINT_ALPHA, LENS_GHOST_ALPHA), and
+  hud.js's faded drawing near line 214 (find what it fades). Ask before
+  changing the Lens: it is how a puzzle item reads.
+
 ## S218 — Seasons' own twinkle and dust; no dust on landing
 
 Branch claude/oracle-tides-effects-review-bqnnui, off main at 34087de (S217).

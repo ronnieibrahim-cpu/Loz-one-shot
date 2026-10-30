@@ -479,7 +479,7 @@ export function installBosses() {
   function gloomCurrent(e, g) {
     if (g.tide.level !== MID) return 0.65;
     driftWithTide(e, g, { perLevel: 0.1, dx: 1, dy: 0 });
-    if (every(e, 30)) g.spawnEffect('foam', e.cx - 8, e.cy + 4);
+    if (every(e, 30)) g.spawnEffect('splash', e.cx - 8, e.cy + 4);
     return 1.25;
   }
 
@@ -881,9 +881,10 @@ export function installBosses() {
       // is a verb the player works out by accident. `whirl` has been in
       // src/data/audio.js since the audio pass and was never played by
       // anything — `enterWhirlpool` was its only caller and nothing could reach
-      // that either. On the ripple's own beat so the two read as one thing.
+      // that either. On the splash's own beat (Seasons' INTERAC_SPLASH since
+      // S219, where it was a hand-drawn ripple) so the two read as one thing.
       if (every(e, 20)) {
-        g.spawnEffect('ripple', e.cx - 8, e.cy - 8, { life: 24 });
+        g.spawnEffect('splash', e.cx - 8, e.cy - 8);
         if (d < 96) g.audio.sfx('whirl');
       }
     }
@@ -1082,7 +1083,7 @@ export function installBosses() {
     e._pinLevel = level;
     if (g.tide.level === level) {
       closeTick(e, g);
-      if (timer(e, 'seal', 200)) g.spawnEffect('shine', e.cx - 8, e.cy - 8, { life: 24 });
+      if (timer(e, 'seal', 200)) g.spawnEffect('sparkle', e.cx - 8, e.cy - 8);
     } else {
       open(e, g, 60);
       if (timer(e, 'pin', period)) {
