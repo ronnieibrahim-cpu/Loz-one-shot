@@ -39863,6 +39863,8 @@ __define("game/cutscene.js", function (__exports, __require) {
 // right up until the day somebody used it and found the colon doubled.
 //   { wait: 60 }                             pause n frames
 //   { fade: 'out' } / { fade: 'in' }         screen fade (waits for it)
+//   { fade: 'black' }                        black at once, held until a
+//                                            `fade: 'in'` (the intro's cards)
 //   { white: true, fade: 'out' }             fade to white instead
 //   { music: 'trackName' } / { music: null } change or stop music
 //   { jingle: 'fanfare' }
@@ -39881,15 +39883,18 @@ __define("game/cutscene.js", function (__exports, __require) {
 //                                            an item (an Essence)
 //   { text: 'Big centred caption', frames: 120 }
 //   { show: 'p_tidebell_0' }                 hold a sprite up on screen
-//   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150, scale: 3,
-//             rise: true, dim: false, pal: 'tide' } }
+//   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150,
+//             rise: true, pal: 'tide' } }
 //
 // `show` is the one drawing step, and it is the only one this file has ever
 // had beyond a caption box. It holds a sprite (or a two-frame cycle) over the
 // scene for `frames`, optionally drifting upward as it goes. A step may carry
-// BOTH `show` and `text` — the six Essence scenes all want the orb and its
-// title card at the same time — and the step ends when the longer of the two
-// is done.
+// BOTH `show` and `text`, and the step ends when the longer of the two is
+// done. It draws the sprite at its own size over the scene as it stands: the
+// `scale` that blew Nereth up twice and the Bell four times, and the `dim`
+// that darkened the world see-through behind them, went in S221 — the Game
+// Boy can do neither. No scene uses `show` today; a held-up thing is
+// `present`.
 //
 // THERE IS DELIBERATELY NO CAMERA-PAN STEP. It was the obvious second thing to
 // add and it would have been dead code: every room a cutscene plays in is
@@ -40006,13 +40011,14 @@ function runCutscene(game, steps, data = {}) {
       const total = Math.max(o.frames || step.frames || CUTSCENE_SHOW_FRAMES,
         step.text ? readFrames(step.text) : 0);
       shown = {
-        art, pal: o.pal || null, scale: Math.max(1, o.scale || 1),
-        x: o.x, y: o.y, rise: o.rise !== false, dim: o.dim !== false,
+        art, pal: o.pal || null,
+        x: o.x, y: o.y, rise: o.rise !== false,
         total, t: total,
       };
     }
     if (step.fade) {
       if (step.fade === 'out') game.fadeOut(null, !!step.white);
+      else if (step.fade === 'black') game.blackOut();
       else game.fadeIn();
     }
     if (step.say) {
@@ -40133,15 +40139,6 @@ function runCutscene(game, steps, data = {}) {
         : 0;
 
       if (showing) {
-        // Dim the world behind a held picture, unless the scene says not to.
-        // The caption box has always drawn its own scrim for exactly this
-        // reason; a sprite held over open terrain without one competes with
-        // every tuft of grass behind it and loses. Same alpha as the card, so
-        // the two read as one presentation rather than two overlays.
-        if (shown.dim) {
-          ctx.fillStyle = 'rgba(8,12,16,0.62)';
-          ctx.fillRect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H);
-        }
         const elapsed = shown.total - shown.t;
         const name = shown.art[Math.floor(elapsed / CUTSCENE_SHOW_ANIM_FRAMES) % shown.art.length];
         // A boss frame drawn in layers (its rig, src/game/enemy.js) is flattened
@@ -40149,7 +40146,7 @@ function runCutscene(game, steps, data = {}) {
         const rig = bossRig(name);
         const c = rig ? flattenRig(rig) : sprites.bake(name, shown.pal);
         if (c) {
-          const w = c.width * shown.scale, h = c.height * shown.scale;
+          const w = c.width, h = c.height;
           const drift = shown.rise
             ? Math.round(CUTSCENE_SHOW_RISE_PX * (elapsed / Math.max(1, shown.total)))
             : 0;
@@ -40157,17 +40154,12 @@ function runCutscene(game, steps, data = {}) {
           const top = HUD_H, bottom = capLines ? capY : SCREEN_H;
           const x = Math.round(shown.x != null ? shown.x : (SCREEN_W - w) / 2);
           const y = Math.round((shown.y != null ? shown.y : top + (bottom - top - h) / 2) - drift);
-          // Integer-scaled blit with smoothing off. `T23` is about PATHS being
-          // anti-aliased; a nearest-neighbour drawImage at an integer scale
-          // stays hard-edged, and the scale is forced to an integer above.
-          const prev = ctx.imageSmoothingEnabled;
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(c, x, y, w, h);
-          ctx.imageSmoothingEnabled = prev;
+          ctx.drawImage(c, x, y);
         }
       }
       if (capLines) {
-        ctx.fillStyle = 'rgba(8,12,16,0.78)';
+        // Solid, as the text box is (S221): it was a see-through scrim.
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, capY, SCREEN_W, capH);
         capLines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, capY + 4 + n * 10, '#f8f8e8'));
       }
@@ -40951,6 +40943,11 @@ class Game {
     if (timing && timing[0] === 0) this.fadeAmount = 1;
   }
   fadeIn() { this.fadeDir = -1; this.fadeAmount = 1; }
+  /** Black at once and held, with no fade down to it: the intro's cards
+   *  stand on it before the beach fades in (S221). */
+  blackOut() {
+    this.fadeDir = 0; this.fadeAmount = 1; this.fadeThen = null; this.fadeTiming = null;
+  }
 
   /** Anything is covering the world: a fade, a held white, the dungeon reveal. */
   veiled() { return !!(this.fadeDir || this.fadeHold > 0 || this.reveal > 0); }
@@ -41794,9 +41791,12 @@ class Game {
     // Both hands are up: whatever he was working stops, and the Bellows'
     // wind goes with it (its puffs would otherwise hang frozen on his head
     // for as long as the text is open, since nothing updates under a box).
-    if (this.player.stopBellows) this.player.stopBellows(this);
+    // No Link is a scene played on its own (check-credits plays the ending,
+    // which holds the Bell up since S221, with no game started).
+    const p = this.player;
+    if (p && p.stopBellows) p.stopBellows(this);
     for (const e of this.entities) if (e.isEffect && e.spec === EFFECTS.foam) e.remove = true;
-    this.player.frozen = ITEM_PRESENT_FRAMES;
+    if (p) p.frozen = ITEM_PRESENT_FRAMES;
     this.itemShow = Object.assign({ t: ITEM_PRESENT_FRAMES, hands }, show);
   }
 
@@ -42455,7 +42455,7 @@ class Game {
     // dialogue early-return too: a charm going dark while a text box is open
     // would be a rule the player never sees applied.
     this.scrim.update();
-    if (this.bannerTime > 0 && !this.veiled()) this.bannerTime--;
+    if (this.bannerTime > 0 && !this.veiled() && this.fadeAmount < 1) this.bannerTime--;
     this.tickItemShow();
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
 
@@ -42930,7 +42930,8 @@ class Game {
     if (this.reveal > 0) this.drawReveal(ctx);
 
     drawHud(ctx, this);
-    if (!this.veiled()) drawAreaBanner(ctx, this);
+    // Nor on a held black (the intro's cards): it waits for the room.
+    if (!this.veiled() && this.fadeAmount < 1) drawAreaBanner(ctx, this);
     // No boss health bar (S215): Seasons never shows one; a boss tells you
     // it is hurt by flashing and by how it fights.
     if (this.race) this.drawRaceClock(ctx);
@@ -73446,11 +73447,15 @@ const CUTSCENES = {
   // Hollow on Gull Sands (a Wenna hint), the Barnacle Key from the Maku Tree,
   // and the Moon Conch from Farore herself, in her shrine on Tern Point —
   // the Oracle met in person, as Din and Nayru are.
+  //
+  // The two cards are on black and the beach fades in after them (S221):
+  // Seasons' own card is words on a plain screen, and a see-through band over
+  // the beach is a thing the Game Boy cannot draw.
   intro: [
-    { music: null },
-    { fade: 'in' },
+    { music: null, fade: 'black' },
     { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
     { text: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.', frames: 220 },
+    { fade: 'in' },
     { flag: 'sawIntro' },
     { music: 'overworld' },
   ],
@@ -73622,8 +73627,8 @@ const CUTSCENES = {
     { music: null },
     { fade: 'out' },
     { fade: 'in' },
-    { show: { art: 'boss_nereth_0', scale: 2, rise: false },
-      text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
+    // No title card and no portrait blown up twice over (S221): he is in the
+    // room at his own size, and he speaks, as Seasons' big moments do.
     { say: 'So you came down. Everything sinks in the end.' },
     { say: 'I didn\'t break the Bell to be cruel, wader. For a thousand years the sea was told what to do. Nobody ever asked it.' },
     { say: 'Now it does as it likes. Which means, as I like!' },
@@ -73633,10 +73638,9 @@ const CUTSCENES = {
   ],
   ending: [
     { music: null },
-    { fade: 'out' },
-    { show: { art: ['p_tidebell_0', 'p_tidebell_1'], scale: 4, pal: 'essence' },
-      text: 'The Tide Bell is whole.', frames: 170 },
-    { fade: 'in' },
+    // Link holds the whole Bell up, as he held up each Essence (S221); it
+    // was drawn four times its size on black, which the Game Boy cannot do.
+    { present: { sprite: 'p_tidebell_0', pal: 'essence', text: 'The Tide Bell is whole.' } },
     { music: 'ending' },
     { say: 'The Bell rings once, deep under the water. You can\'t hear it, but you can feel it.' },
     { tide: 1 },

@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A cutscene step can run with no Link (S221).** check-credits plays the
+  ending on its own, before any game is started, so `player` is null; the
+  ending's new `present` crashed in `holdUp`. Anything a scene calls must
+  tolerate no player.
+- **A held black is not `veiled()` (S221).** `veiled()` means a fade is
+  MOVING; after `fadeOut(null)` or `blackOut()` the screen is black with
+  `fadeDir` 0, so the place-name label drew over the intro's cards on black.
+  Gate on `fadeAmount < 1` as well.
+
 - **A charm poked into `scrim.active` from a tool lasts one frame (S220).**
   `Scrimshaw` rebuilds `active` from the equipped cases every update, so a
   shot of the Wrecker's Eye must re-add it after each step, or it shows

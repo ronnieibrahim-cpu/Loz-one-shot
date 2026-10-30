@@ -219,11 +219,15 @@ const CUTSCENES = {
   // Hollow on Gull Sands (a Wenna hint), the Barnacle Key from the Maku Tree,
   // and the Moon Conch from Farore herself, in her shrine on Tern Point —
   // the Oracle met in person, as Din and Nayru are.
+  //
+  // The two cards are on black and the beach fades in after them (S221):
+  // Seasons' own card is words on a plain screen, and a see-through band over
+  // the beach is a thing the Game Boy cannot draw.
   intro: [
-    { music: null },
-    { fade: 'in' },
+    { music: null, fade: 'black' },
     { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
     { text: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.', frames: 220 },
+    { fade: 'in' },
     { flag: 'sawIntro' },
     { music: 'overworld' },
   ],
@@ -395,8 +399,8 @@ const CUTSCENES = {
     { music: null },
     { fade: 'out' },
     { fade: 'in' },
-    { show: { art: 'boss_nereth_0', scale: 2, rise: false },
-      text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
+    // No title card and no portrait blown up twice over (S221): he is in the
+    // room at his own size, and he speaks, as Seasons' big moments do.
     { say: 'So you came down. Everything sinks in the end.' },
     { say: 'I didn\'t break the Bell to be cruel, wader. For a thousand years the sea was told what to do. Nobody ever asked it.' },
     { say: 'Now it does as it likes. Which means, as I like!' },
@@ -406,10 +410,9 @@ const CUTSCENES = {
   ],
   ending: [
     { music: null },
-    { fade: 'out' },
-    { show: { art: ['p_tidebell_0', 'p_tidebell_1'], scale: 4, pal: 'essence' },
-      text: 'The Tide Bell is whole.', frames: 170 },
-    { fade: 'in' },
+    // Link holds the whole Bell up, as he held up each Essence (S221); it
+    // was drawn four times its size on black, which the Game Boy cannot do.
+    { present: { sprite: 'p_tidebell_0', pal: 'essence', text: 'The Tide Bell is whole.' } },
     { music: 'ending' },
     { say: 'The Bell rings once, deep under the water. You can\'t hear it, but you can feel it.' },
     { tide: 1 },
