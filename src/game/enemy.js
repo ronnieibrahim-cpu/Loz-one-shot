@@ -162,6 +162,8 @@ export class Enemy extends Entity {
     this.still = false;
     this.homeX = x; this.homeY = y;
     this.shadow = this.flying;
+    // On foot it splashes in the shallows; a swimmer is drawn in its water.
+    this.wades = !this.flying && this.terrain !== 'water';
     if (spec.z) this.z = spec.z;
     if (spec.init) spec.init(this, null);
   }
@@ -553,6 +555,7 @@ export class Boss extends Enemy {
     this.hb = spec.hb || { x: 4, y: 8, w: this.w - 8, h: this.h - 12 };
     this.depth = 2;
     this.shadow = false;
+    this.wades = false;
   }
 
   currentPhase() {
@@ -692,7 +695,7 @@ export class Boss extends Enemy {
     const cy = oy + this.y + hb.y + (hb.h >> 1) - this.z;
     const x = this.flipX ? cx - (rig.w - rig.ax) : cx - rig.ax;
     for (const layer of rig.layers) {
-      sprites.draw(ctx, layer, x, cy - rig.ay, { pal: pal || undefined, flipX: this.flipX, alpha: this.alpha });
+      sprites.draw(ctx, layer, x, cy - rig.ay, { pal: pal || undefined, flipX: this.flipX });
     }
   }
 }

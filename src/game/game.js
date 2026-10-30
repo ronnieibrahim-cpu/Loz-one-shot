@@ -72,11 +72,10 @@ import {
   DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES,
   GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
-  LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
-  LENS_SHIMMER_FRAMES, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
+  LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
-  WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
+  WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS,
   COILBONE_INVULN_FRAMES,
   BRIDGE_PLANK_FRAMES,
 } from '../data/feel.js';
@@ -2500,7 +2499,7 @@ export class Game {
       const here = this.tide.level === e.phase;
       e.phasedOut = !here;
       if (here) {
-        if (e._phaseWas) { e.hidden = false; e.harmless = !!e._phaseHarmless; e.alpha = null; }
+        if (e._phaseWas) { e.hidden = false; e.harmless = !!e._phaseHarmless; e.lensGhost = false; }
         e._phaseWas = false;
         continue;
       }
@@ -2508,7 +2507,9 @@ export class Game {
       // Never a threat from the other level, Lens or no Lens.
       e.harmless = true;
       e.hidden = !lensUp;
-      e.alpha = lensUp ? LENS_PHASE_ALPHA : null;
+      // Seen through the Lens it flickers with the other tide's room (S220;
+      // it was drawn see-through, which the Game Boy cannot do).
+      e.lensGhost = lensUp;
       // `Entity.hurt` early-returns on invuln, which is how "not hittable" is
       // expressed without every damage source needing to learn about phases.
       // Re-armed every frame so it lapses the instant the Lens comes up.
@@ -2796,7 +2797,12 @@ export class Game {
   drawScene(ctx, ox, oy) {
     const room = this.room;
     if (!room) return;
-    const base = room.render(this.tide, this.frame);
+    // The Brineglass Lens (S220): on its frames the other tide's room is
+    // drawn INSTEAD of this one, the Game Boy's way of showing two things in
+    // one place (the shadow's flicker), under everything standing in it.
+    const ghost = this.lensGhostLevel();
+    const base = ghost == null ? room.render(this.tide, this.frame)
+      : room.renderAt(this.tide.viewAt(ghost), this.frame);
 
     if (this.tide.busy) {
       this.tide.drawSweep(ctx, ox, oy, base, () => {
@@ -2809,21 +2815,22 @@ export class Game {
     }
 
     ctx.drawImage(base, ox, oy);
-    room.drawAnim(ctx, ox, oy, this.tide, this.frame);
+    // `renderAt` is the whole room, water and all, in one still.
+    if (ghost == null) room.drawAnim(ctx, ox, oy, this.tide, this.frame);
 
     const list = this.entities.slice();
     if (this.player && !list.includes(this.player)) list.push(this.player);
     list.sort((a, b) => (a.depth * 1000 + a.y + a.h) - (b.depth * 1000 + b.y + b.h));
     for (const e of list) { if (e.drawShadow) e.drawShadow(ctx, this, ox, oy); }
     for (const e of list) {
-      if (e.hidden) continue;
+      if (e.hidden || (e.lensGhost && ghost == null)) continue;
       e.draw(ctx, this, ox, oy);
+      if (e.wades) e.drawPuddle(ctx, this, ox, oy);
     }
 
     room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
     if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
-    if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx, ox, oy);
@@ -2843,7 +2850,6 @@ export class Game {
   drawWrecksGlimmer(ctx, ox, oy) {
     const room = this.room;
     if (!room) return;
-    ctx.save();
     for (const e of this.entities) {
       if (!(e instanceof Chest) || e.opened) continue;
       this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
@@ -2855,54 +2861,42 @@ export class Game {
         this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);
       }
     }
-    ctx.restore();
   }
 
+  // Seasons' own twinkle (INTERAC_SPARKLE, S220), played through once every
+  // WRECK_GLIMMER_PERIOD frames; it was a hand-drawn cross faded in and out,
+  // which the Game Boy cannot draw. Drawn straight off the frame counter, not
+  // spawned, so it adds nothing to the effect count.
   glimmerAt(ctx, cx, cy, phase) {
-    const t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
-    if (t > WRECK_GLIMMER_ON) return;
-    const a = Math.sin(t / WRECK_GLIMMER_ON * Math.PI);
-    ctx.globalAlpha = a * WRECK_GLIMMER_ALPHA;
-    ctx.fillStyle = '#f8f8c0';
-    ctx.fillRect(cx - 1, cy - 4, 2, 8);
-    ctx.fillRect(cx - 4, cy - 1, 8, 2);
-    ctx.globalAlpha = 1;
+    let t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
+    for (let i = 0; i < TWINKLE_HOLDS.length; i++) {
+      if (t < TWINKLE_HOLDS[i]) {
+        sprites.draw(ctx, 'fx_twinkle' + i, cx - 16, cy - 16);
+        return;
+      }
+      t -= TWINKLE_HOLDS[i];
+    }
   }
 
   /**
-   * The Brineglass Lens: the room as it will be at the NEXT tide level, laid
-   * over the room as it is. Drawn ABOVE the entities and above `drawOver`, so
-   * the preview reads as glass held in front of the scene rather than as part
-   * of it — under them it looked like the room had already changed, which is
-   * the one thing the Lens must never seem to say.
+   * The Brineglass Lens: the tide level the room is drawn at THIS frame, or
+   * null for the level actually played. L1 shows the next level on every
+   * other frame; L2 shows both other levels, the next one twice as often, so
+   * the two are told apart by how solid they look (LENS_FLICKER_L2). Drawn
+   * as the room itself, under the entities, on its own frames: the Game Boy
+   * shows two things in one place by flickering them (S220). It was a
+   * see-through copy laid over the screen with a tint.
    *
-   * Nothing here consumes randomness. `draw()` runs at display rate and the
-   * shimmer is a plain function of `frame`, for the same reason the screen
-   * shake uses noise1.
+   * The FIELD at that base, not the bare level (see Tide.viewAt): an anchored
+   * patch is the one part of the room that will not change, and the preview
+   * has to say so. A plain function of `frame`, consuming nothing.
    */
-  drawLensGhost(ctx, ox, oy) {
-    const room = this.room;
-    if (!room) return;
-    const t = this.player.lensT / LENS_FADE_FRAMES;
-    const lv = itemLevel(this.progress, 'lens');
-    // L1 shows the next level. L2 shows both other levels, nearest first, so
-    // the two ghosts are told apart by how solid they are.
-    const levels = [(this.tide.level + 1) % TIDE_COUNT];
-    if (lv >= 2) levels.push((this.tide.level + 2) % TIDE_COUNT);
-
-    const shimmer = 0.88 + 0.12 * Math.sin(this.frame * (Math.PI * 2 / LENS_SHIMMER_FRAMES));
-    ctx.save();
-    ctx.globalAlpha = LENS_TINT_ALPHA * t;
-    ctx.fillStyle = '#a8f0e8';
-    ctx.fillRect(ox, oy, room.pw, room.ph);
-    for (let i = 0; i < levels.length; i++) {
-      ctx.globalAlpha = (LENS_GHOST_ALPHA * t * shimmer) / (i + 1);
-      // The FIELD at that base, not the bare level: an anchored patch is the
-      // one part of the room that will not change, and the preview has to say
-      // so. See Tide.viewAt.
-      ctx.drawImage(room.renderAt(this.tide.viewAt(levels[i]), this.frame), ox, oy);
-    }
-    ctx.restore();
+  lensGhostLevel() {
+    const p = this.player;
+    if (!p || p.lensT <= 0 || !this.room) return null;
+    const cycle = itemLevel(this.progress, 'lens') >= 2 ? LENS_FLICKER_L2 : LENS_FLICKER_L1;
+    const ahead = cycle[this.frame % cycle.length];
+    return ahead ? (this.tide.level + ahead) % TIDE_COUNT : null;
   }
 
   drawTransition(ctx, ox, oy) {

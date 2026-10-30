@@ -22,7 +22,7 @@ import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
   HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY,
-  SHADOW_FLICKER,
+  SHADOW_FLICKER, PUDDLE_HOLD,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -142,6 +142,9 @@ export class Entity {
     this.knockX = 0; this.knockY = 0;
     this.hb = { x: 2, y: 4, w: 12, h: 11 };   // hitbox inset within w/h
     this.shadow = true;
+    // Gets Seasons' splash at its feet when it stands in shallow water
+    // (drawPuddle). Set by the things that walk: enemies on foot, townsfolk.
+    this.wades = false;
     this.depth = 0;          // draw-order tiebreak
     // The tide level this entity genuinely exists at, or null for "always".
     // A phased-out entity is not drawn, not dangerous and not hittable until
@@ -248,7 +251,7 @@ export class Entity {
     const off = this.drawOffset ? this.drawOffset(game, name) : null;
     sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0) + (off ? off[0] : 0),
       oy + this.y - this.z + (off ? off[1] : 0), {
-      pal, flipX: this.flipX, alpha: this.alpha,
+      pal, flipX: this.flipX,
     });
   }
 
@@ -260,6 +263,20 @@ export class Entity {
     if (!this.shadow || this.z <= 1) return;
     if ((game.frame + this.id) % SHADOW_FLICKER) return;
     sprites.draw(ctx, 'fx_shadow0', ox + this.x - 8, oy + this.y - 8);
+  }
+
+  // THE SPLASH AT ITS FEET in shallow water (S220): Seasons draws it under
+  // every object that asks for terrain effects (_drawObjectTerrainEffects
+  // @walkingInPuddle) — its enemies on foot and its townsfolk as well as
+  // Link, all in step on the one counter. Where the thing's own feet are
+  // (groundFlags), and only standing: a hop or a bounce is above it.
+  drawPuddle(ctx, game, ox, oy) {
+    if (!this.wades || this.z > 1 || this.dead) return;
+    const f = groundFlags(game, this);
+    if (!(f & F.WATER) || (f & F.DEEP)) return;
+    const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
+    sprites.draw(ctx, 'fx_puddle' + k, ox + this.x + ((this.w - 16) >> 1) - 8,
+      oy + this.y + this.h - 24);
   }
 }
 

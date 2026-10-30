@@ -298,9 +298,10 @@ await hold(['b']); await step(20);
 r = await read(() => {
   const g = window.__game;
   const e = window.__ghost;
-  return { hidden: !!e.hidden, harmless: !!e.harmless, alpha: e.alpha, hurt: e.hurt(g, 99, 'down', 0) };
+  return { hidden: !!e.hidden, harmless: !!e.harmless, lensGhost: !!e.lensGhost, hurt: e.hurt(g, 99, 'down', 0) };
 });
-check('the Lens reveals a phased enemy', !r.hidden && r.alpha > 0, `hidden=${r.hidden} alpha=${r.alpha}`);
+// Revealed, it flickers with the other tide's room (S220; it was drawn see-through).
+check('the Lens reveals a phased enemy', !r.hidden && r.lensGhost, `hidden=${r.hidden} lensGhost=${r.lensGhost}`);
 check('the Lens makes a phased enemy hittable', r.hurt === true, 'the sword still missed');
 check('a revealed enemy still cannot hurt you', r.harmless === true);
 await hold([]); await step(20);

@@ -135,9 +135,11 @@ the far side of a puzzle they would answer.
 
 ### 2. Brineglass Lens
 
-**Hold** to re-render the room as a ghosted overlay at the *next* tide level —
-terrain, platforms, currents, and the enemies that only exist there. **Release**
-and it snaps back.
+**Hold** and the room flickers with itself at the *next* tide level —
+terrain, platforms, currents, and the enemies that only exist there — every
+other frame, the Game Boy's own way of showing two things in one place (S220;
+it was a see-through overlay with a tint until then). **Release** and it snaps
+back.
 
 Not a convenience item. Without it the player toggles blind and finds out
 afterwards whether they drowned themselves. Seasons never needed this because a
@@ -158,7 +160,7 @@ moved you would have to be gated on, and the moment it gates it stops being the
 thing that de-risks the core mechanic.
 
 **Level 2** widens the preview to the level *after* next (i.e. both other tide
-levels, drawn in two tints).
+levels: the next one on two frames in six, the far one on one).
 
 - **Overworld use** — the Salt Pans: which pan floods at HIGH is invisible from
   the shore, and the crossing that works is not the one that looks shortest.

@@ -730,6 +730,13 @@ should say whether the plaque is enough.
 
 ## The Lens shows three dark blues (new, from P8/D2)
 
+**S220: the overlay is gone.** The Lens now draws the next tide's room whole
+on alternate frames (`LENS_FLICKER_L1`), so each tile is shown in its own
+colours rather than blended 80% over a black pit; the table below measured the
+old blend and no longer describes the game. The next-tide frames are a still
+(`Room.renderAt`), so the TEXTURE difference reads and the MOTION one still
+does not. The rest of this entry stands as the history of the question.
+
 **This is the biggest legibility problem the game has, and it was found by
 looking rather than by a checker.** The Brineglass Lens draws the room at the
 next tide level as a ghosted overlay. In D2's forks the player has to read that
@@ -739,8 +746,8 @@ ankle-deep water, an open hole, or over my head? The three answers are
 half-opacity ghost over a black pit they come out 4-6 units apart in RGB.
 
 Measured, at three ghost opacities (mean RGB of a throat in `d2 1,2,2`; the
-numbers and the command that reproduces them are in `src/data/feel.js` beside
-`LENS_GHOST_ALPHA`):
+numbers were kept in `src/data/feel.js` beside `LENS_GHOST_ALPHA` until S220
+removed it):
 
 | ghost | wadeable | a hole | drowning |
 |---|---|---|---|

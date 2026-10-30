@@ -204,19 +204,17 @@ function drawTideGauge(ctx, game, x) {
   }
 }
 
-/** Transient banner naming the area you just entered. */
+/** Transient banner naming the area you just entered. It comes and goes
+ *  whole, as Seasons' dungeon name box does (S220): it used to fade in and
+ *  out, which the Game Boy cannot draw. */
 export function drawAreaBanner(ctx, game) {
   if (game.bannerTime <= 0 || !game.bannerText) return;
-  const t = game.bannerTime;
-  const alpha = t > 90 ? (120 - t) / 30 : Math.min(1, t / 30);
   const w = textWidth(game.bannerText) + 12;
   const x = Math.round((SCREEN_W - w) / 2), y = HUD_H + 8;
-  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
   ctx.fillStyle = '#080c10';
   ctx.fillRect(x, y, w, 13);
   ctx.fillStyle = '#586878';
   ctx.fillRect(x, y, w, 1);
   ctx.fillRect(x, y + 12, w, 1);
   drawTextCentered(ctx, game.bannerText, SCREEN_W / 2, y + 3, '#f8f8e8');
-  ctx.globalAlpha = 1;
 }
