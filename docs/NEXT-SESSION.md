@@ -1,3 +1,50 @@
+## S218 — Seasons' own twinkle and dust; no dust on landing
+
+Branch claude/oracle-tides-effects-review-bqnnui, off main at 34087de (S217).
+
+### The human's choices this session
+- S217's leaves, shards, splash and clink in play: ALL RIGHT, leave them.
+- DUST: match Seasons. Link landing (ledge hop, feather, drop-in) and the
+  Anchor set down make no dust, only the sound (link.s plays SND_LAND and
+  nothing else); a landing in water still splashes. Seasons' own puff
+  (INTERAC_FALLDOWNHOLE subid 1, animation 1, blinking every frame) is kept
+  for the two bosses' heavy steps (bosses.js `every(e, 40/45)`).
+- TWINKLE: Seasons' INTERAC_SPARKLE (dot, cross, X, four dots; 9 9 9 8),
+  ORANGE (standard sprite palette 3) where ours was gold, RED (palette 2,
+  subid 1's own) where it was coral (the Reefseed's sprout: `sparkleRed`).
+
+### Built
+- rip-effects.py `dust()` -> `fx_dust0-2`, `twinkle(pal)` -> `fx_twinkle0-3`
+  and `fx_twinkleR0-3` (spr_triforce_sparkle.png, gfx header $50, tile base
+  $0a, animation 1). assets/effects gains spr_triforce_sparkle.png, sparkle.s,
+  fallDownHole.s (7584d87). Hand-drawn fx_dust/fx_sparkle gone from
+  sprites-link.js and the manifest (now in fxBig).
+- feel.js DUST_HOLDS [4,4,4], TWINKLE_HOLDS [9,9,9,8] (derived);
+  REEFSEED_SHUDDER_EVERY 12 -> 40 (one whole twinkle at a time).
+- effects.js: `blink` (drawn every other frame) and `opts.loop` for held
+  sequences (the bell's chime path keeps its 60 frames by looping). Every
+  other twinkle now plays its whole 35 frames: the old `life` overrides
+  (12-30) and `pal` options are gone from the call sites.
+- ENGINE: effects take their entity ids from their own count (negative;
+  entity.js `nextCosmeticId`, Effect passes `cosmetic: true`). An enemy's
+  `every()` phase is a hash of its id, so while effects shared the count,
+  removing the landing dust re-timed every later enemy and the run died at
+  Bogmaw. This re-phased enemies from D2's approach on, once; from now on a
+  cosmetic change cannot move an enemy.
+- ROUTE: Bogmaw's entry wait 46 -> 4 (swept 0-156: 2-6 win 28/28).
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died, 314417
+frames, low-water 5 (was 2); check-rippers last, alone; check-build OK.
+Replay: d1-descent and d5-overthrow re-recorded; only the entity count `e`
+moved (checked field by field against the old recordings).
+
+### Not done / candidates
+- Still hand-drawn effects: foam, bubble, ripple, flame, shine. Seasons
+  draws shallow water at Link's feet itself, and the torch flame is already
+  ripped (rip-objects.py) — check where `fx_flame` is still used.
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+
 ## S217 — Seasons' own leaves, shards, splash and clink; the cottage's seat
 
 Branch claude/oracle-tides-caves-shop-c90sev, off main at a9d576d (S216).

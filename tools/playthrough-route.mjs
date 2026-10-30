@@ -1350,7 +1350,10 @@ export const ROUTE = [
   // S211 (the Grotto's held bridge and the Spire's Eye Hall moved the clock):
   // 24 loses. Swept 10-130 by 4: 34-58 all win untouched (28/28), and 10, 18
   // too; 14, 22-30 and 62-86 lose. 46, the middle.
-  ['wait', 46],
+  // S218 (effects stopped sharing the enemies' id count, which re-phased
+  // every enemy from D2's approach on): 46 loses. Swept 0-156: 2-6 win
+  // untouched (28/28), 0 and 8-26 win hurt (9-13/28), 36-46 lose. 4.
+  ['wait', 4],
   ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],

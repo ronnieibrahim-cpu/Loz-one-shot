@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An enemy's rhythm was tied to how many puffs had ever been made (S218).**
+  `every(e, n)` phases each enemy by a hash of its entity id, and ids came
+  from one count that effects shared, so taking the landing dust out of the
+  game re-timed every enemy made after the first jump and the playthrough
+  lost to Bogmaw. Effects now count their ids apart (negative, entity.js
+  `nextCosmeticId`). Anything else purely cosmetic that becomes an Entity
+  should pass `cosmetic: true` too.
+- **Seasons makes no dust when Link lands (S218).** link.s plays SND_LAND and
+  nothing else; INTERAC_FALLDOWNHOLE subid 1's puff is Pegasus running,
+  hard knockback and Aquamentus' charge. INTERAC_SPARKLE subid 0 is NOT the
+  tiny sparkle its constant comment says: its graphics (spr_link at $1c00)
+  are the big glowing orb. The twinkle is subids 1/2/3/5, on
+  spr_triforce_sparkle.
+
 - **A missing effect name is silent (S217).** `spawnEffect` on a name not in
   EFFECTS only warns to the console and draws nothing; ten tile transforms
   still carry `sfx: 'break'` (a sound, fine), but check an `fx:` name exists

@@ -10,7 +10,7 @@ import {
   DRY_KINDLING_FACTOR,
   PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER,
   HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY,
-  LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS,
+  LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS, DUST_HOLDS, TWINKLE_HOLDS,
 } from '../data/feel.js';
 
 const TILE_SP = sp(16);
@@ -41,7 +41,7 @@ export function heldStep(holds, f) {
 
 export class Effect extends Entity {
   constructor(x, y, spec, opts = {}) {
-    super(x, y, opts);
+    super(x, y, { ...opts, cosmetic: true });
     this.spec = spec;
     this.isEffect = true;
     this.harmless = true;
@@ -60,7 +60,7 @@ export class Effect extends Entity {
     // Drift is named in px/f by whoever spawns the effect; stored in sp/f.
     this.vx = sp(opts.vx || 0); this.vy = sp(opts.vy || 0);
     this.w = spec.w || 16; this.h = spec.h || 16;
-    this.loop = !!spec.loop;
+    this.loop = !!(opts.loop || spec.loop);
   }
 
   update(game) {
@@ -77,7 +77,12 @@ export class Effect extends Entity {
   spriteName() {
     if (this.holds) {
       // `frame` was already advanced once in the update that made this frame.
-      const n = this.frames[heldStep(this.holds, Math.max(0, this.frame - 1))];
+      const f = Math.max(0, this.frame - 1);
+      // A blinking effect is drawn on every other frame, the first included.
+      if (this.spec.blink && f % 2) return null;
+      // A looping one (given a life longer than its sequence) starts over.
+      const total = this.holds.reduce((a, b) => a + b, 0);
+      const n = this.frames[heldStep(this.holds, this.loop ? f % total : f)];
       return this.spec.flicker && Math.floor((this.frame - 1) / this.spec.flicker) % 2 ? n + 'b' : n;
     }
     const i = Math.floor(this.frame / this.rate);
@@ -110,13 +115,17 @@ export const EFFECTS = {
   spark: { frames: ['fx_clink0', 'fx_clink1'], holds: CLINK_HOLDS, own: true, w: 32, h: 32, centre: true },
   splash: { frames: ['fx_wet0', 'fx_wet1', 'fx_wet2'], holds: SPLASH_HOLDS, own: true, w: 32, h: 32, centre: true },
   ripple: { frames: ['fx_ripple0', 'fx_ripple1'], pal: 'water', rate: 8, loop: true, life: 9999, depth: -5 },
-  dust: { frames: ['fx_dust0', 'fx_dust1', 'fx_dust2'], pal: 'sand', rate: 5 },
+  // INTERAC_FALLDOWNHOLE's dust (S218): kicked up by something heavy going
+  // fast. Seasons makes none when Link lands; only the sound.
+  dust: { frames: ['fx_dust0', 'fx_dust1', 'fx_dust2'], holds: DUST_HOLDS, blink: true, own: true, w: 32, h: 32, centre: true },
   cut: {
     frames: ['fx_leaves0', 'fx_leaves1', 'fx_leaves2', 'fx_leaves3', 'fx_leaves4', 'fx_leaves5', 'fx_leaves6', 'fx_leaves7'],
     holds: LEAVES_HOLDS, own: true, w: 48, h: 48, centre: true,
   },
   shards: { frames: ['fx_shards0', 'fx_shards1', 'fx_shards2', 'fx_shards3'], holds: SHARDS_HOLDS, own: true, w: 32, h: 32, centre: true },
-  sparkle: { frames: ['fx_sparkle0', 'fx_sparkle1', 'fx_sparkle2', 'fx_sparkle1'], pal: 'gold', rate: 5 },
+  // INTERAC_SPARKLE (S218): the twinkle, in orange, and in red (`sparkleRed`).
+  sparkle: { frames: ['fx_twinkle0', 'fx_twinkle1', 'fx_twinkle2', 'fx_twinkle3'], holds: TWINKLE_HOLDS, own: true, w: 32, h: 32, centre: true },
+  sparkleRed: { frames: ['fx_twinkleR0', 'fx_twinkleR1', 'fx_twinkleR2', 'fx_twinkleR3'], holds: TWINKLE_HOLDS, own: true, w: 32, h: 32, centre: true },
   boom: { frames: ['fx_boom0', 'fx_boom1', 'fx_boom0', 'fx_boom2', 'fx_boom3', 'fx_boom4'], holds: EXPLOSION_HOLDS, own: true, w: 32, h: 32 },
   flame: { frames: ['fx_flame0', 'fx_flame1', 'fx_flame2'], pal: 'fire', rate: 6, loop: true, life: 9999 },
   bubble: { frames: ['fx_bubble0', 'fx_bubble1'], pal: 'water', rate: 8, loop: true },

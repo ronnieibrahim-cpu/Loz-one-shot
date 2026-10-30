@@ -1317,7 +1317,7 @@ export class Game {
   }
 
   onConchPlayed() {
-    this.spawnEffect('sparkle', this.player.x, this.player.y - 8, { life: 30 });
+    this.spawnEffect('sparkle', this.player.x, this.player.y - 8);
   }
 
   onEnemyDefeated(e, puffing) {

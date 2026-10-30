@@ -1,23 +1,23 @@
-# Next session (S218)
+# Next session (S219)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S217 and S216; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S218 and S217; docs/HANDOFF.md lessons (top ten).
 
 ## State
-- S217 look-through: a cut bush, a broken pot, a splash and the sword's
-  clink are Seasons' own animations (rip-effects.py `debris()`); Sandpiper
-  Cottage has Seasons' purple seat; the hearth child walks.
+- S218 look-through: Seasons' own twinkle (orange; red for the Reefseed)
+  and dust; no dust on any landing (Seasons has none). Effects no longer
+  share the enemies' id count, so a cosmetic change cannot re-time enemies.
 - The human said LEAVE: our text box, our place-name label, Sandpiper
-  Cottage without its side door. The caves and shop are RIGHT. Do not re-ask.
+  Cottage without its side door; S216's caves and shop; S217's leaves,
+  shards, splash and clink. Do not re-ask.
 - Whole table green; check-playthrough 49/49 to THE END, never died,
-  314667 frames, low-water 2/48 in d6/2,2,5 (see NEXT-SESSION S215).
+  314417 frames, low-water 5.
 
 ## The task
-- Ask the human how the new leaves, shards, splash and clink feel in play;
-  then carry on the look-through against the originals (candidates in
-  NEXT-SESSION S217: the remaining hand-drawn effects — dust, sparkle —
-  first), asking before bigger changes.
+- Ask the human how the new twinkle and the missing landing dust feel in
+  play; then carry on the look-through (candidates in NEXT-SESSION S218:
+  foam, bubble, ripple, flame, shine), asking before bigger changes.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;
