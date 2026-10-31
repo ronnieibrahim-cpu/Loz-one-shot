@@ -4193,6 +4193,19 @@ const BRIDGE_PLANK_FRAMES = 10;
  *  sets var3f to $0a, and @state1 counts it down while Link pushes against
  *  the slot's centre. */
 const SLATE_PUSH_FRAMES = 10;
+
+/** f — the status bar's money counts toward what Link has by one rupee every
+ *  this many frames, ticking SND_RUPEE each step, up or down (S222). derived
+ *  from the cartridge: bank2.s updateStatusBar_body steps wDisplayedRupees by
+ *  one each call, once a frame. A rupee picked up makes no sound of its own. */
+const RUPEE_ROLL_FRAMES = 1;
+
+/** f — the status bar's hearts fill one quarter every this many frames when
+ *  Link has more than they show, chiming SND_GAINHEART at each whole heart,
+ *  and empty one quarter a frame when he has less (S222). derived from the
+ *  cartridge: updateStatusBar_body only raises wDisplayedHearts when
+ *  (wFrameCounter & 3) is 0, and lowers it every call. */
+const HEART_FILL_FRAMES = 4;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4688,6 +4701,8 @@ __exports["CHUNK_BOB_FRAMES"] = CHUNK_BOB_FRAMES;
 __exports["ICE_BLOCK_SPEED"] = ICE_BLOCK_SPEED;
 __exports["BRIDGE_PLANK_FRAMES"] = BRIDGE_PLANK_FRAMES;
 __exports["SLATE_PUSH_FRAMES"] = SLATE_PUSH_FRAMES;
+__exports["RUPEE_ROLL_FRAMES"] = RUPEE_ROLL_FRAMES;
+__exports["HEART_FILL_FRAMES"] = HEART_FILL_FRAMES;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -13941,13 +13956,21 @@ class Entity {
   // @walkingInPuddle) — its enemies on foot and its townsfolk as well as
   // Link, all in step on the one counter. Where the thing's own feet are
   // (groundFlags), and only standing: a hop or a bounce is above it.
+  //
+  // And THE GRASS AT ITS FEET in tall grass (S222, @walkingInGrass): two
+  // blades over the feet, the picture picked by bit 2 of where it stands (its
+  // x xor y), so it sways as it walks and holds still when it stops.
   drawPuddle(ctx, game, ox, oy) {
     if (!this.wades || this.z > 1 || this.dead) return;
     const f = groundFlags(game, this);
+    const x = ox + this.x + ((this.w - 16) >> 1) - 8, y = oy + this.y + this.h - 24;
+    if (f & F.TALLGRASS) {
+      sprites.draw(ctx, 'fx_grass' + grassPicture(this.x + (this.w >> 1), this.y + this.h - 8), x, y);
+      return;
+    }
     if (!(f & F.WATER) || (f & F.DEEP)) return;
     const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
-    sprites.draw(ctx, 'fx_puddle' + k, ox + this.x + ((this.w - 16) >> 1) - 8,
-      oy + this.y + this.h - 24);
+    sprites.draw(ctx, 'fx_puddle' + k, x, y);
   }
 }
 
@@ -14113,6 +14136,12 @@ function dropIntoHole(game, e) {
   game.audio.sfx('fallInHole');
 }
 
+/** Which of the two pictures of the grass at the feet (S222): Seasons'
+ *  _drawObjectTerrainEffects tests bit 2 of the object's x xor y. */
+function grassPicture(x, y) {
+  return ((Math.floor(x) ^ Math.floor(y)) >> 2) & 1;
+}
+
 function groundFlags(game, e) {
   const room = game.room;
   if (!room) return 0;
@@ -14233,6 +14262,7 @@ __exports["moveEntity"] = moveEntity;
 __exports["canOccupy"] = canOccupy;
 __exports["overHole"] = overHole;
 __exports["dropIntoHole"] = dropIntoHole;
+__exports["grassPicture"] = grassPicture;
 __exports["groundFlags"] = groundFlags;
 __exports["touchingDeep"] = touchingDeep;
 __exports["beltUnder"] = beltUnder;
@@ -21239,7 +21269,7 @@ __define("game/player.js", function (__exports, __require) {
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
-const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect } = __require("game/entity.js");
+const { Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect } = __require("game/entity.js");
 
 const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
@@ -22732,8 +22762,7 @@ class Player extends Entity {
     this._strandT = (this._strandT || 0) + 1;
     if (this._strandT < STRANDWALKER_EVERY) return;
     this._strandT = 0;
-    p.hearts = Math.min(p.maxHearts, p.hearts + 1);
-    game.audio.sfx('heart');
+    p.hearts = Math.min(p.maxHearts, p.hearts + 1);   // the bar chimes each whole heart
   }
 
   // ---------------------------------------------------------------- damage
@@ -23120,6 +23149,10 @@ class Player extends Entity {
     if (this.inShallow && this.z <= 1) {
       const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
       sprites.draw(ctx, 'fx_puddle' + k, ox + this.x - 8, oy + this.y - 8);
+    } else if (this.z <= 1 && (groundFlags(game, this) & F.TALLGRASS)) {
+      // THE GRASS AT HIS FEET in tall grass (S222, @walkingInGrass): it
+      // sways as he walks, by where he stands rather than by the clock.
+      sprites.draw(ctx, 'fx_grass' + grassPicture(this.x + 8, this.y + 8), ox + this.x - 8, oy + this.y - 8);
     }
   }
 }
@@ -24178,7 +24211,8 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 // The smoke puffs, the fall into a hole, the bomb blast, the leaves, splash,
 // shards and clink, the moving platform and the ice chunk, cut from Oracle of
 // Seasons' own graphics; since S218 the dust and the twinkle; since S219 the
-// shadow, the splash at the feet, the bubble and the ember's fire.
+// shadow, the splash at the feet, the bubble and the ember's fire; since S222
+// the grass at the feet.
 //
 // Generated by tools/rip-effects.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
@@ -24190,8 +24224,8 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 // INTERAC_D8_GRABBABLE_ICE, INTERAC_STATUE_EYEBALL (S211, with statueEyeball.s),
 // INTERAC_GRASSDEBRIS, INTERAC_SPLASH, INTERAC_ROCKDEBRIS and INTERAC_CLINK (S217),
 // INTERAC_FALLDOWNHOLE's dust and INTERAC_SPARKLE (S218, the sparkle from
-// spr_triforce_sparkle, commit 7584d87), the shadow and the splash at the feet
-// (terrainEffects.s), INTERAC_BUBBLE and the burning ember seed (S219),
+// spr_triforce_sparkle, commit 7584d87), the shadow, the splash and (S222)
+// the green grass at the feet (terrainEffects.s), INTERAC_BUBBLE and the burning ember seed (S219),
 // PART_ENEMY_DESTROYED and the exploding ITEM_BOMB, and the standard sprite
 // palettes. Credit: the oracles-disasm project and its contributors; the
 // artwork is Nintendo's and Capcom's. This is fan-work art only.
@@ -24201,7 +24235,8 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 // its own colours: draw sites must NOT pass a palette. How long each is held
 // is in src/data/feel.js (PUFF_HOLDS, HOLE_FALL_HOLDS, KILL_PUFF_HOLDS,
 // EXPLOSION_HOLDS, LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS,
-// DUST_HOLDS, TWINKLE_HOLDS, PUDDLE_HOLD, EMBER_HOLDS); the
+// DUST_HOLDS, TWINKLE_HOLDS, PUDDLE_HOLD, EMBER_HOLDS; the grass is not
+// timed, it sways with where its wearer stands); the
 // frame order those holds walk is listed here.
 //
 // Built from:
@@ -24218,6 +24253,7 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 //   fx_twinkleR*: frames 0 1 2 3 (held 9 9 9 8), tile base $0a
 //   fx_shadow*: frames 0 (held 1), tile base $00
 //   fx_puddle*: frames 0 1 2 3 (held 8 8 8 8), tile base $00
+//   fx_grass*: frames 0 1 (held 4 4), tile base $00
 //   fx_bubble*: frames 0 (held 127), tile base $16
 //   fx_ember*: frames 0 1 2 (held 2 2 2), tile base $06
 //   o_float*: frames 0 (held 127), tile base $08
@@ -26193,6 +26229,74 @@ const EFFECT_ART = {
     ................................
     ................................` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_grass0: { pal: 'fx_grass0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    .........33....33...............
+    ..........33....33..............
+    ..........333...333...3.........
+    ...........33..3333..33.........
+    ...........33.33333.333.........
+    ...........33.33.33.33..........
+    ............3.33..3.33..........
+    ............3.3...3.3...........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_grass1: { pal: 'fx_grass1', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ...............33....33.........
+    ..............33....33..........
+    .........3...333...333..........
+    .........33..3333..33...........
+    .........333.33333.33...........
+    ..........33.33.33.33...........
+    ..........33.3..33.3............
+    ...........3.3...3.3............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   fx_bubble0: { pal: 'fx_bubble0', art: `
     ................................
     ................................
@@ -26487,6 +26591,8 @@ const EFFECT_PALETTES = {
   fx_puddle1: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   fx_puddle2: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   fx_puddle3: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
+  fx_grass0: ['#000000', '#000000', '#000000', '#10ad42'],
+  fx_grass1: ['#000000', '#000000', '#000000', '#10ad42'],
   fx_bubble0: ['#1884ff', '#1884ff', '#1884ff', '#000000'],
   fx_ember0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   fx_ember1: ['#ffb531', '#de0000', '#de0000', '#000000'],
@@ -26935,11 +27041,17 @@ function themed(base, game) {
 // the cartridge's art. The same sprite is drawn on the floor, rising from a
 // chest and held over Link's head, so none of the three can look different.
 const PICKUPS = {
-  rupee1: { sprite: 'p_rupee', pal: null, worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); g.audio.sfx('rupee'); } },
-  rupee5: { sprite: 'p_rupee5', pal: null, worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); g.audio.sfx('rupee'); } },
-  rupee20: { sprite: 'p_rupee20', pal: null, worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
-  rupee100: { sprite: 'p_rupee100', pal: null, worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
-  heart: { sprite: 'p_heart', pal: null, get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
+  rupee1: { sprite: 'p_rupee', pal: null, worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); } },
+  rupee5: { sprite: 'p_rupee5', pal: null, worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); } },
+  rupee20: { sprite: 'p_rupee20', pal: null, worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); } },
+  rupee100: { sprite: 'p_rupee100', pal: null, worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); } },
+  // A rupee or a heart makes no sound of its own (treasureAndDrops.s): the
+  // status bar ticks and chimes as it counts (Game.updateStatusCounters), and
+  // a heart found at full health chimes once.
+  heart: { sprite: 'p_heart', pal: null, get(g) {
+    if (g.progress.hearts >= g.progress.maxHearts) g.audio.sfx('heart');
+    heal(g.progress, HEART_UNITS);
+  } },
   // EXTRACTED, and it flaps. Both frames come off the Oracle fairy sheet
   // (tools/rip-fairies.py); `pal: null` because each binds its own palette and
   // passing one would override the colours taken off the cartridge.
@@ -27846,8 +27958,7 @@ class ShopItem extends Entity {
     }
     game.ask(`${this.displayName} — ${price} Rupees.\nBuy it?`, ['Yes', 'No'], (pick) => {
       if (pick !== 0) return;
-      addRupees(p, -price);
-      game.audio.sfx('rupee');
+      addRupees(p, -price);   // the status bar ticks them out
       if (this.item) {
         giveItem(p, this.item, this.level);
         game.autoEquip(this.item);
@@ -29522,7 +29633,7 @@ function drawHud(ctx, game) {
   drawSlot(ctx, L.a, p.equipA, p, L.aLetter ? 'A' : null);
   drawTideGauge(ctx, game, L.tide);
   drawMoney(ctx, game, L.money);
-  drawHearts(ctx, p, L.hearts, L.perRow);
+  drawHearts(ctx, p, shownOf(game), L.hearts, L.perRow);
 
   sprites.setTint(tint, tintKey);
 }
@@ -29572,12 +29683,19 @@ function drawItemExtra(ctx, id, p, x, y) {
   }
 }
 
-function drawHearts(ctx, p, x0, perRow) {
+/** The money and health the bar shows: the counted-to numbers
+ *  (Game.updateStatusCounters), or the true ones before the first count. */
+function shownOf(game) {
+  const s = game.shown, p = game.progress;
+  return s && s.of === p ? s : p;
+}
+
+function drawHearts(ctx, p, shown, x0, perRow) {
   const total = Math.ceil(p.maxHearts / HEART_UNITS);
   for (let i = 0; i < total; i++) {
     const x = x0 + (i % perRow) * 8;
     const y = Math.floor(i / perRow) * 8;
-    const filled = Math.max(0, Math.min(HEART_UNITS, p.hearts - i * HEART_UNITS));
+    const filled = Math.max(0, Math.min(HEART_UNITS, shown.hearts - i * HEART_UNITS));
     sprites.draw(ctx, 'hud_heart' + filled, x, y);
   }
 }
@@ -29603,7 +29721,7 @@ function drawMoney(ctx, game, x) {
       sprites.draw(ctx, 'hud_d' + Math.min(9, p.essences.length), x + 16, 0);
     }
   }
-  const s = String(Math.min(999, p.rupees)).padStart(3, '0');
+  const s = String(Math.min(999, shownOf(game).rupees)).padStart(3, '0');
   for (let i = 0; i < 3; i++) sprites.draw(ctx, 'hud_d' + s[i], x + i * 8, EXTRA_Y);
 }
 
@@ -40245,7 +40363,7 @@ const { Credits } = __require("game/credits.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -41737,8 +41855,7 @@ class Game {
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else if (chest.rupees) {
-      addRupees(p, chest.rupees);
-      this.audio.sfx('rupeeBig');
+      addRupees(p, chest.rupees);   // the status bar ticks them in
       this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
         `You got ${chest.rupees} Rupees!`);
     } else {
@@ -42316,6 +42433,7 @@ class Game {
   respawn({ save = true } = {}) {
     const p = this.progress;
     p.hearts = p.maxHearts;
+    this.shown = null;
     const s = p.respawn;
     this.mode = 'play';
     this.deathKnock = 0;
@@ -42377,6 +42495,30 @@ class Game {
 
   // ------------------------------------------------------------------ frame
 
+  /**
+   * WHAT THE STATUS BAR SHOWS (S222): Seasons' bar does not jump to Link's
+   * money and health, it counts to them (bank2.s updateStatusBar_body): the
+   * money a rupee at a time with SND_RUPEE each step, the hearts a quarter
+   * every HEART_FILL_FRAMES with SND_GAINHEART at each whole heart, and down a
+   * quarter a frame. Drawing only: nothing in play reads `shown`. A new run,
+   * a load or a respawn shows the true numbers at once, as a file loaded does.
+   */
+  updateStatusCounters() {
+    const p = this.progress;
+    if (!p || this.mode === 'title') return;
+    const s = this.shown;
+    if (!s || s.of !== p) { this.shown = { of: p, rupees: p.rupees, hearts: p.hearts }; return; }
+    if (s.rupees !== p.rupees && this.frame % RUPEE_ROLL_FRAMES === 0) {
+      s.rupees += s.rupees < p.rupees ? 1 : -1;
+      this.audio.sfx('rupee');
+    }
+    if (s.hearts > p.hearts) s.hearts--;
+    else if (s.hearts < p.hearts && this.frame % HEART_FILL_FRAMES === 0) {
+      s.hearts++;
+      if (s.hearts % HEART_UNITS === 0) this.audio.sfx('heart');
+    }
+  }
+
   update() {
     this.frame++;
     this.input.update();
@@ -42385,6 +42527,7 @@ class Game {
     this.progress.frames++;
     this.updateTimers();
     this.updateFade();
+    this.updateStatusCounters();
     if (this.shakeTime > 0) this.shakeTime--;
 
     const extra = this.input.takeExtra();
@@ -73827,7 +73970,6 @@ const SFX = {
 
   // --- pickups & UI -------------------------------------------------------
   rupee: { seasons: 'rupee' },
-  rupeeBig: { seasons: 'rupee' },
   heart: { seasons: 'gainHeart' },
   fairy: { seasons: 'unknown7' },
   key: { seasons: 'getSeed' },

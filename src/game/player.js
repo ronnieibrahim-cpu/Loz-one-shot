@@ -12,7 +12,7 @@
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
 import {
-  Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
+  Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
   enemyHurtRect,
 } from './entity.js';
 export { enemyHurtRect };
@@ -1534,8 +1534,7 @@ export class Player extends Entity {
     this._strandT = (this._strandT || 0) + 1;
     if (this._strandT < STRANDWALKER_EVERY) return;
     this._strandT = 0;
-    p.hearts = Math.min(p.maxHearts, p.hearts + 1);
-    game.audio.sfx('heart');
+    p.hearts = Math.min(p.maxHearts, p.hearts + 1);   // the bar chimes each whole heart
   }
 
   // ---------------------------------------------------------------- damage
@@ -1922,6 +1921,10 @@ export class Player extends Entity {
     if (this.inShallow && this.z <= 1) {
       const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
       sprites.draw(ctx, 'fx_puddle' + k, ox + this.x - 8, oy + this.y - 8);
+    } else if (this.z <= 1 && (groundFlags(game, this) & F.TALLGRASS)) {
+      // THE GRASS AT HIS FEET in tall grass (S222, @walkingInGrass): it
+      // sways as he walks, by where he stands rather than by the clock.
+      sprites.draw(ctx, 'fx_grass' + grassPicture(this.x + 8, this.y + 8), ox + this.x - 8, oy + this.y - 8);
     }
   }
 }

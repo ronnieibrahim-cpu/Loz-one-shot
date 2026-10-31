@@ -77,7 +77,7 @@ import {
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
   WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS,
   COILBONE_INVULN_FRAMES,
-  BRIDGE_PLANK_FRAMES,
+  BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES,
 } from '../data/feel.js';
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
@@ -1570,8 +1570,7 @@ export class Game {
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else if (chest.rupees) {
-      addRupees(p, chest.rupees);
-      this.audio.sfx('rupeeBig');
+      addRupees(p, chest.rupees);   // the status bar ticks them in
       this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
         `You got ${chest.rupees} Rupees!`);
     } else {
@@ -2149,6 +2148,7 @@ export class Game {
   respawn({ save = true } = {}) {
     const p = this.progress;
     p.hearts = p.maxHearts;
+    this.shown = null;
     const s = p.respawn;
     this.mode = 'play';
     this.deathKnock = 0;
@@ -2210,6 +2210,30 @@ export class Game {
 
   // ------------------------------------------------------------------ frame
 
+  /**
+   * WHAT THE STATUS BAR SHOWS (S222): Seasons' bar does not jump to Link's
+   * money and health, it counts to them (bank2.s updateStatusBar_body): the
+   * money a rupee at a time with SND_RUPEE each step, the hearts a quarter
+   * every HEART_FILL_FRAMES with SND_GAINHEART at each whole heart, and down a
+   * quarter a frame. Drawing only: nothing in play reads `shown`. A new run,
+   * a load or a respawn shows the true numbers at once, as a file loaded does.
+   */
+  updateStatusCounters() {
+    const p = this.progress;
+    if (!p || this.mode === 'title') return;
+    const s = this.shown;
+    if (!s || s.of !== p) { this.shown = { of: p, rupees: p.rupees, hearts: p.hearts }; return; }
+    if (s.rupees !== p.rupees && this.frame % RUPEE_ROLL_FRAMES === 0) {
+      s.rupees += s.rupees < p.rupees ? 1 : -1;
+      this.audio.sfx('rupee');
+    }
+    if (s.hearts > p.hearts) s.hearts--;
+    else if (s.hearts < p.hearts && this.frame % HEART_FILL_FRAMES === 0) {
+      s.hearts++;
+      if (s.hearts % HEART_UNITS === 0) this.audio.sfx('heart');
+    }
+  }
+
   update() {
     this.frame++;
     this.input.update();
@@ -2218,6 +2242,7 @@ export class Game {
     this.progress.frames++;
     this.updateTimers();
     this.updateFade();
+    this.updateStatusCounters();
     if (this.shakeTime > 0) this.shakeTime--;
 
     const extra = this.input.takeExtra();

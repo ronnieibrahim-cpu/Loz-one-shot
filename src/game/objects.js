@@ -61,11 +61,17 @@ function themed(base, game) {
 // the cartridge's art. The same sprite is drawn on the floor, rising from a
 // chest and held over Link's head, so none of the three can look different.
 export const PICKUPS = {
-  rupee1: { sprite: 'p_rupee', pal: null, worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); g.audio.sfx('rupee'); } },
-  rupee5: { sprite: 'p_rupee5', pal: null, worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); g.audio.sfx('rupee'); } },
-  rupee20: { sprite: 'p_rupee20', pal: null, worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
-  rupee100: { sprite: 'p_rupee100', pal: null, worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
-  heart: { sprite: 'p_heart', pal: null, get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
+  rupee1: { sprite: 'p_rupee', pal: null, worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); } },
+  rupee5: { sprite: 'p_rupee5', pal: null, worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); } },
+  rupee20: { sprite: 'p_rupee20', pal: null, worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); } },
+  rupee100: { sprite: 'p_rupee100', pal: null, worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); } },
+  // A rupee or a heart makes no sound of its own (treasureAndDrops.s): the
+  // status bar ticks and chimes as it counts (Game.updateStatusCounters), and
+  // a heart found at full health chimes once.
+  heart: { sprite: 'p_heart', pal: null, get(g) {
+    if (g.progress.hearts >= g.progress.maxHearts) g.audio.sfx('heart');
+    heal(g.progress, HEART_UNITS);
+  } },
   // EXTRACTED, and it flaps. Both frames come off the Oracle fairy sheet
   // (tools/rip-fairies.py); `pal: null` because each binds its own palette and
   // passing one would override the colours taken off the cartridge.
@@ -972,8 +978,7 @@ export class ShopItem extends Entity {
     }
     game.ask(`${this.displayName} — ${price} Rupees.\nBuy it?`, ['Yes', 'No'], (pick) => {
       if (pick !== 0) return;
-      addRupees(p, -price);
-      game.audio.sfx('rupee');
+      addRupees(p, -price);   // the status bar ticks them out
       if (this.item) {
         giveItem(p, this.item, this.level);
         game.autoEquip(this.item);

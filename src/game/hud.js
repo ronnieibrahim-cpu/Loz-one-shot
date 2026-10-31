@@ -79,7 +79,7 @@ export function drawHud(ctx, game) {
   drawSlot(ctx, L.a, p.equipA, p, L.aLetter ? 'A' : null);
   drawTideGauge(ctx, game, L.tide);
   drawMoney(ctx, game, L.money);
-  drawHearts(ctx, p, L.hearts, L.perRow);
+  drawHearts(ctx, p, shownOf(game), L.hearts, L.perRow);
 
   sprites.setTint(tint, tintKey);
 }
@@ -129,12 +129,19 @@ export function drawItemExtra(ctx, id, p, x, y) {
   }
 }
 
-function drawHearts(ctx, p, x0, perRow) {
+/** The money and health the bar shows: the counted-to numbers
+ *  (Game.updateStatusCounters), or the true ones before the first count. */
+function shownOf(game) {
+  const s = game.shown, p = game.progress;
+  return s && s.of === p ? s : p;
+}
+
+function drawHearts(ctx, p, shown, x0, perRow) {
   const total = Math.ceil(p.maxHearts / HEART_UNITS);
   for (let i = 0; i < total; i++) {
     const x = x0 + (i % perRow) * 8;
     const y = Math.floor(i / perRow) * 8;
-    const filled = Math.max(0, Math.min(HEART_UNITS, p.hearts - i * HEART_UNITS));
+    const filled = Math.max(0, Math.min(HEART_UNITS, shown.hearts - i * HEART_UNITS));
     sprites.draw(ctx, 'hud_heart' + filled, x, y);
   }
 }
@@ -160,7 +167,7 @@ function drawMoney(ctx, game, x) {
       sprites.draw(ctx, 'hud_d' + Math.min(9, p.essences.length), x + 16, 0);
     }
   }
-  const s = String(Math.min(999, p.rupees)).padStart(3, '0');
+  const s = String(Math.min(999, shownOf(game).rupees)).padStart(3, '0');
   for (let i = 0; i < 3; i++) sprites.draw(ctx, 'hud_d' + s[i], x + i * 8, EXTRA_Y);
 }
 

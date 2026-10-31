@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A tile flag can be set for years and read by nothing (S222).**
+  F.TALLGRASS said "hides the player's feet" and sat on the tall grass
+  tiles, but no code ever asked for it, so Link walked through Tidewatch's
+  grass as through paint. Before trusting a flag's comment, grep for a
+  READER, not just the definition.
+- **In Seasons a pickup is silent; the status bar makes the noise (S222).**
+  treasureAndDrops.s adds rupees and health without a sound (one chime only
+  for a heart at full health); bank2.s updateStatusBar_body ticks SND_RUPEE
+  per rupee counted and SND_GAINHEART per whole heart filled. Anything new
+  that pays out money or health should not play its own sound.
+
 - **A cutscene step can run with no Link (S221).** check-credits plays the
   ending on its own, before any game is started, so `player` is null; the
   ending's new `present` crashed in `holdUp`. Anything a scene calls must

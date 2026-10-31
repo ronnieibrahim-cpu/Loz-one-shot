@@ -44,7 +44,9 @@ export const REQUIRED_SPRITES = {
     ...seq('fx_dust', 3), ...seq('fx_twinkle', 4), ...seq('fx_twinkleR', 4),
     // S219: the shadow and the splash at a wader's feet (terrainEffects.s),
     // the bubble (INTERAC_BUBBLE) and an ember seed's fire.
-    'fx_shadow0', ...seq('fx_puddle', 4), 'fx_bubble0', ...seq('fx_ember', 3)],
+    'fx_shadow0', ...seq('fx_puddle', 4), 'fx_bubble0', ...seq('fx_ember', 3),
+    // S222: the grass at the feet in tall grass (terrainEffects.s).
+    ...seq('fx_grass', 2)],
   fxHuge: [...seq('fx_leaves', 8)],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud

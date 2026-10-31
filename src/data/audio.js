@@ -147,7 +147,6 @@ const SFX = {
 
   // --- pickups & UI -------------------------------------------------------
   rupee: { seasons: 'rupee' },
-  rupeeBig: { seasons: 'rupee' },
   heart: { seasons: 'gainHeart' },
   fairy: { seasons: 'unknown7' },
   key: { seasons: 'getSeed' },
