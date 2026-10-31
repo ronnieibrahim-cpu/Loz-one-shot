@@ -2443,6 +2443,24 @@ const KEY_RISE_GRAVITY = 0x28 / 256;
  *  overworldKeySprite.s @state1, counter1 = $3c, counted down by @state2. */
 const KEY_HOLD_FRAMES = 60;
 
+/** f — how long each height of a dungeon door's key is held, as the door
+ *  opens to a Small Key or the Boss Key (S223): first low over the door, then
+ *  higher, then gone. derived from the cartridge: oracles-disasm object_code/
+ *  common/interactions/dungeonKeySprite.s, @state0 counter1 = $08, @state1
+ *  counter1 = $14. */
+const KEY_DOOR_HOLDS = [8, 20];
+
+/** px — how high over the middle of its door that key is drawn, for each of
+ *  KEY_DOOR_HOLDS. derived from the cartridge: dungeonKeySprite.s, zh = $fc
+ *  in @state0 and $f8 in @state1. */
+const KEY_DOOR_HEIGHTS = [4, 8];
+
+/** f — how long a key door shows half open (the shut door slid half a tile
+ *  into the wall) before it is fully open. derived from the cartridge:
+ *  oracles-disasm object_code/common/interactions/doorController.s,
+ *  @interleaveDoorTile counter1 = $06, counted by @state2Substate1. */
+const DOOR_SLIDE_FRAMES = 6;
+
 /** f — how long the ground rumbles as a dungeon door opens to its key.
  *  guessed: Seasons' opening scenes are per door (the Gnarled Root's rises
  *  out of the ground); ours is one shake for every door. */
@@ -4351,6 +4369,9 @@ __exports["PUSH_DELAY_FRAMES"] = PUSH_DELAY_FRAMES;
 __exports["KEY_RISE_SPEED"] = KEY_RISE_SPEED;
 __exports["KEY_RISE_GRAVITY"] = KEY_RISE_GRAVITY;
 __exports["KEY_HOLD_FRAMES"] = KEY_HOLD_FRAMES;
+__exports["KEY_DOOR_HOLDS"] = KEY_DOOR_HOLDS;
+__exports["KEY_DOOR_HEIGHTS"] = KEY_DOOR_HEIGHTS;
+__exports["DOOR_SLIDE_FRAMES"] = DOOR_SLIDE_FRAMES;
 __exports["KEYHOLE_OPEN_FRAMES"] = KEYHOLE_OPEN_FRAMES;
 __exports["BLOCK_SLIDE_SPEED"] = BLOCK_SLIDE_SPEED;
 __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
@@ -19256,7 +19277,7 @@ const { Entity, defineEntity } = __require("game/entity.js");
 const { sp } = __require("core/fixed.js");
 const { noise2 } = __require("core/rng.js");
 const { sprites } = __require("gfx/art.js");
-const { EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER, HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY, LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS, DUST_HOLDS, TWINKLE_HOLDS, EMBER_HOLDS, RISE_BUBBLE_SPEED, RISE_BUBBLE_LIFE, RISE_BUBBLE_FLICKER_FRAMES, RISE_BUBBLE_TURN_EVERY, RISE_BUBBLE_TURNS_FIRST, RISE_BUBBLE_TURNS } = __require("data/feel.js");
+const { EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER, HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY, LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS, DUST_HOLDS, TWINKLE_HOLDS, EMBER_HOLDS, RISE_BUBBLE_SPEED, RISE_BUBBLE_LIFE, RISE_BUBBLE_FLICKER_FRAMES, RISE_BUBBLE_TURN_EVERY, RISE_BUBBLE_TURNS_FIRST, RISE_BUBBLE_TURNS, KEY_DOOR_HOLDS, KEY_DOOR_HEIGHTS } = __require("data/feel.js");
 
 const TILE_SP = sp(16);
 
@@ -19305,6 +19326,16 @@ function heldStep(holds, f) {
   let t = 0;
   for (let i = 0; i < holds.length; i++) { t += holds[i]; if (f < t) return i; }
   return holds.length - 1;
+}
+
+/**
+ * A key door's key (S223, INTERAC_DUNGEON_KEY_SPRITE): held KEY_DOOR_HEIGHTS
+ * over the middle of its door for each of KEY_DOOR_HOLDS. Spawned already at
+ * the first height, so the frame before its first update draws it there too.
+ */
+function keyDoorRise(e) {
+  if (e.baseFy == null) e.baseFy = e.fy + sp(KEY_DOOR_HEIGHTS[0]);
+  e.fy = e.baseFy - sp(KEY_DOOR_HEIGHTS[heldStep(KEY_DOOR_HOLDS, e.frame - 1)]);
 }
 
 class Effect extends Entity {
@@ -19400,6 +19431,11 @@ const EFFECTS = {
   // An ember seed's fire (S219, item20's loop): what the Kilnshell's strike
   // burns with.
   flame: { frames: ['fx_ember0', 'fx_ember1', 'fx_ember2'], holds: EMBER_HOLDS, loop: true, own: true, w: 32, h: 32, centre: true },
+  // A key door's key (S223, dungeonKeySprite.s): the Small Key or the Boss
+  // Key over the door it opens, low then higher, then gone. Spawn it at the
+  // door tile, KEY_DOOR_HEIGHTS[0] up.
+  doorKey: { frames: ['p_key', 'p_key'], holds: KEY_DOOR_HOLDS, own: true, depth: 60, update: keyDoorRise },
+  doorBossKey: { frames: ['p_bosskey', 'p_bosskey'], holds: KEY_DOOR_HOLDS, own: true, depth: 60, update: keyDoorRise },
   // INTERAC_BUBBLE (S219): one picture that drifts up, wobbling, and
   // flickers out. Spawn it at the swimmer's own 16x16 spot.
   bubble: {
@@ -27069,7 +27105,7 @@ const PICKUPS = {
   //
   // S155: it is now the cartridge's own DROP, `p_bomb` (tools/rip-treasures.py,
   // item drop 4), which is what Seasons draws on the floor.
-  bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
+  bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('gotAmmo'); } },
   // THE QUARRYMAN'S BAG (S195): a bigger bomb bag, handed over in a cave in
   // the Cliffs of Kell. Not an inventory item — it raises the count the bombs
   // already in `progress.items` can reach, and fills it.
@@ -27119,12 +27155,19 @@ const PICKUPS = {
     get(g) {
       if (g.progress.maxReefseeds <= 0) { g.audio.sfx('deny'); return; }
       addReefseeds(g.progress, 3, g.reefseedCap());
-      g.audio.sfx('rupee');
+      g.audio.sfx('gotAmmo');
     },
   },
   key: {
     sprite: 'p_key', pal: null, persistent: true,
-    get(g) { addKey(g.progress, g.mapId); g.audio.sfx('key'); g.say('You found a Small Key!'); },
+    // Seasons' TREASURE_SMALL_KEY (treasureObjectData.s): one that puffs in
+    // or falls in is taken with the item jingle (SND_GETITEM) and NO text;
+    // only a chest's ($38) says "You found a Small Key!" (S223).
+    get(g, e) {
+      addKey(g.progress, g.mapId);
+      g.audio.jingle('itemGet');
+      if (e && e.fromChest) g.say('You found a Small Key!');
+    },
   },
   bossKey: {
     sprite: 'p_bosskey', pal: null, persistent: true,
@@ -27166,7 +27209,7 @@ const PICKUPS = {
     get(g) {
       if (g.progress.maxBottles <= 0) { g.audio.sfx('deny'); return; }
       const got = addBottles(g.progress, 1);
-      g.audio.sfx(got ? 'rupee' : 'deny');
+      g.audio.sfx(got ? 'gotAmmo' : 'deny');
       if (!got) g.say('Your case is full.');
     },
   },
@@ -27252,6 +27295,8 @@ class Pickup extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
     this.kind = o.kind || 'rupee1';
+    // Popped out of a chest (Game.openChest), which a Small Key announces.
+    this.fromChest = !!o.fromChest;
     const spec = PICKUPS[this.kind] || PICKUPS.rupee1;
     this.spec = spec;
     this.w = 16; this.h = 16;
@@ -40343,7 +40388,7 @@ const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js
 const { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } = __require("world/maps.js");
 const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
-const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } = __require("game/entity.js");
+const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy, DIR_VEC } = __require("game/entity.js");
 const { spawnEffectAt, Explosion, EFFECTS } = __require("game/effects.js");
 const { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots, IceBlock } = __require("game/objects.js");
 const { CUBE_TOP } = __require("data/sprites-cube.js");
@@ -40363,7 +40408,7 @@ const { Credits } = __require("game/credits.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -40544,6 +40589,10 @@ class Game {
     // stake room for the rest of the session. A stake dropped from the Canopy
     // is written into the save (`plantFromAbove`) and `restoreRoomState`
     // puts it back on the way in.
+    // A key door half slid open belongs to the room it is in; and Seasons
+    // tells you a door is locked once per screen (wInformativeTextsShown).
+    this.doorSlides = null;
+    this._lockTold = null;
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // The eye loop's count lives only while Link goes round it (S211): any
@@ -41213,8 +41262,88 @@ class Game {
         }
       }
     }
-    // Leaning on a keyhole is how Seasons turns a key in it.
+    // Leaning on a keyhole is how Seasons turns a key in it, and on a key
+    // door how it opens one.
+    const name = this.room && this.room.inBounds(tx, ty) ? this.room.baseName(tx, ty) : null;
+    if (name === 'dDoorLocked' || name === 'dDoorBoss') return this.tryKeyDoor(tx, ty, true);
     return this.tryKeyhole(tx, ty);
+  }
+
+  /**
+   * A KEY DOOR, Oracle of Seasons' way (S223; code/interactableTiles.s
+   * nextToKeyDoor). Lean on it PUSH_DELAY_FRAMES holding the key — or press
+   * A at it, which Seasons does not do and we keep so nothing feels dead —
+   * and the key is spent, the key appears over the door
+   * (dungeonKeySprite.s, the `doorKey` effect, SND_GETSEED) and the door
+   * slides into its wall: half open for DOOR_SLIDE_FRAMES, then open, with
+   * SND_DOORCLOSE at each (doorController.s @state2). It is passable at once,
+   * as the cartridge writes the open tile into the layout on the first
+   * frame. No text box. Without the key, leaning says so once a screen; A
+   * says so every time, as it always did.
+   */
+  tryKeyDoor(tx, ty, leaning) {
+    const room = this.room;
+    const boss = room.baseName(tx, ty) === 'dDoorBoss';
+    const have = boss ? !!this.progress.bossKeys[this.mapId] : keyCount(this.progress, this.mapId) > 0;
+    if (!have) {
+      if (leaning && this._lockTold === room) return true;
+      this._lockTold = room;
+      this.audio.sfx('deny');
+      this.say(boss ? 'A great lock seals this door.' : 'It is locked. You need a Small Key.');
+      return true;
+    }
+    if (!boss) useKey(this.progress, this.mapId);
+    // Into the wall: away from Link, who is facing it.
+    this.slideDoorOpen(tx, ty, this.player ? DIR_VEC[this.player.dir] : null);
+    this.spawnEffect(boss ? 'doorBossKey' : 'doorKey', tx * TILE, ty * TILE - KEY_DOOR_HEIGHTS[0]);
+    this.audio.sfx('key');
+    return true;
+  }
+
+  /**
+   * Open a door in THIS room the way Seasons' door controller does
+   * (doorController.s @state2): passable at once, drawn half slid into its
+   * wall for DOOR_SLIDE_FRAMES, SND_DOORCLOSE as it starts and as it ends.
+   * `dir` is the way it slides; by default a ring door goes into its own
+   * wall and any other up.
+   */
+  slideDoorOpen(tx, ty, dir) {
+    const room = this.room;
+    const d = room.tile(tx, ty, this.tide);
+    const art = room.artAt(d, tx, ty, this.tide);
+    const pal = room.palFor(d, art);
+    const [ux, uy] = dir || (ty === room.th - 1 ? [0, 1] : tx === 0 ? [-1, 0]
+      : tx === room.tw - 1 ? [1, 0] : [0, -1]);
+    this.openDoorAt(tx, ty);
+    this.doorSlides = (this.doorSlides || []).filter(s => s.room === room && !(s.tx === tx && s.ty === ty));
+    this.doorSlides.push({ room, tx, ty, art, pal, ux, uy, t: DOOR_SLIDE_FRAMES });
+    this.audio.sfx('doorSlide');
+  }
+
+  /** Count down each half-open door; it ends fully open, with its sound. */
+  updateDoorSlide() {
+    if (!this.doorSlides || !this.doorSlides.length) return;
+    let done = false;
+    this.doorSlides = this.doorSlides.filter(s => {
+      if (s.room !== this.room) return false;
+      if (--s.t > 0) return true;
+      done = true;
+      return false;
+    });
+    if (done) this.audio.sfx('doorSlide');
+  }
+
+  /** The half-open doors: each shut door slid half a tile into its wall. */
+  drawDoorSlide(ctx, ox, oy) {
+    if (!this.doorSlides) return;
+    for (const s of this.doorSlides) {
+      if (s.room !== this.room) continue;
+      const x = ox + s.tx * TILE, y = oy + s.ty * TILE;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, TILE, TILE); ctx.clip();
+      tileSheet.draw(ctx, s.art, x + s.ux * TILE / 2, y + s.uy * TILE / 2, { pal: s.pal });
+      ctx.restore();
+    }
   }
 
   /**
@@ -41263,27 +41392,7 @@ class Game {
     if (this.tryKeyhole(tx, ty)) return true;
     const name = room.baseName(tx, ty);
     const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
-    if (name === 'dDoorLocked') {
-      if (useKey(this.progress, this.mapId)) {
-        this.openDoorAt(tx, ty);
-        this.audio.sfx('unlock');
-        this.say('The lock falls away.');
-      } else {
-        this.audio.sfx('deny');
-        this.say('It is locked. You need a Small Key.');
-      }
-      return true;
-    }
-    if (name === 'dDoorBoss') {
-      if (this.progress.bossKeys[this.mapId]) {
-        this.openDoorAt(tx, ty);
-        this.audio.sfx('unlock');
-      } else {
-        this.audio.sfx('deny');
-        this.say('A great lock seals this door.');
-      }
-      return true;
-    }
+    if (name === 'dDoorLocked' || name === 'dDoorBoss') return this.tryKeyDoor(tx, ty, false);
     // A story gate the save has not earned yet. `applyStoryGates` would have
     // opened it on entry if it had, so reaching here means it is still shut —
     // and a tile that simply ignores you reads as scenery, not as a lock.
@@ -41763,7 +41872,13 @@ class Game {
     if (!reward) return;
     const room = this.room;
     if (reward.openDoors) {
-      for (const [tx, ty] of reward.openDoors) this.openDoorAt(tx, ty);
+      // Seen (not a silent re-pay on load), they slide open as Seasons'
+      // shutters do; otherwise they are simply open.
+      for (const [tx, ty] of reward.openDoors) {
+        const d = room.inBounds(tx, ty) && getTileDef(room.baseName(tx, ty));
+        if (!silent && d && (d.flags & F.DOOR) && d.name !== 'dDoorOpen') this.slideDoorOpen(tx, ty);
+        else this.openDoorAt(tx, ty);
+      }
     }
     // A DOOR IN ANOTHER ROOM (S182, the Bogwater Sanctum's Sump): a plate on
     // the cellar's bottom opens a door upstairs — Ages' switch here, gate
@@ -41853,7 +41968,7 @@ class Game {
       this.audio.jingle('itemGet');
       this.chestShow(chest, { sprite: spec.sprite, pal: spec.pal }, spec.line);
     } else if (chest.pickup) {
-      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
+      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10, fromChest: true });
     } else if (chest.rupees) {
       addRupees(p, chest.rupees);   // the status bar ticks them in
       this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
@@ -42656,6 +42771,7 @@ class Game {
     this.camera.update(this.room, this.player);
 
     this.updateBridge();
+    this.updateDoorSlide();
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
@@ -43136,6 +43252,7 @@ class Game {
     ctx.drawImage(base, ox, oy);
     // `renderAt` is the whole room, water and all, in one still.
     if (ghost == null) room.drawAnim(ctx, ox, oy, this.tide, this.frame);
+    this.drawDoorSlide(ctx, ox, oy);
 
     const list = this.entities.slice();
     if (this.player && !list.includes(this.player)) list.push(this.player);
@@ -73958,6 +74075,9 @@ const SFX = {
   // A held bridge's plank going down or up (S211): SND_DOORCLOSE, which
   // Ages' extendableBridge.s plays for every tile it sets.
   plank: { seasons: 'doorClose' },
+  // A key door sliding into its wall (S223): SND_DOORCLOSE, which
+  // doorController.s plays as it goes half open and again fully open.
+  doorSlide: { seasons: 'doorClose' },
 
   // The opening's storm (S168): the cartridge's own lightning crack, the
   // wave its ending sea plays, and its wind.
@@ -73973,7 +74093,10 @@ const SFX = {
   heart: { seasons: 'gainHeart' },
   fairy: { seasons: 'unknown7' },
   key: { seasons: 'getSeed' },
-  unlock: { seasons: 'openChest' },
+  // Bombs, seeds and a bottle's refill picked up (S223): Seasons'
+  // treasureCollectionBehaviours gives TREASURE_BOMBS and every seed
+  // SND_GETSEED, where rupees and hearts are silent and the bar counts.
+  gotAmmo: { seasons: 'getSeed' },
   chest: { seasons: 'openChest' },
   puzzle: { seasons: 'solvePuzzle' },
   switchOn: { seasons: 'switch' },

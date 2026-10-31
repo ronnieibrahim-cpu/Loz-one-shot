@@ -37,7 +37,7 @@ import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
-import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy } from './entity.js';
+import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy, DIR_VEC } from './entity.js';
 import { spawnEffectAt, Explosion, EFFECTS } from './effects.js';
 import { Pickup, PICKUPS, CAPACITY_FOR, rollDropTable, PushBlock, Torch, FloorSwitch, Chest, ColourCube, cubeSpots, IceBlock } from './objects.js';
 import { CUBE_TOP } from '../data/sprites-cube.js';
@@ -72,6 +72,7 @@ import {
   DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES,
   GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
+  DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS,
   LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
@@ -259,6 +260,10 @@ export class Game {
     // stake room for the rest of the session. A stake dropped from the Canopy
     // is written into the save (`plantFromAbove`) and `restoreRoomState`
     // puts it back on the way in.
+    // A key door half slid open belongs to the room it is in; and Seasons
+    // tells you a door is locked once per screen (wInformativeTextsShown).
+    this.doorSlides = null;
+    this._lockTold = null;
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // The eye loop's count lives only while Link goes round it (S211): any
@@ -928,8 +933,88 @@ export class Game {
         }
       }
     }
-    // Leaning on a keyhole is how Seasons turns a key in it.
+    // Leaning on a keyhole is how Seasons turns a key in it, and on a key
+    // door how it opens one.
+    const name = this.room && this.room.inBounds(tx, ty) ? this.room.baseName(tx, ty) : null;
+    if (name === 'dDoorLocked' || name === 'dDoorBoss') return this.tryKeyDoor(tx, ty, true);
     return this.tryKeyhole(tx, ty);
+  }
+
+  /**
+   * A KEY DOOR, Oracle of Seasons' way (S223; code/interactableTiles.s
+   * nextToKeyDoor). Lean on it PUSH_DELAY_FRAMES holding the key — or press
+   * A at it, which Seasons does not do and we keep so nothing feels dead —
+   * and the key is spent, the key appears over the door
+   * (dungeonKeySprite.s, the `doorKey` effect, SND_GETSEED) and the door
+   * slides into its wall: half open for DOOR_SLIDE_FRAMES, then open, with
+   * SND_DOORCLOSE at each (doorController.s @state2). It is passable at once,
+   * as the cartridge writes the open tile into the layout on the first
+   * frame. No text box. Without the key, leaning says so once a screen; A
+   * says so every time, as it always did.
+   */
+  tryKeyDoor(tx, ty, leaning) {
+    const room = this.room;
+    const boss = room.baseName(tx, ty) === 'dDoorBoss';
+    const have = boss ? !!this.progress.bossKeys[this.mapId] : keyCount(this.progress, this.mapId) > 0;
+    if (!have) {
+      if (leaning && this._lockTold === room) return true;
+      this._lockTold = room;
+      this.audio.sfx('deny');
+      this.say(boss ? 'A great lock seals this door.' : 'It is locked. You need a Small Key.');
+      return true;
+    }
+    if (!boss) useKey(this.progress, this.mapId);
+    // Into the wall: away from Link, who is facing it.
+    this.slideDoorOpen(tx, ty, this.player ? DIR_VEC[this.player.dir] : null);
+    this.spawnEffect(boss ? 'doorBossKey' : 'doorKey', tx * TILE, ty * TILE - KEY_DOOR_HEIGHTS[0]);
+    this.audio.sfx('key');
+    return true;
+  }
+
+  /**
+   * Open a door in THIS room the way Seasons' door controller does
+   * (doorController.s @state2): passable at once, drawn half slid into its
+   * wall for DOOR_SLIDE_FRAMES, SND_DOORCLOSE as it starts and as it ends.
+   * `dir` is the way it slides; by default a ring door goes into its own
+   * wall and any other up.
+   */
+  slideDoorOpen(tx, ty, dir) {
+    const room = this.room;
+    const d = room.tile(tx, ty, this.tide);
+    const art = room.artAt(d, tx, ty, this.tide);
+    const pal = room.palFor(d, art);
+    const [ux, uy] = dir || (ty === room.th - 1 ? [0, 1] : tx === 0 ? [-1, 0]
+      : tx === room.tw - 1 ? [1, 0] : [0, -1]);
+    this.openDoorAt(tx, ty);
+    this.doorSlides = (this.doorSlides || []).filter(s => s.room === room && !(s.tx === tx && s.ty === ty));
+    this.doorSlides.push({ room, tx, ty, art, pal, ux, uy, t: DOOR_SLIDE_FRAMES });
+    this.audio.sfx('doorSlide');
+  }
+
+  /** Count down each half-open door; it ends fully open, with its sound. */
+  updateDoorSlide() {
+    if (!this.doorSlides || !this.doorSlides.length) return;
+    let done = false;
+    this.doorSlides = this.doorSlides.filter(s => {
+      if (s.room !== this.room) return false;
+      if (--s.t > 0) return true;
+      done = true;
+      return false;
+    });
+    if (done) this.audio.sfx('doorSlide');
+  }
+
+  /** The half-open doors: each shut door slid half a tile into its wall. */
+  drawDoorSlide(ctx, ox, oy) {
+    if (!this.doorSlides) return;
+    for (const s of this.doorSlides) {
+      if (s.room !== this.room) continue;
+      const x = ox + s.tx * TILE, y = oy + s.ty * TILE;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, TILE, TILE); ctx.clip();
+      tileSheet.draw(ctx, s.art, x + s.ux * TILE / 2, y + s.uy * TILE / 2, { pal: s.pal });
+      ctx.restore();
+    }
   }
 
   /**
@@ -978,27 +1063,7 @@ export class Game {
     if (this.tryKeyhole(tx, ty)) return true;
     const name = room.baseName(tx, ty);
     const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
-    if (name === 'dDoorLocked') {
-      if (useKey(this.progress, this.mapId)) {
-        this.openDoorAt(tx, ty);
-        this.audio.sfx('unlock');
-        this.say('The lock falls away.');
-      } else {
-        this.audio.sfx('deny');
-        this.say('It is locked. You need a Small Key.');
-      }
-      return true;
-    }
-    if (name === 'dDoorBoss') {
-      if (this.progress.bossKeys[this.mapId]) {
-        this.openDoorAt(tx, ty);
-        this.audio.sfx('unlock');
-      } else {
-        this.audio.sfx('deny');
-        this.say('A great lock seals this door.');
-      }
-      return true;
-    }
+    if (name === 'dDoorLocked' || name === 'dDoorBoss') return this.tryKeyDoor(tx, ty, false);
     // A story gate the save has not earned yet. `applyStoryGates` would have
     // opened it on entry if it had, so reaching here means it is still shut —
     // and a tile that simply ignores you reads as scenery, not as a lock.
@@ -1478,7 +1543,13 @@ export class Game {
     if (!reward) return;
     const room = this.room;
     if (reward.openDoors) {
-      for (const [tx, ty] of reward.openDoors) this.openDoorAt(tx, ty);
+      // Seen (not a silent re-pay on load), they slide open as Seasons'
+      // shutters do; otherwise they are simply open.
+      for (const [tx, ty] of reward.openDoors) {
+        const d = room.inBounds(tx, ty) && getTileDef(room.baseName(tx, ty));
+        if (!silent && d && (d.flags & F.DOOR) && d.name !== 'dDoorOpen') this.slideDoorOpen(tx, ty);
+        else this.openDoorAt(tx, ty);
+      }
     }
     // A DOOR IN ANOTHER ROOM (S182, the Bogwater Sanctum's Sump): a plate on
     // the cellar's bottom opens a door upstairs — Ages' switch here, gate
@@ -1568,7 +1639,7 @@ export class Game {
       this.audio.jingle('itemGet');
       this.chestShow(chest, { sprite: spec.sprite, pal: spec.pal }, spec.line);
     } else if (chest.pickup) {
-      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
+      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10, fromChest: true });
     } else if (chest.rupees) {
       addRupees(p, chest.rupees);   // the status bar ticks them in
       this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
@@ -2371,6 +2442,7 @@ export class Game {
     this.camera.update(this.room, this.player);
 
     this.updateBridge();
+    this.updateDoorSlide();
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
@@ -2851,6 +2923,7 @@ export class Game {
     ctx.drawImage(base, ox, oy);
     // `renderAt` is the whole room, water and all, in one still.
     if (ghost == null) room.drawAnim(ctx, ox, oy, this.tide, this.frame);
+    this.drawDoorSlide(ctx, ox, oy);
 
     const list = this.entities.slice();
     if (this.player && !list.includes(this.player)) list.push(this.player);

@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Seasons opens a key door by LEANING, not by A (S223).**
+  interactableTiles.s nextToKeyDoor runs off the same 20-frame push counter
+  as a block; A does nothing there. The door is passable the first frame
+  (the controller writes the open tile into the layout before it draws the
+  half-open one). Ours keeps A as well so nothing reads as dead.
+- **Read a treasure's text byte before adding a `say` (S223).** In
+  treasureObjectData.s byte 2 is the text id and $ff means none: a Small Key
+  that puffs or falls in has no text; only the chest's subid has one. Our
+  key said "You found a Small Key!" everywhere and froze every fight that
+  dropped one.
+- **A probe that drops Link on a big chest gets him shoved (S223).**
+  enterMap's safe-tile search moved him a tile aside and the door test read
+  as "the door will not open". Place a probe clear of entities and log the
+  position before believing what it shows.
+
 - **A tile flag can be set for years and read by nothing (S222).**
   F.TALLGRASS said "hides the player's feet" and sat on the tall grass
   tiles, but no code ever asked for it, so Link walked through Tidewatch's

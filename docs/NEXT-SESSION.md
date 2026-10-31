@@ -1,3 +1,69 @@
+## S223 — key doors open Seasons' way; loose keys and ammo sound like Seasons
+
+Branch claude/oracle-tides-gameplay-feel-4nex42, off main at 496ec74 (S222).
+
+### The human's choices this session
+- S222's grass at the feet and the counting status bar in play: BOTH FEEL
+  RIGHT, keep them.
+- KEY DOORS (shown our A-press + vanish + "The lock falls away." beside
+  Seasons' described sequence, sounds as WAVs): SEASONS' WAY, with A still
+  working too.
+- LOOSE SMALL KEYS (sounds as WAVs): SEASONS' WAY — item jingle, no text box;
+  a chest's key and the Boss Key keep their text.
+
+### Built
+- KEY DOORS (code/interactableTiles.s nextToKeyDoor, dungeonKeySprite.s,
+  doorController.s): `Game.tryKeyDoor(tx, ty, leaning)`, reached from
+  `tryPushBlock` (leaning PUSH_DELAY_FRAMES = Seasons' 20, the push counter
+  player.js already had) and from `tileInteract` (A). With the key: spent,
+  `doorKey`/`doorBossKey` effect (effects.js, p_key/p_bosskey held
+  KEY_DOOR_HEIGHTS 4 then 8 px over the door for KEY_DOOR_HOLDS 8 then 20 f,
+  sfx `key` = SND_GETSEED), and `slideDoorOpen`. No text box. Without it:
+  `deny` + our old line; leaning says it once per screen (`_lockTold`, reset
+  in setRoom — Seasons' wInformativeTextsShown), A every time.
+- DOORS SLIDE OPEN (doorController.s @state2): `Game.slideDoorOpen(tx, ty,
+  dir)` opens the tile at once (passable that frame, as the cartridge writes
+  the layout first) and pushes `doorSlides` {art, pal, ux, uy, t}; drawScene
+  draws the shut door's own art (room.artAt captured before the swap)
+  shifted half a tile into its wall, clipped to the cell, for
+  DOOR_SLIDE_FRAMES (6), with sfx `doorSlide` (SND_DOORCLOSE) at the start
+  and the end. Used by key doors (slide = Link's facing) and by a puzzle
+  reward's `openDoors` when not silent (ring side; interior doors slide up).
+  Drawing and sound only: no entity, nothing in play reads it.
+- LOOSE SMALL KEY (treasureObjectData.s TREASURE_SMALL_KEY subids $18/$28:
+  text $ff; grab plays SND_GETITEM): `PICKUPS.key.get(g, e)` plays
+  jingle `itemGet` and says "You found a Small Key!" only if the pickup was
+  popped out of a chest (`Pickup.fromChest`, set by openChest; Seasons'
+  chest key $38 has text $1a).
+- BOMBS, SEEDS, A BOTTLE PICKED UP (treasureCollectionBehaviours.s:
+  TREASURE_BOMBS and every seed play SND_GETSEED): sfx `gotAmmo` (was
+  `rupee`). `unlock` sfx removed (nothing played it any more).
+- Guide: the A-button row and D1 step 7 now say walk into the door
+  (tools/guide/guide.html, rebuilt docs/guide/index.html; the picture is
+  the old one).
+
+### Verified
+Whole table green (64 tools four at a time); test.mjs 139/139; replay 51/51
+after re-recording d1-descent TWICE (first for the door's text box, then for
+the key's) — each re-record from its plan ends at the same room, place,
+hearts 11/30 and draws 63, 7444 then 7433 frames; check-playthrough 49/49,
+THE END, never died, low-water 5 (313331 -> 313615 with the door, 313463
+with the key); check-rippers last, alone; check-build OK.
+
+### Not done / candidates
+- A chest's Small Key: Seasons raises it out of the chest and Link holds it
+  up with the text (spawn mode 3, FROM_CHEST_A, like our map/chartstone
+  `grant` path); ours pops it onto the floor above the chest to be walked
+  over. Bigger: the robot walks to the popped key, and S162's lesson about a
+  key landing in a wall. Ask first.
+- A key that falls in from the top of the screen plays SND_SOLVEPUZZLE in
+  Seasons (spawn mode 2); ours plays the reward's `secret` jingle — check
+  they are the same sound before touching.
+- Seasons holds a loose key over Link's head for a frame (grab mode 1);
+  invisible, not done.
+- The guide's shop/house/cave/boss shots and D1 door shot still show old
+  rooms/bar/door.
+
 ## S222 — the grass at the feet; the status bar counts
 
 Branch claude/oracle-tides-opening-polish-dcphon, off main at 3efc37e (S221).

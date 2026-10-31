@@ -14,6 +14,7 @@ import {
   LEAVES_HOLDS, SPLASH_HOLDS, SHARDS_HOLDS, CLINK_HOLDS, DUST_HOLDS, TWINKLE_HOLDS,
   EMBER_HOLDS, RISE_BUBBLE_SPEED, RISE_BUBBLE_LIFE, RISE_BUBBLE_FLICKER_FRAMES,
   RISE_BUBBLE_TURN_EVERY, RISE_BUBBLE_TURNS_FIRST, RISE_BUBBLE_TURNS,
+  KEY_DOOR_HOLDS, KEY_DOOR_HEIGHTS,
 } from '../data/feel.js';
 
 const TILE_SP = sp(16);
@@ -63,6 +64,16 @@ export function heldStep(holds, f) {
   let t = 0;
   for (let i = 0; i < holds.length; i++) { t += holds[i]; if (f < t) return i; }
   return holds.length - 1;
+}
+
+/**
+ * A key door's key (S223, INTERAC_DUNGEON_KEY_SPRITE): held KEY_DOOR_HEIGHTS
+ * over the middle of its door for each of KEY_DOOR_HOLDS. Spawned already at
+ * the first height, so the frame before its first update draws it there too.
+ */
+function keyDoorRise(e) {
+  if (e.baseFy == null) e.baseFy = e.fy + sp(KEY_DOOR_HEIGHTS[0]);
+  e.fy = e.baseFy - sp(KEY_DOOR_HEIGHTS[heldStep(KEY_DOOR_HOLDS, e.frame - 1)]);
 }
 
 export class Effect extends Entity {
@@ -158,6 +169,11 @@ export const EFFECTS = {
   // An ember seed's fire (S219, item20's loop): what the Kilnshell's strike
   // burns with.
   flame: { frames: ['fx_ember0', 'fx_ember1', 'fx_ember2'], holds: EMBER_HOLDS, loop: true, own: true, w: 32, h: 32, centre: true },
+  // A key door's key (S223, dungeonKeySprite.s): the Small Key or the Boss
+  // Key over the door it opens, low then higher, then gone. Spawn it at the
+  // door tile, KEY_DOOR_HEIGHTS[0] up.
+  doorKey: { frames: ['p_key', 'p_key'], holds: KEY_DOOR_HOLDS, own: true, depth: 60, update: keyDoorRise },
+  doorBossKey: { frames: ['p_bosskey', 'p_bosskey'], holds: KEY_DOOR_HOLDS, own: true, depth: 60, update: keyDoorRise },
   // INTERAC_BUBBLE (S219): one picture that drifts up, wobbling, and
   // flickers out. Spawn it at the swimmer's own 16x16 spot.
   bubble: {
