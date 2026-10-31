@@ -270,13 +270,21 @@ export class Entity {
   // @walkingInPuddle) — its enemies on foot and its townsfolk as well as
   // Link, all in step on the one counter. Where the thing's own feet are
   // (groundFlags), and only standing: a hop or a bounce is above it.
+  //
+  // And THE GRASS AT ITS FEET in tall grass (S222, @walkingInGrass): two
+  // blades over the feet, the picture picked by bit 2 of where it stands (its
+  // x xor y), so it sways as it walks and holds still when it stops.
   drawPuddle(ctx, game, ox, oy) {
     if (!this.wades || this.z > 1 || this.dead) return;
     const f = groundFlags(game, this);
+    const x = ox + this.x + ((this.w - 16) >> 1) - 8, y = oy + this.y + this.h - 24;
+    if (f & F.TALLGRASS) {
+      sprites.draw(ctx, 'fx_grass' + grassPicture(this.x + (this.w >> 1), this.y + this.h - 8), x, y);
+      return;
+    }
     if (!(f & F.WATER) || (f & F.DEEP)) return;
     const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
-    sprites.draw(ctx, 'fx_puddle' + k, ox + this.x + ((this.w - 16) >> 1) - 8,
-      oy + this.y + this.h - 24);
+    sprites.draw(ctx, 'fx_puddle' + k, x, y);
   }
 }
 
@@ -440,6 +448,12 @@ export function dropIntoHole(game, e) {
   e.remove = true;
   game.spawnEffect('hole', e.cx - 8, e.cy - 8);
   game.audio.sfx('fallInHole');
+}
+
+/** Which of the two pictures of the grass at the feet (S222): Seasons'
+ *  _drawObjectTerrainEffects tests bit 2 of the object's x xor y. */
+export function grassPicture(x, y) {
+  return ((Math.floor(x) ^ Math.floor(y)) >> 2) & 1;
 }
 
 export function groundFlags(game, e) {

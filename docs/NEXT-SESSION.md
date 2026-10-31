@@ -1,3 +1,57 @@
+## S222 — the grass at the feet; the status bar counts
+
+Branch claude/oracle-tides-opening-polish-dcphon, off main at 3efc37e (S221).
+
+### The human's choices this session
+- S221's opening on black, Nereth at his own size, the whole Tide Bell held
+  up and the solid last card in play: ALL FEEL RIGHT, leave them.
+- THE GRASS AT THE FEET (shown before/after beside the cartridge's own two
+  pictures): KEEP.
+- THE STATUS BAR COUNTS (shown as a strip and a before/now sound clip):
+  KEEP Seasons' counting.
+
+### Built
+- GRASS AT THE FEET (Seasons' terrainEffects.s greenGrassAnimationFrame0/1,
+  bank0.s _drawObjectTerrainEffects @walkingInGrass): rip-effects.py cuts
+  `fx_grass0/1` (common sprites tile $24, palette 0's green; frame 1 is the
+  x-flip). Drawn over the feet of Link (player.js, after the sprite) and of
+  every `wades` entity (entity.js drawPuddle, same spot as the splash) when
+  the ground under their feet carries F.TALLGRASS and z <= 1. The picture is
+  `grassPicture(x, y)` = bit 2 of (centre x xor centre y): it changes as the
+  wearer moves, holds when he stops — not timed, so nothing in feel.js.
+  F.TALLGRASS had been set on `tallgrass`/`hTallGrass` ("hides the player's
+  feet") and read by NOTHING for the project's life. Green only: Seasons'
+  orange/blue grass are its autumn/winter, Ages is always green.
+- THE STATUS BAR COUNTS (bank2.s updateStatusBar_body): `Game.shown`
+  {of, rupees, hearts}, stepped each frame by `updateStatusCounters` (not on
+  the title): money one rupee per RUPEE_ROLL_FRAMES (1) toward the truth,
+  SND_RUPEE each step, up or down; hearts up a quarter every
+  HEART_FILL_FRAMES (4, on frame % 4 === 0) with SND_GAINHEART at each whole
+  heart, down a quarter a frame. hud.js draws `shownOf(game)`. Snaps to the
+  truth on a new progress object (new game, load) and on respawn. DRAWING
+  ONLY: nothing in play reads `shown`.
+- Sounds moved to the bar, as in treasureAndDrops.s: rupee pickups, chest
+  rupees and a shop payment make no sound of their own; a heart picked up
+  chimes only if Link is already full; the Strandwalker's quarter-heart no
+  longer chimes per quarter. `rupeeBig` is gone from audio.js (nothing
+  played it any more).
+
+### Verified
+Whole table green (69 tools, four at a time, then alone): test.mjs 139/139,
+replay 51/51 with NO re-record (drawing and sound only), check-items
+100/100, check-respawn 68/68, check-hearts 134/134, check-credits 97/97,
+check-sfx OK; check-playthrough 49/49, THE END, never died, 313331 frames
+(unchanged), low-water 5; check-rippers last, alone, 47/47; check-build OK.
+
+### Not done / candidates
+- Seasons' low-health beep reads Link's health; ours does too — fine.
+- Seasons has no enemy spawn puff on entering a screen (checked: nothing in
+  the disassembly puffs an ordinary enemy in), so ours is already right.
+- Candidates not yet looked at: a key block opening (Seasons: a puff and
+  SND_SOLVEPUZZLE?), the seed/bomb/bottle pickups still play `rupee` — check
+  what Seasons' treasure code plays for each before changing.
+- The guide's shop/house/cave/boss shots still show the old rooms and bar.
+
 ## S221 — no caption see-through, nothing blown up: the opening on black, Nereth at his own size, the Bell held up
 
 Branch claude/oracle-tides-polish-g345gh, off main at 3862ec8 (S220).

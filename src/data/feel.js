@@ -2811,3 +2811,16 @@ export const BRIDGE_PLANK_FRAMES = 10;
  *  sets var3f to $0a, and @state1 counts it down while Link pushes against
  *  the slot's centre. */
 export const SLATE_PUSH_FRAMES = 10;
+
+/** f — the status bar's money counts toward what Link has by one rupee every
+ *  this many frames, ticking SND_RUPEE each step, up or down (S222). derived
+ *  from the cartridge: bank2.s updateStatusBar_body steps wDisplayedRupees by
+ *  one each call, once a frame. A rupee picked up makes no sound of its own. */
+export const RUPEE_ROLL_FRAMES = 1;
+
+/** f — the status bar's hearts fill one quarter every this many frames when
+ *  Link has more than they show, chiming SND_GAINHEART at each whole heart,
+ *  and empty one quarter a frame when he has less (S222). derived from the
+ *  cartridge: updateStatusBar_body only raises wDisplayedHearts when
+ *  (wFrameCounter & 3) is 0, and lowers it every call. */
+export const HEART_FILL_FRAMES = 4;
