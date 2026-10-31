@@ -89,7 +89,7 @@ export const PICKUPS = {
   //
   // S155: it is now the cartridge's own DROP, `p_bomb` (tools/rip-treasures.py,
   // item drop 4), which is what Seasons draws on the floor.
-  bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
+  bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('gotAmmo'); } },
   // THE QUARRYMAN'S BAG (S195): a bigger bomb bag, handed over in a cave in
   // the Cliffs of Kell. Not an inventory item — it raises the count the bombs
   // already in `progress.items` can reach, and fills it.
@@ -139,12 +139,19 @@ export const PICKUPS = {
     get(g) {
       if (g.progress.maxReefseeds <= 0) { g.audio.sfx('deny'); return; }
       addReefseeds(g.progress, 3, g.reefseedCap());
-      g.audio.sfx('rupee');
+      g.audio.sfx('gotAmmo');
     },
   },
   key: {
     sprite: 'p_key', pal: null, persistent: true,
-    get(g) { addKey(g.progress, g.mapId); g.audio.sfx('key'); g.say('You found a Small Key!'); },
+    // Seasons' TREASURE_SMALL_KEY (treasureObjectData.s): one that puffs in
+    // or falls in is taken with the item jingle (SND_GETITEM) and NO text;
+    // only a chest's ($38) says "You found a Small Key!" (S223).
+    get(g, e) {
+      addKey(g.progress, g.mapId);
+      g.audio.jingle('itemGet');
+      if (e && e.fromChest) g.say('You found a Small Key!');
+    },
   },
   bossKey: {
     sprite: 'p_bosskey', pal: null, persistent: true,
@@ -186,7 +193,7 @@ export const PICKUPS = {
     get(g) {
       if (g.progress.maxBottles <= 0) { g.audio.sfx('deny'); return; }
       const got = addBottles(g.progress, 1);
-      g.audio.sfx(got ? 'rupee' : 'deny');
+      g.audio.sfx(got ? 'gotAmmo' : 'deny');
       if (!got) g.say('Your case is full.');
     },
   },
@@ -272,6 +279,8 @@ export class Pickup extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
     this.kind = o.kind || 'rupee1';
+    // Popped out of a chest (Game.openChest), which a Small Key announces.
+    this.fromChest = !!o.fromChest;
     const spec = PICKUPS[this.kind] || PICKUPS.rupee1;
     this.spec = spec;
     this.w = 16; this.h = 16;

@@ -135,6 +135,9 @@ const SFX = {
   // A held bridge's plank going down or up (S211): SND_DOORCLOSE, which
   // Ages' extendableBridge.s plays for every tile it sets.
   plank: { seasons: 'doorClose' },
+  // A key door sliding into its wall (S223): SND_DOORCLOSE, which
+  // doorController.s plays as it goes half open and again fully open.
+  doorSlide: { seasons: 'doorClose' },
 
   // The opening's storm (S168): the cartridge's own lightning crack, the
   // wave its ending sea plays, and its wind.
@@ -150,7 +153,10 @@ const SFX = {
   heart: { seasons: 'gainHeart' },
   fairy: { seasons: 'unknown7' },
   key: { seasons: 'getSeed' },
-  unlock: { seasons: 'openChest' },
+  // Bombs, seeds and a bottle's refill picked up (S223): Seasons'
+  // treasureCollectionBehaviours gives TREASURE_BOMBS and every seed
+  // SND_GETSEED, where rupees and hearts are silent and the bar counts.
+  gotAmmo: { seasons: 'getSeed' },
   chest: { seasons: 'openChest' },
   puzzle: { seasons: 'solvePuzzle' },
   switchOn: { seasons: 'switch' },

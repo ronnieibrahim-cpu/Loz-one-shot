@@ -1061,6 +1061,24 @@ export const KEY_RISE_GRAVITY = 0x28 / 256;
  *  overworldKeySprite.s @state1, counter1 = $3c, counted down by @state2. */
 export const KEY_HOLD_FRAMES = 60;
 
+/** f — how long each height of a dungeon door's key is held, as the door
+ *  opens to a Small Key or the Boss Key (S223): first low over the door, then
+ *  higher, then gone. derived from the cartridge: oracles-disasm object_code/
+ *  common/interactions/dungeonKeySprite.s, @state0 counter1 = $08, @state1
+ *  counter1 = $14. */
+export const KEY_DOOR_HOLDS = [8, 20];
+
+/** px — how high over the middle of its door that key is drawn, for each of
+ *  KEY_DOOR_HOLDS. derived from the cartridge: dungeonKeySprite.s, zh = $fc
+ *  in @state0 and $f8 in @state1. */
+export const KEY_DOOR_HEIGHTS = [4, 8];
+
+/** f — how long a key door shows half open (the shut door slid half a tile
+ *  into the wall) before it is fully open. derived from the cartridge:
+ *  oracles-disasm object_code/common/interactions/doorController.s,
+ *  @interleaveDoorTile counter1 = $06, counted by @state2Substate1. */
+export const DOOR_SLIDE_FRAMES = 6;
+
 /** f — how long the ground rumbles as a dungeon door opens to its key.
  *  guessed: Seasons' opening scenes are per door (the Gnarled Root's rises
  *  out of the ground); ours is one shake for every door. */
