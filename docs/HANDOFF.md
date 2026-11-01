@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A sign is read from the front only, and moving one can move the robot
+  (S225).** Seasons' nextToSignTile is the chest's rule with TX_510e. Five
+  signs had no floor below; the first spot picked for the Cistern's stood
+  beside the keyhole the robot walks to and cost the run 20 frames (a keese
+  died). Compare `route-prefix.mjs 0` traces before and after any move.
+- **Our torches are narrower than Seasons' (S225).** Seasons' torch is a
+  whole solid tile; ours is an 8 px post, so `facingWall` (both front
+  corners) never holds against one and nothing counted as leaning on it.
+  Anything that should respond to a lean on an entity needs its own test.
+- **The tideshade fight is fixed by the RNG history, not by its options
+  (S225).** Every option set with `reachSwing` gives the same 14 -> 8; the
+  room the run could change was the Shade Cell after it, where a different
+  standing place before the fight saved the whole cost.
+
 - **A chest opens from the front only, and the robot did not know (S224).**
   Seasons' checkFacingBottomOfTileAndPressedA; the route opened 16 chests
   from a side or from behind, and the Sunken Nave's chest plugged the only

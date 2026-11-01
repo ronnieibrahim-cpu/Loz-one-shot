@@ -917,7 +917,16 @@ export class Sign extends Entity {
     this.shadow = false;
     this.text = o.text || '...';
   }
-  interact(game) { game.say(this.text); }
+  // FROM THE FRONT ONLY (S225): Seasons reads a sign only to a Link facing
+  // up at it from below (interactableTiles.s nextToSignTile ->
+  // checkFacingBottomOfTileAndPressedA); from any other side A says TX_510e.
+  interact(game, player) {
+    if (player && (player.dir !== 'up' || player.cy <= this.cy)) {
+      game.say('You can\'t read\nit from here!');
+      return;
+    }
+    game.say(this.text);
+  }
 }
 defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 
