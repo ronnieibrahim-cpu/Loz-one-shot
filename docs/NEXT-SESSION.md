@@ -41,7 +41,10 @@ Branch claude/oracle-tides-octorok-playtest-x52psf, off main at 003352c (S226).
 ### Verified
 check-playthrough 49/49, THE END, never died, 313016 frames, LOW-WATER 7
 (identical after each of the three changes; the robot never buys the
-shield). replay 51/51 untouched. See the table run below.
+shield). replay 51/51 untouched. Whole table green (67 tools three at a
+time, every one exit 0; check-exits failed once on a port clash and passed
+alone, 398/398; watch-cutscenes alone; check-build after npm run build);
+check-rippers last, alone, 47/47; check-seasons-mechanics 37/37.
 
 ### Not done / candidates
 - Other Seasons shots not looked at: the beamos beam (PART_BEAM is only
