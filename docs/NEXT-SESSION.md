@@ -33,8 +33,12 @@ Branch claude/oracle-tides-s228-nh6pgx, off main at f03963c (S227).
   left as is. THIN at Anemos.
 
 ### Verified
-check-playthrough 49/49, THE END, never died, LOW-WATER 4. (Table: see the
-end of this entry.)
+check-playthrough 49/49, THE END, never died, LOW-WATER 4, 313483 frames.
+Whole table green (67 tools three at a time, every one exit 0 but replay,
+whose d1-descent was re-recorded after the zol change: it ends in the same
+room with the same items and flags, sooner and on more hearts; replay
+51/51); check-build after npm run build; watch-cutscenes alone;
+check-rippers last, alone, 47/47; check-seasons-mechanics 45/45.
 
 ### Not done / candidates
 - The robot's margin: Anemos leaves 4/24. A future change upstream should
