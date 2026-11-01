@@ -17,7 +17,7 @@ import { toPx } from '../core/fixed.js';
 import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.js';
 import {
   OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK,
-  OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED,
+  OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED, OCTOROK_BLUE_SHOOT_MASK,
   CRAB_SPEED_SIDE, CRAB_SPEED_UPDOWN, CRAB_WALK_FRAMES,
   HOP_ODDS_MASK, SLIME_HOP_SPEED, SLIME_HOP_LAUNCH, SLIME_HOP_GRAVITY,
   ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET,
@@ -45,6 +45,49 @@ import {
 } from './feel.js';
 
 export function installEnemies() {
+  // Seasons' octorok (octorok.s), red or blue: walk a while, then usually
+  // stand and sometimes stop to spit a shot the way it is facing; set off
+  // again in a random direction, one time in four toward Link. Nothing aims
+  // the shot. `o.mask` is @counter1Ranges for the colour.
+  function octorokAi(e, g, o) {
+    switch (e.aiState) {
+      case 0:                                   // octorok_state_uninitialized
+        e.dir = randDir(g);
+        e.aiTimer = OCTOROK_WALK_FRAMES[g.rng.int(4)];
+        e.aiState = 'walk';
+        return;
+      case 'walk':                              // state $0a
+        e.still = false;
+        if (--e.aiTimer <= 0) { e.aiState = 'decide'; return; }
+        if (!walkOn(e, g, OCTOROK_SPEED)) randomCardinal(e, g);
+        return;
+      case 'decide': {                          // state $08
+        e.still = true;
+        const roll = g.rng.int(256) & o.mask;
+        if (roll === 0) {
+          e.aiState = 'windup'; e.aiTimer = OCTOROK_SHOOT_WINDUP;
+          // Blue and golden octoroks turn to face Link before they shoot.
+          if (o.faceToShoot) cardinalToward(e, g);
+        }
+        else { e.aiState = 'stand'; e.aiTimer = OCTOROK_STAND_FRAMES[roll]; }
+        return;
+      }
+      case 'stand':                             // state $09
+        if (--e.aiTimer > 0) return;
+        e.aiState = 'walk';
+        e.aiTimer = OCTOROK_WALK_FRAMES[g.rng.int(4)];
+        e.dir = randDir(g);
+        if (g.rng.int(OCTOROK_TURN_TO_LINK) === 0) cardinalToward(e, g);
+        return;
+      case 'windup':                            // state $0b
+        if (--e.aiTimer > 0) return;
+        e.aiState = 'stand'; e.aiTimer = OCTOROK_SHOOT_REST;
+        // SND_THROW, as octorok_state_0b plays it (S226; it played SND_BEAM).
+        shoot(e, g, { sprite: o.shot, pal: o.shotPal, speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false, sfx: 'throw' });
+        return;
+    }
+  }
+
   // --- Octorok: wanders and spits rocks along its facing axis -------------
   defineEnemy('octorok', {
     hp: 2, damage: 2, pal: 'enemyg', rate: 11,
@@ -64,43 +107,13 @@ export function installEnemies() {
     port: 'octorok.s',
     speed: OCTOROK_SPEED,
     ai(e, g) {
-      switch (e.aiState) {
-        case 0:                                   // octorok_state_uninitialized
-          e.dir = randDir(g);
-          e.aiTimer = OCTOROK_WALK_FRAMES[g.rng.int(4)];
-          e.aiState = 'walk';
-          return;
-        case 'walk':                              // state $0a
-          e.still = false;
-          if (--e.aiTimer <= 0) { e.aiState = 'decide'; return; }
-          if (!walkOn(e, g, OCTOROK_SPEED)) randomCardinal(e, g);
-          return;
-        case 'decide': {                          // state $08
-          e.still = true;
-          const roll = g.rng.int(256) & OCTOROK_SHOOT_MASK;
-          if (roll === 0) { e.aiState = 'windup'; e.aiTimer = OCTOROK_SHOOT_WINDUP; }
-          else { e.aiState = 'stand'; e.aiTimer = OCTOROK_STAND_FRAMES[roll]; }
-          return;
-        }
-        case 'stand':                             // state $09
-          if (--e.aiTimer > 0) return;
-          e.aiState = 'walk';
-          e.aiTimer = OCTOROK_WALK_FRAMES[g.rng.int(4)];
-          e.dir = randDir(g);
-          if (g.rng.int(OCTOROK_TURN_TO_LINK) === 0) cardinalToward(e, g);
-          return;
-        case 'windup':                            // state $0b
-          if (--e.aiTimer > 0) return;
-          e.aiState = 'stand'; e.aiTimer = OCTOROK_SHOOT_REST;
-          shoot(e, g, { sprite: 'shot_rock', speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false });
-          return;
-      }
+      octorokAi(e, g, { mask: OCTOROK_SHOOT_MASK, shot: 'shot_rock' });
     },
   });
 
   // --- Sea Octorok: the aquatic cousin, only present at higher tides ------
   defineEnemy('octorokSea', {
-    hp: 3, damage: 2, pal: 'enemyb', speed: 0.5, rate: 10, terrain: 'water',
+    hp: 3, damage: 2, pal: 'enemyb', rate: 10, terrain: 'water',
     frames: {
       down: ['octorok_d0', 'octorok_d1'],
       up: ['octorok_u0', 'octorok_u1'],
@@ -125,11 +138,14 @@ export function installEnemies() {
     // itself never shows.
     drops: 'common',
     tideOnly: [1, 2],
+    // Seasons' BLUE octorok (S226, the human's choice): octorok.s subid 2,
+    // the red one's walk at the same SPEED_80, a shot one time in four, and
+    // a turn to face Link before it. It used to drift and fire a bubble
+    // aimed at Link every second. The bubble and the water are ours.
+    port: 'octorok.s',
+    speed: OCTOROK_SPEED,
     ai(e, g) {
-      wander(e, g, { turnChance: 0.02 });
-      if (every(e, 60) && distToPlayer(e, g) < 90) {
-        shoot(e, g, { sprite: 'shot_bubble', pal: 'water', speed: 1.4, aim: true, damage: 2 });
-      }
+      octorokAi(e, g, { mask: OCTOROK_BLUE_SHOOT_MASK, faceToShoot: true, shot: 'shot_bubble', shotPal: 'water' });
     },
   });
 
