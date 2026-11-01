@@ -252,6 +252,33 @@ const r = await page.evaluate(async () => {
   out.bumpShield = bump({ shield: true, face: 'left' });
   out.bumpBack = bump({ shield: true, face: 'right' });
   out.bumpBare = bump({ shield: false, face: 'left' });
+  // S228: the zol, the gel and the pincer take a blow without moving
+  // (ENEMYCOLLISION_ZOL/GEL/PINCER: COLLISIONEFFECT_SWORD_NO_KNOCKBACK ->
+  // ENEMYDMG_0c, invincibilityCounter $20, no knockback); the octorok is
+  // shoved. Each held still 14 px to Link's left with a lot of health; one
+  // swing.
+  const struck = (kind) => {
+    g.enterMap('overworld', 0, 4, 7, 24, 80, 'right', { instant: true });
+    g.entities = g.entities.filter(x => !x.isEnemy && !x.isProjectile);
+    if (g.dialogue) g.dialogue.active = false;
+    const p = g.player;
+    p.x = 88; p.y = 80; p.dir = 'left'; p.invuln = 200; p.flicker = 0; p.hurtTime = 0;
+    const e = spawnEntity(g, kind, 0, 0, {});
+    e.x = 74; e.y = 80; e.hp = 99; e.spec = { ...e.spec, ai() {}, onHurt: null, onTouchLink: null };
+    g.flushPending();
+    const ex = e.x, ey = e.y;
+    p.startSwing(g, 1);
+    let hitAt = null, inv = 0, moved = 0;
+    for (let i = 0; i < 60; i++) {
+      step(1);
+      if (hitAt == null && e.hp < 99) { hitAt = i; inv = e.invuln; }
+      moved = Math.max(moved, Math.abs(e.x - ex) + Math.abs(e.y - ey));
+    }
+    p.invuln = 0;
+    return { hit: hitAt != null, inv, moved };   // inv: after that frame's own tick
+  };
+  out.unshovedInv = F.ENEMY_UNSHOVED_INVULN_FRAMES;
+  out.struck = { zol: struck('zol'), gel: struck('gel'), octorok: struck('octorok') };
   out.bumpExpect = { link: F.SHIELD_BUMP[0][0] * F.PLAYER_KNOCK_SPEED / 256, foe: F.SHIELD_BUMP[0][2] * F.ENEMY_KNOCK_SPEED / 256 };
   return out;
 });
@@ -296,6 +323,12 @@ check('while Link is flashing after a hit, the rock flies straight through him',
   r.rockFlashing.passed && r.rockFlashing.turned == null && r.rockFlashing.lost === 0 && !r.rockFlashing.clink, J(r.rockFlashing));
 check('and his raised shield does not knock it back then either',
   r.rockFlashingShield.passed && r.rockFlashingShield.turned == null && !r.rockFlashingShield.deflectSound && r.rockFlashingShield.lost === 0, J(r.rockFlashingShield));
+const SK = r.struck;
+check('a zol struck by the sword is not knocked back, and is safe for 32 frames',
+  SK.zol.hit && SK.zol.moved === 0 && SK.zol.inv + 1 === r.unshovedInv, J(SK.zol));
+check('nor is a gel', SK.gel.hit && SK.gel.moved === 0 && SK.gel.inv + 1 === r.unshovedInv, J(SK.gel));
+check('while an octorok struck the same way is shoved back',
+  SK.octorok.hit && SK.octorok.moved >= 14 && SK.octorok.inv < r.unshovedInv, J(SK.octorok));
 const M = r.moblin, W = r.wizzrobe;
 check("a moblin's spear is knocked back off a wall like the rock, silently",
   M.wall.turned != null && M.wall.after === D && !M.wall.deflectSound && !M.wall.clink, J(M.wall));

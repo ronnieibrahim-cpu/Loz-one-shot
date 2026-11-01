@@ -51,7 +51,7 @@ import { TILE } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
-  ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE,
+  ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_UNSHOVED_INVULN_FRAMES,
   ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS,
   ENEMY_TURN_PAUSE_FRAMES,
   ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES,
@@ -443,6 +443,14 @@ export class Enemy extends Entity {
       if (this.shield === 'all') { game.audio.sfx('block'); return false; }
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
+    // Seasons' zol, gel and pincer take every blow of Link's without moving
+    // (COLLISIONEFFECT_SWORD_NO_KNOCKBACK -> ENEMYDMG_0c) and stay safe for
+    // longer than a shoved enemy does.
+    if (this.spec.unshoved && knock) {
+      if (!super.hurt(game, dmg, dir, 0, from)) return false;
+      if (!this.dead) { this.invuln = ENEMY_UNSHOVED_INVULN_FRAMES; this.flicker = this.invuln; }
+      return true;
+    }
     return super.hurt(game, dmg, dir, knock, from);
   }
 

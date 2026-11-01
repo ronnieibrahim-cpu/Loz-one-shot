@@ -526,6 +526,15 @@ export const KNOCK_TOOL = 6;
  *  Was a guessed 20 "so a boss can be combo'd" (S166, the human: match). */
 export const BOSS_INVULN_FRAMES = 32;
 
+/** f — invulnerability, and flash, after a hit on an enemy that is never
+ *  shoved (a spec with `unshoved`: the zol, the gel, the pincer). derived from
+ *  the cartridge: data/seasons/objectCollisionTable.s gives ENEMYCOLLISION_ZOL,
+ *  _GEL and _PINCER COLLISIONEFFECT_SWORD_NO_KNOCKBACK for every sword, the
+ *  spin, the held blade, a thrown thing, a bomb and the beam, and
+ *  code/collisionEffects.s turns that into ENEMYDMG_0c: invincibilityCounter
+ *  $20, knockbackCounter 0. */
+export const ENEMY_UNSHOVED_INVULN_FRAMES = 32;
+
 /** f — invulnerability granted to a boss when it changes phase. guessed. */
 export const BOSS_PHASE_INVULN_FRAMES = 20;
 
