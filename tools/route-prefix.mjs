@@ -30,9 +30,14 @@ if (process.env.PATCH) for (const part of process.env.PATCH.split(';')) {
 }
 // INSERT='<index>=<json directive>' puts one directive in before <index>
 // (indices after it shift by one), so a wait can be swept where there was none.
+// Several at once: 'i=json;j=json', each <index> counted in the route as
+// written (they are applied from the last back).
 if (process.env.INSERT) {
-  const k = process.env.INSERT.indexOf('=');
-  ROUTE.splice(Number(process.env.INSERT.slice(0, k)), 0, JSON.parse(process.env.INSERT.slice(k + 1)));
+  const parts = process.env.INSERT.split(';').map(part => {
+    const k = part.indexOf('=');
+    return [Number(part.slice(0, k)), JSON.parse(part.slice(k + 1))];
+  }).sort((a, b) => b[0] - a[0]);
+  for (const [i, d] of parts) ROUTE.splice(i, 0, d);
 }
 const start = Number(process.argv[2]), end = Number(process.argv[3] || ROUTE.length);
 const server = createServer(async (req, res) => {
@@ -56,6 +61,7 @@ await page.evaluate(async () => {
   window.__hits = [];
   mod.Player.prototype.takeDamage = function (game, amount, source, o) {
     const before = game.progress.hearts;
+    if (window.__god) return false;   // GOD=1: a survey, not a run
     const r = orig.call(this, game, amount, source, o);
     if (game.progress.hearts !== before) window.__hits.push(`f${game.frame} ${game.mapId} ${game.room && game.room.key} -${before - game.progress.hearts} ${source && source.isProjectile ? 'shot' : (source && (source.kind || source.type)) || '?'} at ${Math.round(this.x)},${Math.round(this.y)} tide ${game.tide.level}`);
     return r;
@@ -92,6 +98,28 @@ if (process.env.FRAMES) {
     };
   }, [a, b]);
 }
+// CHESTSIDES=1 opens every chest from whatever side the route stands on and
+// lists the ones that were not opened from the front (S224).
+if (process.env.GOD) await page.evaluate(() => { window.__god = true; });
+if (process.env.CHESTSIDES) await page.evaluate(async () => {
+  const { Chest } = await import('/src/game/objects.js');
+  const orig = Chest.prototype.interact;
+  window.__sides = [];
+  Chest.prototype.interact = function (game, player) {
+    if (!this.opened && player && (player.dir !== 'up' || player.cy <= this.cy)) {
+      const tr = window.__rp._trace || [];
+      window.__sides.push(`step ${tr.length ? tr[tr.length - 1].step + 1 : 0} ${game.mapId} ${game.room && game.room.key} chest ${this.x / 16},${this.y / 16} Link ${Math.round(player.x)},${Math.round(player.y)} ${player.dir}`);
+      return orig.call(this, game, null);
+    }
+    return orig.call(this, game, player);
+  };
+});
+// SAYS=<text> lists every text box whose words contain <text>, with the step.
+if (process.env.SAYS) await page.evaluate(() => {
+  const g = window.__game, orig = g.say.bind(g);
+  window.__says = [];
+  g.say = (t, o) => { const tr = window.__rp._trace || []; window.__says.push(`step ${tr.length ? tr[tr.length - 1].step + 1 : 0} f${g.frame} ${g.mapId} ${g.room && g.room.key} ${String(t).replace(/\n/g, ' ')}`); return orig(t, o); };
+});
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE.slice(0, end));
 let r; let err = null;
 for (let i = 0; i < 4000; i++) {
@@ -102,8 +130,12 @@ const res = await page.evaluate(() => window.__rp.result());
 for (const t of res.trace.filter(t => t.step >= start)) console.log(`${String(t.step).padStart(4)} ${t.kind.padEnd(9)} f${String(t.frame).padStart(6)} ${t.room.padEnd(12)} ${String(t.x).padStart(4)},${String(t.y).padStart(3)} hp ${t.hp}/${t.maxHp} tide ${t.tide} foes ${t.foes} keys ${t.keys} ${t.foeKinds ? '[' + t.foeKinds + ']' : ''}`);
 const hits = await page.evaluate(() => window.__hits);
 if (process.env.FRAMES) for (const x of await page.evaluate(() => window.__frames)) console.log(x);
+if (process.env.CHESTSIDES) for (const x of await page.evaluate(() => window.__sides)) console.log('SIDE', x);
+if (process.env.SAYS) for (const x of await page.evaluate(() => window.__says)) if (x.includes(process.env.SAYS)) console.log('SAY', x);
 if (process.env.TIDEHOOK) for (const x of await page.evaluate(() => window.__tides)) console.log('TIDE', x); if (process.env.HITS) for (const h of hits) if (h.includes(process.env.HITS)) console.log('HIT', h);
 const st = await page.evaluate(() => { const g = window.__game; return { ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + (e.pressed ? '*' : '') + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' '), flags: Object.keys(g.progress.flags).filter(k => k.startsWith(g.mapId)).join(','), map: g.mapId, room: g.room && g.room.key, x: g.player.x, y: g.player.y, tide: g.tide.level, mode: g.mode, progress: g.progress }; });
 if (process.argv[4]) await writeFile(process.argv[4], JSON.stringify(st));
+// EVAL='<expr>' prints an expression read with the game as `g` at the end.
+if (process.env.EVAL) console.log('EVAL', await page.evaluate(src => { const g = window.__game; return JSON.stringify(eval(src)); }, process.env.EVAL));
 console.log('ENTS', st.ents, 'FLAGS', st.flags); console.log('END', st.map, st.room, st.x, st.y, 'tide', st.tide, 'mode', st.mode, 'hp', st.progress.hearts, '/', st.progress.maxHearts, err ? 'ERR ' + err : '', 'frames', res.frames);
 await browser.close(); server.close();

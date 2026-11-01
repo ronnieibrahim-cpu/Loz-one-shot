@@ -495,7 +495,7 @@ export class Player extends Entity {
     // entities first
     const talk = (qx, qy) => {
       for (const e of game.entities) {
-        if (e.interact && !e.dead) {
+        if (e.interact && !e.dead && !e.inert) {
           const r = e.rect();
           if (qx >= r.x - 4 && qx <= r.x + r.w + 4 && qy >= r.y - 4 && qy <= r.y + r.h + 4) {
             e.interact(game, this);

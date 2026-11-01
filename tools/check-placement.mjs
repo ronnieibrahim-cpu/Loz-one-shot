@@ -233,51 +233,87 @@ for (const l of wander.out) console.log('  roots  ' + l);
 check('no wandering townsperson walks into a tree', wander.walked > 0 && wander.moved > 0 && wander.out.length === 0,
   wander.out.length ? `${wander.out.length} did` : `${wander.walked} walked, ${wander.moved} moved`);
 
-// WHAT A CHEST HANDS OUT LANDS WHERE IT CAN BE PICKED UP (S162). A chest
-// holding a key or a Boss Key does not give it: it pops a pickup
-// out above itself (`Game.openChest`), which settles a tile up and has to be
-// walked into. The Sunken Palace's Boss Key chest stood against the cellar's
-// north wall, so the key came to rest INSIDE the wall — the chest opened, the
-// jingle played, the save recorded it, and nothing could ever touch the key,
-// so the dungeon could not be finished. Every tool here was green: the flood
-// asks whether the CHEST is reachable, and it is. This opens every such chest
-// in the real engine, lets the pickup settle as it does in play, and asks
-// `canOccupy` whether the pickup can be where it came to rest. (Since S179 a
-// map or a Chartstone is handed over by its chest, Seasons' way, and pops
-// nothing — those chests are skipped: `PICKUPS[kind].grant`.)
+// WHAT A CHEST HANDS OUT IS HANDED OVER (S162, S224). A chest holding a key
+// or a Boss Key used to pop a pickup out above itself, to settle a tile up
+// and be walked into — and the Sunken Palace's Boss Key chest stood against
+// the cellar's north wall, so the key came to rest INSIDE the wall and the
+// dungeon could not be finished with every tool green. Since S224 every
+// chest's prize rises out of it and is given the moment the lid opens, as in
+// Seasons (TREASURE_SPAWN_MODE_FROM_CHEST_A): nothing pops, so nothing can be
+// buried. This opens every chest that holds a pickup in the real engine and
+// asserts that no pickup came out, the prize was held up over the chest, and
+// a key or a Boss Key was counted.
 const chests = await page.evaluate(async () => {
   const g = window.__game;
-  const ent = await import('/src/game/entity.js');
   const maps = await import('/src/world/maps.js');
-  const { PICKUPS } = await import('/src/game/objects.js');
-  const pops = s => s[0] === 'chest' && s[3] && s[3].pickup && !(PICKUPS[s[3].pickup] || {}).grant;
   const out = []; let opened = 0;
+  const holds = s => s[0] === 'chest' && s[3] && s[3].pickup;
   for (const map of maps.MAPS.values()) {
     for (const key of Object.keys(map.roomDefs || {})) {
       const def = map.roomDefs[key];
-      if (!(def.entities || []).some(pops)) continue;
+      if (!(def.entities || []).some(holds)) continue;
       const [f, rx, ry] = key.split(',').map(Number);
       g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
-      for (const chest of g.entities.filter(e => e.constructor.name === 'Chest' && e.pickup && !(PICKUPS[e.pickup] || {}).grant)) {
+      for (const chest of g.entities.filter(e => e.constructor.name === 'Chest' && e.pickup)) {
         const before = new Set(g.entities.concat(g.pendingAdd));
+        const p = g.progress, keys = (p.keys || {})[g.mapId] || 0;
+        g.itemShow = null;
         g.openChest(chest);
         g.flushPending();
-        const pk = g.entities.find(e => !before.has(e) && e.constructor.name === 'Pickup');
-        if (!pk) { out.push(`${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}: no pickup came out`); continue; }
-        for (let i = 0; i < 120; i++) pk.update(g);
         opened++;
-        const ok = [0, 1, 2].some(lv => { g.tide.setLevel(lv, { instant: true }); return ent.canOccupy(g, pk, pk.x, pk.y); });
-        if (!ok) out.push(`${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}: its ${pk.kind} came to rest in '${g.room.baseName(Math.floor(pk.cx / 16), Math.floor(pk.cy / 16))}'`);
-        pk.remove = true;
+        const where = `${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}`;
+        if (g.entities.some(e => !before.has(e) && e.constructor.name === 'Pickup')) out.push(`${where}: its ${chest.pickup} popped out`);
+        if (!g.itemShow || !g.itemShow.chest) out.push(`${where}: its ${chest.pickup} was not held up over the chest`);
+        if (chest.pickup === 'key' && ((p.keys || {})[g.mapId] || 0) !== keys + 1) out.push(`${where}: the key was not counted`);
+        if (chest.pickup === 'bossKey' && !p.bossKeys[g.mapId]) out.push(`${where}: the Boss Key was not given`);
+        g.itemShow = null; g.dialogue.active = false;
+        if (g.player) g.player.frozen = 0;
       }
     }
   }
   return { out, opened };
 });
-console.log(`check-placement: ${chests.opened} chests that hand out a pickup, opened in the real engine`);
-for (const l of chests.out) console.log('  buried ' + l);
-check('every chest\'s pickup comes to rest where it can be picked up',
-  chests.opened > 0 && chests.out.length === 0, chests.out.length ? `${chests.out.length} cannot` : '');
+console.log(`check-placement: ${chests.opened} chests that hold a pickup, opened in the real engine`);
+for (const l of chests.out) console.log('  ' + l);
+check('every chest\'s pickup rises out of it and is given, none pops',
+  chests.opened > 0 && chests.out.length === 0, chests.out.length ? `${chests.out.length} do not` : '');
+// EVERY CHEST CAN BE OPENED FROM THE FRONT (S224). Seasons opens a chest
+// only for a Link standing below it facing up, and so does ours now; a chest
+// with a wall, water or a block under it could never be opened at all. This
+// stands a real Player on the tile below each chest in the world and asks
+// `canOccupy` at each sea.
+const fronts = await page.evaluate(async () => {
+  const g = window.__game;
+  const ent = await import('/src/game/entity.js');
+  const maps = await import('/src/world/maps.js');
+  const { Player } = await import('/src/game/player.js');
+  const out = []; let seen = 0;
+  for (const map of maps.MAPS.values()) {
+    for (const key of Object.keys(map.roomDefs || {})) {
+      const def = map.roomDefs[key];
+      if (!(def.entities || []).some(s => s[0] === 'chest')) continue;
+      const [f, rx, ry] = key.split(',').map(Number);
+      g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
+      // From the room's own list, not the live entities: a chest that waits
+      // on a flag (`needFlag`, most Boss Keys) is not built until it rises.
+      for (const s of def.entities.filter(s => s[0] === 'chest')) {
+        seen++;
+        const chest = { x: s[1] * 16, y: s[2] * 16 };
+        const p = new Player(chest.x, chest.y + 16);
+        // A grate below is the Colonnade's: the Resonance Rod retracts it and
+        // check-trade proves that crossing, so the floor under it counts.
+        const under = g.room.baseName(chest.x / 16, chest.y / 16 + 1);
+        const ok = under === 'grate' || [0, 1, 2].some(lv => { g.tide.setLevel(lv, { instant: true }); return ent.canOccupy(g, p, chest.x, chest.y + 16); });
+        if (!ok) out.push(`${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}: no floor in front of it ('${g.room.baseName(chest.x / 16, chest.y / 16 + 1)}')`);
+      }
+    }
+  }
+  return { out, seen };
+});
+console.log(`check-placement: ${fronts.seen} chests, each stood in front of`);
+for (const l of fronts.out) console.log('  ' + l);
+check('every chest has floor in front of it, where it opens from',
+  fronts.seen > 0 && fronts.out.length === 0, fronts.out.length ? `${fronts.out.length} do not` : '');
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

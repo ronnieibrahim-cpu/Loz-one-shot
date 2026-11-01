@@ -479,8 +479,9 @@ const SCENARIOS = [
       ['goto', 7, 1, 600], ['hold', ['up'], 40], ['wait', 20],
       ['goto', 13, 5, 1200], ['hold', ['right'], 40], ['wait', 30],
       ['goto', 7, 5, 1200], ['hold', ['up'], 2], ['tap', 'a', 90],
-      ['goto', 7, 2, 600], ['hold', ['left'], 2], ['tap', 'a', 30], ['dialogue', 300], ['wait', 30],
-      ['goto', 7, 1, 400], ['hold', ['left'], 24], ['wait', 20],
+      // S224: the key's chest stands at the back of the alcove, opened from
+      // below, and its key comes up out of it.
+      ['goto', 7, 2, 600], ['hold', ['up'], 2], ['tap', 'a', 30], ['dialogue', 300], ['wait', 30],
       // the Small Key turned in the Sump's west door, with empty hands
       ['goto', 7, 5, 600], ['hold', ['down'], 2], ['goto', 1, 5, 1200], ['hold', ['left'], 40], ['wait', 20],
       ['goto', 1, 5, 600], ['hold', ['left'], 8], ['tap', 'a', 30], ['dialogue', 300], ['wait', 20],
@@ -564,11 +565,11 @@ const SCENARIOS = [
       ['use', 'coin', 1, 50],
       ['tide', 2, 20, 600],
       ['wait', 90],
-      ['hold', ['right'], 4],
+      // S224: the chest opens from below only, and its key comes up out of it.
+      ['goto', 7, 6, 200],
+      ['hold', ['up'], 4],
       ['tap', 'a', 30],
       ['dialogue', 300],
-      ['wait', 20],
-      ['goto', 7, 4, 200],
       ['wait', 20],
       ['tide', 0, 20, 600],
       ['wait', 90],
@@ -866,6 +867,21 @@ for (const sc of SCENARIOS) {
   await page.goto(`http://localhost:${PORT}/index.html?seed=20260806`);
   await page.waitForFunction(() => !!window.__game && !!window.__harness);
   await page.evaluate(installRuntime);
+  // CHESTSIDES=1 (S224): open every chest from whatever side the scenario
+  // stands on, and list the ones that were not opened from the front.
+  if (process.env.CHESTSIDES) await page.evaluate(async () => {
+    const { Chest } = await import('/src/game/objects.js');
+    const orig = Chest.prototype.interact;
+    window.__sides = [];
+    Chest.prototype.interact = function (game, player) {
+      if (!this.opened && player && (player.dir !== 'up' || player.cy <= this.cy)) {
+        const tr = window.__rp._trace || [];
+        window.__sides.push(`step ${tr.length ? tr[tr.length - 1].step + 1 : 0} ${game.mapId} ${game.room && game.room.key} chest ${this.x / 16},${this.y / 16} Link ${Math.round(player.x)},${Math.round(player.y)} ${player.dir}`);
+        return orig.call(this, game, null);
+      }
+      return orig.call(this, game, player);
+    };
+  });
   await page.evaluate(([s, st]) => window.__rp.beginRecord(s, st), [sc.setup, sc.steps]);
   let err = null;
   for (let i = 0; i < 8000; i++) {
@@ -890,6 +906,7 @@ for (const sc of SCENARIOS) {
       .map(t => `       step ${t.step} ${t.kind} ${t.room} ${t.x},${t.y} hp ${t.hp} tide ${t.tide}`).join('\n'));
   }
   else { pass++; console.log(`  ok   ${sc.name}`); }
+  if (process.env.CHESTSIDES) for (const x of await page.evaluate(() => window.__sides)) console.log('       SIDE ' + x);
   await page.close();
 }
 await browser.close(); server.close();

@@ -267,8 +267,8 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#......=......#',
-          '#.....=.....22.',
-          '#......=......#',
+          '#.....=.=...22.',
+          '#.............#',
           '#.............#',
           '#.U.........U.#',
           '#.............#',
@@ -332,10 +332,11 @@ export function installDungeonsA() {
           ['crab', 3, 5, { drops: 'good' }],
           ['block', 3, 7],
           ['switch', 10, 7],
-          ['chest', 1, 2, { pickup: 'rupee100' }],
+          // In the far corner, opened from below (S224: front only).
+          ['chest', 1, 1, { pickup: 'rupee100' }],
         ],
         bridgeRoom: {
-          from: [7, 9], target: [2, 2], plate: [10, 7], dir: 'H',
+          from: [7, 9], target: [1, 2], plate: [10, 7], dir: 'H',
           planks: [[6, 1], [5, 1], [4, 1], [3, 1]], seas: [1, 2, 0],
         },
         readable: [
@@ -3591,7 +3592,7 @@ export function installDungeonsA() {
         cubeRoom: { from: [1, 5], seas: [0, 1, 2], cracks: true },
         entities: [
           ['cube', 2, 3, { o: 0 }],
-          ['chest', 13, 9, { pickup: 'key', needFlag: 'd4_spillVault' }],
+          ['chest', 13, 8, { pickup: 'key', needFlag: 'd4_spillVault' }],
         ],
         puzzle: {
           cube: true,
@@ -3910,7 +3911,7 @@ export function installDungeonsA() {
         tankRoom: { wheel: true, sea: 2 },
         entities: [
           ['wheel', 7, 4, { needTurns: 40, sets: 'd4EastWheel' }],
-          ['chest', 7, 2, { pickup: 'bossKey', needFlag: 'd4EastWheel' }],
+          ['chest', 7, 1, { pickup: 'bossKey', needFlag: 'd4EastWheel' }],
           ['switch', 5, 9, { hold: false }],
         ],
         puzzle: {

@@ -129,10 +129,11 @@ export const PICKUPS = {
   // herself; a pickup jingle is the whole of what this needs to say.
   blank: {
     sprite: 'p_blank', pal: null,
-    get(g) {
-      g.progress.blanks = (g.progress.blanks || 0) + 1;
-      g.audio.sfx('key');
-    },
+    // The Keep's one blank in a chest rises out with a line (S224), as
+    // everything a Seasons chest holds does; a dropped one says nothing.
+    grant(g) { g.progress.blanks = (g.progress.blanks || 0) + 1; },
+    line: 'A blank charm! The scrimshander can carve it.',
+    get(g) { this.grant(g); g.audio.sfx('key'); },
   },
   seeds5: {
     sprite: 'i_reefseed', pal: null,
@@ -145,17 +146,21 @@ export const PICKUPS = {
   key: {
     sprite: 'p_key', pal: null, persistent: true,
     // Seasons' TREASURE_SMALL_KEY (treasureObjectData.s): one that puffs in
-    // or falls in is taken with the item jingle (SND_GETITEM) and NO text;
-    // only a chest's ($38) says "You found a Small Key!" (S223).
-    get(g, e) {
-      addKey(g.progress, g.mapId);
-      g.audio.jingle('itemGet');
-      if (e && e.fromChest) g.say('You found a Small Key!');
-    },
+    // or falls in is taken with the item jingle (SND_GETITEM) and NO text
+    // (S223). A chest's ($38: spawn mode 3, FROM_CHEST_A, text $1a) rises
+    // out of the chest and says so (S224): Game.openChest hands over
+    // `grant` and `line`, as for the map.
+    grant(g) { addKey(g.progress, g.mapId); },
+    line: 'You found a Small Key!',
+    get(g) { this.grant(g); g.audio.jingle('itemGet'); },
   },
   bossKey: {
     sprite: 'p_bosskey', pal: null, persistent: true,
-    get(g) { g.progress.bossKeys[g.mapId] = true; g.audio.jingle('fanfareShort'); g.say('You found the Boss Key!'); },
+    // Out of a chest it rises (TREASURE_BOSS_KEY $38, spawn mode 3, text
+    // $1b), S224; loose it is the same jingle and line.
+    grant(g) { g.progress.bossKeys[g.mapId] = true; },
+    line: 'You found the Boss Key!',
+    get(g) { this.grant(g); g.audio.jingle('fanfareShort'); g.say(this.line); },
   },
   dungeonMap: {
     // `pal: null` so the sprite's OWN palette wins, like the chartstone below.
@@ -279,8 +284,6 @@ export class Pickup extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
     this.kind = o.kind || 'rupee1';
-    // Popped out of a chest (Game.openChest), which a Small Key announces.
-    this.fromChest = !!o.fromChest;
     const spec = PICKUPS[this.kind] || PICKUPS.rupee1;
     this.spec = spec;
     this.w = 16; this.h = 16;
@@ -472,8 +475,21 @@ export class Chest extends Entity {
     this.needText = o.needText || 'The lid will not lift. Not yet.';
   }
 
+  // An opened chest is only a solid tile in Seasons (TILEINDEX_CHEST_OPENED
+  // has no interaction): A in front of it says nothing and does whatever A
+  // does — it used to say "Empty." (S224). Player.tryContextAction skips it.
+  get inert() { return this.opened; }
+
   interact(game, player) {
-    if (this.opened) { game.say('Empty.'); return; }
+    if (this.opened) return;
+    // FROM THE FRONT ONLY (S224): Seasons opens a chest only for a Link
+    // facing up at it from below (interactableTiles.s
+    // checkFacingBottomOfTileAndPressedA); from any other side A says
+    // TX_510d.
+    if (player && (player.dir !== 'up' || player.cy <= this.cy)) {
+      game.say('It won\'t open\nfrom this side!');
+      return;
+    }
     if (this.needsBossKey && !game.progress.bossKeys[game.mapId]) {
       game.say('A great lock. You need the Boss Key.');
       game.audio.sfx('deny');

@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A chest opens from the front only, and the robot did not know (S224).**
+  Seasons' checkFacingBottomOfTileAndPressedA; the route opened 16 chests
+  from a side or from behind, and the Sunken Nave's chest plugged the only
+  corridor to its own front. Survey a route with `GOD=1 CHESTSIDES=1 node
+  tools/route-prefix.mjs 0 9999` (and `CHESTSIDES=1` on check-side) rather
+  than one failure at a time: a refused chest only shows up as a missing
+  key hundreds of steps later.
+- **Taking an Entity out of a common path moves every fight after it
+  (S224).** Chests stopped spawning a Pickup, every later entity id moved by
+  one per chest, and with frames lined up to the old run exactly the
+  overworld still diverged (an enemy's rhythm is a hash of its id, S218).
+  Padding the route cannot recover it; re-sweep the fights that change.
+- **`pkill -f <name>` kills the shell that runs it when the name is in its
+  own command line (S224).** Kill by pid.
+
 - **Seasons opens a key door by LEANING, not by A (S223).**
   interactableTiles.s nextToKeyDoor runs off the same 20-frame push counter
   as a block; A does nothing there. The door is passable the first frame

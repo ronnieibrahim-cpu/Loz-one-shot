@@ -12,7 +12,7 @@ export const D3_RUN = [
   ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
   // P2: the Hub's south-east hole, the key pen, off its ledge
   ['travel', 3, 5, 2000], ['goto', 11, 6, 900], ['hold', ['down'], 30], ['wait', 150],
-  ['goto', 11, 8, 600], ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
+  ['goto', 12, 9, 600], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
   ['goto', 11, 7, 600], ['hold', ['up'], 40],
   ['travel', 3, 6, 2000], ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
   // the first key, the Hub's east door
@@ -21,7 +21,7 @@ export const D3_RUN = [
   ['travel', 4, 5, 2000], ['equip', 'anchor', 'A', 400], ['anchor', 7, 6, 1600],
   ['tide', 1, 140, 900], ['goto', 7, 7, 400], ['hold', ['up'], 60], ['wait', 150],
   // the Drain Weir: the second key; the shutter opens west
-  ['goto', 11, 8, 900], ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
+  ['goto', 12, 9, 900], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
   ['wait', 60], ['unanchor', 120], ['equip', 'sword', 'A', 400], ['tide', 0, 140, 900],
   ['travel', 3, 5, 2000], ['travel', 3, 6, 2000],
   ['goto', 1, 2, 900], ['hold', ['up'], 30], ['wait', 90], ['hold', ['down'], 40],
@@ -30,7 +30,7 @@ export const D3_RUN = [
   // P4: the Silt Cell's crack; the Chartstone on the Root Cellar's raised
   // corner, off its ledge; the Silt Stair up onto the Map Cell's dais
   ['travel', 2, 4, 2000], ['goto', 2, 2, 900], ['wait', 220],
-  ['hold', ['right'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
+  ['goto', 3, 3, 300], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
   ['goto', 2, 3, 300], ['hold', ['down'], 40],
   ['travel', 2, 5, 2000], ['goto', 12, 9, 900], ['hold', ['up'], 30], ['wait', 90],
   ['goto', 13, 8, 300], ['hold', ['up'], 40], ['wait', 30],

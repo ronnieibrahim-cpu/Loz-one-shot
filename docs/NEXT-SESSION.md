@@ -1,3 +1,85 @@
+## S224 — chests the Seasons way: the prize rises out, the jingle after the climb, front only
+
+Branch claude/oracle-tides-s224-fsqywh, off main at 38262e9 (S223).
+
+### The human's choices this session
+- S223's key doors (lean, the key popping up, the slide), the sliding puzzle
+  doors, the quieter loose keys and the ammo blip: ALL FEEL RIGHT, keep.
+- CHEST PRIZES (shown a strip of a key popping onto the chest's lid beside
+  the map chest rising out, docs/briefs/s224/chest-key.png): SEASONS' WAY,
+  for everything a chest holds.
+- CHESTS FROM THE FRONT ONLY (asked; Seasons' "It won't open from this
+  side!"): YES, front only, every chest checked and moved where needed.
+
+### Built
+- EVERY CHEST'S PRIZE RISES OUT (treasure.s spawn mode 3, FROM_CHEST_A;
+  chestData.s: every dungeon key chest is TREASURE_OBJECT_SMALL_KEY_03 /
+  BOSS_KEY_03, $38: rises, grab mode 0, text $1a/$1b). PICKUPS.key, bossKey
+  and blank gained `grant` + `line` (objects.js), so Game.openChest's grant
+  path (S179's map/chartstone path) takes them; a chest written
+  `pickup: 'rupee100'` goes through the rupee path ("You got 100 Rupees!").
+  Nothing a chest holds pops onto the floor any more; the spawnPickup branch
+  is left only for a pickup kind with neither. `Pickup.fromChest` is gone.
+- THE ITEM JINGLE SOUNDS WHEN THE PRIZE HAS RISEN (treasure.s @m3State1
+  plays SND_GETITEM after the climb): every chest path leaves the jingle to
+  tickItemShow, which plays `itemGet` with the text at CHEST_TEXT_DELAY;
+  before, it played with the lid. Sounds: docs/briefs/s224/chest-sound-*.wav.
+  chestShow tolerates no player.
+- AN OPENED CHEST IS INERT (TILEINDEX_CHEST_OPENED has no interaction): A in
+  front of it says nothing and does what A does (`Chest.inert`, skipped by
+  Player.tryContextAction). It used to say "Empty." — and that ate the
+  robot's Anchor recall once its key no longer had to be walked to.
+- CHESTS OPEN FROM THE FRONT ONLY (interactableTiles.s
+  checkFacingBottomOfTileAndPressedA, TX_510d): Chest.interact refuses a Link
+  not facing up or not below the chest's centre with "It won't open\nfrom
+  this side!". Moved so each has floor in front: d1 Map Alcove's blocks (the
+  open side is now south), d4 Spill Vault key 13,9->13,8, d4 East Tank Boss
+  Key 7,2->7,1, d5 Sunken Nave key 1,8->1,1 (it plugged the corridor), d5
+  Knot Garden purse 11,9->11,8, d6 Rime Gauge blank 13,9->13,8, the Lower
+  Vault's Kelp Cell key 6,2->7,1, d1 Tide Gallery purse 1,2->1,1 (its
+  bridgeRoom target 2,2->1,2). Picture: docs/briefs/s224/chest-wrong-side.png.
+- check-placement: the S162 "pickup comes to rest" clause became "every
+  chest's pickup rises out of it and is given, none pops", and a new clause
+  stands a real Player on the tile below every chest (from the room's own
+  list, so needFlag chests count) and asks canOccupy at each sea; a grate
+  below counts (the Colonnade's, the Rod retracts it). It proves floor, not
+  reachability: the Sunken Nave's 1,9 was floor nobody could reach — the
+  playthrough and check-side found that.
+- The route opens 16 chests from below now (d1 Keyvault, Sluicegate, Map
+  Alcove, Boss Key; d2 x3; d3 x3; d4 x4; d5 x2), and d3-run.mjs and two
+  check-side scenarios (the Lower Vault, the Eyrie's Key Ledge) likewise.
+  Bogmaw changed under it: openRetreat lost at every entry wait 4-34; six
+  option sets swept, {reachSwing, diagRetreat, waitInvuln} wins on 10/28.
+- Tools: route-prefix.mjs gained INSERT with several entries, EVAL=<expr>,
+  SAYS=<text>, CHESTSIDES=1 and GOD=1 (a survey that cannot die);
+  check-side.mjs gained CHESTSIDES=1.
+
+### Verified
+check-playthrough 49/49, THE END, never died, 313863 frames, LOW-WATER 2
+(was 5): the Abyssal Keep's tideshade costs 9 again and the Shade Cell
+leaves him on half a heart. FRAGILE — see "Not done". Whole table green
+(66 tools three at a time, then the two failures fixed and rerun alone):
+check-side 78/78, check-placement 5/5, check-bridges 13/13, replay 51/51
+after re-recording d1-descent ONCE for the Map Alcove's moved blocks (from
+its plan: ends at the same room 0,3,3, place 115,161, hearts 11/30, kills
+18, draws 63; 7433 -> 7680 frames, walking round to the chest's front);
+check-rippers last, alone, 47/47; check-build OK.
+
+### Not done / candidates
+- The low-water mark is 2 quarter-hearts in d6 (tideshade at 2,4,5 then
+  the Shade Cell 2,2,5). A sweep before the chest-side change found
+  `reachSwing` alone beats the shade with more left; worth re-sweeping the
+  shade's options and the Shade Cell's fight before anything else moves the
+  run. Making chests no longer spawn a Pickup shifted every later entity id
+  (an enemy's rhythm is a hash of its id, S218), which is why fights moved.
+- check-placement proves floor in front of a chest, not that it can be
+  walked to; a flood from the room's doors would close that.
+- Seasons' chest key is held in no pose (grab mode 0): ours shows it over
+  the chest, which matches. A loose key's one-frame hold (grab mode 1) is
+  still not done (invisible).
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+
 ## S223 — key doors open Seasons' way; loose keys and ammo sound like Seasons
 
 Branch claude/oracle-tides-gameplay-feel-4nex42, off main at 496ec74 (S222).

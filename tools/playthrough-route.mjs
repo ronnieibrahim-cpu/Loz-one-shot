@@ -238,12 +238,13 @@ export const ROUTE = [
   ['tide', 0, 140, 600],
 
   // West wing: the Dungeon Map, in a chest behind three blocks (S179: in a
-  // chest, as Seasons keeps its map), opened from the open east side.
+  // chest, as Seasons keeps its map), opened from the open south side
+  // (S224: chests open from the front only, so the blocks moved round).
   ['travel', 2, 5, 2000],
   ['fight', 1200],
   ['loot', 500],
-  ['goto', 8, 5, 500],
-  ['hold', ['left'], 6],
+  ['goto', 7, 6, 500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
 
@@ -325,10 +326,11 @@ export const ROUTE = [
   ['exit', 'up', 400],
 
   // ---------------------------------------------------------------- d1 0,3,2
-  // The Sluicegate: the big chest with the Anchor, opened from the north,
-  // under the boss door it will eventually lead back to.
-  ['goto', 7, 2, 500],
-  ['hold', ['down'], 6],
+  // The Sluicegate: the big chest with the Anchor, opened from the front
+  // (S224: a chest opens only from below, as in Seasons), under the boss door
+  // it will eventually lead back to.
+  ['goto', 7, 4, 500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
@@ -364,12 +366,13 @@ export const ROUTE = [
   ['exit', 'left', 300],
 
   // ---------------------------------------------------------------- d1 0,4,1
-  // The Keyvault: the third key, in a chest, opened from the north.
+  // The Keyvault: the third key, in a chest, opened from the south (S224:
+  // from the front, as Seasons opens one; it was opened from the north).
   ['equip', 'sword', 'A', 400],
   ['fight', 1200],
   ['loot', 500],
-  ['goto', 7, 4, 600],
-  ['hold', ['down'], 6],
+  ['goto', 7, 6, 600],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
@@ -474,12 +477,12 @@ export const ROUTE = [
   ['exit', 'right', 300],
 
   // ---------------------------------------------------------------- d1 0,2,1
-  // The Boss Key, opened from the north, and the stair home. The keese is
+  // The Boss Key, opened from the south (S224), and the stair home. The keese is
   // left alone: at 1.5 px/f (S147) chasing it carried Link onto the stair at
   // 10,7 mid-fight, home without the key.
   ['equip', 'sword', 'A', 400],
-  ['goto', 7, 3, 600],
-  ['hold', ['down'], 6],
+  ['goto', 7, 5, 600],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
@@ -764,8 +767,8 @@ export const ROUTE = [
   // Sealed Cell: the Lens, in the big chest in the north-west corner,
   // opened from above.
   ['travel', 4, 4, 1500],
-  ['goto', 2, 1, 500],
-  ['hold', ['down'], 6],
+  ['goto', 2, 3, 500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
@@ -822,8 +825,8 @@ export const ROUTE = [
   ['exit', 'down', 400],
   // FROM THE SIDE. Opened from above, Link leans into the chest until his
   // feet read inside its tile, and every path planned from there fails.
-  ['goto', 6, 4, 500],
-  ['hold', ['right'], 6],
+  ['goto', 7, 5, 500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
@@ -872,8 +875,8 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d2 1,2,1
   // The Boss Key.
-  ['goto', 7, 1, 500],
-  ['hold', ['down'], 6],
+  ['goto', 7, 3, 500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
@@ -1036,8 +1039,8 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d3 0,3,5
   // The south-east pen: the key's chest, then off the pen's ledge into the
   // corridor, and south to the Undercroft Landing.
-  ['goto', 11, 8, 600],
-  ['hold', ['right'], 6],
+  ['goto', 12, 9, 600],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
@@ -1074,8 +1077,8 @@ export const ROUTE = [
   // The Drain Weir: the second Small Key on the dry floor, which opens the
   // shutter west into the Pens. Take the Anchor back, put the sea back to
   // LOW, and go round by the Landing's stair to the Weir.
-  ['goto', 11, 8, 900],
-  ['hold', ['right'], 6],
+  ['goto', 12, 9, 900],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
@@ -1110,8 +1113,10 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d3 0,2,4
   // The Root Cellar: the Chartstone, on the raised corner the crack lands on
   // (S182), and off its ledge. Then the Silt Stair, and its stair up onto the
-  // Map Cell's dais, left by the dais's ledge.
-  ['hold', ['right'], 6],
+  // Map Cell's dais, left by the dais's ledge. The chest is opened from
+  // below, the corner's last free tile (S224: from the front only).
+  ['goto', 3, 3, 300],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
@@ -1353,8 +1358,11 @@ export const ROUTE = [
   // S218 (effects stopped sharing the enemies' id count, which re-phased
   // every enemy from D2's approach on): 46 loses. Swept 0-156: 2-6 win
   // untouched (28/28), 0 and 8-26 win hurt (9-13/28), 36-46 lose. 4.
+  // S224: chests open from the front only, which moved the route round six
+  // of them, and the fight changed under it: every entry wait 4-34 lost with
+  // `openRetreat`; without it (six option sets swept) it wins on 10/28.
   ['wait', 4],
-  ['boss', 9000, 'bogmaw', { openRetreat: true, reachSwing: true, diagRetreat: true, waitInvuln: true }],
+  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -1734,8 +1742,8 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d4 0,1,4
   // The Bellows Vault. One big chest, no enemies, and the Squall Bellows.
-  ['goto', 8, 5, 600],
-  ['hold', ['left'], 6],
+  ['goto', 7, 6, 600],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 600],
   ['wait', 120],
@@ -1803,9 +1811,10 @@ export const ROUTE = [
   ['goto', 9, 3, 600],
   ['cube', 'down'],
   ['dialogue', 400],
-  // The chest rises in the south-east corner and pops its key above itself.
-  ['goto', 13, 8, 1500],
-  ['hold', ['down'], 6],
+  // The chest rises in the south-east corner; its key comes up out of it
+  // (S224), opened from below.
+  ['goto', 13, 9, 1500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 600],
   ['wait', 30],
@@ -1973,8 +1982,8 @@ export const ROUTE = [
   ['hold', ['right'], 50],
   ['wait', 40],
   ['dialogue', 400],
-  ['goto', 13, 2, 1500],
-  ['hold', ['down'], 6],
+  ['goto', 13, 4, 1500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
@@ -2005,8 +2014,8 @@ export const ROUTE = [
   ['bellows', 7, 4, 3000],
   ['dialogue', 400],
   ['equip', 'sword', 'A', 400],
-  ['goto', 6, 2, 1500],
-  ['hold', ['right'], 6],
+  ['goto', 7, 2, 1500],
+  ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 600],
   ['loot', 900],
@@ -2335,9 +2344,9 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d5 0,1,4
   // The Reefseed Vault.
-  ['goto', 8, 5, 1500],
+  ['goto', 7, 6, 1500],
   ['wait', 30],
-  ['hold', ['left'], 6],
+  ['hold', ['up'], 6],
   ['tap', 'a', 60],
   ['dialogue', 600],
   ['loot', 1200],
@@ -2499,9 +2508,9 @@ export const ROUTE = [
   ['goto', 7, 7, 600], ['hold', ['left'], 30], ['wait', 40],
   ['dialogue', 400],
   ['tide', 0, 140, 600],
-  ['goto', 1, 7, 1500],
+  ['goto', 1, 2, 1500],
   ['wait', 30],
-  ['hold', ['down'], 20],
+  ['hold', ['up'], 20],
   ['tap', 'a', 60],
   ['dialogue', 600],
   ['loot', 1200],
@@ -3717,9 +3726,9 @@ export const ROUTE = [
   // K6's far plate (S190): at HIGH the far shaft (27,3) is flooded, and the
   // line brings up the chunk left on the Weighhouse's 12,3; thrown from 23,3
   // over the pit onto the plate in the nook. Both plates held: the chest
-  // rises beside the urn that stands where the old one did (a chest pops its
-  // prize a tile above itself, and one in front of the urn put the Boss Key
-  // inside it).
+  // rises beside the urn that stands where the old one did (before S224 a
+  // chest popped its prize a tile above itself, and one in front of the urn
+  // put the Boss Key inside it).
   ['equip', 'dredge', 'A', 400],
   ['dredge', 27, 4, 'up', 'chunk', 2400],
   ['goto', 23, 3, 900], ['hold', ['up'], 2], ['tap', 'a', 30], ['wait', 60],
