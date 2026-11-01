@@ -128,6 +128,12 @@ const SFX = {
   // The sword poking a wall a bomb would open: a hollower clink (S172,
   // commonCode2.s @bombableWallClink, SND_CLINK2).
   clinkHollow: { seasons: 'clink2' },
+  // An octorok's rock knocked back by the shield or the sword (S227,
+  // collisionEffect1f -> LINKDMG_20: SND_CLINK2).
+  deflect: { seasons: 'clink2' },
+  // The raised shield shoving an ordinary enemy off (S227,
+  // COLLISIONEFFECT_SHIELD_BUMP*: LINKDMG_10/14 play SND_BOMB_LAND).
+  shieldBump: { seasons: 'bombLand' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
   hop: { seasons: 'enemyJump' },
 

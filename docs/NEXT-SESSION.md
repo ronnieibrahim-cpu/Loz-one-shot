@@ -1,3 +1,64 @@
+## S227 — rocks, spears and magic bounce off the shield and sword; the shield bumps
+
+Branch claude/oracle-tides-octorok-playtest-x52psf, off main at 003352c (S226).
+
+### The human's choices this session
+- S226's sea octorok (Seasons' blue octorok's walk and shot): FEELS RIGHT,
+  keep. Do not re-ask.
+- THE OCTOROK'S ROCK bouncing back off a wall, the shield and the sword
+  (docs/briefs/s227/octorok-rock.gif, before/after): KEEP.
+- THE MOBLIN'S SPEAR and THE WIZZROBE'S SHOT the same way: YES, both.
+- THE SHIELD BUMP (any shield shoves an ordinary enemy off, no damage): YES,
+  like Seasons (docs/briefs/s227/shield-bump.gif, shieldBump.wav,
+  deflect.wav).
+
+### Built
+- PROJECTILE `deflects` (projectile.js; parts/commonCode.s
+  partCommon_bounceWhenCollisionsEnabled): `true` = a wall, the raised
+  shield or any sword (swing, spin, held blade: Player.bladeDeflect, called
+  beside every bladeCollect) turns the shot round at SHOT_DEFLECT_SPEED
+  (SPEED_40), hops it (SHOT_DEFLECT_LAUNCH / _GRAVITY = -$e0 / $0e) and
+  removes it after SHOT_DEFLECT_FRAMES (32), harmless, through anything.
+  `'vanish'` = the same collisions just remove it. Shield and sword play
+  `deflect` (SND_CLINK2, collisionEffect1f / LINKDMG_20); a wall is silent;
+  the screen edge removes it. These shots pass `hitFx: null`: Seasons makes
+  no clink picture for them, on a wall, the shield or Link's body
+  (Projectile's hitFx now honours an explicit null).
+  Users: both octoroks' shots (octorokProjectile.s), the moblin's spear
+  (enemyArrow.s, PART_ENEMY_ARROW) = `true`; the wizzrobe's shot
+  (wizzrobeProjectile.s) = `'vanish'`. Every other shot is unchanged.
+- THE SHIELD BUMP (player.js shieldBump, from updateContactDamage before
+  onTouchLink): shield raised, facing an ordinary enemy's body (not a boss,
+  not onShielded / onTouchLink enemies: spiked beetle, gel, bubble) -> both
+  shoved apart, nobody hurt or flashing, `shieldBump` (SND_BOMB_LAND).
+  SHIELD_BUMP rows (feel.js): L1 [Link 19 f, inv 15, foe 11 f, inv 21]
+  (COLLISIONEFFECT_SHIELD_BUMP_HIGH_KNOCKBACK), L2+ [11, 8, 8, 16]. Link uses
+  hurtTime/knockTime with `bumping` so he is not drawn in the hurt pose.
+  The only shield in the game is the shop's L1.
+- check-seasons-mechanics.mjs 21 -> 37 (rock x6, spear/orb x6, bump x5,
+  minus none).
+
+### Verified
+check-playthrough 49/49, THE END, never died, 313016 frames, LOW-WATER 7
+(identical after each of the three changes; the robot never buys the
+shield). replay 51/51 untouched. Whole table green (67 tools three at a
+time, every one exit 0; check-exits failed once on a port clash and passed
+alone, 398/398; watch-cutscenes alone; check-build after npm run build);
+check-rippers last, alone, 47/47; check-seasons-mechanics 37/37.
+
+### Not done / candidates
+- Other Seasons shots not looked at: the beamos beam (PART_BEAM is only
+  stopped by the L3 shield in Seasons; ours by any — that is damage design,
+  left), the barnacle's ink and other shots of ours keep the spark.
+- A shot hitting Link while he is invulnerable expires instead of being
+  shielded (takeDamage returns early). Seasons' shield is its own object.
+- Other enemies of ours that are not ports: urchin, anglerfry, barnacle,
+  jellyfish, siren (our designs).
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+- check-placement proves floor in front of a chest/sign, not that it can be
+  walked to. A loose key's one-frame hold (grab mode 1) is invisible.
+
 ## S226 — the sea octorok is Seasons' blue octorok; our own sounds kept
 
 Branch claude/oracle-tides-s226-9q4t65, off main at 44b7760 (S225).

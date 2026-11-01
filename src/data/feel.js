@@ -390,6 +390,18 @@ export const PLAYER_HURT_FRAMES = 15;
  *  frame by linkUpdateKnockback (object_code/common/specialObjects/link.s). */
 export const PLAYER_KNOCK_FRAMES = 15;
 
+/** [Link's shove f, his invulnerability f, the enemy's shove f, its
+ *  invulnerability f] — Link's raised shield against an ordinary enemy's body
+ *  (S227): the two are shoved apart, nothing is hurt, and neither flashes (a
+ *  negative counter in the cartridge counts without the flash). Row 0 is the
+ *  first shield, row 1 a better one. derived from the cartridge:
+ *  data/seasons/objectCollisionTable.s, ENEMYCOLLISION_STANDARD_ENEMY against
+ *  ITEMCOLLISION_L1_SHIELD = COLLISIONEFFECT_SHIELD_BUMP_HIGH_KNOCKBACK
+ *  (LINKDMG_14 $f1/$13, ENEMYDMG_14 $eb/$0b) and L2/L3 = SHIELD_BUMP
+ *  (LINKDMG_10 $f8/$0b, ENEMYDMG_10 $f0/$08), code/collisionEffects.s. Link
+ *  moves at PLAYER_KNOCK_SPEED, the enemy at ENEMY_KNOCK_SPEED. */
+export const SHIELD_BUMP = [[19, 15, 11, 21], [11, 8, 8, 16]];
+
 /** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
  *  knockback is a scripted displacement, not a physics impulse — a fixed
  *  speed for a fixed frame count, so it always ends the same distance from
@@ -2377,6 +2389,26 @@ export const OCTOROK_TURN_TO_LINK = 4;
 /** px/f — the octorok's rock. derived: parts/octorokProjectile.s @state0,
  *  speed $50 = SPEED_200. */
 export const OCTOROK_SHOT_SPEED = 2;
+
+/** f — how long an octorok's rock lives once it has been knocked back off a
+ *  wall, the shield or the sword (S227): it hops back the way it came,
+ *  harmless, and is gone. derived: parts/commonCode.s
+ *  partCommon_bounceWhenCollisionsEnabled, counter1 $20, counted down by
+ *  partCommon_updateSpeedAndDeleteWhenCounter1Is0. */
+export const SHOT_DEFLECT_FRAMES = 32;
+
+/** sp/f — how fast the knocked-back rock drifts back. derived: the same
+ *  routine sets speed SPEED_40 (0.25 px/f) and turns the angle round. */
+export const SHOT_DEFLECT_SPEED = 64;
+
+/** sp/f — how fast the knocked-back rock hops up as it turns. derived: the
+ *  same routine, objectSetSpeedZ -$e0. */
+export const SHOT_DEFLECT_LAUNCH = 224;
+
+/** sp/f/f — how fast the hop falls back. derived:
+ *  partCommon_updateSpeedAndDeleteWhenCounter1Is0, objectUpdateSpeedZ_paramC
+ *  with c = $0e. Up and down again in the 32 frames it lives. */
+export const SHOT_DEFLECT_GRAVITY = 14;
 
 /** px/f — the sand crab scuttling left or right. derived: sandCrab.s @state8,
  *  SPEED_100 when the angle is sideways. */
