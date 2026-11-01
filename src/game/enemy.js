@@ -423,6 +423,8 @@ export class Enemy extends Entity {
   hurt(game, dmg, dir, knock, from) {
     // Going down a hole, it has no collisions left (@touchedHazard).
     if (this.holeFall > 0) return false;
+    // No collisions at all (the beamos, ENEMYCOLLISION_00): a blow passes it.
+    if (this.spec.intangible) return false;
     // A creature flopping on the bank cannot raise its shield and cannot take
     // a hit lightly. This is the Dredge Line's combat verb, and it is the
     // whole answer to an aquatic enemy you could otherwise never corner.

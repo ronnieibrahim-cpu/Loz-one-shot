@@ -496,6 +496,11 @@ export function installEnemies() {
     // last ten of twenty frames, fires a beam along that angle, a piece a
     // frame at 8 px a frame. Then forty frames before it can fire again.
     port: 'beamos.s',
+    // Seasons' beamos has no collisions at all (ENEMYCOLLISION_00): nothing
+    // hurts it, its body hurts nobody, and it makes its own tile solid
+    // (objectMakeTileSolid), so Link cannot walk into it.
+    intangible: true,
+    init(e) { e.solid = true; e.harmless = true; e.hb = { x: 0, y: 0, w: 16, h: 16 }; },
     ai(e, g) {
       if (e.aiState === 0) {                      // @state_uninitialized
         e.angle = 0; e.aiTimer = BEAMOS_TURN_FRAMES; e.cool = 0; e.aiState = 'turn';

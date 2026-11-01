@@ -280,6 +280,31 @@ const r = await page.evaluate(async () => {
     p.invuln = 0;
     return { hit: hitAt != null, inv, moved };   // inv: after that frame's own tick
   };
+  // S228: the beamos (ENEMYCOLLISION_00, objectMakeTileSolid). Link walks
+  // left at it for 40 frames, then swings at it twice.
+  {
+    g.enterMap('overworld', 0, 4, 7, 24, 80, 'right', { instant: true });
+    g.entities = g.entities.filter(x => !x.isEnemy && !x.isProjectile);
+    if (g.dialogue) g.dialogue.active = false;
+    const p = g.player;
+    p.x = 104; p.y = 80; p.dir = 'left'; p.invuln = 0; p.flicker = 0;
+    g.progress.hearts = g.progress.maxHearts;
+    const e = spawnEntity(g, 'beamos', 0, 0, {});
+    e.x = 80; e.y = 80; e.spec = { ...e.spec, ai() {} };
+    g.flushPending();
+    const sounds = []; const sfx0 = g.audio.sfx.bind(g.audio);
+    g.audio.sfx = (n, ...a) => { sounds.push(n); return sfx0(n, ...a); };
+    const h0 = g.progress.hearts, hp0 = e.hp;
+    g.input._raw.left = true;
+    for (let i = 0; i < 40; i++) step(1);
+    g.input._raw.left = false;
+    const stoppedAt = p.x;
+    for (let k = 0; k < 2; k++) { p.dir = 'left'; p.startSwing(g, 1); step(30); }
+    g.audio.sfx = sfx0;
+    out.beamos = { stoppedAt, lost: h0 - g.progress.hearts, hpLost: hp0 - e.hp,
+      block: sounds.includes('block'), hit: sounds.includes('enemyHit') };
+    e.remove = true; step(1);
+  }
   out.unshovedInv = F.ENEMY_UNSHOVED_INVULN_FRAMES;
   out.struck = { zol: struck('zol'), gel: struck('gel'), octorok: struck('octorok') };
   out.bumpExpect = { link: F.SHIELD_BUMP[0][0] * F.PLAYER_KNOCK_SPEED / 256, foe: F.SHIELD_BUMP[0][2] * F.ENEMY_KNOCK_SPEED / 256 };
@@ -337,6 +362,9 @@ check('while an octorok struck the same way is shoved back',
 check("a pincer walking into Link's raised shield shoves only him, harder, and hurts nobody",
   r.bumpPincer.lost === 0 && r.bumpPincer.foeMoved === 0 && Math.abs(r.bumpPincer.linkMoved - r.pincerExpect) <= 1.5 && r.bumpPincer.thud,
   J({ ...r.bumpPincer, expect: r.pincerExpect }));
+check('a beamos stands on a solid tile: Link walking into it stops a tile off and is not hurt',
+  r.beamos.stoppedAt >= 92 && r.beamos.lost === 0, J(r.beamos));
+check('and the sword passes it silently, without a clink or a hit', r.beamos.hpLost === 0 && !r.beamos.block && !r.beamos.hit, J(r.beamos));
 const M = r.moblin, W = r.wizzrobe;
 check("a moblin's spear is knocked back off a wall like the rock, silently",
   M.wall.turned != null && M.wall.after === D && !M.wall.deflectSound && !M.wall.clink, J(M.wall));
