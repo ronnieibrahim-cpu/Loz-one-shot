@@ -98,6 +98,8 @@ SFX = [
     # A plank of a held bridge going down or coming up (S211): SND_DOORCLOSE,
     # what Ages' extendableBridge.s plays for each tile it sets.
     ('doorClose', 'ROM_AGES'),
+    # The Noble Sword's beam (S225): SND_SWORDBEAM, swordBeam.s @state0.
+    ('swordBeam', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

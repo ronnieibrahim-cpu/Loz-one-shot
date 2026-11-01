@@ -166,7 +166,7 @@ const rooms = {
     ],
     entities: [
       ['wizzrobe', 4, 4],
-      ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
+      ['sign', 1, 5, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
     ],
   },
   '0,3,0': {
@@ -420,7 +420,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 5, { text: 'Down: the Cliffs of Kell.\nUp: the Abyssal Keep.' }],
+      ['sign', 6, 4, { text: 'Down: the Cliffs of Kell.\nUp: the Abyssal Keep.' }],
     ],
   },
   '0,3,1': {
@@ -886,7 +886,7 @@ const rooms = {
       { x: 5, y: 2, to: { map: 'd4', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'CLIFFSIDE CISTERN\nDeep water hides the spikes.' }],
+      ['sign', 1, 2, { text: 'CLIFFSIDE CISTERN\nDeep water hides the spikes.' }],
       ['keese', 7, 4],
     ],
   },
@@ -1609,7 +1609,7 @@ const rooms = {
       '###....###',
     ],
     entities: [
-      ['leever', 5, 4], ['sign', 2, 5, { text: 'North: boulders, and the cliffs beyond.' }],
+      ['leever', 5, 4], ['sign', 1, 4, { text: 'North: boulders, and the cliffs beyond.' }],
     ],
   },
   '0,2,6': {
@@ -2962,7 +2962,7 @@ const rooms = {
       '**********',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'Scratched on a plank: "Gone till the sea calms down. Blade\'s inside. Push the door!"' }],
+      ['sign', 7, 2, { text: 'Scratched on a plank: "Gone till the sea calms down. Blade\'s inside. Push the door!"' }],
     ],
     warps: [
       { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },

@@ -61,6 +61,10 @@ import { Credits } from './credits.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
 import { sp } from '../core/fixed.js';
+
+// Seasons' wInformativeTextsShown bits (interactableTiles.s
+// showInfoTextForTile @data): a hint told once a screen per bit.
+const INFO_BOSS_DOOR = 0x02, INFO_KEY_DOOR = 0x04, INFO_CRACKED_BLOCK = 0x10, INFO_ROCK = 0x20;
 import {
   ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN,
@@ -79,6 +83,7 @@ import {
   WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS,
   COILBONE_INVULN_FRAMES,
   BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES,
+  LIFT_STRENGTH,
 } from '../data/feel.js';
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
@@ -263,7 +268,7 @@ export class Game {
     // A key door half slid open belongs to the room it is in; and Seasons
     // tells you a door is locked once per screen (wInformativeTextsShown).
     this.doorSlides = null;
-    this._lockTold = null;
+    this._infoBits = 0;
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // The eye loop's count lives only while Link goes round it (S211): any
@@ -937,7 +942,56 @@ export class Game {
     // door how it opens one.
     const name = this.room && this.room.inBounds(tx, ty) ? this.room.baseName(tx, ty) : null;
     if (name === 'dDoorLocked' || name === 'dDoorBoss') return this.tryKeyDoor(tx, ty, true);
-    return this.tryKeyhole(tx, ty);
+    return this.tryKeyhole(tx, ty) || this.leanHint(tx, ty);
+  }
+
+  /** Seasons' informative texts (wInformativeTextsShown): each kind of hint
+   *  is told once a screen, and some kinds share a bit, so one stands for
+   *  all of them (the rock, the cracked wall and the unlit torch are $20).
+   *  True if it has not been told yet on this screen, and marks it told. */
+  /** An unlit torch standing on (tx, ty), indoors — Seasons' $08, the only
+   *  torch its interactable table names is a dungeon's. */
+  unlitTorchAt(tx, ty) {
+    if (this.mapId === 'overworld') return null;
+    return this.entities.find(e => e instanceof Torch && !e.dead && !e.lit
+      && Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) || null;
+  }
+
+  infoOnce(bit) {
+    if (this._infoBits & bit) return false;
+    this._infoBits |= bit;
+    return true;
+  }
+
+  /**
+   * LEANING ON SOMETHING YOU CANNOT MOVE (S225; code/interactableTiles.s
+   * nextToTileWithInfoText, data/seasons/tile_properties/interactableTiles.s).
+   * After the same lean a block takes, Seasons says what the thing is, once a
+   * screen: a rock too heavy to lift (TX_5104, the overworld's $96), and
+   * indoors and in dungeons a cracked block (TX_5105), a cracked wall
+   * (TX_5106) and an unlit torch (TX_5108). The overworld's cracked cliffs
+   * say nothing in Seasons, and nor do ours. True if it was a hint tile, told
+   * or not, which starts the lean over as resetPushingAgainstTileCounter does.
+   */
+  leanHint(tx, ty) {
+    const room = this.room;
+    if (!room || !room.inBounds(tx, ty)) return false;
+    const indoors = this.mapId !== 'overworld';
+    let text = null, bit = INFO_ROCK;
+    if (this.unlitTorchAt(tx, ty)) text = 'This torch\nneeds lighting.';
+    else {
+      const name = room.baseName(tx, ty);
+      const def = getTileDef(name);
+      if (!def) return false;
+      if (def.liftLevel && def.liftLevel > LIFT_STRENGTH) text = 'Oof! It\'s heavy,\nlike a rock!';
+      else if (indoors && (def.flags & F.BOMBABLE)) {
+        if (name.startsWith('boulder')) { text = 'This block has\ncracks in it.\nIt looks like it\ncould be broken!'; bit = INFO_CRACKED_BLOCK; }
+        else text = 'This wall is\ncracked.\nIt looks like it\ncould be broken!';
+      }
+    }
+    if (!text) return false;
+    if (this.infoOnce(bit)) this.say(text);
+    return true;
   }
 
   /**
@@ -957,8 +1011,7 @@ export class Game {
     const boss = room.baseName(tx, ty) === 'dDoorBoss';
     const have = boss ? !!this.progress.bossKeys[this.mapId] : keyCount(this.progress, this.mapId) > 0;
     if (!have) {
-      if (leaning && this._lockTold === room) return true;
-      this._lockTold = room;
+      if (leaning && !this.infoOnce(boss ? INFO_BOSS_DOOR : INFO_KEY_DOOR)) return true;
       this.audio.sfx('deny');
       this.say(boss ? 'A great lock seals this door.' : 'It is locked. You need a Small Key.');
       return true;

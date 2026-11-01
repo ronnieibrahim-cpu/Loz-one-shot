@@ -1,12 +1,13 @@
 // Projectiles: enemy shots, player shots (seeds, arrows), and thrown objects.
 
-import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } from './entity.js';
-import { TILE } from '../core/screen.js';
+import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC, enemyHurtRect } from './entity.js';
+import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE,
-  ENEMY_SHOT_RADIUS,
+  ENEMY_SHOT_RADIUS, SWORD_BEAM_SPEED, SWORD_BEAM_START, SWORD_BEAM_RADIUS,
+  SWORD_BEAM_FLIP_FRAMES,
 } from '../data/feel.js';
 
 export class Projectile extends Entity {
@@ -152,3 +153,62 @@ export function fire(game, from, o = {}) {
 }
 
 defineEntity('shot', (x, y, o) => new Projectile(x, y, o));
+
+/**
+ * THE NOBLE SWORD'S BEAM (S225; oracles-disasm object_code/common/items/
+ * swordBeam.s, ITEM_SWORD_BEAM). Made by Player.updateSwing on the swing's
+ * full-reach frame when the sword is level 2 or more and Link's hearts are
+ * full. It flies straight at SWORD_BEAM_SPEED in its own picture, swapping
+ * two palettes every SWORD_BEAM_FLIP_FRAMES, and is gone with a clink on the
+ * first enemy it touches (hurt or not) or the first wall; off the screen it
+ * is simply gone. It hits for what the first sword hits for: ITEM_SWORD_BEAM's
+ * damage is ITEM_SWORD's own $fe, which the cartridge raises for a better
+ * blade and not for the beam.
+ */
+export class SwordBeam extends Projectile {
+  constructor(game, player, damage) {
+    const [dy, dx] = SWORD_BEAM_START[player.dir];
+    const [vx, vy] = DIR_VEC[player.dir];
+    super(player.cx + dx - 4, player.cy + dy - 4, { fromPlayer: true, owner: player, damage, z: 0, hitFx: 'spark', life: Infinity });
+    this.vx = vx * SWORD_BEAM_SPEED; this.vy = vy * SWORD_BEAM_SPEED;
+    this.dir = player.dir;
+    this.radius = SWORD_BEAM_RADIUS;
+    this.hb = { x: 4 - SWORD_BEAM_RADIUS, y: 4 - SWORD_BEAM_RADIUS, w: SWORD_BEAM_RADIUS * 2, h: SWORD_BEAM_RADIUS * 2 };
+    this.isSwordBeam = true;
+    game.audio.sfx('swordBeam');
+  }
+
+  update(game) {
+    this.frame++;
+    const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
+    if (!this.canPass(game, toPx(nfx), toPx(nfy))) { this.expire(game); return; }
+    this.fx = nfx; this.fy = nfy;
+    // Off the screen it is deleted (objectCheckWithinScreenBoundary): the
+    // camera's view, not the room, in a room bigger than the screen.
+    const cam = game.camera || { x: 0, y: 0 };
+    if (this.cx < cam.x || this.cy < cam.y || this.cx >= cam.x + VIEW_W || this.cy >= cam.y + VIEW_H) { this.remove = true; return; }
+    const box = this.contactRect();
+    // A sign, a chest, a block, a torch is a solid TILE in Seasons, and the
+    // beam clinks off it as off a wall; ours are entities, so asked here.
+    for (const e of game.entities) {
+      if (!e.solid || e.isEnemy || e.dead || e === this.owner) continue;
+      const r = e.rect();
+      if (box.x < r.x + r.w && r.x < box.x + box.w && box.y < r.y + r.h && r.y < box.y + box.h) { this.expire(game); return; }
+    }
+    for (const e of game.entities) {
+      if (!e.isEnemy || e.dead) continue;
+      const r = enemyHurtRect(e);
+      if (r && box.x < r.x + r.w && r.x < box.x + box.w && box.y < r.y + r.h && r.y < box.y + box.h) {
+        e.hurt(game, this.damage, this.dir, KNOCK_PROJECTILE, this);
+        this.expire(game);
+        return;
+      }
+    }
+  }
+
+  draw(ctx, game, ox, oy) {
+    const k = { up: 0, right: 1, down: 2, left: 3 }[this.dir];
+    const alt = Math.floor(game.frame / SWORD_BEAM_FLIP_FRAMES) & 1 ? 'b' : '';
+    game.sprites.draw(ctx, `fx_beam${k}${alt}`, ox + this.cx - 16, oy + this.cy - 16);
+  }
+}

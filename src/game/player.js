@@ -11,6 +11,7 @@
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
+import { SwordBeam } from './projectile.js';
 import {
   Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
   enemyHurtRect,
@@ -877,11 +878,15 @@ export class Player extends Entity {
     // facingWall) — and not while a diagonal is held
     // (interactableTiles.s specialObjectCheckPushingAgainstTile). Anything
     // else starts the count over (resetPushingAgainstTileCounter).
-    if (!this.againstWall || (dx && dy)) { this._pushT = 0; return; }
-    this._pushT = (this._pushT || 0) + 1;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
     const tx = Math.floor((this.cx + ux * PUSH_PROBE_REACH) / TILE);
     const ty = Math.floor((this.cy + uy * PUSH_PROBE_REACH) / TILE);
+    // AN UNLIT TORCH (S225) is a whole solid tile in Seasons ($08) and a
+    // narrower post here, so both front corners never meet it: a straight
+    // lean into one counts without them, for the hint it gives.
+    const torch = !(dx && dy) && !this.againstWall && game.unlitTorchAt(tx, ty);
+    if (!torch && (!this.againstWall || (dx && dy))) { this._pushT = 0; return; }
+    this._pushT = (this._pushT || 0) + 1;
     // A SLATE SLOT (S212) takes Ages' own ten frames, not a block's twenty
     // (slateSlot.s var3f $0a).
     if (game.isSlot(tx, ty)) {
@@ -1064,6 +1069,13 @@ export class Player extends Entity {
     // area touches (SWORD_CUT_POINTS).
     if (phase === 2 && t === SWING_PHASE_FRAMES[0] + SWING_PHASE_FRAMES[1]) {
       this.cutAt(game, SPIN_START[this.dir]);
+      // THE BEAM (S225; swordParent.s @checkCreateSwordBeam): on this same
+      // frame a sword of level 2 or more, with Link's health full, throws
+      // ITEM_SWORD_BEAM — one at a time (getFreeItemSlotWithObjectCap 1).
+      if (this.swordLevel >= 2 && game.progress.hearts >= game.progress.maxHearts
+          && !game.entities.some(e => e.isSwordBeam && !e.remove)) {
+        game.addEntity(new SwordBeam(game, this, swordDamage(1)));
+      }
     }
   }
 

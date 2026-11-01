@@ -281,39 +281,40 @@ check('every chest\'s pickup rises out of it and is given, none pops',
 // only for a Link standing below it facing up, and so does ours now; a chest
 // with a wall, water or a block under it could never be opened at all. This
 // stands a real Player on the tile below each chest in the world and asks
-// `canOccupy` at each sea.
+// `canOccupy` at each sea. And since S225 every SIGN the same way: Seasons
+// reads a sign only from below too (nextToSignTile, TX_510e).
 const fronts = await page.evaluate(async () => {
   const g = window.__game;
   const ent = await import('/src/game/entity.js');
   const maps = await import('/src/world/maps.js');
   const { Player } = await import('/src/game/player.js');
-  const out = []; let seen = 0;
+  const out = []; let seen = 0, signs = 0;
   for (const map of maps.MAPS.values()) {
     for (const key of Object.keys(map.roomDefs || {})) {
       const def = map.roomDefs[key];
-      if (!(def.entities || []).some(s => s[0] === 'chest')) continue;
+      if (!(def.entities || []).some(s => s[0] === 'chest' || s[0] === 'sign')) continue;
       const [f, rx, ry] = key.split(',').map(Number);
       g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
       // From the room's own list, not the live entities: a chest that waits
       // on a flag (`needFlag`, most Boss Keys) is not built until it rises.
-      for (const s of def.entities.filter(s => s[0] === 'chest')) {
-        seen++;
+      for (const s of def.entities.filter(s => s[0] === 'chest' || s[0] === 'sign')) {
+        if (s[0] === 'chest') seen++; else signs++;
         const chest = { x: s[1] * 16, y: s[2] * 16 };
         const p = new Player(chest.x, chest.y + 16);
         // A grate below is the Colonnade's: the Resonance Rod retracts it and
         // check-trade proves that crossing, so the floor under it counts.
         const under = g.room.baseName(chest.x / 16, chest.y / 16 + 1);
         const ok = under === 'grate' || [0, 1, 2].some(lv => { g.tide.setLevel(lv, { instant: true }); return ent.canOccupy(g, p, chest.x, chest.y + 16); });
-        if (!ok) out.push(`${map.id}/${key} chest at ${chest.x / 16},${chest.y / 16}: no floor in front of it ('${g.room.baseName(chest.x / 16, chest.y / 16 + 1)}')`);
+        if (!ok) out.push(`${map.id}/${key} ${s[0]} at ${chest.x / 16},${chest.y / 16}: no floor in front of it ('${g.room.baseName(chest.x / 16, chest.y / 16 + 1)}')`);
       }
     }
   }
-  return { out, seen };
+  return { out, seen, signs };
 });
-console.log(`check-placement: ${fronts.seen} chests, each stood in front of`);
+console.log(`check-placement: ${fronts.seen} chests and ${fronts.signs} signs, each stood in front of`);
 for (const l of fronts.out) console.log('  ' + l);
-check('every chest has floor in front of it, where it opens from',
-  fronts.seen > 0 && fronts.out.length === 0, fronts.out.length ? `${fronts.out.length} do not` : '');
+check('every chest and sign has floor in front of it, where it opens or is read from',
+  fronts.seen > 0 && fronts.signs > 0 && fronts.out.length === 0, fronts.out.length ? `${fronts.out.length} do not` : '');
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

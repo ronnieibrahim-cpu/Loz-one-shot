@@ -676,6 +676,65 @@ section('the raised shield');
   check('with the shield raised he still turns', r.dir === 'right', JSON.stringify(r));
 }
 
+// S225: the Noble Sword's beam (swordParent.s @checkCreateSwordBeam,
+// swordBeam.s): a sword of level 2 or more, health full, throws one on the
+// swing's full-reach frame; it flies 3 px a frame, hits the first foe for
+// what the first sword hits for and is gone, and there is only ever one.
+// West Bluff's row 4 is open ground from Link's tile to the screen's edge.
+section('the Noble Sword\'s beam');
+{
+  const beamRun = (o) => page.evaluate(async (o) => {
+    const g = window.__game, p = g.player;
+    const ent = await import('/src/game/entity.js');
+    const { swordDamage } = await import('/src/game/player.js');
+    const { SWING_PHASE_FRAMES } = await import('/src/data/feel.js');
+    if (o.short) g.progress.hearts = g.progress.maxHearts - 1;
+    let e = null, hp0 = 0;
+    if (o.foe) {
+      e = ent.spawnEntity(g, 'octorok', 0, 0, {});
+      e.x = p.x + o.foe; e.y = p.y; e.update = () => {}; g.entities.push(e);
+      hp0 = e.hp;
+    }
+    const beams = () => g.entities.filter(x => x.isSwordBeam && !x.remove);
+    window.__tap('a'); window.__harness.step(1); window.__hold([]);
+    const reach = SWING_PHASE_FRAMES[0] + SWING_PHASE_FRAMES[1];
+    // The press is read after the player's update, so the swing's first
+    // frame is the next one: `reach` frames on, the full-reach frame is next.
+    window.__harness.step(reach);
+    const early = beams().length;
+    window.__harness.step(1);
+    const b = beams()[0];
+    const x0 = b ? b.x : null;
+    window.__harness.step(1);
+    const step = b ? b.x - x0 : null;
+    let second = null;
+    if (o.again) {
+      window.__harness.step(14);
+      window.__tap('a'); window.__harness.step(1); window.__hold([]);
+      window.__harness.step(reach + 1);
+      second = beams().length;
+    }
+    window.__harness.step(o.foe ? 40 : 1);
+    return { early, made: !!b, step, second, left: beams().length,
+      hurt: e ? hp0 - (e.dead ? 0 : e.hp) : null, want: swordDamage(1), dead: e && e.dead, hp0 };
+  }, o);
+  await park({ map: 'overworld', rx: 3, ry: 7, tx: 1, ty: 4, tide: 1, dir: 'right', items: { sword: 2 } });
+  let r = await beamRun({ again: true });
+  check('Noble Sword, hearts full: no beam before the full-reach frame, one on it', r.early === 0 && r.made, JSON.stringify(r));
+  check('the beam flies 3 px a frame', r.step === 3, JSON.stringify(r));
+  check('a second swing while it flies throws no second beam', r.second === 1, JSON.stringify(r));
+  await park({ map: 'overworld', rx: 3, ry: 7, tx: 1, ty: 4, tide: 1, dir: 'right', items: { sword: 2 } });
+  r = await beamRun({ short: true });
+  check('a quarter-heart short of full: no beam', !r.made, JSON.stringify(r));
+  await park({ map: 'overworld', rx: 3, ry: 7, tx: 1, ty: 4, tide: 1, dir: 'right', items: { sword: 1 } });
+  r = await beamRun({});
+  check('the Wooden Sword throws no beam', !r.made, JSON.stringify(r));
+  await park({ map: 'overworld', rx: 3, ry: 7, tx: 1, ty: 4, tide: 1, dir: 'right', items: { sword: 2 } });
+  r = await beamRun({ foe: 64 });
+  check('a foe four tiles off is hit by the beam for what the first sword hits for, and the beam is gone',
+    r.made && (r.hurt === r.want || (r.dead && r.hp0 <= r.want)) && r.left === 0, JSON.stringify(r));
+}
+
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
 if (errs.length) { console.log(errs.slice(0, 5).join('\n')); }
 await browser.close(); server.close();

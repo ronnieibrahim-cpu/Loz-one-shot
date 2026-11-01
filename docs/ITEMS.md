@@ -390,6 +390,10 @@ bottle, and you brought however many bottles you brought.
 `sword`, `shield`, `bombs`, `conch`, `map`. The sword and shield are grammar.
 Bombs are the one consumable the genre cannot do without. The conch is the core
 mechanic's button. The Dungeon Map is the Chartstone's sibling, not its rival.
+The Noble Sword (level 2, the Bluff Grotto, four Essences) throws Seasons'
+own beam on each swing while Link's hearts are full (S225, the human's word;
+swordParent.s @checkCreateSwordBeam): it hits for what the Wooden Sword hits
+for, one at a time, and is proved by `check-sword.mjs`.
 
 ---
 

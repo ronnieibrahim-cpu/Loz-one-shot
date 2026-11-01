@@ -168,6 +168,27 @@ export const TIDE_DRIFT_PER_LEVEL = 32;
  *  (updateSwingableItemAnimation) reads it. */
 export const SWING_PHASE_FRAMES = [3, 3, 8, 3];
 
+/** sp/f — the Noble Sword's beam (S225). derived from the cartridge:
+ *  oracles-disasm object_code/common/items/swordBeam.s @state0, SPEED_300 =
+ *  3 px/f (constants/common/objectSpeeds.s, SPEED_100 = 1 px/f). It is made
+ *  on the swing's full-reach frame (swordParent.s: animParameter bit 5, set
+ *  on animationData19d21's $64 only) by a sword of level 2 or more when
+ *  Link's health is full (@checkCreateSwordBeam), one at a time. */
+export const SWORD_BEAM_SPEED = 768;
+
+/** px — where the beam starts from Link's middle, per facing, [dy, dx].
+ *  derived: swordBeam.s @initialOffsetsTable ($f5 $fc / $00 $0c / $0a $03 /
+ *  $00 $f3, y then x). */
+export const SWORD_BEAM_START = { up: [-11, -4], right: [0, 12], down: [10, 3], left: [0, -13] };
+
+/** px — how far either way of its middle the beam hits. derived:
+ *  data/seasons/itemAttributes.s ITEM_SWORD_BEAM collisionRadius $22. */
+export const SWORD_BEAM_RADIUS = 2;
+
+/** f — how often the beam swaps its two palettes. derived: swordBeam.s
+ *  @noCollision, oamFlags xor 1 when wFrameCounter & 3 is 0. */
+export const SWORD_BEAM_FLIP_FRAMES = 4;
+
 /** f — total length of a sword swing; the player is rooted for all of it.
  *  derived: the sum of SWING_PHASE_FRAMES. Link's movement is disabled when
  *  the swing starts and given back when the animation ends

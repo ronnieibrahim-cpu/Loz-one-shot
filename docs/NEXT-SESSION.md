@@ -1,3 +1,72 @@
+## S225 — signs read from the front, lean hints, the Noble Sword's beam; a sturdier run
+
+Branch claude/oracle-tides-chest-balance-wz274j, off main at 3df7ebb (S224).
+
+### The human's choices this session
+- S224's chests (the prize rising out, the jingle after it rises, front
+  only): ALL FEEL RIGHT, keep.
+- SIGNS FROM THE FRONT ONLY (Seasons' nextToSignTile, TX_510e): YES.
+- LEAN HINTS (Seasons' informative texts): YES, add them.
+- THE NOBLE SWORD'S BEAM at full health: YES, add it.
+
+### Built
+- THE RUN IS STURDIER: the Shade Cell (d6 2,2,5) is fought from its
+  north-east corner (`['goto', 12, 2, 1500]` before the first fight). Swept
+  13 standing places with route-prefix INSERT; 12,2 costs nothing there
+  (the wizzrobe's two shots took 6). The tideshade fight itself is the same
+  under every option set with `reachSwing` (14 -> 8 every time; without it
+  the shade wins or the run errors) and under inserted waits/gotos in its
+  hall (none beat 8). Low-water 2 -> 6 (D2's boss now the lowest), frames
+  unchanged at 313329.
+- SIGNS (objects.js Sign.interact): read only by a Link below facing up;
+  otherwise "You can't read\nit from here!". Moved so each has floor below:
+  overworld 0,2,0 Black Causeway 1,6->1,5; 0,2,1 Cliffs/Keep 6,5->6,4;
+  0,1,3 Cliffside Cistern 2,3->1,2 (6,3 was in the robot's path at the
+  keyhole and cost 20 frames); 0,1,6 boulders 2,5->1,4; 0,6,9 Shipwright's
+  plank 6,2->7,2. check-placement's front clause covers signs (34).
+- LEAN HINTS (game.js leanHint/infoOnce, reached from tryPushBlock after
+  PUSH_DELAY_FRAMES, Seasons' bits in INFO_*): a boulder (liftLevel past
+  LIFT_STRENGTH) "Oof! It's heavy,\nlike a rock!" anywhere; indoors only, a
+  cracked wall (TX_5106/7), a cracked boulder (TX_5105/7) and an unlit torch
+  (TX_5108). Overworld cracked cliffs say nothing (Seasons' overworld table
+  has none). Once a screen per bit; rock/wall/torch share $20 as in Seasons;
+  the key door's once-a-screen now uses the same bits ($04, boss $02).
+  Our torches are a narrow post, so Player.tryPush counts a straight lean
+  into an unlit torch without both corners (`game.unlitTorchAt`). No dungeon
+  of ours has a cracked wall today.
+- THE NOBLE SWORD'S BEAM (projectile.js SwordBeam; player.js updateSwing on
+  the full-reach frame, swordParent.s @checkCreateSwordBeam): sword level 2+
+  and hearts == max, one at a time, 3 px/f (SWORD_BEAM_SPEED), starts at
+  SWORD_BEAM_START, radius 2, picture fx_beam0..3 (+b, palette flip every 4
+  frames) ripped by rip-effects.py from ITEM_SWORD_BEAM (itemData.s copied
+  into assets/effects), sound SND_SWORDBEAM ripped by rip-music.py
+  (`swordBeam`). Hits the first enemy for swordDamage(1) and clinks; clinks
+  off walls and solid entities (signs, chests, blocks are tiles in
+  Seasons); gone off the camera's view. The robot never has the Noble Sword.
+- tools/check-lean.mjs (new, 15 assertions); check-sword +6 (beam).
+  Pictures/sound: docs/briefs/s225/ (sign-and-hints.png, noble-beam.png,
+  swordBeam.wav).
+
+### Verified
+check-playthrough 49/49, THE END, never died, 313329 frames, LOW-WATER 6
+(was 2). Whole table green (68 tools three at a time): validate failed once
+on the beam's 32x32 pictures missing from sprite-manifest.js's fxBig list,
+fixed and rerun OK; test 139/139, check-sword 105/105, check-lean 15/15,
+check-placement 5/5, replay 51/51 untouched; npm run build, check-build OK;
+check-rippers last, alone, 47/47.
+
+### Not done / candidates
+- The beam has no picture beside the original (the footage never has the
+  Noble Sword); it is the cartridge's own picture and sound.
+- check-placement proves floor in front of a chest/sign, not that it can be
+  walked to.
+- A loose key's one-frame hold (grab mode 1) is invisible, not done.
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+- Further look-through ideas: Seasons' pots in the overworld ($c0-$c2) say
+  "Oof! It's heavy!" only without the bracelet — ours lifts bare-handed, so
+  nothing; the Master Sword (level 3) also beams — no level 3 in the world.
+
 ## S224 — chests the Seasons way: the prize rises out, the jingle after the climb, front only
 
 Branch claude/oracle-tides-s224-fsqywh, off main at 38262e9 (S223).

@@ -5,6 +5,8 @@ import { audio } from '../core/audio.js';
 const SFX = {
   // --- Link ---------------------------------------------------------------
   sword1: { seasons: 'swordSlash' },
+  // The Noble Sword's beam (S225): SND_SWORDBEAM, swordBeam.s @state0.
+  swordBeam: { seasons: 'swordBeam' },
   sword2: { seasons: 'unknown5' },
   sword3: { seasons: 'boomerang' },
   // Oracle of Seasons' own spin whoosh (sfx/swordSpin.s), played by its own
