@@ -1784,6 +1784,18 @@ const PLAYER_HURT_FRAMES = 15;
  *  frame by linkUpdateKnockback (object_code/common/specialObjects/link.s). */
 const PLAYER_KNOCK_FRAMES = 15;
 
+/** [Link's shove f, his invulnerability f, the enemy's shove f, its
+ *  invulnerability f] — Link's raised shield against an ordinary enemy's body
+ *  (S227): the two are shoved apart, nothing is hurt, and neither flashes (a
+ *  negative counter in the cartridge counts without the flash). Row 0 is the
+ *  first shield, row 1 a better one. derived from the cartridge:
+ *  data/seasons/objectCollisionTable.s, ENEMYCOLLISION_STANDARD_ENEMY against
+ *  ITEMCOLLISION_L1_SHIELD = COLLISIONEFFECT_SHIELD_BUMP_HIGH_KNOCKBACK
+ *  (LINKDMG_14 $f1/$13, ENEMYDMG_14 $eb/$0b) and L2/L3 = SHIELD_BUMP
+ *  (LINKDMG_10 $f8/$0b, ENEMYDMG_10 $f0/$08), code/collisionEffects.s. Link
+ *  moves at PLAYER_KNOCK_SPEED, the enemy at ENEMY_KNOCK_SPEED. */
+const SHIELD_BUMP = [[19, 15, 11, 21], [11, 8, 8, 16]];
+
 /** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
  *  knockback is a scripted displacement, not a physics impulse — a fixed
  *  speed for a fixed frame count, so it always ends the same distance from
@@ -3772,6 +3784,26 @@ const OCTOROK_TURN_TO_LINK = 4;
  *  speed $50 = SPEED_200. */
 const OCTOROK_SHOT_SPEED = 2;
 
+/** f — how long an octorok's rock lives once it has been knocked back off a
+ *  wall, the shield or the sword (S227): it hops back the way it came,
+ *  harmless, and is gone. derived: parts/commonCode.s
+ *  partCommon_bounceWhenCollisionsEnabled, counter1 $20, counted down by
+ *  partCommon_updateSpeedAndDeleteWhenCounter1Is0. */
+const SHOT_DEFLECT_FRAMES = 32;
+
+/** sp/f — how fast the knocked-back rock drifts back. derived: the same
+ *  routine sets speed SPEED_40 (0.25 px/f) and turns the angle round. */
+const SHOT_DEFLECT_SPEED = 64;
+
+/** sp/f — how fast the knocked-back rock hops up as it turns. derived: the
+ *  same routine, objectSetSpeedZ -$e0. */
+const SHOT_DEFLECT_LAUNCH = 224;
+
+/** sp/f/f — how fast the hop falls back. derived:
+ *  partCommon_updateSpeedAndDeleteWhenCounter1Is0, objectUpdateSpeedZ_paramC
+ *  with c = $0e. Up and down again in the 32 frames it lives. */
+const SHOT_DEFLECT_GRAVITY = 14;
+
 /** px/f — the sand crab scuttling left or right. derived: sandCrab.s @state8,
  *  SPEED_100 when the angle is sideways. */
 const CRAB_SPEED_SIDE = 1;
@@ -4301,6 +4333,7 @@ __exports["PLAYER_RECOVER_INVULN_FRAMES"] = PLAYER_RECOVER_INVULN_FRAMES;
 __exports["RESPAWN_HOLD_FRAMES"] = RESPAWN_HOLD_FRAMES;
 __exports["PLAYER_HURT_FRAMES"] = PLAYER_HURT_FRAMES;
 __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
+__exports["SHIELD_BUMP"] = SHIELD_BUMP;
 __exports["PLAYER_KNOCK_SPEED"] = PLAYER_KNOCK_SPEED;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_HIT_TIERS"] = ENEMY_HIT_TIERS;
@@ -4644,6 +4677,10 @@ __exports["OCTOROK_SHOOT_REST"] = OCTOROK_SHOOT_REST;
 __exports["OCTOROK_BLUE_SHOOT_MASK"] = OCTOROK_BLUE_SHOOT_MASK;
 __exports["OCTOROK_TURN_TO_LINK"] = OCTOROK_TURN_TO_LINK;
 __exports["OCTOROK_SHOT_SPEED"] = OCTOROK_SHOT_SPEED;
+__exports["SHOT_DEFLECT_FRAMES"] = SHOT_DEFLECT_FRAMES;
+__exports["SHOT_DEFLECT_SPEED"] = SHOT_DEFLECT_SPEED;
+__exports["SHOT_DEFLECT_LAUNCH"] = SHOT_DEFLECT_LAUNCH;
+__exports["SHOT_DEFLECT_GRAVITY"] = SHOT_DEFLECT_GRAVITY;
 __exports["CRAB_SPEED_SIDE"] = CRAB_SPEED_SIDE;
 __exports["CRAB_SPEED_UPDOWN"] = CRAB_SPEED_UPDOWN;
 __exports["CRAB_WALK_FRAMES"] = CRAB_WALK_FRAMES;
@@ -14345,7 +14382,7 @@ const { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC, enemyHurtRect } = 
 const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE, ENEMY_SHOT_RADIUS, SWORD_BEAM_SPEED, SWORD_BEAM_START, SWORD_BEAM_RADIUS, SWORD_BEAM_FLIP_FRAMES } = __require("data/feel.js");
+const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE, ENEMY_SHOT_RADIUS, SWORD_BEAM_SPEED, SWORD_BEAM_START, SWORD_BEAM_RADIUS, SWORD_BEAM_FLIP_FRAMES, SHOT_DEFLECT_FRAMES, SHOT_DEFLECT_SPEED, SHOT_DEFLECT_LAUNCH, SHOT_DEFLECT_GRAVITY } = __require("data/feel.js");
 
 class Projectile extends Entity {
   constructor(x, y, o = {}) {
@@ -14371,11 +14408,38 @@ class Projectile extends Entity {
     this.flying = true;
     this.owner = o.owner || null;
     this.onImpact = o.onImpact || null;
-    this.hitFx = o.hitFx || 'spark';
+    this.hitFx = o.hitFx !== undefined ? o.hitFx : 'spark';
     this.z = o.z || PROJECTILE_Z;
     // How big the shot is to LINK: a box this far either way of the middle
     // of the sprite as drawn, against his own 12x12 — the cartridge's rule.
     this.radius = o.radius || ENEMY_SHOT_RADIUS;
+    // Seasons' octorok rock (parts/octorokProjectile.s, S227): a wall, the
+    // shield or the sword knocks it back the way it came with a hop, and it
+    // is harmless until it is gone (`deflect`). It hits Link and is simply
+    // gone; it never makes the clink picture.
+    // `deflects: 'vanish'` is Seasons' wizzrobe shot (wizzrobeProjectile.s):
+    // the same collisions make it simply go, with the same clink.
+    this.deflects = o.deflects === 'vanish' ? 'vanish' : !!o.deflects;
+    this.deflected = 0;      // frames left of the hop back, once knocked
+    this.vz = 0;             // sp/f up, during the hop
+  }
+
+  /**
+   * Knock the shot back (partCommon_bounceWhenCollisionsEnabled): turn it
+   * round at SPEED_40, launch it up, and let it fall for 32 frames before it
+   * is gone. Collisions are off from now on. `sound` is SND_CLINK2, which the
+   * shield and the sword make (collisionEffect1f, LINKDMG_20); a wall makes
+   * none.
+   */
+  deflect(game, sound) {
+    if (this.deflected > 0) return;
+    if (sound) game.audio.sfx('deflect');
+    if (this.deflects === 'vanish') { this.remove = true; this.deflected = 1; return; }
+    const len = Math.hypot(this.vx, this.vy) || 1;
+    this.vx = -Math.round(this.vx / len * SHOT_DEFLECT_SPEED);
+    this.vy = -Math.round(this.vy / len * SHOT_DEFLECT_SPEED);
+    this.vz = SHOT_DEFLECT_LAUNCH;
+    this.deflected = SHOT_DEFLECT_FRAMES;
   }
 
   /** The shot's collision box: `radius` either way of its middle as drawn. */
@@ -14392,6 +14456,15 @@ class Projectile extends Entity {
 
   update(game) {
     this.frame++;
+    if (this.deflected > 0) {
+      // partCommon_updateSpeedAndDeleteWhenCounter1Is0: through anything,
+      // never below the ground, gone when the count runs out.
+      if (--this.deflected <= 0) { this.remove = true; return; }
+      this.fx += this.vx; this.fy += this.vy;
+      this.fz = Math.max(0, this.fz + this.vz);
+      this.vz -= SHOT_DEFLECT_GRAVITY;
+      return;
+    }
     if (--this.life <= 0) { this.expire(game); return; }
 
     const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
@@ -14399,6 +14472,16 @@ class Projectile extends Entity {
     // Walls stop shots; water does not (unless overWater is false).
     const blocked = !this.canPass(game, nx, ny);
     if (blocked) {
+      if (this.deflects) {
+        // The edge of the screen is not a wall: the rock is simply gone
+        // there (partCommon_checkTileCollisionOrOutOfBounds' boundary case).
+        const rw = game.room ? game.room.pw : 160, rh = game.room ? game.room.ph : 128;
+        if (nx + this.hb.x < 0 || ny + this.hb.y < 0
+            || nx + this.hb.x + this.hb.w > rw || ny + this.hb.y + this.hb.h > rh) {
+          this.remove = true; return;
+        }
+        this.deflect(game, false); return;
+      }
       if (this.bounces > 0) {
         this.bounces--;
         if (!this.canPass(game, nx, this.y)) this.vx = -this.vx;
@@ -14429,6 +14512,7 @@ class Projectile extends Entity {
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
       if (this.touchesPlayer(game.player)) {
         game.player.takeDamage(game, this.damage, this);
+        if (this.deflected > 0) return;      // the shield knocked it back
         if (!this.pierce) { this.expire(game); return; }
       }
     }
@@ -21410,7 +21494,7 @@ __define("game/player.js", function (__exports, __require) {
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
 const { SwordBeam } = __require("game/projectile.js");
-const { Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect } = __require("game/entity.js");
+const { Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect, knockVector } = __require("game/entity.js");
 
 const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
@@ -21419,7 +21503,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1, noise2 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, PUDDLE_HOLD, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, PUDDLE_HOLD, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, ENEMY_KNOCK_SPEED } = __require("data/feel.js");
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
 // (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
@@ -21512,7 +21596,7 @@ class Player extends Entity {
     this.breath = 0;              // frames of air left on the seafloor
     this.underwater = false;      // walking the floor right now
     this.speedBoost = 0;
-    this.hurtTime = 0;
+    this.hurtTime = 0; this.bumping = false;
     this.falling = 0;
     this.fallDrop = false;        // this fall is through a drop hole
     this.droppingIn = false;      // falling into the room under a hole
@@ -21579,6 +21663,7 @@ class Player extends Entity {
 
     if (this.hurtTime > 0) {
       this.hurtTime--;
+      if (this.hurtTime === 0) this.bumping = false;
       // Fixed distance, fixed frames, constant speed — the same shape as enemy
       // knockback, so where a hit puts you is something you can learn. The step
       // is whole subpixels and never changes, so nothing rounds on the way.
@@ -22309,6 +22394,7 @@ class Player extends Entity {
 
     const box = this.swordBox(game);
     this.bladeCollect(game, box);
+    this.bladeDeflect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden || e.invuln > 0) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
@@ -22423,6 +22509,7 @@ class Player extends Entity {
     const phase = swingPhase(t);
     const box = this.swordBox(game, phase);
     this.bladeCollect(game, box);
+    this.bladeDeflect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
@@ -22457,6 +22544,18 @@ class Player extends Entity {
       if (!e.isDrop || !e.bladeTakes || !e.bladeTakes(game)) continue;
       const c = { x: e.cx - r, y: e.cy - r, w: r * 2, h: r * 2 };
       if (rectOverlap(box, c)) e.collect(game);
+    }
+  }
+
+  /** The blade knocks back a shot that the cartridge's sword knocks back —
+   *  the octorok's rock (S227; objectCollisionTable.s,
+   *  ENEMYCOLLISION_PROJECTILE_WITH_RING_MOD: every sword column, the spin
+   *  and the held blade are COLLISIONEFFECT_1f, a clink and the rock's
+   *  bounce). Against the shot's own box, as for Link. */
+  bladeDeflect(game, box) {
+    for (const e of game.entities) {
+      if (!e.deflects || e.deflected > 0 || e.remove || e.fromPlayer) continue;
+      if (rectOverlap(box, e.contactRect())) e.deflect(game, true);
     }
   }
 
@@ -22544,6 +22643,7 @@ class Player extends Entity {
     const [ry, rx, oy, ox] = SPIN_ARC[k];
     const box = { x: this.cx + ox - rx, y: this.cy + oy - ry, w: rx * 2, h: ry * 2 };
     this.bladeCollect(game, box);
+    this.bladeDeflect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
@@ -22946,11 +23046,42 @@ class Player extends Entity {
       // What touching it does besides hurt: a gel latches on, a bubble takes
       // the sword. Called whether or not the hit lands, as the cartridge
       // reacts to the collision itself (var2a = ITEMCOLLISION_LINK).
+      if (this.shieldBump(game, e)) break;
       if (e.spec && e.spec.onTouchLink) e.spec.onTouchLink(e, game, this);
       if (e.harmless) break;
       this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });
       break;
     }
+  }
+
+  /**
+   * THE SHIELD BUMP (S227): Link's raised shield, facing an ordinary enemy
+   * that walks into him, shoves the two apart with a thud and hurts neither —
+   * any shield, the first one included (objectCollisionTable.s,
+   * ENEMYCOLLISION_STANDARD_ENEMY: COLLISIONEFFECT_SHIELD_BUMP[_HIGH_
+   * KNOCKBACK], SND_BOMB_LAND). Not a boss, not something the shield turns
+   * (the spiked beetle) and not something whose touch does its own thing (a
+   * gel, a bubble). Returns true when it bumped.
+   */
+  shieldBump(game, e) {
+    if (!this.shielding || e.isBoss) return false;
+    if (e.spec && (e.spec.onShielded || e.spec.onTouchLink)) return false;
+    if (dirFromDelta(e.cx - this.cx, e.cy - this.cy) !== this.dir) return false;
+    const lv = itemLevel(game.progress, 'shield');
+    if (lv < 1) return false;
+    const [linkKnock, linkInv, foeKnock, foeInv] = SHIELD_BUMP[lv >= 2 ? 1 : 0];
+    const me = knockVector(this, null, e, PLAYER_KNOCK_SPEED);
+    if (me && !this.underwater) {
+      this.knockX = me[0]; this.knockY = me[1];
+      this.knockTime = linkKnock; this.hurtTime = linkKnock;
+      this.bumping = true;
+    }
+    this.invuln = Math.max(this.invuln, linkInv);
+    const it = knockVector(e, null, this, ENEMY_KNOCK_SPEED);
+    if (it) { e.knockX = it[0]; e.knockY = it[1]; e.knockTime = foeKnock; }
+    e.invuln = Math.max(e.invuln, foeInv);
+    game.audio.sfx('shieldBump');
+    return true;
   }
 
   /** Charm and shield modifiers applied here so every damage source respects them. */
@@ -22972,6 +23103,12 @@ class Player extends Entity {
         }
         const lv = itemLevel(p, 'shield');
         const blocks = source.isProjectile ? lv >= 1 : lv >= 2;
+        if (blocks && source.deflects) {
+          // Seasons' octorok rock off the shield (collisionEffect1f): a
+          // clink, and it hops back the way it came. No clink picture.
+          source.deflect(game, true);
+          return false;
+        }
         if (blocks) {
           game.audio.sfx('block');
           game.spawnEffect('spark', this.cx - 8, this.cy - 8);
@@ -23011,7 +23148,7 @@ class Player extends Entity {
     p.hearts = Math.max(0, p.hearts - dmg);
     this.invuln = PLAYER_INVULN_FRAMES;
     this.flicker = PLAYER_FLICKER_FRAMES;
-    this.hurtTime = PLAYER_HURT_FRAMES;
+    this.hurtTime = PLAYER_HURT_FRAMES; this.bumping = false;
     // A walker on the seafloor is not shoved. That is the other half of what
     // sink mode buys, and it is why a current-swept room can be crossed under
     // fire at the price of not being able to draw the sword while you do it.
@@ -23086,7 +23223,7 @@ class Player extends Entity {
       this.x = safe.x; this.y = safe.y;
       this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
-      this.hurtTime = RESPAWN_HOLD_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
     }
   }
 
@@ -23160,7 +23297,7 @@ class Player extends Entity {
       this.z = 0;
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
-      this.hurtTime = RESPAWN_HOLD_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
       game.say('The tide swept you back!');
     }
   }
@@ -23227,7 +23364,7 @@ class Player extends Entity {
     if (this.inDeep) {
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);
     }
-    if (this.hurtTime > 0) return 'link_hurt_' + key;
+    if (this.hurtTime > 0 && !this.bumping) return 'link_hurt_' + key;
     // Seasons' swing is two bodies: the wind-up ($ac+direction) on its first
     // phase, then $b0+direction, which the poke is all of (LINK_ANIM_MODE_22
     // and _1f). The lunge on full reach is a move, not a picture: see draw.
@@ -40351,6 +40488,8 @@ function shoot(e, g, o = {}) {
     radius: o.radius,
     overWater: o.overWater,
     bounces: o.bounces,
+    deflects: o.deflects,
+    hitFx: o.hitFx,
   });
 }
 
@@ -63353,7 +63492,10 @@ function installEnemies() {
         if (--e.aiTimer > 0) return;
         e.aiState = 'stand'; e.aiTimer = OCTOROK_SHOOT_REST;
         // SND_THROW, as octorok_state_0b plays it (S226; it played SND_BEAM).
-        shoot(e, g, { sprite: o.shot, pal: o.shotPal, speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false, sfx: 'throw' });
+        // The rock is knocked back off a wall, the shield or the sword and
+        // makes no clink picture (S227, parts/octorokProjectile.s).
+        shoot(e, g, { sprite: o.shot, pal: o.shotPal, speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false, sfx: 'throw',
+          deflects: true, hitFx: null });
         return;
     }
   }
@@ -64001,7 +64143,10 @@ function installEnemies() {
           setOff();
           // arrowDarknut_fireArrowEveryOtherTime
           if ((++e.throws & 1) && g.player && dirOfAngle(angleToward(e, g)) === e.dir) {
-            shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: MOBLIN_SPEAR_SPEED, damage: 3 });
+            // Seasons' PART_ENEMY_ARROW: knocked back off a wall, the shield
+            // or the sword like the octorok's rock (S227, enemyArrow.s).
+            shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: MOBLIN_SPEAR_SPEED, damage: 3,
+              deflects: true, hitFx: null });
           }
           return;
       }
@@ -64169,7 +64314,11 @@ function installEnemies() {
         case 'stand':                             // state $0a
           if (--e.aiTimer <= 0) { off(); e.aiState = 'out'; e.aiTimer = WIZZROBE_OUT_FRAMES; return; }
           if (e.aiTimer === WIZZROBE_FIRE_AT) {
-            shoot(e, g, { sprite: 'shot_orb', pal: 'magic', speed: WIZZROBE_SHOT_SPEED, aim: false, damage: 3 });
+            // Seasons' PART_WIZZROBE_PROJECTILE: gone on a wall without a
+            // sound, gone off the shield or the sword with a clink; never the
+            // clink picture (S227, wizzrobeProjectile.s).
+            shoot(e, g, { sprite: 'shot_orb', pal: 'magic', speed: WIZZROBE_SHOT_SPEED, aim: false, damage: 3,
+              deflects: 'vanish', hitFx: null });
           }
           return;
         case 'out':                               // state $0b
@@ -74569,6 +74718,12 @@ const SFX = {
   // The sword poking a wall a bomb would open: a hollower clink (S172,
   // commonCode2.s @bombableWallClink, SND_CLINK2).
   clinkHollow: { seasons: 'clink2' },
+  // An octorok's rock knocked back by the shield or the sword (S227,
+  // collisionEffect1f -> LINKDMG_20: SND_CLINK2).
+  deflect: { seasons: 'clink2' },
+  // The raised shield shoving an ordinary enemy off (S227,
+  // COLLISIONEFFECT_SHIELD_BUMP*: LINKDMG_10/14 play SND_BOMB_LAND).
+  shieldBump: { seasons: 'bombLand' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
   hop: { seasons: 'enemyJump' },
 

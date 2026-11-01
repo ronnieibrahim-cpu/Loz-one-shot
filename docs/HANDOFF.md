@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Every hand-written `if (blocks) remove` hides a Seasons rule (S227).**
+  Our shield made every blocked shot vanish in a clink star; Seasons looks up
+  objectCollisionTable.s per (enemy collision mode, item collision type) and
+  each part's own code decides: the octorok rock and moblin spear bounce
+  back, the wizzrobe shot vanishes, and only some effects create
+  INTERAC_CLINK. Read the row for the enemy and the part's code before
+  giving anything a block reaction.
+- **A test that pokes `g.input.held` is undone by the next update (S227).**
+  Input.update rebuilds `held` from `_raw` every frame; hold a button across
+  `g.update()` with `g.input._raw.b = true`.
+
 - **An overworld enemy's dice are the whole run's dice (S226).** The sea
   octorok's new walk drew the shared random stream differently on one coast
   screen before D2; padding 11 frames put every FRAME back, but Anemos and
