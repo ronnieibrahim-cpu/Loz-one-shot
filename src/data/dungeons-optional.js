@@ -155,8 +155,10 @@ export function installOptionalDungeons() {
           '#,,,,,,.....,.#',
           '###############',
         ],
+        // The chest stands at the back of the alcove, opened from the
+        // burnt-out plug's side (S224: a chest opens from below only).
         entities: [
-          ['chest', 6, 2, { pickup: 'key' }],
+          ['chest', 7, 1, { pickup: 'key' }],
         ],
         kilnRoom: { target: [7, 3], from: [7, 4], dir: 'up', levels: [0], reach: true },
       },

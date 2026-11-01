@@ -668,10 +668,11 @@ export const PLANS = {
       ['goto', 1, 5, 400],
       ['exit', 'left', 400],
       // The Map Alcove: the map's chest sits in a pocket of blocks, open to
-      // the east (S179: in a chest, as Seasons keeps its map).
+      // the south (S179: in a chest, as Seasons keeps its map; S224: a chest
+      // opens from the front only).
       ['fight', 900],
-      ['goto', 8, 5, 500],
-      ['hold', ['left'], 6],
+      ['goto', 7, 6, 500],
+      ['hold', ['up'], 6],
       ['tap', 'a', 120],
       ['dialogue', 200],
       ['wait', 40],

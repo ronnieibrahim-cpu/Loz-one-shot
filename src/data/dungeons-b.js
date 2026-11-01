@@ -750,7 +750,7 @@ export function installDungeonsB() {
         floorRoom: { from: [7, 1], seas: [0, 1, 2] },
         entities: [
           ['block', 7, 7, { once: false }],
-          ['chest', 11, 9, { pickup: 'rupee100', needFlag: 'd5_knot' }],
+          ['chest', 11, 8, { pickup: 'rupee100', needFlag: 'd5_knot' }],
           ['keese', 10, 7],
         ],
         puzzle: {
@@ -1038,10 +1038,11 @@ export function installDungeonsB() {
           ['switch', 11, 2],
           ['switch', 8, 4],
           ['switch', 5, 7],
-          // THE CHEST FACES THE WAY YOU COME: opened from 1,7, it drops the
-          // key twelve pixels above itself, on the square he stands on, and
-          // leaves the cell's way north to the Silt Cell clear.
-          ['chest', 1, 8, { pickup: 'key' }],
+          // THE CHEST STANDS AT THE CORRIDOR'S DEAD END, opened from below
+          // (S224: from the front only, as in Seasons; it used to plug the
+          // corridor at 1,8 and open from the side), and leaves the cell's
+          // way west clear.
+          ['chest', 1, 1, { pickup: 'key' }],
           ['keese', 10, 8],
         ],
         puzzle: {
@@ -2411,7 +2412,7 @@ export function installDungeonsB() {
           ['iceblock', 12, 6],
           ['switch', 6, 1],
           ['switch', 8, 1],
-          ['chest', 13, 9, { pickup: 'blank', needFlag: 'd6_gauge' }],
+          ['chest', 13, 8, { pickup: 'blank', needFlag: 'd6_gauge' }],
         ],
         puzzle: {
           blocks: [[6, 1], [8, 1]],

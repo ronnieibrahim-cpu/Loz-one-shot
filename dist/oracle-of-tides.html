@@ -21759,7 +21759,7 @@ class Player extends Entity {
     // entities first
     const talk = (qx, qy) => {
       for (const e of game.entities) {
-        if (e.interact && !e.dead) {
+        if (e.interact && !e.dead && !e.inert) {
           const r = e.rect();
           if (qx >= r.x - 4 && qx <= r.x + r.w + 4 && qy >= r.y - 4 && qy <= r.y + r.h + 4) {
             e.interact(game, this);
@@ -27145,10 +27145,11 @@ const PICKUPS = {
   // herself; a pickup jingle is the whole of what this needs to say.
   blank: {
     sprite: 'p_blank', pal: null,
-    get(g) {
-      g.progress.blanks = (g.progress.blanks || 0) + 1;
-      g.audio.sfx('key');
-    },
+    // The Keep's one blank in a chest rises out with a line (S224), as
+    // everything a Seasons chest holds does; a dropped one says nothing.
+    grant(g) { g.progress.blanks = (g.progress.blanks || 0) + 1; },
+    line: 'A blank charm! The scrimshander can carve it.',
+    get(g) { this.grant(g); g.audio.sfx('key'); },
   },
   seeds5: {
     sprite: 'i_reefseed', pal: null,
@@ -27161,17 +27162,21 @@ const PICKUPS = {
   key: {
     sprite: 'p_key', pal: null, persistent: true,
     // Seasons' TREASURE_SMALL_KEY (treasureObjectData.s): one that puffs in
-    // or falls in is taken with the item jingle (SND_GETITEM) and NO text;
-    // only a chest's ($38) says "You found a Small Key!" (S223).
-    get(g, e) {
-      addKey(g.progress, g.mapId);
-      g.audio.jingle('itemGet');
-      if (e && e.fromChest) g.say('You found a Small Key!');
-    },
+    // or falls in is taken with the item jingle (SND_GETITEM) and NO text
+    // (S223). A chest's ($38: spawn mode 3, FROM_CHEST_A, text $1a) rises
+    // out of the chest and says so (S224): Game.openChest hands over
+    // `grant` and `line`, as for the map.
+    grant(g) { addKey(g.progress, g.mapId); },
+    line: 'You found a Small Key!',
+    get(g) { this.grant(g); g.audio.jingle('itemGet'); },
   },
   bossKey: {
     sprite: 'p_bosskey', pal: null, persistent: true,
-    get(g) { g.progress.bossKeys[g.mapId] = true; g.audio.jingle('fanfareShort'); g.say('You found the Boss Key!'); },
+    // Out of a chest it rises (TREASURE_BOSS_KEY $38, spawn mode 3, text
+    // $1b), S224; loose it is the same jingle and line.
+    grant(g) { g.progress.bossKeys[g.mapId] = true; },
+    line: 'You found the Boss Key!',
+    get(g) { this.grant(g); g.audio.jingle('fanfareShort'); g.say(this.line); },
   },
   dungeonMap: {
     // `pal: null` so the sprite's OWN palette wins, like the chartstone below.
@@ -27295,8 +27300,6 @@ class Pickup extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
     this.kind = o.kind || 'rupee1';
-    // Popped out of a chest (Game.openChest), which a Small Key announces.
-    this.fromChest = !!o.fromChest;
     const spec = PICKUPS[this.kind] || PICKUPS.rupee1;
     this.spec = spec;
     this.w = 16; this.h = 16;
@@ -27488,8 +27491,21 @@ class Chest extends Entity {
     this.needText = o.needText || 'The lid will not lift. Not yet.';
   }
 
+  // An opened chest is only a solid tile in Seasons (TILEINDEX_CHEST_OPENED
+  // has no interaction): A in front of it says nothing and does whatever A
+  // does — it used to say "Empty." (S224). Player.tryContextAction skips it.
+  get inert() { return this.opened; }
+
   interact(game, player) {
-    if (this.opened) { game.say('Empty.'); return; }
+    if (this.opened) return;
+    // FROM THE FRONT ONLY (S224): Seasons opens a chest only for a Link
+    // facing up at it from below (interactableTiles.s
+    // checkFacingBottomOfTileAndPressedA); from any other side A says
+    // TX_510d.
+    if (player && (player.dir !== 'up' || player.cy <= this.cy)) {
+      game.say('It won\'t open\nfrom this side!');
+      return;
+    }
     if (this.needsBossKey && !game.progress.bossKeys[game.mapId]) {
       game.say('A great lock. You need the Boss Key.');
       game.audio.sfx('deny');
@@ -41955,24 +41971,27 @@ class Game {
       // is not in PICKUPS and a pickup that fell onto the wrong tile would lose
       // it (see docs/HANDOFF.md on the Compass that landed on a pot).
       giveCharm(p, chest.charm);
-      this.audio.jingle('fanfareShort');
       this.chestShow(chest, { sprite: 'i_charm', pal: (CHARMS[chest.charm] || {}).color },
         'A carved charm! Slot it on the CHARM screen.');
     } else if (chest.pickup && PICKUPS[chest.pickup] && PICKUPS[chest.pickup].grant) {
       // THE MAP AND THE CHARTSTONE COME UP OUT OF THEIR CHEST (S179), as
       // Seasons' map and compass do: given the moment the lid opens, rising
       // out of the chest with the item jingle (SND_GETITEM), not popped out
-      // onto the floor to be walked over.
+      // onto the floor to be walked over. Since S224 so do the Small Key,
+      // the Boss Key and the blank (spawn mode 3, FROM_CHEST_A): a key used
+      // to land on the chest's lid and be walked round to.
       const spec = PICKUPS[chest.pickup];
       spec.grant(this);
-      this.audio.jingle('itemGet');
       this.chestShow(chest, { sprite: spec.sprite, pal: spec.pal }, spec.line);
+    } else if (chest.rupees || (PICKUPS[chest.pickup] || {}).worth) {
+      // A chest of rupees, however it is written, rises out with its line
+      // (S224: a `pickup: 'rupee100'` chest used to pop the rupee out).
+      const n = chest.rupees || PICKUPS[chest.pickup].worth;
+      addRupees(p, n);   // the status bar ticks them in
+      this.chestShow(chest, { sprite: n >= 100 ? 'p_rupee100' : 'p_rupee20' },
+        `You got ${n} Rupees!`);
     } else if (chest.pickup) {
-      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10, fromChest: true });
-    } else if (chest.rupees) {
-      addRupees(p, chest.rupees);   // the status bar ticks them in
-      this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
-        `You got ${chest.rupees} Rupees!`);
+      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else {
       this.say('Nothing but sand.');
     }
@@ -41985,7 +42004,10 @@ class Game {
     const s = this.itemShow;
     if (!s) return;
     s.t--; s.age = (s.age || 0) + 1;
-    if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
+    // Out of a chest the item jingle sounds when the prize has finished
+    // rising, with its text (treasure.s @m3State1: SND_GETITEM after the
+    // climb), not with the lid (S224).
+    if (s.text && s.age === CHEST_TEXT_DELAY) { this.audio.jingle('itemGet'); this.say(s.text); s.text = null; }
     // The item stays up until its text is read, then goes with it.
     if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
     // Held up, it goes when its text is read (Seasons deletes the treasure
@@ -42000,10 +42022,10 @@ class Game {
     // `itemGet` is the rising arpeggio composed for exactly this beat — the
     // item held overhead. `fanfare` is the longer piece, kept for the moments
     // that earn it (heart container, essence, dungeon cleared).
-    this.audio.jingle('itemGet');
     const name = itemName(id, lv);
     const text = `You got the ${name}!\n${def ? def.desc : ''}`;
     if (chest) { this.chestShow(chest, { id, lv }, text); return; }
+    this.audio.jingle('itemGet');
     this.holdUp({ id, lv }, id === 'sword' ? 1 : 2);
     this.say(text);
   }
@@ -42039,7 +42061,7 @@ class Game {
    * lid. `show` is `{ id, lv }` for an item or `{ sprite, pal }` for anything.
    */
   chestShow(chest, show, text) {
-    this.player.frozen = ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY;
+    if (this.player) this.player.frozen = ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY;
     this.itemShow = Object.assign({ t: ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY,
       chest: { x: chest.x, y: chest.y }, age: 0, text }, show);
   }
@@ -65553,8 +65575,8 @@ function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#......=......#',
-          '#.....=.....22.',
-          '#......=......#',
+          '#.....=.=...22.',
+          '#.............#',
           '#.............#',
           '#.U.........U.#',
           '#.............#',
@@ -65618,10 +65640,11 @@ function installDungeonsA() {
           ['crab', 3, 5, { drops: 'good' }],
           ['block', 3, 7],
           ['switch', 10, 7],
-          ['chest', 1, 2, { pickup: 'rupee100' }],
+          // In the far corner, opened from below (S224: front only).
+          ['chest', 1, 1, { pickup: 'rupee100' }],
         ],
         bridgeRoom: {
-          from: [7, 9], target: [2, 2], plate: [10, 7], dir: 'H',
+          from: [7, 9], target: [1, 2], plate: [10, 7], dir: 'H',
           planks: [[6, 1], [5, 1], [4, 1], [3, 1]], seas: [1, 2, 0],
         },
         readable: [
@@ -68877,7 +68900,7 @@ function installDungeonsA() {
         cubeRoom: { from: [1, 5], seas: [0, 1, 2], cracks: true },
         entities: [
           ['cube', 2, 3, { o: 0 }],
-          ['chest', 13, 9, { pickup: 'key', needFlag: 'd4_spillVault' }],
+          ['chest', 13, 8, { pickup: 'key', needFlag: 'd4_spillVault' }],
         ],
         puzzle: {
           cube: true,
@@ -69196,7 +69219,7 @@ function installDungeonsA() {
         tankRoom: { wheel: true, sea: 2 },
         entities: [
           ['wheel', 7, 4, { needTurns: 40, sets: 'd4EastWheel' }],
-          ['chest', 7, 2, { pickup: 'bossKey', needFlag: 'd4EastWheel' }],
+          ['chest', 7, 1, { pickup: 'bossKey', needFlag: 'd4EastWheel' }],
           ['switch', 5, 9, { hold: false }],
         ],
         puzzle: {
@@ -70079,7 +70102,7 @@ function installDungeonsB() {
         floorRoom: { from: [7, 1], seas: [0, 1, 2] },
         entities: [
           ['block', 7, 7, { once: false }],
-          ['chest', 11, 9, { pickup: 'rupee100', needFlag: 'd5_knot' }],
+          ['chest', 11, 8, { pickup: 'rupee100', needFlag: 'd5_knot' }],
           ['keese', 10, 7],
         ],
         puzzle: {
@@ -70367,10 +70390,11 @@ function installDungeonsB() {
           ['switch', 11, 2],
           ['switch', 8, 4],
           ['switch', 5, 7],
-          // THE CHEST FACES THE WAY YOU COME: opened from 1,7, it drops the
-          // key twelve pixels above itself, on the square he stands on, and
-          // leaves the cell's way north to the Silt Cell clear.
-          ['chest', 1, 8, { pickup: 'key' }],
+          // THE CHEST STANDS AT THE CORRIDOR'S DEAD END, opened from below
+          // (S224: from the front only, as in Seasons; it used to plug the
+          // corridor at 1,8 and open from the side), and leaves the cell's
+          // way west clear.
+          ['chest', 1, 1, { pickup: 'key' }],
           ['keese', 10, 8],
         ],
         puzzle: {
@@ -71740,7 +71764,7 @@ function installDungeonsB() {
           ['iceblock', 12, 6],
           ['switch', 6, 1],
           ['switch', 8, 1],
-          ['chest', 13, 9, { pickup: 'blank', needFlag: 'd6_gauge' }],
+          ['chest', 13, 8, { pickup: 'blank', needFlag: 'd6_gauge' }],
         ],
         puzzle: {
           blocks: [[6, 1], [8, 1]],
@@ -72741,8 +72765,10 @@ function installOptionalDungeons() {
           '#,,,,,,.....,.#',
           '###############',
         ],
+        // The chest stands at the back of the alcove, opened from the
+        // burnt-out plug's side (S224: a chest opens from below only).
         entities: [
-          ['chest', 6, 2, { pickup: 'key' }],
+          ['chest', 7, 1, { pickup: 'key' }],
         ],
         kilnRoom: { target: [7, 3], from: [7, 4], dir: 'up', levels: [0], reach: true },
       },

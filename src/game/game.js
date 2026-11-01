@@ -1626,24 +1626,27 @@ export class Game {
       // is not in PICKUPS and a pickup that fell onto the wrong tile would lose
       // it (see docs/HANDOFF.md on the Compass that landed on a pot).
       giveCharm(p, chest.charm);
-      this.audio.jingle('fanfareShort');
       this.chestShow(chest, { sprite: 'i_charm', pal: (CHARMS[chest.charm] || {}).color },
         'A carved charm! Slot it on the CHARM screen.');
     } else if (chest.pickup && PICKUPS[chest.pickup] && PICKUPS[chest.pickup].grant) {
       // THE MAP AND THE CHARTSTONE COME UP OUT OF THEIR CHEST (S179), as
       // Seasons' map and compass do: given the moment the lid opens, rising
       // out of the chest with the item jingle (SND_GETITEM), not popped out
-      // onto the floor to be walked over.
+      // onto the floor to be walked over. Since S224 so do the Small Key,
+      // the Boss Key and the blank (spawn mode 3, FROM_CHEST_A): a key used
+      // to land on the chest's lid and be walked round to.
       const spec = PICKUPS[chest.pickup];
       spec.grant(this);
-      this.audio.jingle('itemGet');
       this.chestShow(chest, { sprite: spec.sprite, pal: spec.pal }, spec.line);
+    } else if (chest.rupees || (PICKUPS[chest.pickup] || {}).worth) {
+      // A chest of rupees, however it is written, rises out with its line
+      // (S224: a `pickup: 'rupee100'` chest used to pop the rupee out).
+      const n = chest.rupees || PICKUPS[chest.pickup].worth;
+      addRupees(p, n);   // the status bar ticks them in
+      this.chestShow(chest, { sprite: n >= 100 ? 'p_rupee100' : 'p_rupee20' },
+        `You got ${n} Rupees!`);
     } else if (chest.pickup) {
-      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10, fromChest: true });
-    } else if (chest.rupees) {
-      addRupees(p, chest.rupees);   // the status bar ticks them in
-      this.chestShow(chest, { sprite: chest.rupees >= 100 ? 'p_rupee100' : 'p_rupee20' },
-        `You got ${chest.rupees} Rupees!`);
+      this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else {
       this.say('Nothing but sand.');
     }
@@ -1656,7 +1659,10 @@ export class Game {
     const s = this.itemShow;
     if (!s) return;
     s.t--; s.age = (s.age || 0) + 1;
-    if (s.text && s.age === CHEST_TEXT_DELAY) { this.say(s.text); s.text = null; }
+    // Out of a chest the item jingle sounds when the prize has finished
+    // rising, with its text (treasure.s @m3State1: SND_GETITEM after the
+    // climb), not with the lid (S224).
+    if (s.text && s.age === CHEST_TEXT_DELAY) { this.audio.jingle('itemGet'); this.say(s.text); s.text = null; }
     // The item stays up until its text is read, then goes with it.
     if (s.chest && !s.text && !this.dialogue.active && s.age > CHEST_TEXT_DELAY) this.itemShow = null;
     // Held up, it goes when its text is read (Seasons deletes the treasure
@@ -1671,10 +1677,10 @@ export class Game {
     // `itemGet` is the rising arpeggio composed for exactly this beat — the
     // item held overhead. `fanfare` is the longer piece, kept for the moments
     // that earn it (heart container, essence, dungeon cleared).
-    this.audio.jingle('itemGet');
     const name = itemName(id, lv);
     const text = `You got the ${name}!\n${def ? def.desc : ''}`;
     if (chest) { this.chestShow(chest, { id, lv }, text); return; }
+    this.audio.jingle('itemGet');
     this.holdUp({ id, lv }, id === 'sword' ? 1 : 2);
     this.say(text);
   }
@@ -1710,7 +1716,7 @@ export class Game {
    * lid. `show` is `{ id, lv }` for an item or `{ sprite, pal }` for anything.
    */
   chestShow(chest, show, text) {
-    this.player.frozen = ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY;
+    if (this.player) this.player.frozen = ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY;
     this.itemShow = Object.assign({ t: ITEM_PRESENT_FRAMES + CHEST_TEXT_DELAY,
       chest: { x: chest.x, y: chest.y }, age: 0, text }, show);
   }
