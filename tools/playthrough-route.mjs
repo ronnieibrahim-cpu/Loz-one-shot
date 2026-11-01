@@ -3493,6 +3493,12 @@ export const ROUTE = [
   ['travel', 2, 5, 4000],
   ['equip', 'sword', 'A', 400],
   ['equip', 'rod', 'B', 400],
+  // S225: THE FIGHT STARTS FROM THE NORTH-EAST CORNER. Walked in from the
+  // east door and fought from there, the wizzrobe's two shots left him on
+  // half a heart (the S224 low-water mark); swept over thirteen standing
+  // places, 12,2 is the one the room costs nothing from, and the heart it
+  // pays is still taken. Waits before the fight change nothing here.
+  ['goto', 12, 2, 1500],
   ['fight', 4000, 1200, { ring: true }],
   ['wait', 90],
   ['fight', 4000, 1200, { ring: true }],
