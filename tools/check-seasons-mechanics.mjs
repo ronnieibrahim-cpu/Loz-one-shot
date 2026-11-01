@@ -217,6 +217,38 @@ const r = await page.evaluate(async () => {
       sword: rockAt({ kind, sword: true }), body: rockAt({ kind }) };
   }
   out.deflectFrames = F.SHOT_DEFLECT_FRAMES;
+
+  // THE SHIELD BUMP (S227; ENEMYCOLLISION_STANDARD_ENEMY against the L1
+  // shield = COLLISIONEFFECT_SHIELD_BUMP_HIGH_KNOCKBACK). An octorok held
+  // still 10 px to Link's left; Link facing it with the shield up, or not.
+  const bump = (o) => {
+    g.enterMap('overworld', 0, 4, 7, 24, 80, 'right', { instant: true });
+    g.entities = g.entities.filter(x => !x.isEnemy && !x.isProjectile);
+    if (g.dialogue) g.dialogue.active = false;
+    const p = g.player;
+    p.x = 88; p.y = 80; p.dir = o.face; p.invuln = 0; p.flicker = 0; p.hurtTime = 0;
+    g.progress.hearts = g.progress.maxHearts;
+    const e = spawnEntity(g, 'octorok', 0, 0, {});
+    e.x = 78; e.y = 80; e.spec = { ...e.spec, ai() {} };
+    g.flushPending();
+    const sounds = []; const sfx0 = g.audio.sfx.bind(g.audio);
+    g.audio.sfx = (n, ...a) => { sounds.push(n); return sfx0(n, ...a); };
+    g.input._raw.b = !!o.shield;
+    const h0 = g.progress.hearts, px = p.x, ex = e.x;
+    let flashed = false, hurtPose = false;
+    for (let i = 0; i < 40; i++) {
+      p.dir = o.face; step(1);
+      flashed = flashed || p.flicker > 0 || e.flicker > 0;
+      hurtPose = hurtPose || String(p.spriteName ? p.spriteName(g) : '').startsWith('link_hurt');
+    }
+    g.input._raw.b = false; g.audio.sfx = sfx0;
+    return { lost: h0 - g.progress.hearts, linkMoved: p.x - px, foeMoved: e.x - ex, flashed, hurtPose,
+      thud: sounds.includes('shieldBump') };
+  };
+  out.bumpShield = bump({ shield: true, face: 'left' });
+  out.bumpBack = bump({ shield: true, face: 'right' });
+  out.bumpBare = bump({ shield: false, face: 'left' });
+  out.bumpExpect = { link: F.SHIELD_BUMP[0][0] * F.PLAYER_KNOCK_SPEED / 256, foe: F.SHIELD_BUMP[0][2] * F.ENEMY_KNOCK_SPEED / 256 };
   return out;
 });
 check('a gel that touches Link clings to him', r.gelClings);
@@ -265,6 +297,13 @@ check("a wizzrobe's shot is gone on a wall without a sound or the clink picture"
 check('and gone off the shield and the sword with the clink, costing Link nothing',
   [W.shield, W.sword].every(x => x.after === 0 && x.deflectSound && x.lost === 0 && !x.clink), J([W.shield, W.sword]));
 check('it hits his body and is simply gone', W.body.turned == null && W.body.lost > 0 && !W.body.clink, J(W.body));
+const B = r.bumpShield, BE = r.bumpExpect;
+check("an octorok walking into Link's raised shield costs him nothing", B.lost === 0, J(B));
+check(`and shoves him back about ${BE.link} px and it about ${BE.foe} px, with Seasons' thud`,
+  Math.abs(B.linkMoved - BE.link) <= 1 && Math.abs(B.foeMoved + BE.foe) <= 1 && B.thud, J(B));
+check('neither flashes, and he is not drawn hurt', !B.flashed && !B.hurtPose, J(B));
+check('with the shield up facing away, it hurts him', r.bumpBack.lost > 0 && !r.bumpBack.thud, J(r.bumpBack));
+check('with no shield up, it hurts him', r.bumpBare.lost > 0 && !r.bumpBare.thud, J(r.bumpBare));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();

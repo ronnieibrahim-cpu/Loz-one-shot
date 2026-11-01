@@ -390,6 +390,18 @@ export const PLAYER_HURT_FRAMES = 15;
  *  frame by linkUpdateKnockback (object_code/common/specialObjects/link.s). */
 export const PLAYER_KNOCK_FRAMES = 15;
 
+/** [Link's shove f, his invulnerability f, the enemy's shove f, its
+ *  invulnerability f] — Link's raised shield against an ordinary enemy's body
+ *  (S227): the two are shoved apart, nothing is hurt, and neither flashes (a
+ *  negative counter in the cartridge counts without the flash). Row 0 is the
+ *  first shield, row 1 a better one. derived from the cartridge:
+ *  data/seasons/objectCollisionTable.s, ENEMYCOLLISION_STANDARD_ENEMY against
+ *  ITEMCOLLISION_L1_SHIELD = COLLISIONEFFECT_SHIELD_BUMP_HIGH_KNOCKBACK
+ *  (LINKDMG_14 $f1/$13, ENEMYDMG_14 $eb/$0b) and L2/L3 = SHIELD_BUMP
+ *  (LINKDMG_10 $f8/$0b, ENEMYDMG_10 $f0/$08), code/collisionEffects.s. Link
+ *  moves at PLAYER_KNOCK_SPEED, the enemy at ENEMY_KNOCK_SPEED. */
+export const SHIELD_BUMP = [[19, 15, 11, 21], [11, 8, 8, 16]];
+
 /** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
  *  knockback is a scripted displacement, not a physics impulse — a fixed
  *  speed for a fixed frame count, so it always ends the same distance from

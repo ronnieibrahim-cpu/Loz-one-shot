@@ -14,7 +14,7 @@
 import { SwordBeam } from './projectile.js';
 import {
   Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
-  enemyHurtRect,
+  enemyHurtRect, knockVector,
 } from './entity.js';
 export { enemyHurtRect };
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
@@ -50,7 +50,7 @@ import {
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
   PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
-  HITSTOP_HURT_FRAMES, BELT_SPEED,
+  HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, ENEMY_KNOCK_SPEED,
 } from '../data/feel.js';
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
@@ -144,7 +144,7 @@ export class Player extends Entity {
     this.breath = 0;              // frames of air left on the seafloor
     this.underwater = false;      // walking the floor right now
     this.speedBoost = 0;
-    this.hurtTime = 0;
+    this.hurtTime = 0; this.bumping = false;
     this.falling = 0;
     this.fallDrop = false;        // this fall is through a drop hole
     this.droppingIn = false;      // falling into the room under a hole
@@ -211,6 +211,7 @@ export class Player extends Entity {
 
     if (this.hurtTime > 0) {
       this.hurtTime--;
+      if (this.hurtTime === 0) this.bumping = false;
       // Fixed distance, fixed frames, constant speed — the same shape as enemy
       // knockback, so where a hit puts you is something you can learn. The step
       // is whole subpixels and never changes, so nothing rounds on the way.
@@ -1593,11 +1594,42 @@ export class Player extends Entity {
       // What touching it does besides hurt: a gel latches on, a bubble takes
       // the sword. Called whether or not the hit lands, as the cartridge
       // reacts to the collision itself (var2a = ITEMCOLLISION_LINK).
+      if (this.shieldBump(game, e)) break;
       if (e.spec && e.spec.onTouchLink) e.spec.onTouchLink(e, game, this);
       if (e.harmless) break;
       this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });
       break;
     }
+  }
+
+  /**
+   * THE SHIELD BUMP (S227): Link's raised shield, facing an ordinary enemy
+   * that walks into him, shoves the two apart with a thud and hurts neither —
+   * any shield, the first one included (objectCollisionTable.s,
+   * ENEMYCOLLISION_STANDARD_ENEMY: COLLISIONEFFECT_SHIELD_BUMP[_HIGH_
+   * KNOCKBACK], SND_BOMB_LAND). Not a boss, not something the shield turns
+   * (the spiked beetle) and not something whose touch does its own thing (a
+   * gel, a bubble). Returns true when it bumped.
+   */
+  shieldBump(game, e) {
+    if (!this.shielding || e.isBoss) return false;
+    if (e.spec && (e.spec.onShielded || e.spec.onTouchLink)) return false;
+    if (dirFromDelta(e.cx - this.cx, e.cy - this.cy) !== this.dir) return false;
+    const lv = itemLevel(game.progress, 'shield');
+    if (lv < 1) return false;
+    const [linkKnock, linkInv, foeKnock, foeInv] = SHIELD_BUMP[lv >= 2 ? 1 : 0];
+    const me = knockVector(this, null, e, PLAYER_KNOCK_SPEED);
+    if (me && !this.underwater) {
+      this.knockX = me[0]; this.knockY = me[1];
+      this.knockTime = linkKnock; this.hurtTime = linkKnock;
+      this.bumping = true;
+    }
+    this.invuln = Math.max(this.invuln, linkInv);
+    const it = knockVector(e, null, this, ENEMY_KNOCK_SPEED);
+    if (it) { e.knockX = it[0]; e.knockY = it[1]; e.knockTime = foeKnock; }
+    e.invuln = Math.max(e.invuln, foeInv);
+    game.audio.sfx('shieldBump');
+    return true;
   }
 
   /** Charm and shield modifiers applied here so every damage source respects them. */
@@ -1664,7 +1696,7 @@ export class Player extends Entity {
     p.hearts = Math.max(0, p.hearts - dmg);
     this.invuln = PLAYER_INVULN_FRAMES;
     this.flicker = PLAYER_FLICKER_FRAMES;
-    this.hurtTime = PLAYER_HURT_FRAMES;
+    this.hurtTime = PLAYER_HURT_FRAMES; this.bumping = false;
     // A walker on the seafloor is not shoved. That is the other half of what
     // sink mode buys, and it is why a current-swept room can be crossed under
     // fire at the price of not being able to draw the sword while you do it.
@@ -1739,7 +1771,7 @@ export class Player extends Entity {
       this.x = safe.x; this.y = safe.y;
       this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
-      this.hurtTime = RESPAWN_HOLD_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
     }
   }
 
@@ -1813,7 +1845,7 @@ export class Player extends Entity {
       this.z = 0;
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
-      this.hurtTime = RESPAWN_HOLD_FRAMES;
+      this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
       game.say('The tide swept you back!');
     }
   }
@@ -1880,7 +1912,7 @@ export class Player extends Entity {
     if (this.inDeep) {
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);
     }
-    if (this.hurtTime > 0) return 'link_hurt_' + key;
+    if (this.hurtTime > 0 && !this.bumping) return 'link_hurt_' + key;
     // Seasons' swing is two bodies: the wind-up ($ac+direction) on its first
     // phase, then $b0+direction, which the poke is all of (LINK_ANIM_MODE_22
     // and _1f). The lunge on full reach is a move, not a picture: see draw.
