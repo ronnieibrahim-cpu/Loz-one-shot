@@ -1035,6 +1035,7 @@ export function installEnemies() {
     // while it is out.
     port: 'pincer.s',
     unshoved: true,                 // ENEMYCOLLISION_PINCER: no knockback
+    shieldShovesLink: true,         // ENEMYCOLLISION_PINCER vs the shield
     ai(e, g) {
       const place = (d) => {                      // objectSetPositionInCircleArc
         const r = e.angle / 32 * 2 * Math.PI;

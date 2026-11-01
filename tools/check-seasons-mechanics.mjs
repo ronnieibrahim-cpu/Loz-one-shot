@@ -232,8 +232,9 @@ const r = await page.evaluate(async () => {
     const p = g.player;
     p.x = 88; p.y = 80; p.dir = o.face; p.invuln = 0; p.flicker = 0; p.hurtTime = 0;
     g.progress.hearts = g.progress.maxHearts;
-    const e = spawnEntity(g, 'octorok', 0, 0, {});
+    const e = spawnEntity(g, o.kind || 'octorok', 0, 0, {});
     e.x = 78; e.y = 80; e.spec = { ...e.spec, ai() {} };
+    e.hidden = false; e.harmless = false; e.invuln = 0;
     g.flushPending();
     const sounds = []; const sfx0 = g.audio.sfx.bind(g.audio);
     g.audio.sfx = (n, ...a) => { sounds.push(n); return sfx0(n, ...a); };
@@ -252,6 +253,8 @@ const r = await page.evaluate(async () => {
   out.bumpShield = bump({ shield: true, face: 'left' });
   out.bumpBack = bump({ shield: true, face: 'right' });
   out.bumpBare = bump({ shield: false, face: 'left' });
+  out.bumpPincer = bump({ shield: true, face: 'left', kind: 'pincer' });
+  out.pincerExpect = F.SHIELD_SHOVE_LINK[0][0] * F.PLAYER_KNOCK_SPEED / 256;
   // S228: the zol, the gel and the pincer take a blow without moving
   // (ENEMYCOLLISION_ZOL/GEL/PINCER: COLLISIONEFFECT_SWORD_NO_KNOCKBACK ->
   // ENEMYDMG_0c, invincibilityCounter $20, no knockback); the octorok is
@@ -329,6 +332,11 @@ check('a zol struck by the sword is not knocked back, and is safe for 32 frames'
 check('nor is a gel', SK.gel.hit && SK.gel.moved === 0 && SK.gel.inv + 1 === r.unshovedInv, J(SK.gel));
 check('while an octorok struck the same way is shoved back',
   SK.octorok.hit && SK.octorok.moved >= 14 && SK.octorok.inv < r.unshovedInv, J(SK.octorok));
+// S228: ENEMYCOLLISION_PINCER against the first shield is COLLISIONEFFECT_07:
+// Link alone is shoved (LINKDMG_18, $19 frames), the pincer is untouched.
+check("a pincer walking into Link's raised shield shoves only him, harder, and hurts nobody",
+  r.bumpPincer.lost === 0 && r.bumpPincer.foeMoved === 0 && Math.abs(r.bumpPincer.linkMoved - r.pincerExpect) <= 1.5 && r.bumpPincer.thud,
+  J({ ...r.bumpPincer, expect: r.pincerExpect }));
 const M = r.moblin, W = r.wizzrobe;
 check("a moblin's spear is knocked back off a wall like the rock, silently",
   M.wall.turned != null && M.wall.after === D && !M.wall.deflectSound && !M.wall.clink, J(M.wall));
