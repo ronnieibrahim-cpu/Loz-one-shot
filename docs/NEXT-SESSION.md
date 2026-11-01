@@ -1,3 +1,66 @@
+## S226 — the sea octorok is Seasons' blue octorok; our own sounds kept
+
+Branch claude/oracle-tides-s226-9q4t65, off main at 44b7760 (S225).
+
+### The human's choices this session
+- S225's signs from the front, lean hints and the Noble Sword's beam: ALL
+  FEEL RIGHT, keep.
+- OUR FIFTEEN HOME-MADE SOUNDS (conch, tide sweep, Dredge Line cast/catch,
+  Anchor recall, coin catch, `place`/`seed` landings, coral pillar `rumble`,
+  `bossPhase`, `charge`, Bellows `gust`, `valve`, bell-buoy `chime`,
+  `whirl`): KEEP OURS, every one. Heard beside cartridge candidates
+  (docs/briefs/s226/sounds/, each clip ours first then the candidate):
+  conch -> SND_ENERGYTHING (usedRodOfSeasons.s), tide sweep ->
+  SND_FLOODGATES held 46 f (Ages' Jabu-Jabu water lever, miscPuzzles.s
+  subid $0a), landings -> SND_BOMB_LAND (seeds.s, a seed landing), cast ->
+  SND_SWITCH_HOOK, catch -> SND_SWITCH2 (Ages switchHook.s), Anchor ->
+  SND_BOOMERANG, coin -> SND_PICKUP, pillar -> SND_RUMBLE2, boss phase ->
+  SND_TRANSFORM, lunge -> SND_UNKNOWN5, puffs -> SND_SLASH, whirlpool ->
+  SND_LINK_FALL / SND_CIRCLING, buoys -> SND_DING / SND_PIRATE_BELL pitched.
+  Do not re-ask.
+- THE SEA OCTOROK (blue, uses Seasons' octorok picture) moving and shooting
+  like Seasons' blue octorok: YES.
+
+### Built
+- THE SEA OCTOROK IS SEASONS' BLUE OCTOROK (enemies.js `octorokAi`, shared
+  with the red one; octorok.s subid 2): SPEED_80 walk, the red one's walk
+  and stand tables, a shot one time in four (OCTOROK_BLUE_SHOOT_MASK = 3,
+  @counter1Ranges), and it turns to face Link before shooting
+  (octorok_state_08, subid >= 2). Keeps its bubble (now OCTOROK_SHOT_SPEED,
+  straight, not aimed), its water and its tides. It is a `port` now, so
+  check-motion covers it. It used to `wander` and fire an aimed bubble every
+  60 frames within 90 px.
+- BOTH OCTOROKS' SHOT plays SND_THROW (`throw`), as octorok_state_0b does;
+  it played SND_BEAM (`enemyShoot`).
+- render-sfx.mjs: a name `gb:<ripped name>` renders a cartridge sound the
+  game does not play (after adding it to rip-music.py's SFX list), and
+  DEFS=file.json renders extra definitions (old/new pairs, a tune).
+- THE ROUTE (playthrough-route.mjs): the octorok on the D2 coast (0,16,4 ->
+  0,15,5 travel) clears 11 frames sooner, so `['wait', 11]` after that
+  travel puts every frame back; but the shared dice moved, so Anemos's wait
+  246 -> 242 (swept 150-358 by 4; the only win that also survives Bogmaw).
+  Bogmaw's wait 4 is THIN (0, 4, 48, 58, 60 win of 0-60).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 7 (was 6).
+Whole table green (69 tools three at a time, every one exit 0, check-build
+after npm run build): test 139/139, replay 51/51 untouched, check-motion
+11/11 (the sea octorok now among the ports), check-side 78/78,
+check-placement 5/5; check-rippers last, alone, 47/47 (rip-music.py
+re-emits byte-identically after the trial candidates were taken out).
+
+### Not done / candidates
+- Other enemies of ours that are not ports: urchin, anglerfry, barnacle,
+  jellyfish, siren (their own pictures and designs; the urchin moves as the
+  whisp). Only the sea octorok wore a Seasons picture with a non-Seasons walk.
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+- check-placement proves floor in front of a chest/sign, not that it can be
+  walked to. A loose key's one-frame hold (grab mode 1) is invisible.
+- Looked at and already right: the low-health beep, the death spin, the
+  door/stairs/menu fades (Seasons' white, its own timings), the shop's
+  prices, the `secret` jingle being SND_SOLVEPUZZLE.
+
 ## S225 — signs read from the front, lean hints, the Noble Sword's beam; a sturdier run
 
 Branch claude/oracle-tides-chest-balance-wz274j, off main at 3df7ebb (S224).

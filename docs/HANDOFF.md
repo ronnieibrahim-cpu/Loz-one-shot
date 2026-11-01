@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An overworld enemy's dice are the whole run's dice (S226).** The sea
+  octorok's new walk drew the shared random stream differently on one coast
+  screen before D2; padding 11 frames put every FRAME back, but Anemos and
+  Bogmaw still came out different. Line the frames up first (compare
+  `route-prefix.mjs 0 N` traces against a worktree of main by step index),
+  then re-sweep the boss waits downstream — and run the winner to the end,
+  since most Anemos wins lose Bogmaw.
+- **A cartridge sound effect can loop for ever (S226).** SND_FLOODGATES
+  holds its last note with a `goto`; the cartridge ends it with
+  SNDCTRL_STOPSFX. Our player has no stop for one, so a looping effect would
+  hold its channel for good. Check a script for `goto` before mapping it.
+
 - **A sign is read from the front only, and moving one can move the robot
   (S225).** Seasons' nextToSignTile is the chest's rule with TX_510e. Five
   signs had no floor below; the first spot picked for the Cistern's stood

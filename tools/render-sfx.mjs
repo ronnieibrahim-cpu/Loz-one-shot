@@ -1,6 +1,8 @@
 // Render sound effects to WAV files through the game's own audio engine,
 // offline, so a person can listen to them outside the game. NOT a checker.
 //   node tools/render-sfx.mjs <outDir> [name ...]     (no names: every sfx)
+//   a name `gb:<ripped name>` renders a cartridge sound the game does not play
+//   DEFS=file.json adds { name: sfx definition } to render under those names
 // Each sound is played once into an OfflineAudioContext exactly as the game
 // plays it (`Audio.sfx`), so a synthesized sound and a cartridge one (S163,
 // `{ seasons: name }`) come out the same way. Trailing silence is trimmed.
@@ -21,16 +23,22 @@ await new Promise(r => server.listen(0, r));
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }).catch(() => chromium.launch());
 const page = await browser.newPage();
 await page.goto(`http://localhost:${server.address().port}/index.html`);
-const out = await page.evaluate(async (wanted) => {
+const extra = process.env.DEFS ? JSON.parse(await readFile(process.env.DEFS, 'utf8')) : {};
+const out = await page.evaluate(async ([wanted, extra]) => {
   const { Audio } = await import('/src/core/audio.js');
-  const { SFX } = await import('/src/data/audio.js');
+  const { SFX: BASE } = await import('/src/data/audio.js');
+  const SFX = { ...BASE, ...extra };
   const names = wanted.length ? wanted : Object.keys(SFX);
   const res = {};
   for (const name of names) {
-    if (!SFX[name]) { res[name] = null; continue; }
+    // `gb:<name>` renders a cartridge sound by its ripped name whether or not
+    // the game plays it yet (S226: a candidate heard beside the sound it may
+    // replace).
+    const def = name.startsWith('gb:') ? { seasons: name.slice(3) } : SFX[name];
+    if (!def) { res[name] = null; continue; }
     const sr = 32768, secs = 4;
     const ctx = new OfflineAudioContext(1, sr * secs, sr);
-    const a = new Audio(); a.init(ctx); a.addSfx(SFX); a.sfx(name);
+    const a = new Audio(); a.init(ctx); a.addSfx({ ...SFX, [name]: def }); a.sfx(name);
     const buf = await ctx.startRendering();
     const d = buf.getChannelData(0);
     let end = d.length;
@@ -47,11 +55,11 @@ const out = await page.evaluate(async (wanted) => {
     res[name] = btoa(s);
   }
   return res;
-}, wanted);
+}, [wanted, extra]);
 await mkdir(outDir, { recursive: true });
 for (const [name, b64] of Object.entries(out)) {
   if (b64 == null) { console.log('no such sfx:', name); continue; }
-  await writeFile(join(outDir, name + '.wav'), Buffer.from(b64, 'base64'));
+  await writeFile(join(outDir, name.replace(':', '-') + '.wav'), Buffer.from(b64, 'base64'));
 }
 console.log(`render-sfx: ${Object.values(out).filter(Boolean).length} sounds -> ${outDir}`);
 await browser.close(); server.close();

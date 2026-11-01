@@ -2364,6 +2364,12 @@ export const OCTOROK_SHOOT_WINDUP = 16;
  *  counter1 $20. */
 export const OCTOROK_SHOOT_REST = 32;
 
+/** mask — the blue octorok's roll (the sea octorok, S226): it shoots one
+ *  time in four and stands only 45, 60 or 75 frames between walks. derived:
+ *  octorok.s @counter1Ranges, $03 for subids 2 and 3; octorok_state_08 also
+ *  turns a blue one to face Link before it shoots. */
+export const OCTOROK_BLUE_SHOOT_MASK = 3;
+
 /** 1-in-n — the chance an octorok turns to face Link as it sets off on a
  *  walk. derived: octorok.s octorok_state_09 (random & 3 == 0). */
 export const OCTOROK_TURN_TO_LINK = 4;

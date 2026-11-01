@@ -705,6 +705,9 @@ export const ROUTE = [
   ['dialogue', 200],
   ['loot', 900],
   ['travel', 15, 5, 4000],
+  // S226: the sea octorok on this coast walks as Seasons' blue one and is
+  // out of the way 11 frames sooner; this puts every frame after it back.
+  ['wait', 11],
   ['goto', 4, 2, 600],
   ['wait', 60],
 
@@ -912,7 +915,11 @@ export const ROUTE = [
   // by 6: wins scattered (30, 60, 90, 96, 126, 150, 162-168, 198, 210-216,
   // 234, 246-252, 270); run to the end, only 198 and 246 also survive D3's
   // bosses. 246 (252 wins Anemos too).
-  ['wait', 246],
+  // S226 (the sea octorok walks as Seasons' blue one, which drew the shared
+  // dice differently on the coast before D2): 246 leaves him on 3/24 and
+  // D3's Bogmaw then wins. Swept 150-358 by 4; of the wins (158, 162, 198,
+  // 210 on 7-14/24...), only 242 also survives Bogmaw (on 10/28). 242.
+  ['wait', 242],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
@@ -1361,6 +1368,8 @@ export const ROUTE = [
   // S224: chests open from the front only, which moved the route round six
   // of them, and the fight changed under it: every entry wait 4-34 lost with
   // `openRetreat`; without it (six option sets swept) it wins on 10/28.
+  // S226 (Anemos's wait 242): 4 still wins, on 10/28; swept 0-60, only 0,
+  // 4, 48, 58 and 60 win. THIN.
   ['wait', 4],
   ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
