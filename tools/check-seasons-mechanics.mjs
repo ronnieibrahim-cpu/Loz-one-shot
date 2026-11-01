@@ -169,6 +169,7 @@ const r = await page.evaluate(async () => {
     p.swinging = 0; p.flicker = 0;
     g.progress.hearts = g.progress.maxHearts;
     if (opts.wall) { p.x = 140; g.room.setTile(5, 5, 'rock'); }
+    if (opts.flashing) p.invuln = 200;
     const kind = opts.kind || 'octorok';
     const o = spawnEntity(g, kind, 0, 0, {});
     const aim = () => {
@@ -194,17 +195,18 @@ const r = await page.evaluate(async () => {
     const r = { fired: !!rock, sounds, fx };
     if (!rock) { g.audio.sfx = sfx0; g.spawnEffect = fx0; return r; }
     const h0 = g.progress.hearts;
-    let frames = 0, maxZ = rock.z, z0 = rock.z, turned = null, vx = null, swung = false;
+    let frames = 0, maxZ = rock.z, z0 = rock.z, turned = null, vx = null, swung = false, passed = false;
     while (!rock.remove && frames < 200) {
       if (opts.shield) { g.input._raw.b = true; p.dir = 'left'; }
       if (opts.sword && !swung && p.x - rock.x < 22) { p.dir = 'left'; p.startSwing(g, 1); swung = true; }
       step(1); frames++;
       if (rock.deflected > 0 && turned == null) { turned = frames; vx = rock.vx; }
       if (turned != null) maxZ = Math.max(maxZ, rock.z);
+      if (!rock.remove && rock.x > p.x + 16) passed = true;
     }
     g.audio.sfx = sfx0; g.spawnEffect = fx0; g.input._raw.b = false;
     if (opts.wall) { g.room.override[5 * g.room.tw + 5] = null; g.room.invalidate(); }
-    Object.assign(r, { frames, turned, vx, rise: maxZ - z0, after: turned == null ? null : frames - turned,
+    Object.assign(r, { frames, passed, turned, vx, rise: maxZ - z0, after: turned == null ? null : frames - turned,
       lost: h0 - g.progress.hearts, clink: fx.includes('spark'), deflectSound: sounds.includes('deflect') });
     return r;
   };
@@ -212,6 +214,8 @@ const r = await page.evaluate(async () => {
   out.rockShield = rockAt({ shield: true });
   out.rockSword = rockAt({ sword: true });
   out.rockBody = rockAt({});
+  out.rockFlashing = rockAt({ flashing: true });
+  out.rockFlashingShield = rockAt({ flashing: true, shield: true });
   for (const kind of ['moblin', 'wizzrobe']) {
     out[kind] = { wall: rockAt({ kind, wall: true }), shield: rockAt({ kind, shield: true }),
       sword: rockAt({ kind, sword: true }), body: rockAt({ kind }) };
@@ -286,6 +290,12 @@ check("Link's raised shield knocks it back with Seasons' clink, and he loses not
 check('so does his sword swung into it', r.rockSword.turned != null && r.rockSword.deflectSound && r.rockSword.lost === 0, J(r.rockSword));
 check('it hits his body for its damage and is simply gone, no clink picture',
   r.rockBody.turned == null && r.rockBody.lost === 2 && !r.rockBody.clink && r.rockBody.frames < 60, J(r.rockBody));
+// S228: checkLinkVulnerable — Link flashing after a hit collides with
+// nothing, shield included, so the shot flies on through him.
+check('while Link is flashing after a hit, the rock flies straight through him',
+  r.rockFlashing.passed && r.rockFlashing.turned == null && r.rockFlashing.lost === 0 && !r.rockFlashing.clink, J(r.rockFlashing));
+check('and his raised shield does not knock it back then either',
+  r.rockFlashingShield.passed && r.rockFlashingShield.turned == null && !r.rockFlashingShield.deflectSound && r.rockFlashingShield.lost === 0, J(r.rockFlashingShield));
 const M = r.moblin, W = r.wizzrobe;
 check("a moblin's spear is knocked back off a wall like the rock, silently",
   M.wall.turned != null && M.wall.after === D && !M.wall.deflectSound && !M.wall.clink, J(M.wall));

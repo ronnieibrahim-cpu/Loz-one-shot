@@ -1632,9 +1632,18 @@ export class Player extends Entity {
     return true;
   }
 
+  /**
+   * Can anything touch Link right now? Seasons' checkLinkVulnerable: while
+   * he is invincible (flashing after a hit) nothing collides with him at all,
+   * shield included, so an enemy's shot flies straight through him.
+   */
+  touchable() {
+    return !(this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn);
+  }
+
   /** Charm and shield modifiers applied here so every damage source respects them. */
   takeDamage(game, amount, source, o = {}) {
-    if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn) return false;
+    if (!this.touchable()) return false;
     const p = game.progress;
 
     // Shield blocks damage from the facing direction (projectiles and contact).
