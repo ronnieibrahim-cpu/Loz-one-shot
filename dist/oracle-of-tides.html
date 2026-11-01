@@ -1369,6 +1369,18 @@ const SEASONS_MUSIC = {
       [0,86,1],[0,87,1],[10,0],[0,0,1],[10,96],[0,36,2],[0,86,2],[0,87,5],[10,32],[0,36,2],[0,86,2],[0,87,5],[7],
     ],
   },
+  // sfx/swordBeam.s
+  swordBeam: {
+    ch: { 2: 0 },
+    prio: { 2: 3 },
+    events: [
+      [4,0],[2,13],[0,59,1],[2,8],[0,49,1],[0,46,1],[0,56,1],[0,46,1],[0,44,1],[0,53,1],[0,44,1],[0,43,1],[0,51,1],[0,43,1],[0,41,1],[2,9],
+      [0,59,1],[2,5],[0,49,1],[0,46,1],[0,56,1],[0,46,1],[0,44,1],[0,53,1],[0,44,1],[0,43,1],[0,51,1],[0,43,1],[0,41,1],[2,6],[0,59,1],[2,3],
+      [0,49,1],[0,46,1],[0,56,1],[0,46,1],[0,44,1],[0,53,1],[0,44,1],[0,43,1],[0,51,1],[0,43,1],[0,41,1],[2,3],[0,59,1],[2,2],[0,49,1],[0,46,1],
+      [0,56,1],[0,46,1],[0,44,1],[0,53,1],[0,44,1],[0,43,1],[0,51,1],[0,43,1],[0,41,1],[2,1],[0,59,1],[2,1],[0,49,1],[0,46,1],[0,56,1],[0,46,1],
+      [0,44,1],[0,53,1],[0,44,1],[0,43,1],[0,51,1],[0,43,1],[0,41,1],[7],
+    ],
+  },
 };
 __exports["GB_FREQ"] = GB_FREQ;
 __exports["GB_ENV_WAIT"] = GB_ENV_WAIT;
@@ -1549,6 +1561,27 @@ const TIDE_DRIFT_PER_LEVEL = 32;
  *  0/2/4/6 halved, as object_code/common/items/postUpdate.s
  *  (updateSwingableItemAnimation) reads it. */
 const SWING_PHASE_FRAMES = [3, 3, 8, 3];
+
+/** sp/f — the Noble Sword's beam (S225). derived from the cartridge:
+ *  oracles-disasm object_code/common/items/swordBeam.s @state0, SPEED_300 =
+ *  3 px/f (constants/common/objectSpeeds.s, SPEED_100 = 1 px/f). It is made
+ *  on the swing's full-reach frame (swordParent.s: animParameter bit 5, set
+ *  on animationData19d21's $64 only) by a sword of level 2 or more when
+ *  Link's health is full (@checkCreateSwordBeam), one at a time. */
+const SWORD_BEAM_SPEED = 768;
+
+/** px — where the beam starts from Link's middle, per facing, [dy, dx].
+ *  derived: swordBeam.s @initialOffsetsTable ($f5 $fc / $00 $0c / $0a $03 /
+ *  $00 $f3, y then x). */
+const SWORD_BEAM_START = { up: [-11, -4], right: [0, 12], down: [10, 3], left: [0, -13] };
+
+/** px — how far either way of its middle the beam hits. derived:
+ *  data/seasons/itemAttributes.s ITEM_SWORD_BEAM collisionRadius $22. */
+const SWORD_BEAM_RADIUS = 2;
+
+/** f — how often the beam swaps its two palettes. derived: swordBeam.s
+ *  @noCollision, oamFlags xor 1 when wFrameCounter & 3 is 0. */
+const SWORD_BEAM_FLIP_FRAMES = 4;
 
 /** f — total length of a sword swing; the player is rooted for all of it.
  *  derived: the sum of SWING_PHASE_FRAMES. Link's movement is disabled when
@@ -4235,6 +4268,10 @@ __exports["SHALLOW_FACTOR"] = SHALLOW_FACTOR;
 __exports["CARRY_FACTOR"] = CARRY_FACTOR;
 __exports["TIDE_DRIFT_PER_LEVEL"] = TIDE_DRIFT_PER_LEVEL;
 __exports["SWING_PHASE_FRAMES"] = SWING_PHASE_FRAMES;
+__exports["SWORD_BEAM_SPEED"] = SWORD_BEAM_SPEED;
+__exports["SWORD_BEAM_START"] = SWORD_BEAM_START;
+__exports["SWORD_BEAM_RADIUS"] = SWORD_BEAM_RADIUS;
+__exports["SWORD_BEAM_FLIP_FRAMES"] = SWORD_BEAM_FLIP_FRAMES;
 __exports["SWING_FRAMES"] = SWING_FRAMES;
 __exports["SWORD_RESWING_PHASE"] = SWORD_RESWING_PHASE;
 __exports["SWORD_ARC"] = SWORD_ARC;
@@ -14293,6 +14330,223 @@ __exports["standAt"] = standAt;
 __exports["findSafeTile"] = findSafeTile;
 });
 
+/* ===== src/game/projectile.js ===== */
+__define("game/projectile.js", function (__exports, __require) {
+// Projectiles: enemy shots, player shots (seeds, arrows), and thrown objects.
+
+const { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC, enemyHurtRect } = __require("game/entity.js");
+const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
+const { sp, toPx } = __require("core/fixed.js");
+const { F } = __require("world/tileset.js");
+const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE, ENEMY_SHOT_RADIUS, SWORD_BEAM_SPEED, SWORD_BEAM_START, SWORD_BEAM_RADIUS, SWORD_BEAM_FLIP_FRAMES } = __require("data/feel.js");
+
+class Projectile extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = o.w || 8; this.h = o.h || 8;
+    this.hb = o.hb || { x: 1, y: 1, w: this.w - 2, h: this.h - 2 };
+    // Callers name a shot's velocity in px/f, the way every enemy spec and
+    // every `shootRing` does. It lands here as an integer subpixel step, which
+    // is the only thing the position accumulator will take.
+    this.vx = sp(o.vx || 0); this.vy = sp(o.vy || 0);
+    this.sprite = o.sprite || 'shot';
+    this.pal = o.pal || 'enemyr';
+    this.damage = o.damage != null ? o.damage : 1;
+    this.life = o.life != null ? o.life : PROJECTILE_LIFE;
+    this.fromPlayer = !!o.fromPlayer;
+    this.pierce = !!o.pierce;
+    this.bounces = o.bounces || 0;
+    this.spin = o.spin || 0;
+    this.overWater = o.overWater !== false;   // most shots fly over water
+    this.isProjectile = true;
+    this.shadow = false;
+    this.grounded = false;
+    this.flying = true;
+    this.owner = o.owner || null;
+    this.onImpact = o.onImpact || null;
+    this.hitFx = o.hitFx || 'spark';
+    this.z = o.z || PROJECTILE_Z;
+    // How big the shot is to LINK: a box this far either way of the middle
+    // of the sprite as drawn, against his own 12x12 — the cartridge's rule.
+    this.radius = o.radius || ENEMY_SHOT_RADIUS;
+  }
+
+  /** The shot's collision box: `radius` either way of its middle as drawn. */
+  contactRect() {
+    const r = this.radius;
+    return { x: this.cx - r, y: this.cy - this.z - r, w: r * 2, h: r * 2 };
+  }
+
+  /** True if this enemy shot is touching Link's collision area. */
+  touchesPlayer(pl) {
+    const a = this.contactRect(), b = pl.contactRect();
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  }
+
+  update(game) {
+    this.frame++;
+    if (--this.life <= 0) { this.expire(game); return; }
+
+    const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
+    const nx = toPx(nfx), ny = toPx(nfy);
+    // Walls stop shots; water does not (unless overWater is false).
+    const blocked = !this.canPass(game, nx, ny);
+    if (blocked) {
+      if (this.bounces > 0) {
+        this.bounces--;
+        if (!this.canPass(game, nx, this.y)) this.vx = -this.vx;
+        if (!this.canPass(game, this.x, ny)) this.vy = -this.vy;
+        game.audio.sfx('ricochet');
+      } else {
+        this.expire(game);
+        return;
+      }
+    } else {
+      this.fx = nfx; this.fy = nfy;
+    }
+
+    const rw = game.room ? game.room.pw : 160, rh = game.room ? game.room.ph : 128;
+    if (this.x < -12 || this.y < -12 || this.x > rw + 12 || this.y > rh + 12) {
+      this.remove = true;
+      return;
+    }
+
+    if (this.fromPlayer) {
+      for (const e of game.entities) {
+        if (!e.isEnemy || e.dead || e === this.owner) continue;
+        if (!this.overlaps(e)) continue;
+        const dir = Math.abs(this.vx) > Math.abs(this.vy)
+          ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
+        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE, this) && !this.pierce) { this.expire(game); return; }
+      }
+    } else if (this.damage > 0 && game.player && !game.player.invincible) {
+      if (this.touchesPlayer(game.player)) {
+        game.player.takeDamage(game, this.damage, this);
+        if (!this.pierce) { this.expire(game); return; }
+      }
+    }
+  }
+
+  canPass(game, x, y) {
+    const room = game.room;
+    if (!room) return false;
+    const r = { x: x + this.hb.x, y: y + this.hb.y, w: this.hb.w, h: this.hb.h };
+    const pts = [
+      [r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1],
+    ];
+    for (const [px, py] of pts) {
+      const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+      const f = room.flagsAt(tx, ty, game.tide);
+      if (f & (F.SOLID | F.VOID)) return false;
+      if (!this.overWater && (f & F.DEEP)) return false;
+    }
+    return true;
+  }
+
+  expire(game) {
+    this.remove = true;
+    if (this.onImpact) this.onImpact(game, this);
+    if (this.hitFx) game.spawnEffect(this.hitFx, this.cx - 8, this.cy - 8);
+  }
+
+  draw(ctx, game, ox, oy) {
+    const sprite = this.spin
+      ? this.sprite + '_' + (Math.floor(this.frame / this.spin) % 4)
+      : this.sprite;
+    const s = game.sprites;
+    s.draw(ctx, sprite, ox + this.x, oy + this.y - this.z, { pal: this.pal });
+  }
+}
+
+/**
+ * Convenience: fire a projectile from an entity toward a direction or point.
+ * `speed`, `vx` and `vy` are px/f here — this is the data-facing edge, and the
+ * Projectile constructor converts them to the engine's subpixel step.
+ */
+function fire(game, from, o = {}) {
+  const speed = o.speed || PROJECTILE_SPEED;
+  let vx = o.vx, vy = o.vy;
+  if (vx == null && vy == null) {
+    if (o.at) {
+      const dx = (o.at.cx - from.cx), dy = (o.at.cy - from.cy);
+      const d = Math.hypot(dx, dy) || 1;
+      vx = dx / d * speed; vy = dy / d * speed;
+    } else {
+      const [dx, dy] = DIR_VEC[o.dir || from.dir] || [0, 1];
+      vx = dx * speed; vy = dy * speed;
+    }
+  }
+  const w = o.w || 8, h = o.h || 8;
+  const p = new Projectile(from.cx - w / 2, from.cy - h / 2, { ...o, vx, vy, owner: from, w, h });
+  game.addEntity(p);
+  return p;
+}
+
+defineEntity('shot', (x, y, o) => new Projectile(x, y, o));
+
+/**
+ * THE NOBLE SWORD'S BEAM (S225; oracles-disasm object_code/common/items/
+ * swordBeam.s, ITEM_SWORD_BEAM). Made by Player.updateSwing on the swing's
+ * full-reach frame when the sword is level 2 or more and Link's hearts are
+ * full. It flies straight at SWORD_BEAM_SPEED in its own picture, swapping
+ * two palettes every SWORD_BEAM_FLIP_FRAMES, and is gone with a clink on the
+ * first enemy it touches (hurt or not) or the first wall; off the screen it
+ * is simply gone. It hits for what the first sword hits for: ITEM_SWORD_BEAM's
+ * damage is ITEM_SWORD's own $fe, which the cartridge raises for a better
+ * blade and not for the beam.
+ */
+class SwordBeam extends Projectile {
+  constructor(game, player, damage) {
+    const [dy, dx] = SWORD_BEAM_START[player.dir];
+    const [vx, vy] = DIR_VEC[player.dir];
+    super(player.cx + dx - 4, player.cy + dy - 4, { fromPlayer: true, owner: player, damage, z: 0, hitFx: 'spark', life: Infinity });
+    this.vx = vx * SWORD_BEAM_SPEED; this.vy = vy * SWORD_BEAM_SPEED;
+    this.dir = player.dir;
+    this.radius = SWORD_BEAM_RADIUS;
+    this.hb = { x: 4 - SWORD_BEAM_RADIUS, y: 4 - SWORD_BEAM_RADIUS, w: SWORD_BEAM_RADIUS * 2, h: SWORD_BEAM_RADIUS * 2 };
+    this.isSwordBeam = true;
+    game.audio.sfx('swordBeam');
+  }
+
+  update(game) {
+    this.frame++;
+    const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
+    if (!this.canPass(game, toPx(nfx), toPx(nfy))) { this.expire(game); return; }
+    this.fx = nfx; this.fy = nfy;
+    // Off the screen it is deleted (objectCheckWithinScreenBoundary): the
+    // camera's view, not the room, in a room bigger than the screen.
+    const cam = game.camera || { x: 0, y: 0 };
+    if (this.cx < cam.x || this.cy < cam.y || this.cx >= cam.x + VIEW_W || this.cy >= cam.y + VIEW_H) { this.remove = true; return; }
+    const box = this.contactRect();
+    // A sign, a chest, a block, a torch is a solid TILE in Seasons, and the
+    // beam clinks off it as off a wall; ours are entities, so asked here.
+    for (const e of game.entities) {
+      if (!e.solid || e.isEnemy || e.dead || e === this.owner) continue;
+      const r = e.rect();
+      if (box.x < r.x + r.w && r.x < box.x + box.w && box.y < r.y + r.h && r.y < box.y + box.h) { this.expire(game); return; }
+    }
+    for (const e of game.entities) {
+      if (!e.isEnemy || e.dead) continue;
+      const r = enemyHurtRect(e);
+      if (r && box.x < r.x + r.w && r.x < box.x + box.w && box.y < r.y + r.h && r.y < box.y + box.h) {
+        e.hurt(game, this.damage, this.dir, KNOCK_PROJECTILE, this);
+        this.expire(game);
+        return;
+      }
+    }
+  }
+
+  draw(ctx, game, ox, oy) {
+    const k = { up: 0, right: 1, down: 2, left: 3 }[this.dir];
+    const alt = Math.floor(game.frame / SWORD_BEAM_FLIP_FRAMES) & 1 ? 'b' : '';
+    game.sprites.draw(ctx, `fx_beam${k}${alt}`, ox + this.cx - 16, oy + this.cy - 16);
+  }
+}
+__exports["Projectile"] = Projectile;
+__exports["fire"] = fire;
+__exports["SwordBeam"] = SwordBeam;
+});
+
 /* ===== src/game/scrimshaw.js ===== */
 __define("game/scrimshaw.js", function (__exports, __require) {
 // Scrimshaw — carved bone charms, and the passive system that replaced rings.
@@ -14775,7 +15029,7 @@ const rooms = {
     ],
     entities: [
       ['wizzrobe', 4, 4],
-      ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
+      ['sign', 1, 5, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
     ],
   },
   '0,3,0': {
@@ -15029,7 +15283,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 5, { text: 'Down: the Cliffs of Kell.\nUp: the Abyssal Keep.' }],
+      ['sign', 6, 4, { text: 'Down: the Cliffs of Kell.\nUp: the Abyssal Keep.' }],
     ],
   },
   '0,3,1': {
@@ -15495,7 +15749,7 @@ const rooms = {
       { x: 5, y: 2, to: { map: 'd4', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'CLIFFSIDE CISTERN\nDeep water hides the spikes.' }],
+      ['sign', 1, 2, { text: 'CLIFFSIDE CISTERN\nDeep water hides the spikes.' }],
       ['keese', 7, 4],
     ],
   },
@@ -16218,7 +16472,7 @@ const rooms = {
       '###....###',
     ],
     entities: [
-      ['leever', 5, 4], ['sign', 2, 5, { text: 'North: boulders, and the cliffs beyond.' }],
+      ['leever', 5, 4], ['sign', 1, 4, { text: 'North: boulders, and the cliffs beyond.' }],
     ],
   },
   '0,2,6': {
@@ -17571,7 +17825,7 @@ const rooms = {
       '**********',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'Scratched on a plank: "Gone till the sea calms down. Blade\'s inside. Push the door!"' }],
+      ['sign', 7, 2, { text: 'Scratched on a plank: "Gone till the sea calms down. Blade\'s inside. Push the door!"' }],
     ],
     warps: [
       { x: 4, y: 1, to: { map: 'caveShipwright', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -19108,163 +19362,6 @@ __exports["listSaves"] = listSaves;
 __exports["saveSlot"] = saveSlot;
 __exports["loadSlot"] = loadSlot;
 __exports["deleteSlot"] = deleteSlot;
-});
-
-/* ===== src/game/projectile.js ===== */
-__define("game/projectile.js", function (__exports, __require) {
-// Projectiles: enemy shots, player shots (seeds, arrows), and thrown objects.
-
-const { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } = __require("game/entity.js");
-const { TILE } = __require("core/screen.js");
-const { sp, toPx } = __require("core/fixed.js");
-const { F } = __require("world/tileset.js");
-const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE, ENEMY_SHOT_RADIUS } = __require("data/feel.js");
-
-class Projectile extends Entity {
-  constructor(x, y, o = {}) {
-    super(x, y, o);
-    this.w = o.w || 8; this.h = o.h || 8;
-    this.hb = o.hb || { x: 1, y: 1, w: this.w - 2, h: this.h - 2 };
-    // Callers name a shot's velocity in px/f, the way every enemy spec and
-    // every `shootRing` does. It lands here as an integer subpixel step, which
-    // is the only thing the position accumulator will take.
-    this.vx = sp(o.vx || 0); this.vy = sp(o.vy || 0);
-    this.sprite = o.sprite || 'shot';
-    this.pal = o.pal || 'enemyr';
-    this.damage = o.damage != null ? o.damage : 1;
-    this.life = o.life != null ? o.life : PROJECTILE_LIFE;
-    this.fromPlayer = !!o.fromPlayer;
-    this.pierce = !!o.pierce;
-    this.bounces = o.bounces || 0;
-    this.spin = o.spin || 0;
-    this.overWater = o.overWater !== false;   // most shots fly over water
-    this.isProjectile = true;
-    this.shadow = false;
-    this.grounded = false;
-    this.flying = true;
-    this.owner = o.owner || null;
-    this.onImpact = o.onImpact || null;
-    this.hitFx = o.hitFx || 'spark';
-    this.z = o.z || PROJECTILE_Z;
-    // How big the shot is to LINK: a box this far either way of the middle
-    // of the sprite as drawn, against his own 12x12 — the cartridge's rule.
-    this.radius = o.radius || ENEMY_SHOT_RADIUS;
-  }
-
-  /** The shot's collision box: `radius` either way of its middle as drawn. */
-  contactRect() {
-    const r = this.radius;
-    return { x: this.cx - r, y: this.cy - this.z - r, w: r * 2, h: r * 2 };
-  }
-
-  /** True if this enemy shot is touching Link's collision area. */
-  touchesPlayer(pl) {
-    const a = this.contactRect(), b = pl.contactRect();
-    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-  }
-
-  update(game) {
-    this.frame++;
-    if (--this.life <= 0) { this.expire(game); return; }
-
-    const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
-    const nx = toPx(nfx), ny = toPx(nfy);
-    // Walls stop shots; water does not (unless overWater is false).
-    const blocked = !this.canPass(game, nx, ny);
-    if (blocked) {
-      if (this.bounces > 0) {
-        this.bounces--;
-        if (!this.canPass(game, nx, this.y)) this.vx = -this.vx;
-        if (!this.canPass(game, this.x, ny)) this.vy = -this.vy;
-        game.audio.sfx('ricochet');
-      } else {
-        this.expire(game);
-        return;
-      }
-    } else {
-      this.fx = nfx; this.fy = nfy;
-    }
-
-    const rw = game.room ? game.room.pw : 160, rh = game.room ? game.room.ph : 128;
-    if (this.x < -12 || this.y < -12 || this.x > rw + 12 || this.y > rh + 12) {
-      this.remove = true;
-      return;
-    }
-
-    if (this.fromPlayer) {
-      for (const e of game.entities) {
-        if (!e.isEnemy || e.dead || e === this.owner) continue;
-        if (!this.overlaps(e)) continue;
-        const dir = Math.abs(this.vx) > Math.abs(this.vy)
-          ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE, this) && !this.pierce) { this.expire(game); return; }
-      }
-    } else if (this.damage > 0 && game.player && !game.player.invincible) {
-      if (this.touchesPlayer(game.player)) {
-        game.player.takeDamage(game, this.damage, this);
-        if (!this.pierce) { this.expire(game); return; }
-      }
-    }
-  }
-
-  canPass(game, x, y) {
-    const room = game.room;
-    if (!room) return false;
-    const r = { x: x + this.hb.x, y: y + this.hb.y, w: this.hb.w, h: this.hb.h };
-    const pts = [
-      [r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1],
-    ];
-    for (const [px, py] of pts) {
-      const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-      const f = room.flagsAt(tx, ty, game.tide);
-      if (f & (F.SOLID | F.VOID)) return false;
-      if (!this.overWater && (f & F.DEEP)) return false;
-    }
-    return true;
-  }
-
-  expire(game) {
-    this.remove = true;
-    if (this.onImpact) this.onImpact(game, this);
-    if (this.hitFx) game.spawnEffect(this.hitFx, this.cx - 8, this.cy - 8);
-  }
-
-  draw(ctx, game, ox, oy) {
-    const sprite = this.spin
-      ? this.sprite + '_' + (Math.floor(this.frame / this.spin) % 4)
-      : this.sprite;
-    const s = game.sprites;
-    s.draw(ctx, sprite, ox + this.x, oy + this.y - this.z, { pal: this.pal });
-  }
-}
-
-/**
- * Convenience: fire a projectile from an entity toward a direction or point.
- * `speed`, `vx` and `vy` are px/f here — this is the data-facing edge, and the
- * Projectile constructor converts them to the engine's subpixel step.
- */
-function fire(game, from, o = {}) {
-  const speed = o.speed || PROJECTILE_SPEED;
-  let vx = o.vx, vy = o.vy;
-  if (vx == null && vy == null) {
-    if (o.at) {
-      const dx = (o.at.cx - from.cx), dy = (o.at.cy - from.cy);
-      const d = Math.hypot(dx, dy) || 1;
-      vx = dx / d * speed; vy = dy / d * speed;
-    } else {
-      const [dx, dy] = DIR_VEC[o.dir || from.dir] || [0, 1];
-      vx = dx * speed; vy = dy * speed;
-    }
-  }
-  const w = o.w || 8, h = o.h || 8;
-  const p = new Projectile(from.cx - w / 2, from.cy - h / 2, { ...o, vx, vy, owner: from, w, h });
-  game.addEntity(p);
-  return p;
-}
-
-defineEntity('shot', (x, y, o) => new Projectile(x, y, o));
-__exports["Projectile"] = Projectile;
-__exports["fire"] = fire;
 });
 
 /* ===== src/game/effects.js ===== */
@@ -21305,6 +21402,7 @@ __define("game/player.js", function (__exports, __require) {
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
+const { SwordBeam } = __require("game/projectile.js");
 const { Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect } = __require("game/entity.js");
 
 const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
@@ -22141,11 +22239,15 @@ class Player extends Entity {
     // facingWall) — and not while a diagonal is held
     // (interactableTiles.s specialObjectCheckPushingAgainstTile). Anything
     // else starts the count over (resetPushingAgainstTileCounter).
-    if (!this.againstWall || (dx && dy)) { this._pushT = 0; return; }
-    this._pushT = (this._pushT || 0) + 1;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
     const tx = Math.floor((this.cx + ux * PUSH_PROBE_REACH) / TILE);
     const ty = Math.floor((this.cy + uy * PUSH_PROBE_REACH) / TILE);
+    // AN UNLIT TORCH (S225) is a whole solid tile in Seasons ($08) and a
+    // narrower post here, so both front corners never meet it: a straight
+    // lean into one counts without them, for the hint it gives.
+    const torch = !(dx && dy) && !this.againstWall && game.unlitTorchAt(tx, ty);
+    if (!torch && (!this.againstWall || (dx && dy))) { this._pushT = 0; return; }
+    this._pushT = (this._pushT || 0) + 1;
     // A SLATE SLOT (S212) takes Ages' own ten frames, not a block's twenty
     // (slateSlot.s var3f $0a).
     if (game.isSlot(tx, ty)) {
@@ -22328,6 +22430,13 @@ class Player extends Entity {
     // area touches (SWORD_CUT_POINTS).
     if (phase === 2 && t === SWING_PHASE_FRAMES[0] + SWING_PHASE_FRAMES[1]) {
       this.cutAt(game, SPIN_START[this.dir]);
+      // THE BEAM (S225; swordParent.s @checkCreateSwordBeam): on this same
+      // frame a sword of level 2 or more, with Link's health full, throws
+      // ITEM_SWORD_BEAM — one at a time (getFreeItemSlotWithObjectCap 1).
+      if (this.swordLevel >= 2 && game.progress.hearts >= game.progress.maxHearts
+          && !game.entities.some(e => e.isSwordBeam && !e.remove)) {
+        game.addEntity(new SwordBeam(game, this, swordDamage(1)));
+      }
     }
   }
 
@@ -24248,7 +24357,8 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 // shards and clink, the moving platform and the ice chunk, cut from Oracle of
 // Seasons' own graphics; since S218 the dust and the twinkle; since S219 the
 // shadow, the splash at the feet, the bubble and the ember's fire; since S222
-// the grass at the feet.
+// the grass at the feet; since S225 the Noble Sword's beam (ITEM_SWORD_BEAM,
+// itemData.s from commit 21c924a).
 //
 // Generated by tools/rip-effects.py — edit that, not this file.
 // Source: Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
@@ -24292,6 +24402,7 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 //   fx_grass*: frames 0 1 (held 4 4), tile base $00
 //   fx_bubble*: frames 0 (held 127), tile base $16
 //   fx_ember*: frames 0 1 2 (held 2 2 2), tile base $06
+//   fx_beam*: frames 0 1 2 3 (held 127 127 127 127), tile base $38
 //   o_float*: frames 0 (held 127), tile base $08
 //   o_icechunk*: frames 0 (held 127), tile base $0a
 //   o_eyeball*: frames 0 (held 127), tile base $1e
@@ -26469,6 +26580,278 @@ const EFFECT_ART = {
     ................................
     ................................` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam0: { pal: 'fx_beam0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ...............33...............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3..3..............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam0b: { pal: 'fx_beam0b', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ...............33...............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3..3..............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam1: { pal: 'fx_beam1', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..........3333333333333.........
+    ...........0000000000003........
+    ...........0000000000003........
+    ..........3333333333333.........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam1b: { pal: 'fx_beam1b', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..........3333333333333.........
+    ...........0000000000003........
+    ...........0000000000003........
+    ..........3333333333333.........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam2: { pal: 'fx_beam2', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..............3..3..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ...............33...............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam2b: { pal: 'fx_beam2b', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ..............3..3..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ..............3003..............
+    ...............33...............
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam3: { pal: 'fx_beam3', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    .........3333333333333..........
+    ........3000000000000...........
+    ........3000000000000...........
+    .........3333333333333..........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  fx_beam3b: { pal: 'fx_beam3b', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    .........3333333333333..........
+    ........3000000000000...........
+    ........3000000000000...........
+    .........3333333333333..........
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_float0: { pal: 'o_float0', art: `
     00000000000000000000000000000000
     00333333333333000033333333333300
@@ -26633,6 +27016,14 @@ const EFFECT_PALETTES = {
   fx_ember0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   fx_ember1: ['#ffb531', '#de0000', '#de0000', '#000000'],
   fx_ember2: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  fx_beam0: ['#0000ff', '#0000ff', '#0000ff', '#000000'],
+  fx_beam0b: ['#de0000', '#de0000', '#de0000', '#000000'],
+  fx_beam1: ['#0000ff', '#0000ff', '#0000ff', '#000000'],
+  fx_beam1b: ['#de0000', '#de0000', '#de0000', '#000000'],
+  fx_beam2: ['#0000ff', '#0000ff', '#0000ff', '#000000'],
+  fx_beam2b: ['#de0000', '#de0000', '#de0000', '#000000'],
+  fx_beam3: ['#0000ff', '#0000ff', '#0000ff', '#000000'],
+  fx_beam3b: ['#de0000', '#de0000', '#de0000', '#000000'],
   o_float0: ['#ffd68c', '#ffd68c', '#ffd68c', '#10ad42'],
   o_icechunk0: ['#73adff', '#0000ff', '#0000ff', '#000000'],
   o_eyeball0: ['#000000', '#000000', '#000000', '#000000'],
@@ -27933,7 +28324,16 @@ class Sign extends Entity {
     this.shadow = false;
     this.text = o.text || '...';
   }
-  interact(game) { game.say(this.text); }
+  // FROM THE FRONT ONLY (S225): Seasons reads a sign only to a Link facing
+  // up at it from below (interactableTiles.s nextToSignTile ->
+  // checkFacingBottomOfTileAndPressedA); from any other side A says TX_510e.
+  interact(game, player) {
+    if (player && (player.dir !== 'up' || player.cy <= this.cy)) {
+      game.say('You can\'t read\nit from here!');
+      return;
+    }
+    game.say(this.text);
+  }
 }
 defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 
@@ -40424,7 +40824,11 @@ const { Credits } = __require("game/credits.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES } = __require("data/feel.js");
+
+// Seasons' wInformativeTextsShown bits (interactableTiles.s
+// showInfoTextForTile @data): a hint told once a screen per bit.
+const INFO_BOSS_DOOR = 0x02, INFO_KEY_DOOR = 0x04, INFO_CRACKED_BLOCK = 0x10, INFO_ROCK = 0x20;
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -40608,7 +41012,7 @@ class Game {
     // A key door half slid open belongs to the room it is in; and Seasons
     // tells you a door is locked once per screen (wInformativeTextsShown).
     this.doorSlides = null;
-    this._lockTold = null;
+    this._infoBits = 0;
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // The eye loop's count lives only while Link goes round it (S211): any
@@ -41282,7 +41686,56 @@ class Game {
     // door how it opens one.
     const name = this.room && this.room.inBounds(tx, ty) ? this.room.baseName(tx, ty) : null;
     if (name === 'dDoorLocked' || name === 'dDoorBoss') return this.tryKeyDoor(tx, ty, true);
-    return this.tryKeyhole(tx, ty);
+    return this.tryKeyhole(tx, ty) || this.leanHint(tx, ty);
+  }
+
+  /** Seasons' informative texts (wInformativeTextsShown): each kind of hint
+   *  is told once a screen, and some kinds share a bit, so one stands for
+   *  all of them (the rock, the cracked wall and the unlit torch are $20).
+   *  True if it has not been told yet on this screen, and marks it told. */
+  /** An unlit torch standing on (tx, ty), indoors — Seasons' $08, the only
+   *  torch its interactable table names is a dungeon's. */
+  unlitTorchAt(tx, ty) {
+    if (this.mapId === 'overworld') return null;
+    return this.entities.find(e => e instanceof Torch && !e.dead && !e.lit
+      && Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) || null;
+  }
+
+  infoOnce(bit) {
+    if (this._infoBits & bit) return false;
+    this._infoBits |= bit;
+    return true;
+  }
+
+  /**
+   * LEANING ON SOMETHING YOU CANNOT MOVE (S225; code/interactableTiles.s
+   * nextToTileWithInfoText, data/seasons/tile_properties/interactableTiles.s).
+   * After the same lean a block takes, Seasons says what the thing is, once a
+   * screen: a rock too heavy to lift (TX_5104, the overworld's $96), and
+   * indoors and in dungeons a cracked block (TX_5105), a cracked wall
+   * (TX_5106) and an unlit torch (TX_5108). The overworld's cracked cliffs
+   * say nothing in Seasons, and nor do ours. True if it was a hint tile, told
+   * or not, which starts the lean over as resetPushingAgainstTileCounter does.
+   */
+  leanHint(tx, ty) {
+    const room = this.room;
+    if (!room || !room.inBounds(tx, ty)) return false;
+    const indoors = this.mapId !== 'overworld';
+    let text = null, bit = INFO_ROCK;
+    if (this.unlitTorchAt(tx, ty)) text = 'This torch\nneeds lighting.';
+    else {
+      const name = room.baseName(tx, ty);
+      const def = getTileDef(name);
+      if (!def) return false;
+      if (def.liftLevel && def.liftLevel > LIFT_STRENGTH) text = 'Oof! It\'s heavy,\nlike a rock!';
+      else if (indoors && (def.flags & F.BOMBABLE)) {
+        if (name.startsWith('boulder')) { text = 'This block has\ncracks in it.\nIt looks like it\ncould be broken!'; bit = INFO_CRACKED_BLOCK; }
+        else text = 'This wall is\ncracked.\nIt looks like it\ncould be broken!';
+      }
+    }
+    if (!text) return false;
+    if (this.infoOnce(bit)) this.say(text);
+    return true;
   }
 
   /**
@@ -41302,8 +41755,7 @@ class Game {
     const boss = room.baseName(tx, ty) === 'dDoorBoss';
     const have = boss ? !!this.progress.bossKeys[this.mapId] : keyCount(this.progress, this.mapId) > 0;
     if (!have) {
-      if (leaning && this._lockTold === room) return true;
-      this._lockTold = room;
+      if (leaning && !this.infoOnce(boss ? INFO_BOSS_DOOR : INFO_KEY_DOOR)) return true;
       this.audio.sfx('deny');
       this.say(boss ? 'A great lock seals this door.' : 'It is locked. You need a Small Key.');
       return true;
@@ -73971,6 +74423,8 @@ const { audio } = __require("core/audio.js");
 const SFX = {
   // --- Link ---------------------------------------------------------------
   sword1: { seasons: 'swordSlash' },
+  // The Noble Sword's beam (S225): SND_SWORDBEAM, swordBeam.s @state0.
+  swordBeam: { seasons: 'swordBeam' },
   sword2: { seasons: 'unknown5' },
   sword3: { seasons: 'boomerang' },
   // Oracle of Seasons' own spin whoosh (sfx/swordSpin.s), played by its own

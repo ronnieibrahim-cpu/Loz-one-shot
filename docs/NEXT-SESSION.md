@@ -48,7 +48,12 @@ Branch claude/oracle-tides-chest-balance-wz274j, off main at 3df7ebb (S224).
   swordBeam.wav).
 
 ### Verified
-(see the end of this entry, filled in after the table ran)
+check-playthrough 49/49, THE END, never died, 313329 frames, LOW-WATER 6
+(was 2). Whole table green (68 tools three at a time): validate failed once
+on the beam's 32x32 pictures missing from sprite-manifest.js's fxBig list,
+fixed and rerun OK; test 139/139, check-sword 105/105, check-lean 15/15,
+check-placement 5/5, replay 51/51 untouched; npm run build, check-build OK;
+check-rippers last, alone, 47/47.
 
 ### Not done / candidates
 - The beam has no picture beside the original (the footage never has the
