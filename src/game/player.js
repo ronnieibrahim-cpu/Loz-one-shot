@@ -50,7 +50,7 @@ import {
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
   PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
-  HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, ENEMY_KNOCK_SPEED,
+  HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, SHIELD_SHOVE_LINK, ENEMY_KNOCK_SPEED,
 } from '../data/feel.js';
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
@@ -1617,7 +1617,11 @@ export class Player extends Entity {
     if (dirFromDelta(e.cx - this.cx, e.cy - this.cy) !== this.dir) return false;
     const lv = itemLevel(game.progress, 'shield');
     if (lv < 1) return false;
-    const [linkKnock, linkInv, foeKnock, foeInv] = SHIELD_BUMP[lv >= 2 ? 1 : 0];
+    // The pincer's head is not shoved; Link is, harder (COLLISIONEFFECT_07).
+    const shoveOnly = !!(e.spec && e.spec.shieldShovesLink);
+    const [linkKnock, linkInv, foeKnock, foeInv] = shoveOnly
+      ? [...SHIELD_SHOVE_LINK[lv >= 2 ? 1 : 0], 0, 0]
+      : SHIELD_BUMP[lv >= 2 ? 1 : 0];
     const me = knockVector(this, null, e, PLAYER_KNOCK_SPEED);
     if (me && !this.underwater) {
       this.knockX = me[0]; this.knockY = me[1];
@@ -1625,16 +1629,25 @@ export class Player extends Entity {
       this.bumping = true;
     }
     this.invuln = Math.max(this.invuln, linkInv);
-    const it = knockVector(e, null, this, ENEMY_KNOCK_SPEED);
+    const it = foeKnock ? knockVector(e, null, this, ENEMY_KNOCK_SPEED) : null;
     if (it) { e.knockX = it[0]; e.knockY = it[1]; e.knockTime = foeKnock; }
     e.invuln = Math.max(e.invuln, foeInv);
     game.audio.sfx('shieldBump');
     return true;
   }
 
+  /**
+   * Can anything touch Link right now? Seasons' checkLinkVulnerable: while
+   * he is invincible (flashing after a hit) nothing collides with him at all,
+   * shield included, so an enemy's shot flies straight through him.
+   */
+  touchable() {
+    return !(this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn);
+  }
+
   /** Charm and shield modifiers applied here so every damage source respects them. */
   takeDamage(game, amount, source, o = {}) {
-    if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn) return false;
+    if (!this.touchable()) return false;
     const p = game.progress;
 
     // Shield blocks damage from the facing direction (projectiles and contact).

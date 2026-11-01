@@ -402,6 +402,16 @@ export const PLAYER_KNOCK_FRAMES = 15;
  *  moves at PLAYER_KNOCK_SPEED, the enemy at ENEMY_KNOCK_SPEED. */
 export const SHIELD_BUMP = [[19, 15, 11, 21], [11, 8, 8, 16]];
 
+/** [Link's shove f, his invulnerability f] — Link's raised shield against a
+ *  pincer's head (a spec with `shieldShovesLink`): Link alone is shoved, harder
+ *  than off an ordinary enemy, and the pincer is untouched. Row 0 is the first
+ *  shield, row 1 a better one. derived from the cartridge:
+ *  data/seasons/objectCollisionTable.s, ENEMYCOLLISION_PINCER against
+ *  ITEMCOLLISION_L1_SHIELD = COLLISIONEFFECT_07 (LINKDMG_18 $ea/$19,
+ *  ENEMYDMG_1c: nothing) and L2/L3 = COLLISIONEFFECT_06 (LINKDMG_14 $f1/$13),
+ *  code/collisionEffects.s. */
+export const SHIELD_SHOVE_LINK = [[25, 22], [19, 15]];
+
 /** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
  *  knockback is a scripted displacement, not a physics impulse — a fixed
  *  speed for a fixed frame count, so it always ends the same distance from
@@ -525,6 +535,15 @@ export const KNOCK_TOOL = 6;
  *  ENEMYCOLLISION_MOTHULA): invincibilityCounter $20, knockbackCounter 0.
  *  Was a guessed 20 "so a boss can be combo'd" (S166, the human: match). */
 export const BOSS_INVULN_FRAMES = 32;
+
+/** f — invulnerability, and flash, after a hit on an enemy that is never
+ *  shoved (a spec with `unshoved`: the zol, the gel, the pincer). derived from
+ *  the cartridge: data/seasons/objectCollisionTable.s gives ENEMYCOLLISION_ZOL,
+ *  _GEL and _PINCER COLLISIONEFFECT_SWORD_NO_KNOCKBACK for every sword, the
+ *  spin, the held blade, a thrown thing, a bomb and the beam, and
+ *  code/collisionEffects.s turns that into ENEMYDMG_0c: invincibilityCounter
+ *  $20, knockbackCounter 0. */
+export const ENEMY_UNSHOVED_INVULN_FRAMES = 32;
 
 /** f — invulnerability granted to a boss when it changes phase. guessed. */
 export const BOSS_PHASE_INVULN_FRAMES = 20;

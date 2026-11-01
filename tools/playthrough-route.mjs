@@ -530,7 +530,7 @@ export const ROUTE = [
   ['dialogue', 900],
   ['loot', 900],
   ['dialogue', 900],
-  ['wait', 240],
+  ['wait', 265],    // S228: 240 + 25 puts every frame to Anemos back
 
   // ===================================================================
   // D2 — CORAL SPIRE. The run does not stop at the essence: it walks OUT of
@@ -919,7 +919,12 @@ export const ROUTE = [
   // dice differently on the coast before D2): 246 leaves him on 3/24 and
   // D3's Bogmaw then wins. Swept 150-358 by 4; of the wins (158, 162, 198,
   // 210 on 7-14/24...), only 242 also survives Bogmaw (on 10/28). 242.
-  ['wait', 242],
+  // S228 (Link flashing after a hit is passed through by shots, Seasons'
+  // checkLinkVulnerable; Gohmaraq fell 20 frames sooner, padded back after
+  // his Essence, but the dice moved): 242 loses. Swept 150-358 by 4: wins at
+  // 198 and 250-286 scattered; only those whose Bogmaw drops the fairy
+  // (198/38, 198/46, 250/38, 254/28, 270/50, 282/40) reach D5. 198, on 12/24.
+  ['wait', 198],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
@@ -1370,7 +1375,10 @@ export const ROUTE = [
   // `openRetreat`; without it (six option sets swept) it wins on 10/28.
   // S226 (Anemos's wait 242): 4 still wins, on 10/28; swept 0-60, only 0,
   // 4, 48, 58 and 60 win. THIN.
-  ['wait', 4],
+  // S228 (Anemos's wait 198): 38-66 win on 8-9/28, but only 38 and 46 leave
+  // Bogmaw's fairy for the loot after (28/28 into Gloomtide, who loses at
+  // every wait swept on 9). 46.
+  ['wait', 46],
   ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
@@ -2759,7 +2767,9 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['hold', ['up'], 60],
-  ['wait', 90],      // S166: 60-240 win; 90 on 19 of 40
+  // S166: 60-240 win; 90 on 19 of 40. S228 (the run arrives 112 frames
+  // later): 0-48 and 84 win on 11/40, 66-72 and 174-234 on 1-2. 24.
+  ['wait', 24],
 
   // ---------------------------------------------------------------- d5 0,3,1
   // ROOTMAW, THE DROWNED WOOD, and the fifth Essence, which stands at 7,4 in
@@ -3715,7 +3725,10 @@ export const ROUTE = [
   // in, and the far island has an urn where the chest stood): swept 0-140 by
   // 4, won at 0-8, 16-32, 48, 60, 72 and 136; 48 leaves the most (40
   // quarter-hearts, the keese down too).
-  ['wait', 48],
+  // S228 (the run arrives 510 frames later): 48 wins the fight on 18/44 and
+  // dies just after it. Swept 0-160 by 4 and run to the end: 148-156 reach
+  // THE END (30/44 here), every other winner loses here or to the King. 152.
+  ['wait', 152],
 
   // THE BRINEHULK, AND THE JOKE THE ROOM IS BUILT ON. Brine dissolves salt:
   // the colossus is armoured at LOW and comes apart at HIGH — and LOW is the
@@ -3844,7 +3857,9 @@ export const ROUTE = [
   // while `evade` steps him into the bricks. `breakPin` (below) walks out of
   // that; sampled on the real stream at 0..12 walk-rounds, the King is won
   // 12 of 13 with it and 8 of 13 without.
-  ['wait', 95],
+  // S228: 95 wins on 5/44. Swept 0-240 by 8: all but 32, 48 and 64 win;
+  // 120-144 leave 28-32/44. 128.
+  ['wait', 128],
   ['hold', ['up'], 40],
   ['wait', 60],
 

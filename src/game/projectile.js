@@ -136,7 +136,9 @@ export class Projectile extends Entity {
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
         if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE, this) && !this.pierce) { this.expire(game); return; }
       }
-    } else if (this.damage > 0 && game.player && !game.player.invincible) {
+    } else if (this.damage > 0 && game.player && game.player.touchable()) {
+      // Seasons' checkLinkVulnerable: Link flashing after a hit is not
+      // collided with at all, so the shot flies on through him.
       if (this.touchesPlayer(game.player)) {
         game.player.takeDamage(game, this.damage, this);
         if (this.deflected > 0) return;      // the shield knocked it back

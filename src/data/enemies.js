@@ -198,6 +198,7 @@ export function installEnemies() {
     // Seasons' red zol (zol.s, subid 1): holds, then slides at Link for a
     // moment; one time in eight it shivers and hops at him instead.
     port: 'zol.s',
+    unshoved: true,                 // ENEMYCOLLISION_ZOL: no knockback
     speed: ZOL_SLIDE_SPEED,
     ai(e, g) {
       switch (e.aiState) {
@@ -262,6 +263,7 @@ export function installEnemies() {
     // button he presses shakes a little of the time off, and then it hops
     // off the way he is not facing. Its damage is ours (the human's S150 no).
     port: 'gel.s',
+    unshoved: true,                 // ENEMYCOLLISION_GEL: no knockback
     speed: GEL_INCH_SPEED,
     onTouchLink(e, g, p) {
       if (e.aiState === 'cling' || e.aiState === 'hopoff' || e.dying || p.clungBy) return;
@@ -494,6 +496,11 @@ export function installEnemies() {
     // last ten of twenty frames, fires a beam along that angle, a piece a
     // frame at 8 px a frame. Then forty frames before it can fire again.
     port: 'beamos.s',
+    // Seasons' beamos has no collisions at all (ENEMYCOLLISION_00): nothing
+    // hurts it, its body hurts nobody, and it makes its own tile solid
+    // (objectMakeTileSolid), so Link cannot walk into it.
+    intangible: true,
+    init(e) { e.solid = true; e.harmless = true; e.hb = { x: 0, y: 0, w: 16, h: 16 }; },
     ai(e, g) {
       if (e.aiState === 0) {                      // @state_uninitialized
         e.angle = 0; e.aiTimer = BEAMOS_TURN_FRAMES; e.cool = 0; e.aiState = 'turn';
@@ -1032,6 +1039,8 @@ export function installEnemies() {
     // eight directions, holds, draws back, and hides a while. Touchable only
     // while it is out.
     port: 'pincer.s',
+    unshoved: true,                 // ENEMYCOLLISION_PINCER: no knockback
+    shieldShovesLink: true,         // ENEMYCOLLISION_PINCER vs the shield
     ai(e, g) {
       const place = (d) => {                      // objectSetPositionInCircleArc
         const r = e.angle / 32 * 2 * Math.PI;
