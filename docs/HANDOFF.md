@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A shot that vanishes on a flashing Link re-rolls the whole run (S228).**
+  Seasons' checkLinkVulnerable skips every collision with an invincible
+  Link, so his own shots fly on; making ours do so changed only Gohmaraq's
+  fight by 20 frames, and padding put every frame back to Anemos, but the
+  dice did not come back: Anemos, Bogmaw (and whether he drops the fairy
+  the run lives on), Rootmaw, the Brinehulk and the King all had to be
+  re-swept. Sweep with `PATCH='i=["wait",n];j=[...]' route-prefix.mjs 0 k`
+  (a run to D2 takes seconds) and always run a winner to THE END: a boss
+  won on a low bar loses the next one.
+- **Check what a boss DROPS, not only that it was beaten (S228).** Bogmaw
+  won at every wait 38-66, but only two of those left the fairy the loot
+  after it picks up; every other one walked into Gloomtide on 9/28 and lost.
+
 - **Every hand-written `if (blocks) remove` hides a Seasons rule (S227).**
   Our shield made every blocked shot vanish in a clink star; Seasons looks up
   objectCollisionTable.s per (enemy collision mode, item collision type) and

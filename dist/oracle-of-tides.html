@@ -1796,6 +1796,16 @@ const PLAYER_KNOCK_FRAMES = 15;
  *  moves at PLAYER_KNOCK_SPEED, the enemy at ENEMY_KNOCK_SPEED. */
 const SHIELD_BUMP = [[19, 15, 11, 21], [11, 8, 8, 16]];
 
+/** [Link's shove f, his invulnerability f] — Link's raised shield against a
+ *  pincer's head (a spec with `shieldShovesLink`): Link alone is shoved, harder
+ *  than off an ordinary enemy, and the pincer is untouched. Row 0 is the first
+ *  shield, row 1 a better one. derived from the cartridge:
+ *  data/seasons/objectCollisionTable.s, ENEMYCOLLISION_PINCER against
+ *  ITEMCOLLISION_L1_SHIELD = COLLISIONEFFECT_07 (LINKDMG_18 $ea/$19,
+ *  ENEMYDMG_1c: nothing) and L2/L3 = COLLISIONEFFECT_06 (LINKDMG_14 $f1/$13),
+ *  code/collisionEffects.s. */
+const SHIELD_SHOVE_LINK = [[25, 22], [19, 15]];
+
 /** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
  *  knockback is a scripted displacement, not a physics impulse — a fixed
  *  speed for a fixed frame count, so it always ends the same distance from
@@ -1919,6 +1929,15 @@ const KNOCK_TOOL = 6;
  *  ENEMYCOLLISION_MOTHULA): invincibilityCounter $20, knockbackCounter 0.
  *  Was a guessed 20 "so a boss can be combo'd" (S166, the human: match). */
 const BOSS_INVULN_FRAMES = 32;
+
+/** f — invulnerability, and flash, after a hit on an enemy that is never
+ *  shoved (a spec with `unshoved`: the zol, the gel, the pincer). derived from
+ *  the cartridge: data/seasons/objectCollisionTable.s gives ENEMYCOLLISION_ZOL,
+ *  _GEL and _PINCER COLLISIONEFFECT_SWORD_NO_KNOCKBACK for every sword, the
+ *  spin, the held blade, a thrown thing, a bomb and the beam, and
+ *  code/collisionEffects.s turns that into ENEMYDMG_0c: invincibilityCounter
+ *  $20, knockbackCounter 0. */
+const ENEMY_UNSHOVED_INVULN_FRAMES = 32;
 
 /** f — invulnerability granted to a boss when it changes phase. guessed. */
 const BOSS_PHASE_INVULN_FRAMES = 20;
@@ -4334,6 +4353,7 @@ __exports["RESPAWN_HOLD_FRAMES"] = RESPAWN_HOLD_FRAMES;
 __exports["PLAYER_HURT_FRAMES"] = PLAYER_HURT_FRAMES;
 __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
 __exports["SHIELD_BUMP"] = SHIELD_BUMP;
+__exports["SHIELD_SHOVE_LINK"] = SHIELD_SHOVE_LINK;
 __exports["PLAYER_KNOCK_SPEED"] = PLAYER_KNOCK_SPEED;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_HIT_TIERS"] = ENEMY_HIT_TIERS;
@@ -4352,6 +4372,7 @@ __exports["KNOCK_EXPLOSION"] = KNOCK_EXPLOSION;
 __exports["KNOCK_THROWN"] = KNOCK_THROWN;
 __exports["KNOCK_TOOL"] = KNOCK_TOOL;
 __exports["BOSS_INVULN_FRAMES"] = BOSS_INVULN_FRAMES;
+__exports["ENEMY_UNSHOVED_INVULN_FRAMES"] = ENEMY_UNSHOVED_INVULN_FRAMES;
 __exports["BOSS_PHASE_INVULN_FRAMES"] = BOSS_PHASE_INVULN_FRAMES;
 __exports["HAZARD_DAMAGE"] = HAZARD_DAMAGE;
 __exports["SPIKE_INVULN_FRAMES"] = SPIKE_INVULN_FRAMES;
@@ -14509,7 +14530,9 @@ class Projectile extends Entity {
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
         if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE, this) && !this.pierce) { this.expire(game); return; }
       }
-    } else if (this.damage > 0 && game.player && !game.player.invincible) {
+    } else if (this.damage > 0 && game.player && game.player.touchable()) {
+      // Seasons' checkLinkVulnerable: Link flashing after a hit is not
+      // collided with at all, so the shot flies on through him.
       if (this.touchesPlayer(game.player)) {
         game.player.takeDamage(game, this.damage, this);
         if (this.deflected > 0) return;      // the shield knocked it back
@@ -21503,7 +21526,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1, noise2 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, PUDDLE_HOLD, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, ENEMY_KNOCK_SPEED } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, PUDDLE_HOLD, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, SHIELD_SHOVE_LINK, ENEMY_KNOCK_SPEED } = __require("data/feel.js");
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
 // (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
@@ -23069,7 +23092,11 @@ class Player extends Entity {
     if (dirFromDelta(e.cx - this.cx, e.cy - this.cy) !== this.dir) return false;
     const lv = itemLevel(game.progress, 'shield');
     if (lv < 1) return false;
-    const [linkKnock, linkInv, foeKnock, foeInv] = SHIELD_BUMP[lv >= 2 ? 1 : 0];
+    // The pincer's head is not shoved; Link is, harder (COLLISIONEFFECT_07).
+    const shoveOnly = !!(e.spec && e.spec.shieldShovesLink);
+    const [linkKnock, linkInv, foeKnock, foeInv] = shoveOnly
+      ? [...SHIELD_SHOVE_LINK[lv >= 2 ? 1 : 0], 0, 0]
+      : SHIELD_BUMP[lv >= 2 ? 1 : 0];
     const me = knockVector(this, null, e, PLAYER_KNOCK_SPEED);
     if (me && !this.underwater) {
       this.knockX = me[0]; this.knockY = me[1];
@@ -23077,16 +23104,25 @@ class Player extends Entity {
       this.bumping = true;
     }
     this.invuln = Math.max(this.invuln, linkInv);
-    const it = knockVector(e, null, this, ENEMY_KNOCK_SPEED);
+    const it = foeKnock ? knockVector(e, null, this, ENEMY_KNOCK_SPEED) : null;
     if (it) { e.knockX = it[0]; e.knockY = it[1]; e.knockTime = foeKnock; }
     e.invuln = Math.max(e.invuln, foeInv);
     game.audio.sfx('shieldBump');
     return true;
   }
 
+  /**
+   * Can anything touch Link right now? Seasons' checkLinkVulnerable: while
+   * he is invincible (flashing after a hit) nothing collides with him at all,
+   * shield included, so an enemy's shot flies straight through him.
+   */
+  touchable() {
+    return !(this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn);
+  }
+
   /** Charm and shield modifiers applied here so every damage source respects them. */
   takeDamage(game, amount, source, o = {}) {
-    if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0 || this.droppingIn) return false;
+    if (!this.touchable()) return false;
     const p = game.progress;
 
     // Shield blocks damage from the facing direction (projectiles and contact).
@@ -39181,7 +39217,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_UNSHOVED_INVULN_FRAMES, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED } = __require("data/feel.js");
 
 // NOSPAWN is a lowered red or blue block (S205): a walker never stands on
 // one, so none is ever inside one when it comes up.
@@ -39535,6 +39571,8 @@ class Enemy extends Entity {
   hurt(game, dmg, dir, knock, from) {
     // Going down a hole, it has no collisions left (@touchedHazard).
     if (this.holeFall > 0) return false;
+    // No collisions at all (the beamos, ENEMYCOLLISION_00): a blow passes it.
+    if (this.spec.intangible) return false;
     // A creature flopping on the bank cannot raise its shield and cannot take
     // a hit lightly. This is the Dredge Line's combat verb, and it is the
     // whole answer to an aquatic enemy you could otherwise never corner.
@@ -39555,6 +39593,14 @@ class Enemy extends Entity {
       if (this.shield === 'all') { game.audio.sfx('block'); return false; }
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
+    // Seasons' zol, gel and pincer take every blow of Link's without moving
+    // (COLLISIONEFFECT_SWORD_NO_KNOCKBACK -> ENEMYDMG_0c) and stay safe for
+    // longer than a shoved enemy does.
+    if (this.spec.unshoved && knock) {
+      if (!super.hurt(game, dmg, dir, 0, from)) return false;
+      if (!this.dead) { this.invuln = ENEMY_UNSHOVED_INVULN_FRAMES; this.flicker = this.invuln; }
+      return true;
+    }
     return super.hurt(game, dmg, dir, knock, from);
   }
 
@@ -63607,6 +63653,7 @@ function installEnemies() {
     // Seasons' red zol (zol.s, subid 1): holds, then slides at Link for a
     // moment; one time in eight it shivers and hops at him instead.
     port: 'zol.s',
+    unshoved: true,                 // ENEMYCOLLISION_ZOL: no knockback
     speed: ZOL_SLIDE_SPEED,
     ai(e, g) {
       switch (e.aiState) {
@@ -63671,6 +63718,7 @@ function installEnemies() {
     // button he presses shakes a little of the time off, and then it hops
     // off the way he is not facing. Its damage is ours (the human's S150 no).
     port: 'gel.s',
+    unshoved: true,                 // ENEMYCOLLISION_GEL: no knockback
     speed: GEL_INCH_SPEED,
     onTouchLink(e, g, p) {
       if (e.aiState === 'cling' || e.aiState === 'hopoff' || e.dying || p.clungBy) return;
@@ -63903,6 +63951,11 @@ function installEnemies() {
     // last ten of twenty frames, fires a beam along that angle, a piece a
     // frame at 8 px a frame. Then forty frames before it can fire again.
     port: 'beamos.s',
+    // Seasons' beamos has no collisions at all (ENEMYCOLLISION_00): nothing
+    // hurts it, its body hurts nobody, and it makes its own tile solid
+    // (objectMakeTileSolid), so Link cannot walk into it.
+    intangible: true,
+    init(e) { e.solid = true; e.harmless = true; e.hb = { x: 0, y: 0, w: 16, h: 16 }; },
     ai(e, g) {
       if (e.aiState === 0) {                      // @state_uninitialized
         e.angle = 0; e.aiTimer = BEAMOS_TURN_FRAMES; e.cool = 0; e.aiState = 'turn';
@@ -64441,6 +64494,8 @@ function installEnemies() {
     // eight directions, holds, draws back, and hides a while. Touchable only
     // while it is out.
     port: 'pincer.s',
+    unshoved: true,                 // ENEMYCOLLISION_PINCER: no knockback
+    shieldShovesLink: true,         // ENEMYCOLLISION_PINCER vs the shield
     ai(e, g) {
       const place = (d) => {                      // objectSetPositionInCircleArc
         const r = e.angle / 32 * 2 * Math.PI;

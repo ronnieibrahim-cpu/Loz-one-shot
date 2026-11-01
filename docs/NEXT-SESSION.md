@@ -1,3 +1,54 @@
+## S228 — shots pass a flashing Link; zols, gels and pincers unshoved; the beamos a statue
+
+Branch claude/oracle-tides-s228-nh6pgx, off main at f03963c (S227).
+
+### The human's choices this session
+- S227's bouncing rocks/spears/wizzrobe shots and the shield bump: BOTH FEEL
+  RIGHT in play. Keep; do not re-ask.
+- Shown docs/briefs/s228/zol-no-knockback.gif (before/after); no answer yet
+  at the time of writing — ask how it feels.
+
+### Built (all small fidelity fixes from objectCollisionTable.s)
+- SHOTS PASS A FLASHING LINK (Player.touchable(), projectile.js): Seasons'
+  checkLinkVulnerable skips every collision, shield included, while Link
+  is invincible or knocked back; ours made the shot vanish on him.
+- ZOL, GEL, PINCER UNSHOVED (spec `unshoved`, Enemy.hurt): their rows give
+  COLLISIONEFFECT_SWORD_NO_KNOCKBACK for every sword/spin/held/thrown/bomb/
+  beam -> ENEMYDMG_0c: damage, no knockback, ENEMY_UNSHOVED_INVULN_FRAMES
+  (32) safe and flashing. Ours shoved them like anything else.
+- SHIELD VS PINCER (spec `shieldShovesLink`, Player.shieldBump): row
+  COLLISIONEFFECT_07 (L1) / 06 (L2+): Link alone shoved, SHIELD_SHOVE_LINK
+  [[25, 22], [19, 15]]; the pincer untouched.
+- BEAMOS (spec `intangible`, solid 16x16, harmless): ENEMYCOLLISION_00 and
+  objectMakeTileSolid — cannot be walked into, does not hurt on touch, the
+  sword passes silently. Its beam unchanged.
+- check-seasons-mechanics 37 -> 45.
+- THE ROUTE: Gohmaraq fell 20 frames sooner (first change); D1's last wait
+  240 -> 265 put every frame back to Anemos, but the dice moved. Re-swept:
+  Anemos 242 -> 198, Bogmaw 4 -> 46 (only 38/46 keep the fairy drop),
+  Rootmaw 90 -> 24, Brinehulk 48 -> 152 (148-156 reach THE END), Nereth
+  95 -> 128 (120-144 leave 28-32/44). The zol change then left the run
+  reaching THE END untouched; low-water 4 (after Anemos, 4/24). Re-sweeping
+  Anemos for margin (230 wins on 12/24) lost Gloomtide at every wait —
+  left as is. THIN at Anemos.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 4. (Table: see the
+end of this entry.)
+
+### Not done / candidates
+- The robot's margin: Anemos leaves 4/24. A future change upstream should
+  re-sweep Anemos with Bogmaw's fairy drop in mind (sweep 707's hp too).
+- More of the collision table: ENEMYCOLLISION_DARKNUT takes the L2 sword's
+  LOW knockback ($08); WHISP row ignores sword and shield (our wisp is our
+  design for combat — left); BUBBLE/GEL shield $00 (ours already exempt).
+- Enemies of ours that are not ports: urchin, anglerfry, barnacle,
+  jellyfish, siren.
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+- check-placement proves floor in front of a chest/sign, not that it can be
+  walked to. A loose key's one-frame hold (grab mode 1) is invisible.
+
 ## S227 — rocks, spears and magic bounce off the shield and sword; the shield bumps
 
 Branch claude/oracle-tides-octorok-playtest-x52psf, off main at 003352c (S226).
