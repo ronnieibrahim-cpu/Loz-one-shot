@@ -44,7 +44,9 @@ export class Projectile extends Entity {
     // shield or the sword knocks it back the way it came with a hop, and it
     // is harmless until it is gone (`deflect`). It hits Link and is simply
     // gone; it never makes the clink picture.
-    this.deflects = !!o.deflects;
+    // `deflects: 'vanish'` is Seasons' wizzrobe shot (wizzrobeProjectile.s):
+    // the same collisions make it simply go, with the same clink.
+    this.deflects = o.deflects === 'vanish' ? 'vanish' : !!o.deflects;
     this.deflected = 0;      // frames left of the hop back, once knocked
     this.vz = 0;             // sp/f up, during the hop
   }
@@ -58,12 +60,13 @@ export class Projectile extends Entity {
    */
   deflect(game, sound) {
     if (this.deflected > 0) return;
+    if (sound) game.audio.sfx('deflect');
+    if (this.deflects === 'vanish') { this.remove = true; this.deflected = 1; return; }
     const len = Math.hypot(this.vx, this.vy) || 1;
     this.vx = -Math.round(this.vx / len * SHOT_DEFLECT_SPEED);
     this.vy = -Math.round(this.vy / len * SHOT_DEFLECT_SPEED);
     this.vz = SHOT_DEFLECT_LAUNCH;
     this.deflected = SHOT_DEFLECT_FRAMES;
-    if (sound) game.audio.sfx('deflect');
   }
 
   /** The shot's collision box: `radius` either way of its middle as drawn. */

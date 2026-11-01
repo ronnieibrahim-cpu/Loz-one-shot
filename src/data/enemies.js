@@ -734,7 +734,10 @@ export function installEnemies() {
           setOff();
           // arrowDarknut_fireArrowEveryOtherTime
           if ((++e.throws & 1) && g.player && dirOfAngle(angleToward(e, g)) === e.dir) {
-            shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: MOBLIN_SPEAR_SPEED, damage: 3 });
+            // Seasons' PART_ENEMY_ARROW: knocked back off a wall, the shield
+            // or the sword like the octorok's rock (S227, enemyArrow.s).
+            shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: MOBLIN_SPEAR_SPEED, damage: 3,
+              deflects: true, hitFx: null });
           }
           return;
       }
@@ -902,7 +905,11 @@ export function installEnemies() {
         case 'stand':                             // state $0a
           if (--e.aiTimer <= 0) { off(); e.aiState = 'out'; e.aiTimer = WIZZROBE_OUT_FRAMES; return; }
           if (e.aiTimer === WIZZROBE_FIRE_AT) {
-            shoot(e, g, { sprite: 'shot_orb', pal: 'magic', speed: WIZZROBE_SHOT_SPEED, aim: false, damage: 3 });
+            // Seasons' PART_WIZZROBE_PROJECTILE: gone on a wall without a
+            // sound, gone off the shield or the sword with a clink; never the
+            // clink picture (S227, wizzrobeProjectile.s).
+            shoot(e, g, { sprite: 'shot_orb', pal: 'magic', speed: WIZZROBE_SHOT_SPEED, aim: false, damage: 3,
+              deflects: 'vanish', hitFx: null });
           }
           return;
         case 'out':                               // state $0b

@@ -169,14 +169,25 @@ const r = await page.evaluate(async () => {
     p.swinging = 0; p.flicker = 0;
     g.progress.hearts = g.progress.maxHearts;
     if (opts.wall) { p.x = 140; g.room.setTile(5, 5, 'rock'); }
-    const o = spawnEntity(g, 'octorok', 0, 0, {});
-    o.x = 24; o.y = 80; o.dir = 'right'; o.aiState = 'windup'; o.aiTimer = 1;
-    o.spec = { ...o.spec, ai: o.spec.ai };
+    const kind = opts.kind || 'octorok';
+    const o = spawnEntity(g, kind, 0, 0, {});
+    const aim = () => {
+      o.x = 24; o.y = 80; o.dir = 'right';
+      // Each at the frame before its own AI throws: the octorok at the end
+      // of its wind-up, the wizzrobe one frame before WIZZROBE_FIRE_AT, the
+      // moblin at the end of a pause on an odd throw (it throws only if the
+      // direction it then rolls faces Link, so it is asked until it does).
+      if (kind === 'octorok') { o.aiState = 'windup'; o.aiTimer = 1; }
+      if (kind === 'wizzrobe') { o.aiState = 'stand'; o.aiTimer = F.WIZZROBE_FIRE_AT + 1; o.hidden = false; }
+      if (kind === 'moblin') { o.aiState = 'pause'; o.aiTimer = 1; o.throws = 0; }
+    };
+    aim();
     const sounds = [], fx = [];
     const sfx0 = g.audio.sfx.bind(g.audio), fx0 = g.spawnEffect.bind(g);
     g.audio.sfx = (n, ...a) => { sounds.push(n); return sfx0(n, ...a); };
     g.spawnEffect = (n, ...a) => { fx.push(n); return fx0(n, ...a); };
     o.spec.ai(o, g);
+    for (let i = 0; i < 64 && !g.pendingAdd.some(x => x.isProjectile); i++) { aim(); o.spec.ai(o, g); }
     o.update = () => {};
     g.flushPending();
     const rock = g.entities.find(x => x.isProjectile && x.owner === o);
@@ -201,6 +212,10 @@ const r = await page.evaluate(async () => {
   out.rockShield = rockAt({ shield: true });
   out.rockSword = rockAt({ sword: true });
   out.rockBody = rockAt({});
+  for (const kind of ['moblin', 'wizzrobe']) {
+    out[kind] = { wall: rockAt({ kind, wall: true }), shield: rockAt({ kind, shield: true }),
+      sword: rockAt({ kind, sword: true }), body: rockAt({ kind }) };
+  }
   out.deflectFrames = F.SHOT_DEFLECT_FRAMES;
   return out;
 });
@@ -239,6 +254,17 @@ check("Link's raised shield knocks it back with Seasons' clink, and he loses not
 check('so does his sword swung into it', r.rockSword.turned != null && r.rockSword.deflectSound && r.rockSword.lost === 0, J(r.rockSword));
 check('it hits his body for its damage and is simply gone, no clink picture',
   r.rockBody.turned == null && r.rockBody.lost === 2 && !r.rockBody.clink && r.rockBody.frames < 60, J(r.rockBody));
+const M = r.moblin, W = r.wizzrobe;
+check("a moblin's spear is knocked back off a wall like the rock, silently",
+  M.wall.turned != null && M.wall.after === D && !M.wall.deflectSound && !M.wall.clink, J(M.wall));
+check('and off the shield and the sword, with the clink, costing Link nothing',
+  [M.shield, M.sword].every(x => x.turned != null && x.deflectSound && x.lost === 0 && !x.clink), J([M.shield, M.sword]));
+check('it hits his body and is simply gone', M.body.turned == null && M.body.lost > 0 && !M.body.clink, J(M.body));
+check("a wizzrobe's shot is gone on a wall without a sound or the clink picture",
+  W.wall.frames < 60 && W.wall.after === 0 && !W.wall.deflectSound && !W.wall.clink, J(W.wall));
+check('and gone off the shield and the sword with the clink, costing Link nothing',
+  [W.shield, W.sword].every(x => x.after === 0 && x.deflectSound && x.lost === 0 && !x.clink), J([W.shield, W.sword]));
+check('it hits his body and is simply gone', W.body.turned == null && W.body.lost > 0 && !W.body.clink, J(W.body));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();
