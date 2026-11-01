@@ -2378,6 +2378,26 @@ export const OCTOROK_TURN_TO_LINK = 4;
  *  speed $50 = SPEED_200. */
 export const OCTOROK_SHOT_SPEED = 2;
 
+/** f — how long an octorok's rock lives once it has been knocked back off a
+ *  wall, the shield or the sword (S227): it hops back the way it came,
+ *  harmless, and is gone. derived: parts/commonCode.s
+ *  partCommon_bounceWhenCollisionsEnabled, counter1 $20, counted down by
+ *  partCommon_updateSpeedAndDeleteWhenCounter1Is0. */
+export const SHOT_DEFLECT_FRAMES = 32;
+
+/** sp/f — how fast the knocked-back rock drifts back. derived: the same
+ *  routine sets speed SPEED_40 (0.25 px/f) and turns the angle round. */
+export const SHOT_DEFLECT_SPEED = 64;
+
+/** sp/f — how fast the knocked-back rock hops up as it turns. derived: the
+ *  same routine, objectSetSpeedZ -$e0. */
+export const SHOT_DEFLECT_LAUNCH = 224;
+
+/** sp/f/f — how fast the hop falls back. derived:
+ *  partCommon_updateSpeedAndDeleteWhenCounter1Is0, objectUpdateSpeedZ_paramC
+ *  with c = $0e. Up and down again in the 32 frames it lives. */
+export const SHOT_DEFLECT_GRAVITY = 14;
+
 /** px/f — the sand crab scuttling left or right. derived: sandCrab.s @state8,
  *  SPEED_100 when the angle is sideways. */
 export const CRAB_SPEED_SIDE = 1;

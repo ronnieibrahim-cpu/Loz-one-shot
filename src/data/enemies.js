@@ -83,7 +83,10 @@ export function installEnemies() {
         if (--e.aiTimer > 0) return;
         e.aiState = 'stand'; e.aiTimer = OCTOROK_SHOOT_REST;
         // SND_THROW, as octorok_state_0b plays it (S226; it played SND_BEAM).
-        shoot(e, g, { sprite: o.shot, pal: o.shotPal, speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false, sfx: 'throw' });
+        // The rock is knocked back off a wall, the shield or the sword and
+        // makes no clink picture (S227, parts/octorokProjectile.s).
+        shoot(e, g, { sprite: o.shot, pal: o.shotPal, speed: OCTOROK_SHOT_SPEED, damage: 2, aim: false, sfx: 'throw',
+          deflects: true, hitFx: null });
         return;
     }
   }

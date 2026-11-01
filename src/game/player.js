@@ -941,6 +941,7 @@ export class Player extends Entity {
 
     const box = this.swordBox(game);
     this.bladeCollect(game, box);
+    this.bladeDeflect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden || e.invuln > 0) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
@@ -1055,6 +1056,7 @@ export class Player extends Entity {
     const phase = swingPhase(t);
     const box = this.swordBox(game, phase);
     this.bladeCollect(game, box);
+    this.bladeDeflect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
@@ -1089,6 +1091,18 @@ export class Player extends Entity {
       if (!e.isDrop || !e.bladeTakes || !e.bladeTakes(game)) continue;
       const c = { x: e.cx - r, y: e.cy - r, w: r * 2, h: r * 2 };
       if (rectOverlap(box, c)) e.collect(game);
+    }
+  }
+
+  /** The blade knocks back a shot that the cartridge's sword knocks back —
+   *  the octorok's rock (S227; objectCollisionTable.s,
+   *  ENEMYCOLLISION_PROJECTILE_WITH_RING_MOD: every sword column, the spin
+   *  and the held blade are COLLISIONEFFECT_1f, a clink and the rock's
+   *  bounce). Against the shot's own box, as for Link. */
+  bladeDeflect(game, box) {
+    for (const e of game.entities) {
+      if (!e.deflects || e.deflected > 0 || e.remove || e.fromPlayer) continue;
+      if (rectOverlap(box, e.contactRect())) e.deflect(game, true);
     }
   }
 
@@ -1176,6 +1190,7 @@ export class Player extends Entity {
     const [ry, rx, oy, ox] = SPIN_ARC[k];
     const box = { x: this.cx + ox - rx, y: this.cy + oy - ry, w: rx * 2, h: ry * 2 };
     this.bladeCollect(game, box);
+    this.bladeDeflect(game, box);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
@@ -1604,6 +1619,12 @@ export class Player extends Entity {
         }
         const lv = itemLevel(p, 'shield');
         const blocks = source.isProjectile ? lv >= 1 : lv >= 2;
+        if (blocks && source.deflects) {
+          // Seasons' octorok rock off the shield (collisionEffect1f): a
+          // clink, and it hops back the way it came. No clink picture.
+          source.deflect(game, true);
+          return false;
+        }
         if (blocks) {
           game.audio.sfx('block');
           game.spawnEffect('spark', this.cx - 8, this.cy - 8);

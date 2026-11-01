@@ -1376,6 +1376,8 @@ export function shoot(e, g, o = {}) {
     radius: o.radius,
     overWater: o.overWater,
     bounces: o.bounces,
+    deflects: o.deflects,
+    hitFx: o.hitFx,
   });
 }
 

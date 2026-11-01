@@ -7,7 +7,8 @@ import { F } from '../world/tileset.js';
 import {
   PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE,
   ENEMY_SHOT_RADIUS, SWORD_BEAM_SPEED, SWORD_BEAM_START, SWORD_BEAM_RADIUS,
-  SWORD_BEAM_FLIP_FRAMES,
+  SWORD_BEAM_FLIP_FRAMES, SHOT_DEFLECT_FRAMES, SHOT_DEFLECT_SPEED,
+  SHOT_DEFLECT_LAUNCH, SHOT_DEFLECT_GRAVITY,
 } from '../data/feel.js';
 
 export class Projectile extends Entity {
@@ -34,11 +35,35 @@ export class Projectile extends Entity {
     this.flying = true;
     this.owner = o.owner || null;
     this.onImpact = o.onImpact || null;
-    this.hitFx = o.hitFx || 'spark';
+    this.hitFx = o.hitFx !== undefined ? o.hitFx : 'spark';
     this.z = o.z || PROJECTILE_Z;
     // How big the shot is to LINK: a box this far either way of the middle
     // of the sprite as drawn, against his own 12x12 — the cartridge's rule.
     this.radius = o.radius || ENEMY_SHOT_RADIUS;
+    // Seasons' octorok rock (parts/octorokProjectile.s, S227): a wall, the
+    // shield or the sword knocks it back the way it came with a hop, and it
+    // is harmless until it is gone (`deflect`). It hits Link and is simply
+    // gone; it never makes the clink picture.
+    this.deflects = !!o.deflects;
+    this.deflected = 0;      // frames left of the hop back, once knocked
+    this.vz = 0;             // sp/f up, during the hop
+  }
+
+  /**
+   * Knock the shot back (partCommon_bounceWhenCollisionsEnabled): turn it
+   * round at SPEED_40, launch it up, and let it fall for 32 frames before it
+   * is gone. Collisions are off from now on. `sound` is SND_CLINK2, which the
+   * shield and the sword make (collisionEffect1f, LINKDMG_20); a wall makes
+   * none.
+   */
+  deflect(game, sound) {
+    if (this.deflected > 0) return;
+    const len = Math.hypot(this.vx, this.vy) || 1;
+    this.vx = -Math.round(this.vx / len * SHOT_DEFLECT_SPEED);
+    this.vy = -Math.round(this.vy / len * SHOT_DEFLECT_SPEED);
+    this.vz = SHOT_DEFLECT_LAUNCH;
+    this.deflected = SHOT_DEFLECT_FRAMES;
+    if (sound) game.audio.sfx('deflect');
   }
 
   /** The shot's collision box: `radius` either way of its middle as drawn. */
@@ -55,6 +80,15 @@ export class Projectile extends Entity {
 
   update(game) {
     this.frame++;
+    if (this.deflected > 0) {
+      // partCommon_updateSpeedAndDeleteWhenCounter1Is0: through anything,
+      // never below the ground, gone when the count runs out.
+      if (--this.deflected <= 0) { this.remove = true; return; }
+      this.fx += this.vx; this.fy += this.vy;
+      this.fz = Math.max(0, this.fz + this.vz);
+      this.vz -= SHOT_DEFLECT_GRAVITY;
+      return;
+    }
     if (--this.life <= 0) { this.expire(game); return; }
 
     const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
@@ -62,6 +96,16 @@ export class Projectile extends Entity {
     // Walls stop shots; water does not (unless overWater is false).
     const blocked = !this.canPass(game, nx, ny);
     if (blocked) {
+      if (this.deflects) {
+        // The edge of the screen is not a wall: the rock is simply gone
+        // there (partCommon_checkTileCollisionOrOutOfBounds' boundary case).
+        const rw = game.room ? game.room.pw : 160, rh = game.room ? game.room.ph : 128;
+        if (nx + this.hb.x < 0 || ny + this.hb.y < 0
+            || nx + this.hb.x + this.hb.w > rw || ny + this.hb.y + this.hb.h > rh) {
+          this.remove = true; return;
+        }
+        this.deflect(game, false); return;
+      }
       if (this.bounces > 0) {
         this.bounces--;
         if (!this.canPass(game, nx, this.y)) this.vx = -this.vx;
@@ -92,6 +136,7 @@ export class Projectile extends Entity {
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
       if (this.touchesPlayer(game.player)) {
         game.player.takeDamage(game, this.damage, this);
+        if (this.deflected > 0) return;      // the shield knocked it back
         if (!this.pierce) { this.expire(game); return; }
       }
     }

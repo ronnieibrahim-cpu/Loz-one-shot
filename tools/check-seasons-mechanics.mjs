@@ -153,6 +153,55 @@ const r = await page.evaluate(async () => {
     }
     out.bomb = { rocks, travelled: landX == null ? null : landX - x0, frames, booms, removed: b.remove };
   }
+
+  // THE OCTOROK'S ROCK (S227; parts/octorokProjectile.s). A wall, the shield
+  // or the sword knocks it back the way it came with a hop (SPEED_40, speedZ
+  // -$e0, gone after 32 frames), the shield and sword with SND_CLINK2 and a
+  // wall silently; it hits Link's body and is simply gone. It never makes
+  // the clink picture. The real octorok spits it: its AI is put at the last
+  // frame of its wind-up, facing right, Link 64 px to its right on row 5.
+  const rockAt = (opts) => {
+    g.enterMap('overworld', 0, 4, 7, 24, 80, 'right', { instant: true });
+    g.entities = g.entities.filter(x => !x.isEnemy && !x.isProjectile);
+    if (g.dialogue) g.dialogue.active = false;
+    const p = g.player;
+    p.x = 24 + 64; p.y = 80; p.dir = 'left'; p.invuln = 0; p.shielding = false;
+    p.swinging = 0; p.flicker = 0;
+    g.progress.hearts = g.progress.maxHearts;
+    if (opts.wall) { p.x = 140; g.room.setTile(5, 5, 'rock'); }
+    const o = spawnEntity(g, 'octorok', 0, 0, {});
+    o.x = 24; o.y = 80; o.dir = 'right'; o.aiState = 'windup'; o.aiTimer = 1;
+    o.spec = { ...o.spec, ai: o.spec.ai };
+    const sounds = [], fx = [];
+    const sfx0 = g.audio.sfx.bind(g.audio), fx0 = g.spawnEffect.bind(g);
+    g.audio.sfx = (n, ...a) => { sounds.push(n); return sfx0(n, ...a); };
+    g.spawnEffect = (n, ...a) => { fx.push(n); return fx0(n, ...a); };
+    o.spec.ai(o, g);
+    o.update = () => {};
+    g.flushPending();
+    const rock = g.entities.find(x => x.isProjectile && x.owner === o);
+    const r = { fired: !!rock, sounds, fx };
+    if (!rock) { g.audio.sfx = sfx0; g.spawnEffect = fx0; return r; }
+    const h0 = g.progress.hearts;
+    let frames = 0, maxZ = rock.z, z0 = rock.z, turned = null, vx = null, swung = false;
+    while (!rock.remove && frames < 200) {
+      if (opts.shield) { g.input._raw.b = true; p.dir = 'left'; }
+      if (opts.sword && !swung && p.x - rock.x < 22) { p.dir = 'left'; p.startSwing(g, 1); swung = true; }
+      step(1); frames++;
+      if (rock.deflected > 0 && turned == null) { turned = frames; vx = rock.vx; }
+      if (turned != null) maxZ = Math.max(maxZ, rock.z);
+    }
+    g.audio.sfx = sfx0; g.spawnEffect = fx0; g.input._raw.b = false;
+    if (opts.wall) { g.room.override[5 * g.room.tw + 5] = null; g.room.invalidate(); }
+    Object.assign(r, { frames, turned, vx, rise: maxZ - z0, after: turned == null ? null : frames - turned,
+      lost: h0 - g.progress.hearts, clink: fx.includes('spark'), deflectSound: sounds.includes('deflect') });
+    return r;
+  };
+  out.rockWall = rockAt({ wall: true });
+  out.rockShield = rockAt({ shield: true });
+  out.rockSword = rockAt({ sword: true });
+  out.rockBody = rockAt({});
+  out.deflectFrames = F.SHOT_DEFLECT_FRAMES;
   return out;
 });
 check('a gel that touches Link clings to him', r.gelClings);
@@ -180,6 +229,16 @@ check("and it hits for Seasons' 3, harder than the starting sword's 2",
 check('a lifted bomb thrown flies as itself, not as a stand-in rock',
   r.bomb.rocks === 0 && r.bomb.travelled > 32, JSON.stringify(r.bomb));
 check('and it still goes off when its fuse ends', r.bomb.booms > 0 && r.bomb.removed, JSON.stringify(r.bomb));
+const D = r.deflectFrames, J = (o) => JSON.stringify(o);
+check("an octorok's rock that hits a wall is knocked back the way it came, slowly",
+  r.rockWall.turned != null && r.rockWall.vx === -64, J(r.rockWall));
+check('it hops up as it turns and is gone 32 frames later', r.rockWall.rise >= 5 && r.rockWall.after === D, J(r.rockWall));
+check('off a wall it makes no sound and no clink picture', !r.rockWall.deflectSound && !r.rockWall.clink, J(r.rockWall));
+check("Link's raised shield knocks it back with Seasons' clink, and he loses nothing",
+  r.rockShield.turned != null && r.rockShield.vx === -64 && r.rockShield.after === D && r.rockShield.deflectSound && r.rockShield.lost === 0 && !r.rockShield.clink, J(r.rockShield));
+check('so does his sword swung into it', r.rockSword.turned != null && r.rockSword.deflectSound && r.rockSword.lost === 0, J(r.rockSword));
+check('it hits his body for its damage and is simply gone, no clink picture',
+  r.rockBody.turned == null && r.rockBody.lost === 2 && !r.rockBody.clink && r.rockBody.frames < 60, J(r.rockBody));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();
