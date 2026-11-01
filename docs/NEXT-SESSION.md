@@ -43,7 +43,11 @@ Branch claude/oracle-tides-s226-9q4t65, off main at 44b7760 (S225).
 
 ### Verified
 check-playthrough 49/49, THE END, never died, LOW-WATER 7 (was 6).
-WHOLE-TABLE-PLACEHOLDER
+Whole table green (69 tools three at a time, every one exit 0, check-build
+after npm run build): test 139/139, replay 51/51 untouched, check-motion
+11/11 (the sea octorok now among the ports), check-side 78/78,
+check-placement 5/5; check-rippers last, alone, 47/47 (rip-music.py
+re-emits byte-identically after the trial candidates were taken out).
 
 ### Not done / candidates
 - Other enemies of ours that are not ports: urchin, anglerfry, barnacle,
