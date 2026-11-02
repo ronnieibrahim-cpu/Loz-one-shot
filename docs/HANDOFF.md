@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An effect's random draws are part of the room's dice (S231).** The old
+  boss death scattered its blasts with `game.rng.float()`; dropping them left
+  everything up to the next room identical, but the Reefguard Hall's fight
+  AFTER its miniboss rolled different drops, the entity ids after them moved,
+  and Anemos's `every` phase (a hash of its id) changed. The DUMP of every
+  primitive field at the first diverging frame (two route-prefix runs, a
+  worktree of origin/main — a local `main` can be stale) found it in one
+  pass. Make sure the worktree is origin/main before comparing anything.
+
 - **A pickup's lifetime starts where the cartridge says it settles (S230).**
   Seasons' fairy stops its pop at 6 px and hovers, and its 480-frame life
   starts THERE (itemDrop_checkHitGround @fairy -> @doneBouncing), about 26

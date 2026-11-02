@@ -944,8 +944,10 @@ const main = async () => {
   // A boss dying weighs more than a landed hit. A hit ON Link freezes
   // nothing at all: Seasons keeps the world running when he is struck
   // (HITSTOP_HURT_FRAMES, measured at S147), and the red flash is the tell.
-  check('a boss dying freezes longest; a hit on Link freezes nothing',
-    stop.hitHz < stop.bossHz && stop.hurtHz === 0,
+  // Since S231 a boss's death freezes nothing either: Seasons'
+  // enemyBoss_dead starts its flicker and stops nothing else.
+  check('nothing freezes the world: a hit, a hit on Link, a boss dying',
+    stop.hitHz === 0 && stop.bossHz === 0 && stop.hurtHz === 0,
     `hit ${stop.hitHz}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
 
   // --- music: vibrato, echo, arpeggio on the cartridge's engine (S164) ----
