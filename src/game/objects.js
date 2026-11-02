@@ -19,7 +19,7 @@ import { ERRANDS } from '../data/errands.js';
 import { FLOAT_DIRS } from './float-path.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN,
-  PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_FLAP_FRAMES,
+  PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_HOVER_Z, FAIRY_ARM_FRAMES,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
@@ -72,12 +72,15 @@ export const PICKUPS = {
     if (g.progress.hearts >= g.progress.maxHearts) g.audio.sfx('heart');
     heal(g.progress, HEART_UNITS);
   } },
-  // EXTRACTED, and it flaps. Both frames come off the Oracle fairy sheet
-  // (tools/rip-fairies.py); `pal: null` because each binds its own palette and
-  // passing one would override the colours taken off the cartridge.
+  // Seasons' own floor fairy (S230, ITEM_DROP_FAIRY, tools/rip-treasures.py):
+  // ONE side-on picture — its animation holds frame 0 for ever — that turns to
+  // face the way it flies (Pickup.update). It used to be a fan sheet's
+  // front-on fairy flapping between two frames.
   fairy: {
-    sprite: 'p_fairy', frames: ['p_fairy', 'p_fairy_1'], pal: null, float: true,
-    get(g) { heal(g.progress, HEART_UNITS * 6); g.audio.sfx('fairy'); },
+    sprite: 'p_fairy', pal: null, float: true,
+    // Silent, like a heart: TREASURE_HEART_REFILL is SND_NONE in Seasons'
+    // treasureCollectionBehaviours.s; the status bar chimes as it fills (S230).
+    get(g) { heal(g.progress, HEART_UNITS * 6); },
   },
   // THE PICKUP IS THE BOMB, not a picture of one. `p_bombs` was a hand-drawn
   // pair of flat-topped canisters — the bomb this game actually throws is
@@ -292,7 +295,10 @@ export class Pickup extends Entity {
     this.pal = spec.pal;
     this.isDrop = true;
     this.harmless = true;
-    this.shadow = false;
+    // Seasons' drops cast the flickering shadow while they are in the air
+    // (itemDrop.s objectSetVisiblec1/c3: terrain effects on), and only then:
+    // Entity.drawShadow draws none at the ground. S230; it was off.
+    this.shadow = true;
     this.life = spec.persistent ? Infinity : (o.life || PICKUP_LIFE_FRAMES);
     // Set by rollDrop when the Beachcomber is on. Null means face value.
     this.worth = o.worth != null ? o.worth : null;
@@ -307,6 +313,8 @@ export class Pickup extends Entity {
     this.z = 0;
     this.settle = this.pop ? 1 : 0;
     this.grabDelay = o.grabDelay || 0;
+    // A fairy that is simply placed starts at its hover (FAIRY_HOVER_Z).
+    if (spec.float && !this.pop) { this.z = FAIRY_HOVER_Z; this.zs = -FAIRY_HOVER_Z << 8; }
     this.saveKey = o.saveKey || null;
     this.depth = -2;
   }
@@ -324,6 +332,13 @@ export class Pickup extends Entity {
         else { this.vz = 0; this.settle = 0; }
       }
       this.z = -(this.zs >> 8);
+      // A fairy's pop stops as it rises past its hover, and it stays up
+      // there, armed a moment later (itemDrop_checkHitGround @fairy).
+      if (this.spec.float && this.z > FAIRY_HOVER_Z) {
+        this.z = FAIRY_HOVER_Z; this.zs = -FAIRY_HOVER_Z << 8;
+        this.vz = 0; this.settle = 0;
+        this.grabDelay = Math.max(this.grabDelay, FAIRY_ARM_FRAMES);
+      }
     }
     if (this.spec.float) {
       // A fairy flies straight legs, Seasons' way (itemDrop.s): a random one
@@ -332,7 +347,12 @@ export class Pickup extends Entity {
       if (!(this._leg > 0)) {
         this._leg = FAIRY_LEG_MIN + 2 * game.rng.int(FAIRY_LEG_SPAN);
         const v = FAIRY_LEG_SPEEDS[game.rng.int(FAIRY_LEG_SPEEDS.length)];
-        const a = game.rng.int(16) * Math.PI / 8;     // 0 is up, clockwise
+        const k = game.rng.int(16);
+        const a = k * Math.PI / 8;                    // 0 is up, clockwise
+        // It faces the way it flies: mirrored going right, as drawn going
+        // left, and unchanged straight up or down (itemDrop_chooseRandom-
+        // FairyMovement sets or clears OAM bit 5 by bit 4 of the angle).
+        if (k % 8) this.flipX = k < 8;
         this._fvx = Math.round(Math.sin(a) * v);
         this._fvy = Math.round(-Math.cos(a) * v);
       }
@@ -385,13 +405,9 @@ export class Pickup extends Entity {
   draw(ctx, game, ox, oy) {
     // Blink out as the timer runs down.
     if (this.life !== Infinity && this.life < PICKUP_BLINK_FRAMES && (this.life >> 1) % 2 === 0) return;
-    const bob = this.spec.persistent ? Math.round(Math.sin(this.frame * 0.08) * 1.5) : 0;
-    // A pickup with `frames` cycles them; everything else draws its one sprite.
-    // `frame` already ticks in update(), so this costs no new state and no new
-    // clock — which is what keeps it out of the recorded replays.
-    const f = this.spec.frames;
-    const art = f ? f[Math.floor(this.frame / FAIRY_FLAP_FRAMES) % f.length] : this.sprite;
-    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob - this.z, { pal: this.pal });
+    // No bob: a Seasons treasure waiting on the floor sits dead still
+    // (treasure.s @state2 only checks for Link), S230.
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y - this.z, { pal: this.pal, flipX: !!this.flipX });
   }
 }
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));

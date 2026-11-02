@@ -48,7 +48,6 @@ const RIPPERS = [
   ['rip-races.py',           'src/data/sprites-races.js'],
   ['rip-enemies.py',         'src/data/sprites-enemies.js'],
   ['rip-hud.py',             'src/data/sprites-hud.js'],
-  ['rip-fairies.py',         'src/data/sprites-fairies.js'],
   ['rip-maku.py',            'src/data/tiles-maku.js'],
   ['rip-screens.py',         'src/data/screens-seasons.js'],
   ['rip-music.py',           'src/data/music-seasons.js'],   // S151: Seasons' own music data

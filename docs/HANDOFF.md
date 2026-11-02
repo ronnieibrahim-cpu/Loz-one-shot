@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A pickup's lifetime starts where the cartridge says it settles (S230).**
+  Seasons' fairy stops its pop at 6 px and hovers, and its 480-frame life
+  starts THERE (itemDrop_checkHitGround @fairy -> @doneBouncing), about 26
+  frames before our old fairy landed. The robot's D4 West Overlook fairy
+  then blinked out one stride short of it — found with route-prefix
+  `FRAMES=a-b` after adding the drops to its frame line. Taking it before
+  the keese and a 13-frame wait put D4 back frame for frame; D6's Sounding
+  Room fairy could not be lined up (caught later, but the stalfos after it
+  missed), so the Brinehulk wait was re-swept and every winner run to THE
+  END.
+- **Fan-sheet art is not always the object the game draws (S230).** The
+  fairy sheet's front-on flapping pair is not Seasons' floor fairy, which is
+  ITEM_DROP_FAIRY, one side-on 8x16 picture. Rip a drop from the drop
+  tables (rip-treasures.py `drop`), not from a sheet that looks right.
+
 - **The robot is taught the enemy's old rules too (S229).** Taking the
   crab's shield off made `bodyAhead` see it as a thing to swing at, and on
   Dov's dive the robot stood on the seafloor pressing a sword that cannot be

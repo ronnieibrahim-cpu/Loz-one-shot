@@ -13,8 +13,9 @@ import { sprites } from '../gfx/art.js';
 // 16x16 pickups.
 export const PICKUP_ART = {
 
-  // The healing fairy is EXTRACTED — see src/data/sprites-fairies.js and
-  // tools/rip-fairies.py. It was hand-drawn here, and it was the one sprite in
+  // The healing fairy is EXTRACTED — since S230 it is Seasons' own floor
+  // fairy (ITEM_DROP_FAIRY) in src/data/sprites-treasures.js, by
+  // tools/rip-treasures.py; before that a fan sheet's. It was hand-drawn here, and it was the one sprite in
   // this file that actually broke the outline rule (eight body pixels on the
   // wings' inner edges touched bare air). The sheet had it all along.
 
