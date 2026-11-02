@@ -2992,6 +2992,16 @@ const ENEMY_BEACHED_FRAMES = 90;
 /** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
 const BOSS_INTRO_FRAMES = 80;
 
+/** f — how long Link walks himself into a boss's or a miniboss's room after
+ *  scrolling into it, the d-pad ignored, at his ordinary walking speed.
+ *  derived from the cartridge (S232): oracles-disasm object_code/common/
+ *  enemies/commonBossCode.s, enemyBoss_initializeRoomWithoutExtraGfx sets
+ *  LINK_STATE_FORCE_MOVEMENT with wLinkStateParameter $1a in Seasons ($16 in
+ *  Ages), and link.s linkState0b decrements that counter BEFORE each move,
+ *  so he moves on $1a - 1 = 25 frames. Only when he came in by a scroll
+ *  (it returns early when wScrollMode has SCROLLMODE_01 set). */
+const BOSS_ENTRY_WALK_FRAMES = 25;
+
 /** f — how long a beaten boss flickers before it goes up in its explosion:
  *  shown and hidden on alternate frames, nothing else happening to it.
  *  derived from the cartridge (S231): oracles-disasm object_code/common/
@@ -4583,6 +4593,7 @@ __exports["ENEMY_SURFACE_DIST_SPAN"] = ENEMY_SURFACE_DIST_SPAN;
 __exports["ENEMY_ALIGN_TOLERANCE"] = ENEMY_ALIGN_TOLERANCE;
 __exports["ENEMY_BEACHED_FRAMES"] = ENEMY_BEACHED_FRAMES;
 __exports["BOSS_INTRO_FRAMES"] = BOSS_INTRO_FRAMES;
+__exports["BOSS_ENTRY_WALK_FRAMES"] = BOSS_ENTRY_WALK_FRAMES;
 __exports["BOSS_DEATH_FRAMES"] = BOSS_DEATH_FRAMES;
 __exports["BOSS_EXPLOSION_HOLDS"] = BOSS_EXPLOSION_HOLDS;
 __exports["BOSS_ESSENCE_DELAY_FRAMES"] = BOSS_ESSENCE_DELAY_FRAMES;
@@ -5987,6 +5998,9 @@ class Audio {
   }
 
   stop() {
+    // Before the sound is unlocked too: a track asked for and then stopped
+    // must not start when the first button press unlocks the sound.
+    if (this._pendingTrack) this._pendingTrack = null;
     this.trackName = null;
     this._releaseAll();
   }
@@ -40574,12 +40588,11 @@ class Boss extends Enemy {
     if (this.intro > 0) {
       this.intro--;
       if (this.intro === 0 && this.spec.onIntro) this.spec.onIntro(this, game);
-      // Ask the game which track this fight wants rather than naming one:
-      // `updateMusic` reads the dungeon's own `bossMusic` and falls back to
-      // 'boss'. Hardcoding 'boss' here meant a dungeon that named its own boss
-      // theme still got the generic one for the whole entrance pose, and then
-      // switched — audibly — the moment anything else called updateMusic.
-      if (this.intro === Math.floor((this.spec.intro || BOSS_INTRO_FRAMES) / 2)) game.updateMusic();
+      // The room has been silent since Link came in (S232, Seasons'
+      // enemyBoss_initializeRoom); the fight's theme starts as the fight
+      // does. Ask the game which track rather than naming one: `updateMusic`
+      // reads the dungeon's own `bossMusic` and falls back to 'boss'.
+      if (this.intro === 0) game.updateMusic();
       return;
     }
 
@@ -41858,8 +41871,20 @@ const { sp } = __require("core/fixed.js");
 
 // Seasons' wInformativeTextsShown bits (interactableTiles.s
 // showInfoTextForTile @data): a hint told once a screen per bit.
+/** A pad holding one direction and nothing else, nothing newly pressed or
+ *  let go: Link walking himself into a boss's room (S232). */
+function forcedPad(dir) {
+  const held = { up: false, down: false, left: false, right: false, a: false, b: false, start: false, select: false };
+  held[dir] = true;
+  return {
+    held, prev: { ...held },
+    down: (b) => !!held[b], pressed: () => false, released: () => false, anyDir: () => true,
+    takeExtra: () => null,
+  };
+}
+
 const INFO_BOSS_DOOR = 0x02, INFO_KEY_DOOR = 0x04, INFO_CRACKED_BLOCK = 0x10, INFO_ROCK = 0x20;
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -41900,6 +41925,7 @@ class Game {
     this.fadeTiming = null; this.fadeHold = 0;
     this.reveal = 0; this.revealNext = false;
     this.transition = null;
+    this.entryWalk = 0; this.entryWalkDir = null;
     this.bannerText = null; this.bannerTime = 0;
     this.cutscene = null;
     this.slot = 0;
@@ -42008,6 +42034,7 @@ class Game {
     this.map = m;
     this.mapId = mapId;
     this._warpLock = true;
+    this.entryWalk = 0;
     this.setRoom(floor, rx, ry, { spawnEntities: true });
     if (this.player) {
       if (px != null) this.player.x = px;
@@ -42518,6 +42545,12 @@ class Game {
       this.camera.snap(this.room, p);
       this.transition = null;
       this.markRespawn(false);
+      // INTO A BOSS'S ROOM, LINK WALKS HIMSELF IN (S232; Seasons'
+      // enemyBoss_initializeRoom, LINK_STATE_FORCE_MOVEMENT): the way he
+      // came, at his own pace, the d-pad ignored. Only by a scroll, as there.
+      this.entryWalk = !t.loop && this.bossWaiting() ? BOSS_ENTRY_WALK_FRAMES : 0;
+      this.entryWalkDir = t.dir;
+      if (this.entryWalk) p.dir = t.dir;
       // "Far enough away" for an overworld enemy's respawn clause (see
       // `onEnemyDefeated`) is measured in screens actually crossed, not
       // frames or wall-clock time — deterministic, and replay-safe.
@@ -43868,7 +43901,20 @@ class Game {
     for (const t of due) t.fn();
   }
 
+  /** A boss or a miniboss in this room that has not started yet (its
+   *  entrance pose is still running). */
+  bossWaiting() {
+    const w = (e) => e._bossClass && !e.dead && !e.remove && e.intro > 0;
+    return this.entities.some(w) || this.pendingAdd.some(w);
+  }
+
   updateMusic() {
+    // A BOSS'S ROOM IS SILENT UNTIL THE BOSS STARTS (S232): Seasons stops the
+    // music on the way in (enemyBoss_initializeRoom, SNDCTRL_STOPMUSIC) and
+    // each boss plays its own theme when its fight begins (Aquamentus on
+    // landing, Manhandla once the shutters are down). Ours: when its
+    // entrance pose ends (Boss.update calls this again then).
+    if (this.bossWaiting()) { this.audio.stop(); return; }
     const want = this.room && this.room.music ? this.room.music
       : (this.map && this.map.music) || 'overworld';
     // A MINIBOSS HAS ITS OWN TUNE (S199), as Seasons stops a dungeon's theme
@@ -44224,7 +44270,7 @@ class Game {
 
     if (this.dialogue.active) { this.dialogue.update(); this.flushPending(); return; }
 
-    if ((this.input.pressed('start') || this.input.pressed('select')) && !this.veiled() && !this.transition) {
+    if (this.entryWalk <= 0 && (this.input.pressed('start') || this.input.pressed('select')) && !this.veiled() && !this.transition) {
       // START is the item menu and SELECT the map; Seasons goes to white
       // before either comes up (MENU_FADE_OPEN), and if both are held when
       // the white is reached it is the save screen instead (bank2.s
@@ -44262,7 +44308,14 @@ class Game {
 
     this.updatePhaseShift();
 
-    if (this.player) this.player.update(this);
+    // The walk into a boss's room holds the d-pad the way he came and
+    // nothing else (no menu above, no sword) until it is done.
+    if (this.entryWalk > 0 && this.player) {
+      this.entryWalk--;
+      const real = this.input;
+      this.input = forcedPad(this.entryWalkDir);
+      try { this.player.update(this); } finally { this.input = real; }
+    } else if (this.player) this.player.update(this);
     for (const e of this.entities) {
       if (e === this.player || e.remove) continue;
       if (e.update) e.update(this);

@@ -39,7 +39,12 @@ Branch claude/oracle-tides-s232-g0jc5v, off main at 516024b (S231).
 
 ### Verified
 check-playthrough 49/49, THE END, never died, LOW-WATER 6, 316912 frames
-(identical to S231). test.mjs 140/140. TABLE_LINE
+(identical to S231). test.mjs 140/140. Whole table: 67 tools two at a time, all exit 0 after two fixes —
+check-side's Eyrie run threw the coin inside the walk (wait 20 -> 50, now
+wins on 24/64, was 12) and replay's d1-clawcrab-den-wide was re-recorded
+(it walks into the den: the walk IS the change). check-side 78/78;
+watch-cutscenes alone, 23 scenes, no fault; npm run build then
+check-build OK; check-drift OK; check-rippers last, alone, 45/45.
 
 ### Not done / candidates
 - Seasons drops a miniboss's loot and spawns the Heart Container when the
