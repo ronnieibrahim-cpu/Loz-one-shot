@@ -1613,9 +1613,6 @@ export const BOSS_DEATH_FRAMES = 120;
  *  (PART_BOSS_DEATH_EXPLOSION's one animation): 8 x6, 2, 6, 6, 4 x4. */
 export const BOSS_EXPLOSION_HOLDS = [8, 8, 8, 8, 8, 8, 2, 6, 6, 4, 4, 4, 4];
 
-/** f — delay between a boss dying and its essence appearing. guessed. */
-export const BOSS_ESSENCE_DELAY_FRAMES = 70;
-
 /** f — delay between a boss dying and room music resuming. guessed. */
 export const BOSS_MUSIC_RESUME_FRAMES = 220;
 

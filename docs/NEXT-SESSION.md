@@ -1,3 +1,72 @@
+## S233 — a boss's prizes come when the smoke clears; boss-room doors that shut (parked)
+
+Branch claude/oracle-tides-s233, off main at 23e8ad6 (S232). The door work is
+parked, unfinished, on claude/oracle-tides-s233-doors-wip (3b48dab).
+
+### The human's choices this session
+- S232's boss-room entry (silence at the door, Link walks himself in, the
+  fight's music when the boss starts): FEELS RIGHT. Keep; do not re-ask.
+- Boss-room doors shutting behind Link until the boss is beaten
+  (docs/briefs/s233/door-mock.png): YES, BOSS AND MINIBOSS ROOMS ONLY.
+  Ordinary fight rooms keep their doors open. Not finished; see below.
+- Standing: Oracle of Ages' code and assets are a reference for all work
+  (CLAUDE.md's Ages rule, unchanged since S231; asked again, already there).
+
+### Built (on this branch, merged)
+- BOSS PAYOUT AT THE SMOKE'S END (bossDeathExplosion.s: decNumEnemies at the
+  end of the animation; dungeonScript_bossDeath then spawns the Heart
+  Container): `Boss.explode` hangs the payout on the explosion's `onDone`.
+  A boss: `Game.holdBossPayout` notes it, `Game.payBoss` spawns the Essence
+  (and its SND_SOLVEPUZZLE jingle) and fires the room's `bossDead` (the Heart
+  Container) the frame the smoke ends — 78 frames after it starts (was: the
+  container at once, the Essence on a guessed 70; BOSS_ESSENCE_DELAY_FRAMES
+  is gone). Keyed on the room: walked out inside the smoke, the prize is
+  there on return (`spawnRoomEntities`), as Seasons' room flag $80 spawns
+  the container again. A miniboss: its room counts as clear when the smoke
+  ends (onEnemyDefeated with `puffing`, then onKillPuffDone).
+  Picture: docs/briefs/s233/boss-prize.png (before/now).
+- test.mjs: a boss's prize appears when its explosion ends, and waits if
+  Link walks out (141/141).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 6, 316912 frames —
+identical to S232 (the robot's waits after each boss were already long).
+Whole table: see the session's last commit message.
+
+### Parked: boss rooms shut behind Link (claude/oracle-tides-s233-doors-wip)
+- Built there, working in play: `Game.updateBossDoors` (Seasons'
+  doorController_shutUntilEnemiesDead). In a room with a boss-class enemy,
+  every opened ring door (`dDoorOpen`) waits until the entry walk is over
+  and Link is not touching it, slides shut over DOOR_SLIDE_FRAMES (still
+  passable, as the cartridge keeps the open tile until the end), then is
+  `dDoorClosed` (never saved). When no enemy and no pending smoke is left,
+  SND_SOLVEPUZZLE (not doubled with the Essence's), BOSS_DOOR_OPEN_DELAY_FRAMES
+  8 (derived, `wait 8`), and `slideDoorOpen`. Leaving the room (death, load,
+  stairs) reopens it (`releaseBossDoors` in setRoom). OURS: Seasons respawns
+  Link if he is on the door as it shuts; ours waits for him to step off.
+- WHAT BREAKS: the robot. Its S232 step-backs and several fights stood IN
+  THE DOORWAY, a refuge the shut door now (rightly) takes away. Re-routed so
+  far on that branch: Gohmaraq wait 256 -> 213 with { reachSwing,
+  diagRetreat } (9/16, swept 185-420 by 1); Bogmaw's wait 46 -> 41 (the only
+  one leaving the fairy, 18/28). The Clawcrab and Anemos still win unchanged
+  (Anemos thin, 5/24). GLOOMTIDE (D3 1,3,1, route index 828/829) is the wall:
+  in on 18/28, swept waits 0-400 and eight option sets (0-200 by 10): best
+  3/28 (o1 { clearAdds, reachSwing } at 40, o3 + openRetreat at 40, o5 at 70).
+  Next: sweep Gloomtide's wait finely around 40 and 70 with o1/o3, try a
+  stand position (goto) before the fight, or win more hearts earlier (D3
+  fairy), then run every winner to THE END (D4 Iron Knight, D5, D6 and Nereth
+  will need the same). Sweeps: route-prefix PATCH with every earlier patch
+  included; a wait sweep of 200 values takes about 3 min four at a time.
+
+### Not done / candidates
+- The shutting doors (above). Seasons' bosses start on their own cue
+  (Aquamentus waits for wcc93, the shutters, to read 0); with the doors in,
+  a boss could wait for them rather than our guessed BOSS_INTRO_FRAMES.
+- Seasons spawns the Heart Container at the room's middle ($58,$78); ours
+  keep their own places (112,120 / 112,56), kept as layout.
+- Side-scrolling passages; the urchin's shield; the guide's old shots;
+  check-placement and the loose key's hold (S230's list).
+
 ## S232 — into a boss's room Link walks himself in, and it is silent until the fight
 
 Branch claude/oracle-tides-s232-g0jc5v, off main at 516024b (S231).

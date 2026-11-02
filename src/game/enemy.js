@@ -731,9 +731,18 @@ export class Boss extends Enemy {
     this.dead = true;
     this.remove = true;
     if (this.onDie) this.onDie(game);
-    game.spawnEffect('bossBoom', this.cx - 8, this.cy - 8 - this.z);
+    // What the fight pays comes when the smoke clears (S233): Seasons'
+    // explosion calls decNumEnemies at the END of its animation, and only
+    // then does dungeonScript_bossDeath see no enemies and spawn the Heart
+    // Container, or a miniboss's room count as clear. A boss's payout is
+    // held by the game so that walking out inside the smoke does not lose it.
+    const boss = this.isBoss;
+    const pay = boss ? game.holdBossPayout(this) : null;
+    game.spawnEffect('bossBoom', this.cx - 8, this.cy - 8 - this.z, {
+      onDone: (g) => { if (boss) g.payBoss(pay); else g.onKillPuffDone(); },
+    });
     game.audio.sfx('bossBoom');
-    game.onEnemyDefeated(this);
+    game.onEnemyDefeated(this, !boss);
   }
 
   spriteName() {
