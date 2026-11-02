@@ -1,8 +1,8 @@
-# Next session (S233)
+# Next session (S234)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S232 and S231; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S233 and S232; docs/HANDOFF.md lessons (top ten).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code
@@ -13,6 +13,11 @@
   says the same under the Ages rule.
 
 ## State
+- S233: a boss's Heart Container and Essence (and a miniboss's room clear)
+  come when its explosion ENDS, as in Seasons. Route unchanged, 316912.
+- S233 PARKED: boss/miniboss rooms shutting behind Link (the human said YES,
+  boss and miniboss rooms only) lives on claude/oracle-tides-s233-doors-wip,
+  working in play; the robot's re-route stops at Gloomtide (3/28 best).
 - S232: into a boss's or miniboss's room by a scroll, Link walks himself in
   25 frames (Seasons' enemyBoss_initializeRoom), the room is silent until
   the boss's entrance pose ends, then its theme. Route lined up frame for
@@ -29,14 +34,17 @@
   walk; S227 bouncing shots, shield bump; S228 unshoved zols/gels/pincers,
   beamos statue, shots through a flashing Link; S229 darknut guard,
   shieldless crab; S230 floating keese/bubble, side-on hovering fairy,
-  still floor treasures; S231 boss death; S232 boss-room entry (ask how it
-  feels in play once).
+  still floor treasures; S231 boss death; S232 boss-room entry; S233 prizes after the smoke
+  (ask how it feels in play once).
 - Whole table green; check-playthrough to THE END, never died, low-water 6.
 
 ## The task
-- Ask the human how the boss-room entry feels in play
-  (docs/briefs/s232/boss-entry.gif).
-- Carry on the look-through against BOTH originals (S232 "Not done" list;
+- Ask the human how the boss prizes appearing after the smoke feel in play
+  (docs/briefs/s233/boss-prize.png).
+- Finish the shutting boss doors: merge claude/oracle-tides-s233-doors-wip's
+  game change and re-route the robot from Gloomtide on (NEXT-SESSION S233
+  "Parked"), every winner to THE END; then ask how the doors feel.
+- Carry on the look-through against BOTH originals (S233/S232 "Not done" lists;
   clone github.com/Stewmath/oracles-disasm to a scratch folder). Pictures
   beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare

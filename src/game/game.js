@@ -81,7 +81,7 @@ import {
   ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN,
   DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY,
-  SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES,
+  SHAKE_OFFSETS,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
@@ -130,6 +130,7 @@ export class Game {
     this.room = null;
     this.mapId = null;
     this.boss = null;
+    this.bossPayout = null;
     this.shakeTime = 0;
     this.hitstop = 0;
     this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
@@ -181,6 +182,7 @@ export class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.bossPayout = null;
     this.race = null;
     this.dive = null;
     this.tide.clearOverrides();
@@ -206,6 +208,7 @@ export class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.bossPayout = null;
     this.race = null;
     this.dive = null;
     // A placed anchor is run state, not save state: reloading returns it to
@@ -372,6 +375,8 @@ export class Game {
     list.forEach((spec, i) => this.spawnSpec(room, spec, i));
     spawnRecordedChunks(this);
     this.spawnFallen();
+    // Walked out inside a boss's smoke: the prize is here when he comes back.
+    if (this.bossPayout) this.payBoss(this.bossPayout);
     this.flushPending();
   }
 
@@ -1513,22 +1518,43 @@ export class Game {
       this.spawnEffect('puff', x.cx - 8, x.cy - 8);
       x.remove = true;
     }
-    // Boss death opens the way to the essence.
-    const room = this.room;
-    if (d && d.essence != null) {
-      this.frameLater(BOSS_ESSENCE_DELAY_FRAMES, () => {
-        this.audio.jingle('bossClear');
-        // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
-        // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
-        // the north-west corner.
-        const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
-        const ey = room.cw === 15 ? 4 : 3;
-        spawnEntity(this, 'essence', ex, ey, { index: d.index });
-      });
-    }
     // The boss track was stopped, so nothing would resume once the jingle ends.
     this.frameLater(BOSS_MUSIC_RESUME_FRAMES, () => this.updateMusic());
-    if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', e);
+  }
+
+  /**
+   * A boss's explosion has begun: note what the room owes, to be paid when
+   * the smoke clears (`payBoss`, S233; Seasons' bossDeathExplosion.s ->
+   * decNumEnemies -> dungeonScript_bossDeath). Keyed on the room, so that if
+   * Link walks out inside the smoke the prize waits for him there, as
+   * Seasons' room flag $80 spawns the Heart Container again on re-entry.
+   */
+  holdBossPayout(e) {
+    const r = this.room;
+    const pay = { boss: e, mapId: this.mapId, floor: r.floor, rx: r.rx, ry: r.ry, paid: false };
+    this.bossPayout = pay;
+    return pay;
+  }
+
+  /** The smoke has cleared: the Essence and the room's own prize appear. */
+  payBoss(pay) {
+    if (!pay || pay.paid) return;
+    const room = this.room;
+    if (!room || this.mapId !== pay.mapId || room.floor !== pay.floor || room.rx !== pay.rx || room.ry !== pay.ry) return;
+    pay.paid = true;
+    if (this.bossPayout === pay) this.bossPayout = null;
+    const d = this.map && this.map.dungeon;
+    // Boss death opens the way to the essence.
+    if (d && d.essence != null) {
+      this.audio.jingle('bossClear');
+      // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
+      // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
+      // the north-west corner.
+      const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
+      const ey = room.cw === 15 ? 4 : 3;
+      spawnEntity(this, 'essence', ex, ey, { index: d.index });
+    }
+    if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', pay.boss);
   }
 
   checkPuzzle() {

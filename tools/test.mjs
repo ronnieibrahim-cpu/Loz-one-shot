@@ -1077,6 +1077,55 @@ const main = async () => {
     && entry.walked === entry.want && entry.walkLeft === 0 && entry.stood === entry.walked
     && !entry.stillSilent && entry.after === 'miniboss', JSON.stringify(entry));
 
+  // A BOSS'S PRIZE COMES WHEN THE SMOKE CLEARS (S233, Seasons'
+  // bossDeathExplosion.s: decNumEnemies at the end of the animation, then
+  // dungeonScript_bossDeath's Heart Container). Gohmaraq's room: nothing
+  // while the explosion runs, the Heart Container and the Essence the frame
+  // it ends; and walked out of inside the smoke, both are there on return.
+  const prize = await G(async () => {
+    const g = window.__game;
+    const feel = await import('/src/data/feel.js');
+    const save = JSON.stringify(g.progress);
+    const back = [g.mapId, g.room.floor || 0, g.room.rx, g.room.ry, g.player.x, g.player.y, g.player.dir];
+    const has = () => ({
+      heart: g.entities.some((e) => e.kind === 'heartContainer' && !e.remove),
+      essence: g.entities.some((e) => e.constructor.name === 'Essence' && !e.remove),
+      smoke: g.entities.some((e) => e.isEffect && e.spec && e.spec.w === 48 && !e.remove),
+    });
+    const kill = () => {
+      g.enterMap('d1', 0, 3, 1, 112, 136, 'up', { instant: true });
+      g.player.invuln = 99999;
+      const b = g.entities.find((e) => e.isBoss);
+      b.intro = 0; b.beginDeath(g);
+      window.__harness.step(feel.BOSS_DEATH_FRAMES + 1);
+      return b;
+    };
+    const boom = feel.BOSS_EXPLOSION_HOLDS.reduce((a, b) => a + b, 0);
+    const out = {};
+    kill();
+    out.start = has();
+    window.__harness.step(boom - 4);
+    out.mid = has();
+    window.__harness.step(6);
+    out.end = has();
+    Object.assign(g.progress, JSON.parse(save));
+    kill();
+    window.__harness.step(10);
+    g.enterMap('d1', 0, 3, 3, 112, 120, 'up', { instant: true });
+    window.__harness.step(boom);
+    out.away = has();
+    g.enterMap('d1', 0, 3, 1, 112, 136, 'up', { instant: true });
+    out.back = has();
+    g.enterMap(...back, { instant: true });
+    Object.assign(g.progress, JSON.parse(save));
+    return out;
+  });
+  check('a boss\'s Heart Container and Essence appear when its explosion ends, and wait if Link walks out',
+    prize.start.smoke && !prize.start.heart && !prize.start.essence
+    && prize.mid.smoke && !prize.mid.heart && !prize.mid.essence
+    && !prize.end.smoke && prize.end.heart && prize.end.essence
+    && !prize.away.heart && !prize.away.essence && prize.back.heart && prize.back.essence, JSON.stringify(prize));
+
   console.log('\n--- HUD, menu, save ---');
   // The menu comes and goes through Seasons' white fade (MENU_FADE_OPEN /
   // _CLOSE), and the page does not answer until it has faded in.

@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The robot fought from doorways (S233).** Seasons shuts a boss room's
+  doors behind Link; ours did not, and the robot's best stands (S232's
+  step-backs, Gloomtide's 111,157) were IN the doorway, out of reach. With
+  the doors shut, Gohmaraq fell from 6/16 to thin wins until re-swept, and
+  Gloomtide won on 3/28 at best. A change that takes away a place to stand
+  is a re-route of every boss after it, not a timing nudge.
+- **A thing spawned on the way into a room waits in `pendingAdd` (S233).**
+  `spawnRoomEntities` flushes before it returns; anything spawned after the
+  flush is not in `entities` until the next frame, so a test reading it at
+  once sees nothing. Spawn before `flushPending`.
+- **A screenshot straight after `pump` can be a stale frame (S233).** The
+  canvas is drawn on animation frames, not by the harness step; wait a few
+  hundred ms (or draw) before reading it.
+
 - **A forced walk can be lined up; a doorway cannot be stood in (S232).**
   Link now walks himself 25 px into a boss's room. Where the robot's next
   move was a wait, stepping back 16 and turning on 1 frame (`hold`) puts him

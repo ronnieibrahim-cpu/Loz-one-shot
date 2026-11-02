@@ -3017,9 +3017,6 @@ const BOSS_DEATH_FRAMES = 120;
  *  (PART_BOSS_DEATH_EXPLOSION's one animation): 8 x6, 2, 6, 6, 4 x4. */
 const BOSS_EXPLOSION_HOLDS = [8, 8, 8, 8, 8, 8, 2, 6, 6, 4, 4, 4, 4];
 
-/** f — delay between a boss dying and its essence appearing. guessed. */
-const BOSS_ESSENCE_DELAY_FRAMES = 70;
-
 /** f — delay between a boss dying and room music resuming. guessed. */
 const BOSS_MUSIC_RESUME_FRAMES = 220;
 
@@ -4596,7 +4593,6 @@ __exports["BOSS_INTRO_FRAMES"] = BOSS_INTRO_FRAMES;
 __exports["BOSS_ENTRY_WALK_FRAMES"] = BOSS_ENTRY_WALK_FRAMES;
 __exports["BOSS_DEATH_FRAMES"] = BOSS_DEATH_FRAMES;
 __exports["BOSS_EXPLOSION_HOLDS"] = BOSS_EXPLOSION_HOLDS;
-__exports["BOSS_ESSENCE_DELAY_FRAMES"] = BOSS_ESSENCE_DELAY_FRAMES;
 __exports["BOSS_MUSIC_RESUME_FRAMES"] = BOSS_MUSIC_RESUME_FRAMES;
 __exports["FARORE_SWAY_HOLD"] = FARORE_SWAY_HOLD;
 __exports["NPC_WANDER_PERIOD"] = NPC_WANDER_PERIOD;
@@ -40671,9 +40667,18 @@ class Boss extends Enemy {
     this.dead = true;
     this.remove = true;
     if (this.onDie) this.onDie(game);
-    game.spawnEffect('bossBoom', this.cx - 8, this.cy - 8 - this.z);
+    // What the fight pays comes when the smoke clears (S233): Seasons'
+    // explosion calls decNumEnemies at the END of its animation, and only
+    // then does dungeonScript_bossDeath see no enemies and spawn the Heart
+    // Container, or a miniboss's room count as clear. A boss's payout is
+    // held by the game so that walking out inside the smoke does not lose it.
+    const boss = this.isBoss;
+    const pay = boss ? game.holdBossPayout(this) : null;
+    game.spawnEffect('bossBoom', this.cx - 8, this.cy - 8 - this.z, {
+      onDone: (g) => { if (boss) g.payBoss(pay); else g.onKillPuffDone(); },
+    });
     game.audio.sfx('bossBoom');
-    game.onEnemyDefeated(this);
+    game.onEnemyDefeated(this, !boss);
   }
 
   spriteName() {
@@ -41884,7 +41889,7 @@ function forcedPad(dir) {
 }
 
 const INFO_BOSS_DOOR = 0x02, INFO_KEY_DOOR = 0x04, INFO_CRACKED_BLOCK = 0x10, INFO_ROCK = 0x20;
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -41918,6 +41923,7 @@ class Game {
     this.room = null;
     this.mapId = null;
     this.boss = null;
+    this.bossPayout = null;
     this.shakeTime = 0;
     this.hitstop = 0;
     this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
@@ -41969,6 +41975,7 @@ class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.bossPayout = null;
     this.race = null;
     this.dive = null;
     this.tide.clearOverrides();
@@ -41994,6 +42001,7 @@ class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.bossPayout = null;
     this.race = null;
     this.dive = null;
     // A placed anchor is run state, not save state: reloading returns it to
@@ -42160,6 +42168,8 @@ class Game {
     list.forEach((spec, i) => this.spawnSpec(room, spec, i));
     spawnRecordedChunks(this);
     this.spawnFallen();
+    // Walked out inside a boss's smoke: the prize is here when he comes back.
+    if (this.bossPayout) this.payBoss(this.bossPayout);
     this.flushPending();
   }
 
@@ -43301,22 +43311,43 @@ class Game {
       this.spawnEffect('puff', x.cx - 8, x.cy - 8);
       x.remove = true;
     }
-    // Boss death opens the way to the essence.
-    const room = this.room;
-    if (d && d.essence != null) {
-      this.frameLater(BOSS_ESSENCE_DELAY_FRAMES, () => {
-        this.audio.jingle('bossClear');
-        // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
-        // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
-        // the north-west corner.
-        const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
-        const ey = room.cw === 15 ? 4 : 3;
-        spawnEntity(this, 'essence', ex, ey, { index: d.index });
-      });
-    }
     // The boss track was stopped, so nothing would resume once the jingle ends.
     this.frameLater(BOSS_MUSIC_RESUME_FRAMES, () => this.updateMusic());
-    if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', e);
+  }
+
+  /**
+   * A boss's explosion has begun: note what the room owes, to be paid when
+   * the smoke clears (`payBoss`, S233; Seasons' bossDeathExplosion.s ->
+   * decNumEnemies -> dungeonScript_bossDeath). Keyed on the room, so that if
+   * Link walks out inside the smoke the prize waits for him there, as
+   * Seasons' room flag $80 spawns the Heart Container again on re-entry.
+   */
+  holdBossPayout(e) {
+    const r = this.room;
+    const pay = { boss: e, mapId: this.mapId, floor: r.floor, rx: r.rx, ry: r.ry, paid: false };
+    this.bossPayout = pay;
+    return pay;
+  }
+
+  /** The smoke has cleared: the Essence and the room's own prize appear. */
+  payBoss(pay) {
+    if (!pay || pay.paid) return;
+    const room = this.room;
+    if (!room || this.mapId !== pay.mapId || room.floor !== pay.floor || room.rx !== pay.rx || room.ry !== pay.ry) return;
+    pay.paid = true;
+    if (this.bossPayout === pay) this.bossPayout = null;
+    const d = this.map && this.map.dungeon;
+    // Boss death opens the way to the essence.
+    if (d && d.essence != null) {
+      this.audio.jingle('bossClear');
+      // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
+      // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
+      // the north-west corner.
+      const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
+      const ey = room.cw === 15 ? 4 : 3;
+      spawnEntity(this, 'essence', ex, ey, { index: d.index });
+    }
+    if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', pay.boss);
   }
 
   checkPuzzle() {
