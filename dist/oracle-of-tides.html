@@ -1939,6 +1939,20 @@ const BOSS_INVULN_FRAMES = 32;
  *  $20, knockbackCounter 0. */
 const ENEMY_UNSHOVED_INVULN_FRAMES = 32;
 
+/** [Link's shove f, his invulnerability f, the foe's shove f, its
+ *  invulnerability f] — SWORDS CLASHING (S229): Link's blade meets a sword
+ *  darknut's guarding blade, a clink, the two shoved apart, nobody hurt and
+ *  nobody flashing (a negative counter counts without the flash). Row 0 is a
+ *  swing of the first or second sword, row 1 the held blade. derived from the
+ *  cartridge: data/seasons/objectCollisionTable.s ENEMYCOLLISION_ENEMY_SWORD
+ *  (PART_ENEMY_SWORD) gives ITEMCOLLISION_L1/L2_SWORD COLLISIONEFFECT_33
+ *  (LINKDMG_38 $f8/$08, ENEMYDMG_4c $f5/$09) and ITEMCOLLISION_SWORD_HELD
+ *  COLLISIONEFFECT_32 (LINKDMG_34 $fa/$06, ENEMYDMG_48 $f7/$07), both with
+ *  createClinkInteraction, code/collisionEffects.s; parts/enemySword.s hands
+ *  the knockback to the darknut. Link moves at PLAYER_KNOCK_SPEED, the
+ *  darknut at ENEMY_KNOCK_SPEED. */
+const SWORD_CLASH = [[8, 8, 9, 11], [6, 6, 7, 9]];
+
 /** f — invulnerability granted to a boss when it changes phase. guessed. */
 const BOSS_PHASE_INVULN_FRAMES = 20;
 
@@ -4373,6 +4387,7 @@ __exports["KNOCK_THROWN"] = KNOCK_THROWN;
 __exports["KNOCK_TOOL"] = KNOCK_TOOL;
 __exports["BOSS_INVULN_FRAMES"] = BOSS_INVULN_FRAMES;
 __exports["ENEMY_UNSHOVED_INVULN_FRAMES"] = ENEMY_UNSHOVED_INVULN_FRAMES;
+__exports["SWORD_CLASH"] = SWORD_CLASH;
 __exports["BOSS_PHASE_INVULN_FRAMES"] = BOSS_PHASE_INVULN_FRAMES;
 __exports["HAZARD_DAMAGE"] = HAZARD_DAMAGE;
 __exports["SPIKE_INVULN_FRAMES"] = SPIKE_INVULN_FRAMES;
@@ -21526,7 +21541,7 @@ const { sprites } = __require("gfx/art.js");
 const { noise1, noise2 } = __require("core/rng.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, PUDDLE_HOLD, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, SHIELD_SHOVE_LINK, ENEMY_KNOCK_SPEED } = __require("data/feel.js");
+const { WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, ICE_STEP_FRAMES, ICE_ACCEL, ICE_TURN_STEPS, SWING_FRAMES, SWING_PHASE_FRAMES, SWORD_ARC, LINK_HURT_RADIUS, SWORD_RESWING_PHASE, PICKUP_BLADE_RADIUS, CHARGE_FRAMES, CHARGE_FLASH_BEAT, SPIN_FRAMES, SPIN_STEP_FRAMES, SPIN_ARC, SWORD_CUT_POINTS, SWORD_POKE_PHASES, SWORD_HOLD_DELAY, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, SPIKE_INVULN_FRAMES, SPIKE_KNOCK_FRAMES, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, FALL_ANIM_FRAMES, RESPAWN_HOLD_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, SLATE_PUSH_FRAMES, CRACK_BREAK_FRAMES, DROP_IN_SPEED, DROP_IN_GRAVITY, DROP_IN_MAX_HEIGHT, DROP_IN_COLLAPSE_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_MIN, SINK_BUBBLE_SPREAD, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, CARRY_HEIGHT, LIFTED_THROW_SPEED, LIFTED_THROW_NUDGE, LIFT_STEP_FRAMES, LIFT_STEP_POS, PUDDLE_HOLD, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, SHIELD_SHOVE_LINK, SWORD_CLASH, ENEMY_KNOCK_SPEED } = __require("data/feel.js");
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
 // (ITEM_SWORD), standing at Link's position plus its hit area's own offset —
@@ -22418,10 +22433,12 @@ class Player extends Entity {
     const box = this.swordBox(game);
     this.bladeCollect(game, box);
     this.bladeDeflect(game, box);
+    if (this.knockTime === 0) this.swordClash(game, box, 1, null);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden || e.invuln > 0) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
-      e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_HOLD), this);
+      if (e.spec && e.spec.swordGuard && e.guarding(game)) continue;   // its sword turns it: nothing
+      e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_HOLD), this, 'held');
       this.startPoke(game, false);
       return;
     }
@@ -22533,12 +22550,13 @@ class Player extends Entity {
     const box = this.swordBox(game, phase);
     this.bladeCollect(game, box);
     this.bladeDeflect(game, box);
+    this.swordClash(game, box, 0, this.swingHit);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.swingHit.add(e.id);
         e.hurt(game, this.swordHit(game), this.dir,
-          this.swordKnock(game, this.swordLevel >= 2 ? KNOCK_SWORD_L2 : KNOCK_SWORD), this);
+          this.swordKnock(game, this.swordLevel >= 2 ? KNOCK_SWORD_L2 : KNOCK_SWORD), this, 'swing');
       }
     }
     // Bushes and grass are cut by the blade at full reach, as the cartridge
@@ -22580,6 +22598,43 @@ class Player extends Entity {
       if (!e.deflects || e.deflected > 0 || e.remove || e.fromPlayer) continue;
       if (rectOverlap(box, e.contactRect())) e.deflect(game, true);
     }
+  }
+
+  /**
+   * SWORDS CLASH (S229): Link's blade meets a sword darknut's guarding blade
+   * (Enemy.guardBlade, PART_ENEMY_SWORD): a clink between them, both shoved
+   * apart, nobody hurt and nobody flashing — SWORD_CLASH row `row` (0 a
+   * swing, 1 the held blade). The spin never meets it (ENEMYCOLLISION_ENEMY_
+   * SWORD gives ITEMCOLLISION_SWORDSPIN nothing). A swing clashes with each
+   * once (`seen`, its hit list, which also spares the body for the swing).
+   */
+  swordClash(game, box, row, seen) {
+    for (const e of game.entities) {
+      if (!e.isEnemy || !e.spec || !e.spec.swordGuard || (seen && seen.has(e.id))) continue;
+      const b = e.guardBlade(game);
+      if (!b || !rectOverlap(box, b)) continue;
+      if (seen) seen.add(e.id);
+      const [linkKnock, linkInv, foeKnock, foeInv] = SWORD_CLASH[row];
+      const me = knockVector(this, null, e, PLAYER_KNOCK_SPEED);
+      if (me && !this.underwater) {
+        this.knockX = me[0]; this.knockY = me[1];
+        this.knockTime = linkKnock; this.hurtTime = linkKnock;
+        this.bumping = true;
+      }
+      this.invuln = Math.max(this.invuln, linkInv);
+      const it = knockVector(e, null, this, ENEMY_KNOCK_SPEED);
+      if (it) { e.knockX = it[0]; e.knockY = it[1]; e.knockTime = foeKnock; }
+      if (!e.invuln) e.invuln = foeInv;
+      this.clinkBetween(game, box, b);
+      game.audio.sfx('shieldBump');
+    }
+  }
+
+  /** INTERAC_CLINK half way between two boxes (createClinkInteraction). */
+  clinkBetween(game, a, b) {
+    const x = ((a.x + a.w / 2) + (b.x + b.w / 2)) / 2, y = ((a.y + a.h / 2) + (b.y + b.h / 2)) / 2;
+    game.spawnEffect('spark', Math.round(x) - 8, Math.round(y) - 8);
+    game.audio.sfx('block');
   }
 
   /** Cut the tile under the blade's point `k` (SWORD_CUT_POINTS: 0..7
@@ -22673,7 +22728,7 @@ class Player extends Entity {
         this.spinHit.add(e.id);
         // Twice a swing's damage: swordParent.s @state3 doubles the blade's
         // var3a (`sla`) as the spin starts.
-        e.hurt(game, this.swordHit(game) * 2, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
+        e.hurt(game, this.swordHit(game) * 2, this.dir, this.swordKnock(game, KNOCK_SPIN), this, 'spin');
       }
     }
     const [card, diag] = SPIN_STEP_FRAMES;
@@ -23062,14 +23117,23 @@ class Player extends Entity {
       if (this.z > 6 && !e.flying) continue;      // jumped over it
       // The cartridge's rule: Link's 12x12 against the enemy's own box, both
       // on the middle of the sprite — not the two walking footprints.
-      if (!rectOverlap(this.contactRect(), e.contactRect())) continue;
+      // A sword darknut's guarding blade hurts to walk into as its body does
+      // (ENEMYCOLLISION_ENEMY_SWORD: ITEMCOLLISION_LINK = DAMAGE_LINK), and
+      // the shield meets it with a clink (COLLISIONEFFECT_SHIELD_BUMP_WITH_
+      // CLINK_HIGH_KNOCKBACK).
+      const mine = this.contactRect();
+      let blade = null;
+      if (!rectOverlap(mine, e.contactRect())) {
+        blade = e.spec && e.spec.swordGuard ? e.guardBlade(game) : null;
+        if (!blade || !rectOverlap(mine, blade)) continue;
+      }
       // "Sea creature" is the enemy's own terrain field, not where it happens
       // to be standing: a crab hauled onto dry land by the tide is still what
       // the Anemone's Gift protects you from.
       // What touching it does besides hurt: a gel latches on, a bubble takes
       // the sword. Called whether or not the hit lands, as the cartridge
       // reacts to the collision itself (var2a = ITEMCOLLISION_LINK).
-      if (this.shieldBump(game, e)) break;
+      if (this.shieldBump(game, e)) { if (blade) this.clinkBetween(game, mine, blade); break; }
       if (e.spec && e.spec.onTouchLink) e.spec.onTouchLink(e, game, this);
       if (e.harmless) break;
       this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });
@@ -39217,7 +39281,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_UNSHOVED_INVULN_FRAMES, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_UNSHOVED_INVULN_FRAMES, KNOCK_SWORD, KNOCK_SWORD_L2, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, HOLE_FOOT_DY, ENEMY_HOLE_PULL_FRAMES, ENEMY_HOLE_PULL_EVERY, ENEMY_HOLE_PULL_STEP, BELT_SPEED } = __require("data/feel.js");
 
 // NOSPAWN is a lowered red or blue block (S205): a walker never stands on
 // one, so none is ever inside one when it comes up.
@@ -39268,6 +39332,9 @@ class Enemy extends Entity {
     // enemies simply never got one.
     if (this.terrain === 'water') this.caps = { jumping: false, swim: true, cutting: false };
     this.shield = spec.shield || null;
+    // Armour the Resonance Rod rings, though it carries no shield (the sword
+    // darknut, S229: its guard is its blade, and it is still armour).
+    this.metal = !!spec.metal;
     // Light enough for the Squall Bellows to shove. Fliers, floaters and
     // slimes are; anything armoured or anchored is not. See docs/ITEMS.md.
     this.light = opts.light != null ? opts.light : !!spec.light;
@@ -39568,7 +39635,38 @@ class Enemy extends Entity {
     game.onEnemyDefeated(this, false);
   }
 
-  hurt(game, dmg, dir, knock, from) {
+  /**
+   * THE SWORD THAT GUARDS (S229; Seasons' sword darknut, swordEnemies.s
+   * swordDarknut_updateEnemyCollisionMode / swordEnemy_checkIgnoreCollision).
+   * A spec's `swordGuard` holds, per facing, the angles (0..31, clockwise
+   * from up) from which Link's blade is turned by the enemy's own — its
+   * front round to its sword hand — and while it is being knocked back it
+   * guards from everywhere. Stunned, dead or going, it does not.
+   */
+  guarding(game) {
+    const gd = this.spec.swordGuard;
+    // Rung by the Resonance Rod (rodLock, with its stun) it cannot guard.
+    if (!gd || this.dead || this.dying || this.hidden || this.stun > 0 || this.rodLock > 0 || this.holeFall > 0) return false;
+    if (this.knockTime > 0) return true;
+    if (!game.player) return false;
+    return gd.arc[this.dir].includes(angleToward(this, game));
+  }
+
+  /**
+   * The guarding blade's own box, or null when it is not guarding:
+   * PART_ENEMY_SWORD (parts/enemySword.s) stands at the facing's offset for
+   * the walking frame and has collisions only while its darknut guards.
+   */
+  guardBlade(game) {
+    const gd = this.spec.swordGuard;
+    if (!gd || !this.guarding(game)) return null;
+    const k = Math.floor(this.animTick / this.rate) % 2;
+    const [dy, dx] = gd.at[this.dir][k];
+    const [ry, rx] = gd.r[this.dir];
+    return { x: this.cx + dx - rx, y: this.cy + dy - ry, w: rx * 2, h: ry * 2 };
+  }
+
+  hurt(game, dmg, dir, knock, from, kind) {
     // Going down a hole, it has no collisions left (@touchedHazard).
     if (this.holeFall > 0) return false;
     // No collisions at all (the beamos, ENEMYCOLLISION_00): a blow passes it.
@@ -39582,6 +39680,18 @@ class Enemy extends Entity {
     // Rung. Armour that is ringing is armour that is not blocking — locking a
     // darknut rigid would be a stun, and a stun is not an answer to armour.
     if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock, from);
+    // A sword darknut's body against Link's blade (objectCollisionTable.s):
+    // guarding, a swing or the held blade does nothing at all (ENEMYCOLLISION_
+    // DARKNUT_BLOCKED_WITH_SWORD; the clash is the blade's, Player.swordClash),
+    // while the spin, a thrown thing, a bomb and the beam still land.
+    // Unguarded (ENEMYCOLLISION_DARKNUT), the second sword shoves it only as
+    // far as the first (COLLISIONEFFECT_SWORD_LOW_KNOCKBACK) and the held
+    // blade not at all (COLLISIONEFFECT_SWORD_NO_KNOCKBACK).
+    if (this.spec.swordGuard && (kind === 'swing' || kind === 'held')) {
+      if (this.guarding(game)) return false;
+      if (kind === 'held') return this.hurtUnshoved(game, dmg, dir, from);
+      if (from && from.swordLevel >= 2) knock = knock * KNOCK_SWORD / KNOCK_SWORD_L2;
+    }
     if (this.shield && dir) {
       // A shielded enemy blocks hits arriving at its facing side.
       const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -39596,12 +39706,16 @@ class Enemy extends Entity {
     // Seasons' zol, gel and pincer take every blow of Link's without moving
     // (COLLISIONEFFECT_SWORD_NO_KNOCKBACK -> ENEMYDMG_0c) and stay safe for
     // longer than a shoved enemy does.
-    if (this.spec.unshoved && knock) {
-      if (!super.hurt(game, dmg, dir, 0, from)) return false;
-      if (!this.dead) { this.invuln = ENEMY_UNSHOVED_INVULN_FRAMES; this.flicker = this.invuln; }
-      return true;
-    }
+    if (this.spec.unshoved && knock) return this.hurtUnshoved(game, dmg, dir, from);
     return super.hurt(game, dmg, dir, knock, from);
+  }
+
+  /** A blow that does not shove (ENEMYDMG_0c): damage, no knockback, and
+   *  ENEMY_UNSHOVED_INVULN_FRAMES safe and flashing. */
+  hurtUnshoved(game, dmg, dir, from) {
+    if (!super.hurt(game, dmg, dir, 0, from)) return false;
+    if (!this.dead) { this.invuln = ENEMY_UNSHOVED_INVULN_FRAMES; this.flicker = this.invuln; }
+    return true;
   }
 
   /**
@@ -63613,11 +63727,13 @@ function installEnemies() {
     frames: ['crab_0', 'crab_1'],
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
-    shield: 'front',
     drops: 'common',
     // Seasons' sand crab (sandCrab.s): never stops; picks a direction and a
     // stretch, scuttles fast sideways and slowly up and down, and picks again
-    // when the stretch ends or something stops it. Its shield faces its way.
+    // when the stretch ends or something stops it. No shield (S229, the
+    // human's choice): its collision is ENEMYCOLLISION_STANDARD_ENEMY
+    // (enemyData.s $1a: $90), so every blow lands; ours used to turn hits
+    // from the way it walked.
     port: 'sandCrab.s',
     speed: CRAB_SPEED_SIDE,
     ai(e, g) {
@@ -64259,7 +64375,7 @@ function installEnemies() {
     },
   });
 
-  // --- Darknut: armoured knight, only vulnerable from behind ------------
+  // --- Darknut: armoured knight whose sword guards it -------------------
   defineEnemy('darknut', {
     hp: 6, damage: 3, pal: 'enemyr', rate: 10,
     // Its sword as the sheet draws it: held down below it facing Link, up
@@ -64279,12 +64395,31 @@ function installEnemies() {
     },
     // S166: its hand-drawn braced pose is gone; Seasons' darknut has none.
     hb: { x: 2, y: 4, w: 12, h: 11 },
-    shield: 'front',
+    // ITS SWORD GUARDS IT (S229, the human's choice; there was a shield of
+    // ours on its front). Seasons' swordEnemy_checkIgnoreCollision @angleBits:
+    // facing up it turns Link's blade from angles 0-5, right 8-13, down
+    // 16-21 and left 19-24 (its front round to its sword hand), and from
+    // everywhere while shoved. PART_ENEMY_SWORD (parts/enemySword.s
+    // @table_524d, [y, x] from its middle per walking frame, and
+    // @table_525d's radii [y, x]) is the blade Link's own meets and clashes
+    // with, and that hurts him to walk into while it guards.
+    swordGuard: {
+      arc: {
+        up: [0, 1, 2, 3, 4, 5], right: [8, 9, 10, 11, 12, 13],
+        down: [16, 17, 18, 19, 20, 21], left: [19, 20, 21, 22, 23, 24],
+      },
+      at: {
+        up: [[-8, 4], [-10, 4]], right: [[4, 7], [4, 9]],
+        down: [[7, -4], [9, -4]], left: [[4, -7], [4, -9]],
+      },
+      r: { up: [5, 2], down: [5, 2], right: [2, 5], left: [2, 5] },
+    },
+    metal: true,                     // the Resonance Rod still rings its armour
     drops: 'rich',
     // Seasons' sword darknut (swordEnemies.s): plods about the four
     // directions; when Link comes within 40 px it stops, squares up, and then
     // hounds him for a while, turning toward him a step every other frame,
-    // before plodding again. The shield on its front is ours: circle behind.
+    // before plodding again.
     port: 'swordEnemies.s',
     speed: DARKNUT_SPEED,
     ai(e, g) {
