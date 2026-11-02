@@ -1,3 +1,58 @@
+## S230 — Seasons' own floor fairy, hovering; floor treasures sit still; drops cast a shadow
+
+Branch claude/oracle-tides-s230-z19f63, off main at da3d52c (S229).
+
+### The human's choices this session
+- S229's darknut guarding with its sword and the shieldless crab: BOTH FEEL
+  RIGHT. Keep; do not re-ask.
+- Keese and bubble float a few px up (keese with a shadow); Seasons draws
+  both at z 0 with no shadow (keese.s/bubble.s objectSetVisible82, zh 0).
+  Shown docs/briefs/s230/keese-ground.png: KEEP THEM FLOATING. Do not re-ask.
+- The floor fairy: Seasons' own (docs/briefs/s230/fairy-drop.png): YES.
+- Floor treasures (key, Boss Key, heart piece, map) bobbing: make them STILL
+  like Seasons (treasure.s @state2 only checks for Link): YES.
+
+### Built
+- FAIRY: `p_fairy` is now ITEM_DROP_FAIRY cut by tools/rip-treasures.py
+  (spr_common_items tile 0, palette 2, one 8x16 hardware sprite; its
+  partAnimation573c7 holds frame 0 for ever). tools/rip-fairies.py and
+  src/data/sprites-fairies.js (the fan sheet's front-on flapping pair,
+  p_fairy/p_fairy_1) are GONE, and with them FAIRY_FLAP_FRAMES; CLAUDE.md's
+  table, check-rippers, check-drift, shoot-sprites, the manifest and
+  data/index.js updated. It faces the way it flies: mirrored for a leg going
+  right, as drawn going left, unchanged straight up/down
+  (itemDrop_chooseRandomFairyMovement, OAM bit 5 from angle bit 4) — no new
+  random draw. It HOVERS: its pop stops as it rises past FAIRY_HOVER_Z 6 and
+  stays there over the flickering shadow, armed FAIRY_ARM_FRAMES 10 later
+  (itemDrop_checkHitGround @fairy, var33 5 on alternate frames); a placed
+  fairy starts at 6. Catching it is silent (TREASURE_HEART_REFILL SND_NONE;
+  the status bar chimes as hearts fill); the `fairy` sound is now unplayed.
+- FLOOR TREASURES STILL: Pickup.draw's sine bob is gone.
+- DROP SHADOW: pickups now cast Seasons' flickering shadow while in the air
+  (itemDrop.s objectSetVisiblec1/c3); none on the ground (drawShadow z>1).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5 (Anemos, upstream
+of every change), 317359 frames (S229: 317402). The first run died to the
+Brinehulk: D4's West Overlook fairy expired one stride short (its life now
+starts at the hover); the route takes it before the keese with a 13-frame
+wait after, which puts every frame back through D5. D6's Sounding Room
+fairy is caught 9 frames later and the stalfos after it misses, so the
+Brinehulk wait was re-swept (152 -> 140, see the route's comment). Whole
+table green: 66 tools three at a time, every one exit 0 (replay untouched,
+no re-record: the bob and shadow are drawing only); watch-cutscenes alone;
+npm run build then check-build OK; check-rippers last, alone, 45/45 (two
+fewer: rip-fairies.py is gone).
+
+### Not done / candidates
+- Seasons' side-scrolling underground passages (the footage shows one): a
+  whole mechanic, not a look-through fix; ask before thinking about it.
+- The urchin keeps `shield: 'front'` (ours, not a port).
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+- check-placement proves floor in front of a chest/sign, not that it can be
+  walked to. A loose key's one-frame hold (grab mode 1) is invisible.
+
 ## S229 — the darknut guards with its sword; the crab loses its shield
 
 Branch claude/oracle-tides-s229-x3dk8l, off main at b2293f3 (S228).

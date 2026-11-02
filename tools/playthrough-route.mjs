@@ -1879,9 +1879,14 @@ export const ROUTE = [
   // THE WEST OVERLOOK, AND IT IS THE HEALTH BUDGET FOR THE REST OF THE
   // DUNGEON. Its pickup is a FAIRY and it is one screen off the path, taken
   // here rather than later because this is the low-water mark of the run.
+  // S230: the fairy is taken BEFORE the keese now. Seasons' fairy hovers
+  // from the top of its pop and its 480-frame life starts there, not when
+  // it lands, so it vanished one stride short of the old loot-after-fight;
+  // the wait puts every frame after this room back where it was.
   ['travel', 2, 1, 4000],
-  ['fight', 3000, 1200],
   ['loot', 1200],
+  ['fight', 3000, 1200],
+  ['wait', 13],
   ['travel', 2, 2, 4000],
   ['travel', 2, 3, 4000],
   ['travel', 3, 3, 4000],
@@ -3728,7 +3733,13 @@ export const ROUTE = [
   // S228 (the run arrives 510 frames later): 48 wins the fight on 18/44 and
   // dies just after it. Swept 0-160 by 4 and run to the end: 148-156 reach
   // THE END (30/44 here), every other winner loses here or to the King. 152.
-  ['wait', 152],
+  // S230 (Seasons' hovering fairy: D6's Sounding Room fairy is caught 9
+  // frames later and the next room's stalfos no longer lands a hit, so the
+  // run arrives 85 frames sooner with the dice moved): swept 20-340 by 8,
+  // won at 28, 60, 84, 132, 140, 164, 188, 236, 276, 300-316; 28, 132, 140,
+  // 236 and 308 all run to THE END. 140 leaves the most here (28/44) and
+  // 21/44 after the King.
+  ['wait', 140],
 
   // THE BRINEHULK, AND THE JOKE THE ROOM IS BUILT ON. Brine dissolves salt:
   // the colossus is armoured at LOW and comes apart at HIGH — and LOW is the

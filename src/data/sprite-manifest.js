@@ -94,14 +94,6 @@ export const REQUIRED_SPRITES = {
   // The six dungeon keys: the Oracle cartridges' key-item shapes, our keys.
   keys: ['i_key_d1', 'i_key_d2', 'i_key_d3', 'i_key_d4', 'i_key_d5', 'i_key_d6'],
 
-  // ---- pack: sprites-fairies.js (GENERATED, tools/rip-fairies.py) --------
-  //
-  // Its own entry rather than a line in `pickups`, because the pack that owns
-  // a name is the thing this file is for: `p_fairy` used to be hand-drawn in
-  // sprites-world.js and is now extracted, and that move should be visible
-  // here rather than only in a git log.
-  fairies: ['p_fairy', 'p_fairy_1'],
-
   // ---- pack: sprites-objects.js (GENERATED, tools/rip-objects.py) -----
   objectsRipped: [
     'o_chest', 'o_chest_open', 'o_chestbig', 'o_chestbig_open', 'o_sign',
@@ -114,7 +106,8 @@ export const REQUIRED_SPRITES = {
   // ---- pack: sprites-treasures.js (GENERATED, tools/rip-treasures.py) --
   // The rupees, hearts, keys, bombs and map lying in the world, the
   // cartridge's own (S155); they used to be hand-drawn in sprites-world.js.
-  treasures: ['p_rupee', 'p_rupee5', 'p_rupee20', 'p_rupee100', 'p_heart', 'p_bomb',
+  // The healing fairy joined them at S230 (the drop's own, not a fan sheet's).
+  treasures: ['p_rupee', 'p_rupee5', 'p_rupee20', 'p_rupee100', 'p_heart', 'p_fairy', 'p_bomb',
     'p_heartpiece', 'p_heartcontainer', 'p_key', 'p_bosskey', 'i_map', 'p_slate'],
 
   // ---- pack: sprites-world.js ------------------------------------------

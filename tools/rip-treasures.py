@@ -58,6 +58,11 @@ WANT = [
     ('p_rupee20', 'treasure', 0x2b, 'TREASURE_OBJECT_RUPEES_03, twenty rupees'),
     ('p_rupee100', 'treasure', 0x2c, 'TREASURE_OBJECT_RUPEES_05, a hundred rupees'),
     ('p_heart', 'drop', 1, 'ITEM_DROP_HEART: a recovery heart'),
+    # S230: the healing fairy as Seasons draws it on the floor — one side-on
+    # picture (partAnimation573c7 holds frame 0 for ever), mirrored to face the
+    # way it flies. It used to be the fan sheet's front-on fairy, flapping
+    # (tools/rip-fairies.py, now gone).
+    ('p_fairy', 'drop', 0, 'ITEM_DROP_FAIRY: the healing fairy'),
     ('p_bomb', 'drop', 4, 'ITEM_DROP_BOMBS'),
     ('p_heartpiece', 'treasure', 0x3a, 'TREASURE_OBJECT_HEART_PIECE'),
     ('p_heartcontainer', 'treasure', 0x3b, 'TREASURE_OBJECT_HEART_CONTAINER'),

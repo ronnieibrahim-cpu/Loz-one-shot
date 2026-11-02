@@ -1683,12 +1683,17 @@ export const PICKUP_BOUNCE_MIN = 256;
  *  blade does not touch. */
 export const PICKUP_BLADE_RADIUS = 4;
 
-/** f — frames per wing frame. The healing fairy's two EXTRACTED frames
- *  (tools/rip-fairies.py) alternate every this many. guessed: nothing was
- *  frame-stepped for it. Six is two beats a second at 60fps, which is a flutter
- *  rather than a flap; the sheet gives wings-up and wings-out and nothing in
- *  between, so slower reads as a stutter and faster as a blur. */
-export const FAIRY_FLAP_FRAMES = 6;
+/** px — the height a healing fairy hovers at. derived from the cartridge:
+ *  oracles-disasm object_code/common/parts/itemDrop.s itemDrop_checkHitGround
+ *  @fairy — its pop is stopped the frame it rises past 6 px (zh < $fa), held
+ *  at zh $fa for good, and it flies there over its flickering shadow. A
+ *  fairy placed in a room starts there. S230; it used to land. */
+export const FAIRY_HOVER_Z = 6;
+
+/** f — how long a fairy that has just reached its hover cannot be caught.
+ *  derived: the same routine sets var33 to 5, and itemDrop_countdownToDisappear
+ *  counts it down on alternate frames before it arms the fairy's collision. */
+export const FAIRY_ARM_FRAMES = 10;
 
 /** sp/f[] — the four speeds a fairy flies a leg at: 0.25, 0.5, 0.75 and 1
  *  px/f. derived from the cartridge: oracles-disasm object_code/common/parts/
