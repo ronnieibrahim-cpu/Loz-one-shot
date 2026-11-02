@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A forced walk can be lined up; a doorway cannot be stood in (S232).**
+  Link now walks himself 25 px into a boss's room. Where the robot's next
+  move was a wait, stepping back 16 and turning on 1 frame (`hold`) puts him
+  where and how he stood, 32 frames late, and the wait gives the 32 back:
+  the fight replays to the frame. Where the old stand was IN the doorway,
+  walking back there lets `doorwayPull` drag him out of the room ("left the
+  arena"); sweep the wait from where he stops instead — a sweep of the old
+  route's wait often contains a value that ends the fight on the old frame
+  (Gloomtide 96, the Iron Knight 145), and then everything after is S231's
+  run unchanged. A `hold` that runs out inside the forced walk leaves him
+  short; a text box advances in steps, so trim a stray frame from a plain
+  `wait` or a conch gap, never from a tap before a dialogue.
+- **PATCH indexes the route as written, INSERT is applied after it (S232).**
+  `PATCH='270=...' INSERT='202=...'` patches the ORIGINAL 270; two INSERTs at
+  one index go in reversed. Edit the route file for anything multi-step.
+
 - **An effect's random draws are part of the room's dice (S231).** The old
   boss death scattered its blasts with `game.rng.float()`; dropping them left
   everything up to the next room identical, but the Reefguard Hall's fight

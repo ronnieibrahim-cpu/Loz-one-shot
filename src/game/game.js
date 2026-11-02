@@ -64,6 +64,18 @@ import { sp } from '../core/fixed.js';
 
 // Seasons' wInformativeTextsShown bits (interactableTiles.s
 // showInfoTextForTile @data): a hint told once a screen per bit.
+/** A pad holding one direction and nothing else, nothing newly pressed or
+ *  let go: Link walking himself into a boss's room (S232). */
+function forcedPad(dir) {
+  const held = { up: false, down: false, left: false, right: false, a: false, b: false, start: false, select: false };
+  held[dir] = true;
+  return {
+    held, prev: { ...held },
+    down: (b) => !!held[b], pressed: () => false, released: () => false, anyDir: () => true,
+    takeExtra: () => null,
+  };
+}
+
 const INFO_BOSS_DOOR = 0x02, INFO_KEY_DOOR = 0x04, INFO_CRACKED_BLOCK = 0x10, INFO_ROCK = 0x20;
 import {
   ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
@@ -72,7 +84,7 @@ import {
   SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
-  BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
+  BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
   DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES,
   GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
@@ -125,6 +137,7 @@ export class Game {
     this.fadeTiming = null; this.fadeHold = 0;
     this.reveal = 0; this.revealNext = false;
     this.transition = null;
+    this.entryWalk = 0; this.entryWalkDir = null;
     this.bannerText = null; this.bannerTime = 0;
     this.cutscene = null;
     this.slot = 0;
@@ -233,6 +246,7 @@ export class Game {
     this.map = m;
     this.mapId = mapId;
     this._warpLock = true;
+    this.entryWalk = 0;
     this.setRoom(floor, rx, ry, { spawnEntities: true });
     if (this.player) {
       if (px != null) this.player.x = px;
@@ -743,6 +757,12 @@ export class Game {
       this.camera.snap(this.room, p);
       this.transition = null;
       this.markRespawn(false);
+      // INTO A BOSS'S ROOM, LINK WALKS HIMSELF IN (S232; Seasons'
+      // enemyBoss_initializeRoom, LINK_STATE_FORCE_MOVEMENT): the way he
+      // came, at his own pace, the d-pad ignored. Only by a scroll, as there.
+      this.entryWalk = !t.loop && this.bossWaiting() ? BOSS_ENTRY_WALK_FRAMES : 0;
+      this.entryWalkDir = t.dir;
+      if (this.entryWalk) p.dir = t.dir;
       // "Far enough away" for an overworld enemy's respawn clause (see
       // `onEnemyDefeated`) is measured in screens actually crossed, not
       // frames or wall-clock time — deterministic, and replay-safe.
@@ -2093,7 +2113,20 @@ export class Game {
     for (const t of due) t.fn();
   }
 
+  /** A boss or a miniboss in this room that has not started yet (its
+   *  entrance pose is still running). */
+  bossWaiting() {
+    const w = (e) => e._bossClass && !e.dead && !e.remove && e.intro > 0;
+    return this.entities.some(w) || this.pendingAdd.some(w);
+  }
+
   updateMusic() {
+    // A BOSS'S ROOM IS SILENT UNTIL THE BOSS STARTS (S232): Seasons stops the
+    // music on the way in (enemyBoss_initializeRoom, SNDCTRL_STOPMUSIC) and
+    // each boss plays its own theme when its fight begins (Aquamentus on
+    // landing, Manhandla once the shutters are down). Ours: when its
+    // entrance pose ends (Boss.update calls this again then).
+    if (this.bossWaiting()) { this.audio.stop(); return; }
     const want = this.room && this.room.music ? this.room.music
       : (this.map && this.map.music) || 'overworld';
     // A MINIBOSS HAS ITS OWN TUNE (S199), as Seasons stops a dungeon's theme
@@ -2449,7 +2482,7 @@ export class Game {
 
     if (this.dialogue.active) { this.dialogue.update(); this.flushPending(); return; }
 
-    if ((this.input.pressed('start') || this.input.pressed('select')) && !this.veiled() && !this.transition) {
+    if (this.entryWalk <= 0 && (this.input.pressed('start') || this.input.pressed('select')) && !this.veiled() && !this.transition) {
       // START is the item menu and SELECT the map; Seasons goes to white
       // before either comes up (MENU_FADE_OPEN), and if both are held when
       // the white is reached it is the save screen instead (bank2.s
@@ -2487,7 +2520,14 @@ export class Game {
 
     this.updatePhaseShift();
 
-    if (this.player) this.player.update(this);
+    // The walk into a boss's room holds the d-pad the way he came and
+    // nothing else (no menu above, no sword) until it is done.
+    if (this.entryWalk > 0 && this.player) {
+      this.entryWalk--;
+      const real = this.input;
+      this.input = forcedPad(this.entryWalkDir);
+      try { this.player.update(this); } finally { this.input = real; }
+    } else if (this.player) this.player.update(this);
     for (const e of this.entities) {
       if (e === this.player || e.remove) continue;
       if (e.update) e.update(this);

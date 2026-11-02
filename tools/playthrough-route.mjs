@@ -398,7 +398,13 @@ export const ROUTE = [
   // S166: with Seasons' 32-frame boss safety window the Clawcrab cost 6-9
   // quarter-hearts; let it settle first (100-104 all leave 10 of 12; 104 is
   // the one Gohmaraq's fight is then won from, on 10 of 16).
-  ['wait', 104],
+  // S232: Link now walks himself 25 px into a boss's room (Seasons'
+  // enemyBoss_initializeRoom), 15 further than the old `exit` took him and
+  // 15 frames later. Stepping back 16 and turning round on one more puts him
+  // where and how he used to stand, 32 frames later, so the wait gives the
+  // 32 back and the fight plays as it did (the same in every boss room).
+  ['hold', ['up'], 16], ['hold', ['down'], 1],
+  ['wait', 72],
   ['boss', 6000, 'clawcrab', { reachSwing: true, diagRetreat: true }],
   ['dialogue', 600],
   ['loot', 1500],
@@ -507,7 +513,8 @@ export const ROUTE = [
   ['tap', 'a', 30],
   ['dialogue', 300],
   ['exit', 'up', 400],
-  ['wait', 288],    // S166: 288 with the two retreats below; see there
+  ['hold', ['down'], 16], ['hold', ['up'], 1],   // S232: see the Clawcrab
+  ['wait', 256],    // S166: 288 with the two retreats below; see there. S232: -32
 
   // ---------------------------------------------------------------- d1 0,3,1
   // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
@@ -813,7 +820,10 @@ export const ROUTE = [
   // Seasons' 1 px/f: `reachSwing` again, now at holds 120-135 (and 105-110).
   ['boss', 6000, 'reefguard', { reachSwing: true }],
   ['dialogue', 300],
-  ['use', 'conch', 2, 140],
+  // S232: Link walks himself into the Hall now and its hold ran out four
+  // frames into that walk, so the fight ends 3 px west and the walk to the
+  // urchin takes 3 frames longer; the second note's wait gives them back.
+  ['use', 'conch', 1, 140], ['use', 'conch', 1, 137],
   ['goto', 20, 5, 700],
   ['fight', 1500],
   ['dialogue', 300],
@@ -900,7 +910,8 @@ export const ROUTE = [
   ['dialogue', 300],
   ['use', 'conch', 1, 140],
   ['exit', 'up', 400],
-  ['wait', 90],
+  ['hold', ['down'], 16], ['hold', ['up'], 1],   // S232: see the Clawcrab
+  ['wait', 58],    // S232: 90 - 32
 
   // ---------------------------------------------------------------- d2 1,3,1
   // ANEMOS, THE CROWNED COLUMN. His timers run off the absolute frame, so
@@ -1341,7 +1352,9 @@ export const ROUTE = [
   // dies; with the diagonal retreat too it wins untouched (swept eight ways:
   // four win — this, the open+diagonal pair, a 16/24 entry, and breakContact).
   ['travel', 2, 2, 4000],
-  ['hold', ['right'], 24],
+  // S232: Link walks himself 15 px further in than `travel` used to leave
+  // him (Seasons' boss-room entry), 15 frames later: 9 more is the old 24.
+  ['hold', ['right'], 9],
   ['hold', ['down'], 12],
   // S164 (walking at Seasons' 1 px/f): the open-floor retreat added wins at
   // every entry hold swept, 4 to 32 frames.
@@ -1562,7 +1575,10 @@ export const ROUTE = [
   // S231 (bosses die Seasons' way; Anemos's wait 270): 52 loses. Swept
   // 0-200 by 2: wins scattered from 12 to 200; 16 and 58 leave 12/28, and
   // both run to THE END. 58.
-  ['wait', 58],     // S166: 58-70 win (waitInvuln, below), was 165
+  // S232 (Link walks himself 25 px in, Seasons' boss-room entry; stepping
+  // back would put him in the doorway, which tugs him out): swept 32-240 by
+  // 2 from where he stops; 96 leaves 12/28 as before, a frame later.
+  ['wait', 96],
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1590,7 +1606,7 @@ export const ROUTE = [
   ['dialogue', 900],
   ['loot', 1200],
   ['dialogue', 900],
-  ['wait', 240],
+  ['wait', 239],   // S232: 240 less the frame Gloomtide now falls later
 
   // ======================================================================
   // OUT OF THE SANCTUM, AND NORTH TO THE CLIFFSIDE CISTERN
@@ -1931,7 +1947,7 @@ export const ROUTE = [
   ['hold', ['right'], 20],
   ['tap', 'a', 30],
   ['hold', ['right'], 40],
-  ['wait', 120],
+  ['wait', 145],   // S232: Link walks himself in now (Seasons); swept 40-400 by 3, 145 ends the fight on the old frame, on 32/32
 
   // ---------------------------------------------------------------- d4 0,5,3
   // THE IRONKNIGHT GALLERY. The miniboss is not `g.boss` — a miniboss clears

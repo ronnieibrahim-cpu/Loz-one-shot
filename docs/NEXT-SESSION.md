@@ -1,3 +1,62 @@
+## S232 — into a boss's room Link walks himself in, and it is silent until the fight
+
+Branch claude/oracle-tides-s232-g0jc5v, off main at 516024b (S231).
+
+### The human's choices this session
+- S231's boss death (two-second flicker with the fight music on, then one
+  big explosion): FEELS RIGHT. Keep; do not re-ask.
+- Seasons' boss-room entry (music cut, Link walks himself in, the boss's
+  theme when the fight starts): YES, match Seasons.
+  (docs/briefs/s232/boss-entry.gif and boss-entry-strip.png, before/now.)
+
+### Built
+- BOSS-ROOM ENTRY (commonBossCode.s enemyBoss_initializeRoom, link.s
+  linkState0b): scrolling into a room with a boss or miniboss whose entrance
+  pose is still running (`Game.bossWaiting`), Link walks on the way he came
+  for BOSS_ENTRY_WALK_FRAMES 25 (derived: wLinkStateParameter $1a, counter
+  decremented before each move; Ages $16), the d-pad, A, B, START and SELECT
+  ignored (`forcedPad` swapped in for the player's update only; the menu
+  check skipped). Only by a scroll, as in Seasons (SCROLLMODE_01 returns
+  early): stairs, warps, a load and the eye loop do not walk him.
+- SILENCE: `updateMusic` stops the music while `bossWaiting()`; the boss
+  calls it again when its intro reaches 0 (was: switched to the boss track
+  at half the intro, and the boss track was already playing from the door).
+  Minibosses the same (their 40-frame intro, then 'miniboss').
+- Audio.stop also clears a track asked for before the sound unlocked.
+- ROBOT: `exit` waits out the walk (then 4 frames) instead of its 10 extra
+  steps. Route lined up to S231's run FRAME FOR FRAME, every boss on its old
+  frame and hearts: Clawcrab and Gohmaraq and Anemos step back 16 and turn
+  on 1 (`hold`), wait - 32; the Reefguard's hold ran out inside the walk
+  (fight ends 3 px west), its second conch note waits 137; Bogmaw's
+  `hold right` 24 -> 9; Gloomtide (stepping back puts Link in the doorway,
+  which TUGS HIM OUT) swept: wait 58 -> 96 ends it a frame late on 12/28,
+  and the wait after the Sanctum 240 -> 239 gives the frame back; the Iron
+  Knight (doorway again) swept: wait 120 -> 145 ends on the old frame,
+  32/32. D4's boss, D5 and D6 are entered on long holds and needed nothing.
+- test.mjs: the miniboss-music test now expects silence during the pose; a
+  new test scrolls into the Clawcrab den and proves the walk, the ignored
+  buttons, the stand after, the silence and the tune.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 6, 316912 frames
+(identical to S231). test.mjs 140/140. Whole table: 67 tools two at a time, all exit 0 after two fixes —
+check-side's Eyrie run threw the coin inside the walk (wait 20 -> 50, now
+wins on 24/64, was 12) and replay's d1-clawcrab-den-wide was re-recorded
+(it walks into the den: the walk IS the change). check-side 78/78;
+watch-cutscenes alone, 23 scenes, no fault; npm run build then
+check-build OK; check-drift OK; check-rippers last, alone, 45/45.
+
+### Not done / candidates
+- Seasons drops a miniboss's loot and spawns the Heart Container when the
+  explosion ENDS (decNumEnemies / dungeonScript_bossDeath); ours drops at its
+  start and the Essence 70 frames later.
+- Seasons' bosses each start on their own cue (Aquamentus lands, Manhandla
+  once the shutters are down: wcc93); ours on its `intro` count, which is
+  still guessed (BOSS_INTRO_FRAMES 80, specs 40-120). Boss-room shutters
+  closing behind Link are not modelled.
+- Side-scrolling passages; the urchin's shield; the guide's old shots;
+  check-placement and the loose key's hold (S230's list).
+
 ## S231 — bosses die Seasons' way: a flicker, then one big explosion; Ages for all work
 
 Branch claude/oracle-tides-s231-z0e6ai, off main at 3a987ea (S230).

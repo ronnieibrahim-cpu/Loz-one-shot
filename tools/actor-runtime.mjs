@@ -938,6 +938,14 @@ export async function installRuntime() {
       // which is how a `fight` in the room you just entered turns into a fight
       // in the room you just left.
       if (now !== was && !g.transition && !g.fadeDir && !g.dialogue.active) {
+        // Into a boss's room Link walks himself in (S232, Seasons'
+        // enemyBoss_initializeRoom): nothing pressed counts until he stops,
+        // and he is well clear of the seam by then.
+        if (g.entryWalk > 0) {
+          while (g.entryWalk > 0) yield m;
+          yield* dWait(4);
+          return;
+        }
         for (let i = 0; i < 10; i++) yield m;
         yield* dWait(4);
         return;

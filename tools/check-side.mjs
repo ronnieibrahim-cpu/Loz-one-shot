@@ -610,7 +610,10 @@ const SCENARIOS = [
       ['wait', 90],
       ['goto', 13, 5, 300],
       ['hold', ['right'], 40],
-      ['wait', 20],
+      // S232: into the Gustharpy's room Link walks himself in (Seasons'
+      // boss-room entry) and the coin is not thrown until he stops; from
+      // there 46-50 win on 24 quarter-hearts (was 20, on 12).
+      ['wait', 50],
       ['use', 'coin', 1, 30],
       ['dialogue', 200],
       ['tide', 0, 20, 600],
