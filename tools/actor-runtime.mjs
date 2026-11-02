@@ -880,7 +880,10 @@ export async function installRuntime() {
       // eating a touch every invulnerability window — eight in a row off the
       // Abyssal Keep's urchin (S150, where contact became the cartridge's
       // 12x12). A person swings at it. Only when the sword is on a button.
-      const blocker = bodyAhead(g, p, wx - p.x, wy - p.y);
+      // Not sunk on the seafloor or swimming: there the sword cannot be
+      // swung, and pressing for it stood the diver still until his breath
+      // ran out (S229, the salvage dive's crab once it lost its shield).
+      const blocker = p.underwater || p.inDeep ? null : bodyAhead(g, p, wx - p.x, wy - p.y);
       if (blocker && slotBit('sword')) {
         const bx = blocker.cx - p.cx, by = blocker.cy - p.cy;
         const face = Math.abs(bx) > Math.abs(by) ? (bx > 0 ? 'right' : 'left') : (by > 0 ? 'down' : 'up');
