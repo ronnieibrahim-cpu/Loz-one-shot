@@ -50,7 +50,7 @@ import {
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
   PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
-  HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, SHIELD_SHOVE_LINK, ENEMY_KNOCK_SPEED,
+  HITSTOP_HURT_FRAMES, BELT_SPEED, SHIELD_BUMP, SHIELD_SHOVE_LINK, SWORD_CLASH, ENEMY_KNOCK_SPEED,
 } from '../data/feel.js';
 
 // THE SWORD AS SEASONS DRAWS IT (S173). The blade is its own object
@@ -943,10 +943,12 @@ export class Player extends Entity {
     const box = this.swordBox(game);
     this.bladeCollect(game, box);
     this.bladeDeflect(game, box);
+    if (this.knockTime === 0) this.swordClash(game, box, 1, null);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden || e.invuln > 0) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
-      e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_HOLD), this);
+      if (e.spec && e.spec.swordGuard && e.guarding(game)) continue;   // its sword turns it: nothing
+      e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_HOLD), this, 'held');
       this.startPoke(game, false);
       return;
     }
@@ -1058,12 +1060,13 @@ export class Player extends Entity {
     const box = this.swordBox(game, phase);
     this.bladeCollect(game, box);
     this.bladeDeflect(game, box);
+    this.swordClash(game, box, 0, this.swingHit);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.swingHit.add(e.id);
         e.hurt(game, this.swordHit(game), this.dir,
-          this.swordKnock(game, this.swordLevel >= 2 ? KNOCK_SWORD_L2 : KNOCK_SWORD), this);
+          this.swordKnock(game, this.swordLevel >= 2 ? KNOCK_SWORD_L2 : KNOCK_SWORD), this, 'swing');
       }
     }
     // Bushes and grass are cut by the blade at full reach, as the cartridge
@@ -1105,6 +1108,43 @@ export class Player extends Entity {
       if (!e.deflects || e.deflected > 0 || e.remove || e.fromPlayer) continue;
       if (rectOverlap(box, e.contactRect())) e.deflect(game, true);
     }
+  }
+
+  /**
+   * SWORDS CLASH (S229): Link's blade meets a sword darknut's guarding blade
+   * (Enemy.guardBlade, PART_ENEMY_SWORD): a clink between them, both shoved
+   * apart, nobody hurt and nobody flashing — SWORD_CLASH row `row` (0 a
+   * swing, 1 the held blade). The spin never meets it (ENEMYCOLLISION_ENEMY_
+   * SWORD gives ITEMCOLLISION_SWORDSPIN nothing). A swing clashes with each
+   * once (`seen`, its hit list, which also spares the body for the swing).
+   */
+  swordClash(game, box, row, seen) {
+    for (const e of game.entities) {
+      if (!e.isEnemy || !e.spec || !e.spec.swordGuard || (seen && seen.has(e.id))) continue;
+      const b = e.guardBlade(game);
+      if (!b || !rectOverlap(box, b)) continue;
+      if (seen) seen.add(e.id);
+      const [linkKnock, linkInv, foeKnock, foeInv] = SWORD_CLASH[row];
+      const me = knockVector(this, null, e, PLAYER_KNOCK_SPEED);
+      if (me && !this.underwater) {
+        this.knockX = me[0]; this.knockY = me[1];
+        this.knockTime = linkKnock; this.hurtTime = linkKnock;
+        this.bumping = true;
+      }
+      this.invuln = Math.max(this.invuln, linkInv);
+      const it = knockVector(e, null, this, ENEMY_KNOCK_SPEED);
+      if (it) { e.knockX = it[0]; e.knockY = it[1]; e.knockTime = foeKnock; }
+      if (!e.invuln) e.invuln = foeInv;
+      this.clinkBetween(game, box, b);
+      game.audio.sfx('shieldBump');
+    }
+  }
+
+  /** INTERAC_CLINK half way between two boxes (createClinkInteraction). */
+  clinkBetween(game, a, b) {
+    const x = ((a.x + a.w / 2) + (b.x + b.w / 2)) / 2, y = ((a.y + a.h / 2) + (b.y + b.h / 2)) / 2;
+    game.spawnEffect('spark', Math.round(x) - 8, Math.round(y) - 8);
+    game.audio.sfx('block');
   }
 
   /** Cut the tile under the blade's point `k` (SWORD_CUT_POINTS: 0..7
@@ -1198,7 +1238,7 @@ export class Player extends Entity {
         this.spinHit.add(e.id);
         // Twice a swing's damage: swordParent.s @state3 doubles the blade's
         // var3a (`sla`) as the spin starts.
-        e.hurt(game, this.swordHit(game) * 2, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
+        e.hurt(game, this.swordHit(game) * 2, this.dir, this.swordKnock(game, KNOCK_SPIN), this, 'spin');
       }
     }
     const [card, diag] = SPIN_STEP_FRAMES;
@@ -1587,14 +1627,23 @@ export class Player extends Entity {
       if (this.z > 6 && !e.flying) continue;      // jumped over it
       // The cartridge's rule: Link's 12x12 against the enemy's own box, both
       // on the middle of the sprite — not the two walking footprints.
-      if (!rectOverlap(this.contactRect(), e.contactRect())) continue;
+      // A sword darknut's guarding blade hurts to walk into as its body does
+      // (ENEMYCOLLISION_ENEMY_SWORD: ITEMCOLLISION_LINK = DAMAGE_LINK), and
+      // the shield meets it with a clink (COLLISIONEFFECT_SHIELD_BUMP_WITH_
+      // CLINK_HIGH_KNOCKBACK).
+      const mine = this.contactRect();
+      let blade = null;
+      if (!rectOverlap(mine, e.contactRect())) {
+        blade = e.spec && e.spec.swordGuard ? e.guardBlade(game) : null;
+        if (!blade || !rectOverlap(mine, blade)) continue;
+      }
       // "Sea creature" is the enemy's own terrain field, not where it happens
       // to be standing: a crab hauled onto dry land by the tide is still what
       // the Anemone's Gift protects you from.
       // What touching it does besides hurt: a gel latches on, a bubble takes
       // the sword. Called whether or not the hit lands, as the cartridge
       // reacts to the collision itself (var2a = ITEMCOLLISION_LINK).
-      if (this.shieldBump(game, e)) break;
+      if (this.shieldBump(game, e)) { if (blade) this.clinkBetween(game, mine, blade); break; }
       if (e.spec && e.spec.onTouchLink) e.spec.onTouchLink(e, game, this);
       if (e.harmless) break;
       this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });

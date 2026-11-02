@@ -545,6 +545,20 @@ export const BOSS_INVULN_FRAMES = 32;
  *  $20, knockbackCounter 0. */
 export const ENEMY_UNSHOVED_INVULN_FRAMES = 32;
 
+/** [Link's shove f, his invulnerability f, the foe's shove f, its
+ *  invulnerability f] — SWORDS CLASHING (S229): Link's blade meets a sword
+ *  darknut's guarding blade, a clink, the two shoved apart, nobody hurt and
+ *  nobody flashing (a negative counter counts without the flash). Row 0 is a
+ *  swing of the first or second sword, row 1 the held blade. derived from the
+ *  cartridge: data/seasons/objectCollisionTable.s ENEMYCOLLISION_ENEMY_SWORD
+ *  (PART_ENEMY_SWORD) gives ITEMCOLLISION_L1/L2_SWORD COLLISIONEFFECT_33
+ *  (LINKDMG_38 $f8/$08, ENEMYDMG_4c $f5/$09) and ITEMCOLLISION_SWORD_HELD
+ *  COLLISIONEFFECT_32 (LINKDMG_34 $fa/$06, ENEMYDMG_48 $f7/$07), both with
+ *  createClinkInteraction, code/collisionEffects.s; parts/enemySword.s hands
+ *  the knockback to the darknut. Link moves at PLAYER_KNOCK_SPEED, the
+ *  darknut at ENEMY_KNOCK_SPEED. */
+export const SWORD_CLASH = [[8, 8, 9, 11], [6, 6, 7, 9]];
+
 /** f — invulnerability granted to a boss when it changes phase. guessed. */
 export const BOSS_PHASE_INVULN_FRAMES = 20;
 

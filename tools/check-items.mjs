@@ -766,16 +766,17 @@ r = await page.evaluate(async () => {
   g.flushPending();          // addEntity queues; nothing sees it until flushed
   knight.dir = 'up';
   knight.invuln = 0;
-  // From the front, before: the shield holds.
-  const blocked = knight.hurt(g, 1, 'down', 0);
+  // From the front, before: its sword guards it (S229; the shield of ours
+  // before it), a swing from where Link stands doing nothing.
+  const blocked = knight.hurt(g, 1, 'down', 0, g.player, 'swing');
   knight.invuln = 0;
   g.player.rodCool = 0;
   ringResonance(g, g.player, 1);
   const locked = knight.rodLock;
-  const through = knight.hurt(g, 1, 'down', 0);
-  return { shield: knight.shield, blocked, locked, through, lockFrames: feel.ROD_LOCK_FRAMES };
+  const through = knight.hurt(g, 1, 'down', 0, g.player, 'swing');
+  return { metal: knight.metal, blocked, locked, through, lockFrames: feel.ROD_LOCK_FRAMES };
 });
-check('an armoured enemy blocks a frontal hit', r.shield && r.blocked === false, `shield=${r.shield}`);
+check('an armoured enemy blocks a frontal hit', r.metal && r.blocked === false, `metal=${r.metal}`);
 check('the Rod locks it rigid', r.locked === r.lockFrames, `rodLock=${r.locked}`);
 check('...and its armour is no use while it rings', r.through === true);
 

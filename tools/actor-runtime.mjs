@@ -880,7 +880,10 @@ export async function installRuntime() {
       // eating a touch every invulnerability window — eight in a row off the
       // Abyssal Keep's urchin (S150, where contact became the cartridge's
       // 12x12). A person swings at it. Only when the sword is on a button.
-      const blocker = bodyAhead(g, p, wx - p.x, wy - p.y);
+      // Not sunk on the seafloor or swimming: there the sword cannot be
+      // swung, and pressing for it stood the diver still until his breath
+      // ran out (S229, the salvage dive's crab once it lost its shield).
+      const blocker = p.underwater || p.inDeep ? null : bodyAhead(g, p, wx - p.x, wy - p.y);
       if (blocker && slotBit('sword')) {
         const bx = blocker.cx - p.cx, by = blocker.cy - p.cy;
         const face = Math.abs(bx) > Math.abs(by) ? (bx > 0 ? 'right' : 'left') : (by > 0 ? 'down' : 'up');
@@ -912,6 +915,8 @@ export async function installRuntime() {
         const toward = Math.abs(bx) > Math.abs(by) ? (bx > 0 ? 'left' : 'right') : (by > 0 ? 'up' : 'down');
         if (e.dir === toward) continue;
       }
+      // A sword darknut's blade turns the swing from where he stands (S229).
+      if (e.spec && e.spec.swordGuard && e.guarding(g)) continue;
       return e;
     }
     return null;
@@ -1485,14 +1490,19 @@ export async function installRuntime() {
        */
       const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
       const faceOn = (useX) => useX ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+      // A sword darknut (S229) guards the angles from its front round to
+      // its sword hand: facing f2 at it, Link stands at the angle opposite.
+      const POS = { left: 8, right: 24, up: 16, down: 0 };
       const shielded = (f2) => best.shield === 'all'
-        || (best.shield === 'front' && OPP[f2] === best.dir);
+        || (best.shield === 'front' && OPP[f2] === best.dir)
+        || (!!best.spec && !!best.spec.swordGuard && !(best.rodLock > 0)
+          && best.spec.swordGuard.arc[best.dir].includes(POS[f2]));
       let axisX = Math.abs(dx) >= Math.abs(dy);
       // Only if the other axis is already a standoff away: lining up on it
       // from closer means walking INTO the enemy to get level with it, and
       // since S150 its box is the cartridge's 12x12 on its middle. That is
       // how the Drinking Floor's crab took a run pinned to the bottom wall.
-      if (best.shield && shielded(faceOn(axisX)) && !shielded(faceOn(!axisX))) {
+      if ((best.shield || (best.spec && best.spec.swordGuard)) && shielded(faceOn(axisX)) && !shielded(faceOn(!axisX))) {
         const off = axisX ? dy : dx;
         if (Math.abs(off) >= NEAR) axisX = !axisX;
         else {

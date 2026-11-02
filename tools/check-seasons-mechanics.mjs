@@ -305,6 +305,47 @@ const r = await page.evaluate(async () => {
       block: sounds.includes('block'), hit: sounds.includes('enemyHit') };
     e.remove = true; step(1);
   }
+  // S229: the sword darknut (swordEnemies.s, parts/enemySword.s): its blade
+  // guards it from its front round to its sword hand; swords clash there.
+  {
+    const dk = (edir, lx, ly, ldir, o = {}) => {
+      g.enterMap('overworld', 0, 4, 7, 24, 80, 'right', { instant: true });
+      g.entities = g.entities.filter(x => !x.isEnemy && !x.isProjectile);
+      if (g.dialogue) g.dialogue.active = false;
+      const p = g.player;
+      p.knockTime = 0; p.hurtTime = 0; p.swinging = 0; p.spinning = 0; p.holding = false;
+      p.x = 80 + lx; p.y = 80 + ly; p.dir = ldir; p.invuln = 0; p.flicker = 0;
+      g.progress.hearts = g.progress.maxHearts;
+      const e = spawnEntity(g, 'darknut', 0, 0, {});
+      e.x = 80; e.y = 80; e.dir = edir; e.spec = { ...e.spec, ai() {} };
+      if (o.knock) { e.knockTime = 5; e.knockX = 0; e.knockY = 0; }
+      g.flushPending();
+      const sounds = []; const sfx0 = g.audio.sfx.bind(g.audio);
+      g.audio.sfx = (n, ...a) => { sounds.push(n); return sfx0(n, ...a); };
+      const h0 = g.progress.hearts, hp0 = e.hp, ex = e.x, ey = e.y, px = p.x, py = p.y;
+      const guard0 = e.guarding(g);
+      if (o.knock) { e.invuln = 0; e.hurt(g, 1, ldir, 16, p, 'swing'); }
+      else if (o.touch) { p.shielding = !!o.shield; p.updateContactDamage(g); }
+      else if (o.spin) { p.startSpin(g); step(40); }
+      else { p.swordLevel = o.level || 1; p.startSwing(g, o.level || 1); step(24); }
+      g.audio.sfx = sfx0;
+      const r = { guard0, dmg: hp0 - e.hp, eMoved: Math.hypot(e.x - ex, e.y - ey), lMoved: Math.hypot(p.x - px, p.y - py),
+        lost: h0 - g.progress.hearts, clink: sounds.includes('block'), thud: sounds.includes('shieldBump'), flash: p.flicker > 0 };
+      e.remove = true; p.shielding = false; step(1);
+      return r;
+    };
+    out.dk = {
+      front: dk('down', 0, 22, 'up'),                 // angle 16: guarded
+      side: dk('down', -24, 0, 'right'),              // angle 24: open
+      sideL2: dk('down', -24, 0, 'right', { level: 2 }),
+      back: dk('down', 0, -22, 'down'),               // angle 0: open
+      handSide: dk('right', 0, 20, 'up'),            // angle 16 facing right: open (8-13)
+      knocked: dk('down', 0, -22, 'down', { knock: true }),
+      spin: dk('down', 0, 20, 'up', { spin: true }),
+      blade: dk('down', -2, 15, 'up', { touch: true }),
+    };
+    out.dkClash = F.SWORD_CLASH[0];
+  }
   out.unshovedInv = F.ENEMY_UNSHOVED_INVULN_FRAMES;
   out.struck = { zol: struck('zol'), gel: struck('gel'), octorok: struck('octorok') };
   out.bumpExpect = { link: F.SHIELD_BUMP[0][0] * F.PLAYER_KNOCK_SPEED / 256, foe: F.SHIELD_BUMP[0][2] * F.ENEMY_KNOCK_SPEED / 256 };
@@ -383,6 +424,18 @@ check(`and shoves him back about ${BE.link} px and it about ${BE.foe} px, with S
 check('neither flashes, and he is not drawn hurt', !B.flashed && !B.hurtPose, J(B));
 check('with the shield up facing away, it hurts him', r.bumpBack.lost > 0 && !r.bumpBack.thud, J(r.bumpBack));
 check('with no shield up, it hurts him', r.bumpBare.lost > 0 && !r.bumpBare.thud, J(r.bumpBare));
+const DK = r.dk, DC = r.dkClash;
+check("a sword darknut's blade turns a swing from its front: no hit", DK.front.guard0 && DK.front.dmg === 0, J(DK.front));
+check(`and the swords clash with a clink: Link shoved about ${DC[0] * 1.25} px, it about ${DC[2] * 2} px, neither hurt nor flashing`,
+  DK.front.clink && DK.front.thud && Math.abs(DK.front.lMoved - DC[0] * 1.25) <= 1.5 && Math.abs(DK.front.eMoved - DC[2] * 2) <= 2
+  && DK.front.lost === 0 && !DK.front.flash, J(DK.front));
+check('from its side and from behind the swing lands', !DK.side.guard0 && DK.side.dmg > 0 && DK.back.dmg > 0 && !DK.side.clink, J([DK.side, DK.back]));
+check("facing right it does not guard from below (its arc is front round to its sword hand)", !DK.handSide.guard0, J(DK.handSide));
+check('the second sword shoves it no further than the first (low knockback)',
+  DK.sideL2.dmg > 0 && Math.abs(DK.sideL2.eMoved - DK.side.eMoved) <= 1, J([DK.side, DK.sideL2]));
+check('while shoved it guards from everywhere', DK.knocked.guard0 && DK.knocked.dmg === 0, J(DK.knocked));
+check('the spin attack goes through its guard', DK.spin.guard0 && DK.spin.dmg > 0, J(DK.spin));
+check('walking into its guarding blade hurts Link', DK.blade.lost > 0, J(DK.blade));
 check('no page errors', errors.length === 0, errors[0]);
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);
 await browser.close(); server.close();

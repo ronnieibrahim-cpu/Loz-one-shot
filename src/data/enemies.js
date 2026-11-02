@@ -158,11 +158,13 @@ export function installEnemies() {
     frames: ['crab_0', 'crab_1'],
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
-    shield: 'front',
     drops: 'common',
     // Seasons' sand crab (sandCrab.s): never stops; picks a direction and a
     // stretch, scuttles fast sideways and slowly up and down, and picks again
-    // when the stretch ends or something stops it. Its shield faces its way.
+    // when the stretch ends or something stops it. No shield (S229, the
+    // human's choice): its collision is ENEMYCOLLISION_STANDARD_ENEMY
+    // (enemyData.s $1a: $90), so every blow lands; ours used to turn hits
+    // from the way it walked.
     port: 'sandCrab.s',
     speed: CRAB_SPEED_SIDE,
     ai(e, g) {
@@ -804,7 +806,7 @@ export function installEnemies() {
     },
   });
 
-  // --- Darknut: armoured knight, only vulnerable from behind ------------
+  // --- Darknut: armoured knight whose sword guards it -------------------
   defineEnemy('darknut', {
     hp: 6, damage: 3, pal: 'enemyr', rate: 10,
     // Its sword as the sheet draws it: held down below it facing Link, up
@@ -824,12 +826,31 @@ export function installEnemies() {
     },
     // S166: its hand-drawn braced pose is gone; Seasons' darknut has none.
     hb: { x: 2, y: 4, w: 12, h: 11 },
-    shield: 'front',
+    // ITS SWORD GUARDS IT (S229, the human's choice; there was a shield of
+    // ours on its front). Seasons' swordEnemy_checkIgnoreCollision @angleBits:
+    // facing up it turns Link's blade from angles 0-5, right 8-13, down
+    // 16-21 and left 19-24 (its front round to its sword hand), and from
+    // everywhere while shoved. PART_ENEMY_SWORD (parts/enemySword.s
+    // @table_524d, [y, x] from its middle per walking frame, and
+    // @table_525d's radii [y, x]) is the blade Link's own meets and clashes
+    // with, and that hurts him to walk into while it guards.
+    swordGuard: {
+      arc: {
+        up: [0, 1, 2, 3, 4, 5], right: [8, 9, 10, 11, 12, 13],
+        down: [16, 17, 18, 19, 20, 21], left: [19, 20, 21, 22, 23, 24],
+      },
+      at: {
+        up: [[-8, 4], [-10, 4]], right: [[4, 7], [4, 9]],
+        down: [[7, -4], [9, -4]], left: [[4, -7], [4, -9]],
+      },
+      r: { up: [5, 2], down: [5, 2], right: [2, 5], left: [2, 5] },
+    },
+    metal: true,                     // the Resonance Rod still rings its armour
     drops: 'rich',
     // Seasons' sword darknut (swordEnemies.s): plods about the four
     // directions; when Link comes within 40 px it stops, squares up, and then
     // hounds him for a while, turning toward him a step every other frame,
-    // before plodding again. The shield on its front is ours: circle behind.
+    // before plodding again.
     port: 'swordEnemies.s',
     speed: DARKNUT_SPEED,
     ai(e, g) {

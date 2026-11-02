@@ -52,6 +52,7 @@ import { hash32 } from '../core/rng.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_UNSHOVED_INVULN_FRAMES,
+  KNOCK_SWORD, KNOCK_SWORD_L2,
   ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS,
   ENEMY_TURN_PAUSE_FRAMES,
   ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES,
@@ -120,6 +121,9 @@ export class Enemy extends Entity {
     // enemies simply never got one.
     if (this.terrain === 'water') this.caps = { jumping: false, swim: true, cutting: false };
     this.shield = spec.shield || null;
+    // Armour the Resonance Rod rings, though it carries no shield (the sword
+    // darknut, S229: its guard is its blade, and it is still armour).
+    this.metal = !!spec.metal;
     // Light enough for the Squall Bellows to shove. Fliers, floaters and
     // slimes are; anything armoured or anchored is not. See docs/ITEMS.md.
     this.light = opts.light != null ? opts.light : !!spec.light;
@@ -420,7 +424,38 @@ export class Enemy extends Entity {
     game.onEnemyDefeated(this, false);
   }
 
-  hurt(game, dmg, dir, knock, from) {
+  /**
+   * THE SWORD THAT GUARDS (S229; Seasons' sword darknut, swordEnemies.s
+   * swordDarknut_updateEnemyCollisionMode / swordEnemy_checkIgnoreCollision).
+   * A spec's `swordGuard` holds, per facing, the angles (0..31, clockwise
+   * from up) from which Link's blade is turned by the enemy's own — its
+   * front round to its sword hand — and while it is being knocked back it
+   * guards from everywhere. Stunned, dead or going, it does not.
+   */
+  guarding(game) {
+    const gd = this.spec.swordGuard;
+    // Rung by the Resonance Rod (rodLock, with its stun) it cannot guard.
+    if (!gd || this.dead || this.dying || this.hidden || this.stun > 0 || this.rodLock > 0 || this.holeFall > 0) return false;
+    if (this.knockTime > 0) return true;
+    if (!game.player) return false;
+    return gd.arc[this.dir].includes(angleToward(this, game));
+  }
+
+  /**
+   * The guarding blade's own box, or null when it is not guarding:
+   * PART_ENEMY_SWORD (parts/enemySword.s) stands at the facing's offset for
+   * the walking frame and has collisions only while its darknut guards.
+   */
+  guardBlade(game) {
+    const gd = this.spec.swordGuard;
+    if (!gd || !this.guarding(game)) return null;
+    const k = Math.floor(this.animTick / this.rate) % 2;
+    const [dy, dx] = gd.at[this.dir][k];
+    const [ry, rx] = gd.r[this.dir];
+    return { x: this.cx + dx - rx, y: this.cy + dy - ry, w: rx * 2, h: ry * 2 };
+  }
+
+  hurt(game, dmg, dir, knock, from, kind) {
     // Going down a hole, it has no collisions left (@touchedHazard).
     if (this.holeFall > 0) return false;
     // No collisions at all (the beamos, ENEMYCOLLISION_00): a blow passes it.
@@ -434,6 +469,18 @@ export class Enemy extends Entity {
     // Rung. Armour that is ringing is armour that is not blocking — locking a
     // darknut rigid would be a stun, and a stun is not an answer to armour.
     if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock, from);
+    // A sword darknut's body against Link's blade (objectCollisionTable.s):
+    // guarding, a swing or the held blade does nothing at all (ENEMYCOLLISION_
+    // DARKNUT_BLOCKED_WITH_SWORD; the clash is the blade's, Player.swordClash),
+    // while the spin, a thrown thing, a bomb and the beam still land.
+    // Unguarded (ENEMYCOLLISION_DARKNUT), the second sword shoves it only as
+    // far as the first (COLLISIONEFFECT_SWORD_LOW_KNOCKBACK) and the held
+    // blade not at all (COLLISIONEFFECT_SWORD_NO_KNOCKBACK).
+    if (this.spec.swordGuard && (kind === 'swing' || kind === 'held')) {
+      if (this.guarding(game)) return false;
+      if (kind === 'held') return this.hurtUnshoved(game, dmg, dir, from);
+      if (from && from.swordLevel >= 2) knock = knock * KNOCK_SWORD / KNOCK_SWORD_L2;
+    }
     if (this.shield && dir) {
       // A shielded enemy blocks hits arriving at its facing side.
       const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -448,12 +495,16 @@ export class Enemy extends Entity {
     // Seasons' zol, gel and pincer take every blow of Link's without moving
     // (COLLISIONEFFECT_SWORD_NO_KNOCKBACK -> ENEMYDMG_0c) and stay safe for
     // longer than a shoved enemy does.
-    if (this.spec.unshoved && knock) {
-      if (!super.hurt(game, dmg, dir, 0, from)) return false;
-      if (!this.dead) { this.invuln = ENEMY_UNSHOVED_INVULN_FRAMES; this.flicker = this.invuln; }
-      return true;
-    }
+    if (this.spec.unshoved && knock) return this.hurtUnshoved(game, dmg, dir, from);
     return super.hurt(game, dmg, dir, knock, from);
+  }
+
+  /** A blow that does not shove (ENEMYDMG_0c): damage, no knockback, and
+   *  ENEMY_UNSHOVED_INVULN_FRAMES safe and flashing. */
+  hurtUnshoved(game, dmg, dir, from) {
+    if (!super.hurt(game, dmg, dir, 0, from)) return false;
+    if (!this.dead) { this.invuln = ENEMY_UNSHOVED_INVULN_FRAMES; this.flicker = this.invuln; }
+    return true;
   }
 
   /**

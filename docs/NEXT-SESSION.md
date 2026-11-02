@@ -1,3 +1,71 @@
+## S229 — the darknut guards with its sword; the crab loses its shield
+
+Branch claude/oracle-tides-s229-x3dk8l, off main at b2293f3 (S228).
+
+### The human's choices this session
+- S228's three changes (zols/gels/pincers unshoved, the beamos statue, shots
+  through a flashing Link): ALL FEEL RIGHT. Keep; do not re-ask.
+- THE DARKNUT: make it like Seasons (shown docs/briefs/s229/
+  darknut-guard-arcs.png, ours vs Seasons' guarded angles). Then shown
+  docs/briefs/s229/darknut-sword-guard.gif (the clash, then a hit from its
+  open side) — no answer yet at the time of writing; ask how it feels.
+- THE CRAB: take its shield off, like Seasons' sand crab. Not yet felt in
+  play; ask.
+
+### Built
+- SWORD DARKNUT'S GUARD (spec `swordGuard`, Enemy.guarding/guardBlade,
+  Player.swordClash; swordEnemies.s swordDarknut_updateEnemyCollisionMode,
+  swordEnemy_checkIgnoreCollision @angleBits, parts/enemySword.s). Facing
+  up it guards Link's angles 0-5, right 8-13, down 16-21, left 19-24 (front
+  round to its sword hand), and everywhere while knocked back; not while
+  stunned or rung. Guarding, the body takes NOTHING from a swing or the held
+  blade (ENEMYCOLLISION_DARKNUT_BLOCKED_WITH_SWORD); the spin, thrown things,
+  bombs, the beam still land. Its blade box (@table_524d offsets per facing
+  and walking frame, @table_525d radii) clashes with Link's swing / held
+  blade: clink between them (spark + `block`) and `shieldBump`, both shoved,
+  nobody hurt or flashing — SWORD_CLASH [[8,8,9,11],[6,6,7,9]] (LINKDMG_38/
+  ENEMYDMG_4c, LINKDMG_34/ENEMYDMG_48). Walking into the guarding blade hurts
+  Link like the body; his shield meets it with a clink. Unguarded
+  (ENEMYCOLLISION_DARKNUT): the Noble Sword's swing shoves it only KNOCK_SWORD
+  (low), the held blade not at all (hurtUnshoved, 32 f). Enemy.hurt now takes
+  a 6th `kind` ('swing' | 'held' | 'spin') from the three Player calls. Its
+  old `shield: 'front'` is gone; `metal: true` (new Enemy field, read by
+  ringResonance) keeps the Resonance Rod ringing its armour, and rung it
+  cannot guard.
+- CRAB: `shield: 'front'` removed (sandCrab.s, enemyData $1a: collision $90 =
+  STANDARD_ENEMY).
+- ROBOT (actor-runtime): treats a guarding darknut like a shield in its
+  approach and bodyAhead; never presses the sword while sunk or swimming
+  (it stood on the seafloor swinging at the dive's crab and drowned the
+  dive).
+- check-seasons-mechanics 45 -> 53 (the darknut: front blocked, the clash's
+  shoves, side/back land, the hand-side arc, L2 low knockback, guarding
+  while shoved, the spin through, the blade hurts). check-items' armour test
+  now uses the darknut's guard and `metal`.
+- Replay d1-descent re-recorded after the crab change: same room, same
+  pixel, same kills and flags, 47 frames later, 2 hearts fewer.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5 (Anemos, d2/1,3,1
+— up from 4 after the crab change), 317402 frames. The darknut change alone
+left the low-water at 4 and D6's own low point rose 8 -> 14. Whole table
+green (67 tools three at a time; check-side failed once on the dive and was
+fixed in the robot); watch-cutscenes alone; check-build after npm run build;
+check-rippers last, alone.
+
+### Not done / candidates
+- The robot's margin: Anemos leaves 5/24.
+- The urchin keeps `shield: 'front'` (ours, not a port). Other ports match
+  objectCollisionTable.s for the sword now (keese/wizzrobe differ only for
+  the boomerang, which we do not have; whisp is ours by design).
+- Seasons' sword moblin / sword stalfos share the same guard
+  (ENEMYCOLLISION_STALFOS_BLOCKED_WITH_SWORD); we have neither, but
+  `swordGuard` is generic if one is ever ported.
+- The guide's shop/house/cave/boss shots and D1 door/chest shots still show
+  old rooms/bar/door/key on the floor.
+- check-placement proves floor in front of a chest/sign, not that it can be
+  walked to. A loose key's one-frame hold (grab mode 1) is invisible.
+
 ## S228 — shots pass a flashing Link; zols, gels and pincers unshoved; the beamos a statue
 
 Branch claude/oracle-tides-s228-nh6pgx, off main at f03963c (S227).

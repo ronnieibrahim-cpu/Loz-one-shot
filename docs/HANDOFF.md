@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The robot is taught the enemy's old rules too (S229).** Taking the
+  crab's shield off made `bodyAhead` see it as a thing to swing at, and on
+  Dov's dive the robot stood on the seafloor pressing a sword that cannot be
+  swung underwater until the casks sank back. A change to how an enemy
+  blocks is also a change to actor-runtime's bodyAhead and approach; run
+  check-side, not only the playthrough.
+- **Seasons' darknut has no shield; its sword is a separate object (S229).**
+  swordDarknut_updateEnemyCollisionMode swaps its collision mode every frame
+  by Link's angle, and PART_ENEMY_SWORD carries the clash and the touch. A
+  sword enemy's guard is a collision MODE, not a hit filter on the body.
+
 - **A shot that vanishes on a flashing Link re-rolls the whole run (S228).**
   Seasons' checkLinkVulnerable skips every collision with an invincible
   Link, so his own shots fly on; making ours do so changed only Gohmaraq's
