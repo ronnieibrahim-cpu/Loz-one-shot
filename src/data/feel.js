@@ -1588,6 +1588,16 @@ export const ENEMY_BEACHED_FRAMES = 90;
 /** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
 export const BOSS_INTRO_FRAMES = 80;
 
+/** f — how long Link walks himself into a boss's or a miniboss's room after
+ *  scrolling into it, the d-pad ignored, at his ordinary walking speed.
+ *  derived from the cartridge (S232): oracles-disasm object_code/common/
+ *  enemies/commonBossCode.s, enemyBoss_initializeRoomWithoutExtraGfx sets
+ *  LINK_STATE_FORCE_MOVEMENT with wLinkStateParameter $1a in Seasons ($16 in
+ *  Ages), and link.s linkState0b decrements that counter BEFORE each move,
+ *  so he moves on $1a - 1 = 25 frames. Only when he came in by a scroll
+ *  (it returns early when wScrollMode has SCROLLMODE_01 set). */
+export const BOSS_ENTRY_WALK_FRAMES = 25;
+
 /** f — how long a beaten boss flickers before it goes up in its explosion:
  *  shown and hidden on alternate frames, nothing else happening to it.
  *  derived from the cartridge (S231): oracles-disasm object_code/common/

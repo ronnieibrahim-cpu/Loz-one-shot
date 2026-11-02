@@ -505,6 +505,9 @@ export class Audio {
   }
 
   stop() {
+    // Before the sound is unlocked too: a track asked for and then stopped
+    // must not start when the first button press unlocks the sound.
+    if (this._pendingTrack) this._pendingTrack = null;
     this.trackName = null;
     this._releaseAll();
   }

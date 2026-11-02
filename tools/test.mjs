@@ -1023,6 +1023,10 @@ const main = async () => {
     const out = { before: track() };
     const e = spawnEntity(g, 'clawcrab', 7, 3, {});
     g.updateMusic();
+    // Silent while it holds its entrance pose (S232, Seasons'
+    // enemyBoss_initializeRoom stops the music); its tune when it starts.
+    out.waiting = track();
+    e.intro = 1; e.update(g);
     out.during = track(); out.isBoss = !!e.isBoss;
     e.die(g);
     while (e.dying) e.update(g);
@@ -1032,7 +1036,46 @@ const main = async () => {
     return out;
   });
   check('a miniboss plays its own tune and gives the dungeon\'s back when it dies',
-    mini.before === 'dungeon' && mini.during === 'miniboss' && !mini.isBoss && mini.after === 'dungeon', JSON.stringify(mini));
+    mini.before === 'dungeon' && !mini.waiting && mini.during === 'miniboss' && !mini.isBoss && mini.after === 'dungeon', JSON.stringify(mini));
+
+  // INTO A BOSS'S ROOM LINK WALKS HIMSELF IN, AND IT IS SILENT (S232,
+  // Seasons' enemyBoss_initializeRoom): scrolling down into D1's Clawcrab
+  // den, he goes on down BOSS_ENTRY_WALK_FRAMES with nothing held and the
+  // B button and START do nothing; the music is stopped on the way in and
+  // the miniboss's tune starts as its entrance pose ends.
+  const entry = await G(async () => {
+    const g = window.__game;
+    const feel = await import('/src/data/feel.js');
+    const track = () => (g.audio.ok ? g.audio.trackName : g.audio._pendingTrack);
+    const save = JSON.stringify(g.progress);
+    const back = [g.mapId, g.room.floor || 0, g.room.rx, g.room.ry, g.player.x, g.player.y, g.player.dir];
+    g.enterMap('d1', 0, 5, 2, 108, 143, 'down', { instant: true });
+    const out = { before: track(), want: feel.BOSS_ENTRY_WALK_FRAMES };
+    g.input._raw.down = true;
+    for (let i = 0; i < 200 && !(g.room.key === '0,5,3' && !g.transition); i++) window.__harness.step(1);
+    g.input._raw.down = false;
+    out.room = g.room.key; out.walk = g.entryWalk; out.silent = track();
+    const y0 = g.player.y;
+    g.input._raw.b = true; g.input._raw.start = true;
+    window.__harness.step(2);
+    out.mode = g.mode;
+    g.input._raw.b = false; g.input._raw.start = false;
+    window.__harness.step(feel.BOSS_ENTRY_WALK_FRAMES);
+    out.walked = g.player.y - y0; out.walkLeft = g.entryWalk;
+    window.__harness.step(4);
+    out.stood = g.player.y - y0;
+    const boss = g.entities.find((e) => e._bossClass);
+    out.stillSilent = track();
+    for (let i = 0; i < 200 && boss && boss.intro > 0; i++) window.__harness.step(1);
+    out.after = track();
+    g.enterMap(...back, { instant: true });
+    Object.assign(g.progress, JSON.parse(save));
+    return out;
+  });
+  check('into a boss\'s room Link walks himself in, and it is silent until the boss starts',
+    entry.room === '0,5,3' && entry.walk === entry.want && !entry.silent && entry.mode === 'play'
+    && entry.walked === entry.want && entry.walkLeft === 0 && entry.stood === entry.walked
+    && !entry.stillSilent && entry.after === 'miniboss', JSON.stringify(entry));
 
   console.log('\n--- HUD, menu, save ---');
   // The menu comes and goes through Seasons' white fade (MENU_FADE_OPEN /

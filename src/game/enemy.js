@@ -648,12 +648,11 @@ export class Boss extends Enemy {
     if (this.intro > 0) {
       this.intro--;
       if (this.intro === 0 && this.spec.onIntro) this.spec.onIntro(this, game);
-      // Ask the game which track this fight wants rather than naming one:
-      // `updateMusic` reads the dungeon's own `bossMusic` and falls back to
-      // 'boss'. Hardcoding 'boss' here meant a dungeon that named its own boss
-      // theme still got the generic one for the whole entrance pose, and then
-      // switched — audibly — the moment anything else called updateMusic.
-      if (this.intro === Math.floor((this.spec.intro || BOSS_INTRO_FRAMES) / 2)) game.updateMusic();
+      // The room has been silent since Link came in (S232, Seasons'
+      // enemyBoss_initializeRoom); the fight's theme starts as the fight
+      // does. Ask the game which track rather than naming one: `updateMusic`
+      // reads the dungeon's own `bossMusic` and falls back to 'boss'.
+      if (this.intro === 0) game.updateMusic();
       return;
     }
 
