@@ -872,6 +872,9 @@ const main = async () => {
   const stop = await G(async () => {
     const g = window.__game;
     const feel = await import('/src/data/feel.js');
+    // Seasons freezes nothing (every HITSTOP_* is 0 since S231), so the
+    // mechanism is probed with a length of its own.
+    const FREEZE_PROBE = 18;
     // Same tile-avoidance as the combat section above: this is the last entry
     // into the room before the death-and-respawn checks, so it is what sets the
     // respawn point, and the zol sits on 72,56.
@@ -902,7 +905,7 @@ const main = async () => {
     // mechanism is still the boss's killing blow's, so it is armed by hand.
     e.hurt(g, 1, 'down', 0);
     const onHit = g.hitstop;
-    g.freeze(feel.HITSTOP_BOSS_DEATH_FRAMES);
+    g.freeze(FREEZE_PROBE);
     const armed = g.hitstop;
 
     // Step strictly fewer frames than the freeze lasts, holding right the
@@ -919,7 +922,7 @@ const main = async () => {
     g.player.invuln = 0;
     g.hitstop = 0;
     return {
-      armedIs: armed, onHit, want: feel.HITSTOP_BOSS_DEATH_FRAMES, hitHz: feel.HITSTOP_HIT_FRAMES, held,
+      armedIs: armed, onHit, want: FREEZE_PROBE, hitHz: feel.HITSTOP_HIT_FRAMES, held,
       frameAdvanced: during.frame - before.frame,
       playAdvanced: during.playFrames - before.playFrames,
       simMoved: during.moved, left: during.left,
@@ -929,7 +932,7 @@ const main = async () => {
   check('a landed hit freezes nothing, as in Seasons', !stop.noEnemy && stop.onHit === 0 && stop.hitHz === 0,
     `a hit armed ${stop.onHit}, HITSTOP_HIT_FRAMES ${stop.hitHz}`);
   check('a freeze arms for as long as asked', stop.armedIs === stop.want,
-    `armed ${stop.armedIs}, HITSTOP_BOSS_DEATH_FRAMES ${stop.want}`);
+    `armed ${stop.armedIs}, asked for ${stop.want}`);
   check('the freeze stops the entity simulation', stop.simMoved === false,
     'the player or the enemy moved while frozen');
   check('the freeze does NOT stop the frame counter', stop.frameAdvanced === stop.held,

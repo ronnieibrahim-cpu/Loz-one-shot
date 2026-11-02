@@ -924,7 +924,12 @@ export const ROUTE = [
   // his Essence, but the dice moved): 242 loses. Swept 150-358 by 4: wins at
   // 198 and 250-286 scattered; only those whose Bogmaw drops the fairy
   // (198/38, 198/46, 250/38, 254/28, 270/50, 282/40) reach D5. 198, on 12/24.
-  ['wait', 198],
+  // S231 (bosses die Seasons' way: a 120-frame flicker and one explosion,
+  // no bomb blasts drawing from the room's dice, so the Reefguard Hall's
+  // drops and every id after them moved): 198 loses. Swept 0-420 by 3: wins
+  // at 99, 207, 228, 270, 276, 294, 303, 315, 336, 339, 393; only 270 (on
+  // 11/24) also survives Bogmaw. 270.
+  ['wait', 270],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
@@ -1554,7 +1559,10 @@ export const ROUTE = [
   // S167 (no bomb drops before the bag): the plain reach swing now wins only
   // at 66-68 on 8 of 28; with BOTH retreats it wins at 28, 44, 52, 56-60 and
   // 66-68 (17/28 at 52, the S166 margin) and loses between. Thin; item 5.
-  ['wait', 52],     // S166: 58-70 win (waitInvuln, below), was 165
+  // S231 (bosses die Seasons' way; Anemos's wait 270): 52 loses. Swept
+  // 0-200 by 2: wins scattered from 12 to 200; 16 and 58 leave 12/28, and
+  // both run to THE END. 58.
+  ['wait', 58],     // S166: 58-70 win (waitInvuln, below), was 165
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is

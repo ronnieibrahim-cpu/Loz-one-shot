@@ -100,6 +100,9 @@ SFX = [
     ('doorClose', 'ROM_AGES'),
     # The Noble Sword's beam (S225): SND_SWORDBEAM, swordBeam.s @state0.
     ('swordBeam', 'ROM_SEASONS'),
+    # A boss going up (S231): SND_BIG_EXPLOSION, what PART_BOSS_DEATH_EXPLOSION
+    # plays as it appears (bossDeathExplosion.s @state0). No goto: it ends.
+    ('bigExplosion', 'ROM_SEASONS'),
 ]
 
 NOTES = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b']

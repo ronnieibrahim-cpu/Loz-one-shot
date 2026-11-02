@@ -42,6 +42,8 @@ const SFX = {
   // touches the ground (commonBombAndBraceletCode.s). The Anchor keeps `place`.
   bombDown: { seasons: 'bombLand' },
   explode: { seasons: 'explosion' },
+  // A beaten boss going up (S231): SND_BIG_EXPLOSION, bossDeathExplosion.s.
+  bossBoom: { seasons: 'bigExplosion' },
   fire: { seasons: 'lightTorch' },
   // THREE DEFINITIONS WERE REMOVED FROM HERE, and the removal is the point.
   // `dig`, `shoot` and `pegasus` were defined, correct, and played by nothing:

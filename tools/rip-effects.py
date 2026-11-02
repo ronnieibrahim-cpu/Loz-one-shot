@@ -35,6 +35,9 @@ gfx header GFXH_COMMON_SPRITES), and says exactly how to draw each:
   * THE EYEBALL (S211) is interaction $e2, INTERAC_STATUE_EYEBALL, from
     spr_polsvoice_hardhatbeetle_spikedbeetle_beamon: the Coral Spire's eye
     statues, with the pixel it moves to look (statueEyeball.s).
+  * THE BOSS'S EXPLOSION (S231) is part $04, PART_BOSS_DEATH_EXPLOSION, what
+    a boss turns into once its death flicker ends (commonBossCode.s
+    enemyBoss_dead), drawn by its animation 0 through part04OamDataPointers.
   * THE BLAST is ITEM_BOMB's animation 1 (itemAnimations.s, item03Animations)
     through item03OamDataPointers (itemOamData.s), with the tile base and oam
     flags itemInitializeBombExplosion (bombs.s) loads when the fuse ends.
@@ -307,6 +310,21 @@ def kill():
     return row[5], row[6], [(h, oam(po, ptrs[k])) for h, k in seq]
 
 
+def bossdeath():
+    """PART_BOSS_DEATH_EXPLOSION (S231): what a boss becomes when its flicker
+    ends (commonBossCode.s enemyBoss_dead): (base, flags, [(hold, entries)]).
+    partData.s row $04 gives the tile base and oam flags; its one animation
+    (partAnimation5740e) draws the fireballs drawing in, the blast and the
+    smoke going out, through part04OamDataPointers. 48x48 at its widest."""
+    rows = [dbs(l) for l in after(lines('partData.s'), 'partData') if l.strip().startswith('.db')]
+    row = rows[0x04]
+    anim = dws(lines('partAnimations.s'), 'part04Animations')[0]
+    ptrs = dws(lines('partAnimations.s'), 'part04OamDataPointers')
+    seq = sequence(lines('partAnimations.s'), anim)
+    po = lines('partOamData.s')
+    return row[5], row[6], [(h, oam(po, ptrs[k])) for h, k in seq]
+
+
 def blast():
     """ITEM_BOMB exploding: (base, flags, [(hold, entries)])."""
     ls = after(lines('bombs.s'), 'itemInitializeBombExplosion')
@@ -441,6 +459,7 @@ def build():
     cut('fx_hole', hole())
     cut('fx_kill', kill(), alt=True)
     cut('fx_boom', blast())
+    cut('fx_bossdie', bossdeath(), cell=48)
     cut('fx_leaves', debris(0x00), cell=48)
     cut('fx_wet', debris(0x03))
     cut('fx_shards', debris(0x06))
