@@ -65,7 +65,7 @@ import {
   ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
-  BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
+  BOSS_DEATH_FRAMES,
   SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
   HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
@@ -634,14 +634,14 @@ export class Boss extends Enemy {
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
 
+    // Seasons' enemyBoss_dead (S231): the beaten boss flickers, shown and
+    // hidden on alternate frames, for BOSS_DEATH_FRAMES, and then is replaced
+    // by ONE explosion on its middle (PART_BOSS_DEATH_EXPLOSION, with
+    // SND_BIG_EXPLOSION). No puff, and no draw from the random stream: the
+    // old run of bomb blasts scattered by `rng.float()` is gone.
     if (this.dying) {
       this.deathTime++;
-      if (this.deathTime % BOSS_DEATH_BOOM_EVERY === 0) {
-        game.spawnEffect('boom',
-          this.x + game.rng.float() * this.w - 8,
-          this.y + game.rng.float() * this.h - 8);
-      }
-      if (this.deathTime > BOSS_DEATH_FRAMES) { this.dying = false; super.die(game); }
+      if (this.deathTime >= BOSS_DEATH_FRAMES) { this.dying = false; this.explode(game); }
       return;
     }
 
@@ -719,12 +719,22 @@ export class Boss extends Enemy {
     this.dying = true;
     this.deathTime = 0;
     this.hp = 0;
-    // The heaviest freeze in the game, on the one hit it is worth spending it
-    // on. The music has just been cut on the line below, so what the player
-    // hears under the hold is the death sfx alone — which is the point.
+    // Seasons stops nothing on the killing blow (HITSTOP_BOSS_DEATH_FRAMES 0)
+    // and leaves the boss's music playing through the flicker; it plays
+    // SND_BOSS_DEAD once, here (enemyBoss_dead).
     game.freeze(HITSTOP_BOSS_DEATH_FRAMES);
-    game.audio.stop();
     game.audio.sfx('bossDie');
+  }
+
+  /** The flicker is over: the boss goes up in its explosion and is gone. */
+  explode(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    if (this.onDie) this.onDie(game);
+    game.spawnEffect('bossBoom', this.cx - 8, this.cy - 8 - this.z);
+    game.audio.sfx('bossBoom');
+    game.onEnemyDefeated(this);
   }
 
   spriteName() {
@@ -741,7 +751,7 @@ export class Boss extends Enemy {
   }
 
   draw(ctx, game, ox, oy) {
-    if (this.dying && (this.deathTime >> 1) % 2 === 0) return;
+    if (this.dying && this.deathTime % 2 === 1) return;
     const name = this.spriteName(game);
     const rig = BOSS_RIG[name];
     if (!rig) { super.draw(ctx, game, ox, oy); return; }

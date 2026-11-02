@@ -1012,10 +1012,13 @@ export const HITSTOP_HIT_FRAMES = 0;
  *  15521. It was 6. */
 export const HITSTOP_HURT_FRAMES = 0;
 
-/** f — freeze on the killing blow to a boss, before the death animation.
- *  guessed. Long enough to be a beat rather than a hitch, and it lands under
- *  the same moment `Game.bossDefeated` cuts the music. */
-export const HITSTOP_BOSS_DEATH_FRAMES = 18;
+/** f — freeze on the killing blow to a boss, before the death flicker: none.
+ *  derived from the cartridge (S231): oracles-disasm object_code/common/
+ *  enemies/commonBossCode.s, enemyBoss_dead starts the flicker on the frame
+ *  the boss's health runs out and stops nothing else; the kill hit is the
+ *  same collision effect as any other (HITSTOP_HIT_FRAMES). It was a guessed
+ *  18. */
+export const HITSTOP_BOSS_DEATH_FRAMES = 0;
 
 // SCREEN SHAKE.
 //
@@ -1585,11 +1588,20 @@ export const ENEMY_BEACHED_FRAMES = 90;
 /** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
 export const BOSS_INTRO_FRAMES = 80;
 
-/** f — length of a boss's death throes before the room clears. guessed. */
-export const BOSS_DEATH_FRAMES = 72;
+/** f — how long a beaten boss flickers before it goes up in its explosion:
+ *  shown and hidden on alternate frames, nothing else happening to it.
+ *  derived from the cartridge (S231): oracles-disasm object_code/common/
+ *  enemies/commonBossCode.s, enemyBoss_dead sets counter1 to 120 and calls
+ *  ecom_flickerVisibility (Enemy.visible xor $80) every frame it counts down,
+ *  then replaces the boss with PART_BOSS_DEATH_EXPLOSION. It was a guessed 72
+ *  of bomb blasts every 9 frames (BOSS_DEATH_BOOM_EVERY, gone). */
+export const BOSS_DEATH_FRAMES = 120;
 
-/** f — interval between explosions during a boss's death. guessed. */
-export const BOSS_DEATH_BOOM_EVERY = 9;
+/** f[] — how long each frame of the boss's explosion is held, in the order
+ *  sprites-effects.js lists `fx_bossdie*`. derived from the cartridge (S231):
+ *  oracles-disasm data/seasons/partAnimations.s, partAnimation5740e
+ *  (PART_BOSS_DEATH_EXPLOSION's one animation): 8 x6, 2, 6, 6, 4 x4. */
+export const BOSS_EXPLOSION_HOLDS = [8, 8, 8, 8, 8, 8, 2, 6, 6, 4, 4, 4, 4];
 
 /** f — delay between a boss dying and its essence appearing. guessed. */
 export const BOSS_ESSENCE_DELAY_FRAMES = 70;

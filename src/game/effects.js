@@ -7,7 +7,7 @@ import { sp } from '../core/fixed.js';
 import { noise2 } from '../core/rng.js';
 import { sprites } from '../gfx/art.js';
 import {
-  EXPLOSION_FRAMES, EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
+  EXPLOSION_FRAMES, EXPLOSION_HOLDS, BOSS_EXPLOSION_HOLDS, EXPLOSION_RADII, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
   DRY_KINDLING_FACTOR,
   PUFF_HOLDS, KILL_PUFF_HOLDS, KILL_PUFF_FLICKER,
   HOLE_FALL_HOLDS, HOLE_FALL_DRIFT_SPEED, HOLE_FOOT_DY,
@@ -165,6 +165,13 @@ export const EFFECTS = {
   // INTERAC_SPARKLE (S218): the twinkle, in orange, and in red (`sparkleRed`).
   sparkle: { frames: ['fx_twinkle0', 'fx_twinkle1', 'fx_twinkle2', 'fx_twinkle3'], holds: TWINKLE_HOLDS, own: true, w: 32, h: 32, centre: true },
   sparkleRed: { frames: ['fx_twinkleR0', 'fx_twinkleR1', 'fx_twinkleR2', 'fx_twinkleR3'], holds: TWINKLE_HOLDS, own: true, w: 32, h: 32, centre: true },
+  // PART_BOSS_DEATH_EXPLOSION (S231, bossDeathExplosion.s): what a boss
+  // becomes once its death flicker ends. 48x48, spawned on its middle.
+  bossBoom: {
+    frames: ['fx_bossdie0', 'fx_bossdie1', 'fx_bossdie2', 'fx_bossdie3', 'fx_bossdie4', 'fx_bossdie5', 'fx_bossdie6',
+      'fx_bossdie7', 'fx_bossdie8', 'fx_bossdie9', 'fx_bossdie10', 'fx_bossdie11', 'fx_bossdie12'],
+    holds: BOSS_EXPLOSION_HOLDS, own: true, w: 48, h: 48, centre: true, depth: 60,
+  },
   boom: { frames: ['fx_boom0', 'fx_boom1', 'fx_boom0', 'fx_boom2', 'fx_boom3', 'fx_boom4'], holds: EXPLOSION_HOLDS, own: true, w: 32, h: 32 },
   // An ember seed's fire (S219, item20's loop): what the Kilnshell's strike
   // burns with.

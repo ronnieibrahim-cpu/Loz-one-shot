@@ -102,6 +102,16 @@ oracles-disasm (github.com/Stewmath/oracles-disasm) holds the rest of Ages
 alongside Seasons. When the two disagree, pick whichever fits the place
 better and say which.
 
+**This stands for ALL future work, not one dungeon (the human, S231).**
+Every session may read Ages' CODE as well as its art — `ages.s`,
+`object_code/ages/`, `code/` and `scripts/ages/` in oracles-disasm, and the
+`.ifdef ROM_AGES` side of every shared file — and may rip anything Ages has
+(tilesets, sprites, sound effects, music, room layouts, enemy and object
+behaviour) into the game by the same rules as Seasons: through a ripper, into
+a generated file, with the credit kept. A look-through against "the
+originals" means both cartridges; when Seasons has no answer, look in Ages
+before drawing or guessing anything.
+
 **If no sheet has it, draw it to match.** Everything original to this game —
 the bosses, Nereth, the Essence orb, the tide valve, the Moon Conch, the
 tide-variant terrain — has to be indistinguishable in register from the

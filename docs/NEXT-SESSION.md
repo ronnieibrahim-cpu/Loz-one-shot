@@ -1,3 +1,54 @@
+## S231 — bosses die Seasons' way: a flicker, then one big explosion; Ages for all work
+
+Branch claude/oracle-tides-s231-z0e6ai, off main at 3a987ea (S230).
+
+### The human's choices this session
+- S230's side-on hovering fairy and the still floor treasures: BOTH FEEL
+  RIGHT. Keep; do not re-ask.
+- Boss (and miniboss) death the Seasons way (docs/briefs/s231/boss-death.gif,
+  boss-death-before.wav / boss-death-now.wav): YES. Not yet felt in play; ask.
+- STANDING: Oracle of Ages' code and assets are a reference for ALL future
+  work (CLAUDE.md's Ages rule, NEXT-PROMPT.md). A look-through compares both
+  cartridges; if Seasons has no answer, check Ages before drawing/guessing.
+
+### Built
+- BOSS DEATH (commonBossCode.s enemyBoss_dead): no freeze on the killing
+  blow (HITSTOP_BOSS_DEATH_FRAMES 18 -> 0, derived), the music no longer cut
+  at the blow (onBossDefeated still stops it at the explosion, then our
+  Essence jingle and music as before), SND_BOSS_DEAD once (it played twice).
+  The boss flickers on alternate frames for BOSS_DEATH_FRAMES 120 (derived;
+  was a guessed 72 of bomb blasts every 9 frames, BOSS_DEATH_BOOM_EVERY gone)
+  and is then replaced by ONE PART_BOSS_DEATH_EXPLOSION on its middle
+  (Boss.explode; effect `bossBoom`, 48x48 `fx_bossdie0-12`, ripped by
+  rip-effects.py `bossdeath()`, held BOSS_EXPLOSION_HOLDS from
+  partAnimation5740e) with SND_BIG_EXPLOSION (`bossBoom` sound,
+  rip-music.py `bigExplosion`, no goto). No puff. The old blasts drew from
+  the room's random stream; the new death draws nothing.
+- ROUTE: Anemos's wait 198 -> 270, Gloomtide's 52 -> 58 (see the comments).
+  Why the run moved: the Reefguard Hall's dice after the miniboss changed,
+  so its drops and every entity id after them did, and an enemy's rhythm is
+  a hash of its id (`every`, enemy.js).
+- test.mjs: the freeze mechanism is probed with its own 18; nothing freezes
+  the world now (hit, hurt, boss death all 0).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 6 (up from 5),
+316912 frames. Whole table: 69 tools three at a time, all exit 0 (replay
+untouched); watch-cutscenes alone; npm run build then check-build;
+check-rippers last, alone.
+
+### Not done / candidates
+- Seasons drops a miniboss's loot and spawns the Heart Container when the
+  explosion ENDS (decNumEnemies / dungeonScript_bossDeath); ours drops at its
+  start and the Essence 70 frames later (close to the 78-frame explosion).
+- Seasons restores the dungeon music at the explosion (wActiveMusic2) and has
+  no clear jingle; ours goes quiet for our Essence jingle (kept, ours).
+- Boss-room entry: Seasons stops the music and walks Link in
+  (enemyBoss_initializeRoom, LINK_STATE_FORCE_MOVEMENT $1a frames);
+  BOSS_INTRO_FRAMES is guessed. A candidate; it would move the route again.
+- Side-scrolling passages; the urchin's shield; the guide's old shots;
+  check-placement and the loose key's hold (S230's list).
+
 ## S230 — Seasons' own floor fairy, hovering; floor treasures sit still; drops cast a shadow
 
 Branch claude/oracle-tides-s230-z19f63, off main at da3d52c (S229).

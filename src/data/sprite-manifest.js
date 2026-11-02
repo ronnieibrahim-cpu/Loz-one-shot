@@ -48,7 +48,7 @@ export const REQUIRED_SPRITES = {
     ...seq('fx_beam', 4), ...seq('fx_beam', 4).map(n => n + 'b'),
     // S222: the grass at the feet in tall grass (terrainEffects.s).
     ...seq('fx_grass', 2)],
-  fxHuge: [...seq('fx_leaves', 8)],
+  fxHuge: [...seq('fx_leaves', 8), ...seq('fx_bossdie', 13)],
 
   // The status bar's own bold digits and "L-", cut from Seasons' gfx_hud
   // (tools/rip-hud-tiles.py): the level beside a levelled item, the count
