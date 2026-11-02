@@ -1148,6 +1148,13 @@ export const KEY_DOOR_HEIGHTS = [4, 8];
  *  @interleaveDoorTile counter1 = $06, counted by @state2Substate1. */
 export const DOOR_SLIDE_FRAMES = 6;
 
+/** f — how long a boss room's shut doors wait, once nothing is left to
+ *  fight, between the puzzle chime and starting to open. derived from the
+ *  cartridge: oracles-disasm scripts/common/commonScripts.s,
+ *  doorController_shutUntilEnemiesDead (checknoenemies, SND_SOLVEPUZZLE,
+ *  wait 8, then the door opens). */
+export const BOSS_DOOR_OPEN_DELAY_FRAMES = 8;
+
 /** f — how long the ground rumbles as a dungeon door opens to its key.
  *  guessed: Seasons' opening scenes are per door (the Gnarled Root's rises
  *  out of the ground); ours is one shake for every door. */
@@ -1612,9 +1619,6 @@ export const BOSS_DEATH_FRAMES = 120;
  *  oracles-disasm data/seasons/partAnimations.s, partAnimation5740e
  *  (PART_BOSS_DEATH_EXPLOSION's one animation): 8 x6, 2, 6, 6, 4 x4. */
 export const BOSS_EXPLOSION_HOLDS = [8, 8, 8, 8, 8, 8, 2, 6, 6, 4, 4, 4, 4];
-
-/** f — delay between a boss dying and its essence appearing. guessed. */
-export const BOSS_ESSENCE_DELAY_FRAMES = 70;
 
 /** f — delay between a boss dying and room music resuming. guessed. */
 export const BOSS_MUSIC_RESUME_FRAMES = 220;

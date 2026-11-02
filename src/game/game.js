@@ -81,14 +81,14 @@ import {
   ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN,
   DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY,
-  SHAKE_OFFSETS, BOSS_ESSENCE_DELAY_FRAMES,
+  SHAKE_OFFSETS,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_DIVISOR, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES,
   DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES,
   GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES,
-  DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS,
+  DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, BOSS_DOOR_OPEN_DELAY_FRAMES,
   LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
@@ -130,6 +130,7 @@ export class Game {
     this.room = null;
     this.mapId = null;
     this.boss = null;
+    this.bossPayout = null;
     this.shakeTime = 0;
     this.hitstop = 0;
     this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
@@ -181,6 +182,7 @@ export class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.bossPayout = null;
     this.race = null;
     this.dive = null;
     this.tide.clearOverrides();
@@ -206,6 +208,7 @@ export class Game {
     invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
+    this.bossPayout = null;
     this.race = null;
     this.dive = null;
     // A placed anchor is run state, not save state: reloading returns it to
@@ -283,6 +286,10 @@ export class Game {
     // tells you a door is locked once per screen (wInformativeTextsShown).
     this.doorSlides = null;
     this._infoBits = 0;
+    // A boss room's doors shut only while Link is in it (S233): the room
+    // outlives the visit, so anything shut is opened again on the way out,
+    // and it shuts again on the way back in if the boss is still there.
+    this.releaseBossDoors();
     if (this.room && this.room !== r) { this.room.clearGrown(); this.room.mendCracks(); if (!this.room._puzzleDone) this.room.resetFloor(); }
     this.room = r;
     // The eye loop's count lives only while Link goes round it (S211): any
@@ -372,6 +379,8 @@ export class Game {
     list.forEach((spec, i) => this.spawnSpec(room, spec, i));
     spawnRecordedChunks(this);
     this.spawnFallen();
+    // Walked out inside a boss's smoke: the prize is here when he comes back.
+    if (this.bossPayout) this.payBoss(this.bossPayout);
     this.flushPending();
   }
 
@@ -1070,11 +1079,93 @@ export class Game {
     let done = false;
     this.doorSlides = this.doorSlides.filter(s => {
       if (s.room !== this.room) return false;
+      if (s.shutting) return true;    // `updateBossDoors` owns a closing door
       if (--s.t > 0) return true;
       done = true;
       return false;
     });
     if (done) this.audio.sfx('doorSlide');
+  }
+
+  /**
+   * A BOSS ROOM SHUTS BEHIND LINK (S233, the human's choice: boss and
+   * miniboss rooms only). Seasons' boss rooms carry door controllers
+   * running doorController_shutUntilEnemiesDead: with enemies in the room,
+   * each door waits until Link is not touching it, then closes the way a
+   * key door opens backwards — half-shut for DOOR_SLIDE_FRAMES, still
+   * passable, SND_DOORCLOSE at both ends — and stays shut until no enemy is
+   * left, when SND_SOLVEPUZZLE plays and BOSS_DOOR_OPEN_DELAY_FRAMES later it
+   * slides open. Ours shuts every opened door in the ring (`dDoorOpen`); the
+   * shut tile is never saved, so a death, a load or leaving puts it back.
+   * OURS: where the cartridge sends Link back to the room's start if he is
+   * still on the door as it shuts (doorController @checkRespawnLink), ours
+   * waits for him to step off.
+   */
+  updateBossDoors() {
+    const room = this.room, p = this.player;
+    if (!room || !p || this.transition) return;
+    const alive = (e) => e.isEnemy && !e.dead && !e.remove;
+    const fighting = () => this.entities.some(alive) || this.pendingAdd.some(alive);
+    const onDoor = () => {
+      const r = p.rect();
+      return this.bossDoors.cells.some(([tx, ty]) =>
+        r.x < (tx + 1) * TILE && r.x + r.w > tx * TILE && r.y < (ty + 1) * TILE && r.y + r.h > ty * TILE);
+    };
+    if (this._bossDoorsFor !== room) {
+      const boss = (e) => e._bossClass && !e.dead && !e.remove;
+      if (!(this.entities.some(boss) || this.pendingAdd.some(boss))) return;
+      this._bossDoorsFor = room;
+      const cells = [];
+      if (room.cw === 15) {
+        for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
+          const ring = x === 0 || y === 0 || x === room.tw - 1 || y === room.th - 1;
+          if (ring && room.baseName(x, y) === 'dDoorOpen') cells.push([x, y]);
+        }
+      }
+      this.bossDoors = cells.length ? { room, cells, state: 'open', t: 0 } : null;
+    }
+    const b = this.bossDoors;
+    if (!b || b.room !== room) return;
+    if (b.state === 'open') {
+      if (this.entryWalk > 0 || !fighting() || onDoor()) return;
+      const shut = getTileDef('dDoorClosed');
+      for (const [tx, ty] of b.cells) {
+        const art = room.artAt(shut, tx, ty, this.tide);
+        const pal = room.palFor(shut, art);
+        const [ux, uy] = ty === room.th - 1 ? [0, 1] : tx === 0 ? [-1, 0] : tx === room.tw - 1 ? [1, 0] : [0, -1];
+        this.doorSlides = (this.doorSlides || []).filter(s => !(s.room === room && s.tx === tx && s.ty === ty));
+        this.doorSlides.push({ room, tx, ty, art, pal, ux, uy, t: DOOR_SLIDE_FRAMES, shutting: true });
+      }
+      this.audio.sfx('doorSlide');
+      b.state = 'shutting'; b.t = DOOR_SLIDE_FRAMES;
+    } else if (b.state === 'shutting') {
+      if (b.t > 0) b.t--;
+      if (b.t > 0 || onDoor()) return;
+      for (const [tx, ty] of b.cells) room.setTile(tx, ty, 'dDoorClosed');
+      if (this.doorSlides) this.doorSlides = this.doorSlides.filter(s => !(s.room === room && s.shutting));
+      this.audio.sfx('doorSlide');
+      b.state = 'shut';
+    } else if (b.state === 'shut') {
+      if (fighting() || this.entities.some(x => x.isEffect && x.onDone && !x.remove)) return;
+      // The boss's own payout chimes SND_SOLVEPUZZLE as the Essence appears
+      // (`payBoss`); the door's chime is the same sound, so it is not doubled.
+      if (this._bossChimed !== this.frame) this.audio.sfx('puzzle');
+      b.state = 'opening'; b.t = BOSS_DOOR_OPEN_DELAY_FRAMES;
+    } else if (b.state === 'opening') {
+      if (--b.t > 0) return;
+      for (const [tx, ty] of b.cells) this.slideDoorOpen(tx, ty);
+      this.bossDoors = null;
+    }
+  }
+
+  /** Leaving a boss room: whatever it shut is open again. */
+  releaseBossDoors() {
+    const b = this.bossDoors;
+    if (b && (b.state === 'shut' || b.state === 'opening')) {
+      for (const [tx, ty] of b.cells) b.room.setTile(tx, ty, 'dDoorOpen');
+    }
+    this.bossDoors = null;
+    this._bossDoorsFor = null;
   }
 
   /** The half-open doors: each shut door slid half a tile into its wall. */
@@ -1513,22 +1604,44 @@ export class Game {
       this.spawnEffect('puff', x.cx - 8, x.cy - 8);
       x.remove = true;
     }
-    // Boss death opens the way to the essence.
-    const room = this.room;
-    if (d && d.essence != null) {
-      this.frameLater(BOSS_ESSENCE_DELAY_FRAMES, () => {
-        this.audio.jingle('bossClear');
-        // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
-        // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
-        // the north-west corner.
-        const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
-        const ey = room.cw === 15 ? 4 : 3;
-        spawnEntity(this, 'essence', ex, ey, { index: d.index });
-      });
-    }
     // The boss track was stopped, so nothing would resume once the jingle ends.
     this.frameLater(BOSS_MUSIC_RESUME_FRAMES, () => this.updateMusic());
-    if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', e);
+  }
+
+  /**
+   * A boss's explosion has begun: note what the room owes, to be paid when
+   * the smoke clears (`payBoss`, S233; Seasons' bossDeathExplosion.s ->
+   * decNumEnemies -> dungeonScript_bossDeath). Keyed on the room, so that if
+   * Link walks out inside the smoke the prize waits for him there, as
+   * Seasons' room flag $80 spawns the Heart Container again on re-entry.
+   */
+  holdBossPayout(e) {
+    const r = this.room;
+    const pay = { boss: e, mapId: this.mapId, floor: r.floor, rx: r.rx, ry: r.ry, paid: false };
+    this.bossPayout = pay;
+    return pay;
+  }
+
+  /** The smoke has cleared: the Essence and the room's own prize appear. */
+  payBoss(pay) {
+    if (!pay || pay.paid) return;
+    const room = this.room;
+    if (!room || this.mapId !== pay.mapId || room.floor !== pay.floor || room.rx !== pay.rx || room.ry !== pay.ry) return;
+    pay.paid = true;
+    if (this.bossPayout === pay) this.bossPayout = null;
+    const d = this.map && this.map.dungeon;
+    // Boss death opens the way to the essence.
+    if (d && d.essence != null) {
+      this.audio.jingle('bossClear');
+      this._bossChimed = this.frame;
+      // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
+      // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
+      // the north-west corner.
+      const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
+      const ey = room.cw === 15 ? 4 : 3;
+      spawnEntity(this, 'essence', ex, ey, { index: d.index });
+    }
+    if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', pay.boss);
   }
 
   checkPuzzle() {
@@ -2542,6 +2655,7 @@ export class Game {
 
     this.updateBridge();
     this.updateDoorSlide();
+    this.updateBossDoors();
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
