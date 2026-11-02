@@ -32,7 +32,17 @@ Branch claude/oracle-tides-s230-z19f63, off main at da3d52c (S229).
   (itemDrop.s objectSetVisiblec1/c3); none on the ground (drawShadow z>1).
 
 ### Verified
-PLACEHOLDER_VERIFIED
+check-playthrough 49/49, THE END, never died, LOW-WATER 5 (Anemos, upstream
+of every change), 317359 frames (S229: 317402). The first run died to the
+Brinehulk: D4's West Overlook fairy expired one stride short (its life now
+starts at the hover); the route takes it before the keese with a 13-frame
+wait after, which puts every frame back through D5. D6's Sounding Room
+fairy is caught 9 frames later and the stalfos after it misses, so the
+Brinehulk wait was re-swept (152 -> 140, see the route's comment). Whole
+table green: 66 tools three at a time, every one exit 0 (replay untouched,
+no re-record: the bob and shadow are drawing only); watch-cutscenes alone;
+npm run build then check-build OK; check-rippers last, alone, 45/45 (two
+fewer: rip-fairies.py is gone).
 
 ### Not done / candidates
 - Seasons' side-scrolling underground passages (the footage shows one): a
