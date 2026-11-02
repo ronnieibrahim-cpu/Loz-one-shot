@@ -514,7 +514,10 @@ export const ROUTE = [
   ['dialogue', 300],
   ['exit', 'up', 400],
   ['hold', ['down'], 16], ['hold', ['up'], 1],   // S232: see the Clawcrab
-  ['wait', 256],    // S166: 288 with the two retreats below; see there. S232: -32
+  // S233 WIP (boss doors shut behind Link): the step back now stops at y 144
+  // against the shut door. Swept 185-420 by 1 with two option sets: 213
+  // with reachSwing + diagRetreat wins on 9/16 (was 6/16).
+  ['wait', 213],
 
   // ---------------------------------------------------------------- d1 0,3,1
   // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
@@ -529,7 +532,7 @@ export const ROUTE = [
   // every entry wait swept from 60 to 240 frames.
   // S166 (Seasons' 32-frame boss safety window, no shove): swept jointly
   // with the Clawcrab's wait; 240-288 win with both retreats, 288 on 10 of 16.
-  ['boss', 20000, null, { reachSwing: true, openRetreat: true, diagRetreat: true }],
+  ['boss', 20000, null, { reachSwing: true, diagRetreat: true }],
   ['wait', 300],
   // WALK ONTO THE ESSENCE BY HAND — `dLoot` cannot collect it: `Essence` has
   // no `isDrop`. It appears in the middle of the arena, tile 7,4.
@@ -1396,7 +1399,8 @@ export const ROUTE = [
   // S228 (Anemos's wait 198): 38-66 win on 8-9/28, but only 38 and 46 leave
   // Bogmaw's fairy for the loot after (28/28 into Gloomtide, who loses at
   // every wait swept on 9). 46.
-  ['wait', 46],
+  // S233 WIP (boss doors): swept 0-200 by 1; 41 alone leaves the fairy (18/28).
+  ['wait', 41],
   ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true }],
   ['wait', 120],
   ['dialogue', 400],
