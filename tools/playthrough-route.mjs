@@ -267,7 +267,7 @@ export const ROUTE = [
   ['loot', 500],
 
   // ---------------------------------------------------------------- d1 0,2,4
-  // West to the Crab Pit: three shielded crabs, and clearing it is the key.
+  // West to the Crab Pit: three crabs (shielded until S229), and clearing it is the key.
   ['travel', 2, 4, 2000],
   ['fight', 2400],
   ['dialogue', 300],

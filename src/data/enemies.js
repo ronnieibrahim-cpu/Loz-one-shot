@@ -158,11 +158,13 @@ export function installEnemies() {
     frames: ['crab_0', 'crab_1'],
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
-    shield: 'front',
     drops: 'common',
     // Seasons' sand crab (sandCrab.s): never stops; picks a direction and a
     // stretch, scuttles fast sideways and slowly up and down, and picks again
-    // when the stretch ends or something stops it. Its shield faces its way.
+    // when the stretch ends or something stops it. No shield (S229, the
+    // human's choice): its collision is ENEMYCOLLISION_STANDARD_ENEMY
+    // (enemyData.s $1a: $90), so every blow lands; ours used to turn hits
+    // from the way it walked.
     port: 'sandCrab.s',
     speed: CRAB_SPEED_SIDE,
     ai(e, g) {
