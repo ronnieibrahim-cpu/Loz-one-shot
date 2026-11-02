@@ -4,6 +4,14 @@
 - CLAUDE.md, all of it.
 - docs/NEXT-SESSION.md S230 and S229; docs/HANDOFF.md lessons (top ten).
 
+## Standing permission (the human, S231)
+- Oracle of Ages is a full reference for ALL work: read its code
+  (oracles-disasm's ages.s, object_code/ages/, scripts/ages/, the ROM_AGES
+  side of shared files) and rip its assets (tiles, sprites, sounds, music,
+  layouts, behaviour) exactly as Seasons'. Compare against both cartridges;
+  if Seasons has no answer, check Ages before drawing or guessing. CLAUDE.md
+  says the same under the Ages rule.
+
 ## State
 - S230: the floor fairy is Seasons' own (ITEM_DROP_FAIRY, ripped by
   rip-treasures.py; rip-fairies.py is gone), faces the way it flies,
