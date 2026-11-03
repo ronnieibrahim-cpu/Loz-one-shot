@@ -98,6 +98,23 @@ if (process.env.FRAMES) {
     };
   }, [a, b]);
 }
+// BOSSSTART=1 lists the frame each boss or miniboss starts its fight (its
+// wait for the shutters ends, S235), so a route's boss waits can be lined up
+// against another build's.
+if (process.env.BOSSSTART) await page.evaluate(async () => {
+  const { Boss } = await import('/src/game/enemy.js');
+  const orig = Boss.prototype.update;
+  window.__starts = [];
+  Boss.prototype.update = function (game) {
+    const before = this.intro;
+    const r = orig.call(this, game);
+    if (before > 0 && this.intro === 0) {
+      const tr = window.__rp._trace || [];
+      window.__starts.push(`step ${tr.length ? tr[tr.length - 1].step + 1 : 0} f${game.frame} ${game.mapId} ${game.room && game.room.key} ${this.kind || this.type}`);
+    }
+    return r;
+  };
+});
 // CHESTSIDES=1 opens every chest from whatever side the route stands on and
 // lists the ones that were not opened from the front (S224).
 if (process.env.GOD) await page.evaluate(() => { window.__god = true; });
@@ -130,6 +147,7 @@ const res = await page.evaluate(() => window.__rp.result());
 for (const t of res.trace.filter(t => t.step >= start)) console.log(`${String(t.step).padStart(4)} ${t.kind.padEnd(9)} f${String(t.frame).padStart(6)} ${t.room.padEnd(12)} ${String(t.x).padStart(4)},${String(t.y).padStart(3)} hp ${t.hp}/${t.maxHp} tide ${t.tide} foes ${t.foes} keys ${t.keys} ${t.foeKinds ? '[' + t.foeKinds + ']' : ''}`);
 const hits = await page.evaluate(() => window.__hits);
 if (process.env.FRAMES) for (const x of await page.evaluate(() => window.__frames)) console.log(x);
+if (process.env.BOSSSTART) for (const x of await page.evaluate(() => window.__starts)) console.log('START', x);
 if (process.env.CHESTSIDES) for (const x of await page.evaluate(() => window.__sides)) console.log('SIDE', x);
 if (process.env.SAYS) for (const x of await page.evaluate(() => window.__says)) if (x.includes(process.env.SAYS)) console.log('SAY', x);
 if (process.env.TIDEHOOK) for (const x of await page.evaluate(() => window.__tides)) console.log('TIDE', x); if (process.env.HITS) for (const h of hits) if (h.includes(process.env.HITS)) console.log('HIT', h);

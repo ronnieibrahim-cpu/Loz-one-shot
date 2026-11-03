@@ -64,7 +64,7 @@ import {
   ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE,
   ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
-  BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
+  BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_DEATH_FRAMES,
   SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
@@ -581,7 +581,6 @@ export function defineEnemy(name, spec) {
 //     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
 //     hurtFrame: 'boss_gohmaraq_hurt',
 //     rate: 10,
-//     intro: 90,                  // frames of held pose before it acts
 //     shell: true,                // ignores hits unless weakOpen is set
 //     phases: [                   // picked by remaining health fraction
 //       { above: 0.66, ai(e, g) {} },
@@ -607,7 +606,9 @@ export class Boss extends Enemy {
     // a Lens tide-affinity marker" for every `Boss` instance regardless.
     this._bossClass = true;
     this.oncePerGame = spec.oncePerGame !== false;
-    this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
+    // Waiting to start: held still until the room's shutters are down
+    // (S235; `Game.bossMayStart`). 1 while waiting, 0 once started.
+    this.intro = 1;
     this.phase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
@@ -645,14 +646,21 @@ export class Boss extends Enemy {
       return;
     }
 
+    // A BOSS STARTS WHEN THE SHUTTERS ARE DOWN (S235, the human's choice).
+    // Seasons' bosses each poll wcc93 — set by enemyBoss_initializeRoom,
+    // counted down by doorController as each shutter finishes closing — and
+    // do nothing until it reads 0 (aquamentus_state_spawner, gleeok,
+    // dodongo, manhandla, frypolar, agunima...). It was a guessed held pose
+    // of 40 to 120 frames (BOSS_INTRO_FRAMES, `intro` in each spec; gone).
     if (this.intro > 0) {
-      this.intro--;
-      if (this.intro === 0 && this.spec.onIntro) this.spec.onIntro(this, game);
+      if (game.bossMayStart && !game.bossMayStart()) return;
+      this.intro = 0;
+      if (this.spec.onIntro) this.spec.onIntro(this, game);
       // The room has been silent since Link came in (S232, Seasons'
       // enemyBoss_initializeRoom); the fight's theme starts as the fight
       // does. Ask the game which track rather than naming one: `updateMusic`
       // reads the dungeon's own `bossMusic` and falls back to 'boss'.
-      if (this.intro === 0) game.updateMusic();
+      game.updateMusic();
       return;
     }
 

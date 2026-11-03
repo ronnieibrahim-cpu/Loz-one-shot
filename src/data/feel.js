@@ -1592,9 +1592,6 @@ export const ENEMY_ALIGN_TOLERANCE = 12;
 /** f — how long an aquatic enemy survives on dry land after the tide drops. guessed. */
 export const ENEMY_BEACHED_FRAMES = 90;
 
-/** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
-export const BOSS_INTRO_FRAMES = 80;
-
 /** f — how long Link walks himself into a boss's or a miniboss's room after
  *  scrolling into it, the d-pad ignored, at his ordinary walking speed.
  *  derived from the cartridge (S232): oracles-disasm object_code/common/
