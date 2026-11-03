@@ -403,8 +403,12 @@ export const ROUTE = [
   // 15 frames later. Stepping back 16 and turning round on one more puts him
   // where and how he used to stand, 32 frames later, so the wait gives the
   // 32 back and the fight plays as it did (the same in every boss room).
-  ['hold', ['up'], 16], ['hold', ['down'], 1],
-  ['wait', 72],
+  // S234: the den now shuts behind him, its north gap and all, so the step
+  // back is gone (the wait counts as two do-nothing steps to keep the
+  // route's numbering). Swept 0-200 by 2 with and without it: 120 from
+  // where the walk leaves him wins on 10/12, and Gohmaraq after on 9/16.
+  ['wait', 0], ['wait', 0],
+  ['wait', 120],
   ['boss', 6000, 'clawcrab', { reachSwing: true, diagRetreat: true }],
   ['dialogue', 600],
   ['loot', 1500],
@@ -1096,9 +1100,12 @@ export const ROUTE = [
   // which is a pit at LOW; at MID it is wading, but the shaft is flooded.
   // Bite the Anchor beside the shaft at LOW, sound MID, and walk in: the held
   // patch keeps the hole open while the cellar fills.
+  // S234: thrown from 7,9 facing up first. The nearest approach (7,8)
+  // threw it onto the shaft, and the next (from 7,4) walked Link into the
+  // shaft itself — a fall and a heart, every run since S181.
   ['travel', 4, 5, 4000],
   ['equip', 'anchor', 'A', 400],
-  ['anchor', 7, 6, 1600],
+  ['anchor', 7, 6, 1600, [7, 9, 'up']],
   ['tide', 1, 140, 900],
   ['goto', 7, 7, 400],
   ['hold', ['up'], 60],
@@ -1400,8 +1407,12 @@ export const ROUTE = [
   // Bogmaw's fairy for the loot after (28/28 into Gloomtide, who loses at
   // every wait swept on 9). 46.
   // S233 WIP (boss doors): swept 0-200 by 1; 41 alone leaves the fairy (18/28).
-  ['wait', 41],
-  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true }],
+  // S234: the hall's west and north gaps shut behind him too, and every
+  // wait lost: the retreat pinned him in the south-west corner with Bogmaw
+  // on him. `cornerSwing` (see actor-runtime) swings out of it; swept 0-200
+  // by 2, 14 wins on 14/28 and the fairy after it makes 18.
+  ['wait', 14],
+  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true, cornerSwing: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
