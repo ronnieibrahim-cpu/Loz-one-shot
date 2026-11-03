@@ -53,7 +53,12 @@ with claude/oracle-tides-s233-doors-wip merged in.
 
 ### Verified
 check-playthrough 49/49, THE END, never died, LOW-WATER 5 (Anemos, 5/24 —
-was 6), 316170 frames. Whole table: see below.
+was 6), 316170 frames. Whole table, two at a time: every tool exit 0 after
+one fix — check-side's Bogwater Sanctum run planned its way out of Bogmaw's
+hall while the shutters were still down (travel found no route and the run
+froze); it waits 40 frames first now, 78/78. test.mjs 142/142; replay green
+unchanged; watch-cutscenes alone, 23 scenes, no fault; npm run build then
+check-build OK; check-rippers last, alone, 45/45.
 
 ### Not done / candidates
 - Seasons' bosses start on their own cue (Aquamentus waits for wcc93, the
