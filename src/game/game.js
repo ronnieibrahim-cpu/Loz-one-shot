@@ -1104,7 +1104,11 @@ export class Game {
   updateBossDoors() {
     const room = this.room, p = this.player;
     if (!room || !p || this.transition) return;
-    const alive = (e) => e.isEnemy && !e.dead && !e.remove;
+    // What cannot be killed is not counted: Seasons places a beamos with the
+    // enemy-data flag that leaves it out of wNumEnemies
+    // (objectLoading.s decEnemyCounterIfApplicable), or its shutters would
+    // never open. The Crossed Shafts keeps one beside the Brinehulk.
+    const alive = (e) => e.isEnemy && !e.dead && !e.remove && !e.spec?.intangible;
     const fighting = () => this.entities.some(alive) || this.pendingAdd.some(alive);
     const onDoor = () => {
       const r = p.rect();

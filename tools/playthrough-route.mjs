@@ -1593,7 +1593,11 @@ export const ROUTE = [
   // S232 (Link walks himself 25 px in, Seasons' boss-room entry; stepping
   // back would put him in the doorway, which tugs him out): swept 32-240 by
   // 2 from where he stops; 96 leaves 12/28 as before, a frame later.
-  ['wait', 96],
+  // S234: the boss door now shuts behind him. Swept 0-150 by 2 over five
+  // option sets: with `cornerSwing` added every wait from 0 to 32 wins on
+  // 6/28 (the same fight: the boss's own entrance swallows the difference),
+  // and every wait from 34 loses. 16, the middle.
+  ['wait', 16],
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1606,7 +1610,7 @@ export const ROUTE = [
   // S166: Seasons' 32-frame boss safety window — hold off while he is safe.
   // S167: `openRetreat` and `diagRetreat` both on (see the wait above) — the
   // S131 seed that openRetreat flipped is long gone.
-  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true }],
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true, cornerSwing: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —
