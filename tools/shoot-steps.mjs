@@ -58,4 +58,6 @@ for (let i = 0; i < 20000; i++) {
   if (r.done || r.error) { if (r.error) console.log('ERR', r.error); break; }
 }
 if (shots.includes('end')) { for (let i = 0; i < 2; i++) await page.evaluate(() => window.__rp.pump(1)); await snap(`${out}-end.png`); }
+// EVAL='<expr>' prints an expression read with the game as `g` at the end.
+if (process.env.EVAL) console.log('EVAL', await page.evaluate(src => { const g = window.__game; return JSON.stringify(eval(src)); }, process.env.EVAL));
 await browser.close(); server.close();
