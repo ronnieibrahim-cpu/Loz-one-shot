@@ -1,3 +1,77 @@
+## S234 — boss rooms shut behind Link, every way in; the robot finishes the game behind them
+
+Branch claude/oracle-tides-boss-doors-nfexil, off main at cb76026 (S233),
+with claude/oracle-tides-s233-doors-wip merged in.
+
+### The human's choices this session
+- S233's boss prizes appearing when the explosion clears: FEELS RIGHT. Keep;
+  do not re-ask.
+- The shutting boss doors (said YES in S233): finished; picture sent
+  (docs/briefs/s234/boss-doors.png — Seasons' Aquamentus room drawn from the
+  cartridge's own room data and tiles, open and shut, beside our Clawcrab den
+  walking in / half shut / shut). Ask how they feel in play.
+
+### Built
+- S233's parked `Game.updateBossDoors` merged in. It only shut ring cells that
+  were `dDoorOpen`, so a room entered through a plain gap in its wall (the
+  Clawcrab den, Reefguard Hall, Bogmaw Hall, Tideshade Hall, the Crossed
+  Shafts, the three optional dungeons' bosses) never shut — the very room the
+  S233 mock showed. Now every ring cell that is not wall, not a closed or
+  locked door and not a warp is shut, and each remembers its own tile: a gap
+  slides open back to its floor with nothing written to the save
+  (`openDoorAt` is only used for real doors). Rooms whose door is already a
+  puzzle-shut `dDoorClosed` (Ironknight, Thornvine) keep that door's own rule.
+- An intangible enemy (the beamos) does not hold the doors: Seasons places it
+  with the enemy-data flag that leaves it out of wNumEnemies
+  (objectLoading.s decEnemyCounterIfApplicable). Without this the Crossed
+  Shafts stayed shut for ever after the Brinehulk.
+- test.mjs: the den shuts after the walk, waits while Link stands in the gap,
+  opens after the smoke, and is open again on re-entry (142/142).
+- shoot-steps.mjs draws the frame before capturing it (the S233 stale-canvas
+  lesson); the Seasons room picture came from a scratch script reading
+  oracles-disasm's rooms/seasons/large/room0512.bin (group 4 room $12 is
+  layout group 5; large rooms are stored raw, 16 bytes a row) with
+  rip-objects.py's `Tileset($37)` pointed at a flattened copy of the
+  disassembly's gfx/data/tileset_layouts folders. Shutters are metatiles
+  $78-$7b (doorController.s), open is $a0.
+
+### Robot
+- actor-runtime `cornerSwing` (opt-in per boss): once Link has not moved for
+  4 frames with the boss on him, he turns and swings. Bogmaw pinned him in
+  the hall's south-west corner nine touches running, every one as his
+  flashing ran out, because the free-swing window (RETREAT_MARGIN) is shorter
+  than the hurt lock. Tried and dropped: a "keep room behind you" sidestep
+  (made Gloomtide worse).
+- `['anchor', tx, ty, maxF, [sx, sy, dir]]` tries that approach first. The
+  Sluice Cell's nearest approach threw onto the shaft and the next walked Link
+  INTO it — a fall and a heart every run since S181. Now 4 quarter-hearts
+  richer into D3.
+- Route: Clawcrab without the step-back, wait 120 (10/12; swept 0-200 by 2
+  with and without); Bogmaw wait 14 + cornerSwing (14/28, 18 after the
+  fairy); Gloomtide wait 16 + cornerSwing (every wait 0-32 wins on 6/28,
+  34+ loses). Everything after won unchanged.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5 (Anemos, 5/24 —
+was 6), 316170 frames. Whole table, two at a time: every tool exit 0 after
+one fix — check-side's Bogwater Sanctum run planned its way out of Bogmaw's
+hall while the shutters were still down (travel found no route and the run
+froze); it waits 40 frames first now, 78/78. test.mjs 142/142; replay green
+unchanged; watch-cutscenes alone, 23 scenes, no fault; npm run build then
+check-build OK; check-rippers last, alone, 45/45.
+
+### Not done / candidates
+- Seasons' bosses start on their own cue (Aquamentus waits for wcc93, the
+  shutters, to read 0); ours on the guessed BOSS_INTRO_FRAMES. With the
+  shutters in, a boss could wait for them. Changes every fight: ask first.
+- Seasons' open doorway has no jambs (the wall runs straight to the gap);
+  ours draws jambs, an approved look — not changed.
+- Low-water 5 at Anemos; a sweep of his wait would re-roll Bogmaw and
+  Gloomtide, so it was left.
+- Side-scrolling passages; the urchin's shield (ours; it is drawn from the
+  spiny beetle); the guide's old shots; check-placement and the loose key's
+  hold (S230's list).
+
 ## S233 — a boss's prizes come when the smoke clears; boss-room doors that shut (parked)
 
 Branch claude/oracle-tides-s233, off main at 23e8ad6 (S232). The door work is

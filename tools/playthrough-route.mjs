@@ -403,8 +403,12 @@ export const ROUTE = [
   // 15 frames later. Stepping back 16 and turning round on one more puts him
   // where and how he used to stand, 32 frames later, so the wait gives the
   // 32 back and the fight plays as it did (the same in every boss room).
-  ['hold', ['up'], 16], ['hold', ['down'], 1],
-  ['wait', 72],
+  // S234: the den now shuts behind him, its north gap and all, so the step
+  // back is gone (the wait counts as two do-nothing steps to keep the
+  // route's numbering). Swept 0-200 by 2 with and without it: 120 from
+  // where the walk leaves him wins on 10/12, and Gohmaraq after on 9/16.
+  ['wait', 0], ['wait', 0],
+  ['wait', 120],
   ['boss', 6000, 'clawcrab', { reachSwing: true, diagRetreat: true }],
   ['dialogue', 600],
   ['loot', 1500],
@@ -514,7 +518,10 @@ export const ROUTE = [
   ['dialogue', 300],
   ['exit', 'up', 400],
   ['hold', ['down'], 16], ['hold', ['up'], 1],   // S232: see the Clawcrab
-  ['wait', 256],    // S166: 288 with the two retreats below; see there. S232: -32
+  // S233 WIP (boss doors shut behind Link): the step back now stops at y 144
+  // against the shut door. Swept 185-420 by 1 with two option sets: 213
+  // with reachSwing + diagRetreat wins on 9/16 (was 6/16).
+  ['wait', 213],
 
   // ---------------------------------------------------------------- d1 0,3,1
   // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
@@ -529,7 +536,7 @@ export const ROUTE = [
   // every entry wait swept from 60 to 240 frames.
   // S166 (Seasons' 32-frame boss safety window, no shove): swept jointly
   // with the Clawcrab's wait; 240-288 win with both retreats, 288 on 10 of 16.
-  ['boss', 20000, null, { reachSwing: true, openRetreat: true, diagRetreat: true }],
+  ['boss', 20000, null, { reachSwing: true, diagRetreat: true }],
   ['wait', 300],
   // WALK ONTO THE ESSENCE BY HAND — `dLoot` cannot collect it: `Essence` has
   // no `isDrop`. It appears in the middle of the arena, tile 7,4.
@@ -1093,9 +1100,12 @@ export const ROUTE = [
   // which is a pit at LOW; at MID it is wading, but the shaft is flooded.
   // Bite the Anchor beside the shaft at LOW, sound MID, and walk in: the held
   // patch keeps the hole open while the cellar fills.
+  // S234: thrown from 7,9 facing up first. The nearest approach (7,8)
+  // threw it onto the shaft, and the next (from 7,4) walked Link into the
+  // shaft itself — a fall and a heart, every run since S181.
   ['travel', 4, 5, 4000],
   ['equip', 'anchor', 'A', 400],
-  ['anchor', 7, 6, 1600],
+  ['anchor', 7, 6, 1600, [7, 9, 'up']],
   ['tide', 1, 140, 900],
   ['goto', 7, 7, 400],
   ['hold', ['up'], 60],
@@ -1396,8 +1406,13 @@ export const ROUTE = [
   // S228 (Anemos's wait 198): 38-66 win on 8-9/28, but only 38 and 46 leave
   // Bogmaw's fairy for the loot after (28/28 into Gloomtide, who loses at
   // every wait swept on 9). 46.
-  ['wait', 46],
-  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true }],
+  // S233 WIP (boss doors): swept 0-200 by 1; 41 alone leaves the fairy (18/28).
+  // S234: the hall's west and north gaps shut behind him too, and every
+  // wait lost: the retreat pinned him in the south-west corner with Bogmaw
+  // on him. `cornerSwing` (see actor-runtime) swings out of it; swept 0-200
+  // by 2, 14 wins on 14/28 and the fairy after it makes 18.
+  ['wait', 14],
+  ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true, cornerSwing: true }],
   ['wait', 120],
   ['dialogue', 400],
   ['loot', 1500],
@@ -1578,7 +1593,11 @@ export const ROUTE = [
   // S232 (Link walks himself 25 px in, Seasons' boss-room entry; stepping
   // back would put him in the doorway, which tugs him out): swept 32-240 by
   // 2 from where he stops; 96 leaves 12/28 as before, a frame later.
-  ['wait', 96],
+  // S234: the boss door now shuts behind him. Swept 0-150 by 2 over five
+  // option sets: with `cornerSwing` added every wait from 0 to 32 wins on
+  // 6/28 (the same fight: the boss's own entrance swallows the difference),
+  // and every wait from 34 loses. 16, the middle.
+  ['wait', 16],
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1591,7 +1610,7 @@ export const ROUTE = [
   // S166: Seasons' 32-frame boss safety window — hold off while he is safe.
   // S167: `openRetreat` and `diagRetreat` both on (see the wait above) — the
   // S131 seed that openRetreat flipped is long gone.
-  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true }],
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true, cornerSwing: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —

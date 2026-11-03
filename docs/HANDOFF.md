@@ -447,6 +447,23 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A door rule that reads one tile name misses the rooms with none (S234).**
+  S233's shutters closed `dDoorOpen` cells only, and half the boss rooms are
+  entered through a plain gap in the wall — including the den the mock was
+  drawn in. List every boss room's ring openings (a probe over MAPS) before
+  believing a room rule covers them.
+- **An enemy nothing can kill must not hold a room (S234).** The beamos kept
+  the Crossed Shafts shut after the Brinehulk; the robot walked into the
+  shutter until it died, two dungeons after the change. Seasons flags such
+  placements out of wNumEnemies.
+- **A route `travel` plans from the room as it is that frame (S234).** With
+  shutters down until the smoke clears, a travel issued right after a
+  miniboss's loot found no way out and the run froze silently (frames stopped
+  advancing). Wait out the smoke before travelling.
+- **A deadlock reads as a lost fight (S234).** Bogmaw "won at no wait" because
+  the robot held its retreat into a corner for 300 frames; FRAMES=a-b showed
+  Link not moving and hit every 34 frames. Look at the frames before sweeping.
+
 - **The robot fought from doorways (S233).** Seasons shuts a boss room's
   doors behind Link; ours did not, and the robot's best stands (S232's
   step-backs, Gloomtide's 111,157) were IN the doorway, out of reach. With

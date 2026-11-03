@@ -87,8 +87,10 @@ export const D3_RUN = [
   ['goto', 7, 1, 900], ['hold', ['up'], 20], ['tap', 'a', 30], ['hold', ['up'], 60], ['wait', 60],
   ['goto', 7, 5, 900], ['hold', ['up'], 6], ['tap', 'a', 40], ['dialogue', 400], ['loot', 900],
   // Bogmaw Hall, and back
+  // S234: the hall shuts behind Link until Bogmaw's smoke has cleared, so
+  // wait for its shutters before planning the way out.
   ['travel', 2, 2, 2000], ['fight', 6000, 6000], ['wait', 120], ['dialogue', 400], ['loot', 900],
-  ['travel', 1, 2, 2000], ['travel', 1, 3, 2000],
+  ['wait', 40], ['travel', 1, 2, 2000], ['travel', 1, 3, 2000],
   // east on the Undertow's current, across the Cistern, the Drain's bottom
   ['travel', 2, 3, 2000], ['hold', ['right'], 300], ['wait', 60],
   ['hold', ['right'], 120], ['goto', 9, 5, 900], ['soles', 'sink', 240], ['hold', ['right'], 200], ['wait', 60],

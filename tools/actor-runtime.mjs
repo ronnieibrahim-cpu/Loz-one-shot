@@ -1849,6 +1849,17 @@ export async function installRuntime() {
     // PUSH THROUGH ON INVULN — `['boss', N, type, { pushThrough: true }]`.
     // See the banked-invuln approach below.
     const pushThrough = !!(opts && opts.pushThrough);
+    // SWING OUT OF A CORNER (S234, opt-in `cornerSwing`). Since the boss rooms
+    // shut behind Link the doorway is no longer a way out, and against Bogmaw
+    // the retreat pressed him into the hall's south-west corner and held him
+    // there: the boss sat on him and touched him every time his flashing ran
+    // out, nine times, with no swing in between, because the free-swing
+    // window (`RETREAT_MARGIN` of flashing left) is shorter than the hurt
+    // lock eats. Once he has not moved for CORNER_STILL frames of trying to,
+    // with the boss on him, he turns and swings instead.
+    const cornerSwing = !!(opts && opts.cornerSwing);
+    const CORNER_STILL = 4;
+    let stillFor = 0, lastPx = null, lastPy = null;
     const wasHere = new Set(g.entities.filter(e => e.isEnemy));
     const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
@@ -1972,6 +1983,8 @@ export async function installRuntime() {
         yield safe(perp); f++; continue;
       }
       chargeSide = 0;
+      stillFor = (p.x === lastPx && p.y === lastPy) ? stillFor + 1 : 0;
+      lastPx = p.x; lastPy = p.y;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
       const adx = Math.abs(dx), ady = Math.abs(dy);
       const axisX = adx > ady;
@@ -2184,6 +2197,14 @@ export async function installRuntime() {
         continue;
       }
 
+      if (cornerSwing && b.weakOpen && stillFor >= CORNER_STILL && p.hurtTime === 0
+          && Math.abs(dx) + Math.abs(dy) < NEAR + 18) {
+        const face = adx >= ady ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
+        yield fence(face); f++;
+        yield fence(face | sword()); f++;
+        stillFor = 0;
+        continue;
+      }
       if (b.weakOpen) {
         // Invulnerability frames are the only free hits in this game. A touch
         // costs a quarter of a new game's hearts and buys PLAYER_INVULN_FRAMES
@@ -2666,7 +2687,7 @@ export async function installRuntime() {
    * and it cannot drift when the constants move, which is the trade this repo
    * makes everywhere else: ask the engine, do not model it.
    */
-  function* dAnchor(tx, ty, maxF) {
+  function* dAnchor(tx, ty, maxF, first) {
     const g = window.__game;
     const held = () => items.anchorOverride(g);
     // Already sitting exactly where it was asked for: nothing to do.
@@ -2683,6 +2704,10 @@ export async function installRuntime() {
         cands.push({ dname, sx: tx - dx * r, sy: ty - dy * r });
       }
     }
+    // A route may name the approach to try first, `[sx, sy, dir]` (S234: the
+    // Sluice Cell's nearest approach throws onto the shaft, and the next one
+    // walks Link into it).
+    if (first) cands.unshift({ dname: first[2], sx: first[0], sy: first[1] });
     const budget = maxF || 1600;
     let spent = 0;
     // Why each approach was rejected. Without this the directive can only say
@@ -3543,7 +3568,7 @@ export async function installRuntime() {
       else if (kind === 'soles') yield* dSoles(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'charm') yield* dCharm(a[0], a[1], a[2], a[3]);
-      else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
+      else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2], a[3]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
       else if (kind === 'cube') yield* dCube(a[0], a[1], a[2]);
