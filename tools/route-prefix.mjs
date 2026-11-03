@@ -115,6 +115,9 @@ if (process.env.BOSSSTART) await page.evaluate(async () => {
     return r;
   };
 });
+// SETHP=<frame>=<quarter-hearts> sets Link's health at that frame: asks
+// whether a fight is lost for want of health or for want of a tactic (S235).
+if (process.env.SETHP) await page.evaluate(([f, hp]) => { const g = window.__game, o = g.update.bind(g); g.update = (...a) => { if (g.frame === f) g.progress.hearts = hp; return o(...a); }; }, process.env.SETHP.split('=').map(Number));
 // CHESTSIDES=1 opens every chest from whatever side the route stands on and
 // lists the ones that were not opened from the front (S224).
 if (process.env.GOD) await page.evaluate(() => { window.__god = true; });
