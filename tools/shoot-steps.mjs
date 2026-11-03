@@ -29,6 +29,9 @@ await page.waitForFunction(() => !!window.__game && !!window.__harness);
 await page.evaluate(installRuntime);
 const snap = async (name) => {
   const url = await page.evaluate(() => {
+    // Draw the frame just stepped: the page's own loop draws on animation
+    // frames, so the canvas can still hold an older one (HANDOFF, S233).
+    window.__game.draw();
     const src = window.__game.screen.canvas || document.querySelector('canvas');
     const c = document.createElement('canvas'); c.width = src.width * 3; c.height = src.height * 3;
     const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(src, 0, 0, c.width, c.height);

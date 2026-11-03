@@ -2666,7 +2666,7 @@ export async function installRuntime() {
    * and it cannot drift when the constants move, which is the trade this repo
    * makes everywhere else: ask the engine, do not model it.
    */
-  function* dAnchor(tx, ty, maxF) {
+  function* dAnchor(tx, ty, maxF, first) {
     const g = window.__game;
     const held = () => items.anchorOverride(g);
     // Already sitting exactly where it was asked for: nothing to do.
@@ -2683,6 +2683,10 @@ export async function installRuntime() {
         cands.push({ dname, sx: tx - dx * r, sy: ty - dy * r });
       }
     }
+    // A route may name the approach to try first, `[sx, sy, dir]` (S234: the
+    // Sluice Cell's nearest approach throws onto the shaft, and the next one
+    // walks Link into it).
+    if (first) cands.unshift({ dname: first[2], sx: first[0], sy: first[1] });
     const budget = maxF || 1600;
     let spent = 0;
     // Why each approach was rejected. Without this the directive can only say
@@ -3543,7 +3547,7 @@ export async function installRuntime() {
       else if (kind === 'soles') yield* dSoles(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'charm') yield* dCharm(a[0], a[1], a[2], a[3]);
-      else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
+      else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2], a[3]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
       else if (kind === 'cube') yield* dCube(a[0], a[1], a[2]);

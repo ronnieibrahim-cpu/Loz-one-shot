@@ -1077,6 +1077,67 @@ const main = async () => {
     && entry.walked === entry.want && entry.walkLeft === 0 && entry.stood === entry.walked
     && !entry.stillSilent && entry.after === 'miniboss', JSON.stringify(entry));
 
+  // A BOSS ROOM SHUTS BEHIND LINK (S233-S234, the human's choice; Seasons'
+  // doorController_shutUntilEnemiesDead): scrolled into the Clawcrab den,
+  // the door he came through waits out his walk, slides shut, holds while
+  // the fight runs, and once the smoke has cleared chimes and slides open
+  // BOSS_DOOR_OPEN_DELAY_FRAMES later. Standing on it, it waits for him.
+  const doors = await G(async () => {
+    const g = window.__game;
+    const feel = await import('/src/data/feel.js');
+    const save = JSON.stringify(g.progress);
+    const back = [g.mapId, g.room.floor || 0, g.room.rx, g.room.ry, g.player.x, g.player.y, g.player.dir];
+    const into = () => {
+      g.enterMap('d1', 0, 5, 2, 108, 143, 'down', { instant: true });
+      g.input._raw.down = true;
+      for (let i = 0; i < 200 && !(g.room.key === '0,5,3' && !g.transition); i++) window.__harness.step(1);
+      g.input._raw.down = false;
+    };
+    // The den's way in is a plain gap in its north wall, column 7.
+    const cell = () => [7, 0];
+    const tile = () => { const c = cell(); return g.room.baseName(c[0], c[1]); };
+    const out = {};
+    into();
+    out.inWalk = tile();
+    window.__harness.step(feel.BOSS_ENTRY_WALK_FRAMES + 1 + feel.DOOR_SLIDE_FRAMES + 1);
+    out.shut = tile();
+    const boss = g.entities.find((e) => e._bossClass);
+    boss.intro = 0; g.player.invuln = 99999;
+    boss.die(g);
+    let f = 0;
+    for (; f < 2000 && tile() === 'dDoorClosed'; f++) {
+      if (g.dialogue.active) g.dialogue.reset();      // the den's own "the claw stops moving"
+      window.__harness.step(1);
+    }
+    out.openedAfter = f;
+    out.smokeGone = !g.entities.some((e) => e.isEffect && e.onDone && !e.remove);
+    window.__harness.step(feel.DOOR_SLIDE_FRAMES + 2);
+    out.open = tile();
+    // Standing in the doorway, it waits for him to step off.
+    Object.assign(g.progress, JSON.parse(save));
+    into();
+    const [dx] = cell();
+    g.player.x = dx * 16 + 3; g.player.y = 6;
+    window.__harness.step(feel.DOOR_SLIDE_FRAMES * 4);
+    out.onIt = tile();
+    g.player.y = 60;
+    window.__harness.step(feel.DOOR_SLIDE_FRAMES + 2);
+    out.offIt = tile();
+    // Leaving puts it back open: in from the room below and out again.
+    g.enterMap('d1', 0, 5, 2, 108, 120, 'down', { instant: true });
+    g.enterMap('d1', 0, 5, 3, 108, 40, 'down', { instant: true });
+    out.reentered = tile();
+    if (g.dialogue.active) g.dialogue.reset();
+    g.enterMap(...back, { instant: true });
+    Object.assign(g.progress, JSON.parse(save));
+    return out;
+  });
+  check('a boss room shuts behind Link until the boss is beaten, then chimes and opens',
+    doors.inWalk !== 'dDoorClosed' && doors.shut === 'dDoorClosed'
+    && doors.openedAfter > 0 && doors.smokeGone && doors.open === doors.inWalk
+    && doors.onIt === doors.inWalk && doors.offIt === 'dDoorClosed' && doors.reentered === doors.inWalk,
+    JSON.stringify(doors));
+
   // A BOSS'S PRIZE COMES WHEN THE SMOKE CLEARS (S233, Seasons'
   // bossDeathExplosion.s: decNumEnemies at the end of the animation, then
   // dungeonScript_bossDeath's Heart Container). Gohmaraq's room: nothing

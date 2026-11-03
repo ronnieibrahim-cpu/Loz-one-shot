@@ -1115,11 +1115,18 @@ export class Game {
       const boss = (e) => e._bossClass && !e.dead && !e.remove;
       if (!(this.entities.some(boss) || this.pendingAdd.some(boss))) return;
       this._bossDoorsFor = room;
+      // Every way in through the ring: a door that stands open, and a plain
+      // gap in the wall (the Clawcrab's den, Bogmaw's hall), which Seasons
+      // would have drawn as a shutter too. Each cell remembers what it was.
       const cells = [];
       if (room.cw === 15) {
         for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
           const ring = x === 0 || y === 0 || x === room.tw - 1 || y === room.th - 1;
-          if (ring && room.baseName(x, y) === 'dDoorOpen') cells.push([x, y]);
+          if (!ring) continue;
+          const name = room.baseName(x, y), d = getTileDef(name);
+          if (!d || d.ring || d.ringWall) continue;
+          const gap = !(d.flags & (F.SOLID | F.DOOR | F.WARP));
+          if (name === 'dDoorOpen' || gap) cells.push([x, y, name]);
         }
       }
       this.bossDoors = cells.length ? { room, cells, state: 'open', t: 0 } : null;
@@ -1153,7 +1160,18 @@ export class Game {
       b.state = 'opening'; b.t = BOSS_DOOR_OPEN_DELAY_FRAMES;
     } else if (b.state === 'opening') {
       if (--b.t > 0) return;
-      for (const [tx, ty] of b.cells) this.slideDoorOpen(tx, ty);
+      for (const [tx, ty, name] of b.cells) {
+        if (name === 'dDoorOpen') { this.slideDoorOpen(tx, ty); continue; }
+        // A gap was never a door: it slides open the same way and goes back
+        // to the floor it was, with nothing written to the save.
+        const d = room.tile(tx, ty, this.tide);
+        const art = room.artAt(d, tx, ty, this.tide), pal = room.palFor(d, art);
+        const [ux, uy] = ty === room.th - 1 ? [0, 1] : tx === 0 ? [-1, 0] : tx === room.tw - 1 ? [1, 0] : [0, -1];
+        room.setTile(tx, ty, name);
+        this.doorSlides = (this.doorSlides || []).filter(s => !(s.room === room && s.tx === tx && s.ty === ty));
+        this.doorSlides.push({ room, tx, ty, art, pal, ux, uy, t: DOOR_SLIDE_FRAMES });
+      }
+      if (b.cells.some(c => c[2] !== 'dDoorOpen')) this.audio.sfx('doorSlide');
       this.bossDoors = null;
     }
   }
@@ -1162,7 +1180,7 @@ export class Game {
   releaseBossDoors() {
     const b = this.bossDoors;
     if (b && (b.state === 'shut' || b.state === 'opening')) {
-      for (const [tx, ty] of b.cells) b.room.setTile(tx, ty, 'dDoorOpen');
+      for (const [tx, ty, name] of b.cells) b.room.setTile(tx, ty, name);
     }
     this.bossDoors = null;
     this._bossDoorsFor = null;
