@@ -565,14 +565,16 @@ function pickByMask(e, diffDirs) {
   if (diffDirs.length === 2) {
     const [a, b] = diffDirs;
     const opposite = (a === 'up' && b === 'down') || (a === 'left' && b === 'right');
-    if (!opposite) {
-      const art = e[CORNER_KEY[a + ',' + b]];
-      if (art) return art;
-    }
+    // An opposite pair has its own art only in a set that brings it (the
+    // ground's edges, S237: Seasons draws a grass strip between two sands).
+    const art = opposite ? e[a === 'up' ? 'upDown' : 'leftRight'] : e[CORNER_KEY[a + ',' + b]];
+    if (art) return art;
   } else if (diffDirs.length === 3) {
     const missing = EDGE_DIRS.find((d) => !diffDirs.includes(d));
     const art = e[INNER_KEY[missing]];
     if (art) return art;
+  } else if (diffDirs.length === 4 && e.all) {
+    return e.all;
   }
   // Degrade: opposite pairs, four-way isolation, or a corner/inner direction
   // with no dedicated art all fall back to the first single-edge match, the

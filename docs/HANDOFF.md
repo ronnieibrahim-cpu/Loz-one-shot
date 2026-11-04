@@ -447,6 +447,18 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A theme's legend override must come after `theme(...)` (S237).**
+  `registerLegend(name, map, base)` copies the base at that moment, and
+  `theme()` rebuilds the dungeon's legend from the shared one, so an override
+  registered before it silently vanishes. Put per-dungeon overrides after the
+  last `theme(...)` call (where the S236 holes and S237 ledges are).
+- **A cartridge picture can already be in the game under another name
+  (S237).** Ripping Seasons' grass-patch corners made validate call four
+  Maku grove cells "theme art no legend reaches": the grove, ripped from the
+  same spring screen, had been drawing those exact pixels all along. Before
+  believing a validate failure about a fresh rip, ask what else has the same
+  pixels.
+
 - **Survey what is DRAWN, not what is placed, to find hand art (S236).** A
   probe that asks `room.artAt` for every cell of every room at every sea and
   keeps the art no generated module holds found the shared navy `dPit` in six

@@ -2000,22 +2000,26 @@ function installTownBlocks() {
 //
 // Every land/land boundary in the game was a straight pixel edge — a sand patch
 // cut into a lawn read as a painted rectangle, because it WAS one. The source
-// does not do that: `oracle-ages-overworld.png @ 300,800` has two grasses
-// meeting along a wiggly interlocking fringe (docs/ART-BACKLOG.md's own
-// investigation). This is that fringe, for the 17 ordered pairs the overworld
+// does not do that: Seasons rounds a grass patch off against sand with its own
+// edge metatiles (spring tileset $00, $13-$1c): the sand flat, the grass, and
+// a scalloped rim of the grass's dark tone along the join, its bumps on an
+// 8-pixel pitch. This is that edge, for the 17 ordered pairs the overworld
 // actually contains.
 //
-// DERIVED, NOT DRAWN, for the same reason the water rim is: 17 pairs x 12 mask
-// cases is 204 tiles, and hand-drawing them would guarantee they drift. Each is
-// composited at install time from the two materials' OWN already-extracted
-// textures, so a re-rip of the terrain moves every fringe with it.
+// THE SHAPE IS THE CARTRIDGE'S (S237). Until S237 the join was a wiggle of our
+// own (`FRINGE_WIGGLE`, S39) between the two grounds' textures, with no rim.
+// Now each cell is the cartridge's own tile read as a MASK — sand, grass, rim
+// (`ge*` in tiles-dungeon-themes.js, rip-dungeon-themes.py) — and painted
+// with this pair's grounds: the carrier's own texture where the grass is, its
+// dark tone where the rim is, and the intruder's commonest tone where the
+// sand is (the cartridge's sand is one flat colour too). Every ground of ours
+// is a palette of an extracted texture, and this is the same move: the
+// cartridge's picture in the pair's colours.
 //
-// THE FOUR-COLOUR BUDGET IS THE WHOLE CONSTRAINT. A transition cell holds both
-// materials and a tile has four colours, so each side gets two: the carrier's
-// two lightest and the intruder's two lightest. Grass's darkest speckle is
-// dropped in a fringe cell and nothing else is. That is what a real GBC
-// transition tile does, and it is why this is AUTHORING rather than extraction
-// (CLAUDE.md) — it is checked by screenshot in several regions, not by a ripper.
+// The cartridge has one edge each way, both opposite pairs and the four outer
+// corners. A cell with ground on three sides or none is the corners it is
+// made of laid over one another (`unionMask`): it never occurs in Seasons'
+// own rooms, which are laid out to avoid it, and does in ours.
 //
 // ONE SIDE OF EACH PAIR CARRIES IT. `FRINGE_PAIRS` is ordered [carrier,
 // intruder]: only the carrier's tiledefs get `edgePairs`, so a boundary is
@@ -2062,45 +2066,74 @@ const FRINGE_PAIRS = [
   ['rust', 'sand'], ['grass', 'sandwet'],
 ];
 
-// The interlock. Three pixels of travel, and the same wiggle every pair uses so
-// the whole world's joins share one hand. Deterministic by construction — no
-// call to the RNG, which `tools/test.mjs` would fail anyway.
-const FRINGE_WIGGLE = [12, 11, 11, 12, 13, 13, 12, 11, 12, 13, 13, 12, 11, 11, 12, 13];
-
-const FRINGE_KEYS = {
-  up: ['up'], down: ['down'], left: ['left'], right: ['right'],
-  cornerUpLeft: ['up', 'left'], cornerUpRight: ['up', 'right'],
-  cornerDownLeft: ['down', 'left'], cornerDownRight: ['down', 'right'],
-  innerUp: ['down', 'left', 'right'], innerDown: ['up', 'left', 'right'],
-  innerLeft: ['up', 'down', 'right'], innerRight: ['up', 'down', 'left'],
-};
-
-/** A 16x16 art string as a grid of digits. */
+/** A 16x16 art string as a list of 16 row strings. */
 function fringeGrid(art) {
   return art.trim().split('\n').map((r) => r.trim()).filter((r) => r.length === 16);
 }
 
+/** `grid` with the quadrant [qx, qy] (0 or 1 each) set to plain carrier, '1'. */
+function clearQuadrant(grid, qx, qy) {
+  return grid.map((row, y) => (Math.floor(y / 8) !== qy ? row
+    : [...row].map((c, x) => (Math.floor(x / 8) === qx ? '1' : c)).join('')));
+}
+
+/** Masks laid over one another: sand wins, then rim, then carrier. */
+function unionMask(...masks) {
+  return masks[0].map((row, y) => [...row].map((_, x) => {
+    const cs = masks.map((m) => m[y][x]);
+    return cs.includes('0') ? '0' : cs.includes('2') ? '2' : '1';
+  }).join(''));
+}
+
 /**
- * One fringe cell. A pixel belongs to the intruder if it lies past the wiggle
- * on ANY of the differing sides — which makes the corner and inner-corner
- * cases fall out of the same rule as the straight edges, rather than needing
- * their own art. That union is why all 12 keys cost one function.
+ * The cartridge's edge masks, one per mask key: '0' the intruder, '1' the
+ * carrier, '2' the rim. A straight edge is half of the opposite-pair tile (so
+ * no tuft comes with it); a corner is its own tile with the quadrant away from
+ * the corner cleared (that is where $17 and $1a keep a grass tuft).
  */
-function fringeCell(carrier, intruder, dirs) {
-  const w = FRINGE_WIGGLE;
+function fringeMasks() {
+  const g = (n) => fringeGrid(DUNGEON_THEME_ART[n]);
+  const ud = g('geUD'), lr = g('geLR');
+  const half = (grid, keep) => grid.map((row, y) => [...row].map((c, x) => (keep(x, y) ? c : '1')).join(''));
+  const m = {
+    up: half(ud, (x, y) => y < 8), down: half(ud, (x, y) => y >= 8),
+    left: half(lr, (x) => x < 8), right: half(lr, (x) => x >= 8),
+    cornerUpLeft: clearQuadrant(g('geUL'), 1, 1), cornerUpRight: clearQuadrant(g('geUR'), 0, 1),
+    cornerDownLeft: clearQuadrant(g('geDL'), 1, 0), cornerDownRight: clearQuadrant(g('geDR'), 0, 0),
+  };
+  m.upDown = unionMask(m.up, m.down);
+  m.leftRight = unionMask(m.left, m.right);
+  m.innerUp = unionMask(m.cornerDownLeft, m.cornerDownRight);
+  m.innerDown = unionMask(m.cornerUpLeft, m.cornerUpRight);
+  m.innerLeft = unionMask(m.cornerUpRight, m.cornerDownRight);
+  m.innerRight = unionMask(m.cornerUpLeft, m.cornerDownLeft);
+  m.all = unionMask(m.cornerUpLeft, m.cornerUpRight, m.cornerDownLeft, m.cornerDownRight);
+  return m;
+}
+
+/**
+ * One fringe cell: the carrier's own texture (its digits 0-2) where the mask
+ * says carrier, 2 (the carrier's dark tone) on the rim, 3 (the intruder's
+ * tone, in the pair's palette) where it says intruder.
+ */
+function fringeCell(carrier, mask) {
   const rows = [];
   for (let y = 0; y < 16; y++) {
     let row = '';
     for (let x = 0; x < 16; x++) {
-      const into = dirs.some((d) => (
-        d === 'down' ? y >= w[x] : d === 'up' ? y <= 15 - w[x]
-          : d === 'right' ? x >= w[y] : x <= 15 - w[y]));
-      const v = Number((into ? intruder : carrier)[y][x]);
-      row += String(Math.min(v, 1) + (into ? 2 : 0));
+      const k = mask[y][x];
+      row += k === '0' ? '3' : k === '2' ? '2' : String(Math.min(Number(carrier[y][x]), 2));
     }
     rows.push(row);
   }
   return rows.join('\n');
+}
+
+/** The digit an art grid uses most. */
+function commonestDigit(grid) {
+  const n = {};
+  for (const row of grid) for (const c of row) n[c] = (n[c] || 0) + 1;
+  return Number(Object.keys(n).sort((a, b) => n[b] - n[a])[0]);
 }
 
 /** Build every fringe tile and hang `material`/`edgePairs` on the ground defs. */
@@ -2145,6 +2178,7 @@ function installMakuGrove() {
 
 function installGroundFringes(defs) {
   const pals = {}, tiles = {};
+  const masks = fringeMasks();
   for (const [name, mat] of Object.entries(GROUND_MATERIAL)) {
     if (defs[name]) defs[name].material = mat;
   }
@@ -2153,11 +2187,11 @@ function installGroundFringes(defs) {
     const cg = fringeGrid(cd.art), ig = fringeGrid(idf.art);
     const palName = `fr_${carrier}_${intruder}`;
     const cp = PALETTES[cd.pal], ip = PALETTES[idf.pal];
-    pals[palName] = [cp[0], cp[1], ip[0], ip[1]];
+    pals[palName] = [cp[0], cp[1], cp[2], ip[commonestDigit(ig)]];
     const set = {};
-    for (const [key, dirs] of Object.entries(FRINGE_KEYS)) {
+    for (const [key, mask] of Object.entries(masks)) {
       const tile = `${palName}_${key}`;
-      tiles[tile] = { art: fringeCell(cg, ig, dirs), pal: palName };
+      tiles[tile] = { art: fringeCell(cg, mask), pal: palName };
       set[key] = tile;
     }
     for (const [name, mat] of Object.entries(GROUND_MATERIAL)) {
@@ -3287,6 +3321,21 @@ export function installCoreTiles() {
     dLedgeBogE: { art: ART.bRingW, pal: 'bRingW', flags: F.LEDGE, ledge: 'right' },
     dLedgeBogW: { art: ART.bRingE, pal: 'bRingE', flags: F.LEDGE, ledge: 'left' },
     dLedgeBogN: { art: ART.bRingS, pal: 'bRingS', flags: F.LEDGE, ledge: 'up' },
+    // S237: the same for the Coral Spire (the Explorer's Crypt's runs), the
+    // Drowned Wood Shrine (the Ancient Ruins') and the Abyssal Keep (its own
+    // fire half's), which still drew the shared grey outdoor lip.
+    dLedgeCoralS: { art: ART.cRingN, pal: 'cRingN', flags: F.LEDGE, ledge: 'down' },
+    dLedgeCoralE: { art: ART.cRingW, pal: 'cRingW', flags: F.LEDGE, ledge: 'right' },
+    dLedgeCoralW: { art: ART.cRingE, pal: 'cRingE', flags: F.LEDGE, ledge: 'left' },
+    dLedgeCoralN: { art: ART.cRingS, pal: 'cRingS', flags: F.LEDGE, ledge: 'up' },
+    dLedgeWoodS: { art: ART.rRingN, pal: 'rRingN', flags: F.LEDGE, ledge: 'down' },
+    dLedgeWoodE: { art: ART.rRingW, pal: 'rRingW', flags: F.LEDGE, ledge: 'right' },
+    dLedgeWoodW: { art: ART.rRingE, pal: 'rRingE', flags: F.LEDGE, ledge: 'left' },
+    dLedgeWoodN: { art: ART.rRingS, pal: 'rRingS', flags: F.LEDGE, ledge: 'up' },
+    dLedgeAbyssS: { art: ART.kRingN, pal: 'kRingN', flags: F.LEDGE, ledge: 'down' },
+    dLedgeAbyssE: { art: ART.kRingW, pal: 'kRingW', flags: F.LEDGE, ledge: 'right' },
+    dLedgeAbyssW: { art: ART.kRingE, pal: 'kRingE', flags: F.LEDGE, ledge: 'left' },
+    dLedgeAbyssN: { art: ART.kRingS, pal: 'kRingS', flags: F.LEDGE, ledge: 'up' },
     // The cracked floor: dry floor that gives way into a shaft once Link has
     // stood on it long enough (`crack`). `dCrackPoolBog` is one in the bottom
     // of a sluice pool — shown and breakable only while the pool is dry, the
