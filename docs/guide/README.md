@@ -79,3 +79,16 @@ Two fight shots were re-timed by a scan: the Tideshade (`plus` counts on from
 the shot before it, so a scan is a run of small `plus` steps) and Nereth's
 later phase, because the fight is now over before the old 900 frames.
 `d2-glass-lens` and `d4-easttank-key` still MISS and keep their old pictures.
+
+## S239: re-shot on the current game
+
+`node tools/oneshot/remap-guide.mjs 60bc713` (S213's numbers) moved 333
+numbers over the route's changes since; then the whole run was re-captured,
+on the game with S214-S238's art. Set by hand: Gohmaraq's and Anemos's fight
+shots (the remap put them after the fight: they count from the wait before
+`boss` again), the Tideshade's (they count from the `travel` into its hall),
+the Crab Pit key and the Tide Gallery door (they wait on the key count: loose
+keys and key doors have had no text since S223) and the first Essence (it
+waits on its cutscene, S220, and is taken before the two unused boss shots).
+The boss bar is gone since S215, so Gohmaraq's caption no longer points at
+it. `d2-glass-lens` and `d4-easttank-key` still MISS, as before.

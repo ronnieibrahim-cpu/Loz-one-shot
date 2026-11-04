@@ -38,8 +38,12 @@ Branch claude/oracle-tides-visual-review-0j5qm3, off main at a610922 (S238).
   name anywhere (artAt over every room and sea), so nothing on screen is wrong.
 
 ### Verified
-Game code identical to main (src/ unchanged): test.mjs 142/142,
-check-placement 6/6. check-playthrough: see the last commit.
+Game code identical to main (src/ unchanged, dist/ rebuilt byte-identical):
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames;
+test.mjs 142/142; check-placement 6/6; check-build OK; check-rippers 45/45
+alone, last. The guide: 254 figures, MISS only d2-glass-lens and
+d4-easttank-key (as since S207); the shots that moved are in
+docs/guide/README.md S239.
 
 ### Not done / candidates
 - Side-scrolling passages (a whole mechanic; ask first); the urchin's shield
