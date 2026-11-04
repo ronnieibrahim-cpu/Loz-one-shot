@@ -246,26 +246,6 @@ const HAND_ART = {
     1111111111111111
     2222222222222222`,
 
-  // The same courses as `cliff` with a fault line zigzagging down through them,
-  // so a bombable stretch of cliff reads as cracked at a glance without leaving
-  // the terrain register. Dithering is allowed on terrain; this is a hard line.
-  cliffCracked: `
-    3333333333333333
-    1111113111111111
-    1111131111111111
-    1211311111111121
-    1111311111111111
-    2222322222222222
-    3333333333333333
-    1111311111111111
-    1111131111111111
-    1111132112111111
-    1111113111111111
-    2222223222222222
-    3333333333333333
-    1111113111111111
-    1111131111111111
-    2222232222222222`,
 
   cliffTop: `
     2222222222222222
@@ -303,49 +283,7 @@ const HAND_ART = {
     1211111111211111
     1111111111111111`,
 
-  // A boulder: deliberately bigger and rounder than `rock`, and drawn to the
-  // tile edge on all four sides, so a player can tell at a glance that it is
-  // not the ordinary liftable rock standing next to it.
-  boulder: `
-    ......3333......
-    ....33111133....
-    ..331111111133..
-    .33111111111133.
-    3311011111111133
-    3110111111111233
-    3101111111112233
-    3011111111122233
-    3011111111222233
-    3011111112222233
-    3011111122222233
-    .30111122222233.
-    .33012222222233.
-    ..332222222233..
-    ....33222233....
-    ......3333......`,
 
-  // The same boulder with a fault line zigzagging down through it, so a
-  // bombable boulder reads as cracked at a glance without leaving the terrain
-  // register — the same trick, and the same grammar, as `cliffCracked`. The
-  // silhouette is byte-identical to `boulder`: only interior pixels turn to
-  // outline, so the two sit in one rockfall without either looking redrawn.
-  boulderCracked: `
-    ......3333......
-    ....33113133....
-    ..331111311133..
-    .33111131111133.
-    3311011311111133
-    3110111131111233
-    3101111131112233
-    3011111311122233
-    3011111311222233
-    3011113112222233
-    3011113122222233
-    .30111322222233.
-    .33012322222233.
-    ..332223222233..
-    ....33232233....
-    ......3333......`,
 
   // ---- props (transparent, need underArt) ---------------------------------
   // A whole tree in ONE cell, because the game's rooms place trees one cell at
@@ -1182,49 +1120,7 @@ const HAND_ART = {
     3222222222222223
     3333333333333333`,
 
-  // THE BODY OF AN OVERWORLD GAP: no border of its own, and no shading at the
-  // top either. A single darker row per cell looked like depth in the art and
-  // rendered as a RUNG every sixteen pixels down a vertical run, which reads as
-  // four separate holes rather than one. `dPit` (below) keeps its frame because
-  // a dungeon pit is a single cell cut into a brick floor.
-  chasmBody: `
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333`,
 
-  // ...and its FAR LIP, drawn only by the cells whose northern neighbour is not
-  // also a gap — the same `family` + `edgeArt` mechanism the cliffs use, and
-  // the reason a vertical run of four gets one lip instead of four rungs.
-  chasmTop: `
-    0000000000000000
-    1111111111111111
-    1111111111111111
-    2222222222222222
-    2222222222222222
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333
-    3333333333333333`,
 
   dPit: `
     3333333333333333
@@ -1408,28 +1304,6 @@ const HAND_ART = {
     1111111111111111
     1111111111111111`,
 
-  // THE SAME MARK, WITH NOTHING BEHIND IT. `digSpot` fills its cell with a flat
-  // mid-sand, so a spade mark on a dithered beach was a hard tan RECTANGLE with
-  // two rings in it — the tile boundary visible from across the screen. The
-  // rings alone, over whatever the room is actually made of, is what the source
-  // draws. The opaque one stays for the dungeon silt floors, which ARE ground.
-  digSpot: `
-    ................
-    .....3333.......
-    ...22..223......
-    ..32.....22.....
-    ..2.......32....
-    ...2.....22.....
-    ....3222........
-    ................
-    ................
-    ........333.....
-    ......322..3....
-    .....32....23...
-    .....2......2...
-    ......32222.....
-    ................
-    ................`,
 
   void: `
     3333333333333333
@@ -1459,6 +1333,7 @@ const HAND_ART = {
 const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie', 'AbyssIce'];
 
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
+
 
 // The houses' tiledefs (S215). `layered` names the pieces cut as two layers.
 function house() {
@@ -2526,8 +2401,7 @@ export function installCoreTiles() {
     // are `dDrain`'s, not the chasm's: a sinkhole is fallen into, not hopped,
     // because a hole you may hop is not a barrier the sea has to fill.
     sinkhole: {
-      art: ART.chasmBody, pal: 'pit', flags: F.PIT,
-      family: 'chasm', edgeArt: { up: 'chasmTop' },
+      art: ART.owHole, pal: 'pit', flags: F.PIT, underArt: 'sand', family: 'chasm',
     },
     seaDrain: { tide: ['sinkhole', 'waterS', 'waterD'] },
     // A race: wadeable at LOW, and a running current above it. Passability is
@@ -2619,18 +2493,18 @@ export function installCoreTiles() {
     // Part of the same mass — a cracked cliff is a cliff — but it keeps its own
     // art at the top row rather than the lip, because the crack IS the tell and
     // a lip drawn over it would hide the one thing the player has to see.
-    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    cliffCracked: { art: ART.owRubble, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // A cracked cliff with a cave behind it (S155): the same wall, and a bomb
     // leaves a cave mouth rather than sand. The room lists the warp on this
     // cell from the start; it is inert until the tile under it carries F.WARP.
-    cliffCrackedCave: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    cliffCrackedCave: { art: ART.owRubble, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The same in the dark stone of the Drowned Wood's bluffs (S191), whose
     // `#` is `cliffDk`: the light crack would be a pale patch in a dark wall.
-    cliffCrackedCaveDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    cliffCrackedCaveDk: { art: ART.owRubble, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // And in the Salt Pans' marble terraces (S191).
-    cliffCrackedCaveMarble: { art: ART.cliffCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    cliffCrackedCaveMarble: { art: ART.owRubble, pal: 'marble', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // And in the Coral Reef's pink cliffs (S192).
-    cliffCrackedCaveCoral: { art: ART.cliffCracked, pal: 'coral', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    cliffCrackedCaveCoral: { art: ART.owRubble, pal: 'coral', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -2677,30 +2551,23 @@ export function installCoreTiles() {
     // is not a Flippers gate, and a one-tile chasm is not a Hookshot gate.
     // `tools/check-gates.mjs` measures the reach in-engine rather than trusting
     // this comment; the widths it proved are recorded there.
+    // Seasons' hole (TILEINDEX_HOLE $f3, S238): every cell its own rimmed
+    // hole, a run of them a row of holes, as the cartridge lays them.
     chasm: {
-      art: ART.chasmBody, pal: 'pit', flags: F.JUMPABLE | F.GAP,
-      family: 'chasm', edgeArt: { up: 'chasmTop' },
-    },
-    // The lip is a tile so the autotiler can name it, and it carries the SAME
-    // flags as the body: a tiledef whose edge piece was passable where the body
-    // is not would make the top row of every gap in the game walkable, which is
-    // the invariant `validateTiles` asserts for ground variants and the same
-    // reasoning applies here.
-    chasmTop: {
-      art: ART.chasmTop, pal: 'pit', flags: F.JUMPABLE | F.GAP, family: 'chasm',
+      art: ART.owHole, pal: 'pit', flags: F.JUMPABLE | F.GAP, underArt: 'rockFloor', family: 'chasm',
     },
     boulder: {
-      art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
+      art: ART.owBoulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
       underArt: 'rockFloor', liftLevel: 2,
     },
-    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
+    cliffCrackedDk: { art: ART.owRubble, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // A boulder already split by a fault: bombs open it, and nothing else
     // does. It carries NEITHER F.ROCK nor F.HEAVY on purpose — a boulder you
     // can also lift or also drag is not gated on bombs, it is gated on
     // whichever of the three you happen to have, and check-overworld would
     // read the gate as open under two different item sets.
     boulderCracked: {
-      art: ART.boulderCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE,
+      art: ART.owRubble, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE,
       underArt: 'rockFloor',
     },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog',
@@ -2810,7 +2677,9 @@ export function installCoreTiles() {
     // own canopy showing through: a hollow trunk instead of a quarry.
     treeHollow: { art: ART.caveMouth, pal: 'treeoakdd', flags: F.SOLID | F.WARP, mask: 0 },
     stairsDown: { art: ART.stairsDown, pal: 'stone', flags: F.WARP | F.STAIRS },
-    // One-way ledges. The art is one tile; what changes per region is the
+    // One-way ledges. Since S238 the art is Seasons' own drop ledge for each
+    // way (cliffTiles.s @overworld: $cf down, $2a up, $28 right, $27 left —
+    // `owLedge*`); indoors `dLedge*` keep the old hand-drawn lip. The art is one tile; what changes per region is the
     // palette and the ground drawn under its transparent top and foot, the same
     // palette-swap trick every cliff variant uses. Without these a ledge in the
     // dunes was a green lip on yellow sand, and the dungeons had no ledge
@@ -2821,14 +2690,14 @@ export function installCoreTiles() {
     // on — and that is also the only choice that guarantees contrast: the first
     // pass gave the Drowned Wood's ledge the region's own `grassdk`, and the
     // drop vanished into the grass it was cut out of.
-    ledgeS: { art: ART.ledgeS, pal: 'stone', flags: F.LEDGE, ledge: 'down', underArt: 'grass' },
-    ledgeDk: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'grassDark' },
-    ledgeSand: { art: ART.ledgeS, pal: 'sand', flags: F.LEDGE, ledge: 'down', underArt: 'sand' },
-    ledgeRock: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloor' },
-    ledgeRockDk: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorDk' },
-    ledgeSalt: { art: ART.ledgeS, pal: 'marble', flags: F.LEDGE, ledge: 'down', underArt: 'saltFlat' },
-    ledgeCoral: { art: ART.ledgeS, pal: 'coral', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorCoral' },
-    ledgeAbyss: { art: ART.ledgeS, pal: 'abyss', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorDk' },
+    ledgeS: { art: ART.owLedgeS, pal: 'stone', flags: F.LEDGE, ledge: 'down', underArt: 'grass' },
+    ledgeDk: { art: ART.owLedgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'grassDark' },
+    ledgeSand: { art: ART.owLedgeS, pal: 'sand', flags: F.LEDGE, ledge: 'down', underArt: 'sand' },
+    ledgeRock: { art: ART.owLedgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloor' },
+    ledgeRockDk: { art: ART.owLedgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorDk' },
+    ledgeSalt: { art: ART.owLedgeS, pal: 'marble', flags: F.LEDGE, ledge: 'down', underArt: 'saltFlat' },
+    ledgeCoral: { art: ART.owLedgeS, pal: 'coral', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorCoral' },
+    ledgeAbyss: { art: ART.owLedgeS, pal: 'abyss', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorDk' },
     // Indoors the lip wants contrast against the tan flagstone, so it takes the
     // wall's palette rather than the floor's narrow `stonef` ramp — three
     // near-identical greys would lose the lit top edge entirely.
@@ -2838,37 +2707,37 @@ export function installCoreTiles() {
     // family's palette and `underArt` exactly — only the art and the `ledge`
     // direction change — so a north drop in the dunes is the same rock as the
     // south drop beside it rather than a second, subtly different cliff.
-    ledgeN: { art: ART.ledgeN, pal: 'stone', flags: F.LEDGE, ledge: 'up', underArt: 'grass' },
-    ledgeE: { art: ART.ledgeE, pal: 'stone', flags: F.LEDGE, ledge: 'right', underArt: 'grass' },
-    ledgeW: { art: ART.ledgeW, pal: 'stone', flags: F.LEDGE, ledge: 'left', underArt: 'grass' },
+    ledgeN: { art: ART.owLedgeN, pal: 'stone', flags: F.LEDGE, ledge: 'up', underArt: 'grass' },
+    ledgeE: { art: ART.owLedgeE, pal: 'stone', flags: F.LEDGE, ledge: 'right', underArt: 'grass' },
+    ledgeW: { art: ART.owLedgeW, pal: 'stone', flags: F.LEDGE, ledge: 'left', underArt: 'grass' },
 
-    ledgeDkN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'grassDark' },
-    ledgeDkE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'grassDark' },
-    ledgeDkW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'grassDark' },
+    ledgeDkN: { art: ART.owLedgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'grassDark' },
+    ledgeDkE: { art: ART.owLedgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'grassDark' },
+    ledgeDkW: { art: ART.owLedgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'grassDark' },
 
-    ledgeSandN: { art: ART.ledgeN, pal: 'sand', flags: F.LEDGE, ledge: 'up', underArt: 'sand' },
-    ledgeSandE: { art: ART.ledgeE, pal: 'sand', flags: F.LEDGE, ledge: 'right', underArt: 'sand' },
-    ledgeSandW: { art: ART.ledgeW, pal: 'sand', flags: F.LEDGE, ledge: 'left', underArt: 'sand' },
+    ledgeSandN: { art: ART.owLedgeN, pal: 'sand', flags: F.LEDGE, ledge: 'up', underArt: 'sand' },
+    ledgeSandE: { art: ART.owLedgeE, pal: 'sand', flags: F.LEDGE, ledge: 'right', underArt: 'sand' },
+    ledgeSandW: { art: ART.owLedgeW, pal: 'sand', flags: F.LEDGE, ledge: 'left', underArt: 'sand' },
 
-    ledgeRockN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloor' },
-    ledgeRockE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloor' },
-    ledgeRockW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloor' },
+    ledgeRockN: { art: ART.owLedgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloor' },
+    ledgeRockE: { art: ART.owLedgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloor' },
+    ledgeRockW: { art: ART.owLedgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloor' },
 
-    ledgeRockDkN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorDk' },
-    ledgeRockDkE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
-    ledgeRockDkW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
+    ledgeRockDkN: { art: ART.owLedgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorDk' },
+    ledgeRockDkE: { art: ART.owLedgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
+    ledgeRockDkW: { art: ART.owLedgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
 
-    ledgeSaltN: { art: ART.ledgeN, pal: 'marble', flags: F.LEDGE, ledge: 'up', underArt: 'saltFlat' },
-    ledgeSaltE: { art: ART.ledgeE, pal: 'marble', flags: F.LEDGE, ledge: 'right', underArt: 'saltFlat' },
-    ledgeSaltW: { art: ART.ledgeW, pal: 'marble', flags: F.LEDGE, ledge: 'left', underArt: 'saltFlat' },
+    ledgeSaltN: { art: ART.owLedgeN, pal: 'marble', flags: F.LEDGE, ledge: 'up', underArt: 'saltFlat' },
+    ledgeSaltE: { art: ART.owLedgeE, pal: 'marble', flags: F.LEDGE, ledge: 'right', underArt: 'saltFlat' },
+    ledgeSaltW: { art: ART.owLedgeW, pal: 'marble', flags: F.LEDGE, ledge: 'left', underArt: 'saltFlat' },
 
-    ledgeCoralN: { art: ART.ledgeN, pal: 'coral', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorCoral' },
-    ledgeCoralE: { art: ART.ledgeE, pal: 'coral', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorCoral' },
-    ledgeCoralW: { art: ART.ledgeW, pal: 'coral', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorCoral' },
+    ledgeCoralN: { art: ART.owLedgeN, pal: 'coral', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorCoral' },
+    ledgeCoralE: { art: ART.owLedgeE, pal: 'coral', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorCoral' },
+    ledgeCoralW: { art: ART.owLedgeW, pal: 'coral', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorCoral' },
 
-    ledgeAbyssN: { art: ART.ledgeN, pal: 'abyss', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorDk' },
-    ledgeAbyssE: { art: ART.ledgeE, pal: 'abyss', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
-    ledgeAbyssW: { art: ART.ledgeW, pal: 'abyss', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
+    ledgeAbyssN: { art: ART.owLedgeN, pal: 'abyss', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorDk' },
+    ledgeAbyssE: { art: ART.owLedgeE, pal: 'abyss', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
+    ledgeAbyssW: { art: ART.owLedgeW, pal: 'abyss', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
 
     dLedgeN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'dFloor' },
     dLedgeE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'dFloor' },
@@ -3586,9 +3455,10 @@ export function installCoreTiles() {
     // is the whole change, and a mouth that walked differently from a stair
     // would be a second rule to prove.
     dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
-    post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
-    postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
-    digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
+    // Seasons' stakes and soft soil (S238, `owStakes` $b9, `owSoil` $e6).
+    post: { art: ART.owStakes, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
+    postSand: { art: ART.owStakes, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
+    digSpot: { art: ART.owSoil, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
     dWaterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     dWaterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
