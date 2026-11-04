@@ -315,6 +315,45 @@ console.log(`check-placement: ${fronts.seen} chests and ${fronts.signs} signs, e
 for (const l of fronts.out) console.log('  ' + l);
 check('every chest and sign has floor in front of it, where it opens or is read from',
   fronts.seen > 0 && fronts.signs > 0 && fronts.out.length === 0, fronts.out.length ? `${fronts.out.length} do not` : '');
+// AND THAT FLOOR CAN BE WALKED TO (S239). Floor in front of a chest says it
+// could be opened; it does not say anyone can get there. Every dungeon chest's
+// front tile must be a cell the dungeon flood (tools/lib/dungeon-flood.mjs, the
+// same one walk-dungeons and check-dungeon-strands use) stands on. The flood
+// does not model every verb, so a chest reached only by one it lacks is named
+// below with the verb and the tool that proves that crossing — a new entry is a
+// decision, not a fix.
+{
+  const { installData } = await import('../src/data/index.js');
+  const { MAPS } = await import('../src/world/maps.js');
+  const { floodDungeon } = await import('./lib/dungeon-flood.mjs');
+  installData();
+  const BY_OTHER_VERB = {
+    // The Whelk Hollow: behind a kelp snarl only a Reefseed stake's blade cuts.
+    'd2/1,5,5 12,3': 'check-reefseed.mjs',
+    // The Keep's grate room: behind the grate only the Resonance Rod retracts.
+    'd6/2,2,4 7,2': 'check-trade.mjs',
+  };
+  let seen = 0; const out = []; const used = new Set();
+  for (const [id, m] of MAPS) {
+    if (!m.dungeon) continue;
+    const flood = floodDungeon(id);
+    for (const [k, def] of Object.entries(m.roomDefs)) {
+      for (const s of def.entities || []) {
+        if (s[0] !== 'chest') continue;
+        seen++;
+        if (flood.seen.has(`${k}:${s[1]},${s[2] + 1}`)) continue;
+        const tag = `${id}/${k} ${s[1]},${s[2]}`;
+        if (BY_OTHER_VERB[tag]) { used.add(tag); continue; }
+        out.push(`${tag}: no one can walk to the floor in front of it`);
+      }
+    }
+  }
+  for (const tag of Object.keys(BY_OTHER_VERB)) if (!used.has(tag)) out.push(`${tag}: listed as reached by another verb, but the flood reaches it (or it is gone): drop it from the list`);
+  console.log(`check-placement: ${seen} dungeon chests, the floor in front of each walked to`);
+  for (const l of out) console.log('  ' + l);
+  check('every dungeon chest can be walked up to from the front',
+    seen > 0 && out.length === 0, out.length ? `${out.length} cannot` : '');
+}
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

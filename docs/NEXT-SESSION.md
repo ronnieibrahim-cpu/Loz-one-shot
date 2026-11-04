@@ -1,3 +1,53 @@
+## S239 — indoor pieces stay ours; the picture guide re-shot; chests proved walkable
+
+Branch claude/oracle-tides-visual-review-0j5qm3, off main at a610922 (S238).
+
+### The human's choices this session
+- S238's outdoor pieces (docs/briefs/s238/outdoor-now.png): ALL RIGHT, KEEP
+  ALL, the faint salt-flat ledges included. Do not re-ask.
+- The last hand-drawn indoor pieces, shown as docs/briefs/s239/indoor-candidates.png
+  (ours beside the originals' piece swapped in, in the real rooms): KEEP ALL
+  OURS, DON'T SWAP. The mooring posts (dPost/dPostAbyss/cvPost; offered:
+  Seasons' stakes $b9 as outdoors), the Keep's silt (dSilt*; offered: the fire
+  maze's dug dirt $4c, TILEINDEX_DUNGEON_DUG_DIRT), the Shrine's trees (dBole;
+  offered: the Ancient Ruins' dungeon bush $20, which Seasons lets you cut).
+  Do not offer them again. The trial was committed and reverted on the branch.
+- Not offered: the Keep's grate (nothing in either cartridge is a metal grille
+  a rod retracts; ours by design), the portals, seals, lighthouse, vane.
+
+### Built
+- check-placement: every DUNGEON chest's front tile is a cell the dungeon
+  flood (tools/lib/dungeon-flood.mjs) stands on. Two are reached by verbs the
+  flood lacks and are listed with the tool that proves them: d2 1,5,5 (the
+  Whelk Hollow, behind a Reefseed snarl: check-reefseed) and d6 2,2,4 (behind
+  the grate: check-trade). A listed chest the flood does reach fails too.
+  Overworld and cave chests are not covered (no cell flood there for chests).
+- The picture guide (docs/guide) re-shot on the current game (last: S213).
+  remap-guide.mjs 60bc713 moved 333 numbers; three D1 shots set by hand: the
+  Crab Pit key and the Tide Gallery door wait on the key count (loose keys and
+  key doors have no text since S223), the first Essence waits on its cutscene
+  (held up, S220). The crab-pit caption no longer quotes "You found a Small
+  Key!". d2-glass-lens and d4-easttank-key still MISS, as before.
+
+### Found
+- tiles-core.js aliases a tile to its tiledef art only when no ART entry has
+  the tile's NAME (`!(name in ART)`), so a tile named like a hand art draws the
+  hand art whatever its `art` says. The trial's dPost swap showed nothing until
+  ART.dPost was deleted. A sweep (tiledef art != ART[name]) finds five today:
+  ledgeS/E/W/N (now owLedge*) and coralWall (ART.rock); none is drawn by that
+  name anywhere (artAt over every room and sea), so nothing on screen is wrong.
+
+### Verified
+Game code identical to main (src/ unchanged): test.mjs 142/142,
+check-placement 6/6. check-playthrough: see the last commit.
+
+### Not done / candidates
+- Side-scrolling passages (a whole mechanic; ask first); the urchin's shield
+  (ours); Seasons' open doorway has no jambs (ours, approved).
+- check-placement's walkable-front clause covers dungeons only.
+- A test that fails when a tiledef's art is shadowed by a same-named ART entry
+  and the tile is drawn (the five above are not).
+
 ## S238 — Seasons' own outdoor rocks, rock piles, soft soil, holes, stakes and drop ledges
 
 Branch claude/oracle-tides-ground-edges-p0s254, off main at 1b37499 (S237).
