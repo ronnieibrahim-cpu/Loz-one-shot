@@ -105,7 +105,7 @@ if (NERETH) {
     // Straight into the throne room. The boss spawns with the room.
     g.enterMap('d6', 2, 3, 0, 200, 150, 'up', { instant: true });
     const hasBoss = !!(g.boss || g.entities.some(e => e.isBoss));
-    // He waits for the shutters (S235); the scene fires as he starts.
+    // The held pose is `intro: 120` frames; the scene fires as it ends.
     await new Promise(res => {
       let n = 0;
       const tick = () => (++n > 400 || g.mode === 'cutscene') ? res() : requestAnimationFrame(tick);

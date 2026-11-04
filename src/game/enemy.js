@@ -64,7 +64,7 @@ import {
   ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE,
   ENEMY_ATTACK_FRAMES, ENEMY_HIT_FLASH_BEAT,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
-  BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
+  BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_DEATH_FRAMES,
   SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
@@ -581,6 +581,7 @@ export function defineEnemy(name, spec) {
 //     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
 //     hurtFrame: 'boss_gohmaraq_hurt',
 //     rate: 10,
+//     intro: 90,                  // frames of held pose, once the shutters are down
 //     shell: true,                // ignores hits unless weakOpen is set
 //     phases: [                   // picked by remaining health fraction
 //       { above: 0.66, ai(e, g) {} },
@@ -606,9 +607,9 @@ export class Boss extends Enemy {
     // a Lens tide-affinity marker" for every `Boss` instance regardless.
     this._bossClass = true;
     this.oncePerGame = spec.oncePerGame !== false;
-    // Waiting to start: held still until the room's shutters are down
-    // (S235; `Game.bossMayStart`). 1 while waiting, 0 once started.
-    this.intro = 1;
+    // Its held pose: it counts down only once the room's shutters are down
+    // (S235; `Game.bossMayStart`), and the boss starts when it runs out.
+    this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
     this.phase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
@@ -646,15 +647,17 @@ export class Boss extends Enemy {
       return;
     }
 
-    // A BOSS STARTS WHEN THE SHUTTERS ARE DOWN (S235, the human's choice).
-    // Seasons' bosses each poll wcc93 — set by enemyBoss_initializeRoom,
-    // counted down by doorController as each shutter finishes closing — and
-    // do nothing until it reads 0 (aquamentus_state_spawner, gleeok,
-    // dodongo, manhandla, frypolar, agunima...). It was a guessed held pose
-    // of 40 to 120 frames (BOSS_INTRO_FRAMES, `intro` in each spec; gone).
+    // A BOSS WAITS FOR THE SHUTTERS, THEN HOLDS ITS POSE (S235, the human's
+    // choice). Seasons' bosses each poll wcc93 — set by
+    // enemyBoss_initializeRoom, counted down by doorController as each
+    // shutter finishes closing — and do nothing until it reads 0; then some
+    // go at once (gleeok, dodongo) and some hold an opening of their own
+    // first (omuai counter1 $5a, manhandla, frypolar). Ours are the second
+    // kind: the pose (`intro`) is not counted until the shutters are down.
     if (this.intro > 0) {
       if (game.bossMayStart && !game.bossMayStart()) return;
-      this.intro = 0;
+      this.intro--;
+      if (this.intro > 0) return;
       if (this.spec.onIntro) this.spec.onIntro(this, game);
       // The room has been silent since Link came in (S232, Seasons'
       // enemyBoss_initializeRoom); the fight's theme starts as the fight

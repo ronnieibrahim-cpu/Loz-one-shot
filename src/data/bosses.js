@@ -252,7 +252,7 @@ export function installBosses() {
     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
     openFrames: ['boss_gohmaraq_open_0', 'boss_gohmaraq_open_1', 'boss_gohmaraq_open_2'],
     hurtFrame: 'boss_gohmaraq_hurt',
-    shell: true, terrain: 'any', drops: 'none',
+    intro: 90, shell: true, terrain: 'any', drops: 'none',
     init(e) { e._pdir = 'right'; e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
@@ -320,7 +320,7 @@ export function installBosses() {
     frames: ['boss_anemos_0', 'boss_anemos_1', 'boss_anemos_2'],
     openFrames: ['boss_anemos_open_0', 'boss_anemos_open_1', 'boss_anemos_open_2'],
     hurtFrame: 'boss_anemos_hurt',
-    shell: true, terrain: 'any', drops: 'none',
+    intro: 80, shell: true, terrain: 'any', drops: 'none',
     // Read by `tools/actor-runtime.mjs`'s `dBoss`: this fight's final phase
     // gates its own fire on `!e.weakOpen` (search that string below), so
     // `weakOpen === true` genuinely means "will not attack" here, unlike a
@@ -424,7 +424,7 @@ export function installBosses() {
     w: 32, h: 32, hb: { x: 4, y: 10, w: 24, h: 20 },
     frames: ['boss_gloomtide_0', 'boss_gloomtide_1', 'boss_gloomtide_2'],
     hurtFrame: 'boss_gloomtide_hurt',
-    terrain: 'any', drops: 'none',
+    intro: 80, terrain: 'any', drops: 'none',
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       surface(e);                       // phase 3 does not submerge
@@ -496,7 +496,7 @@ export function installBosses() {
     frames: ['boss_wyverna_0', 'boss_wyverna_1'],
     openFrames: ['boss_wyverna_open_0'],
     hurtFrame: 'boss_wyverna_hurt',
-    shell: true, terrain: 'air', drops: 'none',
+    intro: 80, shell: true, terrain: 'air', drops: 'none',
     // Read only by tools/actor-runtime.mjs's `dBoss` (as Rootmaw's is): when
     // she has flooded the cistern and flown out of reach, one sound of the
     // conch (HIGH -> LOW) beaches her — the fight's own answer (S166).
@@ -590,7 +590,7 @@ export function installBosses() {
     frames: ['boss_rootmaw_0', 'boss_rootmaw_1', 'boss_rootmaw_2'],
     openFrames: ['boss_rootmaw_open_0', 'boss_rootmaw_open_1'],
     hurtFrame: 'boss_rootmaw_hurt',
-    shell: true, terrain: 'any', drops: 'none',
+    intro: 90, shell: true, terrain: 'any', drops: 'none',
     // Read by `tools/actor-runtime.mjs`'s `dBoss`. `rootmawTide`'s HIGH
     // branch (below) shuts him and heals him with no reopen of its own —
     // unlike every other shelled boss, which has at least one attack that
@@ -721,7 +721,7 @@ export function installBosses() {
     // every pre-fight delay from one frame to eighteen hundred. The colossus's
     // payout is the fairy placed beside its chest in `dungeons-b.js`, which is
     // worth more than a drop table and does not move a single roll.
-    shell: true, terrain: 'any', drops: 'none',
+    intro: 90, shell: true, terrain: 'any', drops: 'none',
     // Read by the test actor only (`dBoss`), in the function form Nereth's
     // uses: the colossus drains the vault to LOW on a timer to set its crust
     // again, and the answer — the one the room's own inscription gives — is to
@@ -811,7 +811,7 @@ export function installBosses() {
     w: 32, h: 32, hb: { x: 4, y: 9, w: 24, h: 20 },
     frames: ['boss_thalassor_0', 'boss_thalassor_1', 'boss_thalassor_2'],
     hurtFrame: 'boss_thalassor_hurt',
-    terrain: 'any', drops: 'none',
+    intro: 90, terrain: 'any', drops: 'none',
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       surface(e);                       // phase 3 leaves the reef for good
@@ -929,7 +929,7 @@ export function installBosses() {
     frames: ['boss_nereth_0', 'boss_nereth_1', 'boss_nereth_2', 'boss_nereth_3'],
     openFrames: ['boss_nereth_open_0', 'boss_nereth_open_1'],
     hurtFrame: 'boss_nereth_hurt',
-    shell: true, terrain: 'any', drops: 'none',
+    intro: 120, shell: true, terrain: 'any', drops: 'none',
     // Read by `tools/actor-runtime.mjs`'s `dBoss` — see the matching comment
     // on `anemos` above. His shell opens via `nerethOpening`/his final
     // phase's own cycle, never via a stun, so `b.stun` alone could never see
@@ -960,7 +960,8 @@ export function installBosses() {
     // the game plays that track, the final boss theme had never been heard
     // either. Both were reachable only from here.
     //
-    // It fires as he starts, once the shutters are down (S235), which is where a boss's
+    // It fires at the END of the held intro pose (counted once the shutters
+    // are down, S235), which is where a boss's
     // first line belongs: the room has had its beat of him standing there,
     // then he talks, then the tide unlocks and the fight is on. Firing it any
     // earlier would talk over the entrance; any later and it interrupts a
@@ -1149,7 +1150,7 @@ export function installBosses() {
   // =========================================================================
   // MINIBOSSES
   // =========================================================================
-  // 24x24, one third to one half of a boss's health, and no phase
+  // 24x24, one third to one half of a boss's health, `intro: 40`, and no phase
   // that is not visible in ten seconds of play. Each carries a light version of
   // its dungeon's tide idea so the miniboss room teaches the boss room.
 
@@ -1159,7 +1160,7 @@ export function installBosses() {
     hp: 14, damage: 3, pal: 'enemyr', speed: 0.8, rate: 8,
     w: 24, h: 24, hb: { x: 3, y: 7, w: 18, h: 15 },
     frames: ['mini_clawcrab_0', 'mini_clawcrab_1'],
-    terrain: 'any', drops: 'rich',
+    intro: 40, terrain: 'any', drops: 'rich',
     init: miniInit, onDie: miniDie,
     phases: [
       { above: 0.50, ai(e, g) {
@@ -1193,7 +1194,7 @@ export function installBosses() {
     hp: 16, damage: 3, pal: 'coral', speed: 0.5, rate: 10,
     w: 24, h: 24, hb: { x: 3, y: 7, w: 18, h: 15 },
     frames: ['mini_reefguard_0', 'mini_reefguard_1'],
-    shell: true, terrain: 'any', drops: 'rich',
+    intro: 40, shell: true, terrain: 'any', drops: 'rich',
     init(e) { miniInit(e); e._open = 0; },
     onDie: miniDie,
     phases: [
@@ -1227,7 +1228,7 @@ export function installBosses() {
     hp: 15, damage: 3, pal: 'bog', speed: 0.55, rate: 11,
     w: 24, h: 24, hb: { x: 3, y: 7, w: 18, h: 15 },
     frames: ['mini_bogmaw_0', 'mini_bogmaw_1'],
-    terrain: 'any', drops: 'rich',
+    intro: 40, terrain: 'any', drops: 'rich',
     init: miniInit, onDie: miniDie,
     onPhase(e) { surface(e); },         // phase 2 stays up
     phases: [
@@ -1261,7 +1262,7 @@ export function installBosses() {
     hp: 18, damage: 3, pal: 'stonedk', speed: 0.55, rate: 10,
     w: 24, h: 24, hb: { x: 3, y: 7, w: 18, h: 15 },
     frames: ['mini_ironknight_0', 'mini_ironknight_1'],
-    shell: true, terrain: 'any', drops: 'rich',
+    intro: 40, shell: true, terrain: 'any', drops: 'rich',
     init(e) { miniInit(e); e._open = 0; },
     onDie: miniDie,
     phases: [
@@ -1299,7 +1300,7 @@ export function installBosses() {
     hp: 16, damage: 3, pal: 'tree', speed: 0, rate: 12,
     w: 24, h: 24, hb: { x: 3, y: 6, w: 18, h: 17 },
     frames: ['mini_thornvine_0', 'mini_thornvine_1'],
-    terrain: 'any', drops: 'rich',
+    intro: 40, terrain: 'any', drops: 'rich',
     init: miniInit, onDie: miniDie,
     phases: [
       { above: 0.50, ai(e, g) {
@@ -1329,7 +1330,7 @@ export function installBosses() {
     hp: 17, damage: 3, pal: 'ice', speed: 0, rate: 12,
     w: 24, h: 24, hb: { x: 3, y: 6, w: 18, h: 16 },
     frames: ['mini_saltwraith_0', 'mini_saltwraith_1'],
-    terrain: 'any', drops: 'rich',
+    intro: 40, terrain: 'any', drops: 'rich',
     init: miniInit, onDie: miniDie,
     onPhase(e) { surface(e); },
     phases: [
@@ -1368,7 +1369,7 @@ export function installBosses() {
     hp: 18, damage: 3, pal: 'enemyy', speed: 1.1, rate: 6,
     w: 24, h: 24, hb: { x: 3, y: 6, w: 18, h: 15 },
     frames: ['mini_gustharpy_0', 'mini_gustharpy_1'],
-    terrain: 'air', drops: 'rich',
+    intro: 40, terrain: 'air', drops: 'rich',
     // A HOVERER, SAID SO (S160): `z` is how high it is drawn, and it is what
     // `enemyHurtRect` lifts the box by. Set only in `init`, the eight pixels
     // read as a jump — at or over ENEMY_CONTACT_Z, which the cartridge treats
@@ -1415,7 +1416,7 @@ export function installBosses() {
     hp: 20, damage: 3, pal: 'shadow', speed: 0.75, rate: 9,
     w: 24, h: 24, hb: { x: 3, y: 7, w: 18, h: 15 },
     frames: ['mini_tideshade_0', 'mini_tideshade_1'],
-    terrain: 'any', drops: 'rich',
+    intro: 40, terrain: 'any', drops: 'rich',
     init: miniInit, onDie: miniDie,
     onPhase(e) { surface(e); },
     phases: [
