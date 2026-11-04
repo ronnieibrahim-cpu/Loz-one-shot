@@ -3819,6 +3819,10 @@ export const ROUTE = [
   // S164: wading stopped slowing Link and that set died; swept ten option
   // sets, then the two winners over six entry waits — the open-floor retreat
   // added wins on 5 of 6 (waits 40-80 before the last conch).
+  // S235 (bosses hold their pose once the shutters are down): the fight
+  // cost 33 of 42 and left the run on 2. Swept a wait here 0-300 by 3: 294
+  // wins on a full bar (159 on 37/44); both run to THE END. 294.
+  ['wait', 294],
   ['boss', 12000, 'brinehulk', { openRetreat: true, diagRetreat: true, reachSwing: true }],
   ['wait', 240],
 
