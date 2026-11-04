@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Look at a metatile in a real room before offering it as one piece
+  (S238).** Seasons' $2d-$2f "log posts" read as a row in a 16-wide tileset
+  render and were shown to the human as a post; laid out they are the top,
+  middle and foot of a TALL palisade. The lone post is $b9 (138 uses in
+  group 0). Count uses in rooms/seasons/small/room00XX.bin and render one
+  room before picking. And metatile numbers hold only within one layout:
+  tileset $00's $54 is a ledge, the mountains' ($09) is not.
+- **A sheet's sand can sit inside the object (S238).** key_background floods
+  from the edge and kept Seasons' sand and grass tufts inside ledges and
+  rocks. For outdoor pieces key by COLOUR (`KEY_BY_COLOUR` in
+  rip-dungeon-themes.py) and emit the rest one step down (1-3) so any of our
+  four-tone palettes draws it; validate matches theme art by VALUE, so the
+  shift has to happen in the ripper, not in tiles-core.
 - **A theme's legend override must come after `theme(...)` (S237).**
   `registerLegend(name, map, base)` copies the base at that moment, and
   `theme()` rebuilds the dungeon's legend from the shared one, so an override

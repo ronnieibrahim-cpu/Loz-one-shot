@@ -949,6 +949,25 @@ PICKS = [
     meta('geUR', 0x17, 'a grass patch, sand north and east, Holodrum (spring)', 'spring'),
     meta('geDL', 0x1a, 'a grass patch, sand west and south, Holodrum (spring)', 'spring'),
     meta('geDR', 0x1c, 'a grass patch, sand east and south, Holodrum (spring)', 'spring'),
+    # ---- The overworld's scenery (S238) --------------------------------------
+    #
+    # Ours had been drawn by hand: a round grey boulder, the same with a crack,
+    # a cliff course with a crack, two rings in the sand for a dig spot, a black
+    # trench for a sinkhole or a gap, a square wooden block for a mooring post,
+    # and a dark band with drips for a drop ledge. These are Seasons' own for
+    # each job, from the same spring tileset; tiles-core.js reads them in each
+    # place's own colours (the human's choice, S238). Their sand is keyed out.
+    # The ledges are tileset $00's own (cliffTiles.s @overworld: $27 left, $28
+    # right, $2a up, $cc-$cf down).
+    meta('owBoulder', 0x64, 'a big rock, Holodrum (spring)', 'spring'),
+    meta('owRubble', 0xe2, 'a rock pile bombs clear, opening a cave ($e8) (breakableTiles.s mode $0c), Holodrum (spring)', 'spring'),
+    meta('owSoil', 0xe6, 'soft soil, Holodrum (spring)', 'spring'),
+    meta('owHole', 0xf3, 'a hole (TILEINDEX_HOLE), Holodrum (spring)', 'spring'),
+    meta('owStakes', 0xb9, 'two wooden stakes, the commonest post on the map, Holodrum (spring)', 'spring'),
+    meta('owLedgeS', 0xcf, 'a drop ledge, south (cliffTiles.s $cf ANGLE_DOWN), Holodrum (spring)', 'spring'),
+    meta('owLedgeE', 0x28, 'a drop ledge, east ($28 ANGLE_RIGHT), Holodrum (spring)', 'spring'),
+    meta('owLedgeW', 0x27, 'a drop ledge, west ($27 ANGLE_LEFT), Holodrum (spring)', 'spring'),
+    meta('owLedgeN', 0x2a, 'a drop ledge, north ($2a ANGLE_UP), Holodrum (spring)', 'spring'),
     # ---- The houses (S215) ---------------------------------------------------
     #
     # Our shop, homes and lighthouse were grey stone boxes. Seasons' houses
@@ -1046,6 +1065,14 @@ PICKS = [
 # `uStatue` is not in it (S162): Mermaid's Cave's magenta block fills its
 # whole cell, so its dark faces ARE its border run, and keying ate them.
 KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue', 'holdPot'}
+# THE OVERWORLD'S SCENERY (S238) is keyed by COLOUR, not by a flood from the
+# edge: Seasons' sand (#ffff73) and the two greens of the grass tufts it sows
+# in it are the ground, wherever they are in the tile, and become `.`. What
+# is left is the rock, soil, hole, posts or ledge in at most three colours,
+# emitted as 1-3 so tiles-core.js can lay it into each place's own palette.
+KEY_COLOURS = {(0xff, 0xff, 0x73), (0xa5, 0xff, 0x21), (0x29, 0xad, 0x00)}
+KEY_BY_COLOUR = {'owBoulder', 'owRubble', 'owSoil', 'owHole', 'owStakes',
+                 'owLedgeS', 'owLedgeE', 'owLedgeW', 'owLedgeN'}
 
 
 def lum(c):
@@ -1225,6 +1252,8 @@ def main():
     for pick in PICKS:
         name, x, y, note, sheet = unpack(pick)
         block = quarters(pick, transform(pick, read(images[sheet], x, y)))
+        if name in KEY_BY_COLOUR:
+            block = [[None if p in KEY_COLOURS else p for p in row] for row in block]
         if flipped(pick):
             note += ' (mirrored)'
         if vflipped(pick):
@@ -1233,6 +1262,13 @@ def main():
             note += ' (turned %+d)' % rotation(pick)
         before = len({p for row in block for p in row if p is not None})
         grid, keep = quantise(block)
+        if name in KEY_BY_COLOUR:
+            # One step down: the cartridge's orange, brown and black land on
+            # 1-3, the mid tone, the dark and the outline of whichever of our
+            # four-tone palettes the tiledef binds (S238). Slot 0 repeats the
+            # lightest so the tile's own palette still draws it as it was.
+            grid = [''.join(str(int(c) + 1) if c in '012' else c for c in row) for row in grid]
+            keep = [keep[0]] + keep[:3]
         if name in KEY_BACKGROUND:
             grid = key_background(grid)
         if before > 4:
