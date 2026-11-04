@@ -960,7 +960,8 @@ export function installBosses() {
     // the game plays that track, the final boss theme had never been heard
     // either. Both were reachable only from here.
     //
-    // It fires at the END of the held intro pose, which is where a boss's
+    // It fires at the END of the held intro pose (counted once the shutters
+    // are down, S235), which is where a boss's
     // first line belongs: the room has had its beat of him standing there,
     // then he talks, then the tide unlocks and the fight is on. Firing it any
     // earlier would talk over the entrance; any later and it interrupts a

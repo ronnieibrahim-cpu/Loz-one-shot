@@ -1,8 +1,8 @@
-# Next session (S235)
+# Next session (S236)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S234 and S233; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S235 and S234; docs/HANDOFF.md lessons (top ten).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code
@@ -13,6 +13,9 @@
   says the same under the Ages rule.
 
 ## State
+- S235: a boss waits for the shutters, then holds its own pose, then
+  fights (the human chose this over starting at once). check-playthrough
+  49/49, THE END, never died, low-water 5, 316364 frames.
 - S234: boss and miniboss rooms shut every way in behind Link (doors and
   plain gaps), open after the smoke; a beamos does not hold them. The robot
   plays the whole game behind them (cornerSwing, the Sluice anchor fix).
@@ -32,20 +35,18 @@
   beamos statue, shots through a flashing Link; S229 darknut guard,
   shieldless crab; S230 floating keese/bubble, side-on hovering fairy,
   still floor treasures; S231 boss death; S232 boss-room entry; S233 prizes
-  after the smoke; S234 boss doors (ask how they feel in play once).
+  after the smoke; S234 boss doors (played: feel right); S235 bosses wait
+  for the shutters, then hold their pose.
 
 ## The task
-- Ask the human how the shutting boss doors feel in play
-  (docs/briefs/s234/boss-doors.png).
-- Offer (ask first, it changes every fight): bosses starting when the
-  shutters are down, as Seasons' do, instead of the guessed intro count.
-- Carry on the look-through against BOTH originals (S234/S233 "Not done"
+- Carry on the look-through against BOTH originals (S235/S234 "Not done"
   lists; clone github.com/Stewmath/oracles-disasm to a scratch folder).
   Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare
-  route-prefix traces against a worktree of ORIGIN/main, line frames up
-  with a wait where you can, else sweep with PATCH and run winners to THE
-  END (HANDOFF S228-S234). Look at FRAMES before sweeping (S234).
+  route-prefix traces against a worktree of ORIGIN/main; if a boss's start
+  moved by N frames, add N to the wait before it first (HANDOFF S235), else
+  sweep with PATCH and run winners to THE END. Look at FRAMES before
+  sweeping (S234); SETHP tells a health problem from a tactic one (S235).
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

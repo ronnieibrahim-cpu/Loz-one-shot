@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Shift a fight, then wait the shift: it replays to the frame (S235).**
+  When a change moves a boss's start by N frames and nothing else in the room
+  moves before it starts, adding N to the robot's last wait before the
+  fight replays the old fight exactly (the Clawcrab and Gohmaraq did, to the
+  frame). It fails the moment anything else in the room is walking (the
+  Reefguard's urchin), and from there on every fight is a fresh sweep. Try
+  the shift first; it is one run instead of a hundred and fifty.
+- **Ask whether a lost fight wants health or a tactic before sweeping
+  (S235).** route-prefix `SETHP=<frame>=<quarter-hearts>`: Gloomtide with a
+  boss that started a second sooner lost even on a full bar, which no wait
+  sweep at ten hearts-quarters could have told apart from bad luck. That
+  answer is what turned "re-tune the robot" into a question for the human
+  (the boss now holds its pose AFTER the shutters, and the old fights came
+  back within reach).
 - **A door rule that reads one tile name misses the rooms with none (S234).**
   S233's shutters closed `dDoorOpen` cells only, and half the boss rooms are
   entered through a plain gap in the wall — including the den the mock was

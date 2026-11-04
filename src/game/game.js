@@ -1180,6 +1180,21 @@ export class Game {
     }
   }
 
+  /**
+   * May this room's boss start yet? (S235.) Seasons' bosses wait for wcc93,
+   * the count of shutters still closing, to read 0. Ours: once this room's
+   * shutters are down — or, in a room with nothing to shut, once Link's walk
+   * in is over. While he stands in the doorway the shutters wait, and so does
+   * the boss, as in the cartridge.
+   */
+  bossMayStart() {
+    const room = this.room;
+    if (!room || this.transition || this._bossDoorsFor !== room) return false;
+    const b = this.bossDoors;
+    if (!b || b.room !== room) return this.entryWalk <= 0;
+    return b.state === 'shut' || b.state === 'opening';
+  }
+
   /** Leaving a boss room: whatever it shut is open again. */
   releaseBossDoors() {
     const b = this.bossDoors;

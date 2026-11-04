@@ -1026,7 +1026,8 @@ const main = async () => {
     // Silent while it holds its entrance pose (S232, Seasons'
     // enemyBoss_initializeRoom stops the music); its tune when it starts.
     out.waiting = track();
-    e.intro = 1; e.update(g);
+    // It starts once the shutters are down and its pose is held (S235).
+    for (let i = 0; i < 400 && e.intro > 0; i++) window.__harness.step(1);
     out.during = track(); out.isBoss = !!e.isBoss;
     e.die(g);
     while (e.dying) e.update(g);

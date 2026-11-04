@@ -1592,7 +1592,8 @@ export const ENEMY_ALIGN_TOLERANCE = 12;
 /** f — how long an aquatic enemy survives on dry land after the tide drops. guessed. */
 export const ENEMY_BEACHED_FRAMES = 90;
 
-/** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
+/** f — a boss's held pose before it starts acting, if its spec omits one,
+ *  counted from when the room's shutters are down (S235). guessed. */
 export const BOSS_INTRO_FRAMES = 80;
 
 /** f — how long Link walks himself into a boss's or a miniboss's room after
