@@ -407,8 +407,10 @@ export const ROUTE = [
   // back is gone (the wait counts as two do-nothing steps to keep the
   // route's numbering). Swept 0-200 by 2 with and without it: 120 from
   // where the walk leaves him wins on 10/12, and Gohmaraq after on 9/16.
+  // S235: a boss holds its pose only once the shutters are down, 31 frames
+  // later; 120 + 31 replays the same fight to the frame.
   ['wait', 0], ['wait', 0],
-  ['wait', 120],
+  ['wait', 151],
   ['boss', 6000, 'clawcrab', { reachSwing: true, diagRetreat: true }],
   ['dialogue', 600],
   ['loot', 1500],
@@ -521,7 +523,8 @@ export const ROUTE = [
   // S233 WIP (boss doors shut behind Link): the step back now stops at y 144
   // against the shut door. Swept 185-420 by 1 with two option sets: 213
   // with reachSwing + diagRetreat wins on 9/16 (was 6/16).
-  ['wait', 213],
+  // S235 (the pose waits for the shutters): 213 + 31, the same fight.
+  ['wait', 244],
 
   // ---------------------------------------------------------------- d1 0,3,1
   // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
@@ -825,6 +828,10 @@ export const ROUTE = [
   // fight died; re-swept five option sets at six holds — `reachSwing` after a
   // hold of 155-185 wins on a full bar every time. Then walking went back to
   // Seasons' 1 px/f: `reachSwing` again, now at holds 120-135 (and 105-110).
+  // S235 (the pose waits for the shutters): 31 more, so he starts the fight
+  // as far before the Reefguard does as he did. Not the same fight to the
+  // frame — the urchin keeps walking while the shutters close — but 18/20.
+  ['wait', 31],
   ['boss', 6000, 'reefguard', { reachSwing: true }],
   ['dialogue', 300],
   // S232: Link walks himself into the Hall now and its hold ran out four
@@ -918,7 +925,10 @@ export const ROUTE = [
   ['use', 'conch', 1, 140],
   ['exit', 'up', 400],
   ['hold', ['down'], 16], ['hold', ['up'], 1],   // S232: see the Clawcrab
-  ['wait', 58],    // S232: 90 - 32
+  // S232: 90 - 32. S235 (the pose waits for the shutters; the run after
+  // the Reefguard is not the same run): swept 0-300 by 2, 50 and 278 win on
+  // 8/24 (was 5/24). 50.
+  ['wait', 50],
 
   // ---------------------------------------------------------------- d2 1,3,1
   // ANEMOS, THE CROWNED COLUMN. His timers run off the absolute frame, so
@@ -1411,7 +1421,9 @@ export const ROUTE = [
   // wait lost: the retreat pinned him in the south-west corner with Bogmaw
   // on him. `cornerSwing` (see actor-runtime) swings out of it; swept 0-200
   // by 2, 14 wins on 14/28 and the fairy after it makes 18.
-  ['wait', 14],
+  // S235 (the pose waits for the shutters): swept 0-300 by 2; 2-10 win on
+  // 15/28 with no fairy after. 6.
+  ['wait', 6],
   ['boss', 9000, 'bogmaw', { reachSwing: true, diagRetreat: true, waitInvuln: true, cornerSwing: true }],
   ['wait', 120],
   ['dialogue', 400],
@@ -1597,7 +1609,10 @@ export const ROUTE = [
   // option sets: with `cornerSwing` added every wait from 0 to 32 wins on
   // 6/28 (the same fight: the boss's own entrance swallows the difference),
   // and every wait from 34 loses. 16, the middle.
-  ['wait', 16],
+  // S235 (the pose waits for the shutters; in on 15/28): swept 0-300 by 2
+  // with the old options (best 3/28 at 126), then 0-200 by 4 over five option
+  // sets: `breakContact` added wins at 49-60; by 1, 49 on 8/28. THIN.
+  ['wait', 49],
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1610,7 +1625,7 @@ export const ROUTE = [
   // S166: Seasons' 32-frame boss safety window — hold off while he is safe.
   // S167: `openRetreat` and `diagRetreat` both on (see the wait above) — the
   // S131 seed that openRetreat flipped is long gone.
-  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true, cornerSwing: true }],
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true, cornerSwing: true, breakContact: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —
@@ -2817,7 +2832,9 @@ export const ROUTE = [
   ['hold', ['up'], 60],
   // S166: 60-240 win; 90 on 19 of 40. S228 (the run arrives 112 frames
   // later): 0-48 and 84 win on 11/40, 66-72 and 174-234 on 1-2. 24.
-  ['wait', 24],
+  // S235 (the pose waits for the shutters): swept 0-300 by 2; 130-140 win
+  // on 17/40 (was 14). 138.
+  ['wait', 138],
 
   // ---------------------------------------------------------------- d5 0,3,1
   // ROOTMAW, THE DROWNED WOOD, and the fifth Essence, which stands at 7,4 in
