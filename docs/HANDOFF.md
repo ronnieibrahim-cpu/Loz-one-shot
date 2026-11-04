@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A tile named like a hand art draws the hand art (S239).** tiles-core.js
+  aliases a tiledef's `art` under its name only when ART has no entry of that
+  name, so repointing `dPost.art` changed nothing on screen while `getTileDef`
+  reported the new art — and a probe reading `getTileDef(n).art` believed it.
+  Delete or rename the ART entry, then LOOK at a screenshot.
+- **Loose keys and key doors are quiet since S223 (S239).** Guide shots that
+  waited on a text box for them silently MISSed; wait on the key count
+  (`g.progress.keys[map]`) instead. The Essence is a cutscene (`g.cutscene`).
+
 - **Look at a metatile in a real room before offering it as one piece
   (S238).** Seasons' $2d-$2f "log posts" read as a row in a 16-wide tileset
   render and were shown to the human as a post; laid out they are the top,
