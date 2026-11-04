@@ -504,6 +504,15 @@ export function installLegends() {
   for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss', 'AbyssIce']) {
     registerLegend('dungeon' + T, { '/': 'dStairsDown' + T, 'S': 'dStairsUp' + T }, 'dungeon' + T);
   }
+  // Each dungeon's own hole (S236): a pit `O`, and the sump `0` and drain `4`
+  // that are that hole at LOW, in the dungeon's own $f3-$f7 rather than the
+  // shared hand-drawn navy `dPit`. The Cistern, the Hold and the optional
+  // Eyrie and Palace already name theirs.
+  registerLegend('dungeonGrotto', { '0': 'dSumpGrotto', '4': 'dDrainGrotto' }, 'dungeonGrotto');
+  registerLegend('dungeonBog', { 'O': 'dPitBog', '0': 'dSumpBog' }, 'dungeonBog');
+  for (const T of ['Coral', 'Wood', 'Abyss', 'Salt']) {
+    registerLegend('dungeon' + T, { 'O': 'dPit' + T, '0': 'dSump' + T, '4': 'dDrain' + T }, 'dungeon' + T);
+  }
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

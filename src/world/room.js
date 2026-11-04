@@ -397,7 +397,15 @@ export class Room {
       if (f) return f;
     }
     if (d.lip) {
-      const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
+      // The lip is the FLOOR's edge (S236): the cartridge's rooms put $f5/$f6
+      // only where floor meets the run from above or below, and a hole under
+      // a wall is plain $f4 (rooms/seasons/large/room0527.bin's top row). So
+      // a wall — the ring or a block of masonry — does not count.
+      const other = (ny) => {
+        if (ny < 0 || ny >= this.th) return false;
+        const o = this.tile(x, ny, tide);
+        return o.family !== d.family && !o.ring && !o.ringWall;
+      };
       const n = other(y - 1), s = other(y + 1);
       // A hole alone in the floor (S189): the cartridge's rimmed $f3, when
       // the cells either side are not hole either.

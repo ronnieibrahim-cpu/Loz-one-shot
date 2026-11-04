@@ -862,6 +862,44 @@ PICKS = [
     meta('holdHoleS', 0xf6, 'the hole, floor below it, the Sword & Shield Maze (ice)', 'mazeIce'),
     meta('holdHoleNS', 0xf7, 'the hole, floor above and below, the Sword & Shield Maze (ice)', 'mazeIce'),
     meta('holdHoleOne', 0xf3, 'a hole alone in the floor, the Sword & Shield Maze (ice)', 'mazeIce'),
+    # THE BOSS DOOR (S236), metatile $74 (a boss door in a north wall; $75-$77
+    # the other walls) in the Grotto's kit, the Sword & Shield Maze's ice
+    # half, which had drawn the shared hand-cut gold `dDoorBoss` because no
+    # sheet held one. And the Coral Spire's whole door set from its own
+    # tileset, the Explorer's Crypt: key doors $70-$73, the boss door $74 and
+    # shutters $78-$7b (doorController.s), each in that dungeon's own colour,
+    # where it had borrowed the Grotto's olive doors off the stitched map.
+    meta('gBossN', 0x74, 'boss door in a north wall, the Sword & Shield Maze (ice)', 'mazeIce'),
+    *[meta('c%s%s' % (kind, d), m + k, '%s in %s wall, the Explorer\'s Crypt' % (what, wall), 'cryptMeta')
+      for kind, m, what in (('Key', 0x70, 'key door'), ('Shut', 0x78, 'shutter'))
+      for k, (d, wall) in enumerate((('N', 'a north'), ('E', 'an east'), ('S', 'a south'), ('W', 'a west')))],
+    meta('cBossN', 0x74, 'boss door in a north wall, the Explorer\'s Crypt', 'cryptMeta'),
+    # EVERY DUNGEON'S OWN HOLE (S236). Both cartridges draw a hole with the
+    # same five metatiles in every dungeon tileset (TILETYPE_HOLE $f3-$f7,
+    # tileTypeMappings.s @dungeons), each in that dungeon's own floor colour:
+    # $f4 inside a run, $f5 with floor above it, $f6 with floor below, $f7
+    # both, $f3 a hole alone in the floor. The room layouts put the lip only
+    # where FLOOR meets the run from above or below, never against a wall
+    # (rooms/seasons/large/room0527.bin, room0502.bin). The Keep's fire half
+    # (`kHole*`) and the Hold (`holdHole*`, also the Grotto's) were already
+    # cut; these are the rest, and they replace the shared hand-drawn navy
+    # `dPit` every other dungeon's pits and drains were drawn with.
+    *[meta(p + suf, m, '%s, %s' % (what, where), sheet)
+      for p, sheet, where in (
+          ('cHole', 'cryptMeta', "the Explorer's Crypt"),
+          ('xHole', 'dragonMeta', 'the Dancing Dragon Dungeon'),
+          ('bPit', 'mothMeta', "the Poison Moth's Lair"),
+          ('rPit', 'ruinsMeta', 'the Ancient Ruins'),
+          ('hPit', 'heros', "the Hero's Cave"),
+          ('nPit', 'snakes', "Snake's Remains"),
+          ('uPit', 'mermaid', "Mermaid's Cave"))
+      for suf, m, what in (
+          ('', 0xf4, 'the hole, inside a run'),
+          ('N', 0xf5, 'the hole, floor above it'),
+          ('S', 0xf6, 'the hole, floor below it'),
+          ('NS', 0xf7, 'the hole, floor above and below'),
+          ('One', 0xf3, 'a hole alone in the floor'))
+      if p + suf not in ('xHole', 'nPit', 'nPitN', 'uPit')],
     meta('kStairsDown', 0x45, 'the stair down, the Sword & Shield Maze (fire)', 'mazeFire'),
     # ---- Farore's room (S168) ------------------------------------------------
     #
