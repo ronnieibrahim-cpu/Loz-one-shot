@@ -12380,7 +12380,15 @@ class Room {
       if (f) return f;
     }
     if (d.lip) {
-      const other = (ny) => ny >= 0 && ny < this.th && this.tile(x, ny, tide).family !== d.family;
+      // The lip is the FLOOR's edge (S236): the cartridge's rooms put $f5/$f6
+      // only where floor meets the run from above or below, and a hole under
+      // a wall is plain $f4 (rooms/seasons/large/room0527.bin's top row). So
+      // a wall — the ring or a block of masonry — does not count.
+      const other = (ny) => {
+        if (ny < 0 || ny >= this.th) return false;
+        const o = this.tile(x, ny, tide);
+        return o.family !== d.family && !o.ring && !o.ringWall;
+      };
       const n = other(y - 1), s = other(y + 1);
       // A hole alone in the floor (S189): the cartridge's rimmed $f3, when
       // the cells either side are not hole either.
@@ -55432,6 +55440,785 @@ const DUNGEON_THEME_ART = {
     0002222222222200
     0011002200200110`,
 
+  // boss door in a north wall, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $74
+  gBossN: `
+    3000000000000003
+    3300000000000033
+    3030000000000303
+    3003133333313003
+    3100300000030013
+    3310100000010133
+    3131001331001313
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3123100330013213
+    3130010330100313
+    3130330330330313
+    3133231001323313
+    3122223113222213
+    3333333333333333`,
+
+  // key door in a north wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $70
+  cKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in an east wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $71
+  cKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // key door in a south wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $72
+  cKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in a west wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $73
+  cKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in a north wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $78
+  cShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in an east wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $79
+  cShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a south wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $7a
+  cShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in a west wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $7b
+  cShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // boss door in a north wall, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $74
+  cBossN: `
+    3000000000000003
+    3300000000000033
+    3030000000000303
+    3003133333313003
+    3100300000030013
+    3310100000010133
+    3131001331001313
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3123100330013213
+    3130010330100313
+    3130330330330313
+    3133231001323313
+    3122223113222213
+    3333333333333333`,
+
+  // the hole, inside a run, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $f4
+  cHole: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the hole, floor above it, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $f5
+  cHoleN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $f6
+  cHoleS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $f7
+  cHoleNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Explorer's Crypt — Seasons tileset $3e (the Explorer's Crypt), metatile $f3
+  cHoleOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the hole, floor above it, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $f5
+  xHoleN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $f6
+  xHoleS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $f7
+  xHoleNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Dancing Dragon Dungeon — Seasons tileset $3a (the Dancing Dragon Dungeon), metatile $f3
+  xHoleOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the hole, inside a run, the Poison Moth's Lair — Seasons tileset $39 (the Poison Moth's Lair), metatile $f4
+  bPit: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the hole, floor above it, the Poison Moth's Lair — Seasons tileset $39 (the Poison Moth's Lair), metatile $f5
+  bPitN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Poison Moth's Lair — Seasons tileset $39 (the Poison Moth's Lair), metatile $f6
+  bPitS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Poison Moth's Lair — Seasons tileset $39 (the Poison Moth's Lair), metatile $f7
+  bPitNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Poison Moth's Lair — Seasons tileset $39 (the Poison Moth's Lair), metatile $f3
+  bPitOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the hole, inside a run, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $f4
+  rPit: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the hole, floor above it, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $f5
+  rPitN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $f6
+  rPitS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $f7
+  rPitNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $f3
+  rPitOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the hole, inside a run, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $f4
+  hPit: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the hole, floor above it, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $f5
+  hPitN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $f6
+  hPitS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $f7
+  hPitNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, the Hero's Cave — Seasons tileset $36 (the Hero's Cave), metatile $f3
+  hPitOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the hole, floor below it, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $f6
+  nPitS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $f7
+  nPitNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, Snake's Remains — Seasons tileset $38 (Snake's Remains), metatile $f3
+  nPitOne: `
+    0000100100120000
+    0111221211220110
+    0121222222211210
+    0122222222222200
+    1122222222222201
+    2122222222222212
+    1222222222222221
+    0222222222222220
+    0222222222222220
+    2222222222222221
+    0222222222222220
+    0222222222222220
+    1222222222222221
+    0012222222222210
+    0002222222222200
+    0011002200200110`,
+
+  // the hole, floor above it, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f5
+  uPitN: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the hole, floor below it, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f6
+  uPitS: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // the hole, floor above and below, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f7
+  uPitNS: `
+    0001210000012100
+    1112221111122211
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    0012210000122100`,
+
+  // a hole alone in the floor, Mermaid's Cave — Ages tileset $3d (Mermaid's Cave, the sunken past), metatile $f3
+  uPitOne: `
+    0100210220120010
+    1321322332231231
+    0232333333332320
+    1133333333333311
+    2233333333333322
+    3333333333333333
+    1333333333333331
+    0233333333333320
+    0233333333333320
+    1333333333333331
+    3333333333333333
+    2233333333333322
+    1133333333333311
+    0232333333332320
+    1321322332231231
+    0100210220120010`,
+
   // the stair down, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $45
   kStairsDown: `
     2222222222222222
@@ -57533,6 +58320,47 @@ const DUNGEON_THEME_PALETTES = {
   holdHoleS: ['#5273a5', '#315284', '#000000', '#000000'],
   holdHoleNS: ['#5273a5', '#315284', '#000000', '#000000'],
   holdHoleOne: ['#7394c6', '#5273a5', '#000000', '#000000'],
+  gBossN: ['#ffff8c', '#b5a531', '#5a5200', '#000000'],
+  cKeyN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cKeyE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cKeyS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cKeyW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cShutN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cShutE: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cShutS: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cShutW: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cBossN: ['#ffff8c', '#73b55a', '#215a00', '#000000'],
+  cHole: ['#000000', '#000000', '#000000', '#000000'],
+  cHoleN: ['#736384', '#4a395a', '#000000', '#000000'],
+  cHoleS: ['#736384', '#4a395a', '#000000', '#000000'],
+  cHoleNS: ['#736384', '#4a395a', '#000000', '#000000'],
+  cHoleOne: ['#9484a5', '#736384', '#000000', '#000000'],
+  xHoleN: ['#4a7b00', '#184a00', '#000000', '#000000'],
+  xHoleS: ['#4a7b00', '#184a00', '#000000', '#000000'],
+  xHoleNS: ['#4a7b00', '#184a00', '#000000', '#000000'],
+  xHoleOne: ['#73bd00', '#4a7b00', '#000000', '#000000'],
+  bPit: ['#000000', '#000000', '#000000', '#000000'],
+  bPitN: ['#7b8c08', '#425218', '#000000', '#000000'],
+  bPitS: ['#7b8c08', '#425218', '#000000', '#000000'],
+  bPitNS: ['#7b8c08', '#425218', '#000000', '#000000'],
+  bPitOne: ['#b5c652', '#7b8c08', '#000000', '#000000'],
+  rPit: ['#000000', '#000000', '#000000', '#000000'],
+  rPitN: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
+  rPitS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
+  rPitNS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
+  rPitOne: ['#c6b518', '#9c7b08', '#000000', '#000000'],
+  hPit: ['#000000', '#000000', '#000000', '#000000'],
+  hPitN: ['#735a73', '#4a315a', '#000000', '#000000'],
+  hPitS: ['#735a73', '#4a315a', '#000000', '#000000'],
+  hPitNS: ['#735a73', '#4a315a', '#000000', '#000000'],
+  hPitOne: ['#948c84', '#735a73', '#000000', '#000000'],
+  nPitS: ['#944a8c', '#63185a', '#000000', '#000000'],
+  nPitNS: ['#944a8c', '#63185a', '#000000', '#000000'],
+  nPitOne: ['#c67bb5', '#944a8c', '#000000', '#000000'],
+  uPitN: ['#5a7384', '#214a42', '#000000', '#000000'],
+  uPitS: ['#5a7384', '#214a42', '#000000', '#000000'],
+  uPitNS: ['#5a7384', '#214a42', '#000000', '#000000'],
+  uPitOne: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   kStairsDown: ['#cebd8c', '#737b39', '#633973', '#000000'],
   frRingTL: ['#ffffff', '#7b9cb5', '#31527b', '#000000'],
   frRingN: ['#ffffff', '#7b9cb5', '#31527b', '#000000'],
@@ -61062,6 +61890,25 @@ function cave() {
 }
 
 /**
+ * A dungeon's HOLE as the cartridges draw it (S236): `name` inside a run of
+ * hole, and `name`N/S/NS/One beside it — the lip of the floor along the top,
+ * the bottom, both, or (a hole alone in the floor) all round. `art` is the
+ * pick prefix of that dungeon's own $f3-$f7 (rip-dungeon-themes.py); `Room
+ * .artAt` reads `lip` and picks by what is above and below. `extra` is copied
+ * onto all five (a shaft's `shaft`), and `family` is what counts as more
+ * hole. Flags are one value for all five, so a lip is never a different
+ * floor from the run it edges.
+ */
+function holeKit(name, art, family, flags, extra = {}) {
+  const t = (a) => ({ art: ART[a], pal: a, flags, family, ...extra });
+  return {
+    [name]: { ...t(art), lip: { n: name + 'N', s: name + 'S', ns: name + 'NS', one: name + 'One' } },
+    [name + 'N']: t(art + 'N'), [name + 'S']: t(art + 'S'),
+    [name + 'NS']: t(art + 'NS'), [name + 'One']: t(art + 'One'),
+  };
+}
+
+/**
  * One whole Oracle kit for theme `T`, from the picks prefixed `P` (S160).
  * Every piece names its own extracted palette, so the kit is the cartridge's
  * colours throughout. The three optional dungeons are built alike, so they
@@ -62401,10 +63248,13 @@ function installCoreTiles() {
       N: 'gRingN', S: 'gRingS', W: 'gRingW', E: 'gRingE',
       jNW: 'gJambNW', jNE: 'gJambNE', jSW: 'gJambSW', jSE: 'gJambSE',
       jWN: 'gJambWN', jWS: 'gJambWS', jEN: 'gJambEN', jES: 'gJambES',
-      // A shut door in the ring draws the Seasons door for its wall. The boss
-      // door keeps its own art: no Seasons sheet here has one to cut.
+      // A shut door in the ring draws the Seasons door for its wall, and the
+      // boss door the kit's own $74 (S236; it was the shared hand-cut gold
+      // square). From inside the boss room the way back is a shutter, as in
+      // the other kits.
       lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
       shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
+      bossN: 'gBossN', bossS: 'gShutS',
     } },
     dWallGrottoX: { art: ART.dWallCracked, pal: 'gRingN', flags: F.SOLID | F.BOMBABLE },
     dBlockGrotto: { art: ART.gBlock, pal: 'gBlock', flags: F.SOLID },
@@ -62416,9 +63266,20 @@ function installCoreTiles() {
     // THE HELD BRIDGE (S211; Ages' INTERAC_EXTENDABLE_BRIDGE): the hole it
     // spans, and its planks, laid one at a time while its plate is held
     // (Game.updateBridges) and taken up again from the far end when it is not.
-    dHoleGrotto: { art: ART.gHole, pal: 'gHole', flags: F.PIT, bridge: { H: 'dBridgeGrottoH', V: 'dBridgeGrottoV' } },
-    dBridgeGrottoV: { art: ART.gBridgeV, pal: 'gBridgeV' },
-    dBridgeGrottoH: { art: ART.gBridgeH, pal: 'gBridgeH' },
+    // The Grotto's kit is the Sword & Shield Maze's ice half, so its hole is
+    // the Hold's (S236: lipped where floor meets it, as the cartridge lays
+    // it). The planks count as more hole for the lip, so laying one does not
+    // redraw the rim of the hole beyond it: the cartridge only swaps the
+    // tile the plank lands on.
+    ...holeKit('dHoleGrotto', 'holdHole', 'grottoHole', F.PIT),
+    dHoleGrotto: { ...holeKit('dHoleGrotto', 'holdHole', 'grottoHole', F.PIT).dHoleGrotto,
+      bridge: { H: 'dBridgeGrottoH', V: 'dBridgeGrottoV' } },
+    dBridgeGrottoV: { art: ART.gBridgeV, pal: 'gBridgeV', family: 'grottoHole' },
+    dBridgeGrottoH: { art: ART.gBridgeH, pal: 'gBridgeH', family: 'grottoHole' },
+    // Its drains and sumps at LOW are the same hole (S236; they were the
+    // shared hand-drawn `dPit`).
+    dSumpGrotto: { tide: ['dHoleGrotto', 'dWaterD', 'dWaterD'] },
+    dDrainGrotto: { tide: ['dHoleGrotto', 'dWaterS', 'dWaterD'] },
     // THE SLATE SLOTS (S211; Ages' Ancient Tomb, room $58a): one per face of
     // the Keep's slate chamber, and each with its slate in.
     ...Object.fromEntries(['N', 'E', 'S', 'W'].flatMap(f => [
@@ -62451,6 +63312,11 @@ function installCoreTiles() {
     gShutS: { art: ART.gShutS, pal: 'gShutS', flags: F.SOLID | F.DOOR },
     gShutE: { art: ART.gShutE, pal: 'gShutE', flags: F.SOLID | F.DOOR },
     gShutW: { art: ART.gShutW, pal: 'gShutW', flags: F.SOLID | F.DOOR },
+    gBossN: { art: ART.gBossN, pal: 'gBossN', flags: F.SOLID | F.DOOR },
+    // The Coral Spire's own doors (S236), the Explorer's Crypt's.
+    ...Object.fromEntries(['Key', 'Shut'].flatMap(k => ['N', 'S', 'E', 'W'].map(d =>
+      ['c' + k + d, { art: ART['c' + k + d], pal: 'c' + k + d, flags: F.SOLID | F.DOOR }]))),
+    cBossN: { art: ART.cBossN, pal: 'cBossN', flags: F.SOLID | F.DOOR },
 
     // d2 Coral Spire.
     // S137: THE CORAL SPIRE IS AN ORACLE DUNGEON, and its kit is the pink
@@ -62460,13 +63326,21 @@ function installCoreTiles() {
     // doorway jambs to cut, so a side opening is framed by plain runs; its
     // doors are the Seasons key doors and shutters the Grotto uses.
     dFloorCoral: { art: ART.cFloor, pal: 'cFloor' },
+    // S236: the Coral Spire's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitCoral', 'cHole', 'coralPit', F.PIT),
+    dSumpCoral: { tide: ['dPitCoral', 'dWaterD', 'dWaterD'] },
+    dDrainCoral: { tide: ['dPitCoral', 'dWaterS', 'dWaterD'] },
     dFloorCoralAlt: { art: ART.cFloorAlt, pal: 'cFloorAlt' },
     dWallCoral: { art: ART.cFill, pal: 'cFill', flags: F.SOLID, ring: {
       TL: 'cRingTL', TR: 'cRingTR', BL: 'cRingBL', BR: 'cRingBR',
       N: 'cRingN', S: 'cRingS', W: 'cRingW', E: 'cRingE',
       jNW: 'cJambNW', jNE: 'cJambNE', jSW: 'cJambSW', jSE: 'cJambSE',
-      lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
-      shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
+      // Its own doors (S236), the Explorer's Crypt's $70-$7b in its colour;
+      // it had borrowed the Grotto's.
+      lockN: 'cKeyN', lockS: 'cKeyS', lockE: 'cKeyE', lockW: 'cKeyW',
+      shutN: 'cShutN', shutS: 'cShutS', shutE: 'cShutE', shutW: 'cShutW',
+      bossN: 'cBossN', bossS: 'cShutS',
     } },
     dWallCoralX: { art: ART.dWallCracked, pal: 'cRingN', flags: F.SOLID | F.BOMBABLE },
     dBlockCoral: { art: ART.cBlock, pal: 'cBlock', flags: F.SOLID },
@@ -62578,7 +63452,7 @@ function installCoreTiles() {
     // and MID, deep water over them at HIGH, so the top of the tide is the
     // only sea they are safe at (docs/briefs/D4-CLIFFSIDE-CISTERN.md).
     dSpikeCistern: { art: ART.xSpike, pal: 'xSpike', flags: F.HAZARD },
-    dHoleCistern: { art: ART.xHole, pal: 'xHole', flags: F.PIT },
+    ...holeKit('dHoleCistern', 'xHole', 'cisternHole', F.PIT),
     dSumpCistern: { tide: ['dHoleCistern', 'dWaterD', 'dWaterD'] },
     dDrainCistern: { tide: ['dHoleCistern', 'dWaterS', 'dWaterD'] },
     dSpikePoolCistern: { tide: ['dSpikeCistern', 'dSpikeCistern', 'dWaterD'] },
@@ -62648,6 +63522,11 @@ function installCoreTiles() {
     // from the door key the ripper laid out beside the map. The Ruins draw
     // jambs where a north or south doorway cuts the bevel.
     dFloorWood: { art: ART.rFloor, pal: 'rFloor' },
+    // S236: the Shrine's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitWood', 'rPit', 'woodPit', F.PIT),
+    dSumpWood: { tide: ['dPitWood', 'dWaterD', 'dWaterD'] },
+    dDrainWood: { tide: ['dPitWood', 'dWaterS', 'dWaterD'] },
     dFloorWoodAlt: { art: ART.rFloorAlt, pal: 'rFloorAlt' },
     dWallWood: { art: ART.rFill, pal: 'rFill', flags: F.SOLID, ring: {
       TL: 'rRingTL', TR: 'rRingTR', BL: 'rRingBL', BR: 'rRingBR',
@@ -62760,14 +63639,12 @@ function installCoreTiles() {
     // pit at LOW, shallow at MID, deep at HIGH — drawn in the Lair's own hole
     // rather than the shared grey pit. A plain pit, not a shaft: nothing
     // beneath it, so it carries F.PIT and not F.DROP.
-    dPitBog: {
-      art: ART.bHole, pal: 'bHole', flags: F.PIT, family: 'bogPit',
-      lip: { n: 'dPitBogN', s: 'dPitBogS', ns: 'dPitBogNS' },
-    },
-    dPitBogN: { art: ART.bHoleN, pal: 'bHoleN', flags: F.PIT, family: 'bogPit' },
-    dPitBogS: { art: ART.bHoleS, pal: 'bHoleS', flags: F.PIT, family: 'bogPit' },
-    dPitBogNS: { art: ART.bHoleNS, pal: 'bHoleNS', flags: F.PIT, family: 'bogPit' },
+    // S236: the Lair's PLAIN hole ($f3-$f7), not its warp hole: the
+    // cartridge draws the hole you fall to the floor below through ($48,
+    // patterned) differently from one with nothing beneath it (black).
+    ...holeKit('dPitBog', 'bPit', 'bogPit', F.PIT),
     dDrainBog: { tide: ['dPitBog', 'dWaterS', 'dWaterD'] },
+    dSumpBog: { tide: ['dPitBog', 'dWaterD', 'dWaterD'] },
     // THE SANCTUM'S ONE-WAY LEDGES (S181). A Seasons dungeon has no ledge
     // tile of its own: it jumps Link off the edge of a raised floor drawn with
     // its WALL RING's own runs — $b0 (the north run) down, $b1 (east) left,
@@ -62798,6 +63675,11 @@ function installCoreTiles() {
     // open doorway, so a gap in the ring is framed by plain runs; the way out
     // is the lit step between two pillars in the south wall, `(C)`.
     ...optionalKit('Salt', 'h'),
+    // S236: the lower vault's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitSalt', 'hPit', 'saltPit', F.PIT),
+    dSumpSalt: { tide: ['dPitSalt', 'dWaterD', 'dWaterD'] },
+    dDrainSalt: { tide: ['dPitSalt', 'dWaterS', 'dWaterD'] },
     ...optionalKit('Eyrie', 'n'),
     // THE GULLWIND EYRIE'S CHASM (S160): Snake's Remains' own black drop, with
     // the floor's lip drawn along its top wherever floor is north of it — the
@@ -62805,8 +63687,8 @@ function installCoreTiles() {
     // them. And its high-water wall: the Eyrie's own masonry, standing until
     // the sea covers it at HIGH (the Keep's `dLintel`, in this dungeon's
     // stone), which is the only sea a thrown Ferryman's Coin can cross it at.
-    dPitEyrie: { art: ART.nPit, pal: 'nPit', flags: F.PIT, family: 'pitEyrie', edgeArt: { up: 'nPitN' } },
-    nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
+    // (S236: all five of the cartridge's hole pieces, by `holeKit`.)
+    ...holeKit('dPitEyrie', 'nPit', 'pitEyrie', F.PIT),
     dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
     ...optionalKit('Palace', 'u'),
 
@@ -62836,7 +63718,7 @@ function installCoreTiles() {
     // floor you are on: sound HIGH standing in the pool and you go down.
     dWaterPalaceS: { art: ART.uWaterS, pal: 'uWaterS', flags: F.WATER },
     dWaterPalaceD: { art: ART.uWaterD, pal: 'uWaterD', flags: F.DEEP },
-    dPitPalace: { art: ART.uPit, pal: 'uPit', flags: F.PIT },
+    ...holeKit('dPitPalace', 'uPit', 'pitPalace', F.PIT),
     dWhirlPalace: {
       art: ART.uWhirl0, pal: 'uWhirl0', flags: F.DEEP | F.WHIRL,
       anim: ['uWhirl0', 'uWhirl1', 'uWhirl2', 'uWhirl3'], animRate: WHIRLPOOL_ANIM_RATE,
@@ -62859,6 +63741,11 @@ function installCoreTiles() {
     // sprout statue, and the maze's own key doors, shutters and horned boss
     // door. It draws jambs on all four sides of a doorway.
     dFloorAbyss: { art: ART.kFloor, pal: 'kFloor' },
+    // S236: the Keep's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitAbyss', 'kHole', 'abyssPit', F.PIT),
+    dSumpAbyss: { tide: ['dPitAbyss', 'dWaterD', 'dWaterD'] },
+    dDrainAbyss: { tide: ['dPitAbyss', 'dWaterS', 'dWaterD'] },
     dFloorAbyssAlt: { art: ART.kFloorAlt, pal: 'kFloorAlt' },
     dWallAbyss: { art: ART.kFill, pal: 'kFill', flags: F.SOLID, ring: {
       TL: 'kRingTL', TR: 'kRingTR', BL: 'kRingBL', BR: 'kRingBR',
@@ -63824,6 +64711,15 @@ function installLegends() {
   // `riptideS`, which no main dungeon room places.
   for (const T of ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Abyss', 'AbyssIce']) {
     registerLegend('dungeon' + T, { '/': 'dStairsDown' + T, 'S': 'dStairsUp' + T }, 'dungeon' + T);
+  }
+  // Each dungeon's own hole (S236): a pit `O`, and the sump `0` and drain `4`
+  // that are that hole at LOW, in the dungeon's own $f3-$f7 rather than the
+  // shared hand-drawn navy `dPit`. The Cistern, the Hold and the optional
+  // Eyrie and Palace already name theirs.
+  registerLegend('dungeonGrotto', { '0': 'dSumpGrotto', '4': 'dDrainGrotto' }, 'dungeonGrotto');
+  registerLegend('dungeonBog', { 'O': 'dPitBog', '0': 'dSumpBog' }, 'dungeonBog');
+  for (const T of ['Coral', 'Wood', 'Abyss', 'Salt']) {
+    registerLegend('dungeon' + T, { 'O': 'dPit' + T, '0': 'dSump' + T, '4': 'dDrain' + T }, 'dungeon' + T);
   }
 
   // ---- cave / interior ---------------------------------------------------
