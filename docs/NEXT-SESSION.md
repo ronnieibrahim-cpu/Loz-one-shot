@@ -1,3 +1,61 @@
+## S238 — Seasons' own outdoor rocks, rock piles, soft soil, holes, stakes and drop ledges
+
+Branch claude/oracle-tides-ground-edges-p0s254, off main at 1b37499 (S237).
+
+### The human's choices this session
+- S237's ground edges (docs/briefs/s237/ground-edges.png): LOOK RIGHT. Keep;
+  do not re-ask. (They first said "rim too strong", then took it back: keep.)
+- Shown docs/briefs/s238/outdoor-candidates.png (ours beside Seasons' piece
+  for the same job), the human chose to swap ALL EIGHT: heavy boulder,
+  bomb-only boulder, cracked cliff, dig spot, sinkhole, feather gap, mooring
+  post, drop ledges. Result sent: docs/briefs/s238/outdoor-now.png (ask how
+  it looks).
+
+### Built (art only: no flag, no rule, no route changed)
+- rip-dungeon-themes.py, sheet 'spring' (Seasons tileset $00): `owBoulder`
+  $64, `owRubble` $e2 (breakableTiles.s @overworld mode $0c: bombs make it
+  the cave $e8), `owSoil` $e6, `owHole` $f3 (TILEINDEX_HOLE), `owStakes` $b9
+  (the map's commonest lone post, 138 uses in group 0; the $2d-$2f "log
+  posts" first shown to the human are a TALL vertical stack, so not used —
+  told the human), `owLedgeS` $cf / `owLedgeN` $2a / `owLedgeE` $28 /
+  `owLedgeW` $27 (cliffTiles.s @overworld). New KEY_BY_COLOUR: Seasons' sand
+  #ffff73 and the tuft greens #a5ff21/#29ad00 become `.` wherever they are,
+  and the remaining <=3 colours are emitted as 1-3 (palette slot 0 repeats
+  the lightest), so any of our four-tone palettes draws them mid/dark/outline.
+- tiles-core.js: boulder -> owBoulder; boulderCracked and all six
+  cliffCracked* -> owRubble (in their cliff palette); digSpot -> owSoil;
+  post/postSand -> owStakes (wood); sinkhole and chasm -> owHole in `pit`
+  with an underArt (no more `edgeArt` lip: every cell its own hole, as
+  Seasons lays them); all 32 outdoor ledge* -> owLedge* (dLedge* indoors
+  keep the old lip). Removed the now-unused hand art (boulder,
+  boulderCracked, cliffCracked, chasmBody, chasmTop, digSpot) and the
+  `chasmTop` tiledef.
+
+### How the cartridge was read (scratch, not committed)
+Full oracles-disasm cloned to the scratchpad; a flat copy of data/{seasons,
+ages}, tileset_layouts and gfx PNGs, and rip-objects.py copied with SRC/AGES
+pointed at it, renders ANY tileset's 256 metatiles. group0Tilesets.bin gives
+each overworld room's tileset; rooms/seasons/small/room00XX.bin its layout.
+Seasons' outdoor metatile numbers are only stable within one layout (tileset
+$00's); other overworld tilesets ($09 mountains, $16 ...) differ.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S237). 70 other table tools green; check-build OK;
+watch-cutscenes and shoot-cutscene --ending: see the last commit;
+check-rippers alone, last.
+
+### Not done / candidates
+- Salt-flat ledges (marble) are faint on the pale ground, as before; offered
+  to darken.
+- Ledges are thinner than our old lip (Seasons' own); a drop reads lighter.
+- From the S237 probe still hand-drawn outdoors: ledgeRock family is done;
+  left are the dungeon portals, seals, lighthouse, salt vane (ours by design),
+  and indoors dPost/cvPost/dLedge*, dBole, dSilt*.
+- Older lists: Seasons' open doorway has no jambs (ours, approved);
+  side-scrolling passages (ask first); the urchin's shield; the guide's old
+  shots; check-placement proves floor in front of a chest, not reachability.
+
 ## S237 — the dungeons' drop ledges from their own walls; the overworld's ground edges are Seasons' own
 
 Branch claude/oracle-tides-s237-odeqr9, off main at 5b1bfdb (S236).
