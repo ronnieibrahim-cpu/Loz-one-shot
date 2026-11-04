@@ -513,6 +513,11 @@ export function installLegends() {
   for (const T of ['Coral', 'Wood', 'Abyss', 'Salt']) {
     registerLegend('dungeon' + T, { 'O': 'dPit' + T, '0': 'dSump' + T, '4': 'dDrain' + T }, 'dungeon' + T);
   }
+  // Their one-way ledges (S237): the wall ring's own runs, as the Sanctum's
+  // (S181; see `dLedgeBogS`), not the shared grey outdoor lip.
+  for (const T of ['Coral', 'Wood', 'Abyss']) {
+    registerLegend('dungeon' + T, { '_': 'dLedge' + T + 'S', '>': 'dLedge' + T + 'E', '<': 'dLedge' + T + 'W', '"': 'dLedge' + T + 'N' }, 'dungeon' + T);
+  }
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

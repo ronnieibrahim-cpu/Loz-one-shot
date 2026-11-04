@@ -170,6 +170,12 @@ for (const [name, d] of TILES) {
       + 'course over a floor — but "the top row of a room is a different tile" '
       + 'is a dungeon-wide authoring convention, not a tile, and no dungeon has '
       + 'adopted one. Wire it when a P8 session decides to.',
+    // S237: Seasons' grass-patch edges are read as SHAPES by tiles-core.js
+    // `fringeMasks`, which paints every overworld ground join with them in
+    // that pair's colours; no tiledef draws these two as they are. (The four
+    // corners also happen to be cells of the Maku grove, so they are drawn.)
+    geLR: 'a mask: the ground fringes\' left and right edges (fringeMasks)',
+    geUD: 'a mask: the ground fringes\' top and bottom edges (fringeMasks)',
   };
 
   // Art is compared by VALUE, not by name: several picks are the same pixels
@@ -214,6 +220,8 @@ for (const [name, d] of TILES) {
     if (d.slotFilled) reachable.add(d.slotFilled);
     if (d.bridge) for (const t of Object.values(d.bridge)) reachable.add(t);
   }
+  // A block's cells (the Maku grove, a town building) are named by the block.
+  for (const [, b] of BLOCKS) for (const row of b.tiles) for (const t of row) reachable.add(t);
   for (const [, rules] of TRANSFORMS) {
     for (const [k, v] of Object.entries(rules)) {
       if (typeof v === 'string' && !['fx', 'drop', 'sfx', 'deny'].includes(k)) reachable.add(v);

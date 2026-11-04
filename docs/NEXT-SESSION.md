@@ -1,3 +1,74 @@
+## S237 — the dungeons' drop ledges from their own walls; the overworld's ground edges are Seasons' own
+
+Branch claude/oracle-tides-s237-odeqr9, off main at 5b1bfdb (S236).
+
+### The human's choices this session
+- S236's holes and doors (docs/briefs/s236/): BOTH LOOK RIGHT. Keep; do not
+  re-ask.
+- The overworld's ground edges (grass/sand, stone/sand, grass/bog, ...): USE
+  SEASONS' EDGES (asked with docs/briefs/s237/fringe.png). Done; the result
+  was sent as docs/briefs/s237/ground-edges.png (five regions, before and
+  now, Seasons beside). Ask how it looks.
+
+### Built (art only: no flag, no rule, no route changed)
+- DROP LEDGES. The Coral Spire (7 cells), the Drowned Wood Shrine (3) and the
+  Abyssal Keep (2, room 2,5,4) drew the shared grey outdoor `dLedge*`. Now
+  their wall ring's own runs, as the Sanctum's (S181; cliffTiles.s @dungeons:
+  $b0 down, $b1 left, $b2 up, $b3 right, and $b0-$b3 ARE the ring's runs):
+  tiles-core.js `dLedge{Coral,Wood,Abyss}{S,E,W,N}` (cRing/rRing/kRing),
+  legends.js a loop after the S236 holes (it must come AFTER `theme(...)`,
+  which rebuilds a theme's legend from the shared one and would drop an
+  earlier override). Picture: docs/briefs/s237/ledges.png, with Seasons'
+  Explorer's Crypt rooms $544/$549 and the fire Maze's $564 rendered from
+  the disassembly (scratch render_room.py: render_tileset + large/room05NN).
+- GROUND EDGES. `installGroundFringes` (tiles-core.js) no longer composites
+  our own wiggle (FRINGE_WIGGLE, S39, no rim). It reads Seasons' grass-patch
+  edge metatiles (spring tileset $00, $13 $14 $15 $17 $1a $1c; ripped by
+  rip-dungeon-themes.py as `geLR geUD geUL geUR geDL geDR`, sheet 'spring' =
+  meta:00) as masks: 0 sand, 1 grass, 2 the dark rim. Each fringe cell is the
+  carrier's own texture where the mask is grass, the carrier's palette
+  index 2 on the rim, and the intruder's commonest tone where it is sand
+  (palette [cp0, cp1, cp2, ip[commonest]]). Straight edges are halves of the
+  opposite-pair tiles (no tuft comes with them); corners are their own tile
+  with the far quadrant cleared ($17/$1a keep a tuft there); three sides,
+  opposite pairs and all four are the corners laid over one another
+  (`unionMask`, sand > rim > grass). New mask keys `upDown`, `leftRight`,
+  `all`: tileset.js `pickByMask` uses them when a set has them (only the
+  fringes do), else degrades as before.
+- CLOSED: the Grotto's east/west shutters. Ripped from $79/$7b of its own
+  tileset they are pixel-identical to the north one turned (the cartridge
+  stores them rotated); only the colour conversion differed by a step. No
+  change kept.
+
+### The hand-art probe (S236's, rerun)
+Dungeons now: dPost/dPostAbyss/cvPost (ours), dBole (ours), dSilt* (ours),
+grate (the Keep's), D1's interior dDoorClosed (approved), palaceSeal (ours).
+Overworld, apart from the fringes (now the cartridge's shape): boulder,
+boulderCracked, chasm/chasmTop, cliffCracked* (5 kinds), digSpot, ledgeRock,
+ledgeDk/ledgeDkN, ledgeSalt/E/W, ledgeCoralN, post/postSand, sinkhole,
+saltVane, lighthouse, the dungeon portals, keepSeal. The portals, seals,
+lighthouse and vane are ours; boulders, dig spots, cracked cliffs, ledges and
+posts all exist in Seasons' spring tileset $00 (see the render in this
+session: ts00) and are the next candidates.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S236). Whole table green (validate needed two fixes, below),
+check-rippers 45/45 alone last. validate.mjs: a BLOCK's cells now count as
+reachable (the Maku grove's corners are the same pixels as Seasons'
+grass-patch corners, so the grove's tiles became "theme art" the moment
+`ge*` were ripped), and geLR/geUD are UNUSED_ART with the reason (masks).
+
+### Not done / candidates
+- The overworld candidates above, from tileset $00 (and its other seasons'
+  palettes where a region wants them).
+- A diagonal-only ground neighbour still meets square (our mask classifier
+  has no diagonal case; Seasons' layouts avoid it).
+- S236's list stands: Seasons' open doorway has no jambs (ours, approved);
+  side-scrolling passages (ask first); the urchin's shield (ours); the
+  guide's old shots; check-placement proves floor in front of a chest, not
+  that it can be walked to.
+
 ## S236 — every dungeon's own hole; the first two boss doors and the Spire's doors from the cartridge
 
 Branch claude/oracle-tides-boss-feel-ctgsko, off main at 01493e5 (S235).

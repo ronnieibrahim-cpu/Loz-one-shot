@@ -135,6 +135,12 @@ SHEETS = {
     # Holodrum's caves (layout group 4's $b7 and $ab; group 5's caves are the
     # same set as tileset $4f).
     'cave': 'meta:31',
+    # THE OVERWORLD'S GROUND EDGES (S237): Seasons tileset $00 (Horon's spring,
+    # GFXH_TILESET_OVERWORLD_SPRING, PALH_TILESET_OVERWORLD_SPRING_A), whose
+    # $13-$1c are a grass patch's edges on sand: a scalloped rim of the dark
+    # green, three colours, no fourth. tiles-core.js `installGroundFringes`
+    # reads their SHAPE (sand / grass / rim) for every pair of grounds.
+    'spring': 'meta:00',
 }
 META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:41': "the Sword & Shield Maze, ice half", 'meta:3e': "the Explorer's Crypt",
@@ -143,7 +149,8 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'ages:3d': "Mermaid's Cave, the sunken past", 'ages:5f': 'the sea floor',
               'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon',
               'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb',
-              'meta:2c': "Horon Village's houses", 'meta:31': "Holodrum's caves"}
+              'meta:2c': "Horon Village's houses", 'meta:31': "Holodrum's caves",
+              'meta:00': "Holodrum's overworld, spring"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -929,6 +936,19 @@ PICKS = [
     meta('frDeskW', 0x8e, "her desk, west end, Farore's room", 'farore'),
     meta('frDesk', 0x8d, "her desk, a middle run, Farore's room", 'farore'),
     meta('frDeskE', 0x8f, "her desk, east end, Farore's room", 'farore'),
+    # ---- The ground's edges (S237) -------------------------------------------
+    #
+    # Where a grass patch meets sand, Seasons draws one of these: the sand
+    # flat, the grass flat, and a scalloped dark rim along the join, its bumps
+    # on an 8-pixel pitch. One edge each way, both opposite pairs, the four
+    # outer corners. Ours had been a wiggle of our own composited between the
+    # two grounds' textures (S39); now the cartridge's shape is the join.
+    meta('geLR', 0x13, 'a grass patch, sand west and east, Holodrum (spring)', 'spring'),
+    meta('geUD', 0x14, 'a grass patch, sand north and south, Holodrum (spring)', 'spring'),
+    meta('geUL', 0x15, 'a grass patch, sand north and west, Holodrum (spring)', 'spring'),
+    meta('geUR', 0x17, 'a grass patch, sand north and east, Holodrum (spring)', 'spring'),
+    meta('geDL', 0x1a, 'a grass patch, sand west and south, Holodrum (spring)', 'spring'),
+    meta('geDR', 0x1c, 'a grass patch, sand east and south, Holodrum (spring)', 'spring'),
     # ---- The houses (S215) ---------------------------------------------------
     #
     # Our shop, homes and lighthouse were grey stone boxes. Seasons' houses
