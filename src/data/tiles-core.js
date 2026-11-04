@@ -1268,41 +1268,7 @@ const HAND_ART = {
     3111111111111113
     3333333333333333`,
 
-  dPost: `
-    ................
-    ....33333333....
-    ..331111111133..
-    ..310000000213..
-    ..311111111213..
-    ..311222221213..
-    ..311211121213..
-    ..311212121213..
-    ..311211121213..
-    ..311222221213..
-    ..311111111213..
-    ..310000000213..
-    ..331111111133..
-    ....33333333....
-    ................
-    ................`,
 
-  siltFloor: `
-    1111111111111111
-    1111133331111111
-    1112211223111111
-    1132111112211111
-    1121111111321111
-    1112111112211111
-    1111322211111111
-    1111111111111111
-    1111111111111111
-    1111111133311111
-    1111113221131111
-    1111132111123111
-    1111121111112111
-    1111113222211111
-    1111111111111111
-    1111111111111111`,
 
 
   void: `
@@ -1392,7 +1358,7 @@ function cave() {
   out.cvStairsDown = own('StairsDown', F.WARP | F.STAIRS);
   // Seasons' cave set has no mooring post; the overworld's wooden one (`post`)
   // stands on the cave floor instead.
-  out.cvPost = { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'cvFloor' };
+  out.cvPost = { art: ART.owStakes, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'cvFloor' };
   return out;
 }
 
@@ -3454,7 +3420,7 @@ export function installCoreTiles() {
     // The two halves of a dungeon mouth. Exactly `dStairs`' flags — the width
     // is the whole change, and a mouth that walked differently from a stair
     // would be a second rule to prove.
-    dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
+    dPost: { art: ART.owStakes, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
     // Seasons' stakes and soft soil (S238, `owStakes` $b9, `owSoil` $e6).
     post: { art: ART.owStakes, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.owStakes, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
@@ -3491,7 +3457,7 @@ export function installCoreTiles() {
     // The trunk is `treeDark`'s art, which is the extracted oak in the wood
     // palette, over the Shrine's own flagstones rather than over grass — an
     // indoor tile standing on outdoor ground draws a hole around its own feet.
-    dBole: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dFloorWood' },
+    dBole: { art: ART.rBush, pal: 'rBush', flags: F.SOLID, underArt: 'dFloorWood' },
     dSnag: { tide: ['dBole', 'dBole', 'dWaterD'] },
 
     // A snarl of drowned kelp across a gap in a wall, and the ONLY thing that
@@ -3512,7 +3478,7 @@ export function installCoreTiles() {
     // feet, exactly the way the urn did before P7.5 gave every theme its own.
     // `dungeonAbyss` repoints `q` at this one. Flags are `dPost`'s to the bit:
     // a theme may change the look and never the rules.
-    dPostAbyss: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloorAbyss' },
+    dPostAbyss: { art: ART.owStakes, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloorAbyss' },
 
     // The Keep's own kelp, and it exists for the reason the post above does.
     // `dSnarl` is this same bush art in `treeoakdk` — a ramp whose index 2 is
@@ -3585,8 +3551,8 @@ export function installCoreTiles() {
     // carries neither. So the floor gives up what it is holding while the sea
     // is on it and gives up nothing at all while the sea is off it, and that
     // is the one thing in this game that wants the water UP.
-    dSiltDry: { art: ART.siltFloor, pal: 'stonedk' },
-    dSiltWet: { art: ART.siltFloor, pal: 'water', flags: F.WATER },
+    dSiltDry: { art: ART.kSilt, pal: 'kSilt' },
+    dSiltWet: { art: ART.kSilt, pal: 'water', flags: F.WATER },
     dSilt: { tide: ['dSiltDry', 'dSiltWet', 'dSiltWet'] },
 
     // A lintel of the Keep's own stone, standing across a shaft, that the sea

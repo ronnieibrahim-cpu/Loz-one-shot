@@ -6303,6 +6303,25 @@ export const DUNGEON_THEME_ART = {
     2112211221122112
     0012210000122100`,
 
+  // the dungeon bush (TILEINDEX_DUNGEON_BUSH), the Ancient Ruins — Seasons tileset $3c (the Ancient Ruins), metatile $20
+  rBush: `
+    ................
+    .......22.......
+    .22...2112...22.
+    .212.211112.212.
+    .21122122122112.
+    .21212211221212.
+    .21121211212112.
+    ..211221122112..
+    ...2222222222...
+    ..211222222112..
+    .21121212222112.
+    .21112112121112.
+    .22222111122222.
+    .....211112.....
+    ......2222......
+    ................`,
+
   // the stair up, the Sword & Shield Maze (fire) — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $44
   kStairsUp: `
     2222222222333333
@@ -6416,6 +6435,25 @@ export const DUNGEON_THEME_ART = {
     0012222222222210
     0002222222222200
     0011002200200110`,
+
+  // dug dirt (TILEINDEX_DUNGEON_DUG_DIRT), the Sword & Shield Maze (fire): the Keep's silted cache — Seasons tileset $42 (the Sword & Shield Maze, fire half), metatile $4c
+  kSilt: `
+    0000100100130000
+    0111331311330110
+    0131333333311310
+    0133333333333300
+    1133311311133301
+    3133100102013313
+    1331002010001331
+    0331120101201330
+    0310011200111130
+    3310201020101131
+    0310111111020130
+    0331020100100130
+    1331000010011131
+    0013100011111310
+    0003331133133300
+    0011003300300110`,
 
   // the blue cobble floor, the Sword & Shield Maze (ice) — Seasons tileset $41 (the Sword & Shield Maze, ice half), metatile $a0
   holdFloor: `
@@ -10134,12 +10172,14 @@ export const DUNGEON_THEME_PALETTES = {
   rHoleN: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
   rHoleS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
   rHoleNS: ['#9c7b08', '#5a4a00', '#000000', '#000000'],
+  rBush: ['#ffff8c', '#009c31', '#000000', '#000000'],
   kStairsUp: ['#cebd8c', '#737b39', '#633973', '#000000'],
   kHole: ['#000000', '#000000', '#000000', '#000000'],
   kHoleN: ['#737b39', '#633973', '#000000', '#000000'],
   kHoleS: ['#737b39', '#633973', '#000000', '#000000'],
   kHoleNS: ['#737b39', '#633973', '#000000', '#000000'],
   kHoleOne: ['#cebd8c', '#737b39', '#000000', '#000000'],
+  kSilt: ['#cebd8c', '#737b39', '#633973', '#000000'],
   holdFloor: ['#7394c6', '#5273a5', '#315284', '#315284'],
   holdFloorAlt: ['#5273a5', '#315284', '#315284', '#315284'],
   holdIce: ['#9cefff', '#7394b5', '#4a5a84', '#4a5a84'],

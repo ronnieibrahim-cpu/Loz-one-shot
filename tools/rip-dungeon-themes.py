@@ -821,6 +821,7 @@ PICKS = [
     meta('rHoleN', 0x49, 'the warp hole, floor above it, the Ancient Ruins', 'ruinsMeta'),
     meta('rHoleS', 0x4a, 'the warp hole, floor below it, the Ancient Ruins', 'ruinsMeta'),
     meta('rHoleNS', 0x4b, 'the warp hole, floor above and below, the Ancient Ruins', 'ruinsMeta'),
+    meta('rBush', 0x20, 'the dungeon bush (TILEINDEX_DUNGEON_BUSH), the Ancient Ruins', 'ruinsMeta'),
     meta('kStairsUp', 0x44, 'the stair up, the Sword & Shield Maze (fire)', 'mazeFire'),
     # THE KEEP'S SHAFTS (S189), the fire half's own holes (TILETYPE_HOLE
     # $f3-$f7, tileTypeMappings.s @dungeons): $f4 inside a run, $f5 with floor
@@ -831,6 +832,7 @@ PICKS = [
     meta('kHoleS', 0xf6, 'the hole, floor below it, the Sword & Shield Maze (fire)', 'mazeFire'),
     meta('kHoleNS', 0xf7, 'the hole, floor above and below, the Sword & Shield Maze (fire)', 'mazeFire'),
     meta('kHoleOne', 0xf3, 'a hole alone in the floor, the Sword & Shield Maze (fire)', 'mazeFire'),
+    meta('kSilt', 0x4c, 'dug dirt (TILEINDEX_DUNGEON_DUG_DIRT), the Sword & Shield Maze (fire): the Keep\'s silted cache', 'mazeFire'),
     # THE HOLD (S189): the Sword & Shield Maze's ICE half, tileset $41, the
     # Abyssal Keep's new floor beneath it. Its floor $a0 and the darker ring
     # $a1 (the cell under a shaft is marked with it), the ice $8c
@@ -1064,7 +1066,7 @@ PICKS = [
 # border-connected run IS the tile.
 # `uStatue` is not in it (S162): Mermaid's Cave's magenta block fills its
 # whole cell, so its dark faces ARE its border run, and keying ate them.
-KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue', 'holdPot'}
+KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue', 'kPot', 'kStatue', 'holdPot', 'rBush'}
 # THE OVERWORLD'S SCENERY (S238) is keyed by COLOUR, not by a flood from the
 # edge: Seasons' sand (#ffff73) and the two greens of the grass tufts it sows
 # in it are the ground, wherever they are in the tile, and become `.`. What
