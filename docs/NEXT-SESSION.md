@@ -1,3 +1,54 @@
+## S235 — a boss waits for its shutters, then holds its pose
+
+Branch claude/oracle-tides-boss-doors-8f0cv2, off main at 3805d44 (S234).
+
+### The human's choices this session
+- S234's shutting boss doors, played: FEEL RIGHT. Keep; do not re-ask.
+- Bosses waiting for the shutters before starting, as Seasons' do: YES.
+- Then, which way (asked after the first try made Gloomtide unwinnable for
+  the robot even on a full bar): PAUSE, THEN START — the shutters close,
+  then each boss holds its own opening pose, then fights. Seasons has both
+  kinds (Gleeok and Dodongo go at once; Omuai holds counter1 $5a, Manhandla
+  and Frypolar have their own openings after wcc93 reads 0).
+
+### Built
+- `Game.bossMayStart()`: true once the room's shutters are `shut` (or
+  `opening`), or, in a room with nothing to shut, once Link's walk in is
+  over. `Boss.update` does not count its `intro` down until then (Seasons'
+  wcc93 poll in aquamentus, gleeok, dodongo, manhandla, frypolar, omuai,
+  agunima, digdogger, medusaHead, poeSister2). Each boss's own `intro` and
+  BOSS_INTRO_FRAMES (guessed) unchanged; the pose now starts about 31 frames
+  later (25 of walk, 6 of shutter), so every fight starts that much later.
+  While Link stands in the doorway the shutters wait, and so does the boss.
+- route-prefix: `BOSSSTART=1` lists the frame each boss starts;
+  `SETHP=<frame>=<qh>` sets Link's health at a frame.
+
+### Robot
+- Clawcrab wait 120 -> 151 and Gohmaraq 213 -> 244: the same fights to the
+  frame. Reefguard: a wait of 31 before the fight (18/20; the urchin walks
+  during the shutters, so not to the frame). Anemos 58 -> 50 (8/24, was
+  5). Bogmaw 14 -> 6 (15/28; no fairy now). Gloomtide 16 -> 49 with
+  `breakContact` added (8/28; 49-60 win, by 1 only 49 at 8; THIN). Rootmaw
+  24 -> 138 (17/40, was 14). Brinehulk: a new wait of 294 before the fight
+  (a full bar; without it the fight cost 33 and the run fell to 2).
+- check-side's Bogwater Sanctum run waits 120, not 40, before leaving
+  Bogmaw's hall. Replay d1-clawcrab-den-wide re-recorded (18/20).
+- The first try (boss starts the instant the shutters are down, no pose)
+  is in this branch's history: Gloomtide lost at every wait 0-240 and five
+  option sets, on 10 and on a full 28 alike.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames.
+Whole table: see the session's last commit message.
+
+### Not done / candidates
+- The look-through against both originals was not continued this session
+  (the boss start took it). S234's list stands: Seasons' open doorway has no
+  jambs (ours do, approved); side-scrolling passages; the urchin's shield
+  (ours, drawn from the spiny beetle); the guide's old shots;
+  check-placement and the loose key's hold (S230's list).
+- Gloomtide is THIN for the robot (one wait wins on 8/28).
+
 ## S234 — boss rooms shut behind Link, every way in; the robot finishes the game behind them
 
 Branch claude/oracle-tides-boss-doors-nfexil, off main at cb76026 (S233),
