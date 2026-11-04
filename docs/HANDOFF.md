@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Survey what is DRAWN, not what is placed, to find hand art (S236).** A
+  probe that asks `room.artAt` for every cell of every room at every sea and
+  keeps the art no generated module holds found the shared navy `dPit` in six
+  dungeons and the gold `dDoorBoss` in D1 and D2, years after both kits were
+  "extracted". A survey of tiledef names flags every ring door and tree (their
+  base art is a placeholder the ring or the 32x32 block replaces) and finds
+  nothing. The probe is ten lines; the S236 notes say how.
+- **A cartridge renders its own reference room (S236).** rip-dungeon-themes
+  `render_tileset(n)` plus `rooms/seasons/large/room05NN.bin` (16 bytes a
+  row, 15 used) and `group4Tilesets.bin[NN]` for the tileset draws any Seasons
+  dungeon room in its own colours in a dozen lines: that is how the holes'
+  lip rule ($f5/$f6 only where FLOOR meets the run, never a wall) was read,
+  and the picture the human got beside ours.
+
 - **Shift a fight, then wait the shift: it replays to the frame (S235).**
   When a change moves a boss's start by N frames and nothing else in the room
   moves before it starts, adding N to the robot's last wait before the

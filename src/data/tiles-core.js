@@ -1522,6 +1522,25 @@ function cave() {
 }
 
 /**
+ * A dungeon's HOLE as the cartridges draw it (S236): `name` inside a run of
+ * hole, and `name`N/S/NS/One beside it — the lip of the floor along the top,
+ * the bottom, both, or (a hole alone in the floor) all round. `art` is the
+ * pick prefix of that dungeon's own $f3-$f7 (rip-dungeon-themes.py); `Room
+ * .artAt` reads `lip` and picks by what is above and below. `extra` is copied
+ * onto all five (a shaft's `shaft`), and `family` is what counts as more
+ * hole. Flags are one value for all five, so a lip is never a different
+ * floor from the run it edges.
+ */
+function holeKit(name, art, family, flags, extra = {}) {
+  const t = (a) => ({ art: ART[a], pal: a, flags, family, ...extra });
+  return {
+    [name]: { ...t(art), lip: { n: name + 'N', s: name + 'S', ns: name + 'NS', one: name + 'One' } },
+    [name + 'N']: t(art + 'N'), [name + 'S']: t(art + 'S'),
+    [name + 'NS']: t(art + 'NS'), [name + 'One']: t(art + 'One'),
+  };
+}
+
+/**
  * One whole Oracle kit for theme `T`, from the picks prefixed `P` (S160).
  * Every piece names its own extracted palette, so the kit is the cartridge's
  * colours throughout. The three optional dungeons are built alike, so they
@@ -2861,10 +2880,13 @@ export function installCoreTiles() {
       N: 'gRingN', S: 'gRingS', W: 'gRingW', E: 'gRingE',
       jNW: 'gJambNW', jNE: 'gJambNE', jSW: 'gJambSW', jSE: 'gJambSE',
       jWN: 'gJambWN', jWS: 'gJambWS', jEN: 'gJambEN', jES: 'gJambES',
-      // A shut door in the ring draws the Seasons door for its wall. The boss
-      // door keeps its own art: no Seasons sheet here has one to cut.
+      // A shut door in the ring draws the Seasons door for its wall, and the
+      // boss door the kit's own $74 (S236; it was the shared hand-cut gold
+      // square). From inside the boss room the way back is a shutter, as in
+      // the other kits.
       lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
       shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
+      bossN: 'gBossN', bossS: 'gShutS',
     } },
     dWallGrottoX: { art: ART.dWallCracked, pal: 'gRingN', flags: F.SOLID | F.BOMBABLE },
     dBlockGrotto: { art: ART.gBlock, pal: 'gBlock', flags: F.SOLID },
@@ -2876,9 +2898,20 @@ export function installCoreTiles() {
     // THE HELD BRIDGE (S211; Ages' INTERAC_EXTENDABLE_BRIDGE): the hole it
     // spans, and its planks, laid one at a time while its plate is held
     // (Game.updateBridges) and taken up again from the far end when it is not.
-    dHoleGrotto: { art: ART.gHole, pal: 'gHole', flags: F.PIT, bridge: { H: 'dBridgeGrottoH', V: 'dBridgeGrottoV' } },
-    dBridgeGrottoV: { art: ART.gBridgeV, pal: 'gBridgeV' },
-    dBridgeGrottoH: { art: ART.gBridgeH, pal: 'gBridgeH' },
+    // The Grotto's kit is the Sword & Shield Maze's ice half, so its hole is
+    // the Hold's (S236: lipped where floor meets it, as the cartridge lays
+    // it). The planks count as more hole for the lip, so laying one does not
+    // redraw the rim of the hole beyond it: the cartridge only swaps the
+    // tile the plank lands on.
+    ...holeKit('dHoleGrotto', 'holdHole', 'grottoHole', F.PIT),
+    dHoleGrotto: { ...holeKit('dHoleGrotto', 'holdHole', 'grottoHole', F.PIT).dHoleGrotto,
+      bridge: { H: 'dBridgeGrottoH', V: 'dBridgeGrottoV' } },
+    dBridgeGrottoV: { art: ART.gBridgeV, pal: 'gBridgeV', family: 'grottoHole' },
+    dBridgeGrottoH: { art: ART.gBridgeH, pal: 'gBridgeH', family: 'grottoHole' },
+    // Its drains and sumps at LOW are the same hole (S236; they were the
+    // shared hand-drawn `dPit`).
+    dSumpGrotto: { tide: ['dHoleGrotto', 'dWaterD', 'dWaterD'] },
+    dDrainGrotto: { tide: ['dHoleGrotto', 'dWaterS', 'dWaterD'] },
     // THE SLATE SLOTS (S211; Ages' Ancient Tomb, room $58a): one per face of
     // the Keep's slate chamber, and each with its slate in.
     ...Object.fromEntries(['N', 'E', 'S', 'W'].flatMap(f => [
@@ -2911,6 +2944,11 @@ export function installCoreTiles() {
     gShutS: { art: ART.gShutS, pal: 'gShutS', flags: F.SOLID | F.DOOR },
     gShutE: { art: ART.gShutE, pal: 'gShutE', flags: F.SOLID | F.DOOR },
     gShutW: { art: ART.gShutW, pal: 'gShutW', flags: F.SOLID | F.DOOR },
+    gBossN: { art: ART.gBossN, pal: 'gBossN', flags: F.SOLID | F.DOOR },
+    // The Coral Spire's own doors (S236), the Explorer's Crypt's.
+    ...Object.fromEntries(['Key', 'Shut'].flatMap(k => ['N', 'S', 'E', 'W'].map(d =>
+      ['c' + k + d, { art: ART['c' + k + d], pal: 'c' + k + d, flags: F.SOLID | F.DOOR }]))),
+    cBossN: { art: ART.cBossN, pal: 'cBossN', flags: F.SOLID | F.DOOR },
 
     // d2 Coral Spire.
     // S137: THE CORAL SPIRE IS AN ORACLE DUNGEON, and its kit is the pink
@@ -2920,13 +2958,21 @@ export function installCoreTiles() {
     // doorway jambs to cut, so a side opening is framed by plain runs; its
     // doors are the Seasons key doors and shutters the Grotto uses.
     dFloorCoral: { art: ART.cFloor, pal: 'cFloor' },
+    // S236: the Coral Spire's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitCoral', 'cHole', 'coralPit', F.PIT),
+    dSumpCoral: { tide: ['dPitCoral', 'dWaterD', 'dWaterD'] },
+    dDrainCoral: { tide: ['dPitCoral', 'dWaterS', 'dWaterD'] },
     dFloorCoralAlt: { art: ART.cFloorAlt, pal: 'cFloorAlt' },
     dWallCoral: { art: ART.cFill, pal: 'cFill', flags: F.SOLID, ring: {
       TL: 'cRingTL', TR: 'cRingTR', BL: 'cRingBL', BR: 'cRingBR',
       N: 'cRingN', S: 'cRingS', W: 'cRingW', E: 'cRingE',
       jNW: 'cJambNW', jNE: 'cJambNE', jSW: 'cJambSW', jSE: 'cJambSE',
-      lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
-      shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
+      // Its own doors (S236), the Explorer's Crypt's $70-$7b in its colour;
+      // it had borrowed the Grotto's.
+      lockN: 'cKeyN', lockS: 'cKeyS', lockE: 'cKeyE', lockW: 'cKeyW',
+      shutN: 'cShutN', shutS: 'cShutS', shutE: 'cShutE', shutW: 'cShutW',
+      bossN: 'cBossN', bossS: 'cShutS',
     } },
     dWallCoralX: { art: ART.dWallCracked, pal: 'cRingN', flags: F.SOLID | F.BOMBABLE },
     dBlockCoral: { art: ART.cBlock, pal: 'cBlock', flags: F.SOLID },
@@ -3038,7 +3084,7 @@ export function installCoreTiles() {
     // and MID, deep water over them at HIGH, so the top of the tide is the
     // only sea they are safe at (docs/briefs/D4-CLIFFSIDE-CISTERN.md).
     dSpikeCistern: { art: ART.xSpike, pal: 'xSpike', flags: F.HAZARD },
-    dHoleCistern: { art: ART.xHole, pal: 'xHole', flags: F.PIT },
+    ...holeKit('dHoleCistern', 'xHole', 'cisternHole', F.PIT),
     dSumpCistern: { tide: ['dHoleCistern', 'dWaterD', 'dWaterD'] },
     dDrainCistern: { tide: ['dHoleCistern', 'dWaterS', 'dWaterD'] },
     dSpikePoolCistern: { tide: ['dSpikeCistern', 'dSpikeCistern', 'dWaterD'] },
@@ -3108,6 +3154,11 @@ export function installCoreTiles() {
     // from the door key the ripper laid out beside the map. The Ruins draw
     // jambs where a north or south doorway cuts the bevel.
     dFloorWood: { art: ART.rFloor, pal: 'rFloor' },
+    // S236: the Shrine's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitWood', 'rPit', 'woodPit', F.PIT),
+    dSumpWood: { tide: ['dPitWood', 'dWaterD', 'dWaterD'] },
+    dDrainWood: { tide: ['dPitWood', 'dWaterS', 'dWaterD'] },
     dFloorWoodAlt: { art: ART.rFloorAlt, pal: 'rFloorAlt' },
     dWallWood: { art: ART.rFill, pal: 'rFill', flags: F.SOLID, ring: {
       TL: 'rRingTL', TR: 'rRingTR', BL: 'rRingBL', BR: 'rRingBR',
@@ -3220,14 +3271,12 @@ export function installCoreTiles() {
     // pit at LOW, shallow at MID, deep at HIGH — drawn in the Lair's own hole
     // rather than the shared grey pit. A plain pit, not a shaft: nothing
     // beneath it, so it carries F.PIT and not F.DROP.
-    dPitBog: {
-      art: ART.bHole, pal: 'bHole', flags: F.PIT, family: 'bogPit',
-      lip: { n: 'dPitBogN', s: 'dPitBogS', ns: 'dPitBogNS' },
-    },
-    dPitBogN: { art: ART.bHoleN, pal: 'bHoleN', flags: F.PIT, family: 'bogPit' },
-    dPitBogS: { art: ART.bHoleS, pal: 'bHoleS', flags: F.PIT, family: 'bogPit' },
-    dPitBogNS: { art: ART.bHoleNS, pal: 'bHoleNS', flags: F.PIT, family: 'bogPit' },
+    // S236: the Lair's PLAIN hole ($f3-$f7), not its warp hole: the
+    // cartridge draws the hole you fall to the floor below through ($48,
+    // patterned) differently from one with nothing beneath it (black).
+    ...holeKit('dPitBog', 'bPit', 'bogPit', F.PIT),
     dDrainBog: { tide: ['dPitBog', 'dWaterS', 'dWaterD'] },
+    dSumpBog: { tide: ['dPitBog', 'dWaterD', 'dWaterD'] },
     // THE SANCTUM'S ONE-WAY LEDGES (S181). A Seasons dungeon has no ledge
     // tile of its own: it jumps Link off the edge of a raised floor drawn with
     // its WALL RING's own runs — $b0 (the north run) down, $b1 (east) left,
@@ -3258,6 +3307,11 @@ export function installCoreTiles() {
     // open doorway, so a gap in the ring is framed by plain runs; the way out
     // is the lit step between two pillars in the south wall, `(C)`.
     ...optionalKit('Salt', 'h'),
+    // S236: the lower vault's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitSalt', 'hPit', 'saltPit', F.PIT),
+    dSumpSalt: { tide: ['dPitSalt', 'dWaterD', 'dWaterD'] },
+    dDrainSalt: { tide: ['dPitSalt', 'dWaterS', 'dWaterD'] },
     ...optionalKit('Eyrie', 'n'),
     // THE GULLWIND EYRIE'S CHASM (S160): Snake's Remains' own black drop, with
     // the floor's lip drawn along its top wherever floor is north of it — the
@@ -3265,8 +3319,8 @@ export function installCoreTiles() {
     // them. And its high-water wall: the Eyrie's own masonry, standing until
     // the sea covers it at HIGH (the Keep's `dLintel`, in this dungeon's
     // stone), which is the only sea a thrown Ferryman's Coin can cross it at.
-    dPitEyrie: { art: ART.nPit, pal: 'nPit', flags: F.PIT, family: 'pitEyrie', edgeArt: { up: 'nPitN' } },
-    nPitN: { art: ART.nPitN, pal: 'nPitN', flags: F.PIT },
+    // (S236: all five of the cartridge's hole pieces, by `holeKit`.)
+    ...holeKit('dPitEyrie', 'nPit', 'pitEyrie', F.PIT),
     dDrownEyrie: { tide: ['dWallEyrie', 'dWallEyrie', 'dWaterD'] },
     ...optionalKit('Palace', 'u'),
 
@@ -3296,7 +3350,7 @@ export function installCoreTiles() {
     // floor you are on: sound HIGH standing in the pool and you go down.
     dWaterPalaceS: { art: ART.uWaterS, pal: 'uWaterS', flags: F.WATER },
     dWaterPalaceD: { art: ART.uWaterD, pal: 'uWaterD', flags: F.DEEP },
-    dPitPalace: { art: ART.uPit, pal: 'uPit', flags: F.PIT },
+    ...holeKit('dPitPalace', 'uPit', 'pitPalace', F.PIT),
     dWhirlPalace: {
       art: ART.uWhirl0, pal: 'uWhirl0', flags: F.DEEP | F.WHIRL,
       anim: ['uWhirl0', 'uWhirl1', 'uWhirl2', 'uWhirl3'], animRate: WHIRLPOOL_ANIM_RATE,
@@ -3319,6 +3373,11 @@ export function installCoreTiles() {
     // sprout statue, and the maze's own key doors, shutters and horned boss
     // door. It draws jambs on all four sides of a doorway.
     dFloorAbyss: { art: ART.kFloor, pal: 'kFloor' },
+    // S236: the Keep's own hole, pits and drains at LOW (they were the
+    // shared hand-drawn `dPit`).
+    ...holeKit('dPitAbyss', 'kHole', 'abyssPit', F.PIT),
+    dSumpAbyss: { tide: ['dPitAbyss', 'dWaterD', 'dWaterD'] },
+    dDrainAbyss: { tide: ['dPitAbyss', 'dWaterS', 'dWaterD'] },
     dFloorAbyssAlt: { art: ART.kFloorAlt, pal: 'kFloorAlt' },
     dWallAbyss: { art: ART.kFill, pal: 'kFill', flags: F.SOLID, ring: {
       TL: 'kRingTL', TR: 'kRingTR', BL: 'kRingBL', BR: 'kRingBR',

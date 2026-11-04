@@ -1,3 +1,82 @@
+## S236 — every dungeon's own hole; the first two boss doors and the Spire's doors from the cartridge
+
+Branch claude/oracle-tides-boss-feel-ctgsko, off main at 01493e5 (S235).
+
+### The human's choices this session
+- S235's bosses waiting for the shutters and then holding their pose,
+  Gloomtide included: FEELS RIGHT. Keep; do not re-ask.
+
+### Built (art only: no flag, no rule, no route changed)
+- HOLES. Both cartridges draw a dungeon hole with five metatiles in every
+  dungeon tileset, in that dungeon's own floor colours (TILETYPE_HOLE
+  $f3-$f7): $f4 inside a run, $f5 floor above, $f6 floor below, $f7 both,
+  $f3 alone. The room layouts put the lip only where FLOOR meets the run,
+  never against a wall (rooms/seasons/large/room0527.bin, room0502.bin).
+  Ours: six dungeons and the lower vault drew pits and LOW drains/sumps with
+  the shared HAND-DRAWN navy `dPit` (a grid of framed squares), D1 and D4
+  drew a lipless $f4, the Sanctum's drains drew its WARP hole ($48, the one
+  you fall a floor through), the Eyrie had only the top lip.
+  - rip-dungeon-themes.py: `cHole*` (crypt), `xHole{N,S,NS,One}` (dragon),
+    `bPit*` (moth), `rPit*` (ruins), `hPit*` (Hero's Cave), `nPit{S,NS,One}`
+    (snakes), `uPit{N,S,NS,One}` (Ages' Mermaid's Cave).
+  - tiles-core.js `holeKit(name, art, family, flags)`: the five tiledefs with
+    `lip`. dHoleGrotto (the Hold's `holdHole*`, same tileset $41; its bridge
+    planks share its family so a plank does not redraw the rim beyond it),
+    dHoleCistern, dPitBog (now the plain hole), dPitEyrie, dPitPalace, and new
+    dPitCoral/Wood/Abyss/Salt with dSump*/dDrain* for each (and Grotto, Bog).
+  - legends.js: `O`/`0`/`4` per theme (Grotto 0/4, Bog O/0, Coral, Wood,
+    Abyss, Salt O/0/4). No room grid changed. `dPit` is still defined (the
+    cave legend's `O`, `dFloorCrack`'s bomb) but no room draws it.
+  - room.js `lip`: a neighbour counts as floor only if it is not the same
+    family and not wall (`ring`/`ringWall`) — the cartridge's rule. This
+    also changes the Keep's and the Hold's shafts and the Sanctum's shafts
+    where they meet a wall.
+  - The Keep's lip is olive and PURPLE: that is the fire half's own $f5
+    (its floor's shadow tone); checked, not a mismatch.
+- BOSS DOORS. D1 and D2 drew the shared hand-cut gold `dDoorBoss` (no sheet
+  had theirs). Now metatile $74 of their tilesets: `gBossN` (S&S Maze ice)
+  and `cBossN` (Explorer's Crypt); `bossS` is the kit's south shutter, as in
+  the other kits.
+- THE CORAL SPIRE'S DOORS: it had borrowed the Grotto's olive key doors and
+  shutters off the stitched map. Now the Explorer's Crypt's own $70-$73 and
+  $78-$7b (`cKey*`, `cShut*`), GREEN — checked against
+  assets/sheets/oracle-seasons-dungeon-explorers-crypt.png (a green key door
+  at 1809,1072).
+- Picture sent: docs/briefs/s236/holes.png (Seasons' Hero's Cave and
+  Ancient Ruins rooms rendered from the disassembly, beside the Keep's pit
+  room and the Grotto's drained channel, before and now).
+
+### How the hand art was found
+A scratch probe: every room of MAPS, every cell, every sea, `room.artAt(d, x,
+y, lv)` (skipping `big`/`quad`/`anim`/`over` cells), keep the cells whose art
+string is in none of TERRAIN_ART/TOWN_ART/DUNGEON_THEME_ART/MAKU_TILE_ART.
+What is left after this session (all checked):
+- Overworld: grass/rock floors and their variants, posts, ledges, the
+  lighthouse, the dungeon portals, the seals, dig spots — older work, not
+  looked at this session.
+- Dungeons: `dPost`/`dPostAbyss`/`cvPost` (the Dredge Line's mooring post,
+  ours), `dBole` (ours), `dSilt*` (ours), `grate` (the Keep's), `dLedge*`
+  in D2, D5 and D6 (the shared grey ledge; the Sanctum's are its wall ring's
+  runs, cliffTiles.s @dungeons — the same could be done for D2/D5/D6), and
+  D1's interior dDoorClosed (the flat interior walls of D1/D2 keep their own
+  door: approved look, room.js says so).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S235). Whole table: see the session's last commit message.
+
+### Not done / candidates
+- D2/D5/D6's ledges from their own wall rings, as the Sanctum's (S181).
+- The Grotto's east/west shutters are its north one turned (`rot`); the
+  cartridge has its own $79/$7b. Same for its key doors' sides. Small.
+- S234's list stands: Seasons' open doorway has no jambs (ours, approved);
+  side-scrolling passages (a whole mechanic; ask first); the urchin's shield
+  (ours); the guide's old shots; check-placement proves floor in front of a
+  chest, not that it can be walked to.
+- The loose key's hold: CLOSED. Seasons' floor and falling keys are grab
+  mode 0 (treasureObjectData.s $18/$28: no pose, no text), which is ours.
+  Only the underwater key ($49) is held up with one hand.
+
 ## S235 — a boss waits for its shutters, then holds its pose
 
 Branch claude/oracle-tides-boss-doors-8f0cv2, off main at 3805d44 (S234).
