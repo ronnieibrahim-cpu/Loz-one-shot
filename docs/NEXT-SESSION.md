@@ -1,3 +1,32 @@
+## S240 — scenery can no longer draw an old picture by its name; cave chests proved walkable
+
+Branch claude/oracle-tides-scenery-chest-6c5ty7, off main at 5d80460 (S239).
+
+### Built (no change on screen)
+- validate.mjs: every tile with `art` must draw exactly that picture — the
+  sheet's entry under the tile's name compared pixel for pixel with the
+  tiledef's art. It found the S239 five: `ledgeS/N/E/W` (placed nowhere; they
+  drew the dungeon lip, not Seasons' ledge their tiledef names) and
+  `coralWall` (the Reefseed pillar's wall at MID: the tiledef said `ART.rock`
+  and the tile has always drawn the extracted rose block named `coralWall`).
+  Fixed by renaming the hand lip art `dLedgeLipS/N/E/W` (the dungeon ledges
+  name it) and pointing `coralWall` at `ART.coralWall`, what it draws. Goes
+  red if `coralWall` is pointed back at `ART.rock`.
+- tools/lib/screen-flood.mjs: check-strands' on-foot flood (gates open, any
+  sea, the base hop) lifted out for sharing; check-strands --verbose prints
+  byte-identically before and after.
+- check-placement: every overworld, cave and house chest's front tile is
+  reached by that flood (overworld from Tidewatch, interiors from their own
+  doorways). 17 chests in 15 cave maps, all reached; no overworld chest
+  exists today. Same `BY_OTHER_VERB` escape as the dungeon clause (empty).
+
+### Verified
+See the S240 commit message for the table run.
+
+### Not done / candidates
+- Side-scrolling passages (a whole mechanic; ask first); the urchin's shield
+  (ours); Seasons' open doorway has no jambs (ours, approved).
+
 ## S239 — indoor pieces stay ours; the picture guide re-shot; chests proved walkable
 
 Branch claude/oracle-tides-visual-review-0j5qm3, off main at a610922 (S238).

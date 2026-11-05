@@ -61578,7 +61578,7 @@ const HAND_ART = {
   // the bottom two let the ground at the foot of the drop show through the
   // ragged shadow fringe, which is what sells the two levels as different
   // heights. `underArt` is what shows in both.
-  ledgeS: `
+  dLedgeLipS: `
     ................
     ................
     0000000000000000
@@ -61657,7 +61657,7 @@ const HAND_ART = {
   // across the tile, and the ragged fringe where the shadow meets the ground
   // below. Rotating puts the light on the high side of the drop in both, which
   // is what makes them read as the same cliff seen from a different side.
-  ledgeE: `
+  dLedgeLipE: `
     ..00222223333...
     ..002222223333..
     ..00222222233...
@@ -61675,7 +61675,7 @@ const HAND_ART = {
     ..002222222333..
     ..00222233333...`,
 
-  ledgeW: `
+  dLedgeLipW: `
     ...33333222200..
     ..333222222200..
     ..333322222200..
@@ -61699,7 +61699,7 @@ const HAND_ART = {
   // painted across the floor. So the face is six rows, not nine, and the order
   // top to bottom is: the ground beyond the drop, the shadow the cliff casts
   // into it, then the lit brink of the ground you are standing on.
-  ledgeN: `
+  dLedgeLipN: `
     ................
     ................
     ................
@@ -63095,8 +63095,15 @@ function installCoreTiles() {
     // use: ART-DIRECTION says extract rather than draw, and where no sheet has
     // the thing, reusing art the sheets DID supply beats inventing a look for
     // it. What tells the three states apart is the flags, not the drawing.
+    //
+    // S240: the wall at MID said `ART.rock` here for its whole life and never
+    // drew it: the tile's NAME is also the name of the extracted rose block
+    // (DUNGEON_THEME_ART.coralWall), and a tile named like an art draws that
+    // art (see the `!(name in ART)` note at the alias pass). It now names the
+    // block it has always drawn; validate.mjs fails on any tile whose drawn
+    // picture is not the one its `art` names.
     coralStep: { art: ART.rockFloor, pal: 'coral' },
-    coralWall: { art: ART.rock, pal: 'coral', flags: F.SOLID | F.RING },
+    coralWall: { art: ART.coralWall, pal: 'coral', flags: F.SOLID | F.RING },
     coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
 
@@ -63371,7 +63378,7 @@ function installCoreTiles() {
     // Indoors the lip wants contrast against the tan flagstone, so it takes the
     // wall's palette rather than the floor's narrow `stonef` ramp — three
     // near-identical greys would lose the lit top edge entirely.
-    dLedge: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'dFloor' },
+    dLedge: { art: ART.dLedgeLipS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'dFloor' },
 
     // The same nine families facing the other three cardinals. Each keeps its
     // family's palette and `underArt` exactly — only the art and the `ledge`
@@ -63409,9 +63416,9 @@ function installCoreTiles() {
     ledgeAbyssE: { art: ART.owLedgeE, pal: 'abyss', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
     ledgeAbyssW: { art: ART.owLedgeW, pal: 'abyss', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
 
-    dLedgeN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'dFloor' },
-    dLedgeE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'dFloor' },
-    dLedgeW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'dFloor' },
+    dLedgeN: { art: ART.dLedgeLipN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'dFloor' },
+    dLedgeE: { art: ART.dLedgeLipE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'dFloor' },
+    dLedgeW: { art: ART.dLedgeLipW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'dFloor' },
 
 
     // --- dungeon themes (P7.5) -------------------------------------------
@@ -64339,6 +64346,9 @@ function installCoreTiles() {
   // changed nothing at all and the tile went on drawing the art it shares its
   // name with — no warning, no missing entry, just the old pixels. If a tile
   // needs different art, rename the ART, not the tiledef.
+  // `node tools/validate.mjs` now FAILS on any such tile (S240: it found five,
+  // the four outdoor ledges shadowed by the dungeon lip and the coral pillar's
+  // wall), so a repoint that does nothing on screen no longer passes silently.
   const aliases = {};
   for (const [name, def] of Object.entries(TILE_DEFS)) {
     if (def && def.art && !(name in ART)) aliases[name] = def.art;
