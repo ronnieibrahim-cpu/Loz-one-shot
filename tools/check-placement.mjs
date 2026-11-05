@@ -354,6 +354,44 @@ check('every chest and sign has floor in front of it, where it opens or is read 
   check('every dungeon chest can be walked up to from the front',
     seen > 0 && out.length === 0, out.length ? `${out.length} cannot` : '');
 }
+// AND OUTSIDE THE DUNGEONS (S240): every overworld, cave and house chest's
+// front tile is a cell the on-foot screen flood (tools/lib/screen-flood.mjs,
+// the one check-strands uses: gates held open, any sea, the base hop) reaches
+// — on the overworld from Tidewatch, in an interior from its own doorways.
+// There are no overworld chests today (all 17 stand in caves); the overworld
+// is covered so the first one placed is. Same rule as above for a chest only
+// another verb reaches: name it here with the tool that proves it.
+{
+  const { MAPS } = await import('../src/world/maps.js');
+  const { floodScreens, screenRooms, allCells, doorCells } = await import('./lib/screen-flood.mjs');
+  const BY_OTHER_VERB = {};
+  let seen = 0, maps = 0; const out = []; const used = new Set();
+  for (const [id, m] of MAPS) {
+    if (m.dungeon) continue;
+    const chests = [];
+    for (const [k, def] of Object.entries(m.roomDefs)) {
+      for (const s of def.entities || []) if (s[0] === 'chest') chests.push([k, s[1], s[2]]);
+    }
+    if (!chests.length) continue;
+    maps++;
+    const rooms = screenRooms(id);
+    const starts = id === 'overworld' ? allCells('0,4,7') : doorCells(id, rooms);
+    if (!starts.length) { out.push(`${id}: no doorway to walk in from`); continue; }
+    const flood = floodScreens(id, starts, rooms);
+    for (const [k, x, y] of chests) {
+      seen++;
+      if (flood.has(`${k}:${x},${y + 1}`)) continue;
+      const tag = `${id}/${k} ${x},${y}`;
+      if (BY_OTHER_VERB[tag]) { used.add(tag); continue; }
+      out.push(`${tag}: no one can walk to the floor in front of it`);
+    }
+  }
+  for (const tag of Object.keys(BY_OTHER_VERB)) if (!used.has(tag)) out.push(`${tag}: listed as reached by another verb, but the flood reaches it (or it is gone): drop it from the list`);
+  console.log(`check-placement: ${seen} overworld, cave and house chests in ${maps} maps, the floor in front of each walked to`);
+  for (const l of out) console.log('  ' + l);
+  check('every overworld, cave and house chest can be walked up to from the front',
+    seen > 0 && out.length === 0, out.length ? `${out.length} cannot` : '');
+}
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

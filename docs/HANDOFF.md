@@ -447,6 +447,12 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The coral pillar's wall was drawn by its name for years (S240).** The
+  tiledef said `ART.rock`; the tile drew the extracted rose block that happens
+  to be called `coralWall`. validate.mjs now compares each tile's drawn
+  picture with its tiledef art, so a shadow fails the day it appears. A probe
+  that scans rooms for a tile misses this one: the pillar is never placed,
+  only grown by the Reefseed in play.
 - **A tile named like a hand art draws the hand art (S239).** tiles-core.js
   aliases a tiledef's `art` under its name only when ART has no entry of that
   name, so repointing `dPost.art` changed nothing on screen while `getTileDef`

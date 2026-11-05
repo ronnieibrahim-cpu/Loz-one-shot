@@ -1,8 +1,8 @@
-# Next session (S240)
+# Next session (S241)
 
 ## Read first
 - CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S239 and S238; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S240 and S239; docs/HANDOFF.md lessons (top ten).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code
@@ -13,6 +13,10 @@
   says the same under the Ages rule.
 
 ## State
+- S240: no game change. validate now fails when a tile draws a picture other
+  than the one it names (the coral pillar's wall and four unused ledges were
+  renamed to say what they draw); check-placement proves every cave, house
+  and overworld chest can be walked up to (17, all in caves).
 - S239: no game change. The human kept S238's outdoor pieces (all, the faint
   salt-flat ledges too) and kept OUR indoor mooring posts, the Keep's silt
   and the Shrine's trees (offered the originals' stakes, dug floor and bush:
@@ -37,11 +41,9 @@
   ledges; S239 our own mooring posts, silt, Shrine trees, grate.
 
 ## The task
-- The hand-art look-through is finished (what is left is ours by design or
-  kept). Next, from NEXT-SESSION.md's lists: a test that a tile named like a
-  hand art cannot silently draw it (S239 "Found"); the walkable-chest proof
-  for overworld and cave chests; then ask the human what to look at next
-  (side-scrolling passages are a whole mechanic: ask first).
+- Whatever the human chose at the end of S240 (see NEXT-SESSION.md S240's
+  last lines). If nothing was chosen, ask what to look at next. Side-scrolling
+  passages are a whole new mechanic: ask first.
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare
   route-prefix traces against a worktree of ORIGIN/main; if a boss's start

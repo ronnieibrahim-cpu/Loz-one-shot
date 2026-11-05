@@ -56,89 +56,25 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { installData } from '../src/data/index.js';
 import { OVERWORLD_W, OVERWORLD_H } from '../src/data/overworld.js';
-import { MAPS, getRoom } from '../src/world/maps.js';
-import { F } from '../src/world/tileset.js';
-import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
-import { tileWalkable, ROUTE_AVOID } from './lib/collision.mjs';
+import { MAPS } from '../src/world/maps.js';
+import { passableAt, stepScreen, floodScreens, screenRooms, allCells, DIRS, SCREEN_W, SCREEN_H } from './lib/screen-flood.mjs';
 
 installData();
 
-const W = 10, H = 8, OW = OVERWORLD_W, OH = OVERWORLD_H;
+const W = SCREEN_W, H = SCREEN_H, OW = OVERWORLD_W, OH = OVERWORLD_H;
 const BASELINE = new URL('./strands-baseline.json', import.meta.url);
 const RECORD = process.argv.includes('--record');
 const VERBOSE = process.argv.includes('--verbose');
 
 const m = MAPS.get('overworld');
-const ROOMS = new Map();
-for (const k of Object.keys(m.roomDefs)) {
-  const [f, rx, ry] = k.split(',').map(Number);
-  ROOMS.set(k, getRoom('overworld', f, rx, ry));
-}
+const ROOMS = screenRooms('overworld');
 
-// Every gate held open: this tool is about terrain, not gates.
-const openMask = F.HEAVY | F.BOMBABLE | F.VANE;
-// Every story gate and keyhole held open (S154: the six dungeon keys).
-const openStory = new Set(['makuOpenedKeep', 'openedD1', 'openedD2', 'openedD3', 'openedD4', 'openedD5', 'openedD6']);
-// On foot. No swimming (that is the Cleats), no jumping, no cutting.
-const CAPS = { jumping: false, swim: false, cutting: false };
+// The flood itself (gates held open, on foot, any sea, the base hop) lives in
+// tools/lib/screen-flood.mjs since S240, shared with check-placement's cave
+// chests. Every gate held open there on purpose: this tool is about terrain.
+const step = (rk, x, y, dx, dy) => stepScreen(m, rk, x, y, dx, dy);
 
-function walkableAt(room, x, y, t) {
-  if (openMask && (room.flagsAt(x, y, t) & openMask)) return true;
-  const d = room.tile(x, y, t);
-  if (d && d.openFlag) return openStory.has(d.openFlag);
-  return tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
-}
-
-// The base hop, modelled the way check-overworld models it: a gap tile is
-// crossable when the run containing it is shorter than GAP_HOP_MAX_SPAN along
-// at least one axis. Read from feel.js rather than written down here.
-const isGap = (r, x, y) => !!(r.flagsAt(x, y, 1) & F.JUMPABLE);
-function runLen(r, x, y, dx, dy) {
-  let n = 1;
-  for (let i = 1; ; i++) { const nx = x + dx * i, ny = y + dy * i; if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(r, nx, ny)) break; n++; }
-  for (let i = 1; ; i++) { const nx = x - dx * i, ny = y - dy * i; if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(r, nx, ny)) break; n++; }
-  return n;
-}
-const hoppable = (r, x, y) => isGap(r, x, y)
-  && (runLen(r, x, y, 1, 0) < GAP_HOP_MAX_SPAN || runLen(r, x, y, 0, 1) < GAP_HOP_MAX_SPAN);
-// The player controls the tide, so a tile is passable if any level allows it.
-const passable = (r, x, y) => [0, 1, 2].some(t => walkableAt(r, x, y, t));
-const passableAt = (r, x, y) => passable(r, x, y) || hoppable(r, x, y);
-
-/** Where a step off the edge of a screen lands, or null at the world's rim. */
-function step(rk, x, y, dx, dy) {
-  const [, rx, ry] = rk.split(',').map(Number);
-  const nx = x + dx, ny = y + dy;
-  if (nx >= 0 && ny >= 0 && nx < W && ny < H) return [rk, nx, ny];
-  const trk = `0,${rx + (nx < 0 ? -1 : nx >= W ? 1 : 0)},${ry + (ny < 0 ? -1 : ny >= H ? 1 : 0)}`;
-  if (!m.roomDefs[trk]) return null;
-  return [trk, (nx + W) % W, (ny + H) % H];
-}
-const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-
-// --- the flood, from Tidewatch Village -------------------------------------
-function flood() {
-  const seen = new Set();
-  const start = '0,4,7', sr = ROOMS.get(start), q = [];
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (passableAt(sr, x, y)) { const k = `${start}:${x},${y}`; if (!seen.has(k)) { seen.add(k); q.push([start, x, y]); } }
-  }
-  while (q.length) {
-    const [rk, x, y] = q.pop();
-    for (const [dx, dy] of DIRS) {
-      const s = step(rk, x, y, dx, dy);
-      if (!s) continue;
-      const [trk, tx, ty] = s, tr = ROOMS.get(trk);
-      if (!tr || !passableAt(tr, tx, ty)) continue;
-      const k = `${trk}:${tx},${ty}`;
-      if (seen.has(k)) continue;
-      seen.add(k); q.push([trk, tx, ty]);
-    }
-  }
-  return seen;
-}
-
-const seen = flood();
+const seen = floodScreens('overworld', allCells('0,4,7'), ROOMS);
 
 // --- every foot-passable cell the flood never reached ----------------------
 const stranded = new Set();

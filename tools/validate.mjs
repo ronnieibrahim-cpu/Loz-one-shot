@@ -12,7 +12,7 @@
 //
 // Usage: node tools/validate.mjs
 
-import { parseArt } from '../src/gfx/art.js';
+import { parseArt, tiles as tileSheet } from '../src/gfx/art.js';
 import { PALETTES } from '../src/gfx/palettes.js';
 import { TILES, TRANSFORMS, BLOCKS, validateTiles } from '../src/world/tileset.js';
 import { MAPS, validateMaps, getRoom } from '../src/world/maps.js';
@@ -63,6 +63,26 @@ function checkArtPack(label, pack, expectW, expectH, { allowVariable = false, si
 }
 
 installData();
+
+// --- a tile draws the picture its `art` names (S240) -----------------------
+// tiles-core.js puts each tile on the sheet under its own name, but only when
+// no ART entry already HAS that name — so a tile named like an art draws that
+// art whatever its `art` says, and every probe that reads `getTileDef(n).art`
+// believes the art it was given. S239 repointed `dPost` to Seasons' stake and
+// saw nothing change on screen until the hand art was deleted. This compares
+// the picture the sheet will actually draw under each tile's name with the
+// picture its tiledef names, pixel for pixel, for every tile that has art.
+{
+  const pic = a => JSON.stringify(a);
+  for (const [name, def] of TILES) {
+    if (!def || typeof def.art !== 'string') continue;
+    const drawn = tileSheet.defs.get(name);
+    if (!drawn) { problems.push(`tile '${name}': has art but nothing is on the sheet under its name`); continue; }
+    if (pic(drawn.art) !== pic(parseArt(def.art))) {
+      problems.push(`tile '${name}': draws the art NAMED '${name}', not the art its tiledef names — rename the art (tiles-core.js, the \`!(name in ART)\` note)`);
+    }
+  }
+}
 
 // --- art ------------------------------------------------------------------
 for (const [label, pack] of Object.entries(ART_PACKS)) {
