@@ -21,7 +21,11 @@ Branch claude/oracle-tides-scenery-chest-6c5ty7, off main at 5d80460 (S239).
   exists today. Same `BY_OTHER_VERB` escape as the dungeon clause (empty).
 
 ### Verified
-See the S240 commit message for the table run.
+Picture unchanged; dist/ rebuilt. check-playthrough 49/49, THE END, never
+died, LOW-WATER 5, 316364 frames (identical to S239). The other 68 table
+tools green in one run (validate, test, check-placement 7/7, check-strands
+identical, check-build ...); watch-cutscenes exit 0; shoot-cutscene --ending
+OK; check-rippers 45/45 alone, last.
 
 ### Not done / candidates
 - Side-scrolling passages (a whole mechanic; ask first); the urchin's shield
