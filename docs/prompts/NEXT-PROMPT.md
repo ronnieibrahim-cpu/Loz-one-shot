@@ -40,7 +40,8 @@
   Spire's doors; S237 ground edges; S238 outdoor rocks, soil, holes, stakes,
   ledges; S239 our own mooring posts, silt, Shrine trees, grate.
 
-## The task (the human chose "all of the above" at the end of S240)
+## The task
+The human chose "all of the above" at the end of S240:
 1. Show the human the coral pillar (all three seas) and the urchin's shield,
    each beside the closest thing in Seasons and Ages; ask keep or swap.
 2. Side-scrolling passages: a whole new mechanic. Talk the design through
