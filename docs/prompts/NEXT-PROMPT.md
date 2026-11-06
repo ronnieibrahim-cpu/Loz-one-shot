@@ -40,10 +40,12 @@
   Spire's doors; S237 ground edges; S238 outdoor rocks, soil, holes, stakes,
   ledges; S239 our own mooring posts, silt, Shrine trees, grate.
 
-## The task
-- Whatever the human chose at the end of S240 (see NEXT-SESSION.md S240's
-  last lines). If nothing was chosen, ask what to look at next. Side-scrolling
-  passages are a whole new mechanic: ask first.
+## The task (the human chose "all of the above" at the end of S240)
+1. Show the human the coral pillar (all three seas) and the urchin's shield,
+   each beside the closest thing in Seasons and Ages; ask keep or swap.
+2. Side-scrolling passages: a whole new mechanic. Talk the design through
+   with the human first (pictures from both cartridges, where they would go,
+   what the tide does in one), and build only once they agree.
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare
   route-prefix traces against a worktree of ORIGIN/main; if a boss's start

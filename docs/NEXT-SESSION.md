@@ -27,9 +27,15 @@ tools green in one run (validate, test, check-placement 7/7, check-strands
 identical, check-build ...); watch-cutscenes exit 0; shoot-cutscene --ending
 OK; check-rippers 45/45 alone, last.
 
-### Not done / candidates
-- Side-scrolling passages (a whole mechanic; ask first); the urchin's shield
-  (ours); Seasons' open doorway has no jambs (ours, approved).
+### The human's choice for next (end of S240): "All of the above"
+1. Side-scrolling passages (Seasons'/Ages' underground side-view rooms). A
+   whole new way of moving: design it WITH the human first (where they go,
+   what our tide does in them, which cartridge rooms to rip) before building.
+2. The coral pillar's look (the Reefseed stake: rock floor at LOW, the rose
+   dungeon block `coralWall` at MID, deep water at HIGH): show all three seas
+   beside the closest thing in both cartridges and let the human choose.
+3. The sea urchin's shield (ours): show it beside the originals, ask.
+Seasons' open doorway has no jambs (ours, approved; do not re-ask).
 
 ## S239 — indoor pieces stay ours; the picture guide re-shot; chests proved walkable
 
