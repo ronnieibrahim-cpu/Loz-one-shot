@@ -147,6 +147,11 @@ export function registerTiles(defs) {
       // Link speak to Farore over her desk. `Player.tryContextAction` reaches
       // one tile further when the tile in front of him is one.
       counter: !!def.counter,
+      // A SIDE-VIEW PIECE (S241, docs/briefs/SIDE-VIEW.md): 'ladder' is climbed
+      // and stops a fall (Seasons' TILETYPE_SS_LADDER), 'ladderTop' is a
+      // ladder that is also stood on from above (TILETYPE_SS_LADDER_TOP).
+      // Only `sideview.js` reads it. Named here, or it would be discarded.
+      sv: def.sv || null,
       // A TILE THAT IS ONE CELL OF A BIGGER OBJECT. `quad` names a set of four
       // 16x16 arts — `<quad>TL`, `TR`, `BL`, `BR` — cut from one 32x32 source
       // tree. Which one this cell draws is decided by its NEIGHBOURS at render

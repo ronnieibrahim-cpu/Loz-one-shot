@@ -274,6 +274,13 @@ def cartridge():
             ents = _oam(so, lay[int(layout[1:], 16)])
             art[name + ('side' if d == 1 else DIRS[d])] = _place(
                 png + '.png', int(off[1:], 16) // 16, ents, 16, (8, 8))
+    # SWIMMING IN A SIDE VIEW (S241): LINK_ANIM_MODE_SWIM_2D ($17), two
+    # bodies a direction held 9 frames each; facing right is direction 1.
+    seq = [l.split()[1:] for l in _after(an, modes[0x17]) if l.strip().startswith('.db')][:2]
+    for k, row in enumerate(seq):
+        layout, png, off, _ = gfx[int(row[1][1:], 16) + 1]
+        art[f'link_swim2d_{k}'] = _place(png + '.png', int(off[1:], 16) // 16,
+                                         _oam(so, lay[int(layout[1:], 16)]), 16, (8, 8))
     ia = _lines('itemAnimations.s')
     io = _lines('itemOamData.s')
     ptrs = [r[0] for r in _list(ia, 'item05OamDataPointers', '.dw')]

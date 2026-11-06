@@ -1406,6 +1406,49 @@ function cave() {
  * hole. Flags are one value for all five, so a lip is never a different
  * floor from the run it edges.
  */
+/**
+ * A side-view kit (S241): Seasons' side-view pieces in one dungeon's colours,
+ * `svK*` art from rip-dungeon-themes.py, as tiles. Solid is solid from every
+ * side, as the cartridge's side-view collision is; water is `F.DEEP` (swum
+ * with the Cleats, drowned in without); spikes hurt where Link stands in
+ * them (TILEINDEX_SS_SPIKE, dealSpikeDamageToLink); a ladder is `sv`.
+ *
+ * THE WATERLINE IS A TIDE TILE. Each row a waterline can cross is one of five
+ * shapes over LOW, MID, HIGH: the LOW line (surface, water, water), between
+ * LOW and MID (air, water, water), the MID line (air, surface, water), between
+ * MID and HIGH (air, air, water) and the HIGH line (air, air, surface) — and
+ * the same five for a ladder, whose under-water half is water, as the
+ * cartridge's ladders stop at the surface (room $5e8). `svK0`-`svK4` and
+ * `svKL0`-`svKL4` in that order; the side legends give them the digits.
+ */
+function sideKit(K) {
+  const k = 'sv' + K;
+  const t = (n, o = {}) => ({ art: ART[k + n], pal: k + n, ...o });
+  const out = {
+    [k + 'Air']: t('Air'),
+    [k + 'Spike']: t('Spike', { flags: F.HAZARD }),
+    [k + 'Ladder']: t('Ladder', { sv: 'ladder' }),
+    [k + 'LadderTop']: t('LadderTop', { sv: 'ladderTop' }),
+    [k + 'LadderWet']: t('LadderWet', { sv: 'ladder', flags: F.DEEP }),
+    // The way out: a ladder climbed off the top of the passage.
+    [k + 'LadderOut']: t('Ladder', { sv: 'ladder', flags: F.WARP }),
+    [k + 'Water']: t('Water', { flags: F.DEEP }),
+    [k + 'Surface']: t('Surface', { flags: F.DEEP }),
+    [k + 'Weed']: t('Weed', { flags: F.DEEP }),
+  };
+  for (const n of ['Platform', 'Brick', 'Ledge', 'LedgeEnd', 'BrickEnd', 'WallW', 'WallE', 'Ceiling', 'CeilingLip', 'Rock', 'Bed']) {
+    out[k + n] = t(n, { flags: F.SOLID });
+  }
+  const shapes = [['Surface', 'Water', 'Water'], ['Air', 'Water', 'Water'], ['Air', 'Surface', 'Water'],
+    ['Air', 'Air', 'Water'], ['Air', 'Air', 'Surface']];
+  const ladder = { Air: 'Ladder', Surface: 'LadderWet', Water: 'Water' };
+  shapes.forEach((sh, i) => {
+    out[k + i] = { tide: sh.map(n => k + n) };
+    out[k + 'L' + i] = { tide: sh.map(n => k + ladder[n]) };
+  });
+  return out;
+}
+
 function holeKit(name, art, family, flags, extra = {}) {
   const t = (a) => ({ art: ART[a], pal: a, flags, family, ...extra });
   return {
@@ -2432,8 +2475,15 @@ export function installCoreTiles() {
     // art (see the `!(name in ART)` note at the alias pass). It now names the
     // block it has always drawn; validate.mjs fails on any tile whose drawn
     // picture is not the one its `art` names.
+    //
+    // S241: the wall at MID is Ages' own coral sprig (the sea floor's metatile
+    // $86, `coralSprig`), the human's pick over the rose block, standing on
+    // whatever ground it grew on: the dungeon's own floor through `dFloor`'s
+    // substitution, and outdoors the ground round it (`Room.underGround`).
+    // Stood on the pillar's own pink rock (`coralStep`) it was lost, pink on
+    // pink; on the floor it reads, in a pool as a mound the coral grew from.
     coralStep: { art: ART.rockFloor, pal: 'coral' },
-    coralWall: { art: ART.coralWall, pal: 'coral', flags: F.SOLID | F.RING },
+    coralWall: { art: ART.coralSprig, pal: 'coral', flags: F.SOLID | F.RING, underArt: 'dFloor' },
     coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
 
@@ -3289,6 +3339,11 @@ export function installCoreTiles() {
     // `dDrownEyrie`, the Keep's `dLintel`): swum over at HIGH, and at HIGH
     // the whirlpools are turning.
     dDrownPalace: { tide: ['dWallPalace', 'dWallPalace', 'dWaterPalaceD'] },
+
+    // THE SIDE-VIEW KIT (S241, docs/briefs/SIDE-VIEW.md): Seasons' side-view
+    // layout $32 in the Poison Moth's Lair's colours (tileset $58), for the
+    // Bogwater Sanctum's passages. See `sideKit`.
+    ...sideKit('Bog'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &

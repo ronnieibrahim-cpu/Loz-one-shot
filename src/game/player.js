@@ -11,6 +11,7 @@
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
+import { isSideRoom, updateSideView, SIDE_HB } from './sideview.js';
 import { SwordBeam } from './projectile.js';
 import {
   Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
@@ -107,6 +108,9 @@ export function playerHurtRect(p) {
   return { x: p.cx - r, y: p.cy - r, w: r * 2, h: r * 2 };
 }
 
+/** Link's box from his sprite's top-left, top-down: his feet. */
+const TOP_HB = Object.freeze({ x: 3, y: 8, w: 10, h: 7 });
+
 export class Player extends Entity {
   /** What an enemy has to touch to hurt him: playerHurtRect. */
   contactRect() { return playerHurtRect(this); }
@@ -115,7 +119,7 @@ export class Player extends Entity {
     super(x, y);
     this.w = 16; this.h = 16;
     // Feet-centred hitbox: Link's head overlaps walls in the GBC games.
-    this.hb = { x: 3, y: 8, w: 10, h: 7 };
+    this.hb = TOP_HB;
     this.dir = 'down';
     this.harmless = true;
     this.depth = 0;
@@ -222,8 +226,14 @@ export class Player extends Entity {
       return;
     }
 
-    this.updateTerrain(game);
-    this.updateBelt(game);
+    // A SIDE-VIEW PASSAGE (S241) has its own movement, gravity and water;
+    // see sideview.js. The sword, the items and the hits are the same.
+    const side = isSideRoom(game);
+    this.hb = side ? SIDE_HB : TOP_HB;
+    if (!side) {
+      this.updateTerrain(game);
+      this.updateBelt(game);
+    }
 
     if (this.spinning > 0) { this.updateSpin(game); return; }
     if (this.poking > 0) { this.updatePoke(game); return; }
@@ -236,6 +246,12 @@ export class Player extends Entity {
     this.updateBreath(game);
     // A poke roots him from the frame it starts (swordParent.s
     // @triggerSwordPoke, itemDisableLinkMovement).
+    if (side) {
+      if (this.poking === 0 && !(this.swinging > 0 && !(this.svFall > 0))) updateSideView(this, game);
+      this.updateContactDamage(game);
+      this.placeCarried();
+      return;
+    }
     if (this.poking === 0) this.updateMovement(game);
     this.updateJump(game);
     this.updateContactDamage(game);
@@ -1902,9 +1918,13 @@ export class Player extends Entity {
     this.washing--;
     this.animT++;
     if (this.washing === 0) {
-      const safe = findSafeTile(game, this) || this.lastSafe;
+      // In a side-view passage the last place he STOOD, not the nearest
+      // free tile, which there can be in mid-air (S241).
+      const side = isSideRoom(game);
+      const safe = (side ? null : findSafeTile(game, this)) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.z = 0;
+      if (side) { this.svFall = 0; this.svClimb = false; this.inDeep = false; this.underwater = false; }
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
       this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
@@ -1970,6 +1990,12 @@ export class Player extends Entity {
     if (this.underwater) {
       const moving = this._lastDx || this._lastDy;
       return 'link_walk_' + key + '_' + (moving ? (Math.floor(this.animT / 7) % 2) : 0);
+    }
+    // Seen from the side he swims in Seasons' own side-view frames
+    // (LINK_ANIM_MODE_SWIM_2D, 9 frames each), facing left or right.
+    if (this.inDeep && game && isSideRoom(game)) {
+      if (!side) this.flipX = false;
+      return 'link_swim2d_' + (Math.floor(this.animT / 9) % 2);
     }
     if (this.inDeep) {
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);

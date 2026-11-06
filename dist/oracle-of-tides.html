@@ -4370,6 +4370,23 @@ const RUPEE_ROLL_FRAMES = 1;
  *  cartridge: updateStatusBar_body only raises wDisplayedHearts when
  *  (wFrameCounter & 3) is 0, and lowers it every call. */
 const HEART_FILL_FRAMES = 4;
+
+// --- Side-view passages (S241, docs/briefs/SIDE-VIEW.md) --------------------
+
+/** sp/f/f — what a fall in a side-view passage gains each frame. derived from
+ *  the cartridge: link.s linkUpdateInAir_sidescroll @applyGravity adds $24 to
+ *  speedZ (8.8 fixed point, as our sp) every frame Link is in the air. */
+const SV_GRAVITY = 0x24;
+
+/** sp/f — the fastest a fall in a side-view passage goes. derived from the
+ *  cartridge: the same routine caps speedZ at $0300 (3 px/f). */
+const SV_FALL_MAX = 0x300;
+
+/** sp/f — the hop out of the water in a side-view passage, upward. derived
+ *  from the cartridge: linkState01_sidescroll @notInWater sets speedZ to
+ *  -$1a0 (1.625 px/f up) the frame Link leaves the water, unless he is on a
+ *  ladder through the surface. */
+const SV_HOP = 0x1a0;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4885,6 +4902,9 @@ __exports["BRIDGE_PLANK_FRAMES"] = BRIDGE_PLANK_FRAMES;
 __exports["SLATE_PUSH_FRAMES"] = SLATE_PUSH_FRAMES;
 __exports["RUPEE_ROLL_FRAMES"] = RUPEE_ROLL_FRAMES;
 __exports["HEART_FILL_FRAMES"] = HEART_FILL_FRAMES;
+__exports["SV_GRAVITY"] = SV_GRAVITY;
+__exports["SV_FALL_MAX"] = SV_FALL_MAX;
+__exports["SV_HOP"] = SV_HOP;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -11394,6 +11414,11 @@ function registerTiles(defs) {
       // Link speak to Farore over her desk. `Player.tryContextAction` reaches
       // one tile further when the tile in front of him is one.
       counter: !!def.counter,
+      // A SIDE-VIEW PIECE (S241, docs/briefs/SIDE-VIEW.md): 'ladder' is climbed
+      // and stops a fall (Seasons' TILETYPE_SS_LADDER), 'ladderTop' is a
+      // ladder that is also stood on from above (TILETYPE_SS_LADDER_TOP).
+      // Only `sideview.js` reads it. Named here, or it would be discarded.
+      sv: def.sv || null,
       // A TILE THAT IS ONE CELL OF A BIGGER OBJECT. `quad` names a set of four
       // 16x16 arts — `<quad>TL`, `TR`, `BL`, `BR` — cut from one 32x32 source
       // tree. Which one this cell draws is decided by its NEIGHBOURS at render
@@ -14465,6 +14490,233 @@ __exports["groundTile"] = groundTile;
 __exports["tideAt"] = tideAt;
 __exports["standAt"] = standAt;
 __exports["findSafeTile"] = findSafeTile;
+});
+
+/* ===== src/game/sideview.js ===== */
+__define("game/sideview.js", function (__exports, __require) {
+// SIDE-VIEW PASSAGES (S241, docs/briefs/SIDE-VIEW.md): Link's movement in a
+// room that declares `side: true`, read from the cartridges' own
+// link.s (oracles-disasm, object_code/common/specialObjects/):
+//
+//   linkState01_sidescroll       on the ground he moves left and right only;
+//                                 in water he swims; leaving the water at the
+//                                 top he hops (SV_HOP)
+//   linkUpdateInAir_sidescroll    off the ground and off a ladder he falls,
+//                                 gaining SV_GRAVITY a frame to SV_FALL_MAX;
+//                                 pressing UP over a ladder catches it
+//   a ladder ($18) is climbed in all four directions and nothing falls on one;
+//   a ladder's top ($19) is also stood on, and Link's middle never rises above
+//   y&15 = 9 standing on one (the cap after linkUpdateMovement)
+//
+// Our addition is the tide: the waterline is ordinary tide tiles (the side
+// legends' digits), so the conch and the Anchor move it. Without the Cleats
+// water is drowned in, as Ages' side view without flippers is
+// (linkUpdateSwimming_sidescroll @drown): Link is washed back to the last
+// place he stood. With them he swims; floor mode sinks him to the bed.
+//
+// Collision is the engine's own: `moveEntity` / `canOccupy` against the
+// room's tiles, with Link's side-view box. Nothing here decides what is solid.
+
+const { F } = __require("world/tileset.js");
+const { TILE } = __require("core/screen.js");
+const { moveEntity, canOccupy } = __require("game/entity.js");
+const { WALK_SPEED, SWIM_SPEED, SINK_SPEED, SV_GRAVITY, SV_FALL_MAX, SV_HOP } = __require("data/feel.js");
+
+/** Link's box in side view, from his sprite's top-left: the cartridge's
+ *  calculateAdjacentWallsBitset @sidescrollOffsets test points, -3..+7 down
+ *  and -5..+4 across his middle (his middle being 8,8 of the sprite), so his
+ *  head counts as well as his feet. */
+const SIDE_HB = { x: 3, y: 5, w: 10, h: 11 };
+/** Standing on a ladder's top his middle is at 9 in the tile above it, which
+ *  puts the bottom of SIDE_HB on the ladder top's top edge. */
+const LADDER_TOP_STAND = 9;
+
+function isSideRoom(game) {
+  return !!(game.room && game.room.def && game.room.def.side);
+}
+
+function tileAtPx(game, px, py) {
+  return game.room.tile(Math.floor(px / TILE), Math.floor(py / TILE), game.tide);
+}
+
+/** The tile at Link's middle, the cartridge's wActiveTile. */
+function activeTile(game, p) { return tileAtPx(game, p.x + 8, p.y + 8); }
+/** The tile 8 px under his middle, the cartridge's wLastActiveTileType. */
+function underTile(game, p) { return tileAtPx(game, p.x + 8, p.y + 16); }
+
+const isLadder = d => d.sv === 'ladder' || d.sv === 'ladderTop';
+
+/** Is he standing: something solid, or a ladder's top, right under his box? */
+function sideGrounded(game, p, climbing = false) {
+  const r = p.hb;
+  const y = p.y + r.y + r.h;              // the first row of pixels under him
+  for (const x of [p.x + r.x, p.x + r.x + r.w - 1]) {
+    const d = tileAtPx(game, x, y);
+    if (d.flags & (F.SOLID | F.VOID)) return true;
+  }
+  if (!climbing) {
+    const d = tileAtPx(game, p.x + 8, y);
+    if (d.sv === 'ladderTop' && (y % TILE) === 0) return true;
+  }
+  return false;
+}
+
+/** One frame of Link in a side-view room. Called from Player.update in place
+ *  of the top-down terrain, movement, jump and hazard steps. */
+function updateSideView(p, game) {
+  const inp = game.input;
+  const dx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
+  const dyIn = (inp.down('down') ? 1 : 0) - (inp.down('up') ? 1 : 0);
+  if (dx) p.dir = dx < 0 ? 'left' : 'right';
+
+  const here = activeTile(game, p);
+  const wet = !!(here.flags & F.DEEP);
+  const wasWet = p.inDeep;
+  p.inShallow = false;
+
+  // ------------------------------------------------------------- water
+  if (wet) {
+    if (!wasWet) {
+      game.audio.sfx('splash');
+      game.spawnEffect('splash', p.x, p.y + 2);
+      p.svFall = 0;
+    }
+    p.inDeep = true;
+    if (p._cleats <= 0) { p.beginWash(game); return; }
+    if (!wasWet && p.cleatMode === 'sink' && !p.underwater) p.underwater = true;
+    if (p.underwater) {
+      // FLOOR MODE: weighted, he walks the bed and climbs nothing.
+      p.svFall = Math.min(SV_FALL_MAX >> 2, (p.svFall || 0) + SV_GRAVITY);
+      const res = move(game, p, dx * SINK_SPEED, p.svFall);
+      if (res.hitY) p.svFall = 0;
+      p._lastDx = dx; p._lastDy = 0;
+      if (dx) p.animT++;
+      return;
+    }
+    // UP on a ladder through the surface climbs out of the water, with no
+    // hop (@notInWater skips it for an underwater ladder).
+    if (here.sv === 'ladder' && dyIn < 0) {
+      p.svFall = 0; p.svClimb = true; p.dir = 'up';
+      move(game, p, 0, -WALK_SPEED);
+      p._lastDx = 0; p._lastDy = dyIn; p.animT++;
+      return;
+    }
+    // Swimming: every direction, facing left or right
+    // (linkUpdateSwimming_sidescroll @swimmingState2).
+    p.svFall = 0; p.svClimb = false;
+    move(game, p, dx * SWIM_SPEED, dyIn * SWIM_SPEED);
+    p._lastDx = dx; p._lastDy = dyIn;
+    p.animT++;
+    return;
+  }
+
+  // ------------------------------------------------- out of the water
+  if (wasWet) {
+    p.inDeep = false;
+    p.underwater = false;
+    game.spawnEffect('splash', p.x, p.y + 2);
+    game.audio.sfx('splash', { pitch: 1.2, vol: 0.8 });
+    // The hop out (@notInWater), unless he climbed out up a ladder.
+    if (!isLadder(underTile(game, p)) && !isLadder(here)) p.svFall = -SV_HOP;
+  }
+
+  const onLadder = isLadder(here) || isLadder(underTile(game, p));
+  if (onLadder && (dyIn || p.svClimb) && !(p.svFall < 0)) {
+    // CLIMBING: four ways at the walking pace, and nothing falls.
+    p.svClimb = true;
+    p.svFall = 0;
+    const res = move(game, p, dx * WALK_SPEED, dyIn * WALK_SPEED);
+    // Off the top of the ladder: stand on its top.
+    const now = activeTile(game, p);
+    if (!isLadder(now) && underTile(game, p).sv === 'ladderTop') {
+      const row = Math.floor((p.y + 16) / TILE);
+      p.y = Math.min(p.y, row * TILE - 16 + (LADDER_TOP_STAND - 8));
+      p.svClimb = false;
+    }
+    // Off the foot of it onto ground: walking again.
+    if (dyIn > 0 && res.hitY) p.svClimb = false;
+    if (!isLadder(now) && !isLadder(underTile(game, p))) p.svClimb = false;
+    if (dyIn) p.dir = 'up';
+    p._lastDx = dx; p._lastDy = dyIn;
+    if (dx || dyIn) p.animT++;
+    return;
+  }
+  p.svClimb = false;
+
+  // Standing on a ladder's top, DOWN climbs down it.
+  if (dyIn > 0 && sideGrounded(game, p) && tileAtPx(game, p.x + 8, p.y + 16).sv === 'ladderTop') {
+    p.svClimb = true;
+    move(game, p, 0, WALK_SPEED);
+    p.dir = 'up';
+    return;
+  }
+
+  // ------------------------------------------------------- walking / air
+  if (dx) move(game, p, dx * WALK_SPEED, 0);
+  p._lastDx = dx; p._lastDy = 0;
+  if (dx) p.animT++;
+
+  if (sideGrounded(game, p) && !(p.svFall < 0)) {
+    p.svFall = 0;
+    rememberSafe(game, p);
+  } else {
+    // UP over a ladder catches it (@positiveSpeedZ).
+    if (dyIn < 0 && isLadder(activeTile(game, p)) && p.svFall >= 0) { p.svClimb = true; p.svFall = 0; return; }
+    p.svFall = Math.min(SV_FALL_MAX, (p.svFall || 0) + SV_GRAVITY);
+    fall(game, p);
+  }
+
+  // Off the bottom of the room: Seasons' hole tile is a death line
+  // (TILETYPE_SS_HOLE, respawnLink with SND_DAMAGE_LINK).
+  if (p.y + 8 >= game.room.ph) { p.beginWash(game); return; }
+
+  // Spikes where he stands (dealSpikeDamageToLink).
+  if ((activeTile(game, p).flags & F.HAZARD) && p.invuln <= 0) {
+    p.takeDamage(game, 2, null, { noKnockDir: true });
+  }
+}
+
+/** Apply this frame's fall, landing on solid ground or a ladder's top. */
+function fall(game, p) {
+  const v = p.svFall;
+  if (v <= 0) {
+    const res = move(game, p, 0, v);
+    if (res.hitY) p.svFall = 0;           // the ceiling (@applyGravity)
+    return;
+  }
+  // Down, a pixel at a time so a ladder's top (not solid) can catch him.
+  let left = v;
+  while (left > 0) {
+    const step = Math.min(256, left);
+    const before = p.y;
+    const res = move(game, p, 0, step);
+    left -= step;
+    if (res.hitY) { p.svFall = 0; return; }
+    const feet = p.y + p.hb.y + p.hb.h;
+    const crossed = Math.floor((before + p.hb.y + p.hb.h - 1) / TILE) !== Math.floor((feet - 1) / TILE);
+    if (crossed && (feet % TILE) <= 2 && tileAtPx(game, p.x + 8, feet).sv === 'ladderTop') {
+      const row = Math.floor(feet / TILE);
+      p.y = row * TILE - p.hb.y - p.hb.h;
+      p.svFall = 0;
+      return;
+    }
+  }
+}
+
+/** The engine's mover, with water never in the way: in side view he falls
+ *  or walks INTO water and the water decides (drowned without the Cleats),
+ *  where top-down a non-swimmer is stopped at the bank. */
+function move(game, p, dx, dy) {
+  return moveEntity(game, p, dx, dy, { ...p.caps, swim: true });
+}
+
+function rememberSafe(game, p) {
+  if (canOccupy(game, p, p.x, p.y)) { p.lastSafe.x = p.x; p.lastSafe.y = p.y; }
+}
+__exports["SIDE_HB"] = SIDE_HB;
+__exports["isSideRoom"] = isSideRoom;
+__exports["sideGrounded"] = sideGrounded;
+__exports["updateSideView"] = updateSideView;
 });
 
 /* ===== src/game/projectile.js ===== */
@@ -21595,6 +21847,7 @@ __define("game/player.js", function (__exports, __require) {
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
+const { isSideRoom, updateSideView, SIDE_HB } = __require("game/sideview.js");
 const { SwordBeam } = __require("game/projectile.js");
 const { Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect, knockVector } = __require("game/entity.js");
 
@@ -21661,6 +21914,9 @@ function playerHurtRect(p) {
   return { x: p.cx - r, y: p.cy - r, w: r * 2, h: r * 2 };
 }
 
+/** Link's box from his sprite's top-left, top-down: his feet. */
+const TOP_HB = Object.freeze({ x: 3, y: 8, w: 10, h: 7 });
+
 class Player extends Entity {
   /** What an enemy has to touch to hurt him: playerHurtRect. */
   contactRect() { return playerHurtRect(this); }
@@ -21669,7 +21925,7 @@ class Player extends Entity {
     super(x, y);
     this.w = 16; this.h = 16;
     // Feet-centred hitbox: Link's head overlaps walls in the GBC games.
-    this.hb = { x: 3, y: 8, w: 10, h: 7 };
+    this.hb = TOP_HB;
     this.dir = 'down';
     this.harmless = true;
     this.depth = 0;
@@ -21776,8 +22032,14 @@ class Player extends Entity {
       return;
     }
 
-    this.updateTerrain(game);
-    this.updateBelt(game);
+    // A SIDE-VIEW PASSAGE (S241) has its own movement, gravity and water;
+    // see sideview.js. The sword, the items and the hits are the same.
+    const side = isSideRoom(game);
+    this.hb = side ? SIDE_HB : TOP_HB;
+    if (!side) {
+      this.updateTerrain(game);
+      this.updateBelt(game);
+    }
 
     if (this.spinning > 0) { this.updateSpin(game); return; }
     if (this.poking > 0) { this.updatePoke(game); return; }
@@ -21790,6 +22052,12 @@ class Player extends Entity {
     this.updateBreath(game);
     // A poke roots him from the frame it starts (swordParent.s
     // @triggerSwordPoke, itemDisableLinkMovement).
+    if (side) {
+      if (this.poking === 0 && !(this.swinging > 0 && !(this.svFall > 0))) updateSideView(this, game);
+      this.updateContactDamage(game);
+      this.placeCarried();
+      return;
+    }
     if (this.poking === 0) this.updateMovement(game);
     this.updateJump(game);
     this.updateContactDamage(game);
@@ -23456,9 +23724,13 @@ class Player extends Entity {
     this.washing--;
     this.animT++;
     if (this.washing === 0) {
-      const safe = findSafeTile(game, this) || this.lastSafe;
+      // In a side-view passage the last place he STOOD, not the nearest
+      // free tile, which there can be in mid-air (S241).
+      const side = isSideRoom(game);
+      const safe = (side ? null : findSafeTile(game, this)) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.z = 0;
+      if (side) { this.svFall = 0; this.svClimb = false; this.inDeep = false; this.underwater = false; }
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
       this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
@@ -23524,6 +23796,12 @@ class Player extends Entity {
     if (this.underwater) {
       const moving = this._lastDx || this._lastDy;
       return 'link_walk_' + key + '_' + (moving ? (Math.floor(this.animT / 7) % 2) : 0);
+    }
+    // Seen from the side he swims in Seasons' own side-view frames
+    // (LINK_ANIM_MODE_SWIM_2D, 9 frames each), facing left or right.
+    if (this.inDeep && game && isSideRoom(game)) {
+      if (!side) this.flipX = false;
+      return 'link_swim2d_' + (Math.floor(this.animT / 9) % 2);
     }
     if (this.inDeep) {
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);
@@ -48526,25 +48804,6 @@ const DUNGEON_THEME_ART = {
     0011110000111100
     0000000000000000`,
 
-  // x266 rose-bevelled block grid — oracle-seasons-dungeon-backgrounds.png @ 17,58
-  coralWall: `
-    2222222222222222
-    2001111111111112
-    2110111111111222
-    2111000000002222
-    2111011111102222
-    2111010000102222
-    2111010000102222
-    2111010000102222
-    2111010000102222
-    2111011111102222
-    2111000000002222
-    2111222222212222
-    2112222222221222
-    2122222222222122
-    2222222222222212
-    2222222222222222`,
-
   // x196 pale wall RUN, lit face and hatched base — oracle-seasons-dungeon-backgrounds.png @ 1,42
   hatchWall: `
     0122011232223233
@@ -53637,6 +53896,386 @@ const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
+  // open air, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $01
+  svBogAir: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // spikes (TILEINDEX_SS_SPIKE), side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $02
+  svBogSpike: `
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3323332333233323
+    3313331333133313
+    3303330333033303
+    3203320332033203
+    3103310331033103
+    3103310331033103
+    3333333333333333`,
+
+  // a ladder (TILEINDEX_SS_LADDER), side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $18
+  svBogLadder: `
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333`,
+
+  // the top of a ladder, stood on, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $19
+  svBogLadderTop: `
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333`,
+
+  // a ladder through the surface of the water, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $1a
+  svBogLadderWet: `
+    1112211111122111
+    1112211111122111
+    1100000000000011
+    1110100000010111
+    1100000000000011
+    1122222222222211
+    1112211111122111
+    1112211111122111
+    1112211111122111
+    1112211111122111
+    1100000000000011
+    1110100000010111
+    1100000000000011
+    1122222222222211
+    1112211111122111
+    1112211111122111`,
+
+  // water, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $1b
+  svBogWater: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the surface of the water, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $1c
+  svBogSurface: `
+    0011110000111100
+    1100001111000011
+    2221122222211222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // seaweed in water, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $1d
+  svBogWeed: `
+    2222222222222222
+    2222222112222222
+    2211222102221122
+    2210222212210122
+    2210122222101222
+    2221012100012222
+    2222100221122112
+    2222211112221012
+    2222222222210122
+    2102222012111222
+    2110222111112222
+    2211001211222012
+    2221111222210012
+    2222222211111122
+    2222221222222222
+    2222210011222222`,
+
+  // the top of a platform, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $26
+  svBogPlatform: `
+    3333333333333333
+    2100000000000123
+    1000000000000012
+    1100110000010112
+    2111111111111122
+    3222222222222223
+    3333333333333333
+    3333333333333333
+    1112321111123211
+    2221312222223122
+    2222322222223222
+    3333333333333333
+    3211222232111112
+    3122222131222222
+    3222222232222222
+    3333333333333333`,
+
+  // brick, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $2a
+  svBogBrick: `
+    0001210000012100
+    1110201111112011
+    1111211111112111
+    2222222222222222
+    2100111121000001
+    2011111020111111
+    2111111121111111
+    2222222222222222
+    0001210000012100
+    1110201111112011
+    1111211111112111
+    2222222222222222
+    2100111121000001
+    2011111020111111
+    2111111121111111
+    2222222222222222`,
+
+  // the top of a ledge, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $27
+  svBogLedge: `
+    3333333333333333
+    2100000000000123
+    1000000000000012
+    1100110000010112
+    2111111111111122
+    3222222222222223
+    3333333333333333
+    3333333333333333
+    2222322222223222
+    2222322222223222
+    2222322222223222
+    3333333333333333
+    3222222232222222
+    3222222232222222
+    3222222232222222
+    3333333333333333`,
+
+  // the east end of a ledge top, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $17
+  svBogLedgeEnd: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222`,
+
+  // the east face of brick, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $16
+  svBogBrickEnd: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222`,
+
+  // the west wall, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $2d
+  svBogWallW: `
+    3333333333333333
+    3100000022001203
+    3100000012100203
+    3110110012100203
+    3101000012100203
+    3110100012100203
+    3211111122111213
+    3333333333333333
+    3333333333333333
+    1110012100011003
+    0000002000002003
+    1110002100002003
+    1111002100002003
+    1110002100002003
+    1111112100012103
+    3333333333333333`,
+
+  // the east wall, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $2e
+  svBogWallE: `
+    3333333333333333
+    3021002200000013
+    3020012100000013
+    3020012100110113
+    3020012100001013
+    3020012100010113
+    3121112211111123
+    3333333333333333
+    3333333333333333
+    3001100012100111
+    3002000002000000
+    3002000012000111
+    3002000012001111
+    3002000012000111
+    3012100012111111
+    3333333333333333`,
+
+  // the ceiling, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $3c
+  svBogCeiling: `
+    1111111111111111
+    1100000110000011
+    1000000000000001
+    1000010000001001
+    1000000000000001
+    1001000000000001
+    1100011000010011
+    1111111111111111
+    1111111111111111
+    1100001111000000
+    0000000110000010
+    0001000110000000
+    0000000110000001
+    0000000110010000
+    0110001111000000
+    1111111111111111`,
+
+  // the lower lip of the ceiling, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $3e
+  svBogCeilingLip: `
+    3222223333222223
+    2111112332111122
+    1111011330111111
+    1111211330101111
+    1111111330121111
+    0001111330111111
+    1110002331000000
+    3333333333333333
+    3322222222222233
+    3221112221111223
+    3111111111110113
+    3010112111112113
+    3012111111111113
+    3011111100011113
+    3100000011100023
+    3333333333333333`,
+
+  // undersea rock, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $3d
+  svBogRock: `
+    3333333333333333
+    3100000011100023
+    3011111100011113
+    3012111111111113
+    3010112111112113
+    3111111111110113
+    3221112221111223
+    3322222222222233
+    3333333333333333
+    1110002331000000
+    0001111330111111
+    1111111330121111
+    1111211330101111
+    1111011330111111
+    2111112332111122
+    3222223333222223`,
+
+  // the sea bed, side view, the Poison Moth's Lair — Seasons tileset $58 (the Poison Moth's Lair, side view), metatile $59
+  svBogBed: `
+    2333233223332332
+    3111311331113113
+    1000100010001000
+    0011000000110000
+    0111110001111100
+    1113111111131111
+    1133331111333311
+    3322223333222233
+    0000000000000000
+    2222200000000022
+    2222222220022222
+    2333332222222222
+    3322233322222333
+    2200022333233322
+    0000000223332200
+    0020000022220000`,
+
+  // the coral sprig, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $86
+  coralSprig: `
+    ..3333....2333..
+    .3..133...31..3.
+    .3.1213..3311.3.
+    ..3312233212333.
+    .3333323232333..
+    312332213213....
+    333.33123223....
+    .....332223.....
+    .333.33213..333.
+    33..333323.31.13
+    3.12123223322233
+    233322223232333.
+    ...333322233323.
+    .....322233.333.
+    .....332223.....
+    .....233332.....`,
+
   // the whirlpool, step 1 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
   uWhirl0: `
     1111222222221111
@@ -58243,7 +58882,6 @@ const DUNGEON_THEME_PALETTES = {
   ruinFloor: ['#ecdcc4', '#a39968', '#a39968', '#a39968'],
   paleFloor: ['#7090c0', '#5070a0', '#305080', '#305080'],
   reefFloor: ['#85b2cf', '#5c8eb0', '#5c8eb0', '#5c8eb0'],
-  coralWall: ['#fbd1fb', '#b17399', '#000000', '#000000'],
   hatchWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   forgeWall: ['#f7bb4d', '#e47a3d', '#944826', '#000000'],
   vaultBlock: ['#78a0b0', '#283060', '#000000', '#000000'],
@@ -58512,6 +59150,26 @@ const DUNGEON_THEME_PALETTES = {
   uWaterS: ['#bddeff', '#5a7bbd', '#5a7bbd', '#5a7bbd'],
   uWaterD: ['#5a7bbd', '#003184', '#003184', '#003184'],
   uPit: ['#000000', '#000000', '#000000', '#000000'],
+  svBogAir: ['#000000', '#000000', '#000000', '#000000'],
+  svBogSpike: ['#a5a5c6', '#5a6b94', '#003963', '#000000'],
+  svBogLadder: ['#d6734a', '#a5424a', '#632942', '#000000'],
+  svBogLadderTop: ['#d6734a', '#a5424a', '#632942', '#000000'],
+  svBogLadderWet: ['#007b73', '#003963', '#000000', '#000000'],
+  svBogWater: ['#003963', '#003963', '#003963', '#003963'],
+  svBogSurface: ['#9cc6a5', '#007b73', '#003963', '#003963'],
+  svBogWeed: ['#cea58c', '#a55284', '#003963', '#003963'],
+  svBogPlatform: ['#9cc6a5', '#007b73', '#003963', '#000000'],
+  svBogBrick: ['#007b73', '#003963', '#000000', '#000000'],
+  svBogLedge: ['#94c684', '#4a7b42', '#003963', '#000000'],
+  svBogLedgeEnd: ['#a55284', '#003963', '#000000', '#000000'],
+  svBogBrickEnd: ['#a55284', '#003963', '#000000', '#000000'],
+  svBogWallW: ['#9cc6a5', '#007b73', '#003963', '#000000'],
+  svBogWallE: ['#9cc6a5', '#007b73', '#003963', '#000000'],
+  svBogCeiling: ['#632942', '#000000', '#000000', '#000000'],
+  svBogCeilingLip: ['#9cc6a5', '#007b73', '#003963', '#000000'],
+  svBogRock: ['#9cc6a5', '#007b73', '#003963', '#000000'],
+  svBogBed: ['#4a7b42', '#007b73', '#003963', '#000000'],
+  coralSprig: ['#9c63a5', '#9c63a5', '#734273', '#210018'],
   uWhirl0: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl1: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl2: ['#5aadef', '#426be7', '#314aad', '#314aad'],
@@ -62076,6 +62734,49 @@ function cave() {
  * hole. Flags are one value for all five, so a lip is never a different
  * floor from the run it edges.
  */
+/**
+ * A side-view kit (S241): Seasons' side-view pieces in one dungeon's colours,
+ * `svK*` art from rip-dungeon-themes.py, as tiles. Solid is solid from every
+ * side, as the cartridge's side-view collision is; water is `F.DEEP` (swum
+ * with the Cleats, drowned in without); spikes hurt where Link stands in
+ * them (TILEINDEX_SS_SPIKE, dealSpikeDamageToLink); a ladder is `sv`.
+ *
+ * THE WATERLINE IS A TIDE TILE. Each row a waterline can cross is one of five
+ * shapes over LOW, MID, HIGH: the LOW line (surface, water, water), between
+ * LOW and MID (air, water, water), the MID line (air, surface, water), between
+ * MID and HIGH (air, air, water) and the HIGH line (air, air, surface) — and
+ * the same five for a ladder, whose under-water half is water, as the
+ * cartridge's ladders stop at the surface (room $5e8). `svK0`-`svK4` and
+ * `svKL0`-`svKL4` in that order; the side legends give them the digits.
+ */
+function sideKit(K) {
+  const k = 'sv' + K;
+  const t = (n, o = {}) => ({ art: ART[k + n], pal: k + n, ...o });
+  const out = {
+    [k + 'Air']: t('Air'),
+    [k + 'Spike']: t('Spike', { flags: F.HAZARD }),
+    [k + 'Ladder']: t('Ladder', { sv: 'ladder' }),
+    [k + 'LadderTop']: t('LadderTop', { sv: 'ladderTop' }),
+    [k + 'LadderWet']: t('LadderWet', { sv: 'ladder', flags: F.DEEP }),
+    // The way out: a ladder climbed off the top of the passage.
+    [k + 'LadderOut']: t('Ladder', { sv: 'ladder', flags: F.WARP }),
+    [k + 'Water']: t('Water', { flags: F.DEEP }),
+    [k + 'Surface']: t('Surface', { flags: F.DEEP }),
+    [k + 'Weed']: t('Weed', { flags: F.DEEP }),
+  };
+  for (const n of ['Platform', 'Brick', 'Ledge', 'LedgeEnd', 'BrickEnd', 'WallW', 'WallE', 'Ceiling', 'CeilingLip', 'Rock', 'Bed']) {
+    out[k + n] = t(n, { flags: F.SOLID });
+  }
+  const shapes = [['Surface', 'Water', 'Water'], ['Air', 'Water', 'Water'], ['Air', 'Surface', 'Water'],
+    ['Air', 'Air', 'Water'], ['Air', 'Air', 'Surface']];
+  const ladder = { Air: 'Ladder', Surface: 'LadderWet', Water: 'Water' };
+  shapes.forEach((sh, i) => {
+    out[k + i] = { tide: sh.map(n => k + n) };
+    out[k + 'L' + i] = { tide: sh.map(n => k + ladder[n]) };
+  });
+  return out;
+}
+
 function holeKit(name, art, family, flags, extra = {}) {
   const t = (a) => ({ art: ART[a], pal: a, flags, family, ...extra });
   return {
@@ -63102,8 +63803,15 @@ function installCoreTiles() {
     // art (see the `!(name in ART)` note at the alias pass). It now names the
     // block it has always drawn; validate.mjs fails on any tile whose drawn
     // picture is not the one its `art` names.
+    //
+    // S241: the wall at MID is Ages' own coral sprig (the sea floor's metatile
+    // $86, `coralSprig`), the human's pick over the rose block, standing on
+    // whatever ground it grew on: the dungeon's own floor through `dFloor`'s
+    // substitution, and outdoors the ground round it (`Room.underGround`).
+    // Stood on the pillar's own pink rock (`coralStep`) it was lost, pink on
+    // pink; on the floor it reads, in a pool as a mound the coral grew from.
     coralStep: { art: ART.rockFloor, pal: 'coral' },
-    coralWall: { art: ART.coralWall, pal: 'coral', flags: F.SOLID | F.RING },
+    coralWall: { art: ART.coralSprig, pal: 'coral', flags: F.SOLID | F.RING, underArt: 'dFloor' },
     coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
 
@@ -63959,6 +64667,11 @@ function installCoreTiles() {
     // `dDrownEyrie`, the Keep's `dLintel`): swum over at HIGH, and at HIGH
     // the whirlpools are turning.
     dDrownPalace: { tide: ['dWallPalace', 'dWallPalace', 'dWaterPalaceD'] },
+
+    // THE SIDE-VIEW KIT (S241, docs/briefs/SIDE-VIEW.md): Seasons' side-view
+    // layout $32 in the Poison Moth's Lair's colours (tileset $58), for the
+    // Bogwater Sanctum's passages. See `sideKit`.
+    ...sideKit('Bog'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &
@@ -64959,6 +65672,22 @@ function installLegends() {
   }
 
   // ---- cave / interior ---------------------------------------------------
+  // A SIDE-VIEW PASSAGE (S241, docs/briefs/SIDE-VIEW.md), the Bogwater
+  // Sanctum's, in the Poison Moth's Lair's own side-view colours. The digits
+  // are the waterline, tide tiles as everywhere: 0 the LOW line, 1 between
+  // LOW and MID, 2 the MID line, 3 between MID and HIGH, 4 the HIGH line;
+  // 5-9 the same five for a ladder.
+  registerLegend('sideBog', {
+    ' ': 'svBogAir', '.': 'svBogAir', '#': 'svBogBrick', ']': 'svBogBrickEnd',
+    '=': 'svBogPlatform', '_': 'svBogLedge', '>': 'svBogLedgeEnd',
+    '[': 'svBogWallW', '|': 'svBogWallE', '^': 'svBogCeiling', 'v': 'svBogCeilingLip',
+    'r': 'svBogRock', 'b': 'svBogBed', 'H': 'svBogLadder', 'T': 'svBogLadderTop',
+    'U': 'svBogLadderOut', '~': 'svBogWater', 's': 'svBogSurface', 'k': 'svBogWeed',
+    'x': 'svBogSpike',
+    '0': 'svBog0', '1': 'svBog1', '2': 'svBog2', '3': 'svBog3', '4': 'svBog4',
+    '5': 'svBogL0', '6': 'svBogL1', '7': 'svBogL2', '8': 'svBogL3', '9': 'svBogL4',
+  });
+
   registerLegend('cave', {
     ' ': 'void',
     // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js
@@ -79791,6 +80520,42 @@ const PLAYER_ART = {
     ..330033330033..
     ..331133333333..
     ...3333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_swim2d_0: `
+    ................
+    .......33333...3
+    .....33111013333
+    ....311100130033
+    ...3111311300333
+    ..3111303300133.
+    ..311130131333..
+    ..33113003303033
+    .303333103003003
+    300310133333333.
+    300310111113003.
+    301310111113003.
+    31331011113333..
+    33.3101133......
+    ...33333........
+    ................`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_swim2d_1: `
+    ................
+    .......33333..3.
+    .....33111013333
+    ....311100130333
+    ...3111311300333
+    ..3111303300133.
+    .3311130131333..
+    3003313003303033
+    3013133103003003
+    313310133333333.
+    330310111113003.
+    300310111113003.
+    30031011113333..
+    3003101133......
+    30333333........
+    333.............`,
   // extracted — a direct crop off the sheet named in this file's own header (mirrored in place for a flipped pose).
   link_swim_down_0: `
     ................

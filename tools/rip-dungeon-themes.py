@@ -102,6 +102,14 @@ SHEETS = {
     # ($58a) where four slates go into four slots round the stair down.
     'tomb': 'ages:40',
     'whirl0': 'ages:5f@0',
+    # THE REEFSEED PILLAR'S WALL (S241, the human's pick): the Ages sea
+    # floor's coral sprig, metatile $86, standing up at MID.
+    'seaFloor': 'ages:5f',
+    # THE SIDE-VIEW KIT (S241, docs/briefs/SIDE-VIEW.md): every Seasons
+    # side-view tileset ($55-$60) shares layout $32 and recolours it, so a
+    # passage is cut from its own dungeon's: the Bogwater Sanctum wears the
+    # Poison Moth's Lair ($39), whose side-view tileset is $58.
+    'sideBog': 'meta:58',
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
     'whirl3': 'ages:5f@3',
@@ -150,7 +158,8 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'meta:4b': "Farore's room", 'ages:3a': 'the Crown Dungeon',
               'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb',
               'meta:2c': "Horon Village's houses", 'meta:31': "Holodrum's caves",
-              'meta:00': "Holodrum's overworld, spring"}
+              'meta:00': "Holodrum's overworld, spring",
+              'meta:58': "the Poison Moth's Lair, side view"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -267,7 +276,9 @@ PICKS = [
     #
     # What does tile in both axes is bevelled block grids and brick courses.
     # Every wall used by a theme is one of those.
-    ('coralWall',      17,   58, 'x266 rose-bevelled block grid'),
+    # (`coralWall` 17,58, a rose-bevelled block grid, was the Reefseed pillar's
+    # wall at MID until S241, when the human chose Ages' undersea coral
+    # `coralSprig` over it; nothing else drew it.)
     # (`emberWall` 499,1274, brown brick in courses, was the Shrine's wall
     # until S140.)
     # (`cryptWall` 2114,428 was the Keep's wall until S142.)
@@ -739,6 +750,29 @@ PICKS = [
     meta('uPit', 0xf4, 'a hole in the floor, Mermaid\'s Cave', 'mermaid'),
     # THE WHIRLPOOL: TILEINDEX_WHIRLPOOL $e9, as the Ages sea draws it under
     # water (tileset $5f), through animationDataWhirlpool2's four steps.
+    # The side-view kit in the Poison Moth's Lair's colours (layout $32, tileset $58).
+    meta('svBogAir', 0x01, "open air, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogSpike', 0x02, "spikes (TILEINDEX_SS_SPIKE), side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogLadder', 0x18, "a ladder (TILEINDEX_SS_LADDER), side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogLadderTop', 0x19, "the top of a ladder, stood on, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogLadderWet', 0x1a, "a ladder through the surface of the water, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogWater', 0x1b, "water, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogSurface', 0x1c, "the surface of the water, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogWeed', 0x1d, "seaweed in water, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogPlatform', 0x26, "the top of a platform, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogBrick', 0x2a, "brick, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogLedge', 0x27, "the top of a ledge, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogLedgeEnd', 0x17, "the east end of a ledge top, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogBrickEnd', 0x16, "the east face of brick, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogWallW', 0x2d, "the west wall, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogWallE', 0x2e, "the east wall, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogCeiling', 0x3c, "the ceiling, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogCeilingLip', 0x3e, "the lower lip of the ceiling, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogRock', 0x3d, "undersea rock, side view, the Poison Moth's Lair", 'sideBog'),
+    meta('svBogBed', 0x59, "the sea bed, side view, the Poison Moth's Lair", 'sideBog'),
+    # THE REEFSEED PILLAR AT MID (S241): Ages' coral sprig, keyed off its sea
+    # floor's blue (KEY_BY_COLOUR) so it stands on whatever ground it grew on.
+    meta('coralSprig', 0x86, 'the coral sprig, the Ages sea floor (tileset $5f)', 'seaFloor'),
     meta('uWhirl0', 0xe9, 'the whirlpool, step 1 of 4, the Ages sea floor', 'whirl0'),
     meta('uWhirl1', 0xe9, 'the whirlpool, step 2 of 4, the Ages sea floor', 'whirl1'),
     meta('uWhirl2', 0xe9, 'the whirlpool, step 3 of 4, the Ages sea floor', 'whirl2'),
@@ -1072,7 +1106,10 @@ KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', '
 # emitted as 1-3 so tiles-core.js can lay it into each place's own palette.
 KEY_COLOURS = {(0xff, 0xff, 0x73), (0xa5, 0xff, 0x21), (0x29, 0xad, 0x00)}
 KEY_BY_COLOUR = {'owBoulder', 'owRubble', 'owSoil', 'owHole', 'owStakes',
-                 'owLedgeS', 'owLedgeE', 'owLedgeW', 'owLedgeN'}
+                 'owLedgeS', 'owLedgeE', 'owLedgeW', 'owLedgeN', 'coralSprig'}
+# A pick keyed by colours of its own rather than Seasons' sand and grass:
+# the Ages sea floor's light blue round the coral sprig (S241).
+KEY_COLOURS_OF = {'coralSprig': {(0x5a, 0xad, 0xef)}}
 
 
 def lum(c):
@@ -1253,7 +1290,8 @@ def main():
         name, x, y, note, sheet = unpack(pick)
         block = quarters(pick, transform(pick, read(images[sheet], x, y)))
         if name in KEY_BY_COLOUR:
-            block = [[None if p in KEY_COLOURS else p for p in row] for row in block]
+            keyed = KEY_COLOURS_OF.get(name, KEY_COLOURS)
+            block = [[None if p in keyed else p for p in row] for row in block]
         if flipped(pick):
             note += ' (mirrored)'
         if vflipped(pick):

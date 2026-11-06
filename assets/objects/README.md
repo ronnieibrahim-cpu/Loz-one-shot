@@ -22,6 +22,7 @@ proves the rip reproduces byte for byte.
 | `tilesetMappings{00,21,23,24,25,26,27,29,2a,2d,2f}.bin` | `tileset_layouts/seasons/` | the metatile layouts (8 bytes a metatile); 2d the houses (S215), 2f the caves (S216); 21, 23 and 26 (the Hero's Cave, Snake's Remains, Unicorn's Cave) added in S160 for the three optional dungeons' kits, which `tools/rip-dungeon-themes.py` reads through rip-objects' `Tileset` |
 | `gfx_tileset_*.png` | `gfx_compressible/seasons/` | the tile graphics |
 | `gfx_animations_3.png` | `gfx/seasons/` | the flame tiles |
+| `tilesetMappings32.bin`, `tilesetCollisions32.bin`, `gfx_tileset_sidescroll_{1,2}.png` | `tileset_layouts/seasons/`, `gfx_compressible/seasons/` | the side-view kit (S241): layout $32, which every Seasons side-view tileset ($55-$60) shares, recoloured per dungeon; `tools/rip-dungeon-themes.py` picks it as `meta:58` (the Poison Moth's Lair's colours) and the like. The collision table is kept as the reference for the side-view tile types (tileTypes.s TILETYPE_SS_*) |
 
 ## Oracle of Ages (S161)
 

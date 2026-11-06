@@ -520,6 +520,22 @@ export function installLegends() {
   }
 
   // ---- cave / interior ---------------------------------------------------
+  // A SIDE-VIEW PASSAGE (S241, docs/briefs/SIDE-VIEW.md), the Bogwater
+  // Sanctum's, in the Poison Moth's Lair's own side-view colours. The digits
+  // are the waterline, tide tiles as everywhere: 0 the LOW line, 1 between
+  // LOW and MID, 2 the MID line, 3 between MID and HIGH, 4 the HIGH line;
+  // 5-9 the same five for a ladder.
+  registerLegend('sideBog', {
+    ' ': 'svBogAir', '.': 'svBogAir', '#': 'svBogBrick', ']': 'svBogBrickEnd',
+    '=': 'svBogPlatform', '_': 'svBogLedge', '>': 'svBogLedgeEnd',
+    '[': 'svBogWallW', '|': 'svBogWallE', '^': 'svBogCeiling', 'v': 'svBogCeilingLip',
+    'r': 'svBogRock', 'b': 'svBogBed', 'H': 'svBogLadder', 'T': 'svBogLadderTop',
+    'U': 'svBogLadderOut', '~': 'svBogWater', 's': 'svBogSurface', 'k': 'svBogWeed',
+    'x': 'svBogSpike',
+    '0': 'svBog0', '1': 'svBog1', '2': 'svBog2', '3': 'svBog3', '4': 'svBog4',
+    '5': 'svBogL0', '6': 'svBogL1', '7': 'svBogL2', '8': 'svBogL3', '9': 'svBogL4',
+  });
+
   registerLegend('cave', {
     ' ': 'void',
     // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js
