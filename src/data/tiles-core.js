@@ -2432,8 +2432,15 @@ export function installCoreTiles() {
     // art (see the `!(name in ART)` note at the alias pass). It now names the
     // block it has always drawn; validate.mjs fails on any tile whose drawn
     // picture is not the one its `art` names.
+    //
+    // S241: the wall at MID is Ages' own coral sprig (the sea floor's metatile
+    // $86, `coralSprig`), the human's pick over the rose block, standing on
+    // whatever ground it grew on: the dungeon's own floor through `dFloor`'s
+    // substitution, and outdoors the ground round it (`Room.underGround`).
+    // Stood on the pillar's own pink rock (`coralStep`) it was lost, pink on
+    // pink; on the floor it reads, in a pool as a mound the coral grew from.
     coralStep: { art: ART.rockFloor, pal: 'coral' },
-    coralWall: { art: ART.coralWall, pal: 'coral', flags: F.SOLID | F.RING },
+    coralWall: { art: ART.coralSprig, pal: 'coral', flags: F.SOLID | F.RING, underArt: 'dFloor' },
     coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
 

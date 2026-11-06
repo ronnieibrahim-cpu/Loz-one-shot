@@ -90,25 +90,6 @@ export const DUNGEON_THEME_ART = {
     0011110000111100
     0000000000000000`,
 
-  // x266 rose-bevelled block grid — oracle-seasons-dungeon-backgrounds.png @ 17,58
-  coralWall: `
-    2222222222222222
-    2001111111111112
-    2110111111111222
-    2111000000002222
-    2111011111102222
-    2111010000102222
-    2111010000102222
-    2111010000102222
-    2111010000102222
-    2111011111102222
-    2111000000002222
-    2111222222212222
-    2112222222221222
-    2122222222222122
-    2222222222222212
-    2222222222222222`,
-
   // x196 pale wall RUN, lit face and hatched base — oracle-seasons-dungeon-backgrounds.png @ 1,42
   hatchWall: `
     0122011232223233
@@ -5201,6 +5182,25 @@ export const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
+  // the coral sprig, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $86
+  coralSprig: `
+    ..3333....2333..
+    .3..133...31..3.
+    .3.1213..3311.3.
+    ..3312233212333.
+    .3333323232333..
+    312332213213....
+    333.33123223....
+    .....332223.....
+    .333.33213..333.
+    33..333323.31.13
+    3.12123223322233
+    233322223232333.
+    ...333322233323.
+    .....322233.333.
+    .....332223.....
+    .....233332.....`,
+
   // the whirlpool, step 1 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
   uWhirl0: `
     1111222222221111
@@ -9807,7 +9807,6 @@ export const DUNGEON_THEME_PALETTES = {
   ruinFloor: ['#ecdcc4', '#a39968', '#a39968', '#a39968'],
   paleFloor: ['#7090c0', '#5070a0', '#305080', '#305080'],
   reefFloor: ['#85b2cf', '#5c8eb0', '#5c8eb0', '#5c8eb0'],
-  coralWall: ['#fbd1fb', '#b17399', '#000000', '#000000'],
   hatchWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   forgeWall: ['#f7bb4d', '#e47a3d', '#944826', '#000000'],
   vaultBlock: ['#78a0b0', '#283060', '#000000', '#000000'],
@@ -10076,6 +10075,7 @@ export const DUNGEON_THEME_PALETTES = {
   uWaterS: ['#bddeff', '#5a7bbd', '#5a7bbd', '#5a7bbd'],
   uWaterD: ['#5a7bbd', '#003184', '#003184', '#003184'],
   uPit: ['#000000', '#000000', '#000000', '#000000'],
+  coralSprig: ['#9c63a5', '#9c63a5', '#734273', '#210018'],
   uWhirl0: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl1: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl2: ['#5aadef', '#426be7', '#314aad', '#314aad'],
