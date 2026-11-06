@@ -81,6 +81,9 @@ lands in stages; this file is the plan every stage builds to.
 
 1. Engine + kit + one mock passage, filmed for the human (no passage placed
    in the world yet, so no flood change is owed).
+   DONE S241: src/game/sideview.js, the `sideBog` legend and `svBog*` kit,
+   `link_swim2d_*`, tools/oneshot/film-side-mock.mjs and
+   docs/briefs/s241/side-view-mock.gif (NEXT-SESSION.md S241 has the detail).
 2. The dungeon flood learns the side-view verbs (walk, fall, ladder, swim at
    each sea, sink with the Cleats) in `tools/lib/dungeon-flood.mjs`, and a
    `check-sideview.mjs` proves each passage's claim in the real engine: what

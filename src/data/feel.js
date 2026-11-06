@@ -2966,3 +2966,20 @@ export const RUPEE_ROLL_FRAMES = 1;
  *  cartridge: updateStatusBar_body only raises wDisplayedHearts when
  *  (wFrameCounter & 3) is 0, and lowers it every call. */
 export const HEART_FILL_FRAMES = 4;
+
+// --- Side-view passages (S241, docs/briefs/SIDE-VIEW.md) --------------------
+
+/** sp/f/f — what a fall in a side-view passage gains each frame. derived from
+ *  the cartridge: link.s linkUpdateInAir_sidescroll @applyGravity adds $24 to
+ *  speedZ (8.8 fixed point, as our sp) every frame Link is in the air. */
+export const SV_GRAVITY = 0x24;
+
+/** sp/f — the fastest a fall in a side-view passage goes. derived from the
+ *  cartridge: the same routine caps speedZ at $0300 (3 px/f). */
+export const SV_FALL_MAX = 0x300;
+
+/** sp/f — the hop out of the water in a side-view passage, upward. derived
+ *  from the cartridge: linkState01_sidescroll @notInWater sets speedZ to
+ *  -$1a0 (1.625 px/f up) the frame Link leaves the water, unless he is on a
+ *  ladder through the surface. */
+export const SV_HOP = 0x1a0;

@@ -125,13 +125,13 @@ ripper credit in the header. The current set:
 
 | Generated file | Tool |
 |---|---|
-| `src/data/sprites-player.js` | `tools/rip-link.py` (the Ages sheet, plus — since S173 — the swing's two bodies and the sword's eight pictures from Seasons' own graphics in `assets/link/`) |
+| `src/data/sprites-player.js` | `tools/rip-link.py` (the Ages sheet, plus — since S173 — the swing's two bodies and the sword's eight pictures from Seasons' own graphics in `assets/link/`; since S241 his side-view swim, LINK_ANIM_MODE_SWIM_2D) |
 | `src/data/sprites-npcs.js` | `tools/rip-npcs.py` (Farore from Seasons' own graphics in `assets/npcs/`, S168; since S214 Seasons' walking townsfolk for the credits' scenes, the same way) |
 | `src/data/sprites-races.js` | `tools/rip-races.py` |
 | `src/data/sprites-enemies.js` | `tools/rip-enemies.py` |
 | `src/data/sprites-hud.js` | `tools/rip-hud.py` |
 | `src/data/tiles-terrain.js` | `tools/rip-terrain.py` |
-| `src/data/tiles-dungeon-themes.js` | `tools/rip-dungeon-themes.py` |
+| `src/data/tiles-dungeon-themes.js` | `tools/rip-dungeon-themes.py` (since S241 also Seasons' side-view kit, layout $32, in each dungeon's side-view colours — `svBog*` — and Ages' coral sprig for the Reefseed pillar) |
 | `src/data/tiles-maku.js` | `tools/rip-maku.py` |
 | `src/data/screens-seasons.js` | `tools/rip-screens.py` (title sheet + the file select cut from the footage by `tools/grab-footage-frames.py`) |
 | `src/data/sprites-keys.js` | `tools/rip-keys.py` (the six dungeon keys, from the Oracles' key-item graphics in `assets/keys/`) |

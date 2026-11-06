@@ -1,3 +1,81 @@
+## S241 — Ages' coral on the Reefseed pillar; side-view passages, stage 1 (engine and a mock)
+
+Branch claude/oracle-tides-coral-passages-vjh8z3, off main at 11bd315 (S240).
+
+### The human's choices this session (do not re-ask)
+- The coral pillar (docs/briefs/s241/pillar.png): "Ages' coral at mid tide".
+  Built: the pillar's wall at MID draws Ages' sea-floor coral sprig (tileset
+  $5f, metatile $86, `coralSprig`, keyed off its blue) over the floor it grew
+  on (`underArt: 'dFloor'`, so the dungeon's own floor; outdoors the ground
+  round it). LOW (pink rock) and HIGH (pink water) unchanged — the human was
+  offered plain water at HIGH and did not take it. The rose block
+  (`coralWall` 17,58) is out of the rip; nothing else drew it. Tried and
+  dropped: the sprig over the pillar's own pink rock (pink on pink, lost).
+- The urchin's shield (docs/briefs/s241/urchin.png): KEEP AS IS.
+- Side-view passages (docs/briefs/s241/side-view.png): YES to "the tide
+  moves the waterline" — ladders and water, no jump, the Cleats sink him to
+  the bed, the conch works inside; first ones as STAIR PASSAGES IN DUNGEONS.
+  The whole plan is docs/briefs/SIDE-VIEW.md (read it first).
+
+### Built (stage 1 of SIDE-VIEW.md: nothing placed in the world yet)
+- The side-view kit: rip-dungeon-themes.py `svBog*`, Seasons' side-view
+  layout $32 in the Poison Moth's Lair's side-view colours (tileset $58,
+  sheet `sideBog` = `meta:58`), from new copies in assets/objects/
+  oracles-disasm/seasons/ (tilesetMappings32.bin, tilesetCollisions32.bin,
+  gfx_tileset_sidescroll_1/2.png; README row added). svBogLedge and
+  svBogBed quantise from 5 colours.
+- Tiles (tiles-core.js `sideKit(K)`): air, spikes (F.HAZARD), ladder (`sv:
+  'ladder'`), ladder top (`sv: 'ladderTop'`, stood on), ladder through the
+  surface (ladder + DEEP), the way out (`svBogLadderOut`, ladder + F.WARP),
+  water/surface/weed (DEEP), the solids. The waterline is tide tiles: `svBog0`
+  -`svBog4` (LOW line; LOW-MID; MID line; MID-HIGH; HIGH line) and
+  `svBogL0`-`L4` the same for a ladder. Legend `sideBog` (legends.js): digits
+  0-4 / 5-9 are those. tileset.js's registrar names the new `sv` field.
+- src/game/sideview.js: a room with `side: true` (room def) runs
+  `updateSideView` instead of the top-down terrain/movement/jump/hazards
+  (player.js `update`), with Link's side-view box `SIDE_HB` (the cartridge's
+  @sidescrollOffsets) swapped for `TOP_HB`. Read from link.s
+  (linkState01_sidescroll, linkUpdateInAir_sidescroll,
+  linkUpdateSwimming_sidescroll): walk left/right; fall with SV_GRAVITY $24
+  to SV_FALL_MAX $300; ladders four ways, no falling on one, UP catches one
+  mid-fall, DOWN on a ladder top climbs down; water swum every way at
+  SWIM_SPEED (no Cleats: `beginWash`, back to the last place he stood, as
+  Ages without flippers); leaving water at the top hops (SV_HOP $1a0) unless
+  up a ladder; floor mode sinks to the bed; off the room's bottom = washed
+  back; spikes hurt. Water never stops the mover (`move` passes swim: true)
+  so the water decides. feel.js: SV_GRAVITY, SV_FALL_MAX, SV_HOP (derived).
+- Link's side-view swim: rip-link.py cartridge() cuts LINK_ANIM_MODE_SWIM_2D
+  ($17: frames $e8/$ec + direction 1, 9 frames each) as `link_swim2d_0/1`;
+  spriteName uses them in a side room. Manifest updated.
+- The mock (docs/briefs/s241/side-view-mock.gif): one 15x11 test room, four
+  runs (LOW stuck in the dry pool; MID and HIGH with the Cleats swim, hop
+  out and climb the far ladder; MID without the Cleats drowns and is swept
+  back). Filmed by tools/oneshot/film-side-mock.mjs (asserts nothing) from
+  docs/briefs/s241/side-mock/{low,mid,high,dry}.json, which hold the grid.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S240: top-down movement untouched). The other 66 table tools
+green in one run after the side-view engine landed (and in a run after the
+coral, before it); watch-cutscenes exit 0; shoot-cutscene --ending OK;
+npm run build then check-build OK; check-rippers 45/45 alone, last (once
+after the coral, once at the end).
+
+### Next (stage 2 and 3 of docs/briefs/SIDE-VIEW.md)
+- The dungeon flood (tools/lib/dungeon-flood.mjs) learns side view: walk on
+  support, fall, ladders, swim at each sea (Cleats from D3), sink — in the
+  same commit as the first passage placed. A `check-sideview.mjs`: each
+  passage's claim (what is reached at which sea) in the real engine, and
+  nothing strands Link (no Cleats in a flooded passage = washed back).
+- The first real passage: optional, in the Bogwater Sanctum (its kit IS the
+  Poison Moth's), entered by a stair in a top-down room, its ladder out
+  coming up in another room; a prize only one sea reaches. Arrival on the
+  ladder (warpTo px/py at the ladder, climbing). Not on the robot's route.
+- Open questions for the human when it is placed: the conch's animation in
+  side view; enemies in passages (Ages' side-view fish/podoboo are ports to
+  avoid; ours to design); the sword in side view (left/right only now).
+- Known: Link can climb off the TOP of a ladder with no warp (mock only).
+
 ## S240 — scenery can no longer draw an old picture by its name; cave chests proved walkable
 
 Branch claude/oracle-tides-scenery-chest-6c5ty7, off main at 5d80460 (S239).

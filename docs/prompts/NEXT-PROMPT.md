@@ -1,52 +1,45 @@
-# Next session (S241)
+# Next session (S242)
 
 ## Read first
-- CLAUDE.md, all of it.
-- docs/NEXT-SESSION.md S240 and S239; docs/HANDOFF.md lessons (top ten).
+- CLAUDE.md, all of it (the Ages rule: Oracle of Ages' code and assets are a
+  reference for ALL work).
+- docs/briefs/SIDE-VIEW.md — the agreed side-view design and its stages.
+- docs/NEXT-SESSION.md S241 and S240; docs/HANDOFF.md lessons (top ten).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code
   (oracles-disasm's ages.s, object_code/ages/, scripts/ages/, the ROM_AGES
-  side of shared files) and rip its assets (tiles, sprites, sounds, music,
-  layouts, behaviour) exactly as Seasons'. Compare against both cartridges;
-  if Seasons has no answer, check Ages before drawing or guessing. CLAUDE.md
-  says the same under the Ages rule.
+  side of shared files) and rip its assets exactly as Seasons'. Compare
+  against both cartridges; if Seasons has no answer, check Ages before
+  drawing or guessing.
 
 ## State
-- S240: no game change. validate now fails when a tile draws a picture other
-  than the one it names (the coral pillar's wall and four unused ledges were
-  renamed to say what they draw); check-placement proves every cave, house
-  and overworld chest can be walked up to (17, all in caves).
-- S239: no game change. The human kept S238's outdoor pieces (all, the faint
-  salt-flat ledges too) and kept OUR indoor mooring posts, the Keep's silt
-  and the Shrine's trees (offered the originals' stakes, dug floor and bush:
-  docs/briefs/s239/indoor-candidates.png; "keep them all, don't swap").
-  check-placement now proves every dungeon chest can be walked up to; the
-  picture guide was re-shot on the current game.
-- The human said KEEP / LEAVE (do not re-ask): our text box, place-name
-  label, Sandpiper Cottage without its side door; S216 caves and shop; S217
-  leaves/shards/splash/clink; S218 twinkle, no landing dust; S219 water,
-  shadow, bubbles, Rod twinkles; S220 Lens flicker, held-up Essences,
-  splashes at others' feet; S221 opening on black, Nereth's size, held-up
-  Bell, solid last card; S222 grass at the feet, counting bar; S223 key
-  doors, sliding puzzle doors, quiet loose keys, ammo blip; S224 chests;
-  S225 signs, lean hints, Noble Sword beam; S226 own sounds, sea octorok's
-  walk; S227 bouncing shots, shield bump; S228 unshoved zols/gels/pincers,
-  beamos statue, shots through a flashing Link; S229 darknut guard,
-  shieldless crab; S230 floating keese/bubble, side-on hovering fairy,
-  still floor treasures; S231 boss death; S232 boss-room entry; S233 prizes
-  after the smoke; S234 boss doors; S235 bosses wait for the shutters, then
-  hold their pose; S236 every dungeon's own holes, D1/D2 boss doors and the
-  Spire's doors; S237 ground edges; S238 outdoor rocks, soil, holes, stakes,
-  ledges; S239 our own mooring posts, silt, Shrine trees, grate.
+- S241: the Reefseed pillar's wall at MID is Ages' undersea coral sprig (the
+  human's pick). The urchin keeps its shield (the human: keep). Side-view
+  passages, stage 1: the engine (src/game/sideview.js, a room with
+  `side: true`), the Bogwater Sanctum's side-view kit (Seasons' layout $32 in
+  the Poison Moth's Lair's colours, legend `sideBog`, the waterline as tide
+  tiles), Link's own side-view swim frames, and a filmed mock
+  (docs/briefs/s241/side-view-mock.gif). NOTHING IS PLACED IN THE WORLD YET.
+- The human said KEEP / LEAVE (do not re-ask): everything in S240's list
+  (text box, place-name label, Sandpiper Cottage, S216-S239 looks), plus
+  S241: the urchin's shield. (The pillar's LOW pink rock and HIGH pink water
+  were left as they were when the human picked Ages' coral for MID.)
 
 ## The task
-The human chose "all of the above" at the end of S240:
-1. Show the human the coral pillar (all three seas) and the urchin's shield,
-   each beside the closest thing in Seasons and Ages; ask keep or swap.
-2. Side-scrolling passages: a whole new mechanic. Talk the design through
-   with the human first (pictures from both cartridges, where they would go,
-   what the tide does in one), and build only once they agree.
+Side-view passages, stages 2 and 3 of docs/briefs/SIDE-VIEW.md:
+1. Teach the dungeon flood (tools/lib/dungeon-flood.mjs) the side-view
+   verbs — walk on support, fall, ladders, swim at each sea with the Cleats,
+   sink in floor mode — and write `check-sideview.mjs` (each passage's claim
+   of what is reached at which sea, in the real engine; nothing strands
+   Link). Same commit as the first passage placed.
+2. Place the first real passage: OPTIONAL, in the Bogwater Sanctum (D3), a
+   stair in a top-down room down into it, its ladder out coming up in
+   another room, a prize only one sea reaches. Not on the robot's route.
+   Mock it first with tools/oneshot/film-side-mock.mjs and show the human
+   (pictures beside the originals' side-view rooms) before building it in.
+3. Ask the human before deciding: enemies in passages (ours, not ports),
+   and whether the conch's pose needs a side-view look.
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare
   route-prefix traces against a worktree of ORIGIN/main; if a boss's start
@@ -54,9 +47,10 @@ The human chose "all of the above" at the end of S240:
   sweep with PATCH and run winners to THE END.
 
 ## Done means
-- Whole table green; check-playthrough 49/49 or more, THE END, never died;
-  npm run build, dist/ committed; NEXT-SESSION.md and this file updated;
-  pushed; merged to main when done.
+- Whole table green (plus the new checker); check-playthrough 49/49 or
+  more, THE END, never died; npm run build, dist/ committed; NEXT-SESSION.md
+  and this file updated; pushed; merged to main when done.
 
 ## Out of scope
 - Enemy damage and health (S150). A camera that frames bosses (S153).
+- A jump button (the side-view design has none, by the human's choice).

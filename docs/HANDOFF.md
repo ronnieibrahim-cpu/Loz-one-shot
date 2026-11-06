@@ -447,6 +447,24 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An exact-string patch can land in the wrong twin (S241).** `updateFalling`
+  and `updateWashing` in player.js share the lines `const safe =
+  findSafeTile(...) || this.lastSafe; this.x = safe.x; this.y = safe.y;`, and
+  a replace aimed at the wash patched the pit fall. Assert the old string
+  occurs ONCE (`s.count(old) == 1`) before replacing, and include a line
+  that is unique to the place you mean.
+- **In side view, water must never stop the mover (S241).** `canOccupy`
+  refuses DEEP to anyone without `caps.swim`, so a non-swimmer falling into
+  a side-view pool LANDED ON THE WATER and stood on it. sideview.js moves
+  with `swim: true` and lets the water decide (drowned without the Cleats).
+- **Seasons' side-view rooms share one layout (S241).** Tilesets $55-$60 all
+  use metatile layout $32 recoloured; render any of them with
+  rip-dungeon-themes' `meta:NN` once tilesetMappings32 and the two
+  gfx_tileset_sidescroll PNGs are in assets/objects. Find a cartridge's
+  side-view rooms by TILESET (`TILESETFLAG_SIDESCROLL`), not by room group:
+  tools/oneshot/oracle-study's render.py draws them (group 4 rooms are layout
+  group 5 in Seasons; mind that its top level rebinds `g` and `r`).
+
 - **The coral pillar's wall was drawn by its name for years (S240).** The
   tiledef said `ART.rock`; the tile drew the extracted rose block that happens
   to be called `coralWall`. validate.mjs now compares each tile's drawn
