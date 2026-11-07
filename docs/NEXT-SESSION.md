@@ -1,3 +1,67 @@
+## S242 — side-view passages, stages 2 and 3: the flood learns them, and the first passage (the Sounding Way)
+
+Branch claude/side-view-passages-2-3-v0qjp5, off main at a6bb4aa (S241).
+
+### The human's choices this session (do not re-ask)
+- The first passage as mocked (docs/briefs/s242/passage-mock.png beside the
+  originals, passage-mock.gif): BUILD IT AS SHOWN.
+- Its prize: 100 RUPEES (a placed `rupee100`; one-shot like every placed
+  pickup).
+- Enemies in passages: NONE in this first one. Ours to design in a later
+  session and show first; never Seasons'/Ages' side-view fish or podoboos.
+- The conch in side view (docs/briefs/s242/conch-side.png): KEEP — he faces
+  out and plays, as everywhere else.
+
+### Built
+- THE SOUNDING WAY, d3 room 0,4,6 (`side: true`, legend `sideBog`), under the
+  Bell Cell (optional, off the Nave, reachable before the Cleats). A stair
+  `/` at the Bell Cell's 1,1 goes down onto the west ladder (arrive 16,16);
+  the east ladder comes up on a new stair at the Current Garden's 1,1
+  (arrive 1,2). LOW: the floor is walked, the pool in it drowns a Link
+  without the Cleats; the east ledge is out of reach. MID: swim up, hop onto
+  the east ledge, climb out. HIGH: swim to the top, hop onto the platform for
+  the 100 rupees. Not on the robot's route (the Bell Cell and the Garden are
+  both off it; the run is frame-identical).
+- Engine (src/game/sideview.js, player.js, game.js): drowned in a passage,
+  Link is washed back to where he CAME IN (`svEntry`, the cartridge's rule —
+  the side-view respawn point is not updated), not the last place he stood
+  (the conch could have put that under the sea: a wash loop); arriving on a
+  ladder he holds on it (`arriveSideView`/`settleSideView`); the conch
+  changing the sea round him in a passage washes him only if he has no
+  Cleats (`reconcileWithTide`; it used to look for a "safe tile" top-down
+  style). Passages are not drawn on the dungeon map (mapscreen.js).
+- tools/lib/side-flood.mjs: the side-view verbs once (walk, fall with a
+  cell's drift, ladders, swim with the Cleats, the hop out, drowned back to
+  the way in, the conch anywhere). dungeon-flood.mjs walks a passage with it
+  (closure from each arrival cell, conch free) and joins it to nothing but
+  its warps (no seams, drops, whirlpools in); its floor universe is the cells
+  he can be at rest in. walk-dungeons skips a side room's `_` (a shelf there,
+  not a one-way ledge).
+- tools/check-sideview.mjs (29 assertions, CLAUDE.md table): model claims
+  (`sideRoom: { entries, reach: [{ name, at, from, seas, onFoot? }] }`) with
+  the sea HELD; no strands; and in the engine the stairs, the plans (prize at
+  HIGH only, +100 once), both ladders out, the two wash-backs, and a wandering
+  sweep proving the model is an upper bound of the engine.
+- tools/oneshot/film-side-mock.mjs takes `entities` and `equipB`, and logs
+  rupees/tide. Mock scenarios: docs/briefs/s242/side-mock/.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S241). The other 67 table tools green in one run (test.mjs
+142/142, check-sideview 29/29, check-placement 7/7, walk-dungeons 32/32,
+check-dungeon-strands OK); watch-cutscenes exit 0; shoot-cutscene --ending
+OK; npm run build then check-build OK; check-rippers alone, last.
+
+### Next (docs/briefs/SIDE-VIEW.md stage 4)
+- More passages, one per dungeon from D3, each asking the waterline a
+  different question (the Cistern: $59 Dancing Dragon colours; the
+  Grotto/Keep: $5b/$5c) — each needs its kit ripped (`svBog*` is the
+  pattern in rip-dungeon-themes.py) and its own `sideRoom` claims.
+- Ask the human about an enemy of OUR design for passages (shown first).
+- Open: the dungeon map's Link marker in a passage points at the empty cell
+  under the Bell Cell (the passage itself is not drawn); the sword in side
+  view swings left/right only.
+
 ## S241 — Ages' coral on the Reefseed pillar; side-view passages, stage 1 (engine and a mock)
 
 Branch claude/oracle-tides-coral-passages-vjh8z3, off main at 11bd315 (S240).

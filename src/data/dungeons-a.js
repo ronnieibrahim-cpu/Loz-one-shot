@@ -1701,9 +1701,13 @@ export function installDungeonsA() {
       },
       '1,4,6': {
         name: 'Bell Cell',
+        // S242: the stair in its corner goes down into the Sounding Way, the
+        // Sanctum's side-view passage (0,4,6), whose far ladder comes up in
+        // the Current Garden next door.
+        warps: [stair3(1, 1, P3(0, 4, 6, 1, 1, 'up'))],
         map: [
           '###############',
-          '#.............#',
+          '#/............#',
           '#.U.........U.#',
           '#.............#',
           '#....,,,,,....#',
@@ -2422,15 +2426,65 @@ export function installDungeonsA() {
           reward: { openDoors: [[2, 4]], say: 'A grate lifts in the west wall.' },
         },
       },
+      '0,4,6': {
+        // THE SOUNDING WAY (S242, docs/briefs/SIDE-VIEW.md stage 3): the
+        // Sanctum's side-view passage, optional, under the Bell Cell. THE SEA
+        // IS THE LIFT. Down the Bell Cell's stair onto the west ladder; at LOW
+        // the floor is walked (and the pool in it drowns a Link without the
+        // Cleats, who is washed back to the ladder he came in on), but the
+        // east ladder's ledge is two tiles over his head; at MID he swims up
+        // and hops onto it, and its ladder comes up in the Current Garden; at
+        // HIGH he swims to the top and hops onto the platform for 100 rupees,
+        // which no lower sea reaches. The human's choices: build it as shown,
+        // 100 rupees, no enemies yet, the conch played as everywhere else.
+        // Not on the dungeon map (Seasons keeps passages off it).
+        // tools/check-sideview.mjs proves `sideRoom` in the engine.
+        name: 'The Sounding Way',
+        side: true,
+        legend: 'sideBog',
+        map: [
+          '[U^^^^^^^^^^^U|',
+          '[H...........H|',
+          '[H...........H|',
+          '[94444===44449|',
+          '[8333333333338|',
+          '[8333333333338|',
+          '[7222222222___|',
+          '[6111111111111|',
+          '[6111111111111|',
+          '[###0000000###|',
+          '[bbbbbbbbbbbbb|',
+        ],
+        warps: [
+          { x: 1, y: 0, to: P3(1, 4, 6, 1, 2, 'down') },
+          { x: 13, y: 0, to: P3(1, 5, 6, 1, 2, 'down') },
+        ],
+        // What is reached with the sea HELD at each level from each way in
+        // (`seas`: the levels it is reached at, Cleats owned): the prize only
+        // at HIGH, the way out east only at MID and HIGH.
+        sideRoom: {
+          entries: [[1, 1], [13, 1]],
+          reach: [
+            { name: 'the platform prize', at: [7, 2], from: [1, 1], seas: [2] },
+            { name: 'the east ledge', at: [12, 5], from: [1, 1], seas: [1, 2] },
+            { name: 'the east floor', at: [12, 8], from: [1, 1], seas: [0, 1, 2] },
+          ],
+        },
+        entities: [
+          ['pickup', 7, 2, { kind: 'rupee100' }],
+        ],
+      },
       '1,5,6': {
         name: 'Current Garden',
         // Optional, off the Bell Cell's east wall. The whole floor runs west,
         // back at the door, and the chest is on an island two screens out:
         // swum, the current hands you back; walked on the bottom, nothing does.
         size: [2, 1],
+        // S242: the Sounding Way's ladder out comes up on the stair here.
+        warps: [stair3(1, 1, P3(0, 4, 6, 13, 1, 'up'))],
         map: [
           '##############################',
-          '#...ttttttttttttttttttttttttt#',
+          '#/..ttttttttttttttttttttttttt#',
           '#.U.ttttt#ttttt#ttttttttttttt#',
           '#...ttttttttttttttttttttttttt#',
           '#...tttttttttttttttttt...tttt#',

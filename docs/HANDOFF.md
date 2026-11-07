@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A passage's claims are made with the sea HELD (S242).** With the Cleats
+  higher water reaches more, never less. Swimming is free movement and water stops nothing, so "a prize only one sea
+  reaches" can only mean "with the sea HELD from the moment you come in"
+  (the lift): once on the HIGH platform the sea can be lowered under him.
+  check-sideview states its claims held, like every per-sea checker here.
+- **A side-view wash-back to "the last place he stood" can loop (S242).**
+  The conch raises the sea over that place, he is washed back into water and
+  washed again. The cartridge sends him to where he entered the room
+  (respawn not updated in side view), which is a ladder dry at every sea.
+- **A side room in a dungeon grid is a neighbour to everything round it
+  (S242).** Seams, drops and whirlpools in the dungeon flood had to be told a
+  passage joins nothing but its warps, walk-dungeons read its `_` (a solid
+  shelf there) as a one-way ledge, and the dungeon map drew it as a room.
+
 - **An exact-string patch can land in the wrong twin (S241).** `updateFalling`
   and `updateWashing` in player.js share the lines `const safe =
   findSafeTile(...) || this.lastSafe; this.x = safe.x; this.y = safe.y;`, and

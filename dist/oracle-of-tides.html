@@ -6304,6 +6304,749 @@ __exports["Audio"] = Audio;
 __exports["audio"] = audio;
 });
 
+/* ===== src/world/tileset.js ===== */
+__define("world/tileset.js", function (__exports, __require) {
+// Tile registry.
+//
+// TILE DEFINITION FORMAT (contract for tile data files):
+//
+//   'grass': {
+//     art: `...16 rows of 16 chars...`,   // see gfx/art.js for the pixel grammar
+//     pal: 'grass',                       // palette name from gfx/palettes.js
+//     flags: 0,                           // bitwise OR of F.* below
+//     mask: 15,                            // sub-tile solid quadrants, only if SOLID
+//     tide: ['sandLow','sandMid','waterDeep'],  // variant per tide level 0/1/2
+//     anim: ['water0','water1','water2','water1'], animRate: 10,
+//     over: true,                          // draw above entities (treetops, arches)
+//     push: [dx, dy],                      // water current, pixels/frame
+//     belt: [dx, dy],                      // a conveyor's direction (BELT_SPEED)
+//     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
+//     openTo: 'rockFloorDk',               //   carries this flag (see below)
+//     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
+//     keyFlag: 'keyD1',                    // a KEYHOLE: holding this flag and
+//                                          //   pushing in sets `openFlag`
+//   }
+//
+// STORY GATES
+//   `openFlag` is the third kind of gate this game has, next to a flag an item
+//   answers (F.BOMBABLE, F.VANE) and terrain an item crosses (F.DEEP). It is
+//   not answered by an item at all: the tile becomes `openTo` on room entry
+//   once the save carries the named flag, and nothing the player is holding
+//   changes that. `Game.applyStoryGates` is the whole implementation and it
+//   runs alongside `restoreRoomState`, so a story gate opens the moment you
+//   walk in rather than when you touch it.
+//
+//   A KEYHOLE is a story gate with `keyFlag` as well: the player who holds
+//   that flag (a dungeon key, src/data/keys.js) opens it himself by leaning on
+//   it, Seasons' way (`Game.tryKeyhole`), and that sets `openFlag`. Every tool
+//   that floods counts a keyhole open once the key is held.
+//
+//   It exists because a region can be owed to the STORY rather than to an
+//   item, and expressing that as an item flag is how a progression lock gets
+//   built: the Keep's road was sealed by a tile only the Dredge Line opened,
+//   and the Dredge Line is inside the Keep.
+//
+// TIDE VARIANTS
+//   A tile with `tide` is a *virtual* tile: at runtime it resolves to one of three
+//   concrete tiles depending on the global tide level (0 = low, 1 = mid, 2 = high).
+//   Variant targets must be concrete (no nested `tide`); validate() enforces this.
+//   This is how the whole world reshapes: authors place one char and the tide
+//   system decides whether it is dry sand, wadeable shallows, or deep sea.
+
+const { hash32 } = __require("core/rng.js");
+
+const F = {
+  SOLID:     1 << 0,   // blocks movement
+  WATER:     1 << 1,   // shallow: walkable, wading animation, slight slowdown
+  DEEP:      1 << 2,   // deep water: needs Flippers, enters swim state
+  PIT:       1 << 3,   // fall in, take damage, respawn at room edge
+  HAZARD:    1 << 4,   // lava / spikes: damage on contact
+  LEDGE:     1 << 5,   // one-way hop-down ledge (direction in `ledge`)
+  STAIRS:    1 << 6,   // auto-warp on step (stairs, doorway)
+  BUSH:      1 << 7,   // destructible by sword/bomb
+  ROCK:      1 << 8,   // liftable with Power Bracelet
+  ICE:       1 << 9,   // slippery
+  SLOW:      1 << 10,  // deep sand / mud
+  NOFLY:     1 << 11,  // cannot be crossed even with Roc's Feather
+  JUMPABLE:  1 << 12,  // 1-tile gap that Roc's Feather clears
+  WARP:      1 << 13,  // cave mouth / door: triggers the room's warp list
+  NOSPAWN:   1 << 14,  // enemies never spawn or wander here
+  // A fixed thing a thrown line catches on: a post, a ring, a mooring. The
+  // Dredge Line hauls Link to it rather than hauling it to Link, which is the
+  // crossing verb it inherits. Declared by a tile rather than discovered,
+  // because being yanked somewhere you did not choose is a bug.
+  SNAG:      1 << 15,
+  BOMBABLE:  1 << 16,  // cracked wall
+  DOOR:      1 << 17,  // dungeon door (state in room)
+  SWITCHF:   1 << 18,  // floor switch
+  CURRENT:   1 << 19,  // pushes the player while swimming (see `push`)
+  // A WHIRLPOOL (S161, the Sunken Palace): touch it and the sea takes you to
+  // the floor below, to the same place in the room under this one
+  // (`Game.enterWhirlpool`). The bit was once a WHIRL no tile ever carried,
+  // whose only live branch sent the player to his last respawn point — a death
+  // he did not die — and was removed for it. It is back because a tile now
+  // carries it, and tools/check-whirlpool.mjs proves every one in the engine.
+  WHIRL:     1 << 20,
+  VOID:      1 << 21,  // outside the map: solid and never rendered as floor
+  SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
+  TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
+  VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
+  // A DROP HOLE (S181, the Bogwater Sanctum): a hole with a room under it.
+  // Dry, it also carries PIT and is fallen into the way a pit is, but the fall
+  // ends on the floor below, at the same place (`Game.dropThroughHole`);
+  // flooded, it carries DEEP and a player walking the bottom with the Cleats
+  // goes down it. A drop whose landing is no landing is a pit fall. The bit
+  // was MAGNETIC once, which nothing carried after the Keep's seal became a
+  // story gate. tools/check-shafts.mjs proves every one in the engine.
+  DROP:      1 << 25,
+  // Region-gate markers. These do NOT drive traversal — the engine already
+  // knows how to cross each of these tiles, because each one also carries the
+  // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
+  // boulder is SOLID+ROCK). The marker exists so a checker can say *which item*
+  // a given impassable tile is holding shut, which is the whole difference
+  // between "the region is unreachable" and "the region is gated on the
+  // Dredge Line". Reusing JUMPABLE or DEEP for that would make every gap and
+  // every stretch of ocean in the world read as the same gate.
+  HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
+  SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
+  GRAPPLE:   1 << 28,  // span crossed by dredging a fixed snag on the far side
+  GAP:       1 << 29,  // chasm: only Roc's Feather clears it
+  // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
+  // traversal flag — a ringable tile also carries whatever it actually is.
+  RING:      1 << 30,
+};
+
+// Convenient composites
+F.BLOCKED = F.SOLID | F.VOID;
+F.WET = F.WATER | F.DEEP;
+
+const TILES = new Map();
+
+/** Register a batch of tile definitions. Later registrations override earlier. */
+function registerTiles(defs) {
+  for (const [name, def] of Object.entries(defs)) {
+    if (!def) continue;
+    TILES.set(name, {
+      name,
+      art: def.art,
+      // Tiles with transparency (trees, bushes, rocks) name a tile to draw beneath.
+      underArt: def.underArt || null,
+      // `underArt` names EXACTLY the tile to draw beneath, rather than a
+      // ground to be re-derived from the neighbours (Room.underGround). For a
+      // picture cut into stacked layers — the Maku grove — where the layer
+      // underneath is part of the same artwork and not the region's ground.
+      underExact: !!def.underExact,
+      // The tile this one is the lower layer of (S215, the houses: a Seasons
+      // metatile mixing two palettes, cut as two). Not a ground; just the
+      // rest of that tile's picture.
+      layerOf: def.layerOf || null,
+      pal: def.pal || 'stone',
+      flags: def.flags || 0,
+      mask: def.mask == null ? 15 : def.mask,
+      tide: def.tide || null,
+      // A RED OR BLUE BLOCK (S205): [the tile at toggle 0, the tile at 1].
+      // See `resolveTile`. Named here: this registrar discards what it does
+      // not name.
+      toggle: def.toggle || null,
+      anim: def.anim || null,
+      animRate: def.animRate || 10,
+      over: !!def.over,
+      // A COUNTER (S168): a solid tile you can talk ACROSS, as Seasons lets
+      // Link speak to Farore over her desk. `Player.tryContextAction` reaches
+      // one tile further when the tile in front of him is one.
+      counter: !!def.counter,
+      // A SIDE-VIEW PIECE (S241, docs/briefs/SIDE-VIEW.md): 'ladder' is climbed
+      // and stops a fall (Seasons' TILETYPE_SS_LADDER), 'ladderTop' is a
+      // ladder that is also stood on from above (TILETYPE_SS_LADDER_TOP).
+      // Only `sideview.js` reads it. Named here, or it would be discarded.
+      sv: def.sv || null,
+      // A TILE THAT IS ONE CELL OF A BIGGER OBJECT. `quad` names a set of four
+      // 16x16 arts — `<quad>TL`, `TR`, `BL`, `BR` — cut from one 32x32 source
+      // tree. Which one this cell draws is decided by its NEIGHBOURS at render
+      // time, not by its coordinates: see `Room.render`.
+      //
+      // The top and bottom rows carry separate palettes (`quadPalTop`,
+      // `quadPalBot`) because a canopy and its roots do not fit in one
+      // four-colour palette. On hardware they are separate tiles with separate
+      // palettes, and this is the same split.
+      //
+      // An earlier cut of this drew the whole 32x32 tree from one tile,
+      // overhanging its neighbours. It clipped the canopy off every tree on a
+      // screen's top row and double-drew every run. Quadrants keep each cell
+      // inside itself.
+      //
+      // NAMED HERE ON PURPOSE: this registrar copies field by field, so a
+      // field it does not name is silently DISCARDED — that is how `liftLevel`
+      // sat in the data unread for the life of the project.
+      quad: def.quad || null,
+      quadPalTop: def.quadPalTop || null,
+      quadPalBot: def.quadPalBot || null,
+      // GROUND VARIANTS: other art names this tile may be drawn as. Purely a
+      // draw-time substitution — same flags, same palette, same everything the
+      // simulation can see — so a field of grass stops being one 16x16 cell
+      // repeated across the screen. `tileVariant` picks one, and it MUST be
+      // named here or `registerTiles` would discard it silently, the way it
+      // discarded `liftLevel` for the life of the project (see below).
+      variants: def.variants || null,
+      // AUTOTILING. `family` groups tiles that are the same MASS — every
+      // palette-swap of a cliff is still cliff, so a `cliffDk` beside a `cliff`
+      // is not an edge. `edgeArt` names the art to draw instead of this tile's
+      // own when the neighbour in that direction is a DIFFERENT family:
+      // `{ up: 'cliffTop' }` puts a lip on the top row of every cliff mass in
+      // the game without a single room grid changing. Draw-time only, like
+      // `variants` — nothing the simulation can see moves.
+      family: def.family || null,
+      edgeArt: def.edgeArt || null,
+      // PROTOTYPE, land-vs-land fringes. A SECOND comparison axis: `family`
+      // groups the same MASS (every land tile is 'shore', which is what lets
+      // the water rim fire), so it cannot see grass meeting sand. `material`
+      // is the specific ground and `edgePairs` maps a neighbour's material to
+      // the 12 edge keys. Both must be listed HERE or the registrar drops them
+      // — see CLAUDE.md's `liftLevel` trap.
+      material: def.material || null,
+      edgePairs: def.edgePairs || null,
+      // Narrows which neighbour families this tile draws an edge against. A
+      // cliff wants a lip against ANYTHING that is not cliff, so it leaves
+      // this unset. Grass does NOT want a bank against sand or mud — that is
+      // the still-hard rectangular fringe docs/ART-BACKLOG.md tracks
+      // separately — so it names 'water' and edgeArt fires only when the
+      // neighbour actually resolves to that family.
+      edgeAgainst: def.edgeAgainst || null,
+      // A FENCE (S157): a palisade or a paling run is a line on purpose, the
+      // way a treeline or a gate is. Read by tools/check-ground.mjs, which
+      // otherwise fails three decorative props in a row.
+      fence: !!def.fence,
+      // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
+      // this is a SCATTER and not an even mix.
+      variantOdds: def.variantOdds || 8,
+      push: def.push || null,
+      // A BELT (S186, the Drowned Wood Shrine's Canopy): [dx, dy], a unit
+      // direction, Seasons' conveyor; the speed is BELT_SPEED (feel.js). Unlike `push`, which is a current in deep water,
+      // a belt carries what stands on it (Player.updateBelt, Enemy, a growing
+      // Reefseed) and never what swims or flies.
+      belt: def.belt || null,
+      ledge: def.ledge || null,
+      // THE CRACKED FLOOR (S181): the tile it gives way into, after Link has
+      // stood on it CRACK_BREAK_FRAMES (Player.updateCrack, Game.breakCrack).
+      crack: def.crack || null,
+      // THE COLOUR CUBE'S SPOT (S207): 0 red, 1 yellow, 2 blue — the colour a
+      // cube must show on top resting here (objects.js ColourCube).
+      cubeSpot: def.cubeSpot != null ? def.cubeSpot : null,
+      // A CRACK THAT COMES BACK (S207): broken, it is not written to the save,
+      // and leaving the room mends it (`Room.mendCracks`), as a cube room
+      // resets in Ages when it is entered again.
+      crackResets: !!def.crackResets,
+      // THE TIDE FLOOR (S208, kind C): the tile this one becomes when the sea
+      // rising covers it (`Game.floodFloor`), and its colour (0 red, 2 blue).
+      floorFlip: def.floorFlip || null,
+      floorColour: def.floorColour != null ? def.floorColour : null,
+      // A SLATE SLOT (S211, Ages' slateSlot.s): the face it is leaned on from
+      // ('N'/'E'/'S'/'W') and the tile it becomes with a slate in it.
+      slot: def.slot || null,
+      slotFilled: def.slotFilled || null,
+      // A HOLE A HELD BRIDGE SPANS (S211): its planks, `{ H, V }`.
+      bridge: def.bridge || null,
+      // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
+      // (n), below (s) or both is not of this tile's `family` — Seasons' drop
+      // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
+      // edges, where the floor's edge shows. See `Room.artAt`. `one` (S189)
+      // is a hole with no hole on any side: the Sword & Shield Maze's $f3.
+      lip: def.lip || null,
+      // A KEEP SHAFT (S189): a hole or a flooded well with a room under it
+      // that only an ice chunk goes down and only the Dredge Line reaches
+      // through. To Link it is the pit or the water its flags say.
+      shaft: !!def.shaft,
+      depth: def.depth || 0,
+      // How strong you have to be to pick this up, against LIFT_STRENGTH and
+      // any item that raises it, and what it looks like once lifted.
+      //
+      // THESE TWO WERE MISSING and had been since tiledefs existed. This
+      // function copies field by field rather than spreading, so a tiledef key
+      // it does not name is silently discarded — `boulder` has declared
+      // `liftLevel` the whole time and `Game.liftTile` has read it the whole
+      // time, and the two never met. Nothing validated it, because the boulder
+      // was ALSO gated behind an item the player did not have yet, so the
+      // symptom never showed. Same class as the `giver` options in
+      // docs/HANDOFF.md: data contracts drift from engine contracts silently.
+      liftLevel: def.liftLevel || 0,
+      liftSprite: def.liftSprite || null,
+      // A story gate: see the contract at the top of this file. THESE THREE
+      // HAVE TO BE NAMED HERE. This function copies field by field, so a
+      // tiledef key it does not list is silently discarded — which is exactly
+      // how `liftLevel` sat in the data unread for the life of the project.
+      openFlag: def.openFlag || null,
+      openTo: def.openTo || null,
+      openDeny: def.openDeny || null,
+      // A KEYHOLE is a story gate the player opens himself: holding the flag
+      // `keyFlag` names (a dungeon key, see src/data/keys.js) and pushing into
+      // the tile sets `openFlag`. Named here for the same reason as the three
+      // above it.
+      keyFlag: def.keyFlag || null,
+      // THE ORACLE WALL RING. A wall tile in a dungeon built at Oracle room
+      // size (`cell: [15, 11]` on its map) draws the outer ring of every room
+      // from this set of pieces — four corners, four runs and the jambs that
+      // finish a run beside a doorway — chosen by where the cell sits on the
+      // ring, not by any neighbour's family. See `Room.ringArt`. Draw-time
+      // only; the tile's flags are the wall's. Named here for the same reason
+      // as every field above.
+      ring: def.ring || null,
+      // A tile that stands IN the ring and is wall to it — a pillar beside a
+      // way out — so the runs either side do not draw jambs against it.
+      ringWall: !!def.ringWall,
+    });
+  }
+}
+
+// --------------------------------------------------------------------------
+// BLOCKS: objects bigger than a tile.
+//
+// A building is three cells wide and three tall. Cutting one into nine loose
+// tiles gives an author nine characters that mean something in exactly one
+// arrangement, with nothing to catch a wrong one — the roof laid on upside
+// down validates, renders and strands the screen behind it.
+//
+// So a block is registered once, as its grid of cell tiles, and PLACED once. A
+// room grid draws the building's footprint as a rectangle of a single legend
+// character:
+//
+//     'ggHHHggg'          H is 'block:bShop', 3x3, so this is one shop
+//     'ggHHHggg'          with grass either side — not nine tiles that
+//     'ggHHHggg'          happen to line up.
+//
+// `Room` claims each rectangle top-left-first and resolves every cell to the
+// tile named here (see the footprint pass in src/world/room.js). A footprint
+// that is not exactly w x h THROWS at construction, which is the whole point:
+// a mis-drawn building is a typo, and a typo should be an error and not a
+// screen you have to look at to discover is wrong.
+//
+// The cell tiles are ordinary tiles with ordinary flags. Nothing downstream —
+// collision, rendering, the tide field, every checker — knows a block exists.
+const BLOCKS = new Map();
+
+/** Register a batch of block definitions: { name: { w, h, tiles: [[name]] } }. */
+function registerBlocks(defs) {
+  for (const [name, def] of Object.entries(defs)) {
+    const { w, h, tiles } = def;
+    if (!w || !h || tiles.length !== h || tiles.some(r => r.length !== w)) {
+      throw new Error(`block ${name}: declares ${w}x${h} and lists `
+        + `${tiles.length} rows of ${tiles.map(r => r.length).join('/')}`);
+    }
+    BLOCKS.set(name, { name, w, h, tiles: tiles.map(r => r.slice()) });
+  }
+}
+
+/** The block a legend entry names, or null if it names an ordinary tile. */
+function blockRef(tileName) {
+  if (typeof tileName !== 'string' || !tileName.startsWith('block:')) return null;
+  return BLOCKS.get(tileName.slice(6)) || null;
+}
+
+const EMPTY = {
+  name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
+  anim: null, animRate: 10, over: false, push: null, belt: null, ledge: null, depth: 0,
+};
+
+const warned = new Set();
+
+/**
+ * The registered tiledef for `name`, or null if it names no tile at all (an
+ * animation-only art name, say). Unlike `getTileDef` this never warns and
+ * never returns the `EMPTY` placeholder — a caller that wants "the tile this
+ * name draws, if it has its own" needs to tell "no such tile" apart from "a
+ * tile that legitimately has no flags", which `EMPTY` collapses into the same
+ * answer. `Room.render`'s art/palette lookup is the reason this exists: an
+ * `edgeArt` or `variants` substitution can name a tile with a DIFFERENT
+ * palette than the cell being drawn (a bank tile's blue rim is not the
+ * grass's green), and only a real tiledef lookup can find that out.
+ */
+function artDef(name) {
+  return TILES.get(name) || null;
+}
+
+function getTileDef(name) {
+  const d = TILES.get(name);
+  if (!d) {
+    if (!warned.has(name)) { warned.add(name); console.warn('[tiles] undefined tile:', name); }
+    return EMPTY;
+  }
+  return d;
+}
+
+/**
+ * THE RED AND BLUE BLOCKS (S205): which of the two stands up. Oracle of Ages
+ * keeps one bit, wToggleBlocksState, that an orb flips; in this game the
+ * conch is the orb, and every tide change flips it (`Tide.setLevel`). A tile
+ * with `toggle: [atZero, atOne]` resolves to one of two concrete tiles by
+ * this bit, before its tide is looked at.
+ *
+ * It is module state rather than an argument because every query in the game
+ * reaches tiles through `resolveTile`, and threading a second dimension
+ * through all of them would be a hundred edits for one bit. The running game
+ * keeps it equal to `Tide.toggle` (Tide owns it and sets it here); a checker
+ * sets it explicitly with `setToggleState` before asking a room anything. A
+ * caller asking about a parity other than the live one — the Lens's preview —
+ * passes it as `resolveTile`'s third argument, and `Room.tile` does that when
+ * the tide it is handed carries a `toggle` of its own.
+ */
+let TOGGLE = 0;
+function setToggleState(p) { TOGGLE = p & 1; }
+function toggleState() { return TOGGLE; }
+
+/** Resolve a possibly-virtual tile name to its concrete tile at a tide level. */
+function resolveTile(name, tide, toggle = TOGGLE) {
+  let d = getTileDef(name);
+  if (d.toggle) d = getTileDef(d.toggle[toggle & 1]);
+  if (!d.tide) return d;
+  const target = d.tide[Math.max(0, Math.min(2, tide))] ?? d.tide[d.tide.length - 1];
+  const r = getTileDef(target);
+  // One level of indirection only; a nested tide tile is a data bug.
+  return r.tide ? getTileDef(r.tide[Math.max(0, Math.min(2, tide))]) : r;
+}
+
+/**
+ * Whether a resolved tile definition blocks a mover with the given
+ * capabilities — the same rule `Room.solidAt` applies at a pixel, pulled out
+ * here so anything that already has a concrete `TileDef` (rather than a pixel
+ * to sample) can ask the identical question instead of re-deriving it from
+ * raw flags. `Room.solidAt` calls this; nothing should define its own copy.
+ *
+ * `quadSolid` is the SOLID flag's own verdict for the quadrant being asked
+ * about — `Room.solidAt` passes the correct one for a pixel's sub-tile
+ * position; a caller with no pixel (a tile-granularity checker) passes
+ * `d.mask !== 0`, which is exactly right for every tile in this game today,
+ * since no tile uses a mask other than 0 (a doorway cut into a SOLID tile) or
+ * 15 (uniformly solid) — see docs/ART-DIRECTION.md and CLAUDE.md.
+ */
+function tileDefSolid(d, caps, quadSolid) {
+  const f = d.flags;
+  if (f & F.VOID) return true;
+  if (f & F.SOLID) return quadSolid;
+  // Deep water is impassable on foot but fine while swimming.
+  if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
+  // Gaps are crossed by jumping only.
+  if (f & F.JUMPABLE) return !(caps && caps.jumping);
+  // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
+  // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
+  // happens, so caps.jumping is what lets the hop through. Blocking it on
+  // the ground is the half that makes the ledge one-way — otherwise you
+  // could walk back up the drop or stroll along the lip.
+  if (f & F.LEDGE) return !(caps && caps.jumping);
+  if (f & F.BUSH) return !(caps && caps.cutting);
+  if (f & F.ROCK) return true;
+  return false;
+}
+
+/** The art name to draw for a tile at a given tide + frame counter. */
+function tileArt(def, frame) {
+  if (def.anim && def.anim.length) {
+    const i = Math.floor(frame / def.animRate) % def.anim.length;
+    return def.anim[i];
+  }
+  return def.name;
+}
+
+
+/**
+ * Which art to draw for a tile at (tx, ty) in a room, when the tile declares
+ * interchangeable ground variants.
+ *
+ * A PURE HASH OF THE TILE'S ADDRESS, never a draw from an RNG stream. This is
+ * `T2` exactly: `Room.render` runs at display rate, so a variant drawn from a
+ * stream would desync every replay AND make the ground flicker as the cache
+ * rebuilt. `every(e, n)` is the existing precedent for hashing instead.
+ *
+ * The room key is part of the hash so the same coordinates in two rooms do not
+ * pick the same variant, which would put an identical pattern of tufts in the
+ * same place on every screen — a subtler grid than the one this replaces.
+ *
+ * A SCATTER, NOT A MIX, and this is the part that was measured rather than
+ * assumed. Picking evenly among a base and three variants does not remove the
+ * grid; it replaces it with a patchwork quilt, and a quilt is WORSE, because
+ * `rip-terrain.py` quantises each tile against its own four colours, so two
+ * tiles that look alike on the sheet can land on different palette indices and
+ * their shared edge becomes a hard tonal seam. Rendered as a full 10x8 room,
+ * an even four-way mix of good candidates read as a chessboard. One variant in
+ * seven read as a meadow. So: most cells are the base, and the variants are
+ * occasional detail — which is also what the source games do, except that
+ * there a person places each tuft by hand.
+ *
+ * Two independent hashes, not one divided: the gate decides WHETHER this cell
+ * is a variant and the pick decides WHICH, and deriving the second from the
+ * quotient of the first correlates them.
+ */
+function tileVariant(def, roomKey, tx, ty) {
+  const v = def.variants;
+  if (!v || !v.length) return def.name;
+  if (hash32('tilevar', roomKey, tx, ty) % def.variantOdds !== 0) return def.name;
+  return v[hash32('tilepick', roomKey, tx, ty) % v.length];
+}
+
+/**
+ * Which art to draw for a tile whose look depends on its neighbours.
+ *
+ * `neighbourFamily(dir)` is supplied by the caller — `Room` owns the grid, and
+ * a checker may never re-derive a rule the engine already owns (`R4`).
+ *
+ * OUT OF BOUNDS COUNTS AS THE SAME MASS, and this is the decision that makes
+ * the feature usable rather than a disaster. A cliff running along the top row
+ * of a screen continues into the screen above it in every source game, and the
+ * room has no way to see that room's grid — so treating "off the edge" as a
+ * different family would draw a lip along the top of every screen in the game,
+ * on cliff that visibly carries on. The caller returns the tile's own family
+ * for a neighbour it cannot see.
+ *
+ * A FULL 4-NEIGHBOUR MASK, not "the first direction that matches" — that was
+ * `cliffTop`'s whole limitation (docs/ART-BACKLOG.md): a ground patch is a top
+ * edge and a left edge at once, and picking one lost the other. This reads all
+ * four of up/down/left/right and classifies the set of directions that differ:
+ *
+ *   0 differ  -> no edge art (this cell is not on a boundary)
+ *   1 differs -> a straight edge  (up/down/left/right)
+ *   2 differ, ADJACENT (e.g. up+left)  -> an OUTER corner: this tile's own
+ *              mass is confined to the corner opposite the two differing
+ *              sides, so the art shows it curving around a convex point
+ *   2 differ, OPPOSITE (up+down, or left+right) -> a one-tile-wide strip; no
+ *              dedicated art exists for this, so it degrades to whichever
+ *              single-direction edge is listed first (the old behaviour)
+ *   3 differ  -> an INNER corner: this tile is nearly engulfed, connected to
+ *              its own mass on only the one remaining side
+ *   4 differ  -> fully isolated; degrades the same way the opposite-pair case
+ *              does, for the same reason (no dedicated art, and a single-tile
+ *              island is a room-data smell a checker should catch on its own)
+ *
+ * Any of the 12 named keys (`up`/`down`/`left`/`right`,
+ * `cornerUpLeft`/`cornerUpRight`/`cornerDownLeft`/`cornerDownRight`,
+ * `innerUp`/`innerDown`/`innerLeft`/`innerRight`) may be omitted — a tile that
+ * only defines `up` behaves exactly as before, corners and all, because every
+ * case below falls back to the straight-edge degrade when the art it actually
+ * wants is not defined.
+ */
+function tileEdgeArt(def, neighbourFamily, neighbourMaterial) {
+  // ---- LAND AGAINST LAND, which needs a SECOND comparison axis -----------
+  //
+  // `family` groups tiles that are the same MASS, and every dry ground in the
+  // game is `'shore'` — that is what lets the water rim fire against all of
+  // them at once. So family cannot see grass meeting sand: they are the same
+  // family by design. `material` is the specific ground, and `edgePairs` maps a
+  // NEIGHBOUR'S material to its own set of the 12 mask keys, because grass
+  // meeting sand and grass meeting mud are different pictures.
+  //
+  // It runs before the family check and uses the SAME mask classifier, so a
+  // fringe gets real corners rather than the first direction that matched.
+  // Only one side of a pair carries `edgePairs` — see `FRINGE_PAIRS` in
+  // tiles-core.js — so a boundary is fringed once, not from both sides.
+  if (def.edgePairs && neighbourMaterial) {
+    const byMat = new Map();
+    for (const dir of EDGE_DIRS) {
+      const m = neighbourMaterial(dir);
+      if (!m || m === def.material || !def.edgePairs[m]) continue;
+      if (!byMat.has(m)) byMat.set(m, []);
+      byMat.get(m).push(dir);
+    }
+    // A cell touching two different foreign materials picks the one it touches
+    // most; ties go to the first in EDGE_DIRS order, which is stable.
+    let best = null;
+    for (const [m, dirs] of byMat) if (!best || dirs.length > best[1].length) best = [m, dirs];
+    if (best) {
+      const art = pickByMask(def.edgePairs[best[0]], best[1]);
+      if (art) return art;
+    }
+  }
+
+  const e = def.edgeArt;
+  if (!e || !def.family) return null;
+  const against = def.edgeAgainst;
+  const matches = (nf) => (Array.isArray(against) ? against.includes(nf) : nf === against);
+  const differs = (dir) => {
+    const nf = neighbourFamily(dir);
+    if (nf === def.family) return false;
+    return against ? matches(nf) : true;
+  };
+  return pickByMask(e, EDGE_DIRS.filter(differs));
+}
+
+/**
+ * Choose one of an art set's 12 keys from the set of directions that differ.
+ * Shared by the family path and the material path above so a fringe and a rim
+ * classify a corner identically.
+ */
+function pickByMask(e, diffDirs) {
+  if (diffDirs.length === 0) return null;
+  if (diffDirs.length === 1) {
+    return e[diffDirs[0]] || null;
+  }
+  if (diffDirs.length === 2) {
+    const [a, b] = diffDirs;
+    const opposite = (a === 'up' && b === 'down') || (a === 'left' && b === 'right');
+    // An opposite pair has its own art only in a set that brings it (the
+    // ground's edges, S237: Seasons draws a grass strip between two sands).
+    const art = opposite ? e[a === 'up' ? 'upDown' : 'leftRight'] : e[CORNER_KEY[a + ',' + b]];
+    if (art) return art;
+  } else if (diffDirs.length === 3) {
+    const missing = EDGE_DIRS.find((d) => !diffDirs.includes(d));
+    const art = e[INNER_KEY[missing]];
+    if (art) return art;
+  } else if (diffDirs.length === 4 && e.all) {
+    return e.all;
+  }
+  // Degrade: opposite pairs, four-way isolation, or a corner/inner direction
+  // with no dedicated art all fall back to the first single-edge match, the
+  // same answer this function always gave before corners existed.
+  for (const dir of EDGE_DIRS) {
+    if (diffDirs.includes(dir) && e[dir]) return e[dir];
+  }
+  return null;
+}
+
+const EDGE_DIRS = ['up', 'down', 'left', 'right'];
+
+// The 2-differ (outer corner) and 3-differ (inner corner) cases, named by the
+// directions involved. `diffDirs` is always built by filtering EDGE_DIRS in
+// its own order, so a 2-element result is always one of exactly these four
+// pairs — the opposite pairs (up+down, left+right) are handled before this
+// table is consulted.
+const CORNER_KEY = {
+  'up,left': 'cornerUpLeft', 'up,right': 'cornerUpRight',
+  'down,left': 'cornerDownLeft', 'down,right': 'cornerDownRight',
+};
+// Keyed by the ONE direction that still matches (the tile's mass is nearly
+// engulfed, connected out through only that side).
+const INNER_KEY = { up: 'innerUp', down: 'innerDown', left: 'innerLeft', right: 'innerRight' };
+
+const EDGE_ART_KEYS = new Set([
+  ...EDGE_DIRS, ...Object.values(CORNER_KEY), ...Object.values(INNER_KEY),
+]);
+
+/** True if any tile in the set changes appearance with the tide. */
+function isTideSensitive(name) {
+  return !!getTileDef(name).tide;
+}
+
+/** Data-integrity check; run once at boot and surfaced in the dev overlay. */
+function validateTiles() {
+  const problems = [];
+  for (const [name, d] of TILES) {
+    if (d.tide) {
+      if (d.tide.length !== 3) problems.push(`${name}: tide must have exactly 3 entries`);
+      for (const t of d.tide) {
+        if (!TILES.has(t)) { problems.push(`${name}: tide variant '${t}' is not registered`); continue; }
+        if (TILES.get(t).tide) problems.push(`${name}: tide variant '${t}' is itself a tide tile (nesting not allowed)`);
+      }
+      if (d.art) problems.push(`${name}: tide tiles must not define art`);
+      if (d.variants) problems.push(`${name}: tide tiles must not declare variants`);
+    } else if (d.toggle) {
+      if (d.toggle.length !== 2) problems.push(`${name}: toggle must have exactly 2 entries`);
+      for (const t of d.toggle) {
+        if (!TILES.has(t)) { problems.push(`${name}: toggle state '${t}' is not registered`); continue; }
+        if (TILES.get(t).toggle || TILES.get(t).tide) problems.push(`${name}: toggle state '${t}' is itself virtual`);
+      }
+      if (d.art) problems.push(`${name}: toggle tiles must not define art`);
+    } else if (!d.art && !d.anim) {
+      problems.push(`${name}: concrete tile has neither art nor anim`);
+    }
+    if (d.anim) {
+      for (const a of d.anim) {
+        if (!TILES.has(a) && !ANIM_ART.has(a)) problems.push(`${name}: anim frame '${a}' has no art`);
+      }
+    }
+    // GROUND VARIANTS ARE A DRAW-TIME SUBSTITUTION AND NOTHING ELSE. A variant
+    // whose flags differed from its base would make a patch of a field solid,
+    // or wet, or a pit, in a pattern nobody authored and no room grid shows —
+    // a bug that would render perfectly and be nearly impossible to find from
+    // the symptom. So the invariant is asserted here rather than trusted.
+    if (d.edgeArt) {
+      if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
+      for (const [dir, art] of Object.entries(d.edgeArt)) {
+        if (!EDGE_ART_KEYS.has(dir)) problems.push(`${name}: edgeArt key '${dir}' is not a recognised edge/corner direction`);
+        if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
+      }
+    }
+    if (d.edgeAgainst && !d.edgeArt) problems.push(`${name}: edgeAgainst with no edgeArt does nothing`);
+    if (d.variants) {
+      if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
+      if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
+      for (const v of d.variants) {
+        const t = TILES.get(v);
+        if (!t) { problems.push(`${name}: variant '${v}' is not a registered tile`); continue; }
+        if (t.variants) problems.push(`${name}: variant '${v}' declares variants of its own (no nesting)`);
+        if (t.flags !== d.flags) problems.push(`${name}: variant '${v}' has different flags`);
+        if (t.mask !== d.mask) problems.push(`${name}: variant '${v}' has a different solid mask`);
+        if (t.anim) problems.push(`${name}: variant '${v}' is animated`);
+        if (t.over !== d.over) problems.push(`${name}: variant '${v}' disagrees about 'over'`);
+      }
+    }
+  }
+  return problems;
+}
+
+// Animation frames may be pure art (registered on the tiles Sheet) without being
+// full tile definitions; data files declare them here.
+const ANIM_ART = new Set();
+function declareAnimArt(names) { for (const n of names) ANIM_ART.add(n); }
+
+// --------------------------------------------------------------------------
+// Tile transforms: what a tile becomes when acted upon.
+//
+//   registerTransforms({
+//     bush:         { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut' },
+//     dWallCracked: { bomb: 'dFloor', fx: 'boom' },
+//     torchUnlit:   { fire: 'torchLit', quiet: true },
+//   });
+//
+// Actions: 'cut' (sword), 'bomb', 'fire' (flame), 'lift' (bare hands, base
+// moveset), 'dredge' (the Dredge Line), 'ring' (the Resonance Rod).
+// `fx` names an effect to spawn, `drop` a drop table to roll, `flagged` a save
+// flag so the change persists.
+//
+// `level` is the minimum item level the action must carry. It is what lets a
+// gate name a SPECIFIC item rather than a category: the Salt Pans vane wants
+// `ring`, so only the Resonance Rod opens the region. Without a named action
+// on the transform, every "needs item X" gate
+// degrades to "needs anything in X's family".
+// --------------------------------------------------------------------------
+
+const TRANSFORMS = new Map();
+
+function registerTransforms(defs) {
+  for (const [tile, rules] of Object.entries(defs)) {
+    TRANSFORMS.set(tile, { ...(TRANSFORMS.get(tile) || {}), ...rules });
+  }
+}
+
+function transformFor(tileName, action) {
+  const r = TRANSFORMS.get(tileName);
+  if (!r) return null;
+  const to = r[action];
+  if (to === undefined) return null;
+  return {
+    to, fx: r.fx || null, drop: r.drop || null, sfx: r.sfx || null,
+    persist: !!r.persist, level: r.level || 0, deny: r.deny || null,
+  };
+}
+__exports["F"] = F;
+__exports["TILES"] = TILES;
+__exports["registerTiles"] = registerTiles;
+__exports["BLOCKS"] = BLOCKS;
+__exports["registerBlocks"] = registerBlocks;
+__exports["blockRef"] = blockRef;
+__exports["artDef"] = artDef;
+__exports["getTileDef"] = getTileDef;
+__exports["setToggleState"] = setToggleState;
+__exports["toggleState"] = toggleState;
+__exports["resolveTile"] = resolveTile;
+__exports["tileDefSolid"] = tileDefSolid;
+__exports["tileArt"] = tileArt;
+__exports["tileVariant"] = tileVariant;
+__exports["tileEdgeArt"] = tileEdgeArt;
+__exports["isTideSensitive"] = isTideSensitive;
+__exports["validateTiles"] = validateTiles;
+__exports["ANIM_ART"] = ANIM_ART;
+__exports["declareAnimArt"] = declareAnimArt;
+__exports["TRANSFORMS"] = TRANSFORMS;
+__exports["registerTransforms"] = registerTransforms;
+__exports["transformFor"] = transformFor;
+});
+
 /* ===== src/gfx/palettes.js ===== */
 __define("gfx/palettes.js", function (__exports, __require) {
 // Game Boy Color palettes. Each is exactly 4 colours, ordered lightest -> darkest.
@@ -6710,6 +7453,906 @@ __exports["Sheet"] = Sheet;
 __exports["tiles"] = tiles;
 __exports["sprites"] = sprites;
 __exports["flushAll"] = flushAll;
+});
+
+/* ===== src/core/fixed.js ===== */
+__define("core/fixed.js", function (__exports, __require) {
+// 8.8 fixed-point positions.
+//
+// Every entity's position on the playfield is an integer number of SUBPIXELS,
+// 256 to the pixel, plus a derived integer pixel position that rendering reads.
+// Nothing on a movement path uses a float coordinate, and nothing on a drawing
+// path rounds one.
+//
+// WHY, IN ORDER OF HOW MUCH IT COSTS TO GET WRONG
+//
+// 1. `| 0` truncates toward zero. `(-0.5) | 0` is 0, not -1. So a float
+//    coordinate floored with `| 0` is a pixel too far right for every negative
+//    x and a pixel too low for every negative y — and an entity sits at
+//    negative x on every single room transition, because the incoming player is
+//    placed at x = -3 and eased across the seam. The sprite jittered by a pixel
+//    at exactly the moment the whole screen was sliding, which is why nobody
+//    ever caught it by looking. `>> 8` is an arithmetic shift: it floors, and
+//    it floors the same way on both sides of zero.
+//
+// 2. A float accumulator drifts. Adding 1.35 sixty times a second for a few
+//    minutes gives a number whose low bits depend on the entire history of the
+//    run, so two runs from the same seed and the same inputs can land on
+//    different pixels. An integer accumulator cannot do that, which is what
+//    makes tools/replay.mjs able to assert on exact equality.
+//
+// 3. Subpixel accumulation is what lets a speed slower than one pixel per frame
+//    exist at all. A current pushing 0.12 px/f against an integer pixel
+//    position rounds to nothing every frame and pushes you nowhere.
+//
+// THE UNITS
+//
+//   sp     subpixels; 256 sp = 1 px
+//   sp/f   subpixels per frame at 60 Hz — the engine's native speed unit
+//   px/f   pixels per frame; what enemy and projectile DATA is written in
+//
+// `moveEntity` and the `fx`/`fy`/`fz` accumulators speak sp. Data-facing
+// helpers (the enemy AI toolkit, `fire`) convert with `sp()` at their edge, so
+// a spec can keep saying `speed: 0.45` and still move on the fixed grid.
+
+const FP_BITS = 8;
+const FP_ONE = 1 << FP_BITS;      // 256 subpixels to the pixel
+const FP_HALF = FP_ONE >> 1;
+
+/** Pixels (or px/f) -> subpixels. The one place a float may enter the grid. */
+function sp(px) {
+  return Math.round(px * FP_ONE);
+}
+
+/**
+ * Subpixels -> whole pixels, flooring on both sides of zero.
+ * Never use `| 0`, `Math.trunc` or a plain divide here: see note 1 above.
+ */
+function toPx(v) {
+  return v >> FP_BITS;
+}
+__exports["FP_BITS"] = FP_BITS;
+__exports["FP_ONE"] = FP_ONE;
+__exports["FP_HALF"] = FP_HALF;
+__exports["sp"] = sp;
+__exports["toPx"] = toPx;
+});
+
+/* ===== src/game/entity.js ===== */
+__define("game/entity.js", function (__exports, __require) {
+// Entity base class, tile collision, and the spawn registry.
+//
+// Coordinates are room-local: x in 0..159, y in 0..127. `z` is height off the
+// ground for jumps and flying enemies; it shifts the sprite up and detaches the
+// entity from ground hazards without moving its shadow.
+//
+// POSITIONS ARE 8.8 FIXED-POINT. `fx`, `fy` and `fz` are integer subpixel
+// accumulators; `x`, `y` and `z` are integer pixel positions derived from them
+// by an arithmetic shift. Rendering reads the pixel positions and rounds
+// nothing. See src/core/fixed.js for why both halves of that matter.
+//
+// Assigning `e.x = 40` still works and is still the right way to place an
+// entity — the accessor converts and the accumulator follows. What does NOT
+// work is `e.x += 0.5`: the read gives whole pixels, so a step smaller than a
+// pixel rounds away to nothing every frame and the entity never moves. Add to
+// `e.fx` instead, or go through `moveEntity`.
+
+const { TILE } = __require("core/screen.js");
+const { sprites } = __require("gfx/art.js");
+const { FP_ONE, sp, toPx } = __require("core/fixed.js");
+const { F } = __require("world/tileset.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY, SHADOW_FLICKER, PUDDLE_HOLD } = __require("data/feel.js");
+
+const ENTITY_TYPES = new Map();
+
+/** Register a spawnable entity. `factory(x, y, opts, game) -> Entity`. */
+function defineEntity(name, factory) {
+  ENTITY_TYPES.set(name, factory);
+}
+
+function spawnEntity(game, name, tx, ty, opts) {
+  const f = ENTITY_TYPES.get(name);
+  if (!f) { console.warn('[entity] unknown type:', name); return null; }
+  const e = f(tx * TILE, ty * TILE, opts || {}, game);
+  if (e) { e.type = name; game.addEntity(e); }
+  return e;
+}
+
+const DIRS = ['down', 'up', 'left', 'right'];
+const DIR_VEC = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
+
+function dirFromVec(dx, dy) {
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'left' : 'right';
+  return dy < 0 ? 'up' : 'down';
+}
+
+function dirTo(a, b) {
+  return dirFromVec((b.x + b.w / 2) - (a.x + a.w / 2), (b.y + b.h / 2) - (a.y + a.h / 2));
+}
+
+let nextId = 1;
+// A puff, a splash or a twinkle draws its id from a count of its own (S218).
+// An enemy's rhythm is a hash of its id (`every`, enemy.js), so while effects
+// shared the count, taking a landing's dust away moved every enemy made after
+// it and the playthrough lost the Bogwater Sanctum's boss.
+let nextCosmeticId = -1;
+
+/**
+ * An enemy's collision area — what the sword must reach and what hurts Link
+ * when it touches his own (playerHurtRect): a box of ENEMY_HURT_RADIUS either
+ * way of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
+ * is the footprint it walks on and sits two pixels low. An enemy whose spec
+ * declares its own `hurtBox` keeps it; anything bigger than one cell with
+ * none (a boss) falls back to its `hb`.
+ */
+function enemyHurtRect(e) {
+  // A hoverer (keese, bubble, wisp) is drawn `spec.z` pixels up, and the box
+  // goes with the sprite: the cartridge's keese and bubble fly at z 0, so their
+  // box is where they are drawn, and ours are drawn higher.
+  //
+  // Anything ABOVE that — a zol, a tektite, a stalfos in the air — keeps its
+  // box on the ground under it, and touches nothing once it is ENEMY_CONTACT_Z
+  // or more up: the cartridge compares heights before it compares boxes, for
+  // Link and for his sword alike (code/collisionEffects.s, "Check if Z
+  // positions are within 7 pixels"). S151; the box used to rise with the jump.
+  const hover = (e.spec && e.spec.z) || 0;
+  if (e.z - hover >= ENEMY_CONTACT_Z) return { x: -1e4, y: -1e4, w: 0, h: 0 };
+  const lift = hover > 0 && e.z > 0 ? Math.min(e.z, hover) : 0;
+  const hb = e.spec && e.spec.hurtBox;
+  if (hb) return { x: e.x + hb.x, y: e.y + hb.y - lift, w: hb.w, h: hb.h };
+  if (e.w > 16 || e.h > 16) return e.rect();
+  const r = ENEMY_HURT_RADIUS;
+  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r - lift, w: r * 2, h: r * 2 };
+}
+
+/** How long a hit of `knock` pixels leaves an ordinary enemy invulnerable. */
+function hitInvulnFrames(knock) {
+  if (!knock) return ENEMY_INVULN_FRAMES;
+  for (const [px, f] of ENEMY_HIT_TIERS) if (knock <= px) return f;
+  return ENEMY_HIT_TIERS[ENEMY_HIT_TIERS.length - 1][1];
+}
+
+/**
+ * The per-frame step, in sp/f, of a knockback at `speed`: away from `from`'s
+ * middle when there is one, snapped to one of 32 angles as the cartridge's
+ * angles are; else along `dir`. Null if there is no direction at all.
+ */
+function knockVector(e, dir, from, speed) {
+  if (from) {
+    const dx = e.cx - from.cx, dy = e.cy - from.cy;
+    if (dx || dy) {
+      const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 16)) * (Math.PI / 16);
+      return [Math.round(Math.cos(a) * speed), Math.round(Math.sin(a) * speed)];
+    }
+  }
+  const v = dir && DIR_VEC[dir];
+  if (!v) return null;
+  return [v[0] * speed, v[1] * speed];
+}
+
+class Entity {
+  constructor(x, y, opts = {}) {
+    this.id = opts.cosmetic ? nextCosmeticId-- : nextId++;
+    this.fx = sp(x); this.fy = sp(y); this.fz = 0;
+    this.w = 16; this.h = 16;
+    this.vx = 0; this.vy = 0;      // sp/f
+    this.vz = 0;                   // sp/f
+    this.dir = 'down';
+    this.frame = 0;          // animation counter, ticks each update
+    this.hp = 1; this.maxHp = 1;
+    this.damage = 0;         // contact damage dealt to the player, in half-hearts
+    this.invuln = 0;
+    this.flicker = 0;
+    this.stun = 0;
+    this.dead = false;
+    this.remove = false;
+    this.solid = false;      // blocks the player like a pushable block
+    this.pushable = false;
+    this.isEnemy = false;
+    this.isBoss = false;
+    this.isProjectile = false;
+    this.isDrop = false;
+    this.isEffect = false;
+    this.harmless = false;   // never damages the player (NPCs, drops)
+    this.grounded = true;    // affected by pits/water
+    this.flying = false;
+    this.knockTime = 0;
+    this.knockX = 0; this.knockY = 0;
+    this.hb = { x: 2, y: 4, w: 12, h: 11 };   // hitbox inset within w/h
+    this.shadow = true;
+    // Gets Seasons' splash at its feet when it stands in shallow water
+    // (drawPuddle). Set by the things that walk: enemies on foot, townsfolk.
+    this.wades = false;
+    this.depth = 0;          // draw-order tiebreak
+    // The tide level this entity genuinely exists at, or null for "always".
+    // A phased-out entity is not drawn, not dangerous and not hittable until
+    // the Brineglass Lens is raised. See Game.updatePhaseShift and
+    // docs/ITEMS.md.
+    this.phase = opts.phase != null ? opts.phase : null;
+    this.opts = opts;
+    this.spawnTx = Math.floor(x / TILE);
+    this.spawnTy = Math.floor(y / TILE);
+  }
+
+  // The pixel position is derived, never stored: anything may add to `fx`
+  // directly, and a cached copy would go stale the moment something did.
+  get x() { return toPx(this.fx); }
+  set x(v) { this.fx = sp(v); }
+  get y() { return toPx(this.fy); }
+  set y(v) { this.fy = sp(v); }
+  get z() { return toPx(this.fz); }
+  set z(v) { this.fz = sp(v); }
+
+  get cx() { return this.x + this.w / 2; }
+  get cy() { return this.y + this.h / 2; }
+
+  rect() {
+    return { x: this.x + this.hb.x, y: this.y + this.hb.y, w: this.hb.w, h: this.hb.h };
+  }
+
+  /**
+   * The box this thing HURTS and IS HURT with, as opposed to `rect()`, the
+   * footprint it walks on. The same for most entities; an enemy, Link and an
+   * enemy shot use the cartridge's collision radii (enemyHurtRect,
+   * Player.contactRect, Projectile.contactRect). Contact damage asks this, and
+   * so does every tool that models contact — never a copy of it.
+   */
+  contactRect() { return this.rect(); }
+
+  overlaps(o) {
+    const a = this.rect(), b = o.rect();
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  }
+
+  distTo(o) {
+    const dx = this.cx - o.cx, dy = this.cy - o.cy;
+    return Math.hypot(dx, dy);
+  }
+
+  /**
+   * Take damage. `knock` is a DISTANCE IN PIXELS, not a speed; the target is
+   * thrown it at ENEMY_KNOCK_SPEED (2 px a frame, the cartridge's) and stops
+   * early if something stops it. `from`, when given, is what struck it — the
+   * throw goes straight away from its middle, as Seasons' does, on the nearest
+   * of the cartridge's 32 angles. Without one it goes along `dir`, the
+   * direction the hit travelled.
+   *
+   * How long the target is then invulnerable (and flashing) follows the hit's
+   * strength: ENEMY_HIT_TIERS.
+   */
+  hurt(game, dmg, dir, knock = KNOCK_DEFAULT, from = null) {
+    if (this.invuln > 0 || this.dead) return false;
+    this.hp -= dmg;
+    this.invuln = hitInvulnFrames(knock);
+    this.flicker = this.invuln;
+    const v = knockVector(this, dir, from, ENEMY_KNOCK_SPEED);
+    if (knock && v) {
+      this.knockX = v[0]; this.knockY = v[1];
+      this.knockTime = Math.max(1, Math.round(knock / (ENEMY_KNOCK_SPEED / 256)));
+    }
+    // The freeze goes on the hit CONNECTING, not on the sword specifically:
+    // this is the one funnel every damage source in the game passes through,
+    // so a bomb, a thrown pot and a swing all land with the same weight.
+    // Longest-wins inside `freeze` keeps a four-enemy explosion to one impact.
+    if (this.isEnemy) game.freeze(HITSTOP_HIT_FRAMES);
+    if (this.hp <= 0) { this.die(game); return true; }
+    game.audio.sfx('enemyHit');
+    if (this.onHurt) this.onHurt(game);
+    return true;
+  }
+
+  die(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    if (this.onDie) this.onDie(game);
+    game.spawnEffect('puff', this.cx - 8, this.cy - 8 - this.z);
+    game.audio.sfx(this.isBoss ? 'bossDie' : 'enemyDie');
+    if (this.isEnemy) game.onEnemyDefeated(this);
+  }
+
+  update(game) { }
+
+  draw(ctx, game, ox, oy) {
+    // A struck enemy FLASHES, the way the Oracles draw it: on the off beat it
+    // is drawn in `hitflash` instead of being hidden, so it never leaves the
+    // screen while it is being hit. Anything else still blinks out.
+    let pal = this.pal;
+    if (this.flicker > 0 && Math.floor(this.flicker / ENEMY_HIT_FLASH_BEAT) % 2 === 0) {
+      if (!this.isEnemy) return;
+      pal = 'hitflash';
+    }
+    const name = this.spriteName ? this.spriteName(game) : this.sprite;
+    if (!name) return;
+    // `shakeX`: a whole-pixel shiver an enemy's ai sets (the flipped spiked
+    // beetle's last second); drawing only, the entity does not move.
+    const off = this.drawOffset ? this.drawOffset(game, name) : null;
+    sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0) + (off ? off[0] : 0),
+      oy + this.y - this.z + (off ? off[1] : 0), {
+      pal, flipX: this.flipX,
+    });
+  }
+
+  // Seasons' own shadow (S219, terrainEffects.s shadowAnimation), drawn on
+  // alternate frames, each thing on its own beat (_drawObjectTerrainEffects
+  // @inAir) — the Game Boy cannot draw half a shadow, so it flickers one. A
+  // 32x32 cell centred on the middle of the 16x16 spot.
+  drawShadow(ctx, game, ox, oy) {
+    if (!this.shadow || this.z <= 1) return;
+    if ((game.frame + this.id) % SHADOW_FLICKER) return;
+    sprites.draw(ctx, 'fx_shadow0', ox + this.x - 8, oy + this.y - 8);
+  }
+
+  // THE SPLASH AT ITS FEET in shallow water (S220): Seasons draws it under
+  // every object that asks for terrain effects (_drawObjectTerrainEffects
+  // @walkingInPuddle) — its enemies on foot and its townsfolk as well as
+  // Link, all in step on the one counter. Where the thing's own feet are
+  // (groundFlags), and only standing: a hop or a bounce is above it.
+  //
+  // And THE GRASS AT ITS FEET in tall grass (S222, @walkingInGrass): two
+  // blades over the feet, the picture picked by bit 2 of where it stands (its
+  // x xor y), so it sways as it walks and holds still when it stops.
+  drawPuddle(ctx, game, ox, oy) {
+    if (!this.wades || this.z > 1 || this.dead) return;
+    const f = groundFlags(game, this);
+    const x = ox + this.x + ((this.w - 16) >> 1) - 8, y = oy + this.y + this.h - 24;
+    if (f & F.TALLGRASS) {
+      sprites.draw(ctx, 'fx_grass' + grassPicture(this.x + (this.w >> 1), this.y + this.h - 8), x, y);
+      return;
+    }
+    if (!(f & F.WATER) || (f & F.DEEP)) return;
+    const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
+    sprites.draw(ctx, 'fx_puddle' + k, x, y);
+  }
+}
+
+// --------------------------------------------------------------------------
+// Tile collision
+// --------------------------------------------------------------------------
+
+/**
+ * Try to move an entity by (sdx, sdy) SUBPIXELS against the room's solid tiles.
+ * Axis-separated so sliding along walls works, with a small corner-nudge so
+ * the player doesn't snag on tile seams (matches how the GBC games felt).
+ * Returns { hitX, hitY }.
+ *
+ * The deltas are subpixels, not pixels — 256 to the pixel. A caller holding a
+ * px/f speed converts it with `sp()`; the enemy AI toolkit does this once at
+ * its edge so enemy data can go on being written in px/f.
+ *
+ * A step that does not change the whole-pixel position still lands: the
+ * accumulator takes it, `canOccupy` is asked about the same pixel it already
+ * occupies and says yes. That is how a 0.12 px/f current pushes at all.
+ */
+function moveEntity(game, e, sdx, sdy, caps) {
+  const c = caps || e.caps || null;
+  let hitX = false, hitY = false;
+  // THE CORNER NUDGE IS FOR TERRAIN, AND FOR A STRAIGHT PUSH. Seasons slides
+  // Link round the corner of a wall he walks into square-on; it does not
+  // slide him round a person, and a diagonal press already slides along a
+  // wall by moving on its free axis. Nudging round a solid townsperson on a
+  // diagonal press walked Link along its side and off the screen beside an
+  // exit (Sennit, Sandpiper Row; S147's note).
+  const straight = !(sdx && sdy);
+
+  if (sdx !== 0) {
+    const nfx = e.fx + sdx;
+    const nx = toPx(nfx);
+    if (canOccupy(game, e, nx, e.y, c)) {
+      e.fx = nfx;
+    } else {
+      // corner nudge: allow the move if shifting a pixel on the other axis frees it
+      let ok = false;
+      const nudge = straight && !canOccupy(game, e, nx, e.y, c, true) ? [e.fy - FP_ONE, e.fy + FP_ONE] : [];
+      for (const nfy of nudge) {
+        if (canOccupy(game, e, nx, toPx(nfy), c)) { e.fx = nfx; e.fy = nfy; ok = true; break; }
+      }
+      if (!ok) hitX = true;
+    }
+  }
+  if (sdy !== 0) {
+    const nfy = e.fy + sdy;
+    const ny = toPx(nfy);
+    if (canOccupy(game, e, e.x, ny, c)) {
+      e.fy = nfy;
+    } else {
+      let ok = false;
+      const nudge = straight && !canOccupy(game, e, e.x, ny, c, true) ? [e.fx - FP_ONE, e.fx + FP_ONE] : [];
+      for (const nfx of nudge) {
+        if (canOccupy(game, e, toPx(nfx), ny, c)) { e.fy = nfy; e.fx = nfx; ok = true; break; }
+      }
+      if (!ok) hitY = true;
+    }
+  }
+  return { hitX, hitY };
+}
+
+/** Would the entity's hitbox at (x, y) be free of solid tiles? */
+function canOccupy(game, e, x, y, caps, terrainOnly = false) {
+  const room = game.room;
+  if (!room) return false;
+  const r = { x: x + e.hb.x, y: y + e.hb.y, w: e.hb.w, h: e.hb.h };
+  // Flying entities and mid-jump entities ignore ground obstructions but not walls.
+  const airborne = (e.flying || e.z > 2);
+  // AN ENTITY'S OWN `caps` ARE THE FALLBACK, and this is the whole of why the
+  // sea had no living thing in it. `moveEntity` has always read `e.caps`; this
+  // read `e.swimming`, which NOTHING IN THE GAME EVER SET. So one function said
+  // an anglerfry could swim and the other said it could not, and the one that
+  // said no is the one every bare call reaches — every aquatic enemy in the
+  // world sat frozen on its spawn tile, unable to leave deep water, for the
+  // life of the project. Nothing could see it: they spawn, they update, they
+  // draw, they animate, they hurt you if you touch them, and check-motion's
+  // "swimmers stay off the 8px lattice" is satisfied perfectly by not moving.
+  //
+  // `jumping` is OR-ed rather than taken, so an entity that is off the ground
+  // clears ground obstructions whatever its own caps say.
+  const cps = caps || (e.caps
+    ? { ...e.caps, jumping: e.caps.jumping || airborne }
+    : { jumping: airborne, swim: false, cutting: false });
+  const x0 = r.x, x1 = r.x + r.w - 1, y0 = r.y, y1 = r.y + r.h - 1;
+  const xs = sampleAxis(x0, x1), ys = sampleAxis(y0, y1);
+  // Enemies additionally refuse terrain they will not walk on (water, pits, lava),
+  // so they path around hazards instead of shuffling into them.
+  const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
+  for (const py of ys) {
+    for (const px of xs) {
+      if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
+      // A BOSS KEEPS TO ITS ARENA (S192). In Seasons a boss or miniboss never
+      // follows Link into a doorway: the ring of tiles round a dungeon room is
+      // wall to it. Ours could, and Bogmaw sat on Link in the hall's west door
+      // until he died there. Only in a room with a wall ring, so an outdoor
+      // fight keeps the whole screen.
+      if (e._bossClass && room.cw === 15 && !airborne
+          && (px < TILE || py < TILE || px >= room.pw - TILE || py >= room.ph - TILE)) return false;
+      if (room.solidAt(px, py, game.tide, cps)) return false;
+      if (avoid) {
+        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+        if (room.flagsAt(tx, ty, game.tide) & avoid) return false;
+      }
+      // A townsperson keeps out of a tree's root mound (S168): see
+      // `Room.quadRootCover`. Walkable for Link, never somewhere to stand.
+      if (e.avoidRoots && !airborne
+          && room.quadRootCover(Math.floor(px / TILE), Math.floor(py / TILE), game.tide)) return false;
+    }
+  }
+  if (!airborne && !terrainOnly) {
+    for (const o of game.entities) {
+      // A solid thing in the air — held overhead, on a line, mid-throw — is
+      // not in anyone's way (S189: an ice chunk walled Link in from his own
+      // hands).
+      if (o === e || !o.solid || o.dead || o.carried || o.attached || o.flight) continue;
+      const ob = o.rect();
+      if (o.yieldsWhenInside) {
+        const er = { x: e.x + e.hb.x, y: e.y + e.hb.y, w: e.hb.w, h: e.hb.h };
+        if (er.x < ob.x + ob.w && ob.x < er.x + er.w && er.y < ob.y + ob.h && ob.y < er.y + er.h) continue;
+      }
+      if (x0 <= ob.x + ob.w - 1 && ob.x <= x1 && y0 <= ob.y + ob.h - 1 && ob.y <= y1) return false;
+    }
+  }
+  return true;
+}
+
+// Sample the hitbox edges plus interior points at 8px intervals, so a hitbox
+// never tunnels through a thin obstruction.
+function sampleAxis(a, b) {
+  const out = [a];
+  for (let v = a + 8; v < b; v += 8) out.push(v);
+  out.push(b);
+  return out;
+}
+
+/** Tile flags under an entity's feet (its hitbox centre-bottom). */
+/**
+ * Is this object over a hole? The cartridge's own test
+ * (objectCheckIsOverHazard): the one tile HOLE_FOOT_DY below its centre.
+ * Returns that tile, or null. Height is the caller's to ask — the cartridge's
+ * objectCheckIsOnHazard says no to anything in the air.
+ */
+function overHole(game, e) {
+  const room = game.room;
+  if (!room) return null;
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + HOLE_FOOT_DY) / TILE);
+  if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, game.tide) & F.PIT)) return null;
+  return { tx, ty };
+}
+
+/**
+ * Gone down a hole (S185): replaced by INTERAC_FALLDOWNHOLE, Seasons' ball
+ * that shrinks as it slides to the hole's middle, with SND_FALLINHOLE
+ * (objectReplaceWithFallingDownHoleInteraction). Nothing is dropped and
+ * nothing breaks: it is simply gone.
+ */
+function dropIntoHole(game, e) {
+  e.remove = true;
+  game.spawnEffect('hole', e.cx - 8, e.cy - 8);
+  game.audio.sfx('fallInHole');
+}
+
+/** Which of the two pictures of the grass at the feet (S222): Seasons'
+ *  _drawObjectTerrainEffects tests bit 2 of the object's x xor y. */
+function grassPicture(x, y) {
+  return ((Math.floor(x) ^ Math.floor(y)) >> 2) & 1;
+}
+
+function groundFlags(game, e) {
+  const room = game.room;
+  if (!room) return 0;
+  const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
+  const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
+  const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+  return room.flagsAt(tx, ty, game.tide);
+}
+
+/**
+ * Is any part of this entity's hitbox over deep water?
+ *
+ * `groundFlags` asks about ONE point — the hitbox's centre-bottom — which is
+ * the right question for "what am I standing in" and the wrong one for "have I
+ * met the water yet". The Kelp-Soled Cleats' dive needs the second: a player
+ * who has set the soles to drink is promised the floor of the next water he
+ * meets, and at the mouth of a torrent running against him he never gets his
+ * middle over it (see Player.updateWater). Samples the hitbox the same way
+ * `canOccupy` does, so the two never disagree about where the water starts.
+ */
+function touchingDeep(game, e) {
+  const room = game.room;
+  if (!room) return false;
+  const r = e.rect();
+  const xs = sampleAxis(r.x, r.x + r.w - 1), ys = sampleAxis(r.y, r.y + r.h - 1);
+  for (const py of ys) {
+    for (const px of xs) {
+      const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+      if (!room.inBounds(tx, ty)) continue;
+      if (room.flagsAt(tx, ty, game.tide) & F.DEEP) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * THE BELT UNDER A BODY (S186), as Seasons asks it: the tile BELT_FOOT_DY
+ * below its centre (ecom_updateMovingPlatform's objectGetRelativeTile $05),
+ * at the sea there. Returns the belt's direction, or null — a drowned belt
+ * is water, and water has no `belt`.
+ */
+function beltUnder(game, e, footDy = BELT_FOOT_DY) {
+  const room = game.room;
+  if (!room) return null;
+  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + footDy) / TILE);
+  if (!room.inBounds(tx, ty)) return null;
+  return room.tile(tx, ty, game.tide).belt || null;
+}
+
+function groundTile(game, e) {
+  const room = game.room;
+  const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
+  const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
+  return { tx: Math.floor(px / TILE), ty: Math.floor(py / TILE) };
+}
+
+/**
+ * The tide level under an entity's own feet, 0-2.
+ *
+ * This is what anything reading "the tide" from inside the world should ask
+ * for — an enemy, a boss, a raft. `game.tide.level` is the BASE, which is a
+ * different question and is only the right one for the HUD, the music and the
+ * save. Since the Anchor, the two can disagree inside a single room.
+ */
+function tideAt(game, e) {
+  const { tx, ty } = groundTile(game, e);
+  return game.tide.levelAt(tx, ty, game.room);
+}
+
+/**
+ * Can this entity STAND on that tile — not merely move through it?
+ *
+ * `canOccupy` answers a narrower question. A pit is not solid, so the engine
+ * lets a walker step into one and then punishes him for it; deep water, lava
+ * and a ledge's jumpable face are all the same shape of answer. This is the
+ * "somewhere to put your feet" rule, and it lives here rather than in each
+ * caller because a caller with its own copy of it is the private-model
+ * mistake this project keeps paying for (CLAUDE.md's collision rule).
+ *
+ * Returns the pixel position to stand at, or null.
+ */
+function standAt(game, e, tx, ty, o = {}) {
+  if (tx < 0 || ty < 0 || tx >= game.room.tw || ty >= game.room.th) return null;
+  const f = game.room.flagsAt(tx, ty, game.tide);
+  if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) return null;
+  const px = tx * TILE + (TILE - e.w) / 2;
+  const py = ty * TILE + (TILE - e.h) / 2;
+  if (!canOccupy(game, e, px, py, o.caps || { jumping: false, swim: false })) return null;
+  return { x: px, y: py };
+}
+
+/** Nearest tile the given entity can legally stand on. Used after a tide change. */
+function findSafeTile(game, e, maxRadius = 6) {
+  const { tx, ty } = groundTile(game, e);
+  for (let r = 0; r <= maxRadius; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const at = standAt(game, e, tx + dx, ty + dy);
+        if (at) return at;
+      }
+    }
+  }
+  return null;
+}
+__exports["ENTITY_TYPES"] = ENTITY_TYPES;
+__exports["defineEntity"] = defineEntity;
+__exports["spawnEntity"] = spawnEntity;
+__exports["DIRS"] = DIRS;
+__exports["DIR_VEC"] = DIR_VEC;
+__exports["dirFromVec"] = dirFromVec;
+__exports["dirTo"] = dirTo;
+__exports["enemyHurtRect"] = enemyHurtRect;
+__exports["hitInvulnFrames"] = hitInvulnFrames;
+__exports["knockVector"] = knockVector;
+__exports["Entity"] = Entity;
+__exports["moveEntity"] = moveEntity;
+__exports["canOccupy"] = canOccupy;
+__exports["overHole"] = overHole;
+__exports["dropIntoHole"] = dropIntoHole;
+__exports["grassPicture"] = grassPicture;
+__exports["groundFlags"] = groundFlags;
+__exports["touchingDeep"] = touchingDeep;
+__exports["beltUnder"] = beltUnder;
+__exports["groundTile"] = groundTile;
+__exports["tideAt"] = tideAt;
+__exports["standAt"] = standAt;
+__exports["findSafeTile"] = findSafeTile;
+});
+
+/* ===== src/game/sideview.js ===== */
+__define("game/sideview.js", function (__exports, __require) {
+// SIDE-VIEW PASSAGES (S241, docs/briefs/SIDE-VIEW.md): Link's movement in a
+// room that declares `side: true`, read from the cartridges' own
+// link.s (oracles-disasm, object_code/common/specialObjects/):
+//
+//   linkState01_sidescroll       on the ground he moves left and right only;
+//                                 in water he swims; leaving the water at the
+//                                 top he hops (SV_HOP)
+//   linkUpdateInAir_sidescroll    off the ground and off a ladder he falls,
+//                                 gaining SV_GRAVITY a frame to SV_FALL_MAX;
+//                                 pressing UP over a ladder catches it
+//   a ladder ($18) is climbed in all four directions and nothing falls on one;
+//   a ladder's top ($19) is also stood on, and Link's middle never rises above
+//   y&15 = 9 standing on one (the cap after linkUpdateMovement)
+//
+// Our addition is the tide: the waterline is ordinary tide tiles (the side
+// legends' digits), so the conch and the Anchor move it. Without the Cleats
+// water is drowned in, as Ages' side view without flippers is
+// (linkUpdateSwimming_sidescroll @drown): Link is washed back to the last
+// place he stood. With them he swims; floor mode sinks him to the bed.
+//
+// Collision is the engine's own: `moveEntity` / `canOccupy` against the
+// room's tiles, with Link's side-view box. Nothing here decides what is solid.
+
+const { F } = __require("world/tileset.js");
+const { TILE } = __require("core/screen.js");
+const { moveEntity, canOccupy } = __require("game/entity.js");
+const { WALK_SPEED, SWIM_SPEED, SINK_SPEED, SV_GRAVITY, SV_FALL_MAX, SV_HOP } = __require("data/feel.js");
+
+/** Link's box in side view, from his sprite's top-left: the cartridge's
+ *  calculateAdjacentWallsBitset @sidescrollOffsets test points, -3..+7 down
+ *  and -5..+4 across his middle (his middle being 8,8 of the sprite), so his
+ *  head counts as well as his feet. */
+const SIDE_HB = { x: 3, y: 5, w: 10, h: 11 };
+/** Standing on a ladder's top his middle is at 9 in the tile above it, which
+ *  puts the bottom of SIDE_HB on the ladder top's top edge. */
+const LADDER_TOP_STAND = 9;
+
+function isSideRoom(game) {
+  return !!(game.room && game.room.def && game.room.def.side);
+}
+
+function tileAtPx(game, px, py) {
+  return game.room.tile(Math.floor(px / TILE), Math.floor(py / TILE), game.tide);
+}
+
+/** The tile at Link's middle, the cartridge's wActiveTile. */
+function activeTile(game, p) { return tileAtPx(game, p.x + 8, p.y + 8); }
+/** The tile 8 px under his middle, the cartridge's wLastActiveTileType. */
+function underTile(game, p) { return tileAtPx(game, p.x + 8, p.y + 16); }
+
+const isLadder = d => d.sv === 'ladder' || d.sv === 'ladderTop';
+
+/** Is he standing: something solid, or a ladder's top, right under his box? */
+function sideGrounded(game, p, climbing = false) {
+  const r = p.hb;
+  const y = p.y + r.y + r.h;              // the first row of pixels under him
+  for (const x of [p.x + r.x, p.x + r.x + r.w - 1]) {
+    const d = tileAtPx(game, x, y);
+    if (d.flags & (F.SOLID | F.VOID)) return true;
+  }
+  if (!climbing) {
+    const d = tileAtPx(game, p.x + 8, y);
+    if (d.sv === 'ladderTop' && (y % TILE) === 0) return true;
+  }
+  return false;
+}
+
+/** One frame of Link in a side-view room. Called from Player.update in place
+ *  of the top-down terrain, movement, jump and hazard steps. */
+function updateSideView(p, game) {
+  const inp = game.input;
+  const dx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
+  const dyIn = (inp.down('down') ? 1 : 0) - (inp.down('up') ? 1 : 0);
+  if (dx) p.dir = dx < 0 ? 'left' : 'right';
+
+  const here = activeTile(game, p);
+  const wet = !!(here.flags & F.DEEP);
+  const wasWet = p.inDeep;
+  p.inShallow = false;
+
+  // ------------------------------------------------------------- water
+  if (wet) {
+    if (!wasWet) {
+      game.audio.sfx('splash');
+      game.spawnEffect('splash', p.x, p.y + 2);
+      p.svFall = 0;
+    }
+    p.inDeep = true;
+    if (p._cleats <= 0) { p.beginWash(game); return; }
+    if (!wasWet && p.cleatMode === 'sink' && !p.underwater) p.underwater = true;
+    if (p.underwater) {
+      // FLOOR MODE: weighted, he walks the bed and climbs nothing.
+      p.svFall = Math.min(SV_FALL_MAX >> 2, (p.svFall || 0) + SV_GRAVITY);
+      const res = move(game, p, dx * SINK_SPEED, p.svFall);
+      if (res.hitY) p.svFall = 0;
+      p._lastDx = dx; p._lastDy = 0;
+      if (dx) p.animT++;
+      return;
+    }
+    // UP on a ladder through the surface climbs out of the water, with no
+    // hop (@notInWater skips it for an underwater ladder).
+    if (here.sv === 'ladder' && dyIn < 0) {
+      p.svFall = 0; p.svClimb = true; p.dir = 'up';
+      move(game, p, 0, -WALK_SPEED);
+      p._lastDx = 0; p._lastDy = dyIn; p.animT++;
+      return;
+    }
+    // Swimming: every direction, facing left or right
+    // (linkUpdateSwimming_sidescroll @swimmingState2).
+    p.svFall = 0; p.svClimb = false;
+    move(game, p, dx * SWIM_SPEED, dyIn * SWIM_SPEED);
+    p._lastDx = dx; p._lastDy = dyIn;
+    p.animT++;
+    return;
+  }
+
+  // ------------------------------------------------- out of the water
+  if (wasWet) {
+    p.inDeep = false;
+    p.underwater = false;
+    game.spawnEffect('splash', p.x, p.y + 2);
+    game.audio.sfx('splash', { pitch: 1.2, vol: 0.8 });
+    // The hop out (@notInWater), unless he climbed out up a ladder.
+    if (!isLadder(underTile(game, p)) && !isLadder(here)) p.svFall = -SV_HOP;
+  }
+
+  const onLadder = isLadder(here) || isLadder(underTile(game, p));
+  if (onLadder && (dyIn || p.svClimb) && !(p.svFall < 0)) {
+    // CLIMBING: four ways at the walking pace, and nothing falls.
+    p.svClimb = true;
+    p.svFall = 0;
+    const res = move(game, p, dx * WALK_SPEED, dyIn * WALK_SPEED);
+    // Off the top of the ladder: stand on its top.
+    const now = activeTile(game, p);
+    if (!isLadder(now) && underTile(game, p).sv === 'ladderTop') {
+      const row = Math.floor((p.y + 16) / TILE);
+      p.y = Math.min(p.y, row * TILE - 16 + (LADDER_TOP_STAND - 8));
+      p.svClimb = false;
+    }
+    // Off the foot of it onto ground: walking again.
+    if (dyIn > 0 && res.hitY) p.svClimb = false;
+    if (!isLadder(now) && !isLadder(underTile(game, p))) p.svClimb = false;
+    if (dyIn) p.dir = 'up';
+    p._lastDx = dx; p._lastDy = dyIn;
+    if (dx || dyIn) p.animT++;
+    return;
+  }
+  p.svClimb = false;
+
+  // Standing on a ladder's top, DOWN climbs down it.
+  if (dyIn > 0 && sideGrounded(game, p) && tileAtPx(game, p.x + 8, p.y + 16).sv === 'ladderTop') {
+    p.svClimb = true;
+    move(game, p, 0, WALK_SPEED);
+    p.dir = 'up';
+    return;
+  }
+
+  // ------------------------------------------------------- walking / air
+  if (dx) move(game, p, dx * WALK_SPEED, 0);
+  p._lastDx = dx; p._lastDy = 0;
+  if (dx) p.animT++;
+
+  if (sideGrounded(game, p) && !(p.svFall < 0)) {
+    p.svFall = 0;
+    rememberSafe(game, p);
+  } else {
+    // UP over a ladder catches it (@positiveSpeedZ).
+    if (dyIn < 0 && isLadder(activeTile(game, p)) && p.svFall >= 0) { p.svClimb = true; p.svFall = 0; return; }
+    p.svFall = Math.min(SV_FALL_MAX, (p.svFall || 0) + SV_GRAVITY);
+    fall(game, p);
+  }
+
+  // Off the bottom of the room: Seasons' hole tile is a death line
+  // (TILETYPE_SS_HOLE, respawnLink with SND_DAMAGE_LINK).
+  if (p.y + 8 >= game.room.ph) { p.beginWash(game); return; }
+
+  // Spikes where he stands (dealSpikeDamageToLink).
+  if ((activeTile(game, p).flags & F.HAZARD) && p.invuln <= 0) {
+    p.takeDamage(game, 2, null, { noKnockDir: true });
+  }
+}
+
+/** Apply this frame's fall, landing on solid ground or a ladder's top. */
+function fall(game, p) {
+  const v = p.svFall;
+  if (v <= 0) {
+    const res = move(game, p, 0, v);
+    if (res.hitY) p.svFall = 0;           // the ceiling (@applyGravity)
+    return;
+  }
+  // Down, a pixel at a time so a ladder's top (not solid) can catch him.
+  let left = v;
+  while (left > 0) {
+    const step = Math.min(256, left);
+    const before = p.y;
+    const res = move(game, p, 0, step);
+    left -= step;
+    if (res.hitY) { p.svFall = 0; return; }
+    const feet = p.y + p.hb.y + p.hb.h;
+    const crossed = Math.floor((before + p.hb.y + p.hb.h - 1) / TILE) !== Math.floor((feet - 1) / TILE);
+    if (crossed && (feet % TILE) <= 2 && tileAtPx(game, p.x + 8, feet).sv === 'ladderTop') {
+      const row = Math.floor(feet / TILE);
+      p.y = row * TILE - p.hb.y - p.hb.h;
+      p.svFall = 0;
+      return;
+    }
+  }
+}
+
+/** The engine's mover, with water never in the way: in side view he falls
+ *  or walks INTO water and the water decides (drowned without the Cleats),
+ *  where top-down a non-swimmer is stopped at the bank. */
+function move(game, p, dx, dy) {
+  return moveEntity(game, p, dx, dy, { ...p.caps, swim: true });
+}
+
+/** Is the tile at his middle water at this sea? */
+function sideWet(game, p) { return !!(activeTile(game, p).flags & F.DEEP); }
+
+/** Put him on a ladder as climbing if he is on one (arriving, or washed back
+ *  to the ladder he came in on), so he holds there and does not fall. */
+function settleSideView(game, p) {
+  const on = isLadder(activeTile(game, p)) || isLadder(underTile(game, p));
+  p.svClimb = on && !sideGrounded(game, p, true);
+  if (p.svClimb) p.dir = 'up';
+}
+
+/** Into a side-view room (Game.enterMap, S242): where he arrives is where the
+ *  passage washes him back to, and on the ladder he is climbing. */
+function arriveSideView(game, p) {
+  if (!isSideRoom(game)) { p.svEntry = null; p.svClimb = false; p.svFall = 0; return; }
+  p.svEntry = { x: p.x, y: p.y };
+  p.hb = SIDE_HB;
+  p.svFall = 0; p.inDeep = false; p.underwater = false;
+  settleSideView(game, p);
+}
+
+function rememberSafe(game, p) {
+  if (canOccupy(game, p, p.x, p.y)) { p.lastSafe.x = p.x; p.lastSafe.y = p.y; }
+}
+__exports["SIDE_HB"] = SIDE_HB;
+__exports["isSideRoom"] = isSideRoom;
+__exports["sideGrounded"] = sideGrounded;
+__exports["updateSideView"] = updateSideView;
+__exports["sideWet"] = sideWet;
+__exports["settleSideView"] = settleSideView;
+__exports["arriveSideView"] = arriveSideView;
 });
 
 /* ===== src/gfx/font.js ===== */
@@ -11263,749 +12906,6 @@ __exports["drawScreen"] = drawScreen;
 __exports["drawObject"] = drawObject;
 });
 
-/* ===== src/world/tileset.js ===== */
-__define("world/tileset.js", function (__exports, __require) {
-// Tile registry.
-//
-// TILE DEFINITION FORMAT (contract for tile data files):
-//
-//   'grass': {
-//     art: `...16 rows of 16 chars...`,   // see gfx/art.js for the pixel grammar
-//     pal: 'grass',                       // palette name from gfx/palettes.js
-//     flags: 0,                           // bitwise OR of F.* below
-//     mask: 15,                            // sub-tile solid quadrants, only if SOLID
-//     tide: ['sandLow','sandMid','waterDeep'],  // variant per tide level 0/1/2
-//     anim: ['water0','water1','water2','water1'], animRate: 10,
-//     over: true,                          // draw above entities (treetops, arches)
-//     push: [dx, dy],                      // water current, pixels/frame
-//     belt: [dx, dy],                      // a conveyor's direction (BELT_SPEED)
-//     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
-//     openTo: 'rockFloorDk',               //   carries this flag (see below)
-//     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
-//     keyFlag: 'keyD1',                    // a KEYHOLE: holding this flag and
-//                                          //   pushing in sets `openFlag`
-//   }
-//
-// STORY GATES
-//   `openFlag` is the third kind of gate this game has, next to a flag an item
-//   answers (F.BOMBABLE, F.VANE) and terrain an item crosses (F.DEEP). It is
-//   not answered by an item at all: the tile becomes `openTo` on room entry
-//   once the save carries the named flag, and nothing the player is holding
-//   changes that. `Game.applyStoryGates` is the whole implementation and it
-//   runs alongside `restoreRoomState`, so a story gate opens the moment you
-//   walk in rather than when you touch it.
-//
-//   A KEYHOLE is a story gate with `keyFlag` as well: the player who holds
-//   that flag (a dungeon key, src/data/keys.js) opens it himself by leaning on
-//   it, Seasons' way (`Game.tryKeyhole`), and that sets `openFlag`. Every tool
-//   that floods counts a keyhole open once the key is held.
-//
-//   It exists because a region can be owed to the STORY rather than to an
-//   item, and expressing that as an item flag is how a progression lock gets
-//   built: the Keep's road was sealed by a tile only the Dredge Line opened,
-//   and the Dredge Line is inside the Keep.
-//
-// TIDE VARIANTS
-//   A tile with `tide` is a *virtual* tile: at runtime it resolves to one of three
-//   concrete tiles depending on the global tide level (0 = low, 1 = mid, 2 = high).
-//   Variant targets must be concrete (no nested `tide`); validate() enforces this.
-//   This is how the whole world reshapes: authors place one char and the tide
-//   system decides whether it is dry sand, wadeable shallows, or deep sea.
-
-const { hash32 } = __require("core/rng.js");
-
-const F = {
-  SOLID:     1 << 0,   // blocks movement
-  WATER:     1 << 1,   // shallow: walkable, wading animation, slight slowdown
-  DEEP:      1 << 2,   // deep water: needs Flippers, enters swim state
-  PIT:       1 << 3,   // fall in, take damage, respawn at room edge
-  HAZARD:    1 << 4,   // lava / spikes: damage on contact
-  LEDGE:     1 << 5,   // one-way hop-down ledge (direction in `ledge`)
-  STAIRS:    1 << 6,   // auto-warp on step (stairs, doorway)
-  BUSH:      1 << 7,   // destructible by sword/bomb
-  ROCK:      1 << 8,   // liftable with Power Bracelet
-  ICE:       1 << 9,   // slippery
-  SLOW:      1 << 10,  // deep sand / mud
-  NOFLY:     1 << 11,  // cannot be crossed even with Roc's Feather
-  JUMPABLE:  1 << 12,  // 1-tile gap that Roc's Feather clears
-  WARP:      1 << 13,  // cave mouth / door: triggers the room's warp list
-  NOSPAWN:   1 << 14,  // enemies never spawn or wander here
-  // A fixed thing a thrown line catches on: a post, a ring, a mooring. The
-  // Dredge Line hauls Link to it rather than hauling it to Link, which is the
-  // crossing verb it inherits. Declared by a tile rather than discovered,
-  // because being yanked somewhere you did not choose is a bug.
-  SNAG:      1 << 15,
-  BOMBABLE:  1 << 16,  // cracked wall
-  DOOR:      1 << 17,  // dungeon door (state in room)
-  SWITCHF:   1 << 18,  // floor switch
-  CURRENT:   1 << 19,  // pushes the player while swimming (see `push`)
-  // A WHIRLPOOL (S161, the Sunken Palace): touch it and the sea takes you to
-  // the floor below, to the same place in the room under this one
-  // (`Game.enterWhirlpool`). The bit was once a WHIRL no tile ever carried,
-  // whose only live branch sent the player to his last respawn point — a death
-  // he did not die — and was removed for it. It is back because a tile now
-  // carries it, and tools/check-whirlpool.mjs proves every one in the engine.
-  WHIRL:     1 << 20,
-  VOID:      1 << 21,  // outside the map: solid and never rendered as floor
-  SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
-  TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
-  VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
-  // A DROP HOLE (S181, the Bogwater Sanctum): a hole with a room under it.
-  // Dry, it also carries PIT and is fallen into the way a pit is, but the fall
-  // ends on the floor below, at the same place (`Game.dropThroughHole`);
-  // flooded, it carries DEEP and a player walking the bottom with the Cleats
-  // goes down it. A drop whose landing is no landing is a pit fall. The bit
-  // was MAGNETIC once, which nothing carried after the Keep's seal became a
-  // story gate. tools/check-shafts.mjs proves every one in the engine.
-  DROP:      1 << 25,
-  // Region-gate markers. These do NOT drive traversal — the engine already
-  // knows how to cross each of these tiles, because each one also carries the
-  // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
-  // boulder is SOLID+ROCK). The marker exists so a checker can say *which item*
-  // a given impassable tile is holding shut, which is the whole difference
-  // between "the region is unreachable" and "the region is gated on the
-  // Dredge Line". Reusing JUMPABLE or DEEP for that would make every gap and
-  // every stretch of ocean in the world read as the same gate.
-  HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
-  SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
-  GRAPPLE:   1 << 28,  // span crossed by dredging a fixed snag on the far side
-  GAP:       1 << 29,  // chasm: only Roc's Feather clears it
-  // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
-  // traversal flag — a ringable tile also carries whatever it actually is.
-  RING:      1 << 30,
-};
-
-// Convenient composites
-F.BLOCKED = F.SOLID | F.VOID;
-F.WET = F.WATER | F.DEEP;
-
-const TILES = new Map();
-
-/** Register a batch of tile definitions. Later registrations override earlier. */
-function registerTiles(defs) {
-  for (const [name, def] of Object.entries(defs)) {
-    if (!def) continue;
-    TILES.set(name, {
-      name,
-      art: def.art,
-      // Tiles with transparency (trees, bushes, rocks) name a tile to draw beneath.
-      underArt: def.underArt || null,
-      // `underArt` names EXACTLY the tile to draw beneath, rather than a
-      // ground to be re-derived from the neighbours (Room.underGround). For a
-      // picture cut into stacked layers — the Maku grove — where the layer
-      // underneath is part of the same artwork and not the region's ground.
-      underExact: !!def.underExact,
-      // The tile this one is the lower layer of (S215, the houses: a Seasons
-      // metatile mixing two palettes, cut as two). Not a ground; just the
-      // rest of that tile's picture.
-      layerOf: def.layerOf || null,
-      pal: def.pal || 'stone',
-      flags: def.flags || 0,
-      mask: def.mask == null ? 15 : def.mask,
-      tide: def.tide || null,
-      // A RED OR BLUE BLOCK (S205): [the tile at toggle 0, the tile at 1].
-      // See `resolveTile`. Named here: this registrar discards what it does
-      // not name.
-      toggle: def.toggle || null,
-      anim: def.anim || null,
-      animRate: def.animRate || 10,
-      over: !!def.over,
-      // A COUNTER (S168): a solid tile you can talk ACROSS, as Seasons lets
-      // Link speak to Farore over her desk. `Player.tryContextAction` reaches
-      // one tile further when the tile in front of him is one.
-      counter: !!def.counter,
-      // A SIDE-VIEW PIECE (S241, docs/briefs/SIDE-VIEW.md): 'ladder' is climbed
-      // and stops a fall (Seasons' TILETYPE_SS_LADDER), 'ladderTop' is a
-      // ladder that is also stood on from above (TILETYPE_SS_LADDER_TOP).
-      // Only `sideview.js` reads it. Named here, or it would be discarded.
-      sv: def.sv || null,
-      // A TILE THAT IS ONE CELL OF A BIGGER OBJECT. `quad` names a set of four
-      // 16x16 arts — `<quad>TL`, `TR`, `BL`, `BR` — cut from one 32x32 source
-      // tree. Which one this cell draws is decided by its NEIGHBOURS at render
-      // time, not by its coordinates: see `Room.render`.
-      //
-      // The top and bottom rows carry separate palettes (`quadPalTop`,
-      // `quadPalBot`) because a canopy and its roots do not fit in one
-      // four-colour palette. On hardware they are separate tiles with separate
-      // palettes, and this is the same split.
-      //
-      // An earlier cut of this drew the whole 32x32 tree from one tile,
-      // overhanging its neighbours. It clipped the canopy off every tree on a
-      // screen's top row and double-drew every run. Quadrants keep each cell
-      // inside itself.
-      //
-      // NAMED HERE ON PURPOSE: this registrar copies field by field, so a
-      // field it does not name is silently DISCARDED — that is how `liftLevel`
-      // sat in the data unread for the life of the project.
-      quad: def.quad || null,
-      quadPalTop: def.quadPalTop || null,
-      quadPalBot: def.quadPalBot || null,
-      // GROUND VARIANTS: other art names this tile may be drawn as. Purely a
-      // draw-time substitution — same flags, same palette, same everything the
-      // simulation can see — so a field of grass stops being one 16x16 cell
-      // repeated across the screen. `tileVariant` picks one, and it MUST be
-      // named here or `registerTiles` would discard it silently, the way it
-      // discarded `liftLevel` for the life of the project (see below).
-      variants: def.variants || null,
-      // AUTOTILING. `family` groups tiles that are the same MASS — every
-      // palette-swap of a cliff is still cliff, so a `cliffDk` beside a `cliff`
-      // is not an edge. `edgeArt` names the art to draw instead of this tile's
-      // own when the neighbour in that direction is a DIFFERENT family:
-      // `{ up: 'cliffTop' }` puts a lip on the top row of every cliff mass in
-      // the game without a single room grid changing. Draw-time only, like
-      // `variants` — nothing the simulation can see moves.
-      family: def.family || null,
-      edgeArt: def.edgeArt || null,
-      // PROTOTYPE, land-vs-land fringes. A SECOND comparison axis: `family`
-      // groups the same MASS (every land tile is 'shore', which is what lets
-      // the water rim fire), so it cannot see grass meeting sand. `material`
-      // is the specific ground and `edgePairs` maps a neighbour's material to
-      // the 12 edge keys. Both must be listed HERE or the registrar drops them
-      // — see CLAUDE.md's `liftLevel` trap.
-      material: def.material || null,
-      edgePairs: def.edgePairs || null,
-      // Narrows which neighbour families this tile draws an edge against. A
-      // cliff wants a lip against ANYTHING that is not cliff, so it leaves
-      // this unset. Grass does NOT want a bank against sand or mud — that is
-      // the still-hard rectangular fringe docs/ART-BACKLOG.md tracks
-      // separately — so it names 'water' and edgeArt fires only when the
-      // neighbour actually resolves to that family.
-      edgeAgainst: def.edgeAgainst || null,
-      // A FENCE (S157): a palisade or a paling run is a line on purpose, the
-      // way a treeline or a gate is. Read by tools/check-ground.mjs, which
-      // otherwise fails three decorative props in a row.
-      fence: !!def.fence,
-      // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
-      // this is a SCATTER and not an even mix.
-      variantOdds: def.variantOdds || 8,
-      push: def.push || null,
-      // A BELT (S186, the Drowned Wood Shrine's Canopy): [dx, dy], a unit
-      // direction, Seasons' conveyor; the speed is BELT_SPEED (feel.js). Unlike `push`, which is a current in deep water,
-      // a belt carries what stands on it (Player.updateBelt, Enemy, a growing
-      // Reefseed) and never what swims or flies.
-      belt: def.belt || null,
-      ledge: def.ledge || null,
-      // THE CRACKED FLOOR (S181): the tile it gives way into, after Link has
-      // stood on it CRACK_BREAK_FRAMES (Player.updateCrack, Game.breakCrack).
-      crack: def.crack || null,
-      // THE COLOUR CUBE'S SPOT (S207): 0 red, 1 yellow, 2 blue — the colour a
-      // cube must show on top resting here (objects.js ColourCube).
-      cubeSpot: def.cubeSpot != null ? def.cubeSpot : null,
-      // A CRACK THAT COMES BACK (S207): broken, it is not written to the save,
-      // and leaving the room mends it (`Room.mendCracks`), as a cube room
-      // resets in Ages when it is entered again.
-      crackResets: !!def.crackResets,
-      // THE TIDE FLOOR (S208, kind C): the tile this one becomes when the sea
-      // rising covers it (`Game.floodFloor`), and its colour (0 red, 2 blue).
-      floorFlip: def.floorFlip || null,
-      floorColour: def.floorColour != null ? def.floorColour : null,
-      // A SLATE SLOT (S211, Ages' slateSlot.s): the face it is leaned on from
-      // ('N'/'E'/'S'/'W') and the tile it becomes with a slate in it.
-      slot: def.slot || null,
-      slotFilled: def.slotFilled || null,
-      // A HOLE A HELD BRIDGE SPANS (S211): its planks, `{ H, V }`.
-      bridge: def.bridge || null,
-      // A LIP (S181): `{ n, s, ns }`, the art to draw when the cell above
-      // (n), below (s) or both is not of this tile's `family` — Seasons' drop
-      // hole is $48 inside a run and $49/$4a/$4b at a run's top and bottom
-      // edges, where the floor's edge shows. See `Room.artAt`. `one` (S189)
-      // is a hole with no hole on any side: the Sword & Shield Maze's $f3.
-      lip: def.lip || null,
-      // A KEEP SHAFT (S189): a hole or a flooded well with a room under it
-      // that only an ice chunk goes down and only the Dredge Line reaches
-      // through. To Link it is the pit or the water its flags say.
-      shaft: !!def.shaft,
-      depth: def.depth || 0,
-      // How strong you have to be to pick this up, against LIFT_STRENGTH and
-      // any item that raises it, and what it looks like once lifted.
-      //
-      // THESE TWO WERE MISSING and had been since tiledefs existed. This
-      // function copies field by field rather than spreading, so a tiledef key
-      // it does not name is silently discarded — `boulder` has declared
-      // `liftLevel` the whole time and `Game.liftTile` has read it the whole
-      // time, and the two never met. Nothing validated it, because the boulder
-      // was ALSO gated behind an item the player did not have yet, so the
-      // symptom never showed. Same class as the `giver` options in
-      // docs/HANDOFF.md: data contracts drift from engine contracts silently.
-      liftLevel: def.liftLevel || 0,
-      liftSprite: def.liftSprite || null,
-      // A story gate: see the contract at the top of this file. THESE THREE
-      // HAVE TO BE NAMED HERE. This function copies field by field, so a
-      // tiledef key it does not list is silently discarded — which is exactly
-      // how `liftLevel` sat in the data unread for the life of the project.
-      openFlag: def.openFlag || null,
-      openTo: def.openTo || null,
-      openDeny: def.openDeny || null,
-      // A KEYHOLE is a story gate the player opens himself: holding the flag
-      // `keyFlag` names (a dungeon key, see src/data/keys.js) and pushing into
-      // the tile sets `openFlag`. Named here for the same reason as the three
-      // above it.
-      keyFlag: def.keyFlag || null,
-      // THE ORACLE WALL RING. A wall tile in a dungeon built at Oracle room
-      // size (`cell: [15, 11]` on its map) draws the outer ring of every room
-      // from this set of pieces — four corners, four runs and the jambs that
-      // finish a run beside a doorway — chosen by where the cell sits on the
-      // ring, not by any neighbour's family. See `Room.ringArt`. Draw-time
-      // only; the tile's flags are the wall's. Named here for the same reason
-      // as every field above.
-      ring: def.ring || null,
-      // A tile that stands IN the ring and is wall to it — a pillar beside a
-      // way out — so the runs either side do not draw jambs against it.
-      ringWall: !!def.ringWall,
-    });
-  }
-}
-
-// --------------------------------------------------------------------------
-// BLOCKS: objects bigger than a tile.
-//
-// A building is three cells wide and three tall. Cutting one into nine loose
-// tiles gives an author nine characters that mean something in exactly one
-// arrangement, with nothing to catch a wrong one — the roof laid on upside
-// down validates, renders and strands the screen behind it.
-//
-// So a block is registered once, as its grid of cell tiles, and PLACED once. A
-// room grid draws the building's footprint as a rectangle of a single legend
-// character:
-//
-//     'ggHHHggg'          H is 'block:bShop', 3x3, so this is one shop
-//     'ggHHHggg'          with grass either side — not nine tiles that
-//     'ggHHHggg'          happen to line up.
-//
-// `Room` claims each rectangle top-left-first and resolves every cell to the
-// tile named here (see the footprint pass in src/world/room.js). A footprint
-// that is not exactly w x h THROWS at construction, which is the whole point:
-// a mis-drawn building is a typo, and a typo should be an error and not a
-// screen you have to look at to discover is wrong.
-//
-// The cell tiles are ordinary tiles with ordinary flags. Nothing downstream —
-// collision, rendering, the tide field, every checker — knows a block exists.
-const BLOCKS = new Map();
-
-/** Register a batch of block definitions: { name: { w, h, tiles: [[name]] } }. */
-function registerBlocks(defs) {
-  for (const [name, def] of Object.entries(defs)) {
-    const { w, h, tiles } = def;
-    if (!w || !h || tiles.length !== h || tiles.some(r => r.length !== w)) {
-      throw new Error(`block ${name}: declares ${w}x${h} and lists `
-        + `${tiles.length} rows of ${tiles.map(r => r.length).join('/')}`);
-    }
-    BLOCKS.set(name, { name, w, h, tiles: tiles.map(r => r.slice()) });
-  }
-}
-
-/** The block a legend entry names, or null if it names an ordinary tile. */
-function blockRef(tileName) {
-  if (typeof tileName !== 'string' || !tileName.startsWith('block:')) return null;
-  return BLOCKS.get(tileName.slice(6)) || null;
-}
-
-const EMPTY = {
-  name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
-  anim: null, animRate: 10, over: false, push: null, belt: null, ledge: null, depth: 0,
-};
-
-const warned = new Set();
-
-/**
- * The registered tiledef for `name`, or null if it names no tile at all (an
- * animation-only art name, say). Unlike `getTileDef` this never warns and
- * never returns the `EMPTY` placeholder — a caller that wants "the tile this
- * name draws, if it has its own" needs to tell "no such tile" apart from "a
- * tile that legitimately has no flags", which `EMPTY` collapses into the same
- * answer. `Room.render`'s art/palette lookup is the reason this exists: an
- * `edgeArt` or `variants` substitution can name a tile with a DIFFERENT
- * palette than the cell being drawn (a bank tile's blue rim is not the
- * grass's green), and only a real tiledef lookup can find that out.
- */
-function artDef(name) {
-  return TILES.get(name) || null;
-}
-
-function getTileDef(name) {
-  const d = TILES.get(name);
-  if (!d) {
-    if (!warned.has(name)) { warned.add(name); console.warn('[tiles] undefined tile:', name); }
-    return EMPTY;
-  }
-  return d;
-}
-
-/**
- * THE RED AND BLUE BLOCKS (S205): which of the two stands up. Oracle of Ages
- * keeps one bit, wToggleBlocksState, that an orb flips; in this game the
- * conch is the orb, and every tide change flips it (`Tide.setLevel`). A tile
- * with `toggle: [atZero, atOne]` resolves to one of two concrete tiles by
- * this bit, before its tide is looked at.
- *
- * It is module state rather than an argument because every query in the game
- * reaches tiles through `resolveTile`, and threading a second dimension
- * through all of them would be a hundred edits for one bit. The running game
- * keeps it equal to `Tide.toggle` (Tide owns it and sets it here); a checker
- * sets it explicitly with `setToggleState` before asking a room anything. A
- * caller asking about a parity other than the live one — the Lens's preview —
- * passes it as `resolveTile`'s third argument, and `Room.tile` does that when
- * the tide it is handed carries a `toggle` of its own.
- */
-let TOGGLE = 0;
-function setToggleState(p) { TOGGLE = p & 1; }
-function toggleState() { return TOGGLE; }
-
-/** Resolve a possibly-virtual tile name to its concrete tile at a tide level. */
-function resolveTile(name, tide, toggle = TOGGLE) {
-  let d = getTileDef(name);
-  if (d.toggle) d = getTileDef(d.toggle[toggle & 1]);
-  if (!d.tide) return d;
-  const target = d.tide[Math.max(0, Math.min(2, tide))] ?? d.tide[d.tide.length - 1];
-  const r = getTileDef(target);
-  // One level of indirection only; a nested tide tile is a data bug.
-  return r.tide ? getTileDef(r.tide[Math.max(0, Math.min(2, tide))]) : r;
-}
-
-/**
- * Whether a resolved tile definition blocks a mover with the given
- * capabilities — the same rule `Room.solidAt` applies at a pixel, pulled out
- * here so anything that already has a concrete `TileDef` (rather than a pixel
- * to sample) can ask the identical question instead of re-deriving it from
- * raw flags. `Room.solidAt` calls this; nothing should define its own copy.
- *
- * `quadSolid` is the SOLID flag's own verdict for the quadrant being asked
- * about — `Room.solidAt` passes the correct one for a pixel's sub-tile
- * position; a caller with no pixel (a tile-granularity checker) passes
- * `d.mask !== 0`, which is exactly right for every tile in this game today,
- * since no tile uses a mask other than 0 (a doorway cut into a SOLID tile) or
- * 15 (uniformly solid) — see docs/ART-DIRECTION.md and CLAUDE.md.
- */
-function tileDefSolid(d, caps, quadSolid) {
-  const f = d.flags;
-  if (f & F.VOID) return true;
-  if (f & F.SOLID) return quadSolid;
-  // Deep water is impassable on foot but fine while swimming.
-  if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
-  // Gaps are crossed by jumping only.
-  if (f & F.JUMPABLE) return !(caps && caps.jumping);
-  // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
-  // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
-  // happens, so caps.jumping is what lets the hop through. Blocking it on
-  // the ground is the half that makes the ledge one-way — otherwise you
-  // could walk back up the drop or stroll along the lip.
-  if (f & F.LEDGE) return !(caps && caps.jumping);
-  if (f & F.BUSH) return !(caps && caps.cutting);
-  if (f & F.ROCK) return true;
-  return false;
-}
-
-/** The art name to draw for a tile at a given tide + frame counter. */
-function tileArt(def, frame) {
-  if (def.anim && def.anim.length) {
-    const i = Math.floor(frame / def.animRate) % def.anim.length;
-    return def.anim[i];
-  }
-  return def.name;
-}
-
-
-/**
- * Which art to draw for a tile at (tx, ty) in a room, when the tile declares
- * interchangeable ground variants.
- *
- * A PURE HASH OF THE TILE'S ADDRESS, never a draw from an RNG stream. This is
- * `T2` exactly: `Room.render` runs at display rate, so a variant drawn from a
- * stream would desync every replay AND make the ground flicker as the cache
- * rebuilt. `every(e, n)` is the existing precedent for hashing instead.
- *
- * The room key is part of the hash so the same coordinates in two rooms do not
- * pick the same variant, which would put an identical pattern of tufts in the
- * same place on every screen — a subtler grid than the one this replaces.
- *
- * A SCATTER, NOT A MIX, and this is the part that was measured rather than
- * assumed. Picking evenly among a base and three variants does not remove the
- * grid; it replaces it with a patchwork quilt, and a quilt is WORSE, because
- * `rip-terrain.py` quantises each tile against its own four colours, so two
- * tiles that look alike on the sheet can land on different palette indices and
- * their shared edge becomes a hard tonal seam. Rendered as a full 10x8 room,
- * an even four-way mix of good candidates read as a chessboard. One variant in
- * seven read as a meadow. So: most cells are the base, and the variants are
- * occasional detail — which is also what the source games do, except that
- * there a person places each tuft by hand.
- *
- * Two independent hashes, not one divided: the gate decides WHETHER this cell
- * is a variant and the pick decides WHICH, and deriving the second from the
- * quotient of the first correlates them.
- */
-function tileVariant(def, roomKey, tx, ty) {
-  const v = def.variants;
-  if (!v || !v.length) return def.name;
-  if (hash32('tilevar', roomKey, tx, ty) % def.variantOdds !== 0) return def.name;
-  return v[hash32('tilepick', roomKey, tx, ty) % v.length];
-}
-
-/**
- * Which art to draw for a tile whose look depends on its neighbours.
- *
- * `neighbourFamily(dir)` is supplied by the caller — `Room` owns the grid, and
- * a checker may never re-derive a rule the engine already owns (`R4`).
- *
- * OUT OF BOUNDS COUNTS AS THE SAME MASS, and this is the decision that makes
- * the feature usable rather than a disaster. A cliff running along the top row
- * of a screen continues into the screen above it in every source game, and the
- * room has no way to see that room's grid — so treating "off the edge" as a
- * different family would draw a lip along the top of every screen in the game,
- * on cliff that visibly carries on. The caller returns the tile's own family
- * for a neighbour it cannot see.
- *
- * A FULL 4-NEIGHBOUR MASK, not "the first direction that matches" — that was
- * `cliffTop`'s whole limitation (docs/ART-BACKLOG.md): a ground patch is a top
- * edge and a left edge at once, and picking one lost the other. This reads all
- * four of up/down/left/right and classifies the set of directions that differ:
- *
- *   0 differ  -> no edge art (this cell is not on a boundary)
- *   1 differs -> a straight edge  (up/down/left/right)
- *   2 differ, ADJACENT (e.g. up+left)  -> an OUTER corner: this tile's own
- *              mass is confined to the corner opposite the two differing
- *              sides, so the art shows it curving around a convex point
- *   2 differ, OPPOSITE (up+down, or left+right) -> a one-tile-wide strip; no
- *              dedicated art exists for this, so it degrades to whichever
- *              single-direction edge is listed first (the old behaviour)
- *   3 differ  -> an INNER corner: this tile is nearly engulfed, connected to
- *              its own mass on only the one remaining side
- *   4 differ  -> fully isolated; degrades the same way the opposite-pair case
- *              does, for the same reason (no dedicated art, and a single-tile
- *              island is a room-data smell a checker should catch on its own)
- *
- * Any of the 12 named keys (`up`/`down`/`left`/`right`,
- * `cornerUpLeft`/`cornerUpRight`/`cornerDownLeft`/`cornerDownRight`,
- * `innerUp`/`innerDown`/`innerLeft`/`innerRight`) may be omitted — a tile that
- * only defines `up` behaves exactly as before, corners and all, because every
- * case below falls back to the straight-edge degrade when the art it actually
- * wants is not defined.
- */
-function tileEdgeArt(def, neighbourFamily, neighbourMaterial) {
-  // ---- LAND AGAINST LAND, which needs a SECOND comparison axis -----------
-  //
-  // `family` groups tiles that are the same MASS, and every dry ground in the
-  // game is `'shore'` — that is what lets the water rim fire against all of
-  // them at once. So family cannot see grass meeting sand: they are the same
-  // family by design. `material` is the specific ground, and `edgePairs` maps a
-  // NEIGHBOUR'S material to its own set of the 12 mask keys, because grass
-  // meeting sand and grass meeting mud are different pictures.
-  //
-  // It runs before the family check and uses the SAME mask classifier, so a
-  // fringe gets real corners rather than the first direction that matched.
-  // Only one side of a pair carries `edgePairs` — see `FRINGE_PAIRS` in
-  // tiles-core.js — so a boundary is fringed once, not from both sides.
-  if (def.edgePairs && neighbourMaterial) {
-    const byMat = new Map();
-    for (const dir of EDGE_DIRS) {
-      const m = neighbourMaterial(dir);
-      if (!m || m === def.material || !def.edgePairs[m]) continue;
-      if (!byMat.has(m)) byMat.set(m, []);
-      byMat.get(m).push(dir);
-    }
-    // A cell touching two different foreign materials picks the one it touches
-    // most; ties go to the first in EDGE_DIRS order, which is stable.
-    let best = null;
-    for (const [m, dirs] of byMat) if (!best || dirs.length > best[1].length) best = [m, dirs];
-    if (best) {
-      const art = pickByMask(def.edgePairs[best[0]], best[1]);
-      if (art) return art;
-    }
-  }
-
-  const e = def.edgeArt;
-  if (!e || !def.family) return null;
-  const against = def.edgeAgainst;
-  const matches = (nf) => (Array.isArray(against) ? against.includes(nf) : nf === against);
-  const differs = (dir) => {
-    const nf = neighbourFamily(dir);
-    if (nf === def.family) return false;
-    return against ? matches(nf) : true;
-  };
-  return pickByMask(e, EDGE_DIRS.filter(differs));
-}
-
-/**
- * Choose one of an art set's 12 keys from the set of directions that differ.
- * Shared by the family path and the material path above so a fringe and a rim
- * classify a corner identically.
- */
-function pickByMask(e, diffDirs) {
-  if (diffDirs.length === 0) return null;
-  if (diffDirs.length === 1) {
-    return e[diffDirs[0]] || null;
-  }
-  if (diffDirs.length === 2) {
-    const [a, b] = diffDirs;
-    const opposite = (a === 'up' && b === 'down') || (a === 'left' && b === 'right');
-    // An opposite pair has its own art only in a set that brings it (the
-    // ground's edges, S237: Seasons draws a grass strip between two sands).
-    const art = opposite ? e[a === 'up' ? 'upDown' : 'leftRight'] : e[CORNER_KEY[a + ',' + b]];
-    if (art) return art;
-  } else if (diffDirs.length === 3) {
-    const missing = EDGE_DIRS.find((d) => !diffDirs.includes(d));
-    const art = e[INNER_KEY[missing]];
-    if (art) return art;
-  } else if (diffDirs.length === 4 && e.all) {
-    return e.all;
-  }
-  // Degrade: opposite pairs, four-way isolation, or a corner/inner direction
-  // with no dedicated art all fall back to the first single-edge match, the
-  // same answer this function always gave before corners existed.
-  for (const dir of EDGE_DIRS) {
-    if (diffDirs.includes(dir) && e[dir]) return e[dir];
-  }
-  return null;
-}
-
-const EDGE_DIRS = ['up', 'down', 'left', 'right'];
-
-// The 2-differ (outer corner) and 3-differ (inner corner) cases, named by the
-// directions involved. `diffDirs` is always built by filtering EDGE_DIRS in
-// its own order, so a 2-element result is always one of exactly these four
-// pairs — the opposite pairs (up+down, left+right) are handled before this
-// table is consulted.
-const CORNER_KEY = {
-  'up,left': 'cornerUpLeft', 'up,right': 'cornerUpRight',
-  'down,left': 'cornerDownLeft', 'down,right': 'cornerDownRight',
-};
-// Keyed by the ONE direction that still matches (the tile's mass is nearly
-// engulfed, connected out through only that side).
-const INNER_KEY = { up: 'innerUp', down: 'innerDown', left: 'innerLeft', right: 'innerRight' };
-
-const EDGE_ART_KEYS = new Set([
-  ...EDGE_DIRS, ...Object.values(CORNER_KEY), ...Object.values(INNER_KEY),
-]);
-
-/** True if any tile in the set changes appearance with the tide. */
-function isTideSensitive(name) {
-  return !!getTileDef(name).tide;
-}
-
-/** Data-integrity check; run once at boot and surfaced in the dev overlay. */
-function validateTiles() {
-  const problems = [];
-  for (const [name, d] of TILES) {
-    if (d.tide) {
-      if (d.tide.length !== 3) problems.push(`${name}: tide must have exactly 3 entries`);
-      for (const t of d.tide) {
-        if (!TILES.has(t)) { problems.push(`${name}: tide variant '${t}' is not registered`); continue; }
-        if (TILES.get(t).tide) problems.push(`${name}: tide variant '${t}' is itself a tide tile (nesting not allowed)`);
-      }
-      if (d.art) problems.push(`${name}: tide tiles must not define art`);
-      if (d.variants) problems.push(`${name}: tide tiles must not declare variants`);
-    } else if (d.toggle) {
-      if (d.toggle.length !== 2) problems.push(`${name}: toggle must have exactly 2 entries`);
-      for (const t of d.toggle) {
-        if (!TILES.has(t)) { problems.push(`${name}: toggle state '${t}' is not registered`); continue; }
-        if (TILES.get(t).toggle || TILES.get(t).tide) problems.push(`${name}: toggle state '${t}' is itself virtual`);
-      }
-      if (d.art) problems.push(`${name}: toggle tiles must not define art`);
-    } else if (!d.art && !d.anim) {
-      problems.push(`${name}: concrete tile has neither art nor anim`);
-    }
-    if (d.anim) {
-      for (const a of d.anim) {
-        if (!TILES.has(a) && !ANIM_ART.has(a)) problems.push(`${name}: anim frame '${a}' has no art`);
-      }
-    }
-    // GROUND VARIANTS ARE A DRAW-TIME SUBSTITUTION AND NOTHING ELSE. A variant
-    // whose flags differed from its base would make a patch of a field solid,
-    // or wet, or a pit, in a pattern nobody authored and no room grid shows —
-    // a bug that would render perfectly and be nearly impossible to find from
-    // the symptom. So the invariant is asserted here rather than trusted.
-    if (d.edgeArt) {
-      if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
-      for (const [dir, art] of Object.entries(d.edgeArt)) {
-        if (!EDGE_ART_KEYS.has(dir)) problems.push(`${name}: edgeArt key '${dir}' is not a recognised edge/corner direction`);
-        if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
-      }
-    }
-    if (d.edgeAgainst && !d.edgeArt) problems.push(`${name}: edgeAgainst with no edgeArt does nothing`);
-    if (d.variants) {
-      if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
-      if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
-      for (const v of d.variants) {
-        const t = TILES.get(v);
-        if (!t) { problems.push(`${name}: variant '${v}' is not a registered tile`); continue; }
-        if (t.variants) problems.push(`${name}: variant '${v}' declares variants of its own (no nesting)`);
-        if (t.flags !== d.flags) problems.push(`${name}: variant '${v}' has different flags`);
-        if (t.mask !== d.mask) problems.push(`${name}: variant '${v}' has a different solid mask`);
-        if (t.anim) problems.push(`${name}: variant '${v}' is animated`);
-        if (t.over !== d.over) problems.push(`${name}: variant '${v}' disagrees about 'over'`);
-      }
-    }
-  }
-  return problems;
-}
-
-// Animation frames may be pure art (registered on the tiles Sheet) without being
-// full tile definitions; data files declare them here.
-const ANIM_ART = new Set();
-function declareAnimArt(names) { for (const n of names) ANIM_ART.add(n); }
-
-// --------------------------------------------------------------------------
-// Tile transforms: what a tile becomes when acted upon.
-//
-//   registerTransforms({
-//     bush:         { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut' },
-//     dWallCracked: { bomb: 'dFloor', fx: 'boom' },
-//     torchUnlit:   { fire: 'torchLit', quiet: true },
-//   });
-//
-// Actions: 'cut' (sword), 'bomb', 'fire' (flame), 'lift' (bare hands, base
-// moveset), 'dredge' (the Dredge Line), 'ring' (the Resonance Rod).
-// `fx` names an effect to spawn, `drop` a drop table to roll, `flagged` a save
-// flag so the change persists.
-//
-// `level` is the minimum item level the action must carry. It is what lets a
-// gate name a SPECIFIC item rather than a category: the Salt Pans vane wants
-// `ring`, so only the Resonance Rod opens the region. Without a named action
-// on the transform, every "needs item X" gate
-// degrades to "needs anything in X's family".
-// --------------------------------------------------------------------------
-
-const TRANSFORMS = new Map();
-
-function registerTransforms(defs) {
-  for (const [tile, rules] of Object.entries(defs)) {
-    TRANSFORMS.set(tile, { ...(TRANSFORMS.get(tile) || {}), ...rules });
-  }
-}
-
-function transformFor(tileName, action) {
-  const r = TRANSFORMS.get(tileName);
-  if (!r) return null;
-  const to = r[action];
-  if (to === undefined) return null;
-  return {
-    to, fx: r.fx || null, drop: r.drop || null, sfx: r.sfx || null,
-    persist: !!r.persist, level: r.level || 0, deny: r.deny || null,
-  };
-}
-__exports["F"] = F;
-__exports["TILES"] = TILES;
-__exports["registerTiles"] = registerTiles;
-__exports["BLOCKS"] = BLOCKS;
-__exports["registerBlocks"] = registerBlocks;
-__exports["blockRef"] = blockRef;
-__exports["artDef"] = artDef;
-__exports["getTileDef"] = getTileDef;
-__exports["setToggleState"] = setToggleState;
-__exports["toggleState"] = toggleState;
-__exports["resolveTile"] = resolveTile;
-__exports["tileDefSolid"] = tileDefSolid;
-__exports["tileArt"] = tileArt;
-__exports["tileVariant"] = tileVariant;
-__exports["tileEdgeArt"] = tileEdgeArt;
-__exports["isTideSensitive"] = isTideSensitive;
-__exports["validateTiles"] = validateTiles;
-__exports["ANIM_ART"] = ANIM_ART;
-__exports["declareAnimArt"] = declareAnimArt;
-__exports["TRANSFORMS"] = TRANSFORMS;
-__exports["registerTransforms"] = registerTransforms;
-__exports["transformFor"] = transformFor;
-});
-
 /* ===== src/world/room.js ===== */
 __define("world/room.js", function (__exports, __require) {
 // Room: one or more 10x8 tile screens. Owns its tile grid, collision queries, a
@@ -13841,882 +14741,6 @@ __exports["TIDE_COUNT"] = TIDE_COUNT;
 __exports["Tide"] = Tide;
 __exports["drawTideWipe"] = drawTideWipe;
 __exports["tileDrowns"] = tileDrowns;
-});
-
-/* ===== src/core/fixed.js ===== */
-__define("core/fixed.js", function (__exports, __require) {
-// 8.8 fixed-point positions.
-//
-// Every entity's position on the playfield is an integer number of SUBPIXELS,
-// 256 to the pixel, plus a derived integer pixel position that rendering reads.
-// Nothing on a movement path uses a float coordinate, and nothing on a drawing
-// path rounds one.
-//
-// WHY, IN ORDER OF HOW MUCH IT COSTS TO GET WRONG
-//
-// 1. `| 0` truncates toward zero. `(-0.5) | 0` is 0, not -1. So a float
-//    coordinate floored with `| 0` is a pixel too far right for every negative
-//    x and a pixel too low for every negative y — and an entity sits at
-//    negative x on every single room transition, because the incoming player is
-//    placed at x = -3 and eased across the seam. The sprite jittered by a pixel
-//    at exactly the moment the whole screen was sliding, which is why nobody
-//    ever caught it by looking. `>> 8` is an arithmetic shift: it floors, and
-//    it floors the same way on both sides of zero.
-//
-// 2. A float accumulator drifts. Adding 1.35 sixty times a second for a few
-//    minutes gives a number whose low bits depend on the entire history of the
-//    run, so two runs from the same seed and the same inputs can land on
-//    different pixels. An integer accumulator cannot do that, which is what
-//    makes tools/replay.mjs able to assert on exact equality.
-//
-// 3. Subpixel accumulation is what lets a speed slower than one pixel per frame
-//    exist at all. A current pushing 0.12 px/f against an integer pixel
-//    position rounds to nothing every frame and pushes you nowhere.
-//
-// THE UNITS
-//
-//   sp     subpixels; 256 sp = 1 px
-//   sp/f   subpixels per frame at 60 Hz — the engine's native speed unit
-//   px/f   pixels per frame; what enemy and projectile DATA is written in
-//
-// `moveEntity` and the `fx`/`fy`/`fz` accumulators speak sp. Data-facing
-// helpers (the enemy AI toolkit, `fire`) convert with `sp()` at their edge, so
-// a spec can keep saying `speed: 0.45` and still move on the fixed grid.
-
-const FP_BITS = 8;
-const FP_ONE = 1 << FP_BITS;      // 256 subpixels to the pixel
-const FP_HALF = FP_ONE >> 1;
-
-/** Pixels (or px/f) -> subpixels. The one place a float may enter the grid. */
-function sp(px) {
-  return Math.round(px * FP_ONE);
-}
-
-/**
- * Subpixels -> whole pixels, flooring on both sides of zero.
- * Never use `| 0`, `Math.trunc` or a plain divide here: see note 1 above.
- */
-function toPx(v) {
-  return v >> FP_BITS;
-}
-__exports["FP_BITS"] = FP_BITS;
-__exports["FP_ONE"] = FP_ONE;
-__exports["FP_HALF"] = FP_HALF;
-__exports["sp"] = sp;
-__exports["toPx"] = toPx;
-});
-
-/* ===== src/game/entity.js ===== */
-__define("game/entity.js", function (__exports, __require) {
-// Entity base class, tile collision, and the spawn registry.
-//
-// Coordinates are room-local: x in 0..159, y in 0..127. `z` is height off the
-// ground for jumps and flying enemies; it shifts the sprite up and detaches the
-// entity from ground hazards without moving its shadow.
-//
-// POSITIONS ARE 8.8 FIXED-POINT. `fx`, `fy` and `fz` are integer subpixel
-// accumulators; `x`, `y` and `z` are integer pixel positions derived from them
-// by an arithmetic shift. Rendering reads the pixel positions and rounds
-// nothing. See src/core/fixed.js for why both halves of that matter.
-//
-// Assigning `e.x = 40` still works and is still the right way to place an
-// entity — the accessor converts and the accumulator follows. What does NOT
-// work is `e.x += 0.5`: the read gives whole pixels, so a step smaller than a
-// pixel rounds away to nothing every frame and the entity never moves. Add to
-// `e.fx` instead, or go through `moveEntity`.
-
-const { TILE } = __require("core/screen.js");
-const { sprites } = __require("gfx/art.js");
-const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_HURT_RADIUS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT, ENEMY_CONTACT_Z, HOLE_FOOT_DY, BELT_FOOT_DY, SHADOW_FLICKER, PUDDLE_HOLD } = __require("data/feel.js");
-
-const ENTITY_TYPES = new Map();
-
-/** Register a spawnable entity. `factory(x, y, opts, game) -> Entity`. */
-function defineEntity(name, factory) {
-  ENTITY_TYPES.set(name, factory);
-}
-
-function spawnEntity(game, name, tx, ty, opts) {
-  const f = ENTITY_TYPES.get(name);
-  if (!f) { console.warn('[entity] unknown type:', name); return null; }
-  const e = f(tx * TILE, ty * TILE, opts || {}, game);
-  if (e) { e.type = name; game.addEntity(e); }
-  return e;
-}
-
-const DIRS = ['down', 'up', 'left', 'right'];
-const DIR_VEC = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
-
-function dirFromVec(dx, dy) {
-  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'left' : 'right';
-  return dy < 0 ? 'up' : 'down';
-}
-
-function dirTo(a, b) {
-  return dirFromVec((b.x + b.w / 2) - (a.x + a.w / 2), (b.y + b.h / 2) - (a.y + a.h / 2));
-}
-
-let nextId = 1;
-// A puff, a splash or a twinkle draws its id from a count of its own (S218).
-// An enemy's rhythm is a hash of its id (`every`, enemy.js), so while effects
-// shared the count, taking a landing's dust away moved every enemy made after
-// it and the playthrough lost the Bogwater Sanctum's boss.
-let nextCosmeticId = -1;
-
-/**
- * An enemy's collision area — what the sword must reach and what hurts Link
- * when it touches his own (playerHurtRect): a box of ENEMY_HURT_RADIUS either
- * way of the middle of its sprite, as the cartridge has it — NOT its `hb`, which
- * is the footprint it walks on and sits two pixels low. An enemy whose spec
- * declares its own `hurtBox` keeps it; anything bigger than one cell with
- * none (a boss) falls back to its `hb`.
- */
-function enemyHurtRect(e) {
-  // A hoverer (keese, bubble, wisp) is drawn `spec.z` pixels up, and the box
-  // goes with the sprite: the cartridge's keese and bubble fly at z 0, so their
-  // box is where they are drawn, and ours are drawn higher.
-  //
-  // Anything ABOVE that — a zol, a tektite, a stalfos in the air — keeps its
-  // box on the ground under it, and touches nothing once it is ENEMY_CONTACT_Z
-  // or more up: the cartridge compares heights before it compares boxes, for
-  // Link and for his sword alike (code/collisionEffects.s, "Check if Z
-  // positions are within 7 pixels"). S151; the box used to rise with the jump.
-  const hover = (e.spec && e.spec.z) || 0;
-  if (e.z - hover >= ENEMY_CONTACT_Z) return { x: -1e4, y: -1e4, w: 0, h: 0 };
-  const lift = hover > 0 && e.z > 0 ? Math.min(e.z, hover) : 0;
-  const hb = e.spec && e.spec.hurtBox;
-  if (hb) return { x: e.x + hb.x, y: e.y + hb.y - lift, w: hb.w, h: hb.h };
-  if (e.w > 16 || e.h > 16) return e.rect();
-  const r = ENEMY_HURT_RADIUS;
-  return { x: e.x + e.w / 2 - r, y: e.y + e.h / 2 - r - lift, w: r * 2, h: r * 2 };
-}
-
-/** How long a hit of `knock` pixels leaves an ordinary enemy invulnerable. */
-function hitInvulnFrames(knock) {
-  if (!knock) return ENEMY_INVULN_FRAMES;
-  for (const [px, f] of ENEMY_HIT_TIERS) if (knock <= px) return f;
-  return ENEMY_HIT_TIERS[ENEMY_HIT_TIERS.length - 1][1];
-}
-
-/**
- * The per-frame step, in sp/f, of a knockback at `speed`: away from `from`'s
- * middle when there is one, snapped to one of 32 angles as the cartridge's
- * angles are; else along `dir`. Null if there is no direction at all.
- */
-function knockVector(e, dir, from, speed) {
-  if (from) {
-    const dx = e.cx - from.cx, dy = e.cy - from.cy;
-    if (dx || dy) {
-      const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 16)) * (Math.PI / 16);
-      return [Math.round(Math.cos(a) * speed), Math.round(Math.sin(a) * speed)];
-    }
-  }
-  const v = dir && DIR_VEC[dir];
-  if (!v) return null;
-  return [v[0] * speed, v[1] * speed];
-}
-
-class Entity {
-  constructor(x, y, opts = {}) {
-    this.id = opts.cosmetic ? nextCosmeticId-- : nextId++;
-    this.fx = sp(x); this.fy = sp(y); this.fz = 0;
-    this.w = 16; this.h = 16;
-    this.vx = 0; this.vy = 0;      // sp/f
-    this.vz = 0;                   // sp/f
-    this.dir = 'down';
-    this.frame = 0;          // animation counter, ticks each update
-    this.hp = 1; this.maxHp = 1;
-    this.damage = 0;         // contact damage dealt to the player, in half-hearts
-    this.invuln = 0;
-    this.flicker = 0;
-    this.stun = 0;
-    this.dead = false;
-    this.remove = false;
-    this.solid = false;      // blocks the player like a pushable block
-    this.pushable = false;
-    this.isEnemy = false;
-    this.isBoss = false;
-    this.isProjectile = false;
-    this.isDrop = false;
-    this.isEffect = false;
-    this.harmless = false;   // never damages the player (NPCs, drops)
-    this.grounded = true;    // affected by pits/water
-    this.flying = false;
-    this.knockTime = 0;
-    this.knockX = 0; this.knockY = 0;
-    this.hb = { x: 2, y: 4, w: 12, h: 11 };   // hitbox inset within w/h
-    this.shadow = true;
-    // Gets Seasons' splash at its feet when it stands in shallow water
-    // (drawPuddle). Set by the things that walk: enemies on foot, townsfolk.
-    this.wades = false;
-    this.depth = 0;          // draw-order tiebreak
-    // The tide level this entity genuinely exists at, or null for "always".
-    // A phased-out entity is not drawn, not dangerous and not hittable until
-    // the Brineglass Lens is raised. See Game.updatePhaseShift and
-    // docs/ITEMS.md.
-    this.phase = opts.phase != null ? opts.phase : null;
-    this.opts = opts;
-    this.spawnTx = Math.floor(x / TILE);
-    this.spawnTy = Math.floor(y / TILE);
-  }
-
-  // The pixel position is derived, never stored: anything may add to `fx`
-  // directly, and a cached copy would go stale the moment something did.
-  get x() { return toPx(this.fx); }
-  set x(v) { this.fx = sp(v); }
-  get y() { return toPx(this.fy); }
-  set y(v) { this.fy = sp(v); }
-  get z() { return toPx(this.fz); }
-  set z(v) { this.fz = sp(v); }
-
-  get cx() { return this.x + this.w / 2; }
-  get cy() { return this.y + this.h / 2; }
-
-  rect() {
-    return { x: this.x + this.hb.x, y: this.y + this.hb.y, w: this.hb.w, h: this.hb.h };
-  }
-
-  /**
-   * The box this thing HURTS and IS HURT with, as opposed to `rect()`, the
-   * footprint it walks on. The same for most entities; an enemy, Link and an
-   * enemy shot use the cartridge's collision radii (enemyHurtRect,
-   * Player.contactRect, Projectile.contactRect). Contact damage asks this, and
-   * so does every tool that models contact — never a copy of it.
-   */
-  contactRect() { return this.rect(); }
-
-  overlaps(o) {
-    const a = this.rect(), b = o.rect();
-    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-  }
-
-  distTo(o) {
-    const dx = this.cx - o.cx, dy = this.cy - o.cy;
-    return Math.hypot(dx, dy);
-  }
-
-  /**
-   * Take damage. `knock` is a DISTANCE IN PIXELS, not a speed; the target is
-   * thrown it at ENEMY_KNOCK_SPEED (2 px a frame, the cartridge's) and stops
-   * early if something stops it. `from`, when given, is what struck it — the
-   * throw goes straight away from its middle, as Seasons' does, on the nearest
-   * of the cartridge's 32 angles. Without one it goes along `dir`, the
-   * direction the hit travelled.
-   *
-   * How long the target is then invulnerable (and flashing) follows the hit's
-   * strength: ENEMY_HIT_TIERS.
-   */
-  hurt(game, dmg, dir, knock = KNOCK_DEFAULT, from = null) {
-    if (this.invuln > 0 || this.dead) return false;
-    this.hp -= dmg;
-    this.invuln = hitInvulnFrames(knock);
-    this.flicker = this.invuln;
-    const v = knockVector(this, dir, from, ENEMY_KNOCK_SPEED);
-    if (knock && v) {
-      this.knockX = v[0]; this.knockY = v[1];
-      this.knockTime = Math.max(1, Math.round(knock / (ENEMY_KNOCK_SPEED / 256)));
-    }
-    // The freeze goes on the hit CONNECTING, not on the sword specifically:
-    // this is the one funnel every damage source in the game passes through,
-    // so a bomb, a thrown pot and a swing all land with the same weight.
-    // Longest-wins inside `freeze` keeps a four-enemy explosion to one impact.
-    if (this.isEnemy) game.freeze(HITSTOP_HIT_FRAMES);
-    if (this.hp <= 0) { this.die(game); return true; }
-    game.audio.sfx('enemyHit');
-    if (this.onHurt) this.onHurt(game);
-    return true;
-  }
-
-  die(game) {
-    if (this.dead) return;
-    this.dead = true;
-    this.remove = true;
-    if (this.onDie) this.onDie(game);
-    game.spawnEffect('puff', this.cx - 8, this.cy - 8 - this.z);
-    game.audio.sfx(this.isBoss ? 'bossDie' : 'enemyDie');
-    if (this.isEnemy) game.onEnemyDefeated(this);
-  }
-
-  update(game) { }
-
-  draw(ctx, game, ox, oy) {
-    // A struck enemy FLASHES, the way the Oracles draw it: on the off beat it
-    // is drawn in `hitflash` instead of being hidden, so it never leaves the
-    // screen while it is being hit. Anything else still blinks out.
-    let pal = this.pal;
-    if (this.flicker > 0 && Math.floor(this.flicker / ENEMY_HIT_FLASH_BEAT) % 2 === 0) {
-      if (!this.isEnemy) return;
-      pal = 'hitflash';
-    }
-    const name = this.spriteName ? this.spriteName(game) : this.sprite;
-    if (!name) return;
-    // `shakeX`: a whole-pixel shiver an enemy's ai sets (the flipped spiked
-    // beetle's last second); drawing only, the entity does not move.
-    const off = this.drawOffset ? this.drawOffset(game, name) : null;
-    sprites.draw(ctx, name, ox + this.x + (this.shakeX || 0) + (off ? off[0] : 0),
-      oy + this.y - this.z + (off ? off[1] : 0), {
-      pal, flipX: this.flipX,
-    });
-  }
-
-  // Seasons' own shadow (S219, terrainEffects.s shadowAnimation), drawn on
-  // alternate frames, each thing on its own beat (_drawObjectTerrainEffects
-  // @inAir) — the Game Boy cannot draw half a shadow, so it flickers one. A
-  // 32x32 cell centred on the middle of the 16x16 spot.
-  drawShadow(ctx, game, ox, oy) {
-    if (!this.shadow || this.z <= 1) return;
-    if ((game.frame + this.id) % SHADOW_FLICKER) return;
-    sprites.draw(ctx, 'fx_shadow0', ox + this.x - 8, oy + this.y - 8);
-  }
-
-  // THE SPLASH AT ITS FEET in shallow water (S220): Seasons draws it under
-  // every object that asks for terrain effects (_drawObjectTerrainEffects
-  // @walkingInPuddle) — its enemies on foot and its townsfolk as well as
-  // Link, all in step on the one counter. Where the thing's own feet are
-  // (groundFlags), and only standing: a hop or a bounce is above it.
-  //
-  // And THE GRASS AT ITS FEET in tall grass (S222, @walkingInGrass): two
-  // blades over the feet, the picture picked by bit 2 of where it stands (its
-  // x xor y), so it sways as it walks and holds still when it stops.
-  drawPuddle(ctx, game, ox, oy) {
-    if (!this.wades || this.z > 1 || this.dead) return;
-    const f = groundFlags(game, this);
-    const x = ox + this.x + ((this.w - 16) >> 1) - 8, y = oy + this.y + this.h - 24;
-    if (f & F.TALLGRASS) {
-      sprites.draw(ctx, 'fx_grass' + grassPicture(this.x + (this.w >> 1), this.y + this.h - 8), x, y);
-      return;
-    }
-    if (!(f & F.WATER) || (f & F.DEEP)) return;
-    const k = Math.floor(game.frame / PUDDLE_HOLD) % 4;
-    sprites.draw(ctx, 'fx_puddle' + k, x, y);
-  }
-}
-
-// --------------------------------------------------------------------------
-// Tile collision
-// --------------------------------------------------------------------------
-
-/**
- * Try to move an entity by (sdx, sdy) SUBPIXELS against the room's solid tiles.
- * Axis-separated so sliding along walls works, with a small corner-nudge so
- * the player doesn't snag on tile seams (matches how the GBC games felt).
- * Returns { hitX, hitY }.
- *
- * The deltas are subpixels, not pixels — 256 to the pixel. A caller holding a
- * px/f speed converts it with `sp()`; the enemy AI toolkit does this once at
- * its edge so enemy data can go on being written in px/f.
- *
- * A step that does not change the whole-pixel position still lands: the
- * accumulator takes it, `canOccupy` is asked about the same pixel it already
- * occupies and says yes. That is how a 0.12 px/f current pushes at all.
- */
-function moveEntity(game, e, sdx, sdy, caps) {
-  const c = caps || e.caps || null;
-  let hitX = false, hitY = false;
-  // THE CORNER NUDGE IS FOR TERRAIN, AND FOR A STRAIGHT PUSH. Seasons slides
-  // Link round the corner of a wall he walks into square-on; it does not
-  // slide him round a person, and a diagonal press already slides along a
-  // wall by moving on its free axis. Nudging round a solid townsperson on a
-  // diagonal press walked Link along its side and off the screen beside an
-  // exit (Sennit, Sandpiper Row; S147's note).
-  const straight = !(sdx && sdy);
-
-  if (sdx !== 0) {
-    const nfx = e.fx + sdx;
-    const nx = toPx(nfx);
-    if (canOccupy(game, e, nx, e.y, c)) {
-      e.fx = nfx;
-    } else {
-      // corner nudge: allow the move if shifting a pixel on the other axis frees it
-      let ok = false;
-      const nudge = straight && !canOccupy(game, e, nx, e.y, c, true) ? [e.fy - FP_ONE, e.fy + FP_ONE] : [];
-      for (const nfy of nudge) {
-        if (canOccupy(game, e, nx, toPx(nfy), c)) { e.fx = nfx; e.fy = nfy; ok = true; break; }
-      }
-      if (!ok) hitX = true;
-    }
-  }
-  if (sdy !== 0) {
-    const nfy = e.fy + sdy;
-    const ny = toPx(nfy);
-    if (canOccupy(game, e, e.x, ny, c)) {
-      e.fy = nfy;
-    } else {
-      let ok = false;
-      const nudge = straight && !canOccupy(game, e, e.x, ny, c, true) ? [e.fx - FP_ONE, e.fx + FP_ONE] : [];
-      for (const nfx of nudge) {
-        if (canOccupy(game, e, toPx(nfx), ny, c)) { e.fy = nfy; e.fx = nfx; ok = true; break; }
-      }
-      if (!ok) hitY = true;
-    }
-  }
-  return { hitX, hitY };
-}
-
-/** Would the entity's hitbox at (x, y) be free of solid tiles? */
-function canOccupy(game, e, x, y, caps, terrainOnly = false) {
-  const room = game.room;
-  if (!room) return false;
-  const r = { x: x + e.hb.x, y: y + e.hb.y, w: e.hb.w, h: e.hb.h };
-  // Flying entities and mid-jump entities ignore ground obstructions but not walls.
-  const airborne = (e.flying || e.z > 2);
-  // AN ENTITY'S OWN `caps` ARE THE FALLBACK, and this is the whole of why the
-  // sea had no living thing in it. `moveEntity` has always read `e.caps`; this
-  // read `e.swimming`, which NOTHING IN THE GAME EVER SET. So one function said
-  // an anglerfry could swim and the other said it could not, and the one that
-  // said no is the one every bare call reaches — every aquatic enemy in the
-  // world sat frozen on its spawn tile, unable to leave deep water, for the
-  // life of the project. Nothing could see it: they spawn, they update, they
-  // draw, they animate, they hurt you if you touch them, and check-motion's
-  // "swimmers stay off the 8px lattice" is satisfied perfectly by not moving.
-  //
-  // `jumping` is OR-ed rather than taken, so an entity that is off the ground
-  // clears ground obstructions whatever its own caps say.
-  const cps = caps || (e.caps
-    ? { ...e.caps, jumping: e.caps.jumping || airborne }
-    : { jumping: airborne, swim: false, cutting: false });
-  const x0 = r.x, x1 = r.x + r.w - 1, y0 = r.y, y1 = r.y + r.h - 1;
-  const xs = sampleAxis(x0, x1), ys = sampleAxis(y0, y1);
-  // Enemies additionally refuse terrain they will not walk on (water, pits, lava),
-  // so they path around hazards instead of shuffling into them.
-  const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
-  for (const py of ys) {
-    for (const px of xs) {
-      if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
-      // A BOSS KEEPS TO ITS ARENA (S192). In Seasons a boss or miniboss never
-      // follows Link into a doorway: the ring of tiles round a dungeon room is
-      // wall to it. Ours could, and Bogmaw sat on Link in the hall's west door
-      // until he died there. Only in a room with a wall ring, so an outdoor
-      // fight keeps the whole screen.
-      if (e._bossClass && room.cw === 15 && !airborne
-          && (px < TILE || py < TILE || px >= room.pw - TILE || py >= room.ph - TILE)) return false;
-      if (room.solidAt(px, py, game.tide, cps)) return false;
-      if (avoid) {
-        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-        if (room.flagsAt(tx, ty, game.tide) & avoid) return false;
-      }
-      // A townsperson keeps out of a tree's root mound (S168): see
-      // `Room.quadRootCover`. Walkable for Link, never somewhere to stand.
-      if (e.avoidRoots && !airborne
-          && room.quadRootCover(Math.floor(px / TILE), Math.floor(py / TILE), game.tide)) return false;
-    }
-  }
-  if (!airborne && !terrainOnly) {
-    for (const o of game.entities) {
-      // A solid thing in the air — held overhead, on a line, mid-throw — is
-      // not in anyone's way (S189: an ice chunk walled Link in from his own
-      // hands).
-      if (o === e || !o.solid || o.dead || o.carried || o.attached || o.flight) continue;
-      const ob = o.rect();
-      if (o.yieldsWhenInside) {
-        const er = { x: e.x + e.hb.x, y: e.y + e.hb.y, w: e.hb.w, h: e.hb.h };
-        if (er.x < ob.x + ob.w && ob.x < er.x + er.w && er.y < ob.y + ob.h && ob.y < er.y + er.h) continue;
-      }
-      if (x0 <= ob.x + ob.w - 1 && ob.x <= x1 && y0 <= ob.y + ob.h - 1 && ob.y <= y1) return false;
-    }
-  }
-  return true;
-}
-
-// Sample the hitbox edges plus interior points at 8px intervals, so a hitbox
-// never tunnels through a thin obstruction.
-function sampleAxis(a, b) {
-  const out = [a];
-  for (let v = a + 8; v < b; v += 8) out.push(v);
-  out.push(b);
-  return out;
-}
-
-/** Tile flags under an entity's feet (its hitbox centre-bottom). */
-/**
- * Is this object over a hole? The cartridge's own test
- * (objectCheckIsOverHazard): the one tile HOLE_FOOT_DY below its centre.
- * Returns that tile, or null. Height is the caller's to ask — the cartridge's
- * objectCheckIsOnHazard says no to anything in the air.
- */
-function overHole(game, e) {
-  const room = game.room;
-  if (!room) return null;
-  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + HOLE_FOOT_DY) / TILE);
-  if (!room.inBounds(tx, ty) || !(room.flagsAt(tx, ty, game.tide) & F.PIT)) return null;
-  return { tx, ty };
-}
-
-/**
- * Gone down a hole (S185): replaced by INTERAC_FALLDOWNHOLE, Seasons' ball
- * that shrinks as it slides to the hole's middle, with SND_FALLINHOLE
- * (objectReplaceWithFallingDownHoleInteraction). Nothing is dropped and
- * nothing breaks: it is simply gone.
- */
-function dropIntoHole(game, e) {
-  e.remove = true;
-  game.spawnEffect('hole', e.cx - 8, e.cy - 8);
-  game.audio.sfx('fallInHole');
-}
-
-/** Which of the two pictures of the grass at the feet (S222): Seasons'
- *  _drawObjectTerrainEffects tests bit 2 of the object's x xor y. */
-function grassPicture(x, y) {
-  return ((Math.floor(x) ^ Math.floor(y)) >> 2) & 1;
-}
-
-function groundFlags(game, e) {
-  const room = game.room;
-  if (!room) return 0;
-  const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
-  const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
-  const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-  return room.flagsAt(tx, ty, game.tide);
-}
-
-/**
- * Is any part of this entity's hitbox over deep water?
- *
- * `groundFlags` asks about ONE point — the hitbox's centre-bottom — which is
- * the right question for "what am I standing in" and the wrong one for "have I
- * met the water yet". The Kelp-Soled Cleats' dive needs the second: a player
- * who has set the soles to drink is promised the floor of the next water he
- * meets, and at the mouth of a torrent running against him he never gets his
- * middle over it (see Player.updateWater). Samples the hitbox the same way
- * `canOccupy` does, so the two never disagree about where the water starts.
- */
-function touchingDeep(game, e) {
-  const room = game.room;
-  if (!room) return false;
-  const r = e.rect();
-  const xs = sampleAxis(r.x, r.x + r.w - 1), ys = sampleAxis(r.y, r.y + r.h - 1);
-  for (const py of ys) {
-    for (const px of xs) {
-      const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-      if (!room.inBounds(tx, ty)) continue;
-      if (room.flagsAt(tx, ty, game.tide) & F.DEEP) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * THE BELT UNDER A BODY (S186), as Seasons asks it: the tile BELT_FOOT_DY
- * below its centre (ecom_updateMovingPlatform's objectGetRelativeTile $05),
- * at the sea there. Returns the belt's direction, or null — a drowned belt
- * is water, and water has no `belt`.
- */
-function beltUnder(game, e, footDy = BELT_FOOT_DY) {
-  const room = game.room;
-  if (!room) return null;
-  const tx = Math.floor(e.cx / TILE), ty = Math.floor((e.cy + footDy) / TILE);
-  if (!room.inBounds(tx, ty)) return null;
-  return room.tile(tx, ty, game.tide).belt || null;
-}
-
-function groundTile(game, e) {
-  const room = game.room;
-  const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
-  const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
-  return { tx: Math.floor(px / TILE), ty: Math.floor(py / TILE) };
-}
-
-/**
- * The tide level under an entity's own feet, 0-2.
- *
- * This is what anything reading "the tide" from inside the world should ask
- * for — an enemy, a boss, a raft. `game.tide.level` is the BASE, which is a
- * different question and is only the right one for the HUD, the music and the
- * save. Since the Anchor, the two can disagree inside a single room.
- */
-function tideAt(game, e) {
-  const { tx, ty } = groundTile(game, e);
-  return game.tide.levelAt(tx, ty, game.room);
-}
-
-/**
- * Can this entity STAND on that tile — not merely move through it?
- *
- * `canOccupy` answers a narrower question. A pit is not solid, so the engine
- * lets a walker step into one and then punishes him for it; deep water, lava
- * and a ledge's jumpable face are all the same shape of answer. This is the
- * "somewhere to put your feet" rule, and it lives here rather than in each
- * caller because a caller with its own copy of it is the private-model
- * mistake this project keeps paying for (CLAUDE.md's collision rule).
- *
- * Returns the pixel position to stand at, or null.
- */
-function standAt(game, e, tx, ty, o = {}) {
-  if (tx < 0 || ty < 0 || tx >= game.room.tw || ty >= game.room.th) return null;
-  const f = game.room.flagsAt(tx, ty, game.tide);
-  if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) return null;
-  const px = tx * TILE + (TILE - e.w) / 2;
-  const py = ty * TILE + (TILE - e.h) / 2;
-  if (!canOccupy(game, e, px, py, o.caps || { jumping: false, swim: false })) return null;
-  return { x: px, y: py };
-}
-
-/** Nearest tile the given entity can legally stand on. Used after a tide change. */
-function findSafeTile(game, e, maxRadius = 6) {
-  const { tx, ty } = groundTile(game, e);
-  for (let r = 0; r <= maxRadius; r++) {
-    for (let dy = -r; dy <= r; dy++) {
-      for (let dx = -r; dx <= r; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-        const at = standAt(game, e, tx + dx, ty + dy);
-        if (at) return at;
-      }
-    }
-  }
-  return null;
-}
-__exports["ENTITY_TYPES"] = ENTITY_TYPES;
-__exports["defineEntity"] = defineEntity;
-__exports["spawnEntity"] = spawnEntity;
-__exports["DIRS"] = DIRS;
-__exports["DIR_VEC"] = DIR_VEC;
-__exports["dirFromVec"] = dirFromVec;
-__exports["dirTo"] = dirTo;
-__exports["enemyHurtRect"] = enemyHurtRect;
-__exports["hitInvulnFrames"] = hitInvulnFrames;
-__exports["knockVector"] = knockVector;
-__exports["Entity"] = Entity;
-__exports["moveEntity"] = moveEntity;
-__exports["canOccupy"] = canOccupy;
-__exports["overHole"] = overHole;
-__exports["dropIntoHole"] = dropIntoHole;
-__exports["grassPicture"] = grassPicture;
-__exports["groundFlags"] = groundFlags;
-__exports["touchingDeep"] = touchingDeep;
-__exports["beltUnder"] = beltUnder;
-__exports["groundTile"] = groundTile;
-__exports["tideAt"] = tideAt;
-__exports["standAt"] = standAt;
-__exports["findSafeTile"] = findSafeTile;
-});
-
-/* ===== src/game/sideview.js ===== */
-__define("game/sideview.js", function (__exports, __require) {
-// SIDE-VIEW PASSAGES (S241, docs/briefs/SIDE-VIEW.md): Link's movement in a
-// room that declares `side: true`, read from the cartridges' own
-// link.s (oracles-disasm, object_code/common/specialObjects/):
-//
-//   linkState01_sidescroll       on the ground he moves left and right only;
-//                                 in water he swims; leaving the water at the
-//                                 top he hops (SV_HOP)
-//   linkUpdateInAir_sidescroll    off the ground and off a ladder he falls,
-//                                 gaining SV_GRAVITY a frame to SV_FALL_MAX;
-//                                 pressing UP over a ladder catches it
-//   a ladder ($18) is climbed in all four directions and nothing falls on one;
-//   a ladder's top ($19) is also stood on, and Link's middle never rises above
-//   y&15 = 9 standing on one (the cap after linkUpdateMovement)
-//
-// Our addition is the tide: the waterline is ordinary tide tiles (the side
-// legends' digits), so the conch and the Anchor move it. Without the Cleats
-// water is drowned in, as Ages' side view without flippers is
-// (linkUpdateSwimming_sidescroll @drown): Link is washed back to the last
-// place he stood. With them he swims; floor mode sinks him to the bed.
-//
-// Collision is the engine's own: `moveEntity` / `canOccupy` against the
-// room's tiles, with Link's side-view box. Nothing here decides what is solid.
-
-const { F } = __require("world/tileset.js");
-const { TILE } = __require("core/screen.js");
-const { moveEntity, canOccupy } = __require("game/entity.js");
-const { WALK_SPEED, SWIM_SPEED, SINK_SPEED, SV_GRAVITY, SV_FALL_MAX, SV_HOP } = __require("data/feel.js");
-
-/** Link's box in side view, from his sprite's top-left: the cartridge's
- *  calculateAdjacentWallsBitset @sidescrollOffsets test points, -3..+7 down
- *  and -5..+4 across his middle (his middle being 8,8 of the sprite), so his
- *  head counts as well as his feet. */
-const SIDE_HB = { x: 3, y: 5, w: 10, h: 11 };
-/** Standing on a ladder's top his middle is at 9 in the tile above it, which
- *  puts the bottom of SIDE_HB on the ladder top's top edge. */
-const LADDER_TOP_STAND = 9;
-
-function isSideRoom(game) {
-  return !!(game.room && game.room.def && game.room.def.side);
-}
-
-function tileAtPx(game, px, py) {
-  return game.room.tile(Math.floor(px / TILE), Math.floor(py / TILE), game.tide);
-}
-
-/** The tile at Link's middle, the cartridge's wActiveTile. */
-function activeTile(game, p) { return tileAtPx(game, p.x + 8, p.y + 8); }
-/** The tile 8 px under his middle, the cartridge's wLastActiveTileType. */
-function underTile(game, p) { return tileAtPx(game, p.x + 8, p.y + 16); }
-
-const isLadder = d => d.sv === 'ladder' || d.sv === 'ladderTop';
-
-/** Is he standing: something solid, or a ladder's top, right under his box? */
-function sideGrounded(game, p, climbing = false) {
-  const r = p.hb;
-  const y = p.y + r.y + r.h;              // the first row of pixels under him
-  for (const x of [p.x + r.x, p.x + r.x + r.w - 1]) {
-    const d = tileAtPx(game, x, y);
-    if (d.flags & (F.SOLID | F.VOID)) return true;
-  }
-  if (!climbing) {
-    const d = tileAtPx(game, p.x + 8, y);
-    if (d.sv === 'ladderTop' && (y % TILE) === 0) return true;
-  }
-  return false;
-}
-
-/** One frame of Link in a side-view room. Called from Player.update in place
- *  of the top-down terrain, movement, jump and hazard steps. */
-function updateSideView(p, game) {
-  const inp = game.input;
-  const dx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
-  const dyIn = (inp.down('down') ? 1 : 0) - (inp.down('up') ? 1 : 0);
-  if (dx) p.dir = dx < 0 ? 'left' : 'right';
-
-  const here = activeTile(game, p);
-  const wet = !!(here.flags & F.DEEP);
-  const wasWet = p.inDeep;
-  p.inShallow = false;
-
-  // ------------------------------------------------------------- water
-  if (wet) {
-    if (!wasWet) {
-      game.audio.sfx('splash');
-      game.spawnEffect('splash', p.x, p.y + 2);
-      p.svFall = 0;
-    }
-    p.inDeep = true;
-    if (p._cleats <= 0) { p.beginWash(game); return; }
-    if (!wasWet && p.cleatMode === 'sink' && !p.underwater) p.underwater = true;
-    if (p.underwater) {
-      // FLOOR MODE: weighted, he walks the bed and climbs nothing.
-      p.svFall = Math.min(SV_FALL_MAX >> 2, (p.svFall || 0) + SV_GRAVITY);
-      const res = move(game, p, dx * SINK_SPEED, p.svFall);
-      if (res.hitY) p.svFall = 0;
-      p._lastDx = dx; p._lastDy = 0;
-      if (dx) p.animT++;
-      return;
-    }
-    // UP on a ladder through the surface climbs out of the water, with no
-    // hop (@notInWater skips it for an underwater ladder).
-    if (here.sv === 'ladder' && dyIn < 0) {
-      p.svFall = 0; p.svClimb = true; p.dir = 'up';
-      move(game, p, 0, -WALK_SPEED);
-      p._lastDx = 0; p._lastDy = dyIn; p.animT++;
-      return;
-    }
-    // Swimming: every direction, facing left or right
-    // (linkUpdateSwimming_sidescroll @swimmingState2).
-    p.svFall = 0; p.svClimb = false;
-    move(game, p, dx * SWIM_SPEED, dyIn * SWIM_SPEED);
-    p._lastDx = dx; p._lastDy = dyIn;
-    p.animT++;
-    return;
-  }
-
-  // ------------------------------------------------- out of the water
-  if (wasWet) {
-    p.inDeep = false;
-    p.underwater = false;
-    game.spawnEffect('splash', p.x, p.y + 2);
-    game.audio.sfx('splash', { pitch: 1.2, vol: 0.8 });
-    // The hop out (@notInWater), unless he climbed out up a ladder.
-    if (!isLadder(underTile(game, p)) && !isLadder(here)) p.svFall = -SV_HOP;
-  }
-
-  const onLadder = isLadder(here) || isLadder(underTile(game, p));
-  if (onLadder && (dyIn || p.svClimb) && !(p.svFall < 0)) {
-    // CLIMBING: four ways at the walking pace, and nothing falls.
-    p.svClimb = true;
-    p.svFall = 0;
-    const res = move(game, p, dx * WALK_SPEED, dyIn * WALK_SPEED);
-    // Off the top of the ladder: stand on its top.
-    const now = activeTile(game, p);
-    if (!isLadder(now) && underTile(game, p).sv === 'ladderTop') {
-      const row = Math.floor((p.y + 16) / TILE);
-      p.y = Math.min(p.y, row * TILE - 16 + (LADDER_TOP_STAND - 8));
-      p.svClimb = false;
-    }
-    // Off the foot of it onto ground: walking again.
-    if (dyIn > 0 && res.hitY) p.svClimb = false;
-    if (!isLadder(now) && !isLadder(underTile(game, p))) p.svClimb = false;
-    if (dyIn) p.dir = 'up';
-    p._lastDx = dx; p._lastDy = dyIn;
-    if (dx || dyIn) p.animT++;
-    return;
-  }
-  p.svClimb = false;
-
-  // Standing on a ladder's top, DOWN climbs down it.
-  if (dyIn > 0 && sideGrounded(game, p) && tileAtPx(game, p.x + 8, p.y + 16).sv === 'ladderTop') {
-    p.svClimb = true;
-    move(game, p, 0, WALK_SPEED);
-    p.dir = 'up';
-    return;
-  }
-
-  // ------------------------------------------------------- walking / air
-  if (dx) move(game, p, dx * WALK_SPEED, 0);
-  p._lastDx = dx; p._lastDy = 0;
-  if (dx) p.animT++;
-
-  if (sideGrounded(game, p) && !(p.svFall < 0)) {
-    p.svFall = 0;
-    rememberSafe(game, p);
-  } else {
-    // UP over a ladder catches it (@positiveSpeedZ).
-    if (dyIn < 0 && isLadder(activeTile(game, p)) && p.svFall >= 0) { p.svClimb = true; p.svFall = 0; return; }
-    p.svFall = Math.min(SV_FALL_MAX, (p.svFall || 0) + SV_GRAVITY);
-    fall(game, p);
-  }
-
-  // Off the bottom of the room: Seasons' hole tile is a death line
-  // (TILETYPE_SS_HOLE, respawnLink with SND_DAMAGE_LINK).
-  if (p.y + 8 >= game.room.ph) { p.beginWash(game); return; }
-
-  // Spikes where he stands (dealSpikeDamageToLink).
-  if ((activeTile(game, p).flags & F.HAZARD) && p.invuln <= 0) {
-    p.takeDamage(game, 2, null, { noKnockDir: true });
-  }
-}
-
-/** Apply this frame's fall, landing on solid ground or a ladder's top. */
-function fall(game, p) {
-  const v = p.svFall;
-  if (v <= 0) {
-    const res = move(game, p, 0, v);
-    if (res.hitY) p.svFall = 0;           // the ceiling (@applyGravity)
-    return;
-  }
-  // Down, a pixel at a time so a ladder's top (not solid) can catch him.
-  let left = v;
-  while (left > 0) {
-    const step = Math.min(256, left);
-    const before = p.y;
-    const res = move(game, p, 0, step);
-    left -= step;
-    if (res.hitY) { p.svFall = 0; return; }
-    const feet = p.y + p.hb.y + p.hb.h;
-    const crossed = Math.floor((before + p.hb.y + p.hb.h - 1) / TILE) !== Math.floor((feet - 1) / TILE);
-    if (crossed && (feet % TILE) <= 2 && tileAtPx(game, p.x + 8, feet).sv === 'ladderTop') {
-      const row = Math.floor(feet / TILE);
-      p.y = row * TILE - p.hb.y - p.hb.h;
-      p.svFall = 0;
-      return;
-    }
-  }
-}
-
-/** The engine's mover, with water never in the way: in side view he falls
- *  or walks INTO water and the water decides (drowned without the Cleats),
- *  where top-down a non-swimmer is stopped at the bank. */
-function move(game, p, dx, dy) {
-  return moveEntity(game, p, dx, dy, { ...p.caps, swim: true });
-}
-
-function rememberSafe(game, p) {
-  if (canOccupy(game, p, p.x, p.y)) { p.lastSafe.x = p.x; p.lastSafe.y = p.y; }
-}
-__exports["SIDE_HB"] = SIDE_HB;
-__exports["isSideRoom"] = isSideRoom;
-__exports["sideGrounded"] = sideGrounded;
-__exports["updateSideView"] = updateSideView;
 });
 
 /* ===== src/game/projectile.js ===== */
@@ -21847,7 +21871,7 @@ __define("game/player.js", function (__exports, __require) {
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
-const { isSideRoom, updateSideView, SIDE_HB } = __require("game/sideview.js");
+const { isSideRoom, updateSideView, settleSideView, sideWet, SIDE_HB } = __require("game/sideview.js");
 const { SwordBeam } = __require("game/projectile.js");
 const { Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder, enemyHurtRect, knockVector } = __require("game/entity.js");
 
@@ -23724,13 +23748,16 @@ class Player extends Entity {
     this.washing--;
     this.animT++;
     if (this.washing === 0) {
-      // In a side-view passage the last place he STOOD, not the nearest
-      // free tile, which there can be in mid-air (S241).
+      // In a side-view passage the place he came IN (S242): the cartridge
+      // does not update the respawn point in a side-view room, so a drowned
+      // Link goes back to where he entered (link.s, respawnLink). The last
+      // place he stood could be under the sea by now, and washed back into
+      // water he would be washed back again, for ever.
       const side = isSideRoom(game);
-      const safe = (side ? null : findSafeTile(game, this)) || this.lastSafe;
+      const safe = (side ? this.svEntry : findSafeTile(game, this)) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.z = 0;
-      if (side) { this.svFall = 0; this.svClimb = false; this.inDeep = false; this.underwater = false; }
+      if (side) { this.svFall = 0; this.inDeep = false; this.underwater = false; settleSideView(game, this); }
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
       this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
@@ -23740,6 +23767,13 @@ class Player extends Entity {
 
   /** Called after a tide change to make sure Link is not left in a wall. */
   reconcileWithTide(game) {
+    // A side-view passage (S242): the sea moving round him is the lift, not a
+    // wall he is pushed out of. He falls or swims from where he is; only
+    // water without the Cleats sends him back.
+    if (isSideRoom(game)) {
+      if (sideWet(game, this) && this._cleats <= 0) this.beginWash(game);
+      return;
+    }
     if (canOccupy(game, this, this.x, this.y, this.caps)) {
       const f = groundFlags(game, this);
       if (!(f & F.DEEP) || this._cleats > 0) return;
@@ -32465,6 +32499,9 @@ class MapScreen {
         for (let x = 0; x < 8 && x < m.w; x++) {
           const key = roomKeyAt(m.id, f, x, y);
           if (!key) continue;
+          // A side-view passage is not on the dungeon map (S242): Seasons
+          // keeps them in a room group of their own, off every floor's grid.
+          if (m.roomDefs[key] && m.roomDefs[key].side) continue;
           const sx = 80 + x * 8;
           if (this.seen(m.id, key)) drawScreen(ctx, 'dmapRoom' + exitsFor(g, m, f, x, y), sx, sy);
           else if (haveMap) drawScreen(ctx, 'dmapUnseen', sx, sy);
@@ -42152,6 +42189,7 @@ __define("game/game.js", function (__exports, __require) {
 
 const { Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen, paletteFade } = __require("core/screen.js");
 const { Input } = __require("core/input.js");
+const { arriveSideView } = __require("game/sideview.js");
 const { audio } = __require("core/audio.js");
 const { tiles: tileSheet, sprites } = __require("gfx/art.js");
 const { TINTS } = __require("gfx/palettes.js");
@@ -42358,6 +42396,9 @@ class Game {
       if (dir) this.player.dir = dir;
       this.player.z = 0; this.player.vz = 0; this.player.jumping = false;
       this.player.lastSafe.x = this.player.x; this.player.lastSafe.y = this.player.y;
+      // Into a side-view passage (S242): on the ladder, climbing, and the
+      // place the passage washes him back to.
+      arriveSideView(this, this.player);
       this.player.reconcileWithTide(this);
     }
     // After the player is placed, never before: a room has no camera history to
@@ -70639,9 +70680,13 @@ function installDungeonsA() {
       },
       '1,4,6': {
         name: 'Bell Cell',
+        // S242: the stair in its corner goes down into the Sounding Way, the
+        // Sanctum's side-view passage (0,4,6), whose far ladder comes up in
+        // the Current Garden next door.
+        warps: [stair3(1, 1, P3(0, 4, 6, 1, 1, 'up'))],
         map: [
           '###############',
-          '#.............#',
+          '#/............#',
           '#.U.........U.#',
           '#.............#',
           '#....,,,,,....#',
@@ -71360,15 +71405,65 @@ function installDungeonsA() {
           reward: { openDoors: [[2, 4]], say: 'A grate lifts in the west wall.' },
         },
       },
+      '0,4,6': {
+        // THE SOUNDING WAY (S242, docs/briefs/SIDE-VIEW.md stage 3): the
+        // Sanctum's side-view passage, optional, under the Bell Cell. THE SEA
+        // IS THE LIFT. Down the Bell Cell's stair onto the west ladder; at LOW
+        // the floor is walked (and the pool in it drowns a Link without the
+        // Cleats, who is washed back to the ladder he came in on), but the
+        // east ladder's ledge is two tiles over his head; at MID he swims up
+        // and hops onto it, and its ladder comes up in the Current Garden; at
+        // HIGH he swims to the top and hops onto the platform for 100 rupees,
+        // which no lower sea reaches. The human's choices: build it as shown,
+        // 100 rupees, no enemies yet, the conch played as everywhere else.
+        // Not on the dungeon map (Seasons keeps passages off it).
+        // tools/check-sideview.mjs proves `sideRoom` in the engine.
+        name: 'The Sounding Way',
+        side: true,
+        legend: 'sideBog',
+        map: [
+          '[U^^^^^^^^^^^U|',
+          '[H...........H|',
+          '[H...........H|',
+          '[94444===44449|',
+          '[8333333333338|',
+          '[8333333333338|',
+          '[7222222222___|',
+          '[6111111111111|',
+          '[6111111111111|',
+          '[###0000000###|',
+          '[bbbbbbbbbbbbb|',
+        ],
+        warps: [
+          { x: 1, y: 0, to: P3(1, 4, 6, 1, 2, 'down') },
+          { x: 13, y: 0, to: P3(1, 5, 6, 1, 2, 'down') },
+        ],
+        // What is reached with the sea HELD at each level from each way in
+        // (`seas`: the levels it is reached at, Cleats owned): the prize only
+        // at HIGH, the way out east only at MID and HIGH.
+        sideRoom: {
+          entries: [[1, 1], [13, 1]],
+          reach: [
+            { name: 'the platform prize', at: [7, 2], from: [1, 1], seas: [2] },
+            { name: 'the east ledge', at: [12, 5], from: [1, 1], seas: [1, 2] },
+            { name: 'the east floor', at: [12, 8], from: [1, 1], seas: [0, 1, 2] },
+          ],
+        },
+        entities: [
+          ['pickup', 7, 2, { kind: 'rupee100' }],
+        ],
+      },
       '1,5,6': {
         name: 'Current Garden',
         // Optional, off the Bell Cell's east wall. The whole floor runs west,
         // back at the door, and the chest is on an island two screens out:
         // swum, the current hands you back; walked on the bottom, nothing does.
         size: [2, 1],
+        // S242: the Sounding Way's ladder out comes up on the stair here.
+        warps: [stair3(1, 1, P3(0, 4, 6, 13, 1, 'up'))],
         map: [
           '##############################',
-          '#...ttttttttttttttttttttttttt#',
+          '#/..ttttttttttttttttttttttttt#',
           '#.U.ttttt#ttttt#ttttttttttttt#',
           '#...ttttttttttttttttttttttttt#',
           '#...tttttttttttttttttt...tttt#',

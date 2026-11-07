@@ -88,7 +88,21 @@ lands in stages; this file is the plan every stage builds to.
    each sea, sink with the Cleats) in `tools/lib/dungeon-flood.mjs`, and a
    `check-sideview.mjs` proves each passage's claim in the real engine: what
    is reached at which sea, and that nothing strands Link.
+   DONE S242: tools/lib/side-flood.mjs (the verbs, once), taught to
+   tools/lib/dungeon-flood.mjs (a passage is joined only by its warps), and
+   tools/check-sideview.mjs (model + engine, 29 assertions).
 3. The first real passage, optional, in the Bogwater Sanctum (Poison Moth's
    own side-view colours), its prize behind a waterline only one sea reaches.
+   DONE S242: the Sounding Way (d3 0,4,6), down the Bell Cell's stair, its
+   east ladder up in the Current Garden; LOW walks the floor, MID reaches the
+   way out east, HIGH the 100 rupees on the platform. Mock and pictures:
+   docs/briefs/s242/. The human (S242): build as shown, 100 rupees, NO
+   ENEMIES YET (ours to design later, never Seasons'/Ages' fish or podoboos),
+   the conch played facing out as everywhere else (keep).
+   Engine rules added with it: drowned in a passage, Link is washed back to
+   where he CAME IN (the cartridge's respawn rule; the last place he stood
+   could be under the sea by then), arriving on a ladder he holds on it, the
+   conch changing the sea round him in a passage only washes him if he has no
+   Cleats, and passages are not drawn on the dungeon map.
 4. More passages, one per dungeon from D3, each asking the waterline a
    different question.

@@ -385,6 +385,9 @@ const placements = await page.evaluate((CHARS) => {
   const out = [];
   for (const [mapId, m] of window.__MAPS) {
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
+      // A side-view passage's `_` is a solid shelf seen from the side
+      // (sideBog's svBogLedge), not a one-way ledge (S242).
+      if (def.side) continue;
       const grid = def.map || [];
       const at = (x, y) => (grid[y] || '')[x];
       const seen = new Set();

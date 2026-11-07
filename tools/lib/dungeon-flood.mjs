@@ -25,6 +25,7 @@ import { DREDGE_RANGE, COIN_THROW_SPEED, COIN_SETTLE_FRAMES } from '../../src/da
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
 import { floatSweep, floatStations } from '../../src/game/float-path.js';
 import { drainedBase } from '../../src/game/tide.js';
+import { sideFlood, sideRestCells } from './side-flood.mjs';
 
 const DREDGE_TILES = Math.floor(DREDGE_RANGE / 16);
 // Where a thrown Ferryman's Coin comes down: its flight (speed x settle
@@ -150,6 +151,21 @@ export function floodDungeon(mapId, opts = {}) {
     } finally { setToggleState(was); }
   };
   const passable = (room, x, y) => [0, 1, 2].some(t => walkableAt(room, x, y, t));
+
+  // A SIDE-VIEW PASSAGE (S242, docs/briefs/SIDE-VIEW.md) is moved through by
+  // its own verbs — walk, fall, ladders, swim with the Cleats, the hop out of
+  // the water, the conch changing the sea anywhere — taught once in
+  // tools/lib/side-flood.mjs. Its edges join nothing (a passage is entered
+  // and left by its ladders' warps), so no seam, drop or whirlpool reaches it.
+  const isSide = (rk) => !!(m.roomDefs[rk] && m.roomDefs[rk].side);
+  const sideDone = new Set();
+  const sideExpand = (rk, x, y) => {
+    const k = rk + ':' + x + ',' + y;
+    if (sideDone.has(k)) return;
+    sideDone.add(k);
+    const r = sideFlood(ROOMS.get(rk), [[x, y]], { conch: true, cleats: !!CAPS.swim });
+    for (const c of r.cells) { const [cx, cy] = c.split(',').map(Number); push(rk, cx, cy); }
+  };
 
   // The sealed floor and its gates.
   const sealed = (rk) => !!m.roomDefs[rk].noTide;
@@ -293,7 +309,7 @@ export function floodDungeon(mapId, opts = {}) {
     const D = dims.get(rk);
     if (!dropAt(ROOMS.get(rk), x, y)) return;
     const below = `${D.f - 1},${D.rx},${D.ry}`;
-    if (m.roomDefs[below] && landAt(ROOMS.get(below), x, y)) push(below, x, y);
+    if (m.roomDefs[below] && !isSide(below) && landAt(ROOMS.get(below), x, y)) push(below, x, y);
   };
   // A FLOAT IS TRAVERSAL (S183, the Cliffside Cistern). Seasons' moving
   // platform: board it from any cell beside the tiles it ever covers, and get
@@ -446,6 +462,7 @@ export function floodDungeon(mapId, opts = {}) {
         ? passAt(rk2, nx, ny, t) : passable(ROOMS.get(rk2), nx, ny));
       const w = warpsOut.get(rk + ':' + x + ',' + y);
       if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy, seaTo(wrk)); }
+      if (isSide(rk)) { sideExpand(rk, x, y); continue; }
       const D = dims.get(rk);
       const W = D.W, H = D.H;
       // A WHIRLPOOL IS TRAVERSAL (S161, the Sunken Palace): a cell that is a
@@ -454,7 +471,7 @@ export function floodDungeon(mapId, opts = {}) {
       // the way back up is a stair. tools/check-whirlpool.mjs proves each one.
       if (opts.whirl !== false && [0, 1, 2].some(s => room.flagsAt(x, y, s) & F.WHIRL)) {
         const below = `${D.f - 1},${D.rx},${D.ry}`;
-        if (m.roomDefs[below]) push(below, x, y);
+        if (m.roomDefs[below] && !isSide(below)) push(below, x, y);
       }
       tryDrop(rk, x, y);
       tryFloat(rk, x, y, t);
@@ -505,6 +522,7 @@ export function floodDungeon(mapId, opts = {}) {
         const out = stepOut(rk, nx, ny);
         if (!out) continue;
         const [nk, tx, ty] = out;
+        if (isSide(nk)) continue;
         if (pass(nk, tx, ty) || puzzleOpen(nk, tx, ty, seaTo(nk)) || burnable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty, seaTo(nk));
       }
     }
@@ -572,9 +590,15 @@ export function floodDungeon(mapId, opts = {}) {
   // even when this particular flood never got a key to them — the leaky-lock
   // check (walk-dungeons.mjs part 2c) is what proves a lock actually gates
   // anything; this just needs to know the tile becomes floor once it does.
+  const sideRestMemo = new Map();
+  const sideRest = (rk) => {
+    if (!sideRestMemo.has(rk)) sideRestMemo.set(rk, sideRestCells(ROOMS.get(rk), !!CAPS.swim));
+    return sideRestMemo.get(rk);
+  };
   const floorAt = (rk, x, y) => {
     const room = ROOMS.get(rk);
     if (!room) return false;
+    if (isSide(rk)) return sideRest(rk).has(x + ',' + y);
     return passable(room, x, y) || puzzleDoors.has(`${rk}:${x},${y}`) || burnable(room, x, y)
       || isLock(room, x, y) || isBossDoor(room, x, y);
   };
