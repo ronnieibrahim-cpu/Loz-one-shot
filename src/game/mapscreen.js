@@ -547,6 +547,9 @@ export class MapScreen {
         for (let x = 0; x < 8 && x < m.w; x++) {
           const key = roomKeyAt(m.id, f, x, y);
           if (!key) continue;
+          // A side-view passage is not on the dungeon map (S242): Seasons
+          // keeps them in a room group of their own, off every floor's grid.
+          if (m.roomDefs[key] && m.roomDefs[key].side) continue;
           const sx = 80 + x * 8;
           if (this.seen(m.id, key)) drawScreen(ctx, 'dmapRoom' + exitsFor(g, m, f, x, y), sx, sy);
           else if (haveMap) drawScreen(ctx, 'dmapUnseen', sx, sy);

@@ -216,6 +216,27 @@ function move(game, p, dx, dy) {
   return moveEntity(game, p, dx, dy, { ...p.caps, swim: true });
 }
 
+/** Is the tile at his middle water at this sea? */
+export function sideWet(game, p) { return !!(activeTile(game, p).flags & F.DEEP); }
+
+/** Put him on a ladder as climbing if he is on one (arriving, or washed back
+ *  to the ladder he came in on), so he holds there and does not fall. */
+export function settleSideView(game, p) {
+  const on = isLadder(activeTile(game, p)) || isLadder(underTile(game, p));
+  p.svClimb = on && !sideGrounded(game, p, true);
+  if (p.svClimb) p.dir = 'up';
+}
+
+/** Into a side-view room (Game.enterMap, S242): where he arrives is where the
+ *  passage washes him back to, and on the ladder he is climbing. */
+export function arriveSideView(game, p) {
+  if (!isSideRoom(game)) { p.svEntry = null; p.svClimb = false; p.svFall = 0; return; }
+  p.svEntry = { x: p.x, y: p.y };
+  p.hb = SIDE_HB;
+  p.svFall = 0; p.inDeep = false; p.underwater = false;
+  settleSideView(game, p);
+}
+
 function rememberSafe(game, p) {
   if (canOccupy(game, p, p.x, p.y)) { p.lastSafe.x = p.x; p.lastSafe.y = p.y; }
 }

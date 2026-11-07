@@ -34,8 +34,9 @@ const out = await page.evaluate(async (scen) => {
   const { registerMap } = await import('/src/world/maps.js');
   registerMap({ id: 'svmock', kind: 'dungeon', name: 'Mock', w: 1, h: 1, floors: 1, cell: [15, 11],
     legend: scen.legend, tint: 'cave', music: 'dungeon3',
-    rooms: { '0,0,0': { name: 'Passage', side: true, map: scen.map, entities: [] } } });
+    rooms: { "0,0,0": { name: "Passage", side: true, map: scen.map, entities: scen.entities || [] } } });
   if (scen.cleats) { const { giveItem } = await import('/src/game/progress.js'); giveItem(g.progress, 'cleats'); }
+  if (scen.equipB) { const { giveItem } = await import('/src/game/progress.js'); giveItem(g.progress, scen.equipB); g.progress.equipB = scen.equipB; }
   g.tide.clearOverrides(); g.tide.setLevel(scen.tide, { instant: true });
   g.enterMap('svmock', 0, 0, 0, scen.start[0], scen.start[1], 'up', { instant: true });
   g.dialogue.active = false; g.bannerTime = 0;
@@ -53,7 +54,7 @@ const out = await page.evaluate(async (scen) => {
       g.dialogue.active = false;
       if (f % scen.every === 0) frames.push(shot());
       const p = g.player;
-      if (f % 8 === 0) log.push(`${f} ${keys} x=${p.x} y=${p.y} fall=${p.svFall} climb=${p.svClimb} deep=${p.inDeep} uw=${p.underwater} wash=${p.washing} hp=${g.progress.hearts}`);
+      if (f % 8 === 0) log.push(`${f} ${keys} x=${p.x} y=${p.y} fall=${p.svFall} climb=${p.svClimb} deep=${p.inDeep} uw=${p.underwater} wash=${p.washing} hp=${g.progress.hearts} rup=${g.progress.rupees} room=${g.room.key} tide=${g.tide.level} B=${g.progress.equipB} play=${p.playing||p.conchT||0}`);
     }
   }
   return { frames, log };

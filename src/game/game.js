@@ -28,6 +28,7 @@ import {
   Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen, paletteFade,
 } from '../core/screen.js';
 import { Input } from '../core/input.js';
+import { arriveSideView } from './sideview.js';
 import { audio } from '../core/audio.js';
 import { tiles as tileSheet, sprites } from '../gfx/art.js';
 import { TINTS } from '../gfx/palettes.js';
@@ -257,6 +258,9 @@ export class Game {
       if (dir) this.player.dir = dir;
       this.player.z = 0; this.player.vz = 0; this.player.jumping = false;
       this.player.lastSafe.x = this.player.x; this.player.lastSafe.y = this.player.y;
+      // Into a side-view passage (S242): on the ladder, climbing, and the
+      // place the passage washes him back to.
+      arriveSideView(this, this.player);
       this.player.reconcileWithTide(this);
     }
     // After the player is placed, never before: a room has no camera history to

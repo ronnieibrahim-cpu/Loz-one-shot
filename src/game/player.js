@@ -11,7 +11,7 @@
 //   link_dive
 //   fx_sword_0..7          (the sword itself, a 32x32 cell centred on it)
 
-import { isSideRoom, updateSideView, SIDE_HB } from './sideview.js';
+import { isSideRoom, updateSideView, settleSideView, sideWet, SIDE_HB } from './sideview.js';
 import { SwordBeam } from './projectile.js';
 import {
   Entity, moveEntity, canOccupy, groundFlags, grassPicture, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS, beltUnder,
@@ -1918,13 +1918,16 @@ export class Player extends Entity {
     this.washing--;
     this.animT++;
     if (this.washing === 0) {
-      // In a side-view passage the last place he STOOD, not the nearest
-      // free tile, which there can be in mid-air (S241).
+      // In a side-view passage the place he came IN (S242): the cartridge
+      // does not update the respawn point in a side-view room, so a drowned
+      // Link goes back to where he entered (link.s, respawnLink). The last
+      // place he stood could be under the sea by now, and washed back into
+      // water he would be washed back again, for ever.
       const side = isSideRoom(game);
-      const safe = (side ? null : findSafeTile(game, this)) || this.lastSafe;
+      const safe = (side ? this.svEntry : findSafeTile(game, this)) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.z = 0;
-      if (side) { this.svFall = 0; this.svClimb = false; this.inDeep = false; this.underwater = false; }
+      if (side) { this.svFall = 0; this.inDeep = false; this.underwater = false; settleSideView(game, this); }
       this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
       this.hurtTime = RESPAWN_HOLD_FRAMES; this.bumping = false;
@@ -1934,6 +1937,13 @@ export class Player extends Entity {
 
   /** Called after a tide change to make sure Link is not left in a wall. */
   reconcileWithTide(game) {
+    // A side-view passage (S242): the sea moving round him is the lift, not a
+    // wall he is pushed out of. He falls or swims from where he is; only
+    // water without the Cleats sends him back.
+    if (isSideRoom(game)) {
+      if (sideWet(game, this) && this._cleats <= 0) this.beginWash(game);
+      return;
+    }
     if (canOccupy(game, this, this.x, this.y, this.caps)) {
       const f = groundFlags(game, this);
       if (!(f & F.DEEP) || this._cleats > 0) return;
