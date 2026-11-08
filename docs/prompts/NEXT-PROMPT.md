@@ -1,11 +1,10 @@
-# Next session (S244)
+# Next session (S245)
 
 ## Read first
 - CLAUDE.md, all of it (the Ages rule: Oracle of Ages' code and assets are a
   reference for ALL work).
-- docs/briefs/SIDE-VIEW.md — the side-view design, its stages, and what the
-  human said about how many passages (not one in every dungeon).
-- docs/NEXT-SESSION.md S243 and S242; docs/HANDOFF.md lessons (top ten).
+- docs/DUNGEON-STATUS.md (the board) and docs/briefs/SIDE-VIEW.md.
+- docs/NEXT-SESSION.md S244 and S243; docs/HANDOFF.md lessons (top ten).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code and rip its
@@ -13,19 +12,19 @@
   drawing or guessing.
 
 ## State
-- S243: the Cliffside Cistern's side-view passage, the Float Shaft (d4
-  1,5,5): ride the float the sea carries; the alcove's 100 rupees at LOW
-  only. The strider (our own passage enemy, skates the water's surface) is
-  in both passages. check-sideview proves both passages and the strider.
-- The human said KEEP / LEAVE (do not re-ask): everything in S240-S242's
-  lists, plus S243: the Float Shaft as built, its blue water and 100 rupees,
-  the strider's look and behaviour, one strider in each passage, and no
-  passage in a dungeon unless it earns its place.
+- S244: the pincer's lunge stops at 30 px as the cartridge's does (it used
+  to overshoot to 32 and snap back); the strider hops (Seasons' enemy-jump
+  sound) when the sea lifts or lowers it, and keeps its loot when stranded.
+- The human said KEEP / LEAVE (do not re-ask): everything in S240-S243's
+  lists, plus S244: the strider's hop sound, silent while pacing, and its
+  loot when stranded.
 
 ## The task
-Ask the human what they want next (offer: show the strider moving in the
-game and ask whether it needs a sound of its own or should not drop loot
-when beached; or return to the dungeon board, docs/DUNGEON-STATUS.md).
+Ask the human what they want next. Offer: back to the dungeon board
+(docs/DUNGEON-STATUS.md — say what is outstanding in plain words); the two
+open side-view items (Link's marker on the dungeon map while in a passage;
+the sword only swinging left/right in side view); or another passage, only
+if one earns its place (ask first).
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare
   route-prefix traces against a worktree of ORIGIN/main first.

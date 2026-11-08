@@ -431,6 +431,33 @@ for (const P of passages.filter(p => p.mapId === 'd4' && p.rk === '1,5,5')) {
       xs.size > 5 && mid && mid.y === 6 * 16 - 13 && high && high.y === 3 * 16 - 13, JSON.stringify({ n: xs.size, mid, high }));
   }
   {
+    // Its one sound (the human, S244): the enemy hop as the sea lifts it to a
+    // new line or it comes down onto one, once each, and none while it paces.
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 0, true, true);
+    await sv('hold', [], 30);
+    await page.evaluate(() => {
+      const g = window.__game, sfx = g.audio.sfx.bind(g.audio);
+      window.__hops = 0;
+      g.audio.sfx = (n, ...a) => { if (n === 'hop') window.__hops++; return sfx(n, ...a); };
+    });
+    const hops = async () => page.evaluate(() => { const n = window.__hops; window.__hops = 0; return n; });
+    await sv('hold', [], 200);
+    const pacing = await hops();
+    const per = [];
+    for (let i = 0; i < 2; i++) { await sv('hold', ['b'], 4); await sv('hold', [], 150); per.push(await hops()); }
+    // Down: from HIGH straight away, while it is still over the pool (paced
+    // a while at HIGH it may be over the ledge, and drained from under it it
+    // falls to the floor, flounders and is gone — silently).
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 2, true, true);
+    await sv('hold', [], 20);
+    await hops();
+    await sv('hold', ['b'], 4); await sv('hold', [], 120);
+    per.push(await hops());
+    const down = await strider();
+    check(`strider: it hops (SND_ENEMY_JUMP) once as each tide lifts it or lowers it onto a new line, and is silent while it paces`,
+      pacing === 0 && per.join() === '1,1,1' && down && down.y === 9 * 16 - 13, JSON.stringify({ pacing, per, down }));
+  }
+  {
     // The Float Shaft's is on the east ledge's water, which only HIGH puts there.
     const here = [];
     for (const t of [0, 1, 2]) { await sv('start', 'd4', 1, 5, 5, 208, 16, t, true, false); await sv('hold', [], 10); here.push(!!(await strider())); }

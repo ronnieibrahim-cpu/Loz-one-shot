@@ -362,6 +362,40 @@ check('every ported enemy moves exactly its cartridge speed, never faster', port
   portFast.slice(0, 4).map(r => `${r.name}: ${r.badSpeedCount} frame(s), first ` +
     r.badSpeed.slice(0, 2).map(b => `f${b.f} ${b.ddx},${b.ddy} want ${b.step}`).join(', ')).join(' | '));
 
+// --- the pincer's lunge, drawn as pincer.s draws it (S244) -----------------
+// One pincer two tiles from Link, alone: the head's distance from its hole,
+// every frame it is out, is pincer_head_stateB/D's var33 — up by 2 from 0 to
+// $1e (it is only STORED below $20), held, then down by 1 to 1. The old port
+// stored $20, so the first frame of the draw-back put the head two pixels
+// further OUT: twice the draw-back speed, the wrong way. The frame it is
+// placed at 1 it hides (stateD's objectSetInvisible), so 2 is the last seen. The roster run above
+// only sees a pincer if its spot happens to be within reach of Link.
+const lunge = await page.evaluate(async () => {
+  const ent = await import('/src/game/entity.js');
+  const g = window.__game;
+  g.entities = g.entities.filter(e => e === g.player);
+  g.pendingAdd = [];
+  const e = ent.spawnEntity(g, 'pincer', 6, 3);
+  const seen = [];
+  for (let f = 0; f < 240; f++) {
+    window.__harness.step(1);
+    if (e.hidden || e.homeFx === undefined) continue;
+    seen.push(Math.round(Math.hypot(e.fx - e.homeFx, e.fy - e.homeFy) / 256));
+  }
+  return seen;
+});
+const want = [];
+for (let r = 0; r < 0x20; r += 2) want.push(r);
+const peak = want[want.length - 1];
+// It shows its eyes at 0 first (and its first lunge frame is placed at 0 too).
+const out = [0, ...lunge.slice(lunge.findIndex(d => d > 0), lunge.indexOf(peak) + 1)];
+const after = lunge.slice(lunge.indexOf(peak) + 1).filter((d, i, a) => !(d === peak && a.slice(0, i).every(x => x === peak)));
+check("the pincer's head goes out 2 px a frame to 30 and comes back 1 px a frame, as pincer.s",
+  lunge.length > 0 && JSON.stringify(out) === JSON.stringify(want) && Math.max(...lunge) === peak
+    && after.length >= peak - 1 && after.slice(0, peak - 2).every((d, i) => d === peak - 1 - i)
+    && after[peak - 2] === 0,
+  `out ${out.join(",")} | back ${after.slice(0, 40).join(",")} | max ${Math.max(...lunge)}`);
+
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log('\n=== ' + passed + ' passed, ' + failures.length + ' failed ===');
