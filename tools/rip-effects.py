@@ -378,6 +378,27 @@ def platform():
     return b1 & 0x7f, (b2 >> 4) & 7, [(h, oam(io, ptrs[k])) for h, k in seq]
 
 
+def side_platform():
+    """INTERAC_MOVING_SIDESCROLL_PLATFORM ($a1, S243): the Dancing Dragon
+    Dungeon's side-view platform (room $45c rides two of them over its spikes),
+    the Cliffside Cistern passage's float. interactiona1SubidData's subid 0 is
+    gfx header $57 (spr_dungeon_sprites), tile base $0e, flags $00; the
+    picture is the animation its `direction` names (movingSidescrollPlatform.s
+    interactionSetAnimation), and direction 0 is the 32-wide one
+    (@collisionRadii $09 $0f), drawn through interactiona1OamDataPointers."""
+    ls = lines('interactionData.s')
+    rows = [dbs(l.replace('m_InteractionSubidData', '.db')) for l in after(ls, 'interactiona1SubidData')
+            if l.strip().startswith('m_InteractionSubidData') and 'End' not in l]
+    gfx, b1, b2 = rows[0]
+    assert gfx == 0x57, 'the side-view platform is not on spr_dungeon_sprites'
+    ia = lines('interactionAnimations.s')
+    anim = dws(ia, 'interactiona1Animations')[0]
+    ptrs = dws(ia, 'interactiona1OamDataPointers')
+    seq = sequence(ia, anim)
+    io = lines('interactionOamData.s')
+    return b1 & 0x7f, (b2 >> 4) & 7, [(h, oam(io, ptrs[k])) for h, k in seq]
+
+
 def chunk():
     """INTERAC_D8_GRABBABLE_ICE (S189): the Sword & Shield Maze's chunk of ice,
     the thing Link lifts off the ice floor (swordShieldMazeGrabbableIce.s).
@@ -476,6 +497,7 @@ def build():
     # xor 1), so each facing is cut in both.
     cut('fx_beam', beam(), alt=True)
     cut('o_float', platform(), sheet='spr_dungeon_sprites.png')
+    cut('o_svfloat', side_platform(), sheet='spr_dungeon_sprites.png')
     cut('o_icechunk', chunk(), sheet='spr_pedestal_ice.png')
     cut('o_eyeball', eyeball(), sheet='spr_polsvoice_hardhatbeetle_spikedbeetle_beamon.png')
     return art, pals, notes

@@ -342,7 +342,7 @@ const TIERS = {
   ordinary: {
     qh: 2,
     of: ['barnacle', 'beamos', 'beetle', 'bubble', 'crab', 'leever', 'octorok',
-      'octorokSea', 'stalfos', 'tektite', 'urchin', 'wisp', 'zol'],
+      'octorokSea', 'stalfos', 'strider', 'tektite', 'urchin', 'wisp', 'zol'],
   },
   // The tougher overworld and late-dungeon roster.
   heavy: {

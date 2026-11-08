@@ -35,7 +35,7 @@ export const REQUIRED_SPRITES = {
   // fx_sword_*: the sword's eight pictures, cut from Seasons' spr_swords by
   // tools/rip-link.py, the sword object's position at (16, 16).
   fxBig: [...seq('fx_sword_', 8), ...seq('fx_puff', 3), ...seq('fx_hole', 3), ...seq('fx_kill', 5), ...seq('fx_kill', 5).map(n => n + 'b'),
-    ...seq('fx_boom', 5), 'o_float0', 'o_icechunk0', 'o_eyeball0',
+    ...seq('fx_boom', 5), 'o_float0', 'o_svfloat0', 'o_icechunk0', 'o_eyeball0',
     // S217: the clink, the splash and the shards (32x32), and the leaves a cut
     // bush throws, which fly further and are cut 48x48 (fxHuge).
     ...seq('fx_clink', 2), ...seq('fx_wet', 3), ...seq('fx_shards', 4),
@@ -158,6 +158,9 @@ export const REQUIRED_SPRITES = {
     'npc_brine_d', 'npc_brine_u', 'npc_brinewife',
     'npc_reefkin_d', 'npc_reefkin_u', 'npc_reefkin_r',
   ],
+
+  // ---- pack: sprites-enemies-drawn.js (ours, S243) ----------------------
+  enemiesDrawn: [...seq('strider_', 2)],
 
   // ---- pack: sprites-enemies.js ----------------------------------------
   enemies: [

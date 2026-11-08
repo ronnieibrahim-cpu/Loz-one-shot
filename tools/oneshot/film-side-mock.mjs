@@ -35,6 +35,14 @@ const out = await page.evaluate(async (scen) => {
   registerMap({ id: 'svmock', kind: 'dungeon', name: 'Mock', w: 1, h: 1, floors: 1, cell: [15, 11],
     legend: scen.legend, tint: 'cave', music: 'dungeon3',
     rooms: { "0,0,0": { name: "Passage", side: true, map: scen.map, entities: scen.entities || [] } } });
+  // `alias`: { tile: otherTile } draws a tile as another one (a colour trial
+  // for the human, S243: the Cistern's water in the Poison Moth's blue).
+  if (scen.alias) {
+    const { tiles } = await import('/src/gfx/art.js');
+    const { TILES } = await import('/src/world/tileset.js');
+    for (const [a, b] of Object.entries(scen.alias)) { tiles.defs.set(a, tiles.defs.get(b)); const d = TILES.get(a); if (d) d.pal = TILES.get(b).pal; }
+    tiles.flush();
+  }
   if (scen.cleats) { const { giveItem } = await import('/src/game/progress.js'); giveItem(g.progress, 'cleats'); }
   if (scen.equipB) { const { giveItem } = await import('/src/game/progress.js'); giveItem(g.progress, scen.equipB); g.progress.equipB = scen.equipB; }
   g.tide.clearOverrides(); g.tide.setLevel(scen.tide, { instant: true });

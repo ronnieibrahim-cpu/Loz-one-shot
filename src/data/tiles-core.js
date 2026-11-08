@@ -1421,9 +1421,15 @@ function cave() {
  * cartridge's ladders stop at the surface (room $5e8). `svK0`-`svK4` and
  * `svKL0`-`svKL4` in that order; the side legends give them the digits.
  */
-function sideKit(K) {
+function sideKit(K, waterOf = K) {
   const k = 'sv' + K;
-  const t = (n, o = {}) => ({ art: ART[k + n], pal: k + n, ...o });
+  // `waterOf`: the kit whose water this one draws (S243: the Cistern's is the
+  // Poison Moth's blue; the Dancing Dragon's own side-view water is grey).
+  const WET = new Set(['LadderWet', 'Water', 'Surface', 'Weed']);
+  const t = (n, o = {}) => {
+    const a = (WET.has(n) ? 'sv' + waterOf : k) + n;
+    return { art: ART[a], pal: a, ...o };
+  };
   const out = {
     [k + 'Air']: t('Air'),
     [k + 'Spike']: t('Spike', { flags: F.HAZARD }),
@@ -1439,6 +1445,8 @@ function sideKit(K) {
   for (const n of ['Platform', 'Brick', 'Ledge', 'LedgeEnd', 'BrickEnd', 'WallW', 'WallE', 'Ceiling', 'CeilingLip', 'Rock', 'Bed']) {
     out[k + n] = t(n, { flags: F.SOLID });
   }
+  // The Dancing Dragon's wall lamp (S243), scenery: a 3x3 block in its kit.
+  for (let i = 0; i < 9; i++) if (ART[k + 'Lamp' + i]) out[k + 'Lamp' + i] = t('Lamp' + i);
   const shapes = [['Surface', 'Water', 'Water'], ['Air', 'Water', 'Water'], ['Air', 'Surface', 'Water'],
     ['Air', 'Air', 'Water'], ['Air', 'Air', 'Surface']];
   const ladder = { Air: 'Ladder', Surface: 'LadderWet', Water: 'Water' };
@@ -3344,6 +3352,9 @@ export function installCoreTiles() {
     // layout $32 in the Poison Moth's Lair's colours (tileset $58), for the
     // Bogwater Sanctum's passages. See `sideKit`.
     ...sideKit('Bog'),
+    // ...and in the Dancing Dragon Dungeon's (tileset $59), for the Cliffside
+    // Cistern's (S243).
+    ...sideKit('Cis', 'Bog'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &

@@ -447,6 +447,27 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An opening below a float's highest line lets a swimmer round it
+  (S243).** The first Float Shaft had its east doorway one row under the
+  HIGH float: at HIGH the doorway was water joined to the water under the
+  float, so the alcove's "LOW only" prize was reachable by swimming from the
+  east. The model's `conch`/held claims caught it at once. Keep every opening
+  that is not meant to flood level with or above the float's top line.
+- **A harness `calm` that removes anything with `hp` removes pickups and
+  floats too (S243).** Use `e.isEnemy`.
+- **A run that leaves a room mid-slide poisons the next `start` (S243).**
+  newGame and enterMap do not clear `g.transition`; the slide finished on the
+  next run and put Link inside a wall. Clear it in the harness.
+- **check-motion places enemies by roster order (S243).** A new enemy that
+  removes itself on spawn (the strider, where there is no water) still took a
+  spot and shifted every later one; the pincer, moved, showed 3 frames of
+  double speed (362,362 and 512,0 sub-px). The checker now skips a removed
+  spawn; the pincer's double step in that other spot is a LATENT fault, not
+  looked into yet.
+- **The robot walks over corners (S243).** A stair at a room's 1,1 was on the
+  robot's travel line through the Rung Gallery; run route-prefix and grep the
+  room before trusting "off the route".
+
 - **A passage's claims are made with the sea HELD (S242).** With the Cleats
   higher water reaches more, never less. Swimming is free movement and water stops nothing, so "a prize only one sea
   reaches" can only mean "with the sea HELD from the moment you come in"

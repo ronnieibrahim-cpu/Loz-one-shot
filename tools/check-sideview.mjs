@@ -5,10 +5,14 @@
 //
 // A passage declares
 //   sideRoom: { entries: [[x, y], ...],
-//               reach: [{ name, at: [x, y], from: [x, y], seas: [...] }] }
+//               reach: [{ name, at: [x, y], from: [x, y], seas: [...], dry?, onFoot?, conch? }] }
 // `entries` are where its warps put Link (on a ladder under a way out);
 // each `reach` claim is a cell he gets to from `from`, with the Cleats, with
-// the sea HELD at exactly the levels in `seas` and at no other.
+// the sea HELD at exactly the levels in `seas` and at no other; `dry` the
+// levels it is reached at held without them (default none; `onFoot`: LOW).
+// A `conch` claim (S243, the Float Shaft) is reached at NO sea held and is
+// reached with the sea changed while he is inside, Cleats or not: a float
+// carries him there.
 //
 // MODEL
 //   1. every entry is a ladder, dry at every sea (the wash-back point), with
@@ -113,14 +117,22 @@ for (const P of passages) {
 
   // 2. each claim at exactly its seas, held, with the Cleats.
   for (const c of S.reach) {
+    if (c.conch) {
+      const held = [0, 1, 2].filter(t => sideFlood(room, [c.from], { seas: [t], cleats: true }).cells.has(c.at.join(',')));
+      const ride = [true, false].every(cleats => sideFlood(room, [c.from], { conch: true, cleats }).cells.has(c.at.join(',')));
+      check(`${tag}: ${c.name} (${c.at}) is reached at no sea held, and with the conch (Cleats or not)`,
+        held.length === 0 && ride, `held at ${held.map(t => SEAS[t]).join('+') || 'none'}, conch ${ride}`);
+      continue;
+    }
     const got = [0, 1, 2].filter(t => sideFlood(room, [c.from], { seas: [t], cleats: true }).cells.has(c.at.join(',')));
     check(`${tag}: ${c.name} (${c.at}) is reached at ${c.seas.map(t => SEAS[t]).join('+')} only`,
       got.join() === c.seas.join(), `reached at ${got.map(t => SEAS[t]).join('+') || 'none'}`);
     // 4. ...and needs the Cleats, unless the claim says `onFoot` (reached at
     //    LOW without them).
     const dry = [0, 1, 2].filter(t => sideFlood(room, [c.from], { seas: [t], cleats: false }).cells.has(c.at.join(',')));
-    const okDry = c.onFoot ? dry.join() === '0' : dry.length === 0;
-    check(`${tag}: ${c.name} without the Cleats: ${c.onFoot ? 'on foot at LOW only' : 'never'}`,
+    const want = c.dry || (c.onFoot ? [0] : []);
+    const okDry = dry.join() === want.join();
+    check(`${tag}: ${c.name} without the Cleats: ${want.length ? 'at ' + want.map(t => SEAS[t]).join('+') + ' only' : 'never'}`,
       okDry, `reached at ${dry.map(t => SEAS[t]).join('+') || 'none'}`);
   }
 
@@ -165,6 +177,9 @@ await page.evaluate(async () => {
     // (px, py) in room (f, rx, ry) of the map.
     start(map, f, rx, ry, px, py, t, cleats, conch, calm) {
       g.newGame(0, 'LINK', 20260806);
+      // A run that walked out of a passage's room may have left a slide to
+      // the next room going (S243): it would land on the next run.
+      g.transition = null; g.fadeThen = null;
       g.cutscene = null; g.mode = 'play'; g.dialogue.active = false;
       g.progress.maxHearts = 80; g.progress.hearts = 80;
       giveItem(g.progress, 'conch');
@@ -174,7 +189,7 @@ await page.evaluate(async () => {
       g.enterMap(map, f, rx, ry, px, py, 'up', { instant: true });
       g.dialogue.active = false; g.bannerTime = 0;
       // `calm`: nothing in the room can touch him (a keese by a stair).
-      if (calm) for (const e of g.entities) if (e !== g.player && e.hp != null) e.remove = true;
+      if (calm) for (const e of g.entities) if (e.isEnemy) e.remove = true;
       this.release();
     },
     release() { const raw = g.input._raw; for (const b of ['up', 'down', 'left', 'right', 'a', 'b']) raw[b] = false; },
@@ -238,7 +253,8 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
 
   // 6. the claims, played.
   const runPlan = async (plan, t, cleats = true) => {
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, t, cleats, false);
+    // `calm`: these plans are about the passage, not its strider (clause 10).
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, t, cleats, false, true);
     const r0 = (await sv('state')).rupees;
     const tr = await sv('play', plan, true);
     return { tr, r0, end: tr[tr.length - 1] };
@@ -265,6 +281,8 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
     await page.evaluate(() => { const g = window.__game; g.enterMap('d3', 1, 4, 6, 16, 32, 'up', { instant: true }); });
     const out = await sv('state');
     await sv('hold', ['up'], 40, false, true);
+    // The passage's strider (clause 10) is not this plan's business.
+    await page.evaluate(() => { const g = window.__game; for (const e of g.entities) if (e.isEnemy) e.remove = true; });
     await sv('hold', [], 90);
     const back = await sv('state');
     const r1 = back.rupees;
@@ -278,7 +296,7 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
 
   // 7. the ways out.
   {
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false);
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false, true);
     await sv('hold', ['up'], 40, false, true); await sv('hold', [], 90);
     const w = await sv('state');
     check(`${tag}: up the west ladder comes out in the Bell Cell on floor`, w.room === '1,4,6' && w.x === 16 && w.y === 32, JSON.stringify(w));
@@ -292,14 +310,14 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
 
   // 8. no Cleats.
   {
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false);
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false, true);
     const h0 = (await sv('state')).hearts;
     const tr = await sv('play', [[['down'], 130], [['right'], 60], [[], 120]], true);
     const end = tr[tr.length - 1];
     const washes = tr.filter((s, i) => s.wash && !(i && tr[i - 1].wash)).length;
     check(`${tag}: no Cleats, the pool at LOW washes Link back to the entry, on the ladder, once`,
       washes === 1 && end.x === ENTRY_W[0] && end.y === ENTRY_W[1] && end.climb && end.hearts < h0, JSON.stringify({ washes, end }));
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, true);
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, true, true);
     await sv('play', [[['down'], 130], [['right'], 10], [[], 10]]);
     const tr2 = await sv('play', [[['b'], 4], [[], 200]], true);
     const end2 = tr2[tr2.length - 1];
@@ -308,36 +326,190 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
       end2.tide === 1 && w2 === 1 && end2.x === ENTRY_W[0] && end2.y === ENTRY_W[1] && end2.climb, JSON.stringify({ w2, end2 }));
   }
 
-  // 9. the engine never goes where the model says it cannot.
-  {
-    let seed = 1234567;
-    const rnd = (n) => { seed = (seed * 1103515245 + 12345) >>> 0; return (seed >>> 16) % n; };
-    const MOVES = [['left'], ['right'], ['up'], ['down'], ['up', 'left'], ['up', 'right'], ['down', 'left'], ['down', 'right'], []];
-    const bad = [];
-    let cellsSeen = 0;
-    for (const t of [0, 1, 2]) {
-      for (const cleats of [true, false]) {
-        const model = sideFlood(P.room, P.def.sideRoom.entries, { seas: [t], cleats }).cells;
-        const seen = new Set();
-        for (let run = 0; run < 6; run++) {
-          const entry = run % 2 ? ENTRY_E : ENTRY_W;
-          await sv('start', P.mapId, f, rx, ry, ...entry, t, cleats, false);
-          const steps = [];
-          for (let k = 0; k < 30; k++) steps.push([MOVES[rnd(MOVES.length)], 8 + rnd(40)]);
-          const tr = await sv('play', steps, true);
-          for (const s of tr) {
-            if (s.room !== P.rk || s.wash || s.fade) continue;
-            const [cx, cy] = cellOf(s);
-            seen.add(cx + ',' + cy);
-          }
-        }
-        cellsSeen += seen.size;
-        for (const c of seen) if (!model.has(c)) bad.push(`${c}@${SEAS[t]}${cleats ? '' : ' no Cleats'}`);
-      }
+}
+
+// The Float Shaft (S243, d4 1,5,5): the plans, as filmed for the human
+// (docs/briefs/s243/side-mock/*.json).
+for (const P of passages.filter(p => p.mapId === 'd4' && p.rk === '1,5,5')) {
+  const tag = `${P.mapId} ${P.rk}`;
+  const [f, rx, ry] = [P.f, P.rx, P.ry];
+  const W = [16, 16], E = [208, 16];
+  const PRIZE = [[['down'], 50], [['right'], 95], [[], 30], [['right'], 60]];
+  const RIDE = [[['left'], 62], [[], 10], [['b'], 4], [[], 160], [['right'], 110], [['up'], 90], [[], 90]];
+
+  // 5. down each stair, at each sea.
+  for (const t of [0, 1, 2]) {
+    for (const [name, room, entry, at, key] of [['the Rung Gallery', [0, 4, 5], W, [208, 128], 'down'], ['the Cliffside Cell', [0, 5, 5], E, [16, 32], 'up']]) {
+      await sv('start', 'd4', ...room, ...at, t, true, false, true);
+      await sv('hold', [key], 40, false, true);
+      for (let i = 0; i < 60 && (await sv('state')).fade; i++) await sv('hold', [], 4);
+      const a = await sv('state');
+      await sv('hold', [], 60);
+      const b = await sv('state');
+      check(`${tag}: down ${name}'s stair at ${SEAS[t]} Link arrives on the ladder at ${entry}, climbing, and stays`,
+        a.room === P.rk && a.x === entry[0] && a.y === entry[1] && a.climb && b.x === a.x && b.y === a.y && !b.wash,
+        JSON.stringify({ a, b }));
     }
-    check(`${tag}: wandering at each sea held, Link is never in a cell the model rules out (${cellsSeen} cells seen)`,
-      bad.length === 0, bad.slice(0, 8).join(' '));
   }
+
+  const run = async (plan, t, cleats = true, from = W) => {
+    await sv('start', P.mapId, f, rx, ry, ...from, t, cleats, true);
+    const r0 = (await sv('state')).rupees;
+    const tr = await sv('play', plan, true);
+    return { tr, r0, end: tr[tr.length - 1] };
+  };
+
+  // 6. the prize at LOW only, once.
+  {
+    const got = [];
+    for (const t of [0, 1, 2]) { const r = await run(PRIZE, t); if (r.end.rupees - r.r0 === 100) got.push(t); }
+    check(`${tag}: down the shaft, the alcove's 100 rupees are taken at LOW and at no other sea`, got.join() === '0', got.join());
+  }
+  // ...and the float carries him out: on it, the conch, up to MID, out east.
+  for (const cleats of [true, false]) {
+    const r = await run(PRIZE.concat(RIDE), 0, cleats);
+    const rode = r.tr.some(s => s.tide === 1 && s.y === 80 && s.room === P.rk && !s.deep && !s.wash);
+    check(`${tag}: ${cleats ? '' : 'no Cleats: '}from the alcove, on the float, the conch carries Link up to MID and he climbs out into the Cliffside Cell`,
+      rode && r.end.room === '0,5,5' && r.end.rupees - r.r0 === 100 && !r.tr.some(s => s.wash), JSON.stringify(r.end));
+  }
+  // The trap: the conch sounded from the alcove takes the float up without
+  // him, and he cannot swim past it.
+  {
+    const r = await run(PRIZE.concat([[[], 10], [['b'], 4], [[], 200], [['left'], 95], [['up'], 60], [[], 30]]), 0);
+    const ys = r.tr.slice(-60).map(s => s.y);
+    check(`${tag}: the conch from the alcove leaves Link under the float at MID, swimming, held at its underside`,
+      r.end.tide === 1 && r.end.deep && r.end.room === P.rk && Math.min(...ys) === 107, JSON.stringify(r.end));
+    const n = await run(PRIZE.concat([[[], 10], [['b'], 4], [[], 120]]), 0, false);
+    const washes = n.tr.filter((s, i) => s.wash && !(i && n.tr[i - 1].wash)).length;
+    check(`${tag}: no Cleats, the same conch washes him back to the west ladder, once`,
+      washes === 1 && n.end.x === W[0] && n.end.y === W[1] && n.end.climb, JSON.stringify({ washes, end: n.end }));
+  }
+  // At HIGH the float lies level with the west gallery: walked on, a bridge
+  // to the shaft's east wall, and down nowhere.
+  {
+    const r = await run([[['down'], 50], [['right'], 110], [[], 60]], 2);
+    check(`${tag}: at HIGH Link walks out onto the float level with the gallery and stands on it`,
+      r.end.y === 64 && r.end.x > 96 && r.end.x < 128 && !r.tr.some(s => s.fall > 0), JSON.stringify(r.end));
+  }
+  // 7. from the east at MID: onto the float, the conch to HIGH, across the
+  //    gallery and up the west ladder into the Rung Gallery.
+  {
+    const r = await run([[['down'], 80], [['left'], 104], [[], 10], [['b'], 4], [[], 200], [['left'], 110], [['up'], 90], [[], 90]], 1, true, E);
+    check(`${tag}: from the east at MID the float carries Link up to the gallery at HIGH and the west ladder comes out in the Rung Gallery`,
+      r.end.room === '0,4,5' && r.tr.some(s => s.tide === 2 && s.y === 64 && s.room === P.rk), JSON.stringify(r.end));
+  }
+}
+
+// 10. THE STRIDER (S243, ours, the human's yes to docs/briefs/s243/
+//     enemy-sketch.png): it stands on the surface of the water under it, the
+//     conch lifts it and drops it, drained out from under it it flounders and
+//     is gone, it never appears with no water to skate, it hurts Link to
+//     touch and one sword cut kills it.
+{
+  const strider = () => page.evaluate(() => {
+    const e = window.__game.entities.find(o => o.type === 'strider' && !o.remove && !o.dead);
+    return e ? { x: e.x, y: e.y, dir: e.dir } : null;
+  });
+  // The Sounding Way's pool: LOW line row 9, MID row 6, HIGH row 3.
+  const LINE = [9, 6, 3];
+  for (const t of [0, 1, 2]) {
+    await sv('start', 'd3', 0, 4, 6, 16, 16, t, true, false);
+    await sv('hold', [], 30);
+    const s = await strider();
+    check(`strider: in the Sounding Way at ${SEAS[t]} it stands on the surface (row ${LINE[t]})`, s && s.y === LINE[t] * 16 - 13, JSON.stringify(s));
+  }
+  {
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 0, true, true);
+    await sv('hold', [], 30);
+    const xs = new Set();
+    for (let i = 0; i < 20; i++) { await sv('hold', [], 10); const s = await strider(); xs.add(s && s.x); }
+    await sv('hold', ['b'], 4); await sv('hold', [], 120);
+    const mid = await strider();
+    await sv('hold', ['b'], 4); await sv('hold', [], 120);
+    const high = await strider();
+    check(`strider: it paces the LOW pool, and the conch lifts it to the MID line and then the HIGH line`,
+      xs.size > 5 && mid && mid.y === 6 * 16 - 13 && high && high.y === 3 * 16 - 13, JSON.stringify({ n: xs.size, mid, high }));
+  }
+  {
+    // The Float Shaft's is on the east ledge's water, which only HIGH puts there.
+    const here = [];
+    for (const t of [0, 1, 2]) { await sv('start', 'd4', 1, 5, 5, 208, 16, t, true, false); await sv('hold', [], 10); here.push(!!(await strider())); }
+    check(`strider: in the Float Shaft it is there at HIGH only (no water on the east ledge lower)`, here.join() === 'false,false,true', here.join());
+    await sv('start', 'd4', 1, 5, 5, 208, 16, 2, true, true);
+    await sv('hold', [], 10);
+    await sv('hold', ['b'], 4);
+    const fall = [];
+    for (let i = 0; i < 25; i++) { await sv('hold', [], 10); fall.push(await strider()); }
+    const landed = fall.find(s => s && s.y === 5 * 16 - 13 + 0) || fall.find(s => s);
+    check(`strider: the conch drains the ledge from under it, it falls and is gone`, fall[fall.length - 1] === null && !!landed, JSON.stringify(fall.slice(0, 3)));
+  }
+  {
+    // Touched, it hurts; one cut kills it.
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 1, true, false);
+    await page.evaluate(async () => {
+      const g = window.__game; const { giveItem } = await import('/src/game/progress.js');
+      giveItem(g.progress, 'sword'); g.progress.equipA = 'sword';
+      const e = g.entities.find(o => o.type === 'strider');
+      g.player.x = e.x + 20; g.player.y = e.y + 4; g.player.dir = 'left'; g.player.invuln = 0;
+    });
+    const h0 = (await sv('state')).hearts;
+    let hurt = false;
+    for (let i = 0; i < 80 && !hurt; i++) { await sv('hold', ['left'], 1); hurt = (await sv('state')).hearts < h0; }
+    check(`strider: swimming into it costs Link hearts`, hurt, '');
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 1, true, false);
+    const gone = await page.evaluate(async () => {
+      const g = window.__game; const { giveItem } = await import('/src/game/progress.js');
+      giveItem(g.progress, 'sword'); g.progress.equipA = 'sword';
+      const e = g.entities.find(o => o.type === 'strider');
+      e.dir = 'right';
+      g.player.x = e.x + 14; g.player.y = e.y + 2; g.player.dir = 'left';
+      return true;
+    });
+    await sv('hold', ['left'], 1);
+    await sv('hold', ['a'], 3);
+    await sv('hold', [], 40);
+    check(`strider: one sword cut kills it`, gone && (await strider()) === null, JSON.stringify(await strider()));
+  }
+}
+
+// 9. the engine never goes where the model says it cannot (every passage).
+for (const P of passages) {
+  const tag = `${P.mapId} ${P.rk}`;
+  const [f, rx, ry] = [P.f, P.rx, P.ry];
+  const cellOf = s => [Math.floor((s.x + 8) / 16), Math.floor((s.y + 8) / 16)];
+  const ENTRY_W = P.def.sideRoom.entries[0].map(v => v * 16), ENTRY_E = P.def.sideRoom.entries[1].map(v => v * 16);
+  // 9. the engine never goes where the model says it cannot.
+{
+  let seed = 1234567;
+  const rnd = (n) => { seed = (seed * 1103515245 + 12345) >>> 0; return (seed >>> 16) % n; };
+  const MOVES = [['left'], ['right'], ['up'], ['down'], ['up', 'left'], ['up', 'right'], ['down', 'left'], ['down', 'right'], []];
+  const bad = [];
+  const where = {};
+  let cellsSeen = 0;
+  for (const t of [0, 1, 2]) {
+    for (const cleats of [true, false]) {
+      const model = sideFlood(P.room, P.def.sideRoom.entries, { seas: [t], cleats }).cells;
+      const seen = new Set();
+      for (let run = 0; run < 6; run++) {
+        const entry = run % 2 ? ENTRY_E : ENTRY_W;
+        await sv('start', P.mapId, f, rx, ry, ...entry, t, cleats, false, true);
+        const steps = [];
+        for (let k = 0; k < 30; k++) steps.push([MOVES[rnd(MOVES.length)], 8 + rnd(40)]);
+        const tr = await sv('play', steps, true);
+        for (const s of tr) {
+          if (s.room !== P.rk || s.wash || s.fade) continue;
+          const [cx, cy] = cellOf(s);
+          if (!seen.has(cx + ',' + cy)) where[cx + ',' + cy + '@' + t] = `${s.x},${s.y}`;
+          seen.add(cx + ',' + cy);
+        }
+      }
+      cellsSeen += seen.size;
+      for (const c of seen) if (!model.has(c)) bad.push(`${c}@${SEAS[t]}${cleats ? '' : ' no Cleats'} (at ${where[c + '@' + t]})`);
+    }
+  }
+  check(`${tag}: wandering at each sea held, Link is never in a cell the model rules out (${cellsSeen} cells seen)`,
+    bad.length === 0, bad.slice(0, 8).join(' '));
+}
 }
 check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
