@@ -2797,7 +2797,8 @@ export const PINCER_SEE_PX = 0x28;
 export const PINCER_WARN_FRAMES = 0x24;
 
 /** px/f, px — it lunges out this fast, this far. derived: pincer.s
- *  pincer_head_stateB (var33 += 2 until $20). */
+ *  pincer_head_stateB (var33 += 2, stored only below $20, so the head
+ *  stops at $1e). */
 export const PINCER_OUT_SPEED = 2;
 export const PINCER_REACH = 0x20;
 

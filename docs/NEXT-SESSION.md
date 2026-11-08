@@ -1,3 +1,47 @@
+## S244 — the pincer's lunge as pincer.s draws it; the strider's hop
+
+Branch claude/oracle-tides-s244-u3yj69, off main at 2c5c4a1 (S243).
+
+### The human's choices this session (do not re-ask)
+- Did both small jobs: the strider's finishing touches and the pincer fix.
+- The strider's sound: the HOP (Seasons' SND_ENEMY_JUMP, our `hop`) as the
+  conch lifts it to a new line and as it comes down onto one; silent while
+  it paces. (Ages' water tektite, its nearest cousin, has no sound of its own
+  — waterTektite.s plays none; the human chose the hop over silence, a splash
+  on landing and a tick on turning. Candidates were rendered with
+  render-sfx: enemyHit, enemyDie, gb:splash, gb:land, gb:enemyJump,
+  gb:linkSwim, gb:unknown7, gb:unknown5.)
+- The strider KEEPS its loot when it dies stranded (drained out from under
+  it): it can drop like any defeated enemy. Do not re-ask.
+
+### Built
+- THE PINCER (the eel head on a tether; Thalassor summons two): its lunge
+  now stops at 30 px, where pincer.s stops it — pincer_head_stateB adds 2
+  to var33 and only STORES it below $20. Ours stored 32, so the first frame
+  of the draw-back put the head two pixels further OUT (twice the draw-back
+  speed, the wrong way: the S243 lesson's "362,362 and 512,0"). The beads
+  follow (they read the same reach). check-motion gained a clause that
+  spawns one pincer beside Link and asserts the whole lunge profile
+  (0,2,…,30 out; 29,…,2 back, hidden at 1); it goes red on the old code
+  (back 32,31,…, max 32). The roster run alone could not see it: whether the
+  roster's pincer lunges at all depends on its spot.
+- THE STRIDER plays `hop` when the sea lifts it and when it lands on a new
+  line; never while pacing, never when it falls to the floor stranded.
+  check-sideview clause: 0 hops in 200 frames pacing, 1 per conch for LOW to
+  MID, MID to HIGH and HIGH to LOW (dropped from HIGH at once, over the pool;
+  paced a while at HIGH it can be over the dry ledge and strand, silently —
+  that is right, and is what the first try of the clause found).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S243: nothing on the robot's route changed). Whole table
+green; check-sideview 64/64; check-motion 12/12; check-rippers alone, last.
+
+### Next
+- More passages only where one earns its place (ask the human first).
+- Open: the dungeon map's Link marker in a passage; the sword in side view
+  swings left/right only.
+
 ## S243 — side-view passages, stage 4: the Cistern's Float Shaft, and the strider (our first passage enemy)
 
 Branch claude/sideview-passage-d4-2l60th, off main at 5ecb58e (S242).

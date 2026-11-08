@@ -1048,10 +1048,14 @@ export function installEnemies() {
       }
       e.stranded = 0; e.still = false;
       const ty = r * TILE - 13;
-      if (e.y > ty) { e.y = ty; e.vy = 0; }            // the sea rose: lifted with it
+      // Its one sound of its own (the human, S244): the cartridge's enemy
+      // hop, SND_ENEMY_JUMP, as the sea lifts it to a new line and as it
+      // comes down onto one. Silent while it paces, as Ages' water tektite is.
+      if (e.y > ty) { e.y = ty; e.vy = 0; g.audio.sfx('hop'); }   // the sea rose: lifted with it
       else if (e.y < ty) {                              // the sea fell: down to it
         e.vy = Math.min(SV_FALL_MAX, e.vy + SV_GRAVITY);
         e.fy = Math.min(e.fy + e.vy, ty << 8);
+        if (e.y === ty) g.audio.sfx('hop');
         return;
       }
       // Pace along the surface; turn where it ends or a wall stands.
@@ -1173,9 +1177,13 @@ export function installEnemies() {
           e.reach = 0; e.speed = PINCER_OUT_SPEED; e.aiState = 'out';
           return;
         case 'out':                               // state $0b
+          // pincer_head_stateB adds 2 and only STORES it below $20: the
+          // reach stops at 30, where the head was last placed. Storing 32
+          // here put the first frame of the draw-back two pixels further
+          // OUT, at twice the draw-back speed (S244; check-motion saw it).
           place(e.reach);
-          e.reach += PINCER_OUT_SPEED;
-          if (e.reach >= PINCER_REACH) { e.aiState = 'hold'; e.aiTimer = PINCER_HOLD_FRAMES; }
+          if (e.reach + PINCER_OUT_SPEED >= PINCER_REACH) { e.aiState = 'hold'; e.aiTimer = PINCER_HOLD_FRAMES; }
+          else e.reach += PINCER_OUT_SPEED;
           return;
         case 'hold':                              // state $0c
           if (--e.aiTimer > 0) return;

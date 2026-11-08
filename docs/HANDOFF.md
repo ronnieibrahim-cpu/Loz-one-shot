@@ -462,8 +462,14 @@ BEFORE checking a file out for isolation, not after.**
   removes itself on spawn (the strider, where there is no water) still took a
   spot and shifted every later one; the pincer, moved, showed 3 frames of
   double speed (362,362 and 512,0 sub-px). The checker now skips a removed
-  spawn; the pincer's double step in that other spot is a LATENT fault, not
-  looked into yet.
+  spawn. The pincer's double step was REAL (fixed S244): the port stored a
+  value the cartridge only compares (pincer_head_stateB's `cp $20; jr nc`
+  skips the store), so its reach ended at 32 not 30. When porting an
+  assembly loop, look for a compare that jumps PAST the store.
+- **A roster checker sees an enemy's behaviour only where its spot happens
+  to trigger it (S244).** Whether check-motion's pincer ever lunged depended
+  on how far its spot was from Link; pin a behaviour you care about with its
+  own placed probe, as the pincer's lunge profile now is.
 - **The robot walks over corners (S243).** A stair at a room's 1,1 was on the
   robot's travel line through the Rung Gallery; run route-prefix and grep the
   room before trusting "off the route".
