@@ -180,7 +180,10 @@ async function runInPage([ground, wet, frames, seed]) {
     // their intro to do anything. Minibosses DO come through here, because they
     // clear `isBoss` in their init, and that is worth having: they are the
     // sharpest test that the lattice did not swallow the set pieces.
-    if (!e.isEnemy || e.isBoss) { g.pendingAdd = g.pendingAdd.filter(x => x !== e); continue; }
+    // ...nor one that declined to appear here (S243: the strider only lives
+    // on the surface of a side-view passage's water, and removes itself
+    // where it has none), which would only shift every later enemy's spot.
+    if (!e.isEnemy || e.isBoss || e.remove) { g.pendingAdd = g.pendingAdd.filter(x => x !== e); continue; }
     const aquatic = e.terrain === 'water';
     // One room per medium: an aquatic enemy dropped on dry land beaches and
     // dies 90 frames in, and would spend the rest of the run proving nothing.

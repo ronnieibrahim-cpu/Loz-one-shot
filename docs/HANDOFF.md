@@ -458,6 +458,12 @@ BEFORE checking a file out for isolation, not after.**
 - **A run that leaves a room mid-slide poisons the next `start` (S243).**
   newGame and enterMap do not clear `g.transition`; the slide finished on the
   next run and put Link inside a wall. Clear it in the harness.
+- **check-motion places enemies by roster order (S243).** A new enemy that
+  removes itself on spawn (the strider, where there is no water) still took a
+  spot and shifted every later one; the pincer, moved, showed 3 frames of
+  double speed (362,362 and 512,0 sub-px). The checker now skips a removed
+  spawn; the pincer's double step in that other spot is a LATENT fault, not
+  looked into yet.
 - **The robot walks over corners (S243).** A stair at a room's 1,1 was on the
   robot's travel line through the Rung Gallery; run route-prefix and grep the
   room before trusting "off the route".
