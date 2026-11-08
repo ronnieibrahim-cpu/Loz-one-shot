@@ -20,6 +20,11 @@
 //            cell above the surface and a cell either side of it.
 //   CONCH    (unless the sea is held) the sea changes under him wherever he
 //            is: dry -> he falls or stands; wet without the Cleats -> washed.
+//   RIDE     (S243) a side-view float (`svFloat`, objects.js SideFloat) lies
+//            on its shaft's waterline, `rows[t]` at sea t, two cells wide, and
+//            is solid; standing on it when the sea changes he is carried to
+//            its new line, and a float coming down where he is puts him on
+//            top of it. Nothing gets past it any other way.
 // The collision is the room's own tiles (`room.tile`, flags SOLID/VOID/DEEP
 // and the `sv` field); nothing here decides what a tile is.
 //
@@ -34,7 +39,11 @@ export function sideCells(room) {
   const W = room.tw, H = room.th;
   const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
   const def = (x, y, t) => room.tile(x, y, t);
-  const solid = (x, y, t) => !inb(x, y) || !!(def(x, y, t).flags & (F.SOLID | F.VOID));
+  // The room's floats, as SideFloat is placed: two cells wide from its x.
+  const floats = ((room.def && room.def.entities) || [])
+    .filter(e => e[0] === 'svFloat').map(e => ({ x: e[1], rows: (e[3] || {}).rows || [e[2], e[2], e[2]] }));
+  const floatAt = (x, y, t) => floats.find(f => (x === f.x || x === f.x + 1) && y === f.rows[t]) || null;
+  const solid = (x, y, t) => !inb(x, y) || !!(def(x, y, t).flags & (F.SOLID | F.VOID)) || !!floatAt(x, y, t);
   const wet = (x, y, t) => inb(x, y) && !!(def(x, y, t).flags & F.DEEP);
   const ladder = (x, y, t) => inb(x, y) && isLadderDef(def(x, y, t));
   const ladderTop = (x, y, t) => inb(x, y) && def(x, y, t).sv === 'ladderTop';
@@ -43,7 +52,13 @@ export function sideCells(room) {
   /** A place he can be at rest: standing, on a ladder, or swimming. */
   const rest = (x, y, t, cleats) => !solid(x, y, t)
     && (ladder(x, y, t) || (wet(x, y, t) ? cleats : supported(x, y, t)));
-  return { W, H, inb, solid, wet, ladder, ladderTop, warp, supported, rest };
+  /** Where the sea changing from t to t2 leaves him at (x, y): carried by a
+   *  float he stands on, or set on top of one that comes to where he is. */
+  const ride = (x, y, t, t2) => {
+    const f = floatAt(x, y + 1, t) || floatAt(x, y, t2);
+    return f ? [x, f.rows[t2] - 1] : [x, y];
+  };
+  return { W, H, inb, solid, wet, ladder, ladderTop, warp, supported, rest, floats, floatAt, ride };
 }
 
 /**
@@ -111,7 +126,7 @@ export function sideFlood(room, starts, o = {}) {
       for (const [sx, sy] of starts) push(sx, sy, t);
     }
     for (const [nx, ny] of s.out) push(nx, ny, t);
-    if (o.conch) for (const t2 of seas) if (t2 !== t) push(x, y, t2);
+    if (o.conch) for (const t2 of seas) if (t2 !== t) { const [rx, ry] = C.ride(x, y, t, t2); push(rx, ry, t2); }
   }
   return { at, cells, restCells, warps, drowned };
 }

@@ -3053,6 +3053,11 @@ export function installDungeonsA() {
       },
       '0,4,5': {
         name: 'Rung Gallery',
+        // S243: the stair in its south-east corner (off the robot's way
+        // through, which crosses the north-west) goes down into the Cistern's side-view
+        // passage, the Float Shaft (1,5,5), whose east ladder comes up in the
+        // Cliffside Cell next door.
+        warps: [stair4(13, 9, P4(1, 5, 5, 1, 1, 'up'))],
         // A drown-wall box with one square of floor inside it. At LOW and MID
         // it is four walls; at HIGH it is deep water and the Cleats swim you in
         // over the top. The teaching room for every sill in the second half,
@@ -3067,7 +3072,7 @@ export function installDungeonsA() {
           '#.............#',
           '#..11.........#',
           '#..11.........#',
-          '#.............#',
+          '#............/#',
           '#######.#######',
         ],
         entities: [
@@ -3078,9 +3083,11 @@ export function installDungeonsA() {
       },
       '0,5,5': {
         name: 'Cliffside Cell',
+        // S243: the stair in its corner comes from the Float Shaft (1,5,5).
+        warps: [stair4(1, 1, P4(1, 5, 5, 13, 1, 'up'))],
         map: [
           '#######.#######',
-          '#.............#',
+          '#/............#',
           '#.U.........U.#',
           '#.............#',
           '#.............#',
@@ -3094,6 +3101,57 @@ export function installDungeonsA() {
         entities: [
           ['chest', 7, 3, { charm: 'bosunsWhistle' }],
           ['stalfos', 11, 5],
+        ],
+      },
+      '1,5,5': {
+        // THE FLOAT SHAFT (S243, docs/briefs/SIDE-VIEW.md stage 4): the
+        // Cistern's side-view passage, optional, between the Rung Gallery and
+        // the Cliffside Cell. RIDE IT: a float (Seasons' side-view platform,
+        // the Dancing Dragon's room $45c rides two) lies on the water in a
+        // shaft, at row 9 at LOW, 6 at MID and 5 at HIGH, and nothing swims
+        // past it: the way east is level with it at HIGH, so the sea in the
+        // shaft under it never meets the sea on the east ledge. At LOW the shaft is dropped down to the alcove and its 100
+        // rupees; the only way back up is to stand on the float and sound the
+        // conch: MID carries him to the east ledge and its ladder, HIGH back
+        // to the west gallery. Sounded from the alcove, the float goes up
+        // without him and he is shut under it until the sea goes out again.
+        // The Dancing Dragon's side-view colours with the Poison Moth's blue
+        // water (the human's choice). Not on the dungeon map.
+        // tools/check-sideview.mjs proves `sideRoom` in the engine.
+        name: 'The Float Shaft',
+        side: true,
+        legend: 'sideCis',
+        map: [
+          '[U^^^^^^^^^^^U|',
+          '[Hcde...#cde.H|',
+          '[Hfgh...#fgh.H|',
+          '[Hijl...#ijl.H|',
+          '[H......#....H|',
+          '[____>44444449|',
+          '[#####22______|',
+          '[#####11######|',
+          '[#####111111##|',
+          '[#####00____##|',
+          '[#############|',
+        ],
+        warps: [
+          { x: 1, y: 0, to: P4(0, 4, 5, 13, 8, 'up') },
+          { x: 13, y: 0, to: P4(0, 5, 5, 1, 2, 'down') },
+        ],
+        // Reached with the sea HELD (`seas`, the Cleats owned; `dry`, without
+        // them), or only by changing it while inside (`conch`: at no held sea).
+        sideRoom: {
+          entries: [[1, 1], [13, 1]],
+          reach: [
+            { name: 'the alcove prize', at: [10, 8], from: [1, 1], seas: [0], dry: [0] },
+            { name: 'the east ledge', at: [11, 5], from: [1, 1], seas: [1], dry: [1] },
+            { name: 'the west gallery from the east', at: [3, 4], from: [13, 1], conch: true },
+            { name: 'a way out from the alcove', at: [12, 5], from: [10, 8], conch: true },
+          ],
+        },
+        entities: [
+          ['svFloat', 6, 9, { rows: [9, 6, 5] }],
+          ['pickup', 10, 8, { kind: 'rupee100' }],
         ],
       },
       '0,4,4': {

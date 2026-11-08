@@ -110,6 +110,9 @@ SHEETS = {
     # passage is cut from its own dungeon's: the Bogwater Sanctum wears the
     # Poison Moth's Lair ($39), whose side-view tileset is $58.
     'sideBog': 'meta:58',
+    # The Cliffside Cistern's passage (S243) wears the Dancing Dragon
+    # Dungeon's ($3a) side-view tileset, $59.
+    'sideCis': 'meta:59',
     'whirl1': 'ages:5f@1',
     'whirl2': 'ages:5f@2',
     'whirl3': 'ages:5f@3',
@@ -159,7 +162,8 @@ META_NAMES = {'meta:36': "the Hero's Cave", 'meta:38': "Snake's Remains",
               'ages:3b': "Mermaid's Cave, the present", 'ages:40': 'the Ancient Tomb',
               'meta:2c': "Horon Village's houses", 'meta:31': "Holodrum's caves",
               'meta:00': "Holodrum's overworld, spring",
-              'meta:58': "the Poison Moth's Lair, side view"}
+              'meta:58': "the Poison Moth's Lair, side view",
+              'meta:59': "the Dancing Dragon Dungeon, side view"}
 
 
 def meta(name, m, note, sheet, **opt):
@@ -770,6 +774,37 @@ PICKS = [
     meta('svBogCeilingLip', 0x3e, "the lower lip of the ceiling, side view, the Poison Moth's Lair", 'sideBog'),
     meta('svBogRock', 0x3d, "undersea rock, side view, the Poison Moth's Lair", 'sideBog'),
     meta('svBogBed', 0x59, "the sea bed, side view, the Poison Moth's Lair", 'sideBog'),
+    # The same kit in the Dancing Dragon Dungeon's side-view colours (tileset $59),
+    # the Cliffside Cistern's passage (S243).
+    # Its water is not here: the Dragon never floods a side-view room, and $59's
+    # water quarter comes out grey; the human (S243) chose the Poison Moth's blue
+    # (tiles-core.js sideKit('Cis', 'Bog')).
+    meta('svCisAir', 0x01, "open air, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisSpike', 0x02, "spikes (TILEINDEX_SS_SPIKE), side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLadder', 0x18, "a ladder (TILEINDEX_SS_LADDER), side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLadderTop', 0x19, "the top of a ladder, stood on, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisPlatform', 0x26, "the top of a platform, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisBrick', 0x2a, "brick, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLedge', 0x27, "the top of a ledge, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLedgeEnd', 0x17, "the east end of a ledge top, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisBrickEnd', 0x16, "the east face of brick, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisWallW', 0x2d, "the west wall, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisWallE', 0x2e, "the east wall, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisCeiling', 0x3c, "the ceiling, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisCeilingLip', 0x3e, "the lower lip of the ceiling, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisRock', 0x3d, "undersea rock, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisBed', 0x59, "the sea bed, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    # The wall lamp the Dancing Dragon's side-view rooms hang in threes ($45c, $45d),
+    # a 3x3 block read row by row: $08 $09 $0a / $04 $03 $05 / $06 $0b $07.
+    meta('svCisLamp0', 0x08, "the wall lamp, piece 1 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp1', 0x09, "the wall lamp, piece 2 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp2', 0x0a, "the wall lamp, piece 3 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp3', 0x04, "the wall lamp, piece 4 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp4', 0x03, "the wall lamp, piece 5 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp5', 0x05, "the wall lamp, piece 6 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp6', 0x06, "the wall lamp, piece 7 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp7', 0x0b, "the wall lamp, piece 8 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
+    meta('svCisLamp8', 0x07, "the wall lamp, piece 9 of 9, side view, the Dancing Dragon Dungeon", 'sideCis'),
     # THE REEFSEED PILLAR AT MID (S241): Ages' coral sprig, keyed off its sea
     # floor's blue (KEY_BY_COLOUR) so it stands on whatever ground it grew on.
     meta('coralSprig', 0x86, 'the coral sprig, the Ages sea floor (tileset $5f)', 'seaFloor'),

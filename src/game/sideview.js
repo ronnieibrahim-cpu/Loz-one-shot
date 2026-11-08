@@ -64,7 +64,14 @@ export function sideGrounded(game, p, climbing = false) {
     const d = tileAtPx(game, p.x + 8, y);
     if (d.sv === 'ladderTop' && (y % TILE) === 0) return true;
   }
-  return false;
+  return !!floatUnder(game, p);
+}
+
+/** The side-view float (objects.js `SideFloat`, S243) he is standing on, if
+ *  any. On one he is carried, not in the water the sea has put round it. */
+export function floatUnder(game, p) {
+  for (const e of game.entities) if (e.svFloat && !e.remove && e.carries(p)) return e;
+  return null;
 }
 
 /** One frame of Link in a side-view room. Called from Player.update in place
@@ -76,7 +83,7 @@ export function updateSideView(p, game) {
   if (dx) p.dir = dx < 0 ? 'left' : 'right';
 
   const here = activeTile(game, p);
-  const wet = !!(here.flags & F.DEEP);
+  const wet = !!(here.flags & F.DEEP) && !floatUnder(game, p);
   const wasWet = p.inDeep;
   p.inShallow = false;
 
@@ -217,7 +224,7 @@ function move(game, p, dx, dy) {
 }
 
 /** Is the tile at his middle water at this sea? */
-export function sideWet(game, p) { return !!(activeTile(game, p).flags & F.DEEP); }
+export function sideWet(game, p) { return !!(activeTile(game, p).flags & F.DEEP) && !floatUnder(game, p); }
 
 /** Put him on a ladder as climbing if he is on one (arriving, or washed back
  *  to the ladder he came in on), so he holds there and does not fall. */

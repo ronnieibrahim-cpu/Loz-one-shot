@@ -536,6 +536,22 @@ export function installLegends() {
     '5': 'svBogL0', '6': 'svBogL1', '7': 'svBogL2', '8': 'svBogL3', '9': 'svBogL4',
   });
 
+  // The Cliffside Cistern's (S243), in the Dancing Dragon Dungeon's side-view
+  // colours, the same pieces and digits, and its wall lamp in c d e / f g h /
+  // i j l.
+  registerLegend('sideCis', {
+    ' ': 'svCisAir', '.': 'svCisAir', '#': 'svCisBrick', ']': 'svCisBrickEnd',
+    '=': 'svCisPlatform', '_': 'svCisLedge', '>': 'svCisLedgeEnd',
+    '[': 'svCisWallW', '|': 'svCisWallE', '^': 'svCisCeiling', 'v': 'svCisCeilingLip',
+    'r': 'svCisRock', 'b': 'svCisBed', 'H': 'svCisLadder', 'T': 'svCisLadderTop',
+    'U': 'svCisLadderOut', '~': 'svCisWater', 's': 'svCisSurface', 'k': 'svCisWeed',
+    'x': 'svCisSpike',
+    'c': 'svCisLamp0', 'd': 'svCisLamp1', 'e': 'svCisLamp2', 'f': 'svCisLamp3', 'g': 'svCisLamp4',
+    'h': 'svCisLamp5', 'i': 'svCisLamp6', 'j': 'svCisLamp7', 'l': 'svCisLamp8',
+    '0': 'svCis0', '1': 'svCis1', '2': 'svCis2', '3': 'svCis3', '4': 'svCis4',
+    '5': 'svCisL0', '6': 'svCisL1', '7': 'svCisL2', '8': 'svCisL3', '9': 'svCisL4',
+  });
+
   registerLegend('cave', {
     ' ': 'void',
     // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js

@@ -2983,3 +2983,10 @@ export const SV_FALL_MAX = 0x300;
  *  -$1a0 (1.625 px/f up) the frame Link leaves the water, unless he is on a
  *  ladder through the surface. */
 export const SV_HOP = 0x1a0;
+
+/** sp/f — how fast a side-view float (the Cliffside Cistern's passage, S243)
+ *  rides up or down to the sea's new line: 0.5 px/f. derived from the
+ *  cartridge: every INTERAC_MOVING_SIDESCROLL_PLATFORM script in
+ *  data/seasons/movingSidescrollPlatform.s opens with SPEED_80, the speed
+ *  table's $80 subpixels a frame (constants/common/objectSpeeds.s). */
+export const SV_FLOAT_SPEED = 0x80;

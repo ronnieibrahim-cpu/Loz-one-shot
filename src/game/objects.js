@@ -26,7 +26,7 @@ import {
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
   LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES,
-  FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES,
+  FLOAT_SPEED, FLOAT_FOOT_DY, SV_FLOAT_SPEED, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES,
   BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
@@ -2357,6 +2357,81 @@ export class Float extends Entity {
   }
 }
 defineEntity('float', (x, y, o) => new Float(x, y, o));
+
+/**
+ * A SIDE-VIEW FLOAT (S243, the Cliffside Cistern's passage): Seasons'
+ * INTERAC_MOVING_SIDESCROLL_PLATFORM (the Dancing Dragon's room $45c rides two
+ * over its spikes), but what moves it is the sea. It lies on the waterline of
+ * the shaft it is set in: `rows` is the tile row its top is in at LOW, MID and
+ * HIGH, and when the sea changes it rides to the new line at SV_FLOAT_SPEED,
+ * carrying Link if he stands on it (updateLinkPositionGivenVelocity when
+ * wLinkRidingObject is the platform), and holding still while the conch
+ * sounds, as every platform does (wLinkPlayingInstrument). It is solid from
+ * every side: nothing swims up past it, so the only way up its shaft is on it.
+ * `tools/lib/side-flood.mjs` reads the same `rows`.
+ */
+export class SideFloat extends Entity {
+  constructor(x, y, o = {}, game) {
+    super(x, y, o);
+    this.w = 32; this.h = 16;
+    this.hb = { x: 0, y: 0, w: 32, h: 16 };
+    this.sprite = 'o_svfloat0';
+    this.svFloat = true;
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.depth = -9;
+    this.rows = o.rows || [y / TILE, y / TILE, y / TILE];
+    this.tx = Math.floor(x / TILE);
+    if (game && game.room) this.y = this.lineAt(game);
+  }
+
+  /** The pixel row its top rests at for the sea at its own column. */
+  lineAt(game) {
+    const t = game.tide.levelAt(this.tx, this.rows[0], game.room);
+    return this.rows[t] * TILE;
+  }
+
+  /** Is Link standing on it: his feet on its top, over it, not in water? */
+  carries(p) {
+    if (!p || p.dead || p.inDeep || p.svClimb || p.svFall < 0) return false;
+    const r = p.hb;
+    const feet = p.y + r.y + r.h;
+    return feet === this.y && p.x + r.x + r.w > this.x && p.x + r.x < this.x + this.w;
+  }
+
+  update(game) {
+    this.frame++;
+    const p = game.player;
+    if (p && p.conchTime > 0) return;
+    const target = this.lineAt(game) << 8;
+    if (this.fy === target) return;
+    const riding = this.carries(p);
+    const before = this.fy;
+    this.fy = this.fy < target ? Math.min(target, this.fy + SV_FLOAT_SPEED) : Math.max(target, this.fy - SV_FLOAT_SPEED);
+    if (!p) return;
+    const r = p.hb;
+    if (riding) { p.y = this.y - r.y - r.h; return; }
+    // Moving into him: below its middle he is pushed under it if he can be
+    // (it is coming down on a swimmer), else he ends up on top of it.
+    const over = p.x + r.x + r.w > this.x && p.x + r.x < this.x + this.w
+      && p.y + r.y + r.h > this.y && p.y + r.y < this.y + this.h;
+    if (!over) return;
+    const pc = p.y + r.y + r.h / 2, fc = this.y + this.h / 2;
+    if (this.fy > before && pc > fc) {
+      const ny = this.y + this.h - r.y;
+      if (canOccupy(game, p, p.x, ny, { ...p.caps, swim: true })) { p.y = ny; return; }
+    }
+    p.y = this.y - r.y - r.h;
+    p.svFall = 0;
+  }
+
+  draw(ctx, game, ox, oy) {
+    // The picture's platform is rows 8-23 of its 32x32 cell.
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y - 8);
+  }
+}
+defineEntity('svFloat', (x, y, o, game) => new SideFloat(x, y, o, game));
 
 
 // --------------------------------------------------------------------------
