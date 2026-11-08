@@ -41,6 +41,7 @@ import {
   MOBLIN_SPEED, MOBLIN_WALK_BASE, MOBLIN_WALK_MASK, MOBLIN_PAUSE_FRAMES, MOBLIN_SPEAR_SPEED,
   TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP,
   BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN,
+  STRIDER_SPEED, SV_GRAVITY, SV_FALL_MAX, ENEMY_BEACHED_FRAMES,
   KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN,
 } from './feel.js';
 
@@ -977,6 +978,95 @@ export function installEnemies() {
       }
     },
   });
+
+  // --- Strider (ours, S243): skates the top of the sea in a passage -----
+  // docs/briefs/s243/enemy-sketch.png. In a side-view passage it stands on
+  // the surface of whatever water is under it and paces left and right
+  // along it, turning where the surface ends. The conch moves it: raise the
+  // sea and it is lifted with it, lower it and it drops to the new surface;
+  // drain the water from under it and it falls to the floor, flounders and
+  // is gone (beached, as any sea creature). One sword cut kills it. It never
+  // appears where there is no water to skate when the room is entered.
+  // Its feet are on row 14 of its picture: on a surface in row r it stands
+  // at y = 16r - 13.
+  function striderSurface(g, cx, row) {
+    const room = g.room;
+    const def = (x, y) => room.tile(x, y, g.tide);
+    const wet = (x, y) => y >= 0 && y < room.th && x >= 0 && x < room.tw && !!(def(x, y).flags & F.DEEP);
+    const solid = (x, y) => y >= room.th || x < 0 || x >= room.tw || !!(def(x, y).flags & (F.SOLID | F.VOID))
+      || g.entities.some(o => o.svFloat && x * TILE < o.x + o.w && x * TILE + TILE > o.x && y * TILE < o.y + o.h && y * TILE + TILE > o.y);
+    let r = Math.max(0, row);
+    if (!wet(cx, r)) {
+      for (; r < room.th; r++) { if (solid(cx, r)) return null; if (wet(cx, r)) break; }
+      if (r >= room.th) return null;
+    }
+    while (wet(cx, r - 1)) r--;
+    // A surface has air over it: water against a ceiling (or a float) is not
+    // one, and a strider is not a swimmer.
+    return solid(cx, r - 1) || solid(cx, r) ? null : r;
+  }
+  defineEnemy('strider', {
+    hp: 1, damage: 2, pal: 'strider', rate: 8,
+    frames: { side: ['strider_0', 'strider_1'] },
+    hb: { x: 2, y: 4, w: 12, h: 10 },
+    drops: 'common',
+    init(e, g) {
+      e.dir = 'right';
+      e.vy = 0;
+      e.wades = false; e.shadow = false;
+      if (!g || !g.room) return;
+      const cx = Math.floor((e.x + 8) / TILE);
+      const r = striderSurface(g, cx, Math.floor((e.y + 14) / TILE));
+      if (r == null) { e.remove = true; e.harmless = true; return; }
+      e.y = r * TILE - 13;
+    },
+    ai(e, g) {
+      let cx = Math.floor((e.x + 8) / TILE);
+      const row = Math.floor((e.y + 14) / TILE);
+      let r = striderSurface(g, cx, row);
+      // Lifted against a ceiling (a platform, a ledge, the float) by a rising
+      // sea, it slips out sideways to the nearest open surface, as a bubble
+      // would.
+      if (r == null && g.room.tile(cx, row, g.tide).flags & F.DEEP) {
+        for (let d = 1; d < g.room.tw && r == null; d++) {
+          for (const nx of [cx - d, cx + d]) {
+            const nr = striderSurface(g, nx, row);
+            if (nr != null) { cx = nx; r = nr; e.x = nx * TILE; break; }
+          }
+        }
+      }
+      if (r == null) {
+        // No sea under it: it falls, and on the floor it flounders.
+        e.vy = Math.min(SV_FALL_MAX, e.vy + SV_GRAVITY);
+        const hit = moveEntityY(e, g, e.vy);
+        if (hit) {
+          e.vy = 0; e.still = true;
+          e.stranded = (e.stranded || 0) + 1;
+          if (e.stranded > ENEMY_BEACHED_FRAMES) e.die(g);
+        }
+        return;
+      }
+      e.stranded = 0; e.still = false;
+      const ty = r * TILE - 13;
+      if (e.y > ty) { e.y = ty; e.vy = 0; }            // the sea rose: lifted with it
+      else if (e.y < ty) {                              // the sea fell: down to it
+        e.vy = Math.min(SV_FALL_MAX, e.vy + SV_GRAVITY);
+        e.fy = Math.min(e.fy + e.vy, ty << 8);
+        return;
+      }
+      // Pace along the surface; turn where it ends or a wall stands.
+      const step = e.dir === 'left' ? -STRIDER_SPEED : STRIDER_SPEED;
+      const lead = Math.floor((toPx(e.fx + step) + (e.dir === 'left' ? 2 : 13)) / TILE);
+      if (striderSurface(g, lead, r) !== r) { e.dir = e.dir === 'left' ? 'right' : 'left'; return; }
+      e.fx += step;
+    },
+  });
+  // Down by `v` subpixels against the room's solids; true if it landed.
+  function moveEntityY(e, g, v) {
+    const ny = e.fy + v;
+    if (canOccupy(g, e, e.x, toPx(ny), { jumping: true, swim: true, cutting: false }, true)) { e.fy = ny; return false; }
+    return true;
+  }
 
   // --- Jellyfish: drifts with the tide, stings on contact ---------------
   defineEnemy('jellyfish', {

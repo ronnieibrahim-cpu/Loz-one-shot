@@ -1,3 +1,69 @@
+## S243 — side-view passages, stage 4: the Cistern's Float Shaft, and the strider (our first passage enemy)
+
+Branch claude/sideview-passage-d4-2l60th, off main at 5ecb58e (S242).
+
+### The human's choices this session (do not re-ask)
+- Passages: NOT one in every dungeon "if not necessary" — decide each one
+  with the human. YES to this one (the Float Shaft) as mocked
+  (docs/briefs/s243/passage-mock.png beside Seasons' room $45c,
+  passage-stills.png, passage-mock.gif).
+- Its water: the POISON MOTH'S BLUE (the Dancing Dragon's own side-view
+  water, tileset $59, comes out grey). Its prize: 100 RUPEES.
+- An enemy of our own for passages: YES, the strider as sketched
+  (docs/briefs/s243/enemy-sketch.png), in BOTH passages.
+
+### Built
+- THE FLOAT SHAFT, d4 room 1,5,5 (`side: true`, legend `sideCis`), between
+  the Rung Gallery (0,4,5; stair `/` at 13,9 — its south-east corner, as the
+  robot's travel crosses its north-west and walked onto a stair at 1,1) and
+  the Cliffside Cell (0,5,5; stair at 1,1). Grid and claims in
+  dungeons-a.js. A float (`['svFloat', 6, 9, { rows: [9, 6, 5] }]`) lies on
+  the shaft's waterline. LOW: drop down the shaft, walk into the alcove,
+  100 rupees. Back up only on the float: conch to MID carries him to the
+  east ledge and its ladder; to HIGH, level with the west gallery. From the
+  alcove the conch takes the float up without him (stuck under it until the
+  sea goes out). HIGH's line is one row above MID's so the east ledge's
+  water never meets the water under the float (an opening below the HIGH
+  float would let a swimmer round it — the first layout had that).
+- Engine: objects.js `SideFloat` (entity `svFloat`): solid, rides to the
+  sea's line at SV_FLOAT_SPEED (SPEED_80, derived), carries Link standing on
+  it, waits while the conch sounds, sets him on top if it comes down where
+  he is. sideview.js `floatUnder`: on a float he stands (sideGrounded) and is
+  not in the water round it (no wash while it carries him up through the
+  new sea). player.js: a hit in a side room shoves him sideways only.
+- Rips: rip-dungeon-themes.py `svCis*` (meta:59, no water pieces; its wall
+  lamp `svCisLamp0-8`, legend c d e / f g h / i j l); tiles-core.js
+  `sideKit(K, waterOf)`; rip-effects.py `o_svfloat0`
+  (INTERAC_MOVING_SIDESCROLL_PLATFORM subid 0, manifest fxBig).
+- THE STRIDER (src/data/enemies.js `strider`, art in the new hand-drawn
+  module src/data/sprites-enemies-drawn.js, Seasons' blue enemy palette):
+  stands on the surface of the water under it (feet on row 14: y = 16r-13),
+  paces at STRIDER_SPEED (guessed), turns where the surface ends; a rising sea
+  lifts it (against a ceiling it slips sideways to open water), a falling sea
+  drops it; drained out from under it it falls, flounders ENEMY_BEACHED_FRAMES
+  and dies; not spawned where its column has no surface; 1 hp, 2 qh (the
+  ordinary rung, check-hearts). Sounding Way at 4,9; Float Shaft at 10,5
+  (only at HIGH).
+- tools/lib/side-flood.mjs learned RIDE (floats solid at their row per sea;
+  the conch carries a rider). check-sideview: `dry` and `conch` claims, the
+  Float Shaft's engine clauses, the strider (clause 10), the wander for every
+  passage, and its harness clears a leftover room slide between runs. Plans
+  and wandering run with enemies removed (`calm`).
+- Mock tools: film-side-mock.mjs `alias` (draw a tile as another, a colour
+  trial). Scenarios docs/briefs/s243/side-mock/ (built-ride.json and
+  strider.json are the built rooms; built-ride.gif, strider.gif).
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
+(identical to S242). The rest of the table: see the commit.
+
+### Next
+- More passages only where one earns its place (ask the human first).
+- The strider has no sound of its own and drops loot when beached; the
+  human has not seen it moving in the game yet (strider.gif).
+- Open: the dungeon map's Link marker in a passage; the sword in side view
+  swings left/right only.
+
 ## S242 — side-view passages, stages 2 and 3: the flood learns them, and the first passage (the Sounding Way)
 
 Branch claude/side-view-passages-2-3-v0qjp5, off main at a6bb4aa (S241).

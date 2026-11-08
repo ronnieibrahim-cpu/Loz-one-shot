@@ -104,5 +104,20 @@ lands in stages; this file is the plan every stage builds to.
    could be under the sea by then), arriving on a ladder he holds on it, the
    conch changing the sea round him in a passage only washes him if he has no
    Cleats, and passages are not drawn on the dungeon map.
-4. More passages, one per dungeon from D3, each asking the waterline a
-   different question.
+4. More passages, each asking the waterline a different question.
+   The human (S243): NOT one in every dungeon — only where one earns its
+   place; decide each one with them.
+   DONE S243: the Float Shaft (d4 1,5,5), the Cliffside Cistern's, between
+   the Rung Gallery (stair in its south-east corner) and the Cliffside Cell.
+   RIDE IT: a float (Seasons' INTERAC_MOVING_SIDESCROLL_PLATFORM, from the
+   Dancing Dragon's room $45c) lies on its shaft's waterline (rows 9/6/5) and
+   is solid, so nothing swims past it; the alcove's 100 rupees are at LOW
+   only, and the way back up is to stand on the float and sound the conch
+   (MID out east, HIGH back west). Dancing Dragon side-view colours ($59,
+   `svCis*`, with its wall lamp) and the Poison Moth's blue water (the
+   human's pick: $59's water is grey). Mock and pictures: docs/briefs/s243/.
+5. Enemies of our own (S243, the human's yes to docs/briefs/s243/
+   enemy-sketch.png): the STRIDER, a water-strider that skates the top of
+   whatever water is under it, lifted and dropped by the conch, gone when
+   drained out from under it. One in each passage. Hand-drawn in
+   src/data/sprites-enemies-drawn.js.

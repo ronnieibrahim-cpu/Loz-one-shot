@@ -2472,6 +2472,9 @@ export function installDungeonsA() {
         },
         entities: [
           ['pickup', 7, 2, { kind: 'rupee100' }],
+          // The strider (S243, the human's choice: both passages) skates the
+          // pool: the LOW puddle, the MID line, the HIGH line.
+          ['strider', 4, 9],
         ],
       },
       '1,5,6': {
@@ -3152,6 +3155,8 @@ export function installDungeonsA() {
         entities: [
           ['svFloat', 6, 9, { rows: [9, 6, 5] }],
           ['pickup', 10, 8, { kind: 'rupee100' }],
+          // The strider (S243): on the east ledge's water, there only at HIGH.
+          ['strider', 10, 5],
         ],
       },
       '0,4,4': {

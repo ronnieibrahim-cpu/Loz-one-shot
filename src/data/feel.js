@@ -2990,3 +2990,8 @@ export const SV_HOP = 0x1a0;
  *  data/seasons/movingSidescrollPlatform.s opens with SPEED_80, the speed
  *  table's $80 subpixels a frame (constants/common/objectSpeeds.s). */
 export const SV_FLOAT_SPEED = 0x80;
+
+/** sp/f — how fast the strider (ours, S243) skates along the sea's top in a
+ *  side-view passage: 0.5 px/f, half Link's walk, so a swimmer (SWIM_SPEED)
+ *  can get out of its way and a walker can outpace it. guessed. */
+export const STRIDER_SPEED = 0x80;

@@ -189,7 +189,7 @@ await page.evaluate(async () => {
       g.enterMap(map, f, rx, ry, px, py, 'up', { instant: true });
       g.dialogue.active = false; g.bannerTime = 0;
       // `calm`: nothing in the room can touch him (a keese by a stair).
-      if (calm) for (const e of g.entities) if (e !== g.player && e.hp != null) e.remove = true;
+      if (calm) for (const e of g.entities) if (e.isEnemy) e.remove = true;
       this.release();
     },
     release() { const raw = g.input._raw; for (const b of ['up', 'down', 'left', 'right', 'a', 'b']) raw[b] = false; },
@@ -253,7 +253,8 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
 
   // 6. the claims, played.
   const runPlan = async (plan, t, cleats = true) => {
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, t, cleats, false);
+    // `calm`: these plans are about the passage, not its strider (clause 10).
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, t, cleats, false, true);
     const r0 = (await sv('state')).rupees;
     const tr = await sv('play', plan, true);
     return { tr, r0, end: tr[tr.length - 1] };
@@ -280,6 +281,8 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
     await page.evaluate(() => { const g = window.__game; g.enterMap('d3', 1, 4, 6, 16, 32, 'up', { instant: true }); });
     const out = await sv('state');
     await sv('hold', ['up'], 40, false, true);
+    // The passage's strider (clause 10) is not this plan's business.
+    await page.evaluate(() => { const g = window.__game; for (const e of g.entities) if (e.isEnemy) e.remove = true; });
     await sv('hold', [], 90);
     const back = await sv('state');
     const r1 = back.rupees;
@@ -293,7 +296,7 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
 
   // 7. the ways out.
   {
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false);
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false, true);
     await sv('hold', ['up'], 40, false, true); await sv('hold', [], 90);
     const w = await sv('state');
     check(`${tag}: up the west ladder comes out in the Bell Cell on floor`, w.room === '1,4,6' && w.x === 16 && w.y === 32, JSON.stringify(w));
@@ -307,14 +310,14 @@ for (const P of passages.filter(p => p.mapId === 'd3' && p.rk === '0,4,6')) {
 
   // 8. no Cleats.
   {
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false);
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, false, true);
     const h0 = (await sv('state')).hearts;
     const tr = await sv('play', [[['down'], 130], [['right'], 60], [[], 120]], true);
     const end = tr[tr.length - 1];
     const washes = tr.filter((s, i) => s.wash && !(i && tr[i - 1].wash)).length;
     check(`${tag}: no Cleats, the pool at LOW washes Link back to the entry, on the ladder, once`,
       washes === 1 && end.x === ENTRY_W[0] && end.y === ENTRY_W[1] && end.climb && end.hearts < h0, JSON.stringify({ washes, end }));
-    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, true);
+    await sv('start', P.mapId, f, rx, ry, ...ENTRY_W, 0, false, true, true);
     await sv('play', [[['down'], 130], [['right'], 10], [[], 10]]);
     const tr2 = await sv('play', [[['b'], 4], [[], 200]], true);
     const end2 = tr2[tr2.length - 1];
@@ -397,6 +400,78 @@ for (const P of passages.filter(p => p.mapId === 'd4' && p.rk === '1,5,5')) {
   }
 }
 
+// 10. THE STRIDER (S243, ours, the human's yes to docs/briefs/s243/
+//     enemy-sketch.png): it stands on the surface of the water under it, the
+//     conch lifts it and drops it, drained out from under it it flounders and
+//     is gone, it never appears with no water to skate, it hurts Link to
+//     touch and one sword cut kills it.
+{
+  const strider = () => page.evaluate(() => {
+    const e = window.__game.entities.find(o => o.type === 'strider' && !o.remove && !o.dead);
+    return e ? { x: e.x, y: e.y, dir: e.dir } : null;
+  });
+  // The Sounding Way's pool: LOW line row 9, MID row 6, HIGH row 3.
+  const LINE = [9, 6, 3];
+  for (const t of [0, 1, 2]) {
+    await sv('start', 'd3', 0, 4, 6, 16, 16, t, true, false);
+    await sv('hold', [], 30);
+    const s = await strider();
+    check(`strider: in the Sounding Way at ${SEAS[t]} it stands on the surface (row ${LINE[t]})`, s && s.y === LINE[t] * 16 - 13, JSON.stringify(s));
+  }
+  {
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 0, true, true);
+    await sv('hold', [], 30);
+    const xs = new Set();
+    for (let i = 0; i < 20; i++) { await sv('hold', [], 10); const s = await strider(); xs.add(s && s.x); }
+    await sv('hold', ['b'], 4); await sv('hold', [], 120);
+    const mid = await strider();
+    await sv('hold', ['b'], 4); await sv('hold', [], 120);
+    const high = await strider();
+    check(`strider: it paces the LOW pool, and the conch lifts it to the MID line and then the HIGH line`,
+      xs.size > 5 && mid && mid.y === 6 * 16 - 13 && high && high.y === 3 * 16 - 13, JSON.stringify({ n: xs.size, mid, high }));
+  }
+  {
+    // The Float Shaft's is on the east ledge's water, which only HIGH puts there.
+    const here = [];
+    for (const t of [0, 1, 2]) { await sv('start', 'd4', 1, 5, 5, 208, 16, t, true, false); await sv('hold', [], 10); here.push(!!(await strider())); }
+    check(`strider: in the Float Shaft it is there at HIGH only (no water on the east ledge lower)`, here.join() === 'false,false,true', here.join());
+    await sv('start', 'd4', 1, 5, 5, 208, 16, 2, true, true);
+    await sv('hold', [], 10);
+    await sv('hold', ['b'], 4);
+    const fall = [];
+    for (let i = 0; i < 25; i++) { await sv('hold', [], 10); fall.push(await strider()); }
+    const landed = fall.find(s => s && s.y === 5 * 16 - 13 + 0) || fall.find(s => s);
+    check(`strider: the conch drains the ledge from under it, it falls and is gone`, fall[fall.length - 1] === null && !!landed, JSON.stringify(fall.slice(0, 3)));
+  }
+  {
+    // Touched, it hurts; one cut kills it.
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 1, true, false);
+    await page.evaluate(async () => {
+      const g = window.__game; const { giveItem } = await import('/src/game/progress.js');
+      giveItem(g.progress, 'sword'); g.progress.equipA = 'sword';
+      const e = g.entities.find(o => o.type === 'strider');
+      g.player.x = e.x + 20; g.player.y = e.y + 4; g.player.dir = 'left'; g.player.invuln = 0;
+    });
+    const h0 = (await sv('state')).hearts;
+    let hurt = false;
+    for (let i = 0; i < 80 && !hurt; i++) { await sv('hold', ['left'], 1); hurt = (await sv('state')).hearts < h0; }
+    check(`strider: swimming into it costs Link hearts`, hurt, '');
+    await sv('start', 'd3', 0, 4, 6, 16, 16, 1, true, false);
+    const gone = await page.evaluate(async () => {
+      const g = window.__game; const { giveItem } = await import('/src/game/progress.js');
+      giveItem(g.progress, 'sword'); g.progress.equipA = 'sword';
+      const e = g.entities.find(o => o.type === 'strider');
+      e.dir = 'right';
+      g.player.x = e.x + 14; g.player.y = e.y + 2; g.player.dir = 'left';
+      return true;
+    });
+    await sv('hold', ['left'], 1);
+    await sv('hold', ['a'], 3);
+    await sv('hold', [], 40);
+    check(`strider: one sword cut kills it`, gone && (await strider()) === null, JSON.stringify(await strider()));
+  }
+}
+
 // 9. the engine never goes where the model says it cannot (every passage).
 for (const P of passages) {
   const tag = `${P.mapId} ${P.rk}`;
@@ -417,7 +492,7 @@ for (const P of passages) {
       const seen = new Set();
       for (let run = 0; run < 6; run++) {
         const entry = run % 2 ? ENTRY_E : ENTRY_W;
-        await sv('start', P.mapId, f, rx, ry, ...entry, t, cleats, false);
+        await sv('start', P.mapId, f, rx, ry, ...entry, t, cleats, false, true);
         const steps = [];
         for (let k = 0; k < 30; k++) steps.push([MOVES[rnd(MOVES.length)], 8 + rnd(40)]);
         const tr = await sv('play', steps, true);

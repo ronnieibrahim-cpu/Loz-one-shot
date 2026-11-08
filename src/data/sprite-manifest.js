@@ -159,6 +159,9 @@ export const REQUIRED_SPRITES = {
     'npc_reefkin_d', 'npc_reefkin_u', 'npc_reefkin_r',
   ],
 
+  // ---- pack: sprites-enemies-drawn.js (ours, S243) ----------------------
+  enemiesDrawn: [...seq('strider_', 2)],
+
   // ---- pack: sprites-enemies.js ----------------------------------------
   enemies: [
     // Cut by rip-enemies.py and unused since S165 (Seasons has no defeat pose:

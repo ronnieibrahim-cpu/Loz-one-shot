@@ -1787,6 +1787,10 @@ export class Player extends Entity {
       const per = PLAYER_KNOCK_SPEED;
       this.knockX = Math.round(dx / d * per);
       this.knockY = Math.round(dy / d * per);
+      // Seen from the side (S243, the strider's first hits) he is shoved
+      // along the floor or the water, never up into the air: a hit is not a
+      // way to climb in a game with no jump.
+      if (isSideRoom(game)) { this.knockX = (dx < 0 ? -1 : 1) * per; this.knockY = 0; }
       this.knockTime = game.charm('ballastHeart') ? PLAYER_KNOCK_FRAMES >> 1 : PLAYER_KNOCK_FRAMES;
     } else {
       this.knockX = 0; this.knockY = 0; this.knockTime = 0;
