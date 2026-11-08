@@ -4387,6 +4387,18 @@ const SV_FALL_MAX = 0x300;
  *  -$1a0 (1.625 px/f up) the frame Link leaves the water, unless he is on a
  *  ladder through the surface. */
 const SV_HOP = 0x1a0;
+
+/** sp/f — how fast a side-view float (the Cliffside Cistern's passage, S243)
+ *  rides up or down to the sea's new line: 0.5 px/f. derived from the
+ *  cartridge: every INTERAC_MOVING_SIDESCROLL_PLATFORM script in
+ *  data/seasons/movingSidescrollPlatform.s opens with SPEED_80, the speed
+ *  table's $80 subpixels a frame (constants/common/objectSpeeds.s). */
+const SV_FLOAT_SPEED = 0x80;
+
+/** sp/f — how fast the strider (ours, S243) skates along the sea's top in a
+ *  side-view passage: 0.5 px/f, half Link's walk, so a swimmer (SWIM_SPEED)
+ *  can get out of its way and a walker can outpace it. guessed. */
+const STRIDER_SPEED = 0x80;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["DIAGONAL_FACTOR"] = DIAGONAL_FACTOR;
 __exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
@@ -4905,6 +4917,8 @@ __exports["HEART_FILL_FRAMES"] = HEART_FILL_FRAMES;
 __exports["SV_GRAVITY"] = SV_GRAVITY;
 __exports["SV_FALL_MAX"] = SV_FALL_MAX;
 __exports["SV_HOP"] = SV_HOP;
+__exports["SV_FLOAT_SPEED"] = SV_FLOAT_SPEED;
+__exports["STRIDER_SPEED"] = STRIDER_SPEED;
 });
 
 /* ===== src/core/gbsound.js ===== */
@@ -8170,7 +8184,14 @@ function sideGrounded(game, p, climbing = false) {
     const d = tileAtPx(game, p.x + 8, y);
     if (d.sv === 'ladderTop' && (y % TILE) === 0) return true;
   }
-  return false;
+  return !!floatUnder(game, p);
+}
+
+/** The side-view float (objects.js `SideFloat`, S243) he is standing on, if
+ *  any. On one he is carried, not in the water the sea has put round it. */
+function floatUnder(game, p) {
+  for (const e of game.entities) if (e.svFloat && !e.remove && e.carries(p)) return e;
+  return null;
 }
 
 /** One frame of Link in a side-view room. Called from Player.update in place
@@ -8182,7 +8203,7 @@ function updateSideView(p, game) {
   if (dx) p.dir = dx < 0 ? 'left' : 'right';
 
   const here = activeTile(game, p);
-  const wet = !!(here.flags & F.DEEP);
+  const wet = !!(here.flags & F.DEEP) && !floatUnder(game, p);
   const wasWet = p.inDeep;
   p.inShallow = false;
 
@@ -8323,7 +8344,7 @@ function move(game, p, dx, dy) {
 }
 
 /** Is the tile at his middle water at this sea? */
-function sideWet(game, p) { return !!(activeTile(game, p).flags & F.DEEP); }
+function sideWet(game, p) { return !!(activeTile(game, p).flags & F.DEEP) && !floatUnder(game, p); }
 
 /** Put him on a ladder as climbing if he is on one (arriving, or washed back
  *  to the ladder he came in on), so he holds there and does not fall. */
@@ -8349,6 +8370,7 @@ function rememberSafe(game, p) {
 __exports["SIDE_HB"] = SIDE_HB;
 __exports["isSideRoom"] = isSideRoom;
 __exports["sideGrounded"] = sideGrounded;
+__exports["floatUnder"] = floatUnder;
 __exports["updateSideView"] = updateSideView;
 __exports["sideWet"] = sideWet;
 __exports["settleSideView"] = settleSideView;
@@ -23617,6 +23639,10 @@ class Player extends Entity {
       const per = PLAYER_KNOCK_SPEED;
       this.knockX = Math.round(dx / d * per);
       this.knockY = Math.round(dy / d * per);
+      // Seen from the side (S243, the strider's first hits) he is shoved
+      // along the floor or the water, never up into the air: a hit is not a
+      // way to climb in a game with no jump.
+      if (isSideRoom(game)) { this.knockX = (dx < 0 ? -1 : 1) * per; this.knockY = 0; }
       this.knockTime = game.charm('ballastHeart') ? PLAYER_KNOCK_FRAMES >> 1 : PLAYER_KNOCK_FRAMES;
     } else {
       this.knockX = 0; this.knockY = 0; this.knockTime = 0;
@@ -25025,6 +25051,7 @@ __define("data/sprites-effects.js", function (__exports, __require) {
 //   fx_ember*: frames 0 1 2 (held 2 2 2), tile base $06
 //   fx_beam*: frames 0 1 2 3 (held 127 127 127 127), tile base $38
 //   o_float*: frames 0 (held 127), tile base $08
+//   o_svfloat*: frames 0 (held 127), tile base $0e
 //   o_icechunk*: frames 0 (held 127), tile base $0a
 //   o_eyeball*: frames 0 (held 127), tile base $1e
 
@@ -28157,6 +28184,40 @@ const EFFECT_ART = {
     00333333333333000033333333333300
     00000000000000000000000000000000` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_svfloat0: { pal: 'o_svfloat0', art: `
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    10003100000131001000310000013100
+    00003000000130000000300000013000
+    01113311111131110111331111113111
+    33333333333333333333333333333333
+    31000113333333333100011333333333
+    30111113310001133011111331000113
+    30111133301111133011113330111113
+    33333333333333333333333333333333
+    00013100001131000001310000113100
+    11113011111130111111301111113011
+    11113011111130111111301111113011
+    33333333333333333333333333333333
+    33333333100001333333333310000133
+    33100013011111333310001301111133
+    33011113111111333301111311111133
+    33333333333333333333333333333333
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................
+    ................................` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_icechunk0: { pal: 'o_icechunk0', art: `
     ................................
     ................................
@@ -28309,6 +28370,7 @@ const EFFECT_PALETTES = {
   fx_beam3: ['#0000ff', '#0000ff', '#0000ff', '#000000'],
   fx_beam3b: ['#de0000', '#de0000', '#de0000', '#000000'],
   o_float0: ['#ffd68c', '#ffd68c', '#ffd68c', '#10ad42'],
+  o_svfloat0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   o_icechunk0: ['#73adff', '#0000ff', '#0000ff', '#000000'],
   o_eyeball0: ['#000000', '#000000', '#000000', '#000000'],
 };
@@ -28719,7 +28781,7 @@ const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_HOVER_Z, FAIRY_ARM_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_HOVER_Z, FAIRY_ARM_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, SV_FLOAT_SPEED, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
 const { EYEBALL_LOOK } = __require("data/sprites-effects.js");
 const { CUBE_FRAMES, CUBE_ANIMS, CUBE_PUSH_ANIM, CUBE_TOP } = __require("data/sprites-cube.js");
@@ -31049,6 +31111,81 @@ class Float extends Entity {
 }
 defineEntity('float', (x, y, o) => new Float(x, y, o));
 
+/**
+ * A SIDE-VIEW FLOAT (S243, the Cliffside Cistern's passage): Seasons'
+ * INTERAC_MOVING_SIDESCROLL_PLATFORM (the Dancing Dragon's room $45c rides two
+ * over its spikes), but what moves it is the sea. It lies on the waterline of
+ * the shaft it is set in: `rows` is the tile row its top is in at LOW, MID and
+ * HIGH, and when the sea changes it rides to the new line at SV_FLOAT_SPEED,
+ * carrying Link if he stands on it (updateLinkPositionGivenVelocity when
+ * wLinkRidingObject is the platform), and holding still while the conch
+ * sounds, as every platform does (wLinkPlayingInstrument). It is solid from
+ * every side: nothing swims up past it, so the only way up its shaft is on it.
+ * `tools/lib/side-flood.mjs` reads the same `rows`.
+ */
+class SideFloat extends Entity {
+  constructor(x, y, o = {}, game) {
+    super(x, y, o);
+    this.w = 32; this.h = 16;
+    this.hb = { x: 0, y: 0, w: 32, h: 16 };
+    this.sprite = 'o_svfloat0';
+    this.svFloat = true;
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.depth = -9;
+    this.rows = o.rows || [y / TILE, y / TILE, y / TILE];
+    this.tx = Math.floor(x / TILE);
+    if (game && game.room) this.y = this.lineAt(game);
+  }
+
+  /** The pixel row its top rests at for the sea at its own column. */
+  lineAt(game) {
+    const t = game.tide.levelAt(this.tx, this.rows[0], game.room);
+    return this.rows[t] * TILE;
+  }
+
+  /** Is Link standing on it: his feet on its top, over it, not in water? */
+  carries(p) {
+    if (!p || p.dead || p.inDeep || p.svClimb || p.svFall < 0) return false;
+    const r = p.hb;
+    const feet = p.y + r.y + r.h;
+    return feet === this.y && p.x + r.x + r.w > this.x && p.x + r.x < this.x + this.w;
+  }
+
+  update(game) {
+    this.frame++;
+    const p = game.player;
+    if (p && p.conchTime > 0) return;
+    const target = this.lineAt(game) << 8;
+    if (this.fy === target) return;
+    const riding = this.carries(p);
+    const before = this.fy;
+    this.fy = this.fy < target ? Math.min(target, this.fy + SV_FLOAT_SPEED) : Math.max(target, this.fy - SV_FLOAT_SPEED);
+    if (!p) return;
+    const r = p.hb;
+    if (riding) { p.y = this.y - r.y - r.h; return; }
+    // Moving into him: below its middle he is pushed under it if he can be
+    // (it is coming down on a swimmer), else he ends up on top of it.
+    const over = p.x + r.x + r.w > this.x && p.x + r.x < this.x + this.w
+      && p.y + r.y + r.h > this.y && p.y + r.y < this.y + this.h;
+    if (!over) return;
+    const pc = p.y + r.y + r.h / 2, fc = this.y + this.h / 2;
+    if (this.fy > before && pc > fc) {
+      const ny = this.y + this.h - r.y;
+      if (canOccupy(game, p, p.x, ny, { ...p.caps, swim: true })) { p.y = ny; return; }
+    }
+    p.y = this.y - r.y - r.h;
+    p.svFall = 0;
+  }
+
+  draw(ctx, game, ox, oy) {
+    // The picture's platform is rows 8-23 of its 32x32 cell.
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y - 8);
+  }
+}
+defineEntity('svFloat', (x, y, o, game) => new SideFloat(x, y, o, game));
+
 
 // --------------------------------------------------------------------------
 // Tide valve: a dungeon fixture that unlocks or pins the tide
@@ -31306,6 +31443,7 @@ __exports["Beam"] = Beam;
 __exports["Essence"] = Essence;
 __exports["Raft"] = Raft;
 __exports["Float"] = Float;
+__exports["SideFloat"] = SideFloat;
 __exports["TideValve"] = TideValve;
 __exports["GustWheel"] = GustWheel;
 __exports["SunkenBell"] = SunkenBell;
@@ -54298,6 +54436,462 @@ const DUNGEON_THEME_ART = {
     0000000223332200
     0020000022220000`,
 
+  // open air, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $01
+  svCisAir: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // spikes (TILEINDEX_SS_SPIKE), side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $02
+  svCisSpike: `
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3323332333233323
+    3313331333133313
+    3303330333033303
+    3203320332033203
+    3103310331033103
+    3103310331033103
+    3333333333333333`,
+
+  // a ladder (TILEINDEX_SS_LADDER), side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $18
+  svCisLadder: `
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333`,
+
+  // the top of a ladder, stood on, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $19
+  svCisLadderTop: `
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333
+    3332233333322333
+    3333333333333333
+    3300000000000033
+    3330300000030333
+    3311111111111133
+    3333333333333333
+    3332133333312333
+    3332133333312333`,
+
+  // the top of a platform, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $26
+  svCisPlatform: `
+    3333333333333333
+    2100000000000123
+    1000000000000012
+    1100110000010112
+    2111111111111122
+    3222222222222223
+    3333333333333333
+    3333333333333333
+    1112321111123211
+    2221312222223122
+    2222322222223222
+    3333333333333333
+    3211222232111112
+    3122222131222222
+    3222222232222222
+    3333333333333333`,
+
+  // brick, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $2a
+  svCisBrick: `
+    0001210000012100
+    1110201111112011
+    1111211111112111
+    2222222222222222
+    2100111121000001
+    2011111020111111
+    2111111121111111
+    2222222222222222
+    0001210000012100
+    1110201111112011
+    1111211111112111
+    2222222222222222
+    2100111121000001
+    2011111020111111
+    2111111121111111
+    2222222222222222`,
+
+  // the top of a ledge, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $27
+  svCisLedge: `
+    3333333333333333
+    2100000000000123
+    1000000000000012
+    1100110000010112
+    2111111111111122
+    3222222222222223
+    3333333333333333
+    3333333333333333
+    1112321111123211
+    2221312222223122
+    2222322222223222
+    3333333333333333
+    3211222232111112
+    3122222131222222
+    3222222232222222
+    3333333333333333`,
+
+  // the east end of a ledge top, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $17
+  svCisLedgeEnd: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222`,
+
+  // the east face of brick, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $16
+  svCisBrickEnd: `
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2220122222210222
+    2220000000000222
+    2221111111111222
+    2222222222222222
+    2222222222222222`,
+
+  // the west wall, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $2d
+  svCisWallW: `
+    3333333333333333
+    3100000022001203
+    3100000012100203
+    3110110012100203
+    3101000012100203
+    3110100012100203
+    3211111122111213
+    3333333333333333
+    3333333333333333
+    1110012100011003
+    0000002000002003
+    1110002100002003
+    1111002100002003
+    1110002100002003
+    1111112100012103
+    3333333333333333`,
+
+  // the east wall, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $2e
+  svCisWallE: `
+    3333333333333333
+    3021002200000013
+    3020012100000013
+    3020012100110113
+    3020012100001013
+    3020012100010113
+    3121112211111123
+    3333333333333333
+    3333333333333333
+    3001100012100111
+    3002000002000000
+    3002000012000111
+    3002000012001111
+    3002000012000111
+    3012100012111111
+    3333333333333333`,
+
+  // the ceiling, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $3c
+  svCisCeiling: `
+    1111111111111111
+    1100000110000011
+    1000000000000001
+    1000010000001001
+    1000000000000001
+    1001000000000001
+    1100011000010011
+    1111111111111111
+    1111111111111111
+    1100001111000000
+    0000000110000010
+    0001000110000000
+    0000000110000001
+    0000000110010000
+    0110001111000000
+    1111111111111111`,
+
+  // the lower lip of the ceiling, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $3e
+  svCisCeilingLip: `
+    3222223333222223
+    2111112332111122
+    1111011330111111
+    1111211330101111
+    1111111330121111
+    0001111330111111
+    1110002331000000
+    3333333333333333
+    3322222222222233
+    3221112221111223
+    3111111111110113
+    3010112111112113
+    3012111111111113
+    3011111100011113
+    3100000011100023
+    3333333333333333`,
+
+  // undersea rock, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $3d
+  svCisRock: `
+    3333333333333333
+    3100000011100023
+    3011111100011113
+    3012111111111113
+    3010112111112113
+    3111111111110113
+    3221112221111223
+    3322222222222233
+    3333333333333333
+    1110002331000000
+    0001111330111111
+    1111111330121111
+    1111211330101111
+    1111011330111111
+    2111112332111122
+    3222223333222223`,
+
+  // the sea bed, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $59
+  svCisBed: `
+    2333233223332332
+    3111311331113113
+    1000100010001000
+    0011000000110000
+    0111110001111100
+    1113111111131111
+    1133331111333311
+    3322223333222233
+    0000000000000000
+    2222200000000022
+    2222222220022222
+    2333332222222222
+    3322233322222333
+    2200022333233322
+    0000000223332200
+    0020000022220000`,
+
+  // the wall lamp, piece 1 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $08
+  svCisLamp0: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111101000
+    1111111111111111`,
+
+  // the wall lamp, piece 2 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $09
+  svCisLamp1: `
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3332322222232333
+    3333333333333333
+    3333333333333333
+    3333332332333333
+    3333321331233333
+    3333321331233333
+    3333321331233333
+    3332210330122333
+    2221100330011222
+    3333333333333333`,
+
+  // the wall lamp, piece 3 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $0a
+  svCisLamp2: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0001011111111111
+    1111111111111111`,
+
+  // the wall lamp, piece 4 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $04
+  svCisLamp3: `
+    3333333333333333
+    3332322222211003
+    3333333333322103
+    3333333333333213
+    3333333333333213
+    3333333333333213
+    3333333333333323
+    3333333333333333
+    3333333333333333
+    3332322231122232
+    3333333332333333
+    3333333332333333
+    3333333332333333
+    3333333333333333
+    3333333332333333
+    3333333333333333`,
+
+  // the wall lamp, piece 5 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $03
+  svCisLamp4: `
+    3333111111133333
+    3331111111113333
+    3311110001111333
+    3311100000111333
+    3311100000111333
+    3311100000111333
+    3331110001113333
+    3333111111133333
+    3332233333223333
+    3332222222223333
+    3332222222223333
+    3332222222223333
+    3333322222333333
+    3333322222333333
+    3333322222333333
+    3333333333333333`,
+
+  // the wall lamp, piece 6 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $05
+  svCisLamp5: `
+    3333333333333333
+    3001122222232333
+    3012233333333333
+    3123333333333333
+    3123333333333333
+    3123333333333333
+    3233333333333333
+    3333333333333333
+    3333333333333333
+    2322211322232333
+    3333332333333333
+    3333332333333333
+    3333332333333333
+    3333333333333333
+    3333332333333333
+    3333333333333333`,
+
+  // the wall lamp, piece 7 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $06
+  svCisLamp6: `
+    2222222222222222
+    2222222212111002
+    2222222222222212
+    2222222222222212
+    2222222222222212
+    2222222222222222
+    2222222222222212
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
+  // the wall lamp, piece 8 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $0b
+  svCisLamp7: `
+    1111111111111111
+    0001011111101000
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // the wall lamp, piece 9 of 9, side view, the Dancing Dragon Dungeon — Seasons tileset $59 (the Dancing Dragon Dungeon, side view), metatile $07
+  svCisLamp8: `
+    2222222222222222
+    2001112122222222
+    2122222222222222
+    2122222222222222
+    2122222222222222
+    2222222222222222
+    2122222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222`,
+
   // the coral sprig, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $86
   coralSprig: `
     ..3333....2333..
@@ -59210,6 +59804,30 @@ const DUNGEON_THEME_PALETTES = {
   svBogCeilingLip: ['#9cc6a5', '#007b73', '#003963', '#000000'],
   svBogRock: ['#9cc6a5', '#007b73', '#003963', '#000000'],
   svBogBed: ['#4a7b42', '#007b73', '#003963', '#000000'],
+  svCisAir: ['#000000', '#000000', '#000000', '#000000'],
+  svCisSpike: ['#94c684', '#638c52', '#005231', '#000000'],
+  svCisLadder: ['#e7845a', '#ad4a52', '#6b314a', '#000000'],
+  svCisLadderTop: ['#e7845a', '#ad4a52', '#6b314a', '#000000'],
+  svCisPlatform: ['#a5a59c', '#636363', '#393139', '#000000'],
+  svCisBrick: ['#636363', '#393139', '#000000', '#000000'],
+  svCisLedge: ['#a5b594', '#738463', '#393139', '#000000'],
+  svCisLedgeEnd: ['#6b7331', '#393931', '#000000', '#000000'],
+  svCisBrickEnd: ['#6b7331', '#393931', '#000000', '#000000'],
+  svCisWallW: ['#a5a59c', '#636363', '#393139', '#000000'],
+  svCisWallE: ['#a5a59c', '#636363', '#393139', '#000000'],
+  svCisCeiling: ['#6b314a', '#000000', '#000000', '#000000'],
+  svCisCeilingLip: ['#a5a59c', '#636363', '#393139', '#000000'],
+  svCisRock: ['#a5a59c', '#636363', '#393139', '#000000'],
+  svCisBed: ['#738463', '#636363', '#084a42', '#000000'],
+  svCisLamp0: ['#8c2100', '#000000', '#000000', '#000000'],
+  svCisLamp1: ['#ffde00', '#ef6300', '#8c2100', '#000000'],
+  svCisLamp2: ['#8c2100', '#000000', '#000000', '#000000'],
+  svCisLamp3: ['#ffde00', '#ef6300', '#8c2100', '#000000'],
+  svCisLamp4: ['#ffde00', '#ef6300', '#636363', '#000000'],
+  svCisLamp5: ['#ffde00', '#ef6300', '#8c2100', '#000000'],
+  svCisLamp6: ['#ef6300', '#8c2100', '#000000', '#000000'],
+  svCisLamp7: ['#8c2100', '#000000', '#000000', '#000000'],
+  svCisLamp8: ['#ef6300', '#8c2100', '#000000', '#000000'],
   coralSprig: ['#9c63a5', '#9c63a5', '#734273', '#210018'],
   uWhirl0: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl1: ['#5aadef', '#426be7', '#314aad', '#314aad'],
@@ -62790,9 +63408,15 @@ function cave() {
  * cartridge's ladders stop at the surface (room $5e8). `svK0`-`svK4` and
  * `svKL0`-`svKL4` in that order; the side legends give them the digits.
  */
-function sideKit(K) {
+function sideKit(K, waterOf = K) {
   const k = 'sv' + K;
-  const t = (n, o = {}) => ({ art: ART[k + n], pal: k + n, ...o });
+  // `waterOf`: the kit whose water this one draws (S243: the Cistern's is the
+  // Poison Moth's blue; the Dancing Dragon's own side-view water is grey).
+  const WET = new Set(['LadderWet', 'Water', 'Surface', 'Weed']);
+  const t = (n, o = {}) => {
+    const a = (WET.has(n) ? 'sv' + waterOf : k) + n;
+    return { art: ART[a], pal: a, ...o };
+  };
   const out = {
     [k + 'Air']: t('Air'),
     [k + 'Spike']: t('Spike', { flags: F.HAZARD }),
@@ -62808,6 +63432,8 @@ function sideKit(K) {
   for (const n of ['Platform', 'Brick', 'Ledge', 'LedgeEnd', 'BrickEnd', 'WallW', 'WallE', 'Ceiling', 'CeilingLip', 'Rock', 'Bed']) {
     out[k + n] = t(n, { flags: F.SOLID });
   }
+  // The Dancing Dragon's wall lamp (S243), scenery: a 3x3 block in its kit.
+  for (let i = 0; i < 9; i++) if (ART[k + 'Lamp' + i]) out[k + 'Lamp' + i] = t('Lamp' + i);
   const shapes = [['Surface', 'Water', 'Water'], ['Air', 'Water', 'Water'], ['Air', 'Surface', 'Water'],
     ['Air', 'Air', 'Water'], ['Air', 'Air', 'Surface']];
   const ladder = { Air: 'Ladder', Surface: 'LadderWet', Water: 'Water' };
@@ -64713,6 +65339,9 @@ function installCoreTiles() {
     // layout $32 in the Poison Moth's Lair's colours (tileset $58), for the
     // Bogwater Sanctum's passages. See `sideKit`.
     ...sideKit('Bog'),
+    // ...and in the Dancing Dragon Dungeon's (tileset $59), for the Cliffside
+    // Cistern's (S243).
+    ...sideKit('Cis', 'Bog'),
 
     // d6 (map d6, theme "Abyss") Abyssal Keep.
     // S142: THE ABYSSAL KEEP IS AN ORACLE DUNGEON, and its kit is the Sword &
@@ -65729,6 +66358,22 @@ function installLegends() {
     '5': 'svBogL0', '6': 'svBogL1', '7': 'svBogL2', '8': 'svBogL3', '9': 'svBogL4',
   });
 
+  // The Cliffside Cistern's (S243), in the Dancing Dragon Dungeon's side-view
+  // colours, the same pieces and digits, and its wall lamp in c d e / f g h /
+  // i j l.
+  registerLegend('sideCis', {
+    ' ': 'svCisAir', '.': 'svCisAir', '#': 'svCisBrick', ']': 'svCisBrickEnd',
+    '=': 'svCisPlatform', '_': 'svCisLedge', '>': 'svCisLedgeEnd',
+    '[': 'svCisWallW', '|': 'svCisWallE', '^': 'svCisCeiling', 'v': 'svCisCeilingLip',
+    'r': 'svCisRock', 'b': 'svCisBed', 'H': 'svCisLadder', 'T': 'svCisLadderTop',
+    'U': 'svCisLadderOut', '~': 'svCisWater', 's': 'svCisSurface', 'k': 'svCisWeed',
+    'x': 'svCisSpike',
+    'c': 'svCisLamp0', 'd': 'svCisLamp1', 'e': 'svCisLamp2', 'f': 'svCisLamp3', 'g': 'svCisLamp4',
+    'h': 'svCisLamp5', 'i': 'svCisLamp6', 'j': 'svCisLamp7', 'l': 'svCisLamp8',
+    '0': 'svCis0', '1': 'svCis1', '2': 'svCis2', '3': 'svCis3', '4': 'svCis4',
+    '5': 'svCisL0', '6': 'svCisL1', '7': 'svCisL2', '8': 'svCisL3', '9': 'svCisL4',
+  });
+
   registerLegend('cave', {
     ' ': 'void',
     // Seasons' own caves (S216): tileset $31, the `cv*` kit (tiles-core.js
@@ -66467,7 +67112,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { toPx } = __require("core/fixed.js");
 const { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } = __require("data/feel.js");
-const { OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK, OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED, OCTOROK_BLUE_SHOOT_MASK, CRAB_SPEED_SIDE, CRAB_SPEED_UPDOWN, CRAB_WALK_FRAMES, HOP_ODDS_MASK, SLIME_HOP_SPEED, SLIME_HOP_LAUNCH, SLIME_HOP_GRAVITY, ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET, GEL_HOLD_FRAMES, GEL_CLING_FRAMES, GEL_CLING_SHAKE_FRAMES, GEL_HOPOFF_SPEED, GEL_HOPOFF_LAUNCH, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES, KEESE_SPEED, KEESE_FIRST_REST, KEESE_FLIGHT_BASE, KEESE_FLIGHT_SPAN, KEESE_VEER_ODDS, LEEVER_SPEED, LEEVER_UNDER_FRAMES, LEEVER_SURFACE_TILES, LEEVER_RISE_FRAMES, LEEVER_SINK_FRAMES, LEEVER_CHASE_BASE, LEEVER_CHASE_MASK, BUBBLE_SPEED, BUBBLE_SWORD_LOCK_FRAMES, BUBBLE_TURN_ODDS, BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN, BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES, BEETLE_FLIP_FRAMES, BEETLE_FLIP_SHAKE_FRAMES, BEETLE_FLIP_LAUNCH, BEETLE_FLIP_GRAVITY, BEETLE_FLIP_SKID, BEETLE_RIGHT_SPEED, WHISP_SPEED, PINCER_SEE_PX, PINCER_WARN_FRAMES, PINCER_OUT_SPEED, PINCER_REACH, PINCER_HOLD_FRAMES, PINCER_BACK_SPEED, PINCER_REST_FRAMES, WIZZROBE_PHASE_IN_FRAMES, WIZZROBE_STAND_FRAMES, WIZZROBE_FIRE_AT, WIZZROBE_OUT_FRAMES, WIZZROBE_GONE_FRAMES, WIZZROBE_SHOT_SPEED, DARKNUT_SPEED, DARKNUT_WALK_BASE, DARKNUT_WALK_MASK, DARKNUT_SEE_PX, DARKNUT_CHASE_COOLDOWN, DARKNUT_SQUARE_FRAMES, DARKNUT_CHASE_FRAMES, DARKNUT_CHASE_SPEED, STALFOS_SPEED, STALFOS_WALK_BASE, STALFOS_WALK_MASK, STALFOS_TOWARD_ODDS, STALFOS_SHY_PX, STALFOS_LEAP_LAUNCH, STALFOS_LEAP_GRAVITY, STALFOS_LEAP_SPEED, MOBLIN_SPEED, MOBLIN_WALK_BASE, MOBLIN_WALK_MASK, MOBLIN_PAUSE_FRAMES, MOBLIN_SPEAR_SPEED, TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP, BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN, KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN } = __require("data/feel.js");
+const { OCTOROK_SPEED, OCTOROK_STAND_FRAMES, OCTOROK_WALK_FRAMES, OCTOROK_SHOOT_MASK, OCTOROK_SHOOT_WINDUP, OCTOROK_SHOOT_REST, OCTOROK_TURN_TO_LINK, OCTOROK_SHOT_SPEED, OCTOROK_BLUE_SHOOT_MASK, CRAB_SPEED_SIDE, CRAB_SPEED_UPDOWN, CRAB_WALK_FRAMES, HOP_ODDS_MASK, SLIME_HOP_SPEED, SLIME_HOP_LAUNCH, SLIME_HOP_GRAVITY, ZOL_HOLD_FRAMES, ZOL_SLIDE_SPEED, ZOL_SLIDE_FRAMES, ZOL_SHAKE_FRAMES, ZOL_SPLIT_OFFSET, GEL_HOLD_FRAMES, GEL_CLING_FRAMES, GEL_CLING_SHAKE_FRAMES, GEL_HOPOFF_SPEED, GEL_HOPOFF_LAUNCH, GEL_INCH_SPEED, GEL_INCH_FRAMES, GEL_SHAKE_FRAMES, KEESE_SPEED, KEESE_FIRST_REST, KEESE_FLIGHT_BASE, KEESE_FLIGHT_SPAN, KEESE_VEER_ODDS, LEEVER_SPEED, LEEVER_UNDER_FRAMES, LEEVER_SURFACE_TILES, LEEVER_RISE_FRAMES, LEEVER_SINK_FRAMES, LEEVER_CHASE_BASE, LEEVER_CHASE_MASK, BUBBLE_SPEED, BUBBLE_SWORD_LOCK_FRAMES, BUBBLE_TURN_ODDS, BEETLE_WALK_SPEED, BEETLE_WALK_FRAMES, BEETLE_SEE_PX, BEETLE_CHARGE_COUNT, BEETLE_CHARGE_GAIN, BEETLE_CHARGE_MAX, BEETLE_STAND_FRAMES, BEETLE_FLIP_FRAMES, BEETLE_FLIP_SHAKE_FRAMES, BEETLE_FLIP_LAUNCH, BEETLE_FLIP_GRAVITY, BEETLE_FLIP_SKID, BEETLE_RIGHT_SPEED, WHISP_SPEED, PINCER_SEE_PX, PINCER_WARN_FRAMES, PINCER_OUT_SPEED, PINCER_REACH, PINCER_HOLD_FRAMES, PINCER_BACK_SPEED, PINCER_REST_FRAMES, WIZZROBE_PHASE_IN_FRAMES, WIZZROBE_STAND_FRAMES, WIZZROBE_FIRE_AT, WIZZROBE_OUT_FRAMES, WIZZROBE_GONE_FRAMES, WIZZROBE_SHOT_SPEED, DARKNUT_SPEED, DARKNUT_WALK_BASE, DARKNUT_WALK_MASK, DARKNUT_SEE_PX, DARKNUT_CHASE_COOLDOWN, DARKNUT_SQUARE_FRAMES, DARKNUT_CHASE_FRAMES, DARKNUT_CHASE_SPEED, STALFOS_SPEED, STALFOS_WALK_BASE, STALFOS_WALK_MASK, STALFOS_TOWARD_ODDS, STALFOS_SHY_PX, STALFOS_LEAP_LAUNCH, STALFOS_LEAP_GRAVITY, STALFOS_LEAP_SPEED, MOBLIN_SPEED, MOBLIN_WALK_BASE, MOBLIN_WALK_MASK, MOBLIN_PAUSE_FRAMES, MOBLIN_SPEAR_SPEED, TEKTITE_SPEED, TEKTITE_STAND_MASK, TEKTITE_STAND_MIN, TEKTITE_CROUCH_FRAMES, TEKTITE_SMALL_LEAP, TEKTITE_BIG_LEAP, BEAMOS_TURN_FRAMES, BEAMOS_FIRE_FRAMES, BEAMOS_BEAM_PIECES, BEAMOS_BEAM_SPEED, BEAMOS_COOLDOWN, STRIDER_SPEED, SV_GRAVITY, SV_FALL_MAX, ENEMY_BEACHED_FRAMES, KEESE_GLIDE_FRAMES, KEESE_SLOW_SPEEDS, KEESE_SLOW_BEAT, KEESE_STOP_FRAMES, KEESE_REST_BASE, KEESE_REST_SPAN } = __require("data/feel.js");
 
 function installEnemies() {
   // Seasons' octorok (octorok.s), red or blue: walk a while, then usually
@@ -67402,6 +68047,95 @@ function installEnemies() {
       }
     },
   });
+
+  // --- Strider (ours, S243): skates the top of the sea in a passage -----
+  // docs/briefs/s243/enemy-sketch.png. In a side-view passage it stands on
+  // the surface of whatever water is under it and paces left and right
+  // along it, turning where the surface ends. The conch moves it: raise the
+  // sea and it is lifted with it, lower it and it drops to the new surface;
+  // drain the water from under it and it falls to the floor, flounders and
+  // is gone (beached, as any sea creature). One sword cut kills it. It never
+  // appears where there is no water to skate when the room is entered.
+  // Its feet are on row 14 of its picture: on a surface in row r it stands
+  // at y = 16r - 13.
+  function striderSurface(g, cx, row) {
+    const room = g.room;
+    const def = (x, y) => room.tile(x, y, g.tide);
+    const wet = (x, y) => y >= 0 && y < room.th && x >= 0 && x < room.tw && !!(def(x, y).flags & F.DEEP);
+    const solid = (x, y) => y >= room.th || x < 0 || x >= room.tw || !!(def(x, y).flags & (F.SOLID | F.VOID))
+      || g.entities.some(o => o.svFloat && x * TILE < o.x + o.w && x * TILE + TILE > o.x && y * TILE < o.y + o.h && y * TILE + TILE > o.y);
+    let r = Math.max(0, row);
+    if (!wet(cx, r)) {
+      for (; r < room.th; r++) { if (solid(cx, r)) return null; if (wet(cx, r)) break; }
+      if (r >= room.th) return null;
+    }
+    while (wet(cx, r - 1)) r--;
+    // A surface has air over it: water against a ceiling (or a float) is not
+    // one, and a strider is not a swimmer.
+    return solid(cx, r - 1) || solid(cx, r) ? null : r;
+  }
+  defineEnemy('strider', {
+    hp: 1, damage: 2, pal: 'strider', rate: 8,
+    frames: { side: ['strider_0', 'strider_1'] },
+    hb: { x: 2, y: 4, w: 12, h: 10 },
+    drops: 'common',
+    init(e, g) {
+      e.dir = 'right';
+      e.vy = 0;
+      e.wades = false; e.shadow = false;
+      if (!g || !g.room) return;
+      const cx = Math.floor((e.x + 8) / TILE);
+      const r = striderSurface(g, cx, Math.floor((e.y + 14) / TILE));
+      if (r == null) { e.remove = true; e.harmless = true; return; }
+      e.y = r * TILE - 13;
+    },
+    ai(e, g) {
+      let cx = Math.floor((e.x + 8) / TILE);
+      const row = Math.floor((e.y + 14) / TILE);
+      let r = striderSurface(g, cx, row);
+      // Lifted against a ceiling (a platform, a ledge, the float) by a rising
+      // sea, it slips out sideways to the nearest open surface, as a bubble
+      // would.
+      if (r == null && g.room.tile(cx, row, g.tide).flags & F.DEEP) {
+        for (let d = 1; d < g.room.tw && r == null; d++) {
+          for (const nx of [cx - d, cx + d]) {
+            const nr = striderSurface(g, nx, row);
+            if (nr != null) { cx = nx; r = nr; e.x = nx * TILE; break; }
+          }
+        }
+      }
+      if (r == null) {
+        // No sea under it: it falls, and on the floor it flounders.
+        e.vy = Math.min(SV_FALL_MAX, e.vy + SV_GRAVITY);
+        const hit = moveEntityY(e, g, e.vy);
+        if (hit) {
+          e.vy = 0; e.still = true;
+          e.stranded = (e.stranded || 0) + 1;
+          if (e.stranded > ENEMY_BEACHED_FRAMES) e.die(g);
+        }
+        return;
+      }
+      e.stranded = 0; e.still = false;
+      const ty = r * TILE - 13;
+      if (e.y > ty) { e.y = ty; e.vy = 0; }            // the sea rose: lifted with it
+      else if (e.y < ty) {                              // the sea fell: down to it
+        e.vy = Math.min(SV_FALL_MAX, e.vy + SV_GRAVITY);
+        e.fy = Math.min(e.fy + e.vy, ty << 8);
+        return;
+      }
+      // Pace along the surface; turn where it ends or a wall stands.
+      const step = e.dir === 'left' ? -STRIDER_SPEED : STRIDER_SPEED;
+      const lead = Math.floor((toPx(e.fx + step) + (e.dir === 'left' ? 2 : 13)) / TILE);
+      if (striderSurface(g, lead, r) !== r) { e.dir = e.dir === 'left' ? 'right' : 'left'; return; }
+      e.fx += step;
+    },
+  });
+  // Down by `v` subpixels against the room's solids; true if it landed.
+  function moveEntityY(e, g, v) {
+    const ny = e.fy + v;
+    if (canOccupy(g, e, e.x, toPx(ny), { jumping: true, swim: true, cutting: false }, true)) { e.fy = ny; return false; }
+    return true;
+  }
 
   // --- Jellyfish: drifts with the tide, stings on contact ---------------
   defineEnemy('jellyfish', {
@@ -71451,6 +72185,9 @@ function installDungeonsA() {
         },
         entities: [
           ['pickup', 7, 2, { kind: 'rupee100' }],
+          // The strider (S243, the human's choice: both passages) skates the
+          // pool: the LOW puddle, the MID line, the HIGH line.
+          ['strider', 4, 9],
         ],
       },
       '1,5,6': {
@@ -72032,6 +72769,11 @@ function installDungeonsA() {
       },
       '0,4,5': {
         name: 'Rung Gallery',
+        // S243: the stair in its south-east corner (off the robot's way
+        // through, which crosses the north-west) goes down into the Cistern's side-view
+        // passage, the Float Shaft (1,5,5), whose east ladder comes up in the
+        // Cliffside Cell next door.
+        warps: [stair4(13, 9, P4(1, 5, 5, 1, 1, 'up'))],
         // A drown-wall box with one square of floor inside it. At LOW and MID
         // it is four walls; at HIGH it is deep water and the Cleats swim you in
         // over the top. The teaching room for every sill in the second half,
@@ -72046,7 +72788,7 @@ function installDungeonsA() {
           '#.............#',
           '#..11.........#',
           '#..11.........#',
-          '#.............#',
+          '#............/#',
           '#######.#######',
         ],
         entities: [
@@ -72057,9 +72799,11 @@ function installDungeonsA() {
       },
       '0,5,5': {
         name: 'Cliffside Cell',
+        // S243: the stair in its corner comes from the Float Shaft (1,5,5).
+        warps: [stair4(1, 1, P4(1, 5, 5, 13, 1, 'up'))],
         map: [
           '#######.#######',
-          '#.............#',
+          '#/............#',
           '#.U.........U.#',
           '#.............#',
           '#.............#',
@@ -72073,6 +72817,59 @@ function installDungeonsA() {
         entities: [
           ['chest', 7, 3, { charm: 'bosunsWhistle' }],
           ['stalfos', 11, 5],
+        ],
+      },
+      '1,5,5': {
+        // THE FLOAT SHAFT (S243, docs/briefs/SIDE-VIEW.md stage 4): the
+        // Cistern's side-view passage, optional, between the Rung Gallery and
+        // the Cliffside Cell. RIDE IT: a float (Seasons' side-view platform,
+        // the Dancing Dragon's room $45c rides two) lies on the water in a
+        // shaft, at row 9 at LOW, 6 at MID and 5 at HIGH, and nothing swims
+        // past it: the way east is level with it at HIGH, so the sea in the
+        // shaft under it never meets the sea on the east ledge. At LOW the shaft is dropped down to the alcove and its 100
+        // rupees; the only way back up is to stand on the float and sound the
+        // conch: MID carries him to the east ledge and its ladder, HIGH back
+        // to the west gallery. Sounded from the alcove, the float goes up
+        // without him and he is shut under it until the sea goes out again.
+        // The Dancing Dragon's side-view colours with the Poison Moth's blue
+        // water (the human's choice). Not on the dungeon map.
+        // tools/check-sideview.mjs proves `sideRoom` in the engine.
+        name: 'The Float Shaft',
+        side: true,
+        legend: 'sideCis',
+        map: [
+          '[U^^^^^^^^^^^U|',
+          '[Hcde...#cde.H|',
+          '[Hfgh...#fgh.H|',
+          '[Hijl...#ijl.H|',
+          '[H......#....H|',
+          '[____>44444449|',
+          '[#####22______|',
+          '[#####11######|',
+          '[#####111111##|',
+          '[#####00____##|',
+          '[#############|',
+        ],
+        warps: [
+          { x: 1, y: 0, to: P4(0, 4, 5, 13, 8, 'up') },
+          { x: 13, y: 0, to: P4(0, 5, 5, 1, 2, 'down') },
+        ],
+        // Reached with the sea HELD (`seas`, the Cleats owned; `dry`, without
+        // them), or only by changing it while inside (`conch`: at no held sea).
+        sideRoom: {
+          entries: [[1, 1], [13, 1]],
+          reach: [
+            { name: 'the alcove prize', at: [10, 8], from: [1, 1], seas: [0], dry: [0] },
+            { name: 'the east ledge', at: [11, 5], from: [1, 1], seas: [1], dry: [1] },
+            { name: 'the west gallery from the east', at: [3, 4], from: [13, 1], conch: true },
+            { name: 'a way out from the alcove', at: [12, 5], from: [10, 8], conch: true },
+          ],
+        },
+        entities: [
+          ['svFloat', 6, 9, { rows: [9, 6, 5] }],
+          ['pickup', 10, 8, { kind: 'rupee100' }],
+          // The strider (S243): on the east ledge's water, there only at HIGH.
+          ['strider', 10, 5],
         ],
       },
       '0,4,4': {
@@ -84594,6 +85391,71 @@ __exports["ENEMY_ART_PALETTES"] = ENEMY_ART_PALETTES;
 __exports["installEnemySprites"] = installEnemySprites;
 });
 
+/* ===== src/data/sprites-enemies-drawn.js ===== */
+__define("data/sprites-enemies-drawn.js", function (__exports, __require) {
+// Sprite pack: enemies original to this game, drawn by hand to sit beside the
+// extracted Seasons cast (docs/ART-DIRECTION.md; CLAUDE.md "if no sheet has
+// it, draw it to match"): three colours and a hard black outline, two frames
+// differing by more than three pixels, in Seasons' own blue enemy palette
+// (the octorok's and the bubble's: light, blue, blue, black).
+//
+// Art grammar: see src/gfx/art.js ('.' transparent, '0'..'3' light to dark).
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+/** THE STRIDER (S243, docs/briefs/s243/enemy-sketch.png, the human's yes): a
+ *  water-strider that skates the top of the sea in a side-view passage. Seen
+ *  side on, facing right (the engine mirrors it); its feet are on row 14. */
+const ENEMY_DRAWN_ART = {
+  strider_0: { pal: 'strider', art: `
+    ................
+    ................
+    ................
+    .........333....
+    ....33333..13...
+    ...3000113.0103.
+    ..300111113111.3
+    ..3011111223113.
+    ...3111222233...
+    ....3322233.3...
+    ...2..22...2.2..
+    ..2..2..2...2.2.
+    .2..2....2...2.2
+    2..2......2...2.
+    1.1........1...1
+    ................` },
+  strider_1: { pal: 'strider', art: `
+    ................
+    ................
+    ................
+    ................
+    .........333....
+    ....33333..13...
+    ...3000113.0103.
+    ..300111113111.3
+    ..3011111223113.
+    ...3111222233...
+    ....2222222.2...
+    ...2..2.2...2...
+    ..2..2...2..2...
+    .2..2.....2..2..
+    1..1.......1.1..
+    ................` },
+};
+
+const PALETTES = {
+  strider: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
+};
+
+function installDrawnEnemySprites() {
+  registerPalettes(PALETTES);
+  sprites.add(ENEMY_DRAWN_ART, 'strider');
+}
+__exports["ENEMY_DRAWN_ART"] = ENEMY_DRAWN_ART;
+__exports["installDrawnEnemySprites"] = installDrawnEnemySprites;
+});
+
 /* ===== src/data/sprites-hud.js ===== */
 __define("data/sprites-hud.js", function (__exports, __require) {
 // HUD and item-gear icons extracted from the Oracle of Seasons HUD/Gear sheet.
@@ -86705,6 +87567,7 @@ const { installNpcSprites, NPC_ART: NPC_RIPPED_ART } = __require("data/sprites-n
 const { installRaceSprites, RACE_ART } = __require("data/sprites-races.js");
 const { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } = __require("data/sprites-world.js");
 const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
+const { installDrawnEnemySprites, ENEMY_DRAWN_ART } = __require("data/sprites-enemies-drawn.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installSeasonsBossSprites, BOSS_SEASONS_ART } = __require("data/sprites-bosses-seasons.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
@@ -86739,6 +87602,7 @@ const SPRITE_PACKS = {
   shots: SHOT_ART,
   npcs: NPC_ART,
   enemies: ENEMY_ART,
+  enemiesDrawn: ENEMY_DRAWN_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
   bossesSeasons: BOSS_SEASONS_ART,
@@ -86771,6 +87635,8 @@ function installData() {
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();
+  // Our own enemies, drawn to match (S243: the strider).
+  installDrawnEnemySprites();
   installBossSprites();
   // After the hand-drawn pack: a boss assembled from Seasons' own boss
   // graphics takes its frame names off the hand-drawn one it replaces.

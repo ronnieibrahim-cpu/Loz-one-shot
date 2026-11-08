@@ -55,7 +55,11 @@ Branch claude/sideview-passage-d4-2l60th, off main at 5ecb58e (S242).
 
 ### Verified
 check-playthrough 49/49, THE END, never died, LOW-WATER 5, 316364 frames
-(identical to S242). The rest of the table: see the commit.
+(identical to S242, with the strider in). The other table tools green in one
+run (check-motion after its fix: it skips an enemy that removes itself on
+spawn, see HANDOFF); check-sideview 63/63; npm run build then check-build OK;
+watch-cutscenes, shoot-cutscene --ending and check-rippers (alone, last) at
+the end of the session.
 
 ### Next
 - More passages only where one earns its place (ask the human first).
