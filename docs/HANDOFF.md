@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A solid prop in a room with a flier moves the whole robot run (S245).**
+  The Drip Vault's gauge torches turned its keese's flight, so Link no longer
+  took a hit there, and Anemos (whose fight runs off the absolute frame)
+  went from a win to a death. No nearby spot for the torches left the route
+  identical. What fixed it was the usual re-sweep of Anemos's entry wait —
+  but sweep the robot's fight OPTIONS too (`reachSwing` found the only entry
+  keeping low-water at 5). The wait after D1's Essence and a wait inside the
+  Drip Vault changed nothing at all: the run resynchronises before D2.
+  Sweep in a separate worktree (symlink node_modules), never in the main
+  tree, so the route file there stays committed.
+- **"The originals mark a drop-off with a lighter lip" was not true of
+  dungeons (S245).** Rendered every dungeon floor of both cartridges
+  (tools/oneshot/oracle-study/run.sh): no lip on dungeon water in either.
+  Check a backlog's claim about the source against the source before
+  building to it.
 - **An opening below a float's highest line lets a swimmer round it
   (S243).** The first Float Shaft had its east doorway one row under the
   HIGH float: at HIGH the doorway was water joined to the water under the
