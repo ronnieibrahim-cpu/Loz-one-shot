@@ -30736,6 +30736,50 @@ class Torch extends Entity {
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
 
+/**
+ * A GAUGE TORCH (S245). Beside each well of a room whose door reads wells
+ * (`anchorGauges`), a torch that burns while ITS well reads what the door
+ * wants and is dark otherwise — the first dungeon's Two Gauges and Drip Vault,
+ * where nothing on screen used to say which wells were the puzzle or which of
+ * them was already right. The grammar is Oracle of Ages' (Spirit's Grave,
+ * interaction21 subid 4: a flame that reports the tile beside it); the human
+ * chose lit-when-right over Ages' coloured flames. Seasons' own torch, lit
+ * and unlit. It is not a Torch: fire does nothing to it, no torch puzzle
+ * counts it, and leaning on it says nothing.
+ *   ['gaugeTorch', tx, ty, { well: [wx, wy], level }]
+ */
+class GaugeTorch extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 4, y: 6, w: 8, h: 9 };
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.pal = null;
+    this.well = o.well;
+    this.level = o.level;
+    this.lit = null;
+  }
+  reads(game) {
+    const r = game.room;
+    return !!r && game.tide.levelAt(this.well[0], this.well[1], r) === this.level;
+  }
+  spriteName() {
+    if (!this.lit) return 'o_torch';
+    return 'o_torch_lit' + (Math.floor(this.frame / TORCH_FLAME_FRAMES) % TORCH_FLAME_COUNT);
+  }
+  update(game) {
+    this.frame++;
+    const on = this.reads(game);
+    // Catching light makes the torch's sound; the first frame in the room
+    // only sets it, so walking in on a well already right is silent.
+    if (this.lit === false && on) game.audio.sfx('fire');
+    this.lit = on;
+  }
+}
+defineEntity('gaugeTorch', (x, y, o) => new GaugeTorch(x, y, o));
+
 // THE EYE STATUE (S211, the Coral Spire's eye loop; Seasons' eye puzzle,
 // statueEyeball.s, room $59c): TILEINDEX_EYE_STATUE with an eyeball on it.
 // Ours stand in basins and their eyes float, so each turns with the tide:
@@ -31437,6 +31481,7 @@ __exports["cubeSpots"] = cubeSpots;
 __exports["ColourCube"] = ColourCube;
 __exports["FloorSwitch"] = FloorSwitch;
 __exports["Torch"] = Torch;
+__exports["GaugeTorch"] = GaugeTorch;
 __exports["EyeStatue"] = EyeStatue;
 __exports["FallingKey"] = FallingKey;
 __exports["Lamp"] = Lamp;
@@ -70354,13 +70399,17 @@ function installDungeonsA() {
         entities: [
           ['keese', 10, 4],
           ['pickup', 3, 8, { kind: 'heartPiece' }],
+          // S245: a gauge torch over each well, lit while that well reads
+          // what the door wants.
+          ['gaugeTorch', 3, 1, { well: [3, 2], level: 0 }],
+          ['gaugeTorch', 11, 1, { well: [11, 2], level: 2 }],
         ],
         warps: [
           { x: 12, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
           { x: 13, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
         ],
         readable: [
-          [7, 6, 'Two marks over the door: one well empty, one well full.'],
+          [7, 6, 'Light both torches to open the door: one burns while its well is empty, one while its well is full.'],
         ],
         puzzle: {
           condition: (g, r) => g.tide.levelAt(3, 2, r) === 0 && g.tide.levelAt(11, 2, r) === 2,
@@ -70482,9 +70531,14 @@ function installDungeonsA() {
         ],
         entities: [
           ['keese', 3, 3],
+          // S245: a gauge torch by each well and under the basin, lit while
+          // that mark reads what the door wants.
+          ['gaugeTorch', 5, 5, { well: [5, 6], level: 0 }],
+          ['gaugeTorch', 9, 5, { well: [9, 6], level: 0 }],
+          ['gaugeTorch', 7, 4, { well: [7, 1], level: 2 }],
         ],
         readable: [
-          [12, 4, 'Three marks beside the door: both wells empty, the basin full.'],
+          [12, 4, 'Light all three torches to open the door: the wells empty, the basin full.'],
         ],
         puzzle: {
           condition: (g, r) => r.def.anchorGauges.marks.every(([x, y, l]) => g.tide.levelAt(x, y, r) === l),
