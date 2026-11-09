@@ -1,3 +1,36 @@
+## S246 — Anemos holds his fire while he feeds; Wyverna floods from the start
+
+Branch claude/oracle-tides-s246-1keaye, off main at 4687e91 (S245).
+
+### The human's choices this session (do not re-ask)
+- Chose the bosses (over the side-view loose ends and another passage).
+- ANEMOS (D2): quiet while feeding, in every phase (offered: something
+  gentler, or leave him). Chosen from clips of the fight before and after.
+- WYVERNA (D4): floods from her first phase (offered: floods sooner in
+  every phase; fire and keese from the start; leave her).
+
+### Built
+- bosses.js: Anemos's phases 1 and 2 return while `weakOpen` (phase 3
+  already did). Wyverna's phase 1 gained `timer(e, 'flood', 400)`.
+- The route: Anemos's entry wait 273 -> 354 (swept 0-420 by 3, whole runs:
+  138/141 past him, 18 to THE END, all low-water 5). Wyverna's 180 kept
+  (every wait 60-360 by 12 reaches THE END).
+
+### Measured (the route, seed 20260806)
+| | before: in -> out, waits won | now |
+|---|---|---|
+| Anemos | 24 -> 10, 9 of 71 | 24 -> 9, 138 of 141 |
+| Wyverna | 17 -> 10, 34 of 35 | 17 -> 5, all |
+The run's low-water 5 is now at Wyverna.
+
+### Verified
+check-playthrough 49/49, THE END, never died, low-water 5, 317538 frames.
+Whole table green; test.mjs 142/142; check-rippers 45/45 alone, last.
+
+### Next
+- Board: nothing open on the bosses. Side-view loose ends (Link's
+  dungeon-map marker in a passage; the sword only left/right there).
+
 ## S245 — gauge torches in the Grotto; the Lens fork's water left as the Oracles draw it
 
 Branch claude/sleepy-hamilton-cl5p1d, off main at d0cacba (S244).

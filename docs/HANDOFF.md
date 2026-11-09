@@ -447,6 +447,14 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **How many entry frames win a boss is the measure of whether it is fair
+  (S246).** One run's damage says little: Anemos cost the route 14 quarter-
+  hearts at its chosen wait, an ordinary number, yet only 9 of 71 waits won
+  — the fight was a dice roll, because his first two phases fired straight
+  through the feed window. Sweep the wait (scratch `sweep.sh`/`full.sh`:
+  `route-prefix` with `PATCH='<i>=["wait",W]'`, six in parallel, 4-20 s a
+  run) and count wins before and after a change. A whole run to THE END per
+  wait is cheap enough to sweep 141 waits in a few minutes.
 - **A solid prop in a room with a flier moves the whole robot run (S245).**
   The Drip Vault's gauge torches turned its keese's flight, so Link no longer
   took a hit there, and Anemos (whose fight runs off the absolute frame)
