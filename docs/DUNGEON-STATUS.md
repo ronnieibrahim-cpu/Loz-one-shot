@@ -1026,8 +1026,11 @@ from D5. Screenshotted at LOW and HIGH before being believed this time.
 - **No dungeon has been balanced against another.** D1 and D2 both hand out one
   Piece of Heart or two and a fixed number of keys because that is what the
   constraint list asks for, not because anyone compared them.
-- **The tide-gauge fixture and the fork's three-blues problem are open art
-  jobs**, both in `docs/ART-BACKLOG.md`. The second one is a real legibility
+- **The tide-gauge fixture and the fork's three-blues problem were open art
+  jobs; both are closed (S245)**: gauge torches that burn while their well
+  reads right (the Two Gauges, the Drip Vault), and the fork already read
+  through the Lens since S220 (neither Oracle lips its dungeon water, so none
+  was added). `docs/ART-BACKLOG.md` has both. The second one is a real legibility
   finding from D2 and it will recur in any dungeon whose answer is a shade of
   water — which is the argument for D5's bole, and the argument for reaching for
   a whole tile of art rather than a shade of blue next time the question comes

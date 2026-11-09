@@ -1,10 +1,10 @@
-# Next session (S245)
+# Next session (S246)
 
 ## Read first
 - CLAUDE.md, all of it (the Ages rule: Oracle of Ages' code and assets are a
   reference for ALL work).
 - docs/DUNGEON-STATUS.md (the board) and docs/briefs/SIDE-VIEW.md.
-- docs/NEXT-SESSION.md S244 and S243; docs/HANDOFF.md lessons (top ten).
+- docs/NEXT-SESSION.md S245 and S244; docs/HANDOFF.md lessons (top ten).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code and rip its
@@ -12,19 +12,20 @@
   drawing or guessing.
 
 ## State
-- S244: the pincer's lunge stops at 30 px as the cartridge's does (it used
-  to overshoot to 32 and snap back); the strider hops (Seasons' enemy-jump
-  sound) when the sea lifts or lowers it, and keeps its loot when stranded.
-- The human said KEEP / LEAVE (do not re-ask): everything in S240-S243's
-  lists, plus S244: the strider's hop sound, silent while pacing, and its
-  loot when stranded.
+- S245: gauge torches in the Grotto's Two Gauges and Drip Vault (lit while
+  their well reads right); the Lens fork's three blues closed (it reads
+  since S220; neither Oracle lips dungeon water, so none was added). The
+  robot meets Anemos with `reachSwing`, wait 273.
+- The human said KEEP / LEAVE (do not re-ask): everything in S240-S244's
+  lists, plus S245: lit-when-right torches (not coloured flames), and no
+  edge on dungeon deep water.
 
 ## The task
-Ask the human what they want next. Offer: back to the dungeon board
-(docs/DUNGEON-STATUS.md — say what is outstanding in plain words); the two
-open side-view items (Link's marker on the dungeon map while in a passage;
-the sword only swinging left/right in side view); or another passage, only
-if one earns its place (ask first).
+Ask the human what they want next. Offer: the bosses on the board
+(Wyverna too easy, Anemos the hardest — arena or pattern only, never damage
+or health); the two open side-view items (Link's marker on the dungeon map
+while in a passage; the sword only swinging left/right in side view); or
+another passage, only if one earns its place (ask first).
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a fight or a pickup on the route: compare
   route-prefix traces against a worktree of ORIGIN/main first.

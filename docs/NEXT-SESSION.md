@@ -1,3 +1,40 @@
+## S245 — gauge torches in the Grotto; the Lens fork's water left as the Oracles draw it
+
+Branch claude/sleepy-hamilton-cl5p1d, off main at d0cacba (S244).
+
+### The human's choices this session (do not re-ask)
+- Chose the two art jobs (docs/ART-BACKLOG.md).
+- The tide-gauge fixture: torches LIT ONLY WHEN THEIR WELL IS RIGHT (offered
+  Ages' Spirit's Grave coloured flames, red/yellow/blue by level — declined).
+- The Lens fork's three blues: first asked for a lighter edge on deep water;
+  shown that neither Oracle draws one in a dungeon (Mermaid's Cave and the
+  Dancing Dragon's pools beside ours), chose to SKIP it. Closed: the fork
+  already reads through the Lens since S220.
+
+### Built
+- `gaugeTorch` (objects.js `GaugeTorch`, not a Torch): Seasons' own torch,
+  lit while `tide.levelAt(well)` is its `level`. The Two Gauges (d1 0,4,3):
+  over each well at 3,1 and 11,1. The Drip Vault (d1 0,1,1): 5,5 and 9,5 over
+  the wells, 7,4 under the basin's wall. Plaques reworded ("Light both
+  torches..." / "Light all three torches..."). The torch's `fire` sound when
+  one catches light, none walking in on one already lit; fire does nothing
+  to it; leaning says nothing.
+- check-lean section 3 (21 assertions): every anchorGauges room has one
+  torch per mark and no other room has one; at each sea held and with the
+  iron on each mark, lit exactly when right; the sound; fire.
+- The robot: the Drip Vault's torches turned the keese, so Anemos's entry
+  re-swept (see HANDOFF): wait 273 with `reachSwing` added.
+- route-prefix's HITS lines now end with the hearts left.
+
+### Verified
+check-playthrough 49/49, THE END, never died, LOW-WATER 5, 315981 frames.
+Whole table green; check-rippers alone, last.
+
+### Next
+- Open from the board: Wyverna (D4) too easy, Anemos (D2) the hardest boss
+  (levers: arena or pattern only, S150); the side-view loose ends (Link's
+  dungeon-map marker in a passage; the sword only left/right there).
+
 ## S244 — the pincer's lunge as pincer.s draws it; the strider's hop
 
 Branch claude/oracle-tides-s244-u3yj69, off main at 2c5c4a1 (S243).

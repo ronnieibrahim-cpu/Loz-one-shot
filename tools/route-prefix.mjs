@@ -63,7 +63,7 @@ await page.evaluate(async () => {
     const before = game.progress.hearts;
     if (window.__god) return false;   // GOD=1: a survey, not a run
     const r = orig.call(this, game, amount, source, o);
-    if (game.progress.hearts !== before) window.__hits.push(`f${game.frame} ${game.mapId} ${game.room && game.room.key} -${before - game.progress.hearts} ${source && source.isProjectile ? 'shot' : (source && (source.kind || source.type)) || '?'} at ${Math.round(this.x)},${Math.round(this.y)} tide ${game.tide.level}`);
+    if (game.progress.hearts !== before) window.__hits.push(`f${game.frame} ${game.mapId} ${game.room && game.room.key} -${before - game.progress.hearts} ${source && source.isProjectile ? 'shot' : (source && (source.kind || source.type)) || '?'} at ${Math.round(this.x)},${Math.round(this.y)} tide ${game.tide.level} hp ${game.progress.hearts}`);
     return r;
   };
 });

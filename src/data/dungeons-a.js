@@ -632,13 +632,17 @@ export function installDungeonsA() {
         entities: [
           ['keese', 10, 4],
           ['pickup', 3, 8, { kind: 'heartPiece' }],
+          // S245: a gauge torch over each well, lit while that well reads
+          // what the door wants.
+          ['gaugeTorch', 3, 1, { well: [3, 2], level: 0 }],
+          ['gaugeTorch', 11, 1, { well: [11, 2], level: 2 }],
         ],
         warps: [
           { x: 12, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
           { x: 13, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
         ],
         readable: [
-          [7, 6, 'Two marks over the door: one well empty, one well full.'],
+          [7, 6, 'Light both torches to open the door: one burns while its well is empty, one while its well is full.'],
         ],
         puzzle: {
           condition: (g, r) => g.tide.levelAt(3, 2, r) === 0 && g.tide.levelAt(11, 2, r) === 2,
@@ -760,9 +764,14 @@ export function installDungeonsA() {
         ],
         entities: [
           ['keese', 3, 3],
+          // S245: a gauge torch by each well and under the basin, lit while
+          // that mark reads what the door wants.
+          ['gaugeTorch', 5, 5, { well: [5, 6], level: 0 }],
+          ['gaugeTorch', 9, 5, { well: [9, 6], level: 0 }],
+          ['gaugeTorch', 7, 4, { well: [7, 1], level: 2 }],
         ],
         readable: [
-          [12, 4, 'Three marks beside the door: both wells empty, the basin full.'],
+          [12, 4, 'Light all three torches to open the door: the wells empty, the basin full.'],
         ],
         puzzle: {
           condition: (g, r) => r.def.anchorGauges.marks.every(([x, y, l]) => g.tide.levelAt(x, y, r) === l),
