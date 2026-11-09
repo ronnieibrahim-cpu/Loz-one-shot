@@ -408,8 +408,13 @@ class Input {
       g.right = p.buttons[15]?.pressed || ax > 0.4;
       g.up = p.buttons[12]?.pressed || ay < -0.4;
       g.down = p.buttons[13]?.pressed || ay > 0.4;
-      g.a = p.buttons[0]?.pressed || p.buttons[1]?.pressed;
-      g.b = p.buttons[2]?.pressed || p.buttons[3]?.pressed;
+      // By POSITION, as the Game Boy lays them out (A right, B below-left)
+      // and as Nintendo's pads label them: the standard mapping's right face
+      // button (1) is A and its bottom one (0) is B, so a Switch Pro
+      // Controller's A and B do what they say. The top (3) and left (2) back
+      // them up: X as A, Y as B. Before S246 bottom and right were both A.
+      g.a = p.buttons[1]?.pressed || p.buttons[3]?.pressed;
+      g.b = p.buttons[0]?.pressed || p.buttons[2]?.pressed;
       g.start = p.buttons[9]?.pressed;
       g.select = p.buttons[8]?.pressed;
       if (BUTTONS.some(b => g[b])) this.anyPressEver = true;
@@ -8128,6 +8133,13 @@ __define("game/sideview.js", function (__exports, __require) {
 //   linkState01_sidescroll       on the ground he moves left and right only;
 //                                 in water he swims; leaving the water at the
 //                                 top he hops (SV_HOP)
+//   FACING (S246): on the ground he TURNS all four ways — the movement angle
+//   is flattened (linkAdjustAngleInSidescrollingArea) but his direction comes
+//   from the d-pad itself (updateLinkDirectionFromAngle reads wLinkAngle), so
+//   UP faces him into the room and the sword swings up. In the air he does not
+//   turn at all (linkUpdateInAir_sidescroll returns before the turn);
+//   swimming, only left and right (@swimmingState2); with the blade held out,
+//   not at all (wLinkTurningDisabled).
 //   linkUpdateInAir_sidescroll    off the ground and off a ladder he falls,
 //                                 gaining SV_GRAVITY a frame to SV_FALL_MAX;
 //                                 pressing UP over a ladder catches it
@@ -8201,7 +8213,14 @@ function updateSideView(p, game) {
   const inp = game.input;
   const dx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
   const dyIn = (inp.down('down') ? 1 : 0) - (inp.down('up') ? 1 : 0);
-  if (dx) p.dir = dx < 0 ? 'left' : 'right';
+  // Turning (see the header): left/right here serves the water and the
+  // ladder; the ground's four-way turn and the air's none are below.
+  const canTurn = !p.holding && !(p.swinging > 0);
+  const groundedAtStart = sideGrounded(game, p) && !(p.svFall < 0);
+  const prevFacing = p.dir;
+  const lx = p._svLastDx || 0, ly = p._svLastDy || 0;
+  p._svLastDx = dx; p._svLastDy = dyIn;
+  if (dx && canTurn) p.dir = dx < 0 ? 'left' : 'right';
 
   const here = activeTile(game, p);
   const wet = !!(here.flags & F.DEEP) && !floatUnder(game, p);
@@ -8286,6 +8305,19 @@ function updateSideView(p, game) {
   }
 
   // ------------------------------------------------------- walking / air
+  if (canTurn) {
+    if (groundedAtStart) {
+      // The top-down rule (Player.update): the newly pressed axis wins, a
+      // diagonal held keeps the axis already faced.
+      if (dyIn && !ly) p.dir = dyIn < 0 ? 'up' : 'down';
+      else if (dx && !lx) p.dir = dx < 0 ? 'left' : 'right';
+      else if (dx && !dyIn) p.dir = dx < 0 ? 'left' : 'right';
+      else if (dyIn && !dx) p.dir = dyIn < 0 ? 'up' : 'down';
+      else p.dir = prevFacing;            // a diagonal held on: keep the axis
+    } else {
+      p.dir = prevFacing;                 // falling or hopping: no turn
+    }
+  }
   if (dx) move(game, p, dx * WALK_SPEED, 0);
   p._lastDx = dx; p._lastDy = 0;
   if (dx) p.animT++;
@@ -32429,6 +32461,9 @@ class MapScreen {
       const px = g.player ? Math.max(0, Math.floor(g.player.x / cw)) : 0;
       const py = g.player ? Math.max(0, Math.floor(g.player.y / chh)) : 0;
       this.linkCell = g.room ? [g.room.rx + px, g.room.ry + py] : [0, 0];
+      // In a side-view passage, where he was last seen top-down (Game.markMinimap).
+      const mark = g.room && g.room.def.side && g.mapMark && g.mapMark.mapId === m.id ? g.mapMark : null;
+      if (mark) { this.linkFloor = mark.floor; this.linkCell = mark.cell.slice(); }
       this.floorIndex = m.floors - 1 - this.linkFloor;      // 0 is the top floor
       this.scrollY = this.floorIndex * 10;
       this.flicker = 0;
@@ -42380,7 +42415,7 @@ const { TINTS } = __require("gfx/palettes.js");
 const { drawText, textWidth } = __require("gfx/font.js");
 const { drawScreen, screenImage } = __require("gfx/screens.js");
 const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
-const { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } = __require("world/maps.js");
+const { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath, cellPixels } = __require("world/maps.js");
 const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy, DIR_VEC } = __require("game/entity.js");
@@ -42569,6 +42604,8 @@ class Game {
     const m = getMap(mapId);
     if (!m) { console.error('[game] no such map', mapId); return; }
     const changedMap = this.mapId !== mapId;
+    const fromMap = this.map, fromRoom = this.room;
+    const fromAt = this.player ? [this.player.x, this.player.y] : [0, 0];
     this.map = m;
     this.mapId = mapId;
     this._warpLock = true;
@@ -42585,6 +42622,7 @@ class Game {
       arriveSideView(this, this.player);
       this.player.reconcileWithTide(this);
     }
+    this.markMinimap(fromMap, fromRoom, fromAt);
     // After the player is placed, never before: a room has no camera history to
     // deadzone against on the frame you arrive in it.
     this.camera.snap(this.room, this.player);
@@ -42597,6 +42635,34 @@ class Game {
     }
     if (!o.instant) this.fadeIn();
     this.updateMusic();
+  }
+
+  /**
+   * WHERE THE DUNGEON MAP PUTS LINK WHILE HE IS IN A SIDE-VIEW PASSAGE (S246).
+   * Seasons does not update the minimap position in a side-scrolling room
+   * (bank1.s @setMinimapRoom returns for the side-view groups), so the map
+   * opened in one shows him where he was last seen top-down: the room whose
+   * stair he went down, on its floor (wMinimapDungeonFloor,
+   * wMinimapDungeonMapPosition). A passage is not drawn on the map (S242), so
+   * before this the marker stood on an empty square. Kept on `mapMark`: null
+   * outside a passage; the room he came from going in; after a load inside
+   * one, the room the passage's first way out leads to.
+   */
+  markMinimap(fromMap, fromRoom, fromAt) {
+    const r = this.room;
+    if (!r || !r.def.side) { this.mapMark = null; return; }
+    if (fromRoom && fromMap === this.map && !fromRoom.def.side) {
+      const [cw, ch] = cellPixels(this.map);
+      this.mapMark = { mapId: this.mapId, floor: fromRoom.floor || 0,
+        cell: [fromRoom.rx + Math.max(0, Math.floor(fromAt[0] / cw)), fromRoom.ry + Math.max(0, Math.floor(fromAt[1] / ch))] };
+      return;
+    }
+    if (this.mapMark && this.mapMark.mapId === this.mapId) return;
+    const to = (r.def.warps || []).map(w => w.to).find(t => t && t.map === this.mapId);
+    if (!to) { this.mapMark = null; return; }
+    const [cw, ch] = cellPixels(this.map);
+    this.mapMark = { mapId: this.mapId, floor: to.floor || 0,
+      cell: [to.rx + Math.floor((to.px || 0) / cw), to.ry + Math.floor((to.py || 0) / ch)] };
   }
 
   setRoom(floor, rx, ry, o = {}) {

@@ -293,6 +293,9 @@ export class MapScreen {
       const px = g.player ? Math.max(0, Math.floor(g.player.x / cw)) : 0;
       const py = g.player ? Math.max(0, Math.floor(g.player.y / chh)) : 0;
       this.linkCell = g.room ? [g.room.rx + px, g.room.ry + py] : [0, 0];
+      // In a side-view passage, where he was last seen top-down (Game.markMinimap).
+      const mark = g.room && g.room.def.side && g.mapMark && g.mapMark.mapId === m.id ? g.mapMark : null;
+      if (mark) { this.linkFloor = mark.floor; this.linkCell = mark.cell.slice(); }
       this.floorIndex = m.floors - 1 - this.linkFloor;      // 0 is the top floor
       this.scrollY = this.floorIndex * 10;
       this.flicker = 0;

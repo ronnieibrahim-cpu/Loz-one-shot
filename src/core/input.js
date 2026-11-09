@@ -92,8 +92,13 @@ export class Input {
       g.right = p.buttons[15]?.pressed || ax > 0.4;
       g.up = p.buttons[12]?.pressed || ay < -0.4;
       g.down = p.buttons[13]?.pressed || ay > 0.4;
-      g.a = p.buttons[0]?.pressed || p.buttons[1]?.pressed;
-      g.b = p.buttons[2]?.pressed || p.buttons[3]?.pressed;
+      // By POSITION, as the Game Boy lays them out (A right, B below-left)
+      // and as Nintendo's pads label them: the standard mapping's right face
+      // button (1) is A and its bottom one (0) is B, so a Switch Pro
+      // Controller's A and B do what they say. The top (3) and left (2) back
+      // them up: X as A, Y as B. Before S246 bottom and right were both A.
+      g.a = p.buttons[1]?.pressed || p.buttons[3]?.pressed;
+      g.b = p.buttons[0]?.pressed || p.buttons[2]?.pressed;
       g.start = p.buttons[9]?.pressed;
       g.select = p.buttons[8]?.pressed;
       if (BUTTONS.some(b => g[b])) this.anyPressEver = true;

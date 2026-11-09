@@ -27,9 +27,30 @@ The run's low-water 5 is now at Wyverna.
 check-playthrough 49/49, THE END, never died, low-water 5, 317538 frames.
 Whole table green; test.mjs 142/142; check-rippers 45/45 alone, last.
 
+### Then, the same session (the human: "go ahead" on three small ones)
+- SIDE-VIEW FACING (the human asked; the cartridge confirmed it): on the
+  ground Link turns up and down too and the sword swings that way; no turn
+  while falling; none with the blade held out. sideview.js, from link.s's
+  updateLinkDirectionFromAngle / linkUpdateInAir_sidescroll /
+  wLinkTurningDisabled. check-sideview 8b (4 assertions, red on the old).
+- THE MAP IN A PASSAGE: Link's marker on the room whose stair he went down
+  (Seasons' @setMinimapRoom skips side-scrolling groups); `Game.markMinimap`,
+  `mapMark`, read by MapScreen.open. check-sideview 8c (3 assertions).
+- THE CONTROLLER: face buttons by position — right (1) and top (3) are A,
+  bottom (0) and left (2) are B — so a Switch Pro Controller's A and B do
+  what they say. Not tried on a real iPad. README says so.
+- Pictures: docs/briefs/s246/swing-up.png, map-in-passage.png.
+- Verified again: check-sideview 71/71; whole table green; check-playthrough
+  49/49, THE END, never died, low-water 5; test.mjs 142; check-rippers 45.
+- The human asked how to play on an iPad with a Switch Pro Controller:
+  pair it in Bluetooth settings (iPadOS 16+); the game file has to be
+  served (a computer on the same Wi-Fi, or an HTML-viewer app), Safari will
+  not run it from Files. Do NOT publish it publicly (cartridge art).
+
 ### Next
-- Board: nothing open on the bosses. Side-view loose ends (Link's
-  dungeon-map marker in a passage; the sword only left/right there).
+- Board: nothing open on the bosses or the side-view loose ends. The human
+  is to play it cold on the iPad and bring notes; the two reworded signs
+  (Two Weights, Ebb Cell) still want a cold reading.
 
 ## S245 — gauge torches in the Grotto; the Lens fork's water left as the Oracles draw it
 

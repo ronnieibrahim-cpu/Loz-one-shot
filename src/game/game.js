@@ -35,7 +35,7 @@ import { TINTS } from '../gfx/palettes.js';
 import { drawText, textWidth } from '../gfx/font.js';
 import { drawScreen, screenImage } from '../gfx/screens.js';
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
-import { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath } from '../world/maps.js';
+import { getMap, getRoom, hasRoom, resetRooms, MAPS, cellBeneath, cellPixels } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity, canOccupy, DIR_VEC } from './entity.js';
@@ -247,6 +247,8 @@ export class Game {
     const m = getMap(mapId);
     if (!m) { console.error('[game] no such map', mapId); return; }
     const changedMap = this.mapId !== mapId;
+    const fromMap = this.map, fromRoom = this.room;
+    const fromAt = this.player ? [this.player.x, this.player.y] : [0, 0];
     this.map = m;
     this.mapId = mapId;
     this._warpLock = true;
@@ -263,6 +265,7 @@ export class Game {
       arriveSideView(this, this.player);
       this.player.reconcileWithTide(this);
     }
+    this.markMinimap(fromMap, fromRoom, fromAt);
     // After the player is placed, never before: a room has no camera history to
     // deadzone against on the frame you arrive in it.
     this.camera.snap(this.room, this.player);
@@ -275,6 +278,34 @@ export class Game {
     }
     if (!o.instant) this.fadeIn();
     this.updateMusic();
+  }
+
+  /**
+   * WHERE THE DUNGEON MAP PUTS LINK WHILE HE IS IN A SIDE-VIEW PASSAGE (S246).
+   * Seasons does not update the minimap position in a side-scrolling room
+   * (bank1.s @setMinimapRoom returns for the side-view groups), so the map
+   * opened in one shows him where he was last seen top-down: the room whose
+   * stair he went down, on its floor (wMinimapDungeonFloor,
+   * wMinimapDungeonMapPosition). A passage is not drawn on the map (S242), so
+   * before this the marker stood on an empty square. Kept on `mapMark`: null
+   * outside a passage; the room he came from going in; after a load inside
+   * one, the room the passage's first way out leads to.
+   */
+  markMinimap(fromMap, fromRoom, fromAt) {
+    const r = this.room;
+    if (!r || !r.def.side) { this.mapMark = null; return; }
+    if (fromRoom && fromMap === this.map && !fromRoom.def.side) {
+      const [cw, ch] = cellPixels(this.map);
+      this.mapMark = { mapId: this.mapId, floor: fromRoom.floor || 0,
+        cell: [fromRoom.rx + Math.max(0, Math.floor(fromAt[0] / cw)), fromRoom.ry + Math.max(0, Math.floor(fromAt[1] / ch))] };
+      return;
+    }
+    if (this.mapMark && this.mapMark.mapId === this.mapId) return;
+    const to = (r.def.warps || []).map(w => w.to).find(t => t && t.map === this.mapId);
+    if (!to) { this.mapMark = null; return; }
+    const [cw, ch] = cellPixels(this.map);
+    this.mapMark = { mapId: this.mapId, floor: to.floor || 0,
+      cell: [to.rx + Math.floor((to.px || 0) / cw), to.ry + Math.floor((to.py || 0) / ch)] };
   }
 
   setRoom(floor, rx, ry, o = {}) {

@@ -5,6 +5,13 @@
 //   linkState01_sidescroll       on the ground he moves left and right only;
 //                                 in water he swims; leaving the water at the
 //                                 top he hops (SV_HOP)
+//   FACING (S246): on the ground he TURNS all four ways — the movement angle
+//   is flattened (linkAdjustAngleInSidescrollingArea) but his direction comes
+//   from the d-pad itself (updateLinkDirectionFromAngle reads wLinkAngle), so
+//   UP faces him into the room and the sword swings up. In the air he does not
+//   turn at all (linkUpdateInAir_sidescroll returns before the turn);
+//   swimming, only left and right (@swimmingState2); with the blade held out,
+//   not at all (wLinkTurningDisabled).
 //   linkUpdateInAir_sidescroll    off the ground and off a ladder he falls,
 //                                 gaining SV_GRAVITY a frame to SV_FALL_MAX;
 //                                 pressing UP over a ladder catches it
@@ -80,7 +87,14 @@ export function updateSideView(p, game) {
   const inp = game.input;
   const dx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
   const dyIn = (inp.down('down') ? 1 : 0) - (inp.down('up') ? 1 : 0);
-  if (dx) p.dir = dx < 0 ? 'left' : 'right';
+  // Turning (see the header): left/right here serves the water and the
+  // ladder; the ground's four-way turn and the air's none are below.
+  const canTurn = !p.holding && !(p.swinging > 0);
+  const groundedAtStart = sideGrounded(game, p) && !(p.svFall < 0);
+  const prevFacing = p.dir;
+  const lx = p._svLastDx || 0, ly = p._svLastDy || 0;
+  p._svLastDx = dx; p._svLastDy = dyIn;
+  if (dx && canTurn) p.dir = dx < 0 ? 'left' : 'right';
 
   const here = activeTile(game, p);
   const wet = !!(here.flags & F.DEEP) && !floatUnder(game, p);
@@ -165,6 +179,19 @@ export function updateSideView(p, game) {
   }
 
   // ------------------------------------------------------- walking / air
+  if (canTurn) {
+    if (groundedAtStart) {
+      // The top-down rule (Player.update): the newly pressed axis wins, a
+      // diagonal held keeps the axis already faced.
+      if (dyIn && !ly) p.dir = dyIn < 0 ? 'up' : 'down';
+      else if (dx && !lx) p.dir = dx < 0 ? 'left' : 'right';
+      else if (dx && !dyIn) p.dir = dx < 0 ? 'left' : 'right';
+      else if (dyIn && !dx) p.dir = dyIn < 0 ? 'up' : 'down';
+      else p.dir = prevFacing;            // a diagonal held on: keep the axis
+    } else {
+      p.dir = prevFacing;                 // falling or hopping: no turn
+    }
+  }
   if (dx) move(game, p, dx * WALK_SPEED, 0);
   p._lastDx = dx; p._lastDy = 0;
   if (dx) p.animT++;

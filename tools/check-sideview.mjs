@@ -499,6 +499,75 @@ for (const P of passages.filter(p => p.mapId === 'd4' && p.rk === '1,5,5')) {
   }
 }
 
+// 8b. FACING (S246): Link turns as the cartridge turns him in side view.
+// On the ground all four ways (updateLinkDirectionFromAngle reads the d-pad,
+// only the movement angle is flattened), and the sword swings the way he
+// faces; in the air not at all (linkUpdateInAir_sidescroll returns before
+// the turn); with the blade held out not at all (wLinkTurningDisabled).
+{
+  const tag = 'facing';
+  const dir = () => page.evaluate(() => window.__game.player.dir);
+  const pos = () => page.evaluate(() => { const p = window.__game.player; return `${p.x},${p.y}`; });
+  const withSword = () => page.evaluate(async () => {
+    const g = window.__game; const { giveItem } = await import('/src/game/progress.js');
+    giveItem(g.progress, 'sword'); g.progress.equipA = 'sword';
+  });
+  // The Sounding Way's east floor at LOW: standing on the brick at 12,9.
+  await sv('start', 'd3', 0, 4, 6, 192, 128, 0, true, false, true);
+  await sv('hold', [], 10);
+  const p0 = await pos();
+  await sv('hold', ['up'], 3); const up = await dir(); const p1 = await pos();
+  await sv('hold', ['down'], 3); const down = await dir();
+  await sv('hold', ['left'], 3); const left = await dir();
+  await sv('hold', ['left', 'up'], 3); const diagUp = await dir();
+  check(`${tag}: on the ground UP faces him up without moving him, DOWN faces him down, LEFT left, and UP pressed while walking left faces him up`,
+    up === 'up' && p1 === p0 && down === 'down' && left === 'left' && diagUp === 'up',
+    JSON.stringify({ up, p0, p1, down, left, diagUp }));
+  await sv('hold', [], 20);
+  await withSword();
+  await sv('hold', ['up'], 2); await sv('hold', ['a'], 3);
+  const sw = await page.evaluate(() => ({ dir: window.__game.player.dir, swinging: window.__game.player.swinging }));
+  check(`${tag}: facing up on the ground, the sword swings up`, sw.dir === 'up' && sw.swinging > 0, JSON.stringify(sw));
+  await sv('hold', [], 40);
+  // Holding the blade out (charging), he does not turn.
+  await sv('hold', ['right'], 2);
+  await sv('hold', ['a'], 40);
+  await sv('hold', ['a', 'left'], 6);
+  const held = await page.evaluate(() => ({ dir: window.__game.player.dir, holding: window.__game.player.holding }));
+  check(`${tag}: with the blade held out he does not turn`, held.dir === 'right', JSON.stringify(held));
+  // Falling from the top of the room at LOW: no turn.
+  await sv('start', 'd3', 0, 4, 6, 112, 16, 0, true, false, true);
+  await page.evaluate(() => { window.__game.player.dir = 'right'; });
+  await sv('hold', ['left'], 4); const f1 = await dir(); const fall = (await sv('state')).fall;
+  await sv('hold', ['up'], 2); const f2 = await dir();
+  check(`${tag}: falling, he does not turn (left and up held)`, f1 === 'right' && f2 === 'right' && fall > 0,
+    JSON.stringify({ f1, f2, fall }));
+}
+
+// 8c. THE MAP IN A PASSAGE (S246): Seasons does not move the minimap in a
+// side-scrolling room, so the dungeon map shows Link in the room whose stair
+// he went down, on its floor (the passage itself is not drawn). After a load
+// inside one, the room the passage's first way out leads to.
+{
+  const mark = () => page.evaluate(() => {
+    const g = window.__game, ms = g.menu.mapScreen; ms.open();
+    return { room: g.room.key, side: !!g.room.def.side, floor: ms.linkFloor, cell: ms.linkCell.join(',') };
+  });
+  for (const [name, room, want] of [['the Bell Cell', [1, 4, 6], '4,6'], ['the Current Garden', [1, 5, 6], '5,6']]) {
+    await sv('start', 'd3', ...room, 16, 32, 0, true, false, true);
+    const before = await mark();
+    await sv('hold', ['up'], 40, false, true);
+    for (let i = 0; i < 60 && (await sv('state')).fade; i++) await sv('hold', [], 4);
+    const inside = await mark();
+    check(`map: down ${name}'s stair, the dungeon map shows Link in ${name} (floor ${room[0]}, ${want}), not in the passage`,
+      before.cell === want && inside.side && inside.floor === room[0] && inside.cell === want, JSON.stringify({ before, inside }));
+  }
+  await sv('start', 'd3', 0, 4, 6, 16, 16, 0, true, false, true);
+  const loaded = await mark();
+  check(`map: put straight into the passage (a load), the map shows Link where its first way out leads (floor 1, 4,6)`,
+    loaded.side && loaded.floor === 1 && loaded.cell === '4,6', JSON.stringify(loaded));
+}
+
 // 9. the engine never goes where the model says it cannot (every passage).
 for (const P of passages) {
   const tag = `${P.mapId} ${P.rk}`;
