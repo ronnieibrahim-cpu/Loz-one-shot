@@ -957,7 +957,10 @@ export const ROUTE = [
   // drops and every id after them moved): 198 loses. Swept 0-420 by 3: wins
   // at 99, 207, 228, 270, 276, 294, 303, 315, 336, 339, 393; only 270 (on
   // 11/24) also survives Bogmaw. 270.
-  ['wait', 270],
+  // S245 (gauge torches in the Drip Vault turned its keese, so Link took no
+  // hit there and every frame after moved): 270 loses. Swept 0-420 by 3: of
+  // the runs that get past him, only 249 reaches THE END. 249.
+  ['wait', 249],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
