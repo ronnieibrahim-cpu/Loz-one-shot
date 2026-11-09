@@ -121,3 +121,14 @@ lands in stages; this file is the plan every stage builds to.
    whatever water is under it, lifted and dropped by the conch, gone when
    drained out from under it. One in each passage. Hand-drawn in
    src/data/sprites-enemies-drawn.js.
+6. The two loose ends (S246), both from the cartridge's own code:
+   FACING — on the ground Link turns all four ways (updateLinkDirectionFromAngle
+   reads the d-pad; only his movement is flattened), so UP faces him into the
+   room and the sword swings up, DOWN down; falling he does not turn at all
+   (linkUpdateInAir_sidescroll returns first); with the blade held out he does
+   not turn (wLinkTurningDisabled); swimming, left/right only (as before).
+   THE MAP — Seasons does not move the minimap in a side-scrolling group
+   (bank1.s @setMinimapRoom), so the dungeon map in a passage shows Link in
+   the room whose stair he went down, on its floor (`Game.markMinimap`); after
+   a load inside one, the room its first way out leads to. check-sideview
+   sections 8b and 8c. Pictures: docs/briefs/s246/.

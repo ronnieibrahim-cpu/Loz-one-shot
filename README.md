@@ -41,7 +41,7 @@ not work.
 | P | Mute |
 | O | Debug overlay |
 
-Gamepads work, and on-screen controls appear on touch devices.
+Gamepads work (the right face button is A, the bottom one B, as on a Game Boy or a Switch controller), and on-screen controls appear on touch devices.
 
 ## Project layout
 
