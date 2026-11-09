@@ -963,7 +963,11 @@ export const ROUTE = [
   // wait after D1's Essence and a wait in the Drip Vault change nothing).
   // With `reachSwing` too, swept 150-360 by 3: 273 reaches THE END with the
   // whole run's low-water at 5. 273.
-  ['wait', 273],
+  // S246 (Anemos holds his fire while he feeds, in every phase; Wyverna
+  // floods from her first phase): 273 loses Gloomtide. Swept 0-420 by 3:
+  // 138 of 141 waits get past Anemos (was 9 of 71 by 6), mostly on 9/24; 18
+  // reach THE END, all on low-water 5 (267, 297-321, 339-366, 378-411). 354.
+  ['wait', 354],
   ['boss', 9000, null, { openRetreat: true, diagRetreat: true, reachSwing: true }],
   ['wait', 200],
   // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
@@ -2179,6 +2183,8 @@ export const ROUTE = [
   // S151: re-swept; the reach swing wins (15 -> 11); the plain fight loses.
   // S165: and the diagonal retreat with it, after the hit freeze went.
   // S166: the reach swing alone again, now the conch answers her flood.
+  // S246 (she floods from her first phase too): every wait 60-360 by 12
+  // before her reaches THE END; 180 kept (17 -> 5 quarter-hearts here).
   ['boss', 24000, null, { reachSwing: true }],
   ['wait', 240],
   ['goto', 7, 4, 600],

@@ -338,6 +338,7 @@ export function installBosses() {
       // Sways on its stalk and puffs rings of spore-bubbles.
       { above: 0.62, ai(e, g) {
         runPending(e, g); closeTick(e, g); anemosSway(e, g); anemosFeed(e, g);
+        if (e.weakOpen) return;               // feeding: see anemosFeed
         if (timer(e, 'ring', 170)) {
           shootRing(e, g, 6, { sprite: 'shot_bubble', pal: 'water', speed: 1.1, damage: 2 });
         }
@@ -346,6 +347,7 @@ export function installBosses() {
       // A rotating sweep of tentacle spines that you have to walk around.
       { above: 0.32, ai(e, g) {
         runPending(e, g); closeTick(e, g); anemosSway(e, g); anemosFeed(e, g);
+        if (e.weakOpen) return;               // feeding: see anemosFeed
         if (every(e, 26)) {
           e._sweep += 0.42;
           shootRing(e, g, 3, { sprite: 'shot_orb', pal: 'coral', speed: 1.25,
@@ -380,6 +382,15 @@ export function installBosses() {
 
   // The feed cycle, and the tide hook: it unfurls for four times as long with
   // the water up as it does with the spire drained.
+  //
+  // WHILE IT FEEDS IT DOES NOT ATTACK, in every phase (S246, the human's
+  // choice). Until S246 only the last phase held its fire in the window (the
+  // rule above `closeTick`); the first two shot rings, sweeps and lashes
+  // straight through it, so the one moment the fight offers was under fire
+  // and the fight was won or lost on the entry frame: the robot's route won
+  // at 9 of 71 entry waits (0-420 by 6), on 1-9 of 24 quarter-hearts. Held
+  // fire in every phase: 69 of 71, median 13 of 24 left. Same shots, same
+  // damage, same health (S150); shots already in flight still fly.
   function anemosFeed(e, g) {
     if (timer(e, 'feed', 250)) open(e, g, [40, 80, 160][g.tide.level]);
   }
@@ -512,6 +523,12 @@ export function installBosses() {
         runPending(e, g); closeTick(e, g); wyvernaAltitude(e, g);
         bounceDiag(e, g, { speed: e.speed });
         if (timer(e, 'dive', 170)) wyvernaDive(e, g);
+        // S246 (the human's choice): she floods the cistern from the first
+        // phase too. Before, the opening third never flooded, so one sound of
+        // the conch beached her for the whole of it and the fight was the
+        // gentlest of the six (the route lost 7 of 17 quarter-hearts and won
+        // at 34 of 35 entry waits). With it: 36 of 36, median 7 of 17 left.
+        if (timer(e, 'flood', 400)) forceTide(e, g, HIGH);
       } },
       // Adds a breath of three beams raked across the room.
       { above: 0.32, ai(e, g) {

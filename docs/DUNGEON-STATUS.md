@@ -228,6 +228,18 @@ arrives hurt; the robot arrives full, and its Anemos entry wait swept 30-270
 wins only at 192-234, on 1-8/24. THE FIGHT ITSELF IS STILL THE GAME'S
 HARDEST, and the only levers left under S150 are the arena and his pattern.
 
+**S246: BOTH LEVELLED, BY PATTERN (the human's choices).** Measured on the
+real route first (`route-prefix` with PATCH on the entry wait, a whole run
+per wait): Anemos took 24 -> 10 at the chosen wait but the route won at only
+9 of 71 waits (0-420 by 6) — luck, not skill; Wyverna took 17 -> 10 and won
+at 34 of 35. Anemos now HOLDS HIS FIRE WHILE HE FEEDS in every phase (only
+the last did): 138 of 141 waits get past him, mostly on 9/24. Wyverna now
+FLOODS FROM HER FIRST PHASE (timer 400, as her second): every wait 60-360
+wins; the route takes her 17 -> 5. Offered and declined: floods sooner in
+every phase (31/36 waits win); fire breath and keese from the start (19/36).
+Clips: the human was shown both fights before and after. Damage and health
+untouched (S150).
+
 ## S179: MEASURED AGAINST SEASONS AND AGES — AND THE PLAN TO GROW D3-D6
 
 The human asked for the dungeons' complexity to be reassessed against both
