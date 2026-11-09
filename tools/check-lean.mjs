@@ -175,6 +175,88 @@ if (cliff) {
   const r = await run(cliff.enter, [['wait', 4], ['hold', [cliff.dir], 60]]);
   check(`an overworld cracked cliff says nothing (${cliff.at}), as in Seasons`, r.said.length === 0, JSON.stringify(r.said.map(x => x.text)));
 }
+// ----------------------------------------------------------- 3. gauge torches
+// S245 (the human's choice: lit only when right). Every room whose door reads
+// wells (`anchorGauges`) has one gauge torch per mark, reading that mark at
+// the level the door wants, and no gauge torch stands anywhere else; in the
+// engine each burns exactly while its mark reads right — at every sea held,
+// and with the iron down — catches light with the torch's sound, is silent
+// walking in on it already lit, and fire does nothing to it.
+const gauges = await page.evaluate(async () => {
+  const g = window.__game;
+  const maps = await import('/src/world/maps.js');
+  const { GaugeTorch } = await import('/src/game/objects.js');
+  const out = { rooms: [], stray: [], wrong: [], tides: [], held: [], sound: [], fire: [] };
+  const sounds = [];
+  const orig = g.audio.sfx.bind(g.audio);
+  g.audio.sfx = (n, o) => { sounds.push(n); return orig(n, o); };
+  const settle = (n) => { for (let i = 0; i < n; i++) for (const e of g.entities) if (e instanceof GaugeTorch) e.update(g); };
+  const torches = () => g.entities.filter(e => e instanceof GaugeTorch);
+  const truth = (t) => g.tide.levelAt(t.well[0], t.well[1], g.room) === t.level;
+  g.newGame(0, 'LINK', 20260806);
+  for (const map of maps.MAPS.values()) {
+    for (const key of Object.keys(map.roomDefs || {})) {
+      const def = map.roomDefs[key];
+      const placed = (def.entities || []).filter(s => s[0] === 'gaugeTorch');
+      const where = `${map.id}/${key} ${def.name || ''}`;
+      if (!def.anchorGauges) { if (placed.length) out.stray.push(where); continue; }
+      const ag = def.anchorGauges;
+      const marks = ag.marks || [[...ag.a, ag.aLevel], [...ag.b, ag.bLevel]];
+      out.rooms.push(where);
+      for (const m of marks) {
+        const n = placed.filter(s => s[3] && s[3].well[0] === m[0] && s[3].well[1] === m[1] && s[3].level === m[2]).length;
+        if (n !== 1) out.wrong.push(`${where}: mark ${m} has ${n} torches`);
+      }
+      if (placed.length !== marks.length) out.wrong.push(`${where}: ${placed.length} torches for ${marks.length} marks`);
+      const [f, rx, ry] = key.split(',').map(Number);
+      for (const sea of [0, 1, 2]) {
+        g.tide.clearOverrides();
+        g.tide.setLevel(sea, { instant: true });
+        g.enterMap(map.id, f, rx, ry, ag.from[0] * 16, ag.from[1] * 16, 'up', { instant: true });
+        sounds.length = 0;
+        settle(2);
+        for (const t of torches()) if (t.lit !== truth(t)) out.tides.push(`${where} at sea ${sea}: torch ${t.well} lit=${t.lit}`);
+        if (sounds.includes('fire')) out.sound.push(`${where}: walking in at sea ${sea} made a sound`);
+      }
+      // The iron down on each mark in turn, the base at the other level the
+      // door wants: the held mark's torch comes alight, with the sound.
+      for (const m of marks) {
+        const other = marks.find(o => o[2] !== m[2]);
+        g.tide.clearOverrides();
+        g.tide.setLevel(other[2], { instant: true });
+        g.enterMap(map.id, f, rx, ry, ag.from[0] * 16, ag.from[1] * 16, 'up', { instant: true });
+        settle(2);
+        const t = torches().find(t => t.well[0] === m[0] && t.well[1] === m[1]);
+        const was = t && t.lit;
+        sounds.length = 0;
+        g.tide.addOverride({ mapId: map.id, roomKey: g.room.key, tx: m[0], ty: m[1], r: 0, shape: 'square', level: m[2], src: 'check' });
+        g.tide.touch();
+        settle(2);
+        if (!t || was || !t.lit) out.held.push(`${where}: mark ${m} held — was ${was}, now ${t && t.lit}`);
+        else if (sounds.filter(s => s === 'fire').length !== 1) out.sound.push(`${where}: mark ${m} caught light with ${JSON.stringify(sounds)}`);
+        for (const u of torches()) if (u.lit !== truth(u)) out.held.push(`${where}: with ${m} held, torch ${u.well} lit=${u.lit}`);
+        // Fire over a dark one does nothing.
+        const dark = torches().find(u => !u.lit);
+        if (dark) {
+          g.checkTileAction({ x: dark.x - 16, y: dark.y - 16, w: 48, h: 48 }, 'fire');
+          settle(1);
+          if (dark.lit) out.fire.push(`${where}: fire lit torch ${dark.well}`);
+        }
+      }
+      g.tide.clearOverrides();
+    }
+  }
+  g.audio.sfx = orig;
+  return out;
+});
+console.log(`check-lean: gauge torches in ${gauges.rooms.length} rooms (${gauges.rooms.join('; ')})`);
+check('there are rooms that read wells, and each has its gauge torches', gauges.rooms.length >= 2 && gauges.wrong.length === 0, gauges.wrong.join('; '));
+check('no gauge torch stands in a room that reads no wells', gauges.stray.length === 0, gauges.stray.join('; '));
+check('at every sea held, each gauge torch burns exactly while its mark reads right', gauges.tides.length === 0, gauges.tides.slice(0, 4).join('; '));
+check('the iron held on a mark lights that mark\'s torch, and only the right ones burn', gauges.held.length === 0, gauges.held.slice(0, 4).join('; '));
+check('a gauge torch catches light with the torch\'s sound, once, and walking in on one lit is silent', gauges.sound.length === 0, gauges.sound.slice(0, 4).join('; '));
+check('fire does nothing to a gauge torch', gauges.fire.length === 0, gauges.fire.join('; '));
+
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

@@ -712,6 +712,16 @@ so "the top 60" is `doc.tiles.slice(0, 60)`.
 
 ## A tide gauge fixture (new, from P8/D1)
 
+**DONE S245.** Oracle of Ages' Spirit's Grave has the grammar (interaction21
+subid 4: a flame that reports the tile beside it, in red, yellow or blue); the
+human chose the simpler form, a torch that is LIT ONLY WHILE ITS WELL READS
+RIGHT. `gaugeTorch` (objects.js `GaugeTorch`): Seasons' own torch, lit and
+unlit, one over each well of the Two Gauges and one by each mark of the Drip
+Vault (the basin's under its wall). It catches light with the torch's sound;
+fire does nothing to it; leaning on it says nothing. The plaques now say
+which torches to light. check-lean section 3 proves it. The history below
+stands.
+
 D1 has two rooms whose door opens only when one well reads drained and another
 reads drowned (`0,4,3` and `0,1,1`). The rule is legible on paper and half
 legible on screen: the two gauge tiles ARE wells, so their state is visible as
@@ -729,6 +739,15 @@ Until it exists, both rooms lean on the plaque, and a session that plays them
 should say whether the plaque is enough.
 
 ## The Lens shows three dark blues (new, from P8/D2)
+
+**CLOSED S245.** Looked at again in the real engine (the Sounding Fork at
+LOW, MID, HIGH): through the Lens's whole-room flicker (S220) the three read
+plainly — pale speckled shallow water, a black pit, dark rippled deep water.
+The "depth mark" fix (2 below) was checked against every dungeon floor of
+both cartridges, rendered from the disassembly (tools/oneshot/oracle-study):
+NEITHER Oracle draws a lip on dungeon water — Mermaid's Cave and the
+Dancing Dragon's pools sit straight against the floor — so the human chose
+to add none. Only the overworld's shores have a rim, and ours already does.
 
 **S220: the overlay is gone.** The Lens now draws the next tide's room whole
 on alternate frames (`LENS_FLICKER_L1`), so each tile is shown in its own

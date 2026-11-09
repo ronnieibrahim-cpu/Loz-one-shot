@@ -1982,6 +1982,50 @@ export class Torch extends Entity {
 }
 defineEntity('torch', (x, y, o) => new Torch(x, y, o));
 
+/**
+ * A GAUGE TORCH (S245). Beside each well of a room whose door reads wells
+ * (`anchorGauges`), a torch that burns while ITS well reads what the door
+ * wants and is dark otherwise — the first dungeon's Two Gauges and Drip Vault,
+ * where nothing on screen used to say which wells were the puzzle or which of
+ * them was already right. The grammar is Oracle of Ages' (Spirit's Grave,
+ * interaction21 subid 4: a flame that reports the tile beside it); the human
+ * chose lit-when-right over Ages' coloured flames. Seasons' own torch, lit
+ * and unlit. It is not a Torch: fire does nothing to it, no torch puzzle
+ * counts it, and leaning on it says nothing.
+ *   ['gaugeTorch', tx, ty, { well: [wx, wy], level }]
+ */
+export class GaugeTorch extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 4, y: 6, w: 8, h: 9 };
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.pal = null;
+    this.well = o.well;
+    this.level = o.level;
+    this.lit = null;
+  }
+  reads(game) {
+    const r = game.room;
+    return !!r && game.tide.levelAt(this.well[0], this.well[1], r) === this.level;
+  }
+  spriteName() {
+    if (!this.lit) return 'o_torch';
+    return 'o_torch_lit' + (Math.floor(this.frame / TORCH_FLAME_FRAMES) % TORCH_FLAME_COUNT);
+  }
+  update(game) {
+    this.frame++;
+    const on = this.reads(game);
+    // Catching light makes the torch's sound; the first frame in the room
+    // only sets it, so walking in on a well already right is silent.
+    if (this.lit === false && on) game.audio.sfx('fire');
+    this.lit = on;
+  }
+}
+defineEntity('gaugeTorch', (x, y, o) => new GaugeTorch(x, y, o));
+
 // THE EYE STATUE (S211, the Coral Spire's eye loop; Seasons' eye puzzle,
 // statueEyeball.s, room $59c): TILEINDEX_EYE_STATUE with an eyeball on it.
 // Ours stand in basins and their eyes float, so each turns with the tide:
