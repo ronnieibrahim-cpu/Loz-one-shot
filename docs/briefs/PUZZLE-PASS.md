@@ -136,3 +136,25 @@ d4HolesFloortrapRoom, ancientRuinsScript_randomButtonRoom, statueEyeball):
 
 Every new room changes the robot's clock (HANDOFF S192/S198/S203): sweep the
 next boss's entry wait after each.
+
+## S247: the thin dungeons get a room each (off the robot's route)
+
+The audit (docs/AUDIT-S247.md) left the Coral Spire short of puzzle rooms and
+the Cliffside Cistern short of kinds. Three rooms the playthrough never enters
+took one kind each (pictures in `docs/briefs/s247/`):
+
+- **Spire, Chartstone Alcove 0,4,4 (kind A):** one block at the head of a walled
+  channel along the north wall; a well (LOW only) then a drain (MID only) lie
+  in its path, and one gap in the channel's wall lets Link get behind it with
+  the well deep. Over the well at LOW, over the drain at MID. `check-blocks`.
+  Pays two rupee drops.
+- **Spire, Cistern Cell 0,3,3 (kind H):** three pools abreast, a well, a sluice
+  and a basin, each with its plate in the middle; the right plate is the one in
+  wading water. `check-tideplates` (which pays a fairy). A jellyfish was
+  replaced by an urchin because a walker on a plate presses it.
+- **Cistern, Cliffside Cell 0,5,5 (kind F):** a mirror statue in a walled run
+  along the bottom, a gutter beside its plate holding it at MID while the block
+  goes back west. `check-statues`. The Cistern has no statue art of its own, so
+  the statue wears the Shrine's armos (`sprite: 'o_statue_wood'`). Pays two
+  rupee drops. The run is a stranded region in `dungeon-strands-baseline.json`,
+  as the Shrine's are.

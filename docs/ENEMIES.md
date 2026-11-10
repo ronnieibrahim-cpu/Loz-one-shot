@@ -48,12 +48,20 @@ two-fifths one kind.
 
 | Dungeon | New here | Also |
 |---|---|---|
-| D1 | crab, keese, zol, anglerfry, tektite | |
-| D2 | urchin, jellyfish, octorok | keese, crab |
+| D1 | octorok, crab, keese, zol, anglerfry, tektite | |
+| D2 | urchin, jellyfish | keese, crab, octorok again |
 | D3 | beetle, barnacle, strider | zol again, keese, crab, urchin |
 | D4 | stalfos, wizzrobe, bubble, gel | keese, tektite |
 | D5 | moblin, darknut, wisp | keese, tektite, stalfos |
 | D6 | siren, beamos | stalfos, darknut, wizzrobe, anglerfry |
+
+The first enemy of both cartridges, the octorok, stands in D1 only in two rooms
+the playthrough robot never enters (the Bone Cell 0,2,6 and the Weeping Wall
+0,2,3), as the robot's fights are recorded and a room it enters cannot change.
+For the same reason the keese that D4 and D5 still hold are in rooms the
+route walks through: off the route D4 gave up 4 keese (21 to 17: stalfos,
+wizzrobe) and D5 gave up 4 keese and 3 tektites (22 to 18 and 12 to 9: stalfos,
+moblin, wisp).
 
 The playthrough robot cannot beat a beetle, a bubble or (outside D6) a
 darknut, so those stand only in rooms its route does not say `fight` in.
