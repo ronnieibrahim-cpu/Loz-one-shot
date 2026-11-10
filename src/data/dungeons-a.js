@@ -192,7 +192,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['pickup', 7, 5, { kind: 'blank' }],
-          ['keese', 3, 2],
+          ['octorok', 3, 2],
         ],
         readable: [
           [2, 9, 'Scratched deep: "The carver in Tidewatch wants bone, not gold."'],
@@ -460,7 +460,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 4, { charm: 'splitFang' }],
-          ['keese', 3, 2],
+          ['octorok', 3, 2],
           ['zol', 11, 8],
         ],
         puzzle: {
@@ -1046,12 +1046,20 @@ export function installDungeonsA() {
       },
       '0,4,4': {
         name: 'Chartstone Alcove',
+        // THE BLOCK IN ITS CHANNEL (S247, PUZZLE-PASS kind A in the Spire).
+        // One block sits at the head of a walled channel along the north
+        // wall. A well (`3`, ankle-deep at LOW only) and then a drain (`4`, a
+        // hole at LOW, ankle-deep at MID) lie in its path, and the wall has
+        // one gap between them so Link can get behind it again with the well
+        // deep. Push it over the well at LOW, sound the conch, push it over
+        // the drain at MID. The chest below is on its own and is not in the
+        // way. `tools/check-blocks.mjs` searches it in the engine.
         map: [
           '###############',
           '#.............#',
-          '#.U.........U.#',
-          '#.............#',
-          '#.............#',
+          '#.U=======..U.#',
+          '#....3..4.=...#',
+          '#..===.===....#',
           '..............#',
           '#.............#',
           '#.............#',
@@ -1062,27 +1070,75 @@ export function installDungeonsA() {
         entities: [
           ['chest', 7, 5, { pickup: 'chartstone' }],
           ['octorok', 10, 7],
+          ['switch', 9, 3],
+          ['block', 3, 3, { once: false }],
         ],
+        blockRoom: { pockets: [[9, 3]], seas: [0, 1] },
+        puzzle: {
+          switches: 'all',
+          blocks: [[9, 3]],
+          flag: 'd2_044_channel',
+          reward: {
+            spawn: [
+              ['pickup', 11, 6, { kind: 'rupee20' }],
+              ['pickup', 12, 6, { kind: 'rupee20' }],
+            ],
+          },
+        },
       },
       '0,3,3': {
         name: 'Cistern Cell',
+        // THE RIGHT PLATE FOR THE SEA (S247, PUZZLE-PASS kind H in the Spire;
+        // the Grotto's Sunken Hall taught it). Three pools stand abreast
+        // across the cell, a well (`3`, ankle-deep at LOW), a sluice (`1`, at
+        // MID) and a basin (`2`, at HIGH), each with its plate in the middle.
+        // At every sea exactly one plate is in wading water: a plate pressed
+        // there stays down; a plate pressed dry lets two keese loose and puts
+        // every plate back up. All three down is the reward.
+        // `tools/check-tideplates.mjs` proves it in the engine.
         map: [
           '###############',
           '#.............#',
           '#.............#',
-          '#....22222....#',
-          '#....22222....#',
-          '#....22222....#',
-          '#....22222....#',
-          '#....22222....#',
           '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.333.111.222.#',
+          '#.333.111.222.#',
+          '#.333.111.222.#',
           '#.............#',
           '#######D#######',
         ],
         entities: [
           ['chest', 2, 2, { charm: 'barnacleSkin' }],
-          ['jellyfish', 7, 5],
+          ['urchin', 7, 3],
+          ['switch', 3, 7],
+          ['switch', 7, 7],
+          ['switch', 11, 7],
         ],
+        tidePlates: { plates: [[3, 7, 0], [7, 7, 1], [11, 7, 2]], loose: [[5, 3], [9, 3]] },
+        script: {
+          onEvent(game, name, sw) {
+            const room = game.room;
+            if (name !== 'switch' || !sw || !sw.pressed || room._puzzleDone) return;
+            const tx = Math.floor(sw.cx / 16), ty = Math.floor(sw.cy / 16);
+            const f = room.flagsAt(tx, ty, game.tide);
+            if ((f & F.WATER) && !(f & F.DEEP)) { sw.hold = false; return; }
+            for (const e of game.entities) {
+              if (e !== sw && e.hold === false && e.spriteName && 'pressed' in e) { e.hold = true; e.pressed = false; }
+            }
+            game.applyReward({ spawn: room.def.tidePlates.loose.map(([x, y]) => ['keese', x, y]), sfx: 'deny' });
+          },
+        },
+        puzzle: {
+          flag: 'd2_033_plates',
+          condition: (g, r) => r.def.tidePlates.plates.every(([x, y]) =>
+            g.entities.some(e => 'pressed' in e && e.pressed && e.hold === false
+              && Math.floor(e.cx / 16) === x && Math.floor(e.cy / 16) === y)),
+          reward: {
+            spawn: [['pickup', 7, 4, { kind: 'fairy' }]],
+          },
+        },
       },
       '0,2,4': {
         name: 'Stair Coil',
@@ -3072,13 +3128,23 @@ export function installDungeonsA() {
         entities: [
           ['pickup', 9, 4, { kind: 'heartPiece' }],
           ['wizzrobe', 4, 3],
-          ['keese', 12, 8],
+          ['stalfos', 12, 8],
         ],
       },
       '0,5,5': {
         name: 'Cliffside Cell',
         // S243: the stair in its corner comes from the Float Shaft (1,5,5).
         warps: [stair4(1, 1, P4(1, 5, 5, 13, 1, 'up'))],
+        // THE MIRROR STATUE (S247, PUZZLE-PASS kind F in the Cistern; the
+        // Shrine's Sunken Bracken taught it). The statue in the walled run
+        // along the bottom cannot be touched; every push of the block moves
+        // it a tile the OTHER way, and it will not step into water. Its plate
+        // is the west end of the run, past a gutter (`1`, dry at LOW, wading
+        // at MID) beside it, and the block's plate is west of anywhere the
+        // block stands when the statue gets there, so the block has to come
+        // back west, which drags the statue east, unless the gutter holds it:
+        // walk it home at LOW, bring the block back at MID.
+        // `tools/check-statues.mjs` proves it.
         map: [
           '#######.#######',
           '#/............#',
@@ -3086,16 +3152,31 @@ export function installDungeonsA() {
           '#.............#',
           '#.............#',
           '...............',
-          '#....,,,,,....#',
-          '#....,,,,,....#',
-          '#.U.........U.#',
           '#.............#',
+          '#.#############',
+          '#.#.1....1....#',
+          '#.#############',
           '###############',
         ],
+        statueRoom: { from: [1, 5], seas: [0, 1] },
         entities: [
           ['chest', 7, 3, { charm: 'bosunsWhistle' }],
           ['stalfos', 11, 5],
+          ['statue', 10, 8, { sprite: 'o_statue_wood' }],
+          ['block', 4, 6, { once: false }],
+          ['switch', 3, 8],
+          ['switch', 3, 6],
         ],
+        puzzle: {
+          blocks: [[3, 8], [3, 6]],
+          flag: 'd4_cliffside_statue',
+          reward: {
+            spawn: [
+              ['pickup', 7, 6, { kind: 'rupee20' }],
+              ['pickup', 8, 6, { kind: 'rupee20' }],
+            ],
+          },
+        },
       },
       '1,5,5': {
         // THE FLOAT SHAFT (S243, docs/briefs/SIDE-VIEW.md stage 4): the
@@ -3752,7 +3833,7 @@ export function installDungeonsA() {
           ['chest', 2, 2, { charm: 'saltEtched' }],
           ['tektite', 5, 13],
           ['wizzrobe', 10, 7],
-          ['keese', 4, 10],
+          ['stalfos', 4, 10],
         ],
         puzzle: {
           cube: true,
@@ -3794,8 +3875,8 @@ export function installDungeonsA() {
         entities: [
           ['cube', 14, 7, { o: 3 }],
           ['chest', 27, 8, { charm: 'gullsTally' }],
-          ['keese', 6, 2],
-          ['keese', 9, 8],
+          ['wizzrobe', 6, 2],
+          ['stalfos', 9, 8],
           ['bubble', 26, 3],
           ['zol', 6, 5],
         ],

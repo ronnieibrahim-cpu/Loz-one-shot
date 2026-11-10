@@ -1693,6 +1693,72 @@ const main = async () => {
     games.kAsked && games.kNo.state === 'idle' && games.kNo.track === games.bay, JSON.stringify(games.kNo));
   check('Yes starts his tune under the mini-game theme', games.kYes.state !== 'idle' && games.kYes.track === 'minigame', JSON.stringify(games.kYes));
 
+  console.log('\n--- the shore race remembers a best time; Dov asks before the dive (S247) ---');
+  const memory = await G(async () => {
+    const g = window.__game, H = window.__harness;
+    const { exportCode, importCode, newProgress } = await import('/src/game/progress.js');
+    const answer = (pick) => { const c = g.dialogue.choices; g.dialogue.close(); if (c && c.onPick) c.onPick(pick); };
+    const drain = () => { while (g.dialogue.active) g.dialogue.close(); };
+    g.enterMap('overworld', 0, 3, 9, 48, 48, 'left', { instant: true });
+    H.step(2);
+    const racer = g.entities.find(e => e.raceDef);
+    const textOf = () => g.dialogue.text || g.dialogue.full || JSON.stringify(g.dialogue.pages || g.dialogue.lines || '');
+    const run = (used) => {
+      racer.interact(g, g.player); answer(0); drain();
+      g.race.t = g.race.frames - used;
+      g.finishRace();
+      const said = textOf(); drain();
+      return said;
+    };
+    const none = importCode(exportCode({ ...newProgress('OLD', 1), raceBest: undefined })).raceBest;
+    racer.interact(g, g.player);
+    const firstAsk = textOf(); answer(1); drain();
+    const s1 = run(300);                       // 5.0 s: the first, so a record
+    const best1 = g.progress.raceBest.shore;
+    const flagAfter = !!g.progress.flags.raceWon;
+    const hearts1 = g.progress.heartPieces;
+    racer.interact(g, g.player);
+    const secondAsk = textOf(); answer(1); drain();
+    const s2 = run(420);                       // slower: no record
+    const best2 = g.progress.raceBest.shore;
+    const s3 = run(240);                       // faster: record again
+    const best3 = g.progress.raceBest.shore;
+    const back = importCode(exportCode(g.progress)).raceBest.shore;
+    return { none, firstAsk, secondAsk, s1, s2, s3, best1, best2, best3, back, flagAfter, hearts1 };
+  });
+  check('an old save loads with no best times', memory.none && Object.keys(memory.none).length === 0, JSON.stringify(memory.none));
+  check('before any record she does not name a time', !/Time to beat/.test(memory.firstAsk), memory.firstAsk);
+  check('the first win records its time and pays the Piece of Heart as before', memory.best1 === 50 && memory.flagAfter && memory.hearts1 === 1, JSON.stringify(memory));
+  check('a record is announced with its time', /New record! 5\.0 seconds!/.test(memory.s1), memory.s1);
+  check('afterwards her asking line names the time to beat', /Time to beat: 5\.0 seconds!/.test(memory.secondAsk), memory.secondAsk);
+  check('a slower win keeps the best and says the ordinary line', memory.best2 === 50 && !/record/i.test(memory.s2) && /You made it/.test(memory.s2), JSON.stringify([memory.best2, memory.s2]));
+  check('a faster win replaces it', memory.best3 === 40 && /New record! 4\.0 seconds!/.test(memory.s3), JSON.stringify([memory.best3, memory.s3]));
+  check('the best time survives a save and a load', memory.back === 40, JSON.stringify(memory.back));
+
+  const dov = await G(async () => {
+    const g = window.__game, H = window.__harness;
+    const answer = (pick) => { const c = g.dialogue.choices; g.dialogue.close(); if (c && c.onPick) c.onPick(pick); };
+    const drain = () => { while (g.dialogue.active) g.dialogue.close(); };
+    g.enterMap('overworld', 0, 11, 9, 48, 48, 'left', { instant: true });
+    H.step(2);
+    const npc = g.entities.find(e => e.errand && e.errand.asked === 'diveAsked');
+    g.progress.flags.diveAsked = false;
+    npc.interact(g, g.player);
+    const asked = !!(g.dialogue.choices && g.dialogue.choices.options.join('/') === 'Yes/No');
+    answer(1);
+    const no = { flag: !!g.progress.flags.diveAsked, said: g.dialogue.active };
+    drain();
+    npc.interact(g, g.player);
+    const again = !!g.dialogue.choices;
+    answer(0);
+    const yes = !!g.progress.flags.diveAsked;
+    drain();
+    return { asked, no, again, yes };
+  });
+  check('Dov asks Yes or No before the dive', dov.asked, JSON.stringify(dov));
+  check('No sets nothing and he says so', !dov.no.flag && dov.no.said, JSON.stringify(dov));
+  check('he asks again next time, and Yes sets the flag', dov.again && dov.yes, JSON.stringify(dov));
+
   console.log('\n--- the dungeons\' enemies are a ladder (S247) ---');
   // Seasons and Ages bring one or two new kinds of enemy into each dungeon.
   // Ours had D4 and D5 on D1's keese and tektites, and every darknut and

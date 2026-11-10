@@ -2465,7 +2465,7 @@ const rooms = {
       ['octorok', 6, 3],
       ['racer', 2, 3, {
         race: 'shore', sprite: 'npc_child', ask: 'raceAsk', busy: 'raceBusy',
-        go: 'raceGo', decline: 'raceNo', win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
+        go: 'raceGo', decline: 'raceNo', askBest: 'raceAskBest', record: 'raceRecord', win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
       }],
     ],
     buried: [[3, 4, 'rupee20']],
@@ -2638,7 +2638,8 @@ const rooms = {
         deals: [{ stage: 5, wants: 'eel', gives: 'lead', text: 'dovTrade' }],
         // His own errand, asked whenever the chain is not at his link (S155).
         errand: { need: 'salvageDone', prize: 'heartPiece', flag: 'diveDone', ask: 'diveAsk',
-          asked: 'diveAsked', thanks: 'diveThanks' },
+          asked: 'diveAsked', thanks: 'diveThanks',
+          confirm: 'diveConfirm', decline: 'diveNo' },
       }],
       ['crab', 6, 4],
       ['pickup', 2, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],

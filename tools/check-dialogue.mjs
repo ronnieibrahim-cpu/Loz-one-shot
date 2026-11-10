@@ -45,7 +45,7 @@ installData();
 // `ask`/`busy`/`win`/`lose` are a race's `racer` (S155); `noRod`/`turn`/
 // `sour`/`winAgain` and the `next` list the buoy sailor's (S201).
 const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'go', 'decline', 'win', 'lose',
-  'noRod', 'turn', 'sour', 'winAgain'];
+  'noRod', 'turn', 'sour', 'winAgain', 'askBest', 'record'];
 const DEAL_ID_FIELDS = ['text', 'blocked', 'after'];
 
 const referenced = new Map();   // id -> [where, ...]
@@ -69,7 +69,7 @@ for (const m of MAPS.values()) {
         for (const f of DEAL_ID_FIELDS) note(d[f], `deals[].${f}`);
       }
       // A townsperson's errand (S155) speaks two lines of its own.
-      if (opts.errand) { note(opts.errand.ask, 'errand.ask'); note(opts.errand.thanks, 'errand.thanks'); if (opts.errand.partial) note(opts.errand.partial, 'errand.partial'); }
+      if (opts.errand) { note(opts.errand.ask, 'errand.ask'); note(opts.errand.thanks, 'errand.thanks'); if (opts.errand.partial) note(opts.errand.partial, 'errand.partial'); for (const f of ['confirm', 'decline']) if (opts.errand[f]) note(opts.errand[f], 'errand.' + f); }
     }
   }
 }

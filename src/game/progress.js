@@ -77,6 +77,7 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     charts: {},              // mapId -> true (Chartstone; replaced the Compass)
     beaten: {},              // mapId -> true (boss defeated)
     flags: {},               // arbitrary story/world flags
+    raceBest: {},            // race id -> best time in tenths of a second (S247)
     chests: {},              // "mapId:roomKey:index" -> true
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
@@ -352,7 +353,7 @@ function migrate(p) {
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'slain', 'charms', 'charmOpen',
-    'charmTold', 'chunks',
+    'charmTold', 'chunks', 'raceBest',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }

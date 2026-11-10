@@ -172,7 +172,7 @@ export class Dialogue {
   draw(ctx) {
     if (!this.active) return;
     const extra = this.choices && this.page >= this.pages.length - 1
-      ? this.choices.options.length * LINE_H + 2 : 0;
+      ? this.choices.options.length * LINE_H + 5 : 0;
     const h = BOX_H + extra;
     const y = typeof this.place === 'number' ? this.place
       : this.place === 'bottom' || !this.top ? SCREEN_H - h - 5 : HUD_H + 4;
@@ -185,7 +185,9 @@ export class Dialogue {
     }
 
     if (this.choices && this.chars >= this.pageLen) {
-      const oy = y + PAD + LINES * LINE_H - 2;
+      // Clear of a third line of text (S247): at -2 a full page's last line
+      // ran into the first choice.
+      const oy = y + PAD + LINES * LINE_H + 1;
       this.choices.options.forEach((opt, i) => {
         const ly = oy + i * LINE_H;
         drawText(ctx, opt, BOX_X + PAD + 10, ly, TEXT_INK);
