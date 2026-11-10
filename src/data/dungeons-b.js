@@ -693,7 +693,7 @@ export function installDungeonsB() {
           ['block', 9, 7, { once: false }],
           ['statue', 1, 2],
           ['switch', 10, 2],
-          ['tektite', 12, 5],
+          ['stalfos', 12, 5],
         ],
         puzzle: {
           blocks: [[10, 2]],
@@ -748,7 +748,7 @@ export function installDungeonsB() {
         entities: [
           ['block', 7, 7, { once: false }],
           ['chest', 11, 8, { pickup: 'rupee100', needFlag: 'd5_knot' }],
-          ['keese', 10, 7],
+          ['stalfos', 10, 7],
         ],
         puzzle: {
           floor: true,
@@ -826,7 +826,7 @@ export function installDungeonsB() {
         entities: [
           ['chest', 10, 7, { charm: 'strandwalker' }],
           ['moblin', 4, 8],
-          ['keese', 3, 15],
+          ['wisp', 3, 15],
         ],
         readable: [
           [12, 18, 'Cut into the shaft\'s foot: "Only the first stake is thrown from the bank."'],
@@ -850,7 +850,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['urchin', 4, 5],
-          ['tektite', 10, 2],
+          ['stalfos', 10, 2],
           ['moblin', 10, 8],
           ['jellyfish', 3, 3],
         ],
@@ -891,8 +891,8 @@ export function installDungeonsB() {
         entities: [
           ['block', 10, 6, { once: false }],
           ['switch', 13, 5],
-          ['tektite', 8, 2],
-          ['keese', 24, 8],
+          ['moblin', 8, 2],
+          ['stalfos', 24, 8],
         ],
         puzzle: {
           blocks: [[13, 5]],
@@ -930,7 +930,7 @@ export function installDungeonsB() {
         entities: [
           ['chest', 4, 5, { charm: 'dunerunner' }],
           ['darknut', 25, 4],
-          ['keese', 8, 7],
+          ['wisp', 8, 7],
         ],
       },
 
