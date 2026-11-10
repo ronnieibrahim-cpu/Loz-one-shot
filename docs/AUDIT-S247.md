@@ -111,3 +111,13 @@ wheel or solved puzzle says.
 None found in the baseline. One was made and caught here: an aiming octorok
 was placed on dry floor in D2 (it lives in water); `check-placement` refused
 it.
+
+## Afterwards, the same session ("act on all")
+
+Done: octoroks in D1's side rooms; more of the ladder in D4's and D5's side
+rooms (keese 17 and 18, about 30% each); two new puzzle rooms in D2 (now 11)
+and D4's first mirror statue; the race keeps a best time; the dive asks;
+bosses checked for cut-off art (none). Looked at and left, with reasons, in
+docs/NEXT-SESSION.md S247: the D5 -> D6 jump, the robot's narrow boss wins,
+Wyverna leaving the top of the screen. Still wants a person: the two
+reworded signs, and whether D6 reads as a finale.

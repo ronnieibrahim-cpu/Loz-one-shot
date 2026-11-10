@@ -16,16 +16,18 @@
 - S247: an enemy ladder D2-D5 (octoroks, beetles and zols, wizzrobes and
   bubbles, moblins, darknuts and wisps); no text box after a puzzle whose
   result is on screen; the race and the buoy game ask Yes/No and play the
-  cartridges' mini-game theme; hard-coded lines reworded.
+  cartridges' mini-game theme; hard-coded lines reworded; cut-off sprites
+  drawn whole; three new side-room puzzles (D2 x2, D4); the race keeps a best
+  time and the dive asks.
 - The human said KEEP / LEAVE (do not re-ask): everything in S240-S246's
   lists, plus S247's three choices (NEXT-SESSION S247).
 
 ## The task
 Ask the human what they want next. They were going to play it cold on an
 iPad with a Switch Pro Controller: ask for their notes first and work from
-them. Otherwise offer, from the audit's open list: more of the ladder in the
-rooms the route never enters; a look at the D5 -> D6 jump as a person plays
-it; D2's thin puzzle count.
+them. Otherwise offer: a look at the D5 -> D6 jump as a person plays it; a
+statue of the Cistern's own for D4's Cliffside Cell (it wears the Shrine's);
+Wyverna leaving the top of the screen (S153's camera question).
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a room on the route moves the clock for every fight
   after it: sweep the next boss's entry wait with route-prefix (HANDOFF

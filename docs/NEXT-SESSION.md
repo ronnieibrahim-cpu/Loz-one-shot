@@ -48,8 +48,35 @@ The write-up is docs/AUDIT-S247.md. Read it first.
   `darknut_d1` is an unused 16x16 crop, left.
 - Pictures: docs/briefs/s247/cutoff-*.png.
 
+### Then: "merge and act on all" (the human) — merged to main at 96ac524, then:
+Two Sonnet subagents in worktrees (the human asked for the cheaper model),
+reviewed and merged here.
+- THE LADDER, off the route only: D1 octorok 0,2,3 and 0,2,6; D4 stalfos 0,4,5 / 0,0,1 / 0,6,5, wizzrobe 0,6,5; D5 stalfos 0,0,4 /
+  0,0,6 / 0,7,6 / 0,5,6, wisp 0,7,4 / 0,6,3, moblin 0,5,6. D4 keese 21 -> 17,
+  D5 22 -> 18 (still ~30%: the rest are in rooms the route enters).
+- THREE NEW PUZZLE ROOMS, all off the route, each proved by its kind's own
+  checker, paying rupees or a fairy (no key, no heart):
+  D2 Chartstone Alcove 0,4,4 `blockRoom` (a block down a walled channel:
+  over the well at LOW, over the drain at MID);
+  D2 Cistern Cell 0,3,3 `tidePlates` (three pools, the wading one is right);
+  D4 Cliffside Cell 0,5,5 `statueRoom`, D4's first (a gutter dry at LOW,
+  wading at MID holds the statue while the block goes back). The Cistern has
+  no statue art of its own: it wears the Shrine's (`o_statue_wood`).
+  tools/dungeon-strands-baseline.json re-recorded for the statue's run.
+- THE RACE REMEMBERS A BEST TIME (`progress.raceBest`, tenths; raceAskBest,
+  raceRecord are function lines); DOV ASKS (errand `confirm`/`decline`:
+  diveConfirm, diveNo). test.mjs +11.
+- A choice no longer runs into a third line of text (dialogue.js, +3 px).
+- BOSSES checked for cut-off art: none. Wyverna's head leaves the top of
+  the screen along the north wall: the S153 camera question, left.
+- LOOKED AT AND LEFT: D6's cost is three bosses plus pits and spikes at the
+  cartridge's own -4 (HITS=d6); Gloomtide wins only at entry waits 55-59
+  (swept 0-300), which is the robot arriving on 16/28, not the fight.
+- Pictures: docs/briefs/s247/puzzle-*.png, race-best-*.png, dive-ask.png,
+  boss-contact-sheet.png.
+
 ### Verified
-Whole table green; test.mjs 159; check-rippers 45/45.
+Whole table green; test.mjs 170 after the second part (159 after the first); check-rippers 45/45.
 check-playthrough 49/49, THE END, never died, low-water 5 (Wyverna).
 Bosses end: Gloomtide 6/28, Wyverna 5/32, Rootmaw 16/40, Nereth 24/44.
 
