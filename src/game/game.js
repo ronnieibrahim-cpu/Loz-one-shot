@@ -2019,7 +2019,7 @@ export class Game {
 
   startRace(def) {
     this.race = { id: def.id, t: def.frames, frames: def.frames, prize: def.prize,
-      flag: def.flag, again: def.again, lose: def.lose, win: def.win };
+      flag: def.flag, again: def.again, lose: def.lose, win: def.win, record: def.record };
     this.audio.sfx('confirm');
     this.updateMusic();
   }
@@ -2031,7 +2031,15 @@ export class Game {
     this.updateMusic();
     const first = !flag(this.progress, r.flag);
     setFlag(this.progress, r.flag);
-    this.startDialogue(r.win);
+    // THE BEST TIME (S247): the clock counts down, so the run took what it
+    // has used; tenths of a second, as the clock is drawn. A record is said
+    // aloud; a slower run gets the ordinary line.
+    const tenths = Math.floor((r.frames - Math.max(0, r.t)) * 10 / 60);
+    const best = this.progress.raceBest || (this.progress.raceBest = {});
+    const record = best[r.id] == null || tenths < best[r.id];
+    if (record) best[r.id] = tenths;
+    this.raceResult = { id: r.id, tenths, record };
+    this.startDialogue(record && r.record ? r.record : r.win);
     const pay = () => this.presentPrize(first ? r.prize : r.again);
     if (this.dialogue.active) this.dialogue.onClose = pay; else pay();
   }

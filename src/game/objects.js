@@ -15,6 +15,7 @@ import {
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
+import { getText } from './dialogue.js';
 import { ERRANDS } from '../data/errands.js';
 import { FLOAT_DIRS } from './float-path.js';
 import {
@@ -628,6 +629,17 @@ export class NPC extends Entity {
     const needs = Array.isArray(e.need) ? e.need : [e.need];
     const have = needs.filter(n => flag(p, n)).length;
     if (have < needs.length) {
+      // `confirm` (S247): the first asking ends in Yes or No, as the
+      // cartridges ask before a dive. Yes sets `asked` as it always did; No
+      // says `decline`, sets nothing, and he asks again next time.
+      if (e.confirm && e.asked && !flag(p, e.asked)) {
+        const say = (id) => { const t = getText(id); return typeof t === 'function' ? t(game, this) : t; };
+        game.ask(`${say(e.ask)} ${say(e.confirm)}`, ['Yes', 'No'], (pick) => {
+          if (pick === 0) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
+          else if (e.decline) game.startDialogue(e.decline, this);
+        });
+        return true;
+      }
       game.startDialogue(have && e.partial ? e.partial : e.ask, this);
       // `asked`: a flag the asking sets, for an errand whose object is only
       // there once somebody has said so (the salvage dive's cargo).
@@ -731,8 +743,10 @@ export class Racer extends NPC {
     this.raceDef = {
       id: o.race, frames: RACE_FRAMES[o.race] || 0, prize: o.prize || 'rupee20',
       again: o.again || 'rupee20', flag: o.flag || null, win: o.win || null, lose: o.lose || null,
+      record: o.record || null,
     };
     this.askText = o.ask || null;
+    this.askBestText = o.askBest || null;   // said instead once a best time exists (S247)
     this.busyText = o.busy || null;
     this.goText = o.go || null;
     this.declineText = o.decline || null;
@@ -752,7 +766,8 @@ export class Racer extends NPC {
       game.startDialogue(this.goText, this);
       if (game.dialogue.active) game.dialogue.onClose = start; else start();
     };
-    game.askDialogue(this.askText, this, ['Yes', 'No'], (pick) => {
+    const best = game.progress.raceBest && game.progress.raceBest[this.raceDef.id];
+    game.askDialogue(best != null && this.askBestText ? this.askBestText : this.askText, this, ['Yes', 'No'], (pick) => {
       if (pick === 0) go();
       else if (this.declineText) game.startDialogue(this.declineText, this);
     });

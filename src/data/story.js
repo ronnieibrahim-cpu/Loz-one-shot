@@ -20,6 +20,9 @@
 import { registerCutscenes } from '../game/cutscene.js';
 import { registerTexts } from '../game/dialogue.js';
 
+/** Tenths of a second as the race clock writes them: 134 -> "13.4". */
+export function raceTimeText(tenths) { return `${Math.floor(tenths / 10)}.${tenths % 10}`; }
+
 export const DIALOGUE = {
   // ---- Tidewatch Village -------------------------------------------------
   villager1: 'Ever since the Tide Bell broke, the sea comes and goes whenever it likes! Yesterday it ate the pier!',
@@ -148,8 +151,17 @@ export const DIALOGUE = {
   // The townsfolk's errands (S155 side content). Each person says `...Ask`
   // until their thing comes home, then `...Thanks` as they pay for it.
   diveAsk: 'My cargo sank with my boat, into the deep pool behind it. Five casks! Bring all five up in one breath. Come up short and you\'ll drop the lot!',
+  diveConfirm: 'Will you dive for it?',
+  diveNo: 'No? Fair enough. It\'s a deep pool. Ask me again if you change your mind.',
   diveThanks: 'All five casks, and dry inside! I was saving this for the day they came back. Here!',
   raceAsk: 'Race you to Pip on the sandbar past the Fishing Stones! The sand path only shows at LOW tide. Want to race?',
+  // Once a best time is on record (S247): she names it before asking, and a
+  // faster run is announced in the winner's own time. Times are tenths.
+  raceAskBest: (game, npc) => {
+    const best = game.progress.raceBest[npc.raceDef.id];
+    return DIALOGUE.raceAsk.replace(' Want to race?', ` Time to beat: ${raceTimeText(best)} seconds! Want to race?`);
+  },
+  raceRecord: (game) => `New record! ${raceTimeText(game.raceResult.tenths)} seconds! Nobody beats the tide like that. Here, you earned it!`,
   raceGo: 'Ready... GO!',
   raceNo: 'No? I bet the tide beats you home, too!',
   raceBusy: 'Why are you still here? RUN!',
