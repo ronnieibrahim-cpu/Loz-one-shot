@@ -40,6 +40,25 @@ one (`urchin`) now has `idle` too — see below for both.
 | `siren` | Surfaces and fires in every direction at once, so standing at an angle doesn't help — only range or timing the window before it fires does. |
 | `pincer` | Never leaves its hole and always snaps exactly two tiles out and back, so once you've measured that reach you can stand just outside it and punish the recovery. |
 
+## Where each one is first met in a dungeon (S247)
+
+Read from the room data; `tools/test.mjs` asserts that every dungeon after
+the first places a kind no earlier one does and that none is more than
+two-fifths one kind.
+
+| Dungeon | New here | Also |
+|---|---|---|
+| D1 | crab, keese, zol, anglerfry, tektite | |
+| D2 | urchin, jellyfish, octorok | keese, crab |
+| D3 | beetle, barnacle, strider | zol again, keese, crab, urchin |
+| D4 | stalfos, wizzrobe, bubble, gel | keese, tektite |
+| D5 | moblin, darknut, wisp | keese, tektite, stalfos |
+| D6 | siren, beamos | stalfos, darknut, wizzrobe, anglerfry |
+
+The playthrough robot cannot beat a beetle, a bubble or (outside D6) a
+darknut, so those stand only in rooms its route does not say `fight` in.
+Leever, pincer and the sea octorok are in no dungeon.
+
 ## Why this ordering of lessons holds together
 
 Three enemies (`bubble`, `beamos`, `barnacle`) are unkillable by design

@@ -1831,3 +1831,6 @@ as westbound. Do not try to make `travel` clever about them from the route.
 once, nothing on it heals, and the run reaches the Keep on six. Fighting the
 tour is worse, not better, measured two ways. The fix is a world change and
 it has not been made.
+
+Moved out of STATE.md's session log at S247 to keep it inside its cap:
+S128 | objective | Stopped Link paying the same toll twice. He walks through a room full of armoured knights on the way into the west wing and again on the way back out, and it was costing him three hearts; clearing it on the way in costs half a heart net, pays out the heart the room owes for clearing it, and leaves it empty for the walk home. The worst moment in the last dungeon went from a quarter of a heart and a half to nearly four hearts.

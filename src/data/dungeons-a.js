@@ -922,7 +922,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['pickup', 2, 5, { kind: 'blank' }],
-          ['keese', 12, 8],
+          ['octorok', 12, 8],
         ],
         readable: [
           [13, 1, 'Scratched into the shell: "The carver in Tidewatch\nwants bone, not gold."'],
@@ -1061,7 +1061,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 5, { pickup: 'chartstone' }],
-          ['keese', 10, 7],
+          ['octorok', 10, 7],
         ],
       },
       '0,3,3': {
@@ -1406,7 +1406,7 @@ export function installDungeonsA() {
         },
         entities: [
           ['chest', 12, 3, { rupees: 50 }],
-          ['keese', 3, 3],
+          ['octorok', 3, 3],
         ],
         readable: [
           [6, 9, 'Scratched into the coral: "Nothing in here changes with the sea but the coral bar."'],
