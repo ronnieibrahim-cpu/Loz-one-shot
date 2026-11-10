@@ -34,6 +34,20 @@ The write-up is docs/AUDIT-S247.md. Read it first.
 
 - Pictures: docs/briefs/s247/ (tools/oneshot/shoot-s247.mjs).
 
+### Then, the same session: cut-off sprites (the human: "some of the sprites are still cut off - npcs and rocks")
+- Found by a detector over every sprite and prop, then by eye; done by a
+  Sonnet subagent at the human's word (cheaper), reviewed here.
+- ROCK (`rock` and the four that share its art): rip-terrain.py's source x
+  418 -> 419; the boulder's right edge was sliced flat.
+- NPCs: `npc_child` is 16x28 and `npc_zelda` 16x23 on the sheet;
+  rip-npcs.py frames can carry a height, `NPC.drawOffset` draws a taller
+  frame feet-down, expectedSize says so.
+- ENEMIES (rip-enemies.py TALL): `moblin_d1` 16x25, `moblin_u1` 16x26 (its
+  spear), `stalfos_s0/s1` 26 wide (its blade), `urchin_0/1/death` 16x20.
+  Draw offsets only in enemies.js; no hitbox touched, no replay re-recorded.
+  `darknut_d1` is an unused 16x16 crop, left.
+- Pictures: docs/briefs/s247/cutoff-*.png.
+
 ### Verified
 Whole table green; test.mjs 159; check-rippers 45/45.
 check-playthrough 49/49, THE END, never died, low-water 5 (Wyverna).

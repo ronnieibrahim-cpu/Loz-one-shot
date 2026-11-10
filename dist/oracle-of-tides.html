@@ -67947,6 +67947,9 @@ function installEnemies() {
   defineEnemy('urchin', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
+    // S247: its spike tips and legs run two rows past the cell at each end
+    // (the sheet's box is 16x20); the body keeps the rows it always had.
+    drawOffset: (e, name) => sprites.size(name).h > 16 ? [0, -2] : null,
     shield: 'front',
     drops: 'common',
     ai(e, g) {
@@ -67982,6 +67985,10 @@ function installEnemies() {
     // attackTime, and spriteName() shows this pose specifically then, not
     // just whenever the walk cycle happens to land on it.
     attackFrame: { down: 'moblin_d1', up: 'moblin_u1', side: 'moblin_s1' },
+    // S247: the spear held down below it (d1, body in the top 16 rows, so it
+    // sits where it always did) and raised above it (u1, body in the bottom
+    // 16 rows, so the frame is drawn feet-down), as the sheet draws them.
+    drawOffset: (e, name) => name === 'moblin_u1' ? [0, 16 - sprites.size(name).h] : null,
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
     // Seasons' spear moblin (moblinsAndShroudedStalfos.s, sharing
@@ -68025,6 +68032,10 @@ function installEnemies() {
       up: ['stalfos_d0', 'stalfos_d1'],
       side: ['stalfos_s0', 'stalfos_s1'],
     },
+    // S247: facing right, the body sits in the left 16 columns and the blade
+    // runs on out to the right (the sheet's 26-wide frame); mirrored for left,
+    // the whole picture is shifted so the body stays on the same 16 columns.
+    drawOffset: (e, name) => { const w = sprites.size(name).w; return w > 16 && e.flipX ? [16 - w, 0] : null; },
     // Unlike hurtFrame, this has no hp-vs-swordDamage() constraint: die() (not
     // hurt()) is what defers removal, and die() only ever runs once, on the
     // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
@@ -84899,7 +84910,16 @@ const ENEMY_ART = {
     .31001300033333.
     .33333333311133.
     ..3003333001003.
-    ..3003333333333.` },
+    ..3003333333333.
+    ..3003..........
+    ..3003..........
+    ..3003..........
+    ..3003..........
+    ..3003..........
+    ..3003..........
+    ..3003..........
+    ...33...........
+    ................` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_s0: { pal: 'moblin_s0', art: `
     ....3333333.....
@@ -84956,6 +84976,16 @@ const ENEMY_ART = {
     .3333333........` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_u1: { pal: 'moblin_u1', art: `
+    ................
+    ...........33...
+    ..........3003..
+    ..........3003..
+    ..........3003..
+    ..........3003..
+    ..........3003..
+    ..........3003..
+    ..........3003..
+    ..........3003..
     3333..3333303333
     3111331111331113
     .31113333333113.
@@ -84969,7 +84999,7 @@ const ENEMY_ART = {
     ..333111111133..
     ..333333333333..
     ..333333333333..
-    ..333333331113..
+    ...33333331113..
     ..3333333111113.
     ........3333333.` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
@@ -85244,40 +85274,40 @@ const ENEMY_ART = {
     ................` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   stalfos_s0: { pal: 'stalfos_s0', art: `
-    ......333333333.
-    .....3100000003.
-    ....31111100333.
-    ...311111103133.
-    ...333111113003.
-    ..3111111133303.
-    ..3113311333303.
-    .311311313133003
-    .333111333100013
-    ..31111003311013
-    ..31111003033003
-    ..30131003003013
-    ..31003333333330
-    .311111113331133
-    .31111111113333.
-    .33333333333....` },
+    ......333333333...........
+    .....3100000003...........
+    ....31111100333...........
+    ...311111103133...........
+    ...333111113003...........
+    ..3111111133303...........
+    ..3113311333303...........
+    .311311313133003..........
+    .333111333100013..........
+    ..31111003311013..........
+    ..3111100303300333333333..
+    ..30131003003013000000003.
+    ..31003333333330000000003.
+    .31111111333113333333333..
+    .31111111113333...........
+    .33333333333..............` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   stalfos_s1: { pal: 'stalfos_s1', art: `
-    ......333333333.
-    .....3100000003.
-    ....31111100333.
-    ...311111103133.
-    ...333111113003.
-    ..3111111133303.
-    ..3113311333303.
-    .311311313133003
-    .333111333100013
-    ..31111003313333
-    ..31111003331133
-    ..30131003310030
-    ..31003333310030
-    .311111113331133
-    .31111111113333.
-    .33333333333....` },
+    ......333333333...........
+    .....3100000003...........
+    ....31111100333...........
+    ...311111103133...........
+    ...333111113003...........
+    ..3111111133303...........
+    ..3113311333303...........
+    .311311313133003..........
+    .333111333100013..........
+    ..31111003313333..........
+    ..3111100333113333333333..
+    ..30131003310030000000003.
+    ..31003333310030000000003.
+    .31111111333113333333333..
+    .31111111113333...........
+    .33333333333..............` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   tektite_0: { pal: 'tektite_0', art: `
     ................
@@ -85316,6 +85346,8 @@ const ENEMY_ART = {
     .333........333.` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   urchin_0: { pal: 'urchin_0', art: `
+    ................
+    .......33.......
     .33...3003...33.
     .30333000033303.
     .30033033033003.
@@ -85331,9 +85363,13 @@ const ENEMY_ART = {
     32300333333003..
     322333322333323.
     303332322323223.
-    .3...3222233303.` },
+    .3...3222233303.
+    ......3333..303.
+    .............3..` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   urchin_1: { pal: 'urchin_1', art: `
+    ................
+    .......33.......
     .33...3003...33.
     .30333000033303.
     .30033033033003.
@@ -85349,9 +85385,13 @@ const ENEMY_ART = {
     ..30033333300323
     .323333223333223
     .322323223233303
-    .3033322223...3.` },
+    .3033322223...3.
+    .303..3333......
+    ..3.............` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   urchin_death: { pal: 'urchin_death', art: `
+    ................
+    ......33333.....
     .....3000113....
     ....300001113...
     ...30000011113..
@@ -85367,7 +85407,9 @@ const ENEMY_ART = {
     323331111111333.
     322333333333323.
     303332322323223.
-    .3...3222233303.` },
+    .3...3222233303.
+    ......3333..303.
+    .............3..` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   urchin_hurt: { pal: 'urchin_hurt', art: `
     ................

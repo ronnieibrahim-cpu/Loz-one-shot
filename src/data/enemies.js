@@ -684,6 +684,9 @@ export function installEnemies() {
   defineEnemy('urchin', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
+    // S247: its spike tips and legs run two rows past the cell at each end
+    // (the sheet's box is 16x20); the body keeps the rows it always had.
+    drawOffset: (e, name) => sprites.size(name).h > 16 ? [0, -2] : null,
     shield: 'front',
     drops: 'common',
     ai(e, g) {
@@ -719,6 +722,10 @@ export function installEnemies() {
     // attackTime, and spriteName() shows this pose specifically then, not
     // just whenever the walk cycle happens to land on it.
     attackFrame: { down: 'moblin_d1', up: 'moblin_u1', side: 'moblin_s1' },
+    // S247: the spear held down below it (d1, body in the top 16 rows, so it
+    // sits where it always did) and raised above it (u1, body in the bottom
+    // 16 rows, so the frame is drawn feet-down), as the sheet draws them.
+    drawOffset: (e, name) => name === 'moblin_u1' ? [0, 16 - sprites.size(name).h] : null,
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
     // Seasons' spear moblin (moblinsAndShroudedStalfos.s, sharing
@@ -762,6 +769,10 @@ export function installEnemies() {
       up: ['stalfos_d0', 'stalfos_d1'],
       side: ['stalfos_s0', 'stalfos_s1'],
     },
+    // S247: facing right, the body sits in the left 16 columns and the blade
+    // runs on out to the right (the sheet's 26-wide frame); mirrored for left,
+    // the whole picture is shifted so the body stays on the same 16 columns.
+    drawOffset: (e, name) => { const w = sprites.size(name).w; return w > 16 && e.flipX ? [16 - w, 0] : null; },
     // Unlike hurtFrame, this has no hp-vs-swordDamage() constraint: die() (not
     // hurt()) is what defers removal, and die() only ever runs once, on the
     // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
