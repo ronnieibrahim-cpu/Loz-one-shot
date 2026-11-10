@@ -223,6 +223,9 @@ export function expectedSize(name) {
   // sheet draws it (tools/rip-enemies.py TALL, S152).
   const darknut = { darknut_down0: [16, 23], darknut_down1: [16, 25], darknut_up0: [16, 24], darknut_up1: [16, 26] }[name];
   if (darknut) return darknut;
+  // Townsfolk taller than the cell, cut at the sheet's own height (rip-npcs.py, S247).
+  if (name === 'npc_child') return [16, 28];
+  if (name === 'npc_zelda') return [16, 23];
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
   if (REQUIRED_SPRITES.fxHuge.includes(name)) return [48, 48];
   // A boss assembled from Seasons' own graphics (tools/rip-bosses.py) is drawn

@@ -611,6 +611,14 @@ export class NPC extends Entity {
     this.errand = o.errand || null;
   }
 
+  /** A townsperson taller than the cell (the child's feathered cap, the
+   *  woman's bow, S247) is drawn feet-down, rising above the tile the way the
+   *  sheet draws them, instead of being cut at the cell's top. */
+  drawOffset(game, name) {
+    const h = sprites.size(name).h;
+    return h > 16 ? [0, 16 - h] : null;
+  }
+
   /** Speak for this person's errand if it is still open. True if it spoke. */
   errandTalk(game) {
     const e = this.errand, p = game.progress;
