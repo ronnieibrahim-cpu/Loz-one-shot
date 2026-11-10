@@ -488,7 +488,7 @@ export class Chest extends Entity {
     // chest: a boss key is a dungeon's own lock, and an item gate is a wall in
     // front of the room rather than a lock on the box.
     this.needEssences = o.needEssences || 0;
-    this.needText = o.needText || 'The lid will not lift. Not yet.';
+    this.needText = o.needText || 'The lid won\'t lift. Not yet!';
   }
 
   // An opened chest is only a solid tile in Seasons (TILEINDEX_CHEST_OPENED
@@ -507,7 +507,7 @@ export class Chest extends Entity {
       return;
     }
     if (this.needsBossKey && !game.progress.bossKeys[game.mapId]) {
-      game.say('A great lock. You need the Boss Key.');
+      game.say('It\'s locked tight! You need the Boss Key.');
       game.audio.sfx('deny');
       return;
     }
@@ -726,6 +726,8 @@ export class Racer extends NPC {
     };
     this.askText = o.ask || null;
     this.busyText = o.busy || null;
+    this.goText = o.go || null;
+    this.declineText = o.decline || null;
   }
 
   interact(game, player) {
@@ -734,9 +736,18 @@ export class Racer extends NPC {
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
     if (game.race) { if (this.busyText) game.startDialogue(this.busyText, this); return; }
-    const go = () => game.startRace(this.raceDef);
-    game.startDialogue(this.askText, this);
-    if (game.dialogue.active) game.dialogue.onClose = go; else go();
+    // ASKED FIRST (S247), as the cartridges' games are: Yes starts the clock
+    // when the racer's "GO!" is put away, No costs nothing.
+    const go = () => {
+      const start = () => game.startRace(this.raceDef);
+      if (!this.goText) { start(); return; }
+      game.startDialogue(this.goText, this);
+      if (game.dialogue.active) game.dialogue.onClose = start; else start();
+    };
+    game.askDialogue(this.askText, this, ['Yes', 'No'], (pick) => {
+      if (pick === 0) go();
+      else if (this.declineText) game.startDialogue(this.declineText, this);
+    });
   }
 }
 defineEntity('racer', (x, y, o) => new Racer(x, y, o));
@@ -837,7 +848,7 @@ export class BuoyKeeper extends NPC {
     this.winFlag = o.flag || null;
     this.text = {
       ask: o.ask, noRod: o.noRod, turn: o.turn, sour: o.sour,
-      next: o.next || [], win: o.win, winAgain: o.winAgain,
+      next: o.next || [], win: o.win, winAgain: o.winAgain, decline: o.decline,
     };
     this.round = 0;       // which tune
     this.state = 'idle';  // idle | lead | play | listen
@@ -855,9 +866,21 @@ export class BuoyKeeper extends NPC {
     if (!hasItem(game.progress, 'rod')) { game.startDialogue(this.text.noRod, this); return; }
     if (this.state === 'listen' || this.state === 'play') { game.startDialogue(this.text.turn, this); return; }
     const go = () => this.begin(game);
-    game.startDialogue(this.round === 0 ? this.text.ask : this.text.next[this.round - 1], this);
+    // The first round is ASKED (S247), as the cartridges' games are; a round
+    // being tried again after a sour note just starts.
+    if (this.round === 0) {
+      game.askDialogue(this.text.ask, this, ['Yes', 'No'], (pick) => {
+        if (pick === 0) go();
+        else if (this.text.decline) game.startDialogue(this.text.decline, this);
+      });
+      return;
+    }
+    game.startDialogue(this.text.next[this.round - 1], this);
     if (game.dialogue.active) game.dialogue.onClose = go; else go();
   }
+
+  /** A game is on while a tune is being played or rung back (Game.updateMusic). */
+  get gameOn() { return this.state !== 'idle'; }
 
   /** Play the current round's tune from the start. */
   begin(game) {
@@ -865,6 +888,7 @@ export class BuoyKeeper extends NPC {
     this.timer = BUOY_LEAD_IN_FRAMES;
     this.step = 0;
     game.buoyStrike = null;
+    game.updateMusic();
   }
 
   noteSet(note) { return (Array.isArray(note) ? note : [note]).slice().sort((a, b) => a - b).join(','); }
@@ -896,6 +920,7 @@ export class BuoyKeeper extends NPC {
     const tune = this.tunes[this.round];
     if (this.noteSet(strike) !== this.noteSet(tune[this.step])) {
       this.state = 'idle';
+      game.updateMusic();
       game.audio.sfx('deny');
       game.startDialogue(this.text.sour, this);
       return;
@@ -912,6 +937,7 @@ export class BuoyKeeper extends NPC {
       return;
     }
     this.round = 0;
+    game.updateMusic();
     const first = !(this.winFlag && flag(game.progress, this.winFlag));
     if (this.winFlag) setFlag(game.progress, this.winFlag);
     game.startDialogue(first ? this.text.win : this.text.winAgain, this);
@@ -960,8 +986,8 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 // `progress.giveItem` fills when the carrying item is granted. Game.rollDrop
 // reads it too: nothing drops what Link has nowhere to put.
 export const CAPACITY_FOR = {
-  bomb4: { field: 'maxBombs', deny: 'and nothing to carry them in.\nCome back with a bag.' },
-  bottle: { field: 'maxBottles', deny: 'and nowhere to put it.\nCome back with a bottle.' },
+  bomb4: { field: 'maxBombs', deny: 'but you\'ve got nothing to carry them in! Come back with a bag.' },
+  bottle: { field: 'maxBottles', deny: 'but you\'ve got nowhere to put it! Come back with a bottle.' },
 };
 
 export class ShopItem extends Entity {
@@ -1000,7 +1026,7 @@ export class ShopItem extends Entity {
   }
 
   interact(game) {
-    if (this.sold) { game.say('Sold out, sorry.'); return; }
+    if (this.sold) { game.say('Sold out! Sorry.'); return; }
     const p = game.progress;
     // The Chandler's Eye is read here and nowhere else, so the price quoted,
     // the price checked and the price paid are all one number.
@@ -1017,16 +1043,16 @@ export class ShopItem extends Entity {
     const cap = this.pickup && CAPACITY_FOR[this.pickup];
     if (cap && !p[cap.field]) {
       game.audio.sfx('deny');
-      game.say(`${this.displayName} — ${cap.deny}`);
+      game.say(`${this.displayName}... ${cap.deny}`);
       return;
     }
     const price = game.shopPrice(this.price);
     if (p.rupees < price) {
       game.audio.sfx('deny');
-      game.say(`${this.displayName} — ${price} Rupees.\nYou cannot afford it.`);
+      game.say(`${this.displayName}: ${price} Rupees.\nYou don't have enough Rupees!`);
       return;
     }
-    game.ask(`${this.displayName} — ${price} Rupees.\nBuy it?`, ['Yes', 'No'], (pick) => {
+    game.ask(`${this.displayName}: ${price} Rupees.\nWill you buy it?`, ['Yes', 'No'], (pick) => {
       if (pick !== 0) return;
       addRupees(p, -price);   // the status bar ticks them out
       if (this.item) {
@@ -1037,7 +1063,7 @@ export class ShopItem extends Entity {
       } else if (this.charm) {
         giveCharm(p, this.charm);
         game.audio.jingle('fanfareShort');
-        game.say('A carved charm! Slot it on the CHARM screen.');
+        game.say('You got a carved charm! Slot it in on the CHARM screen.');
       } else if (this.pickup) {
         (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game, null);
       }
@@ -1401,9 +1427,9 @@ export class Scrimshander extends NPC {
     const p = game.progress;
     openCharmCases(p);
     const owed = [
-      ['low', 'I cut you that second case when the shard landed —\nfor the low water, when the seafloor is a road.'],
-      ['high', 'And the third, for the high water. Bone keeps\nbetter wet than you would think.'],
-      ['size', 'Every case takes two now. You have earned\nthe room.'],
+      ['low', 'I cut you a second case! It wakes at LOW tide, when the seafloor is a road.'],
+      ['high', 'And here\'s a third case, for HIGH tide. Bone keeps better wet than you\'d think!'],
+      ['size', 'Every case holds two charms now. You\'ve earned the room!'],
     ];
     p.charmTold = p.charmTold || {};
     for (const [k, line] of owed) {
@@ -1428,31 +1454,31 @@ export class Scrimshander extends NPC {
     if (p.carve && p.carve.turns <= 0) {
       const id = game.collectCarving();
       game.audio.jingle('fanfareShort');
-      game.say(`Here. The bone wanted to be a ${CHARMS[id].name}.\n${CHARMS[id].desc}`);
+      game.say(`All done! It\'s a ${CHARMS[id].name}.\n${CHARMS[id].desc}`);
       return;
     }
     if (p.carve) {
-      game.say(`Not yet. ${p.carve.turns} more turn${p.carve.turns === 1 ? '' : 's'} of the tide.\nSound your conch if you are in a hurry.`);
+      game.say(`Not yet! ${p.carve.turns} more turn${p.carve.turns === 1 ? '' : 's'} of the tide. Sound your conch if you\'re in a hurry.`);
       return;
     }
     if (!p.blanks) {
-      game.say('Bring me a blank. Bone, shell, anything the sea\nhas finished with. Dredge the seafloor for it.');
+      game.say('Bring me a blank! Bone, shell, anything the sea is done with. Try dredging the seafloor.');
       return;
     }
     const price = game.shopPrice(CARVE_PRICE);
     if (p.rupees < price) {
-      game.say(`${price} Rupees and a blank, and I will carve you\nsomething. You are short.`);
+      game.say(`A blank and ${price} Rupees, and I\'ll carve you a charm. You\'re short!`);
       return;
     }
-    game.ask(`A blank and ${price} Rupees. I choose what it\nbecomes — the bone does, really. Well?`,
+    game.ask(`A blank and ${price} Rupees, and I\'ll carve you a charm. The bone picks which! Shall I?`,
       ['Yes', 'No'], (pick) => {
         if (pick !== 0) return;
         const id = game.commissionCarving();
-        if (!id) { game.say('You have every charm I know. Go and use them.'); return; }
+        if (!id) { game.say('You\'ve got every charm I know! Go and use them.'); return; }
         p.blanks--;
         addRupees(p, -price);
         game.audio.sfx('confirm');
-        game.say('Come back when the tide has turned all the way\nround. It will be ready.');
+        game.say('Come back when the tide has gone all the way round. It\'ll be ready!');
       });
   }
 }
@@ -2619,7 +2645,7 @@ export class GustWheel extends TideValve {
   }
 
   /** Nothing reaches this by hand — that is the point of putting it here. */
-  interactByHand(game) { game.say('The wheel is too far to reach. Something must blow it.'); }
+  interactByHand(game) { game.say('The wheel is too far to reach. Maybe a gust of wind could turn it?'); }
 
   /** Turning while the wind is on it, so a wheel that moves looks it. */
   spriteName() {
@@ -2690,7 +2716,7 @@ export class SunkenBell extends Entity {
 
   update() { if (this.chime > 0) this.chime--; }
 
-  interact(game) { game.say('A bell, green with salt. Nothing you can reach will move it.'); }
+  interact(game) { game.say('A bell, green with salt. It\'s too heavy to ring by hand.'); }
 
   spriteName() { return this.chime > 0 ? 'o_valve_open' : 'o_valve'; }
 }

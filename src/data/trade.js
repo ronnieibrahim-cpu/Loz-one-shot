@@ -24,47 +24,47 @@
 export const TRADE_ITEMS = {
   float: {
     name: 'Cracked Float', icon: 'i_t_float',
-    got: 'A glass net-float with a crack in it.\nIt holds air. It will not hold a net.',
+    got: 'A glass net-float with a crack in it. It won\'t hold up a net anymore!',
   },
   claw: {
     name: 'Crab Claw', icon: 'i_t_claw',
-    got: 'A crab claw the size of your hand.\nThe crab is not using it any more.',
+    got: 'A crab claw as big as your hand! The crab doesn\'t need it anymore.',
   },
   brick: {
     name: 'Salt Brick', icon: 'i_t_brick',
-    got: 'A brick of pan salt, cut and dried.\nHeavier than it looks, like all of it.',
+    got: 'A brick of salt from the pans. It\'s heavier than it looks!',
   },
   eel: {
     name: 'Smoked Eel', icon: 'i_t_eel',
-    got: 'A smoked eel, whole and curled.\nIt will keep for a week and smell for two.',
+    got: 'A whole smoked eel! It\'ll keep for a week, and smell for two.',
   },
   lead: {
     name: 'Sounding Lead', icon: 'i_t_lead',
-    got: 'A plumb of iron on a knotted line.\nIt measures water. That is all it does.',
+    got: 'An iron weight on a knotted line. It tells you how deep the water is!',
   },
   whelk: {
     name: 'Ringing Whelk', icon: 'i_t_whelk',
-    got: 'A whelk shell that rings when it is wet\nand says nothing at all when it is dry.',
+    got: 'A whelk shell that rings like a bell, but only when it\'s wet!',
   },
   pearl: {
     name: 'Slackwater Pearl', icon: 'i_t_pearl',
-    got: 'A pearl the reef only lets go of at slack\nwater, when the sea forgets to pull.',
+    got: 'A pearl from the reef! It only lets them go when the sea stands still.',
   },
   cup: {
     name: 'Bogwood Cup', icon: 'i_t_cup',
-    got: 'A cup cut from a tree that drinks.\nWater kept in it never goes stale.',
+    got: 'A cup carved from a tree that drinks. Nothing kept in it ever goes bad!',
   },
   jar: {
     name: 'Jar of Brine-Jelly', icon: 'i_t_jar',
-    got: 'A stoppered jar of something the bog\nmakes. The witch says it is bait.',
+    got: 'A jar of something the bog makes. The witch says it\'s bait. Keep the lid on!',
   },
   kettle: {
     name: 'Cold Kettle', icon: 'i_t_kettle',
-    got: 'A kettle, full of sea.\nSomebody has been missing this.',
+    got: 'A kettle full of seawater! Somebody must be missing it.',
   },
   bellrope: {
     name: 'Bell-Rope', icon: 'i_t_rope',
-    got: 'The rope off the old Tide Bell.\nForty years in a drawer, and still waiting.',
+    got: 'The rope from the old Tide Bell! It sat in a drawer for forty years.',
   },
 };
 

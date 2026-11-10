@@ -149,12 +149,15 @@ export const DIALOGUE = {
   // until their thing comes home, then `...Thanks` as they pay for it.
   diveAsk: 'My cargo sank with my boat, into the deep pool behind it. Five casks! Bring all five up in one breath. Come up short and you\'ll drop the lot!',
   diveThanks: 'All five casks, and dry inside! I was saving this for the day they came back. Here!',
-  raceAsk: 'Race you to Pip on the sandbar past the Fishing Stones! The sand path only shows at LOW tide. Ready? GO!',
+  raceAsk: 'Race you to Pip on the sandbar past the Fishing Stones! The sand path only shows at LOW tide. Want to race?',
+  raceGo: 'Ready... GO!',
+  raceNo: 'No? I bet the tide beats you home, too!',
   raceBusy: 'Why are you still here? RUN!',
   raceWin: 'You made it! Nobody beats the tide like that. Here, you earned it!',
   raceLose: 'Too slow! The tide would\'ve had you. Come back and try again.',
   // The bell-buoy echo (S201), Sunken Cove.
-  buoyAsk: 'Each buoy rings its own note. I\'ll play a tune, and you ring it back with your Rod. Careful, it rings every buoy near you!',
+  buoyAsk: 'Each buoy rings its own note. I\'ll play a tune, and you ring it back with your Rod. Careful, it rings every buoy near you! Want to try?',
+  buoyNo: 'No? Come back when your ears are ready!',
   buoyNoRod: 'These buoys play a tune when you strike them. Come back with something metal that rings.',
   buoyTurn: 'Your turn. Ring it back.',
   buoySour: 'Sour note! Talk to me and we\'ll try that one again.',

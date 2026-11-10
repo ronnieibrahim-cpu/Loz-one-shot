@@ -255,7 +255,6 @@ export function installDungeonsA() {
               && Math.floor(e.cx / 16) === x && Math.floor(e.cy / 16) === y)),
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'fairy' }]],
-            say: 'A light comes up out of the water.',
           },
         },
       },
@@ -371,7 +370,6 @@ export function installDungeonsA() {
             // straddling the tile ABOVE the one it was spawned on, so it is
             // spawned a row low. See docs/HANDOFF.md.
             spawn: [['pickup', 7, 6, { kind: 'key' }]],
-            say: 'Something clatters onto the wet stone.',
           },
         },
       },
@@ -418,7 +416,6 @@ export function installDungeonsA() {
               ['pickup', 7, 7, { kind: 'key' }],
               ['pickup', 8, 7, { kind: 'heart' }],
             ],
-            say: 'A catch releases somewhere below.',
           },
         },
       },
@@ -471,7 +468,6 @@ export function installDungeonsA() {
           flag: 'd1_023_puzzle',
           reward: {
             spawn: [['pickup', 7, 9, { kind: 'rupee20' }]],
-            say: 'Loose stone shifts, and something rolls out.',
           },
         },
       },
@@ -607,7 +603,6 @@ export function installDungeonsA() {
           flag: 'd1_clawcrab',
           reward: {
             spawn: [['pickup', 20, 6, { kind: 'heartPiece' }]],
-            say: 'The claw stops moving. The way west is quiet.',
           },
         },
       },
@@ -649,7 +644,6 @@ export function installDungeonsA() {
           flag: 'd1_gauges_east',
           reward: {
             openDoors: [[7, 7]],
-            say: 'Both marks read at once. The door gives.',
           },
         },
         anchorGauges: { a: [3, 2], aLevel: 0, b: [11, 2], bLevel: 2, door: [7, 7], from: [7, 5] },
@@ -734,7 +728,6 @@ export function installDungeonsA() {
           flag: 'd1_013_puzzle',
           reward: {
             spawn: [['pickup', 7, 3, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
           },
         },
       },
@@ -778,7 +771,6 @@ export function installDungeonsA() {
           flag: 'd1_gauges_west',
           reward: {
             openDoors: [[14, 5]],
-            say: 'All three marks read at once. The door gives.',
           },
         },
         anchorGauges: { marks: [[5, 6, 0], [9, 6, 0], [7, 1, 2]], door: [14, 5], from: [7, 9] },
@@ -907,7 +899,6 @@ export function installDungeonsA() {
           flag: 'd2_036_puzzle',
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'fairy' }]],
-            say: 'A light comes up out of the water.',
           },
         },
       },
@@ -1006,7 +997,6 @@ export function installDungeonsA() {
           flag: 'd2_torches',
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'key' }]],
-            say: 'The three flames answer each other.',
           },
         },
       },
@@ -1048,7 +1038,6 @@ export function installDungeonsA() {
           reward: {
             openDoors: [[7, 0]],
             spawn: [['pickup', 9, 1, { kind: 'key' }]],
-            say: 'The door lifts, and something small rattles loose.',
           },
         },
         readable: [
@@ -1261,7 +1250,6 @@ export function installDungeonsA() {
           flag: 'd2_glass_puzzle',
           reward: {
             spawn: [['pickup', 7, 5, { kind: 'heartPiece' }]],
-            say: 'The last wingbeat stops, and something\nsettles out of the salt.',
           },
         },
         readable: [
@@ -1344,7 +1332,6 @@ export function installDungeonsA() {
           flag: 'd2_reefguard',
           reward: {
             spawn: [['pickup', 7, 4, { kind: 'key' }]],
-            say: 'The guard sinks back into the coral, and something\nfalls out of it.',
           },
         },
       },
@@ -1704,7 +1691,6 @@ export function installDungeonsA() {
           flag: 'd3_nave',
           reward: {
             spawn: [['pickup', 7, 1, { kind: 'fairy' }]],
-            say: 'The bog lets something go.',
           },
         },
       },
@@ -1735,7 +1721,7 @@ export function installDungeonsA() {
           // that tells them the case exists.
           ['chest', 7, 5, { charm: 'wreckersEye' }],
           ['pickup', 12, 5, { kind: 'blank' }],
-          ['keese', 10, 3],
+          ['beetle', 10, 3],
         ],
       },
       '1,3,5': {
@@ -1844,7 +1830,7 @@ export function installDungeonsA() {
         warps: [stair3(13, 1, P3(0, 3, 4, 13, 2, 'down'))],
         shaftRoom: { lands: [[7, 7]] },
         entities: [
-          ['crab', 3, 6],
+          ['beetle', 3, 6],
           ['urchin', 11, 4],
         ],
       },
@@ -1900,7 +1886,6 @@ export function installDungeonsA() {
           flag: 'd3_reed',
           reward: {
             spawn: [['pickup', 7, 8, { kind: 'heartPiece' }]],
-            say: 'The reeds part over something round and bright.',
           },
         },
       },
@@ -1942,7 +1927,6 @@ export function installDungeonsA() {
           // the Eel Hall's north door wants is in the Two Weights.
           reward: {
             openDoors: [[14, 5]],
-            say: 'A gate grinds open in the east wall.',
           },
         },
       },
@@ -2056,7 +2040,7 @@ export function installDungeonsA() {
         puzzle: {
           torches: 'all',
           flag: 'd3_vestry',
-          reward: { fallKey: [7, 5], say: 'Something fell down the hole!' },
+          reward: { fallKey: [7, 5] },
         },
         readable: [
           [13, 7, 'Cut in the urn: "The sea puts out every flame it reaches."'],
@@ -2095,7 +2079,7 @@ export function installDungeonsA() {
         puzzle: {
           torches: 'all',
           flag: 'd3_siltvault',
-          reward: { reveal: true, say: 'Both flames burn at once!' },
+          reward: { reveal: true },
         },
       },
       '1,2,2': {
@@ -2124,7 +2108,7 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd3_bogmaw',
-          reward: { say: 'The bogmaw sinks back into the silt.' },
+          reward: {},
         },
       },
       '1,1,2': {
@@ -2151,7 +2135,7 @@ export function installDungeonsA() {
           // A KEESE, NOT A JELLYFISH. A jellyfish is kept on wet tiles by
           // `terrainOk`, and at LOW there are none here to be on: it was
           // scenery with a hitbox. See tools/check-placement.mjs.
-          ['keese', 2, 8],
+          ['zol', 2, 8],
         ],
       },
       '1,2,1': {
@@ -2171,7 +2155,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['pickup', 7, 5, { kind: 'heartPiece' }],
-          ['keese', 10, 3],
+          ['zol', 10, 3],
         ],
       },
       '1,4,3': {
@@ -2315,7 +2299,6 @@ export function installDungeonsA() {
           flag: 'd3_shortcut',
           reward: {
             openDoors: [[0, 5]],
-            say: 'The west gate grinds open.',
           },
         },
       },
@@ -2355,7 +2338,7 @@ export function installDungeonsA() {
         puzzle: {
           switches: 'all',
           flag: 'd3_sounding',
-          reward: { openDoors: [[22, 10]], say: 'Something heavy shifts in the south wall.' },
+          reward: { openDoors: [[22, 10]] },
         },
         readable: [
           [3, 2, 'Bog script on the statue: "The switch is on the bottom. Swimmers float right over it."'],
@@ -2394,7 +2377,6 @@ export function installDungeonsA() {
           flag: 'd3_weights',
           reward: {
             spawn: [['pickup', 11, 3, { kind: 'key' }]],
-            say: 'Both plates hold. A key rattles loose.',
           },
         },
         readable: [
@@ -2432,7 +2414,7 @@ export function installDungeonsA() {
         puzzle: {
           switches: 'all',
           flag: 'd3_sluicebed',
-          reward: { openDoors: [[2, 4]], say: 'A grate lifts in the west wall.' },
+          reward: { openDoors: [[2, 4]] },
         },
       },
       '0,4,6': {
@@ -2510,7 +2492,7 @@ export function installDungeonsA() {
         cleatRoom: { from: [0, 5], to: [22, 5] },
         entities: [
           ['chest', 23, 5, { charm: 'deadweight' }],
-          ['keese', 2, 3],
+          ['beetle', 2, 3],
         ],
       },
       '1,3,1': {
@@ -2700,7 +2682,7 @@ export function installDungeonsA() {
           '#######.#######',
         ],
         entities: [
-          ['crab', 4, 5],
+          ['zol', 4, 5],
           ['keese', 10, 2],
         ],
       },
@@ -2737,7 +2719,7 @@ export function installDungeonsA() {
         puzzle: {
           torches: 'all',
           flag: 'd3_reliquary',
-          reward: { reveal: true, say: 'The two flames answer each other.\nSomething rises between them.' },
+          reward: { reveal: true },
         },
         readable: [
           [2, 1, 'Cut in the urn: "Too damp in here to strike a light. Whatever burns here was lit somewhere else."'],
@@ -2797,7 +2779,7 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd3_reedunder',
-          reward: { reveal: true, say: 'The reeds go still.' },
+          reward: { reveal: true },
         },
       },
       '0,2,5': {
@@ -2817,7 +2799,7 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['crab', 4, 6],
+          ['zol', 4, 6],
           ['keese', 10, 3],
         ],
         warps: [stair3(12, 8, P3(1, 2, 5, 12, 9, 'down'))],
@@ -2980,7 +2962,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 2, { pickup: 'dungeonMap' }],
-          ['keese', 11, 7],
+          ['bubble', 11, 7],
         ],
       },
       '0,4,6': {
@@ -3089,7 +3071,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['pickup', 9, 4, { kind: 'heartPiece' }],
-          ['tektite', 4, 3],
+          ['wizzrobe', 4, 3],
           ['keese', 12, 8],
         ],
       },
@@ -3209,7 +3191,6 @@ export function installDungeonsA() {
           flag: 'd4_floor',
           reward: {
             spawn: [['pickup', 22, 5, { kind: 'key' }]],
-            say: 'A grating opens in the middle of the floor.',
           },
         },
         readable: [
@@ -3234,7 +3215,7 @@ export function installDungeonsA() {
         entities: [
           ['barnacle', 7, 5],
           ['crab', 11, 8],
-          ['keese', 3, 1],
+          ['bubble', 3, 1],
         ],
       },
       '0,2,4': {
@@ -3390,7 +3371,6 @@ export function installDungeonsA() {
           flag: 'd4_gauge',
           reward: {
             spawn: [['pickup', 7, 1, { kind: 'key' }]],
-            say: 'A key drops onto the walk.',
           },
         },
       },
@@ -3411,7 +3391,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['pickup', 7, 2, { kind: 'fairy' }],
-          ['keese', 11, 7],
+          ['wizzrobe', 11, 7],
         ],
       },
       '0,3,3': {
@@ -3430,7 +3410,7 @@ export function installDungeonsA() {
           '###############',
         ],
         entities: [
-          ['tektite', 5, 3],
+          ['wizzrobe', 5, 3],
           ['keese', 11, 8],
         ],
       },
@@ -3507,7 +3487,6 @@ export function installDungeonsA() {
           reward: {
             openDoors: [[7, 0]],
             tiles: [[24, 8, 'dStairsUpCistern']],
-            say: 'The armour folds up. Something grinds open above.',
           },
         },
       },
@@ -3570,7 +3549,6 @@ export function installDungeonsA() {
           flag: 'd4_shortcut',
           reward: {
             openDoors: [[0, 5]],
-            say: 'The west gate grinds open.',
           },
         },
         readable: [
@@ -3723,7 +3701,7 @@ export function installDungeonsA() {
         puzzle: {
           cube: true,
           flag: 'd4_spillVault',
-          reward: { say: 'A chest rises in the corner.' },
+          reward: {},
         },
       },
 
@@ -3773,13 +3751,13 @@ export function installDungeonsA() {
           ['cube', 3, 7, { o: 0 }],
           ['chest', 2, 2, { charm: 'saltEtched' }],
           ['tektite', 5, 13],
-          ['keese', 10, 7],
+          ['wizzrobe', 10, 7],
           ['keese', 4, 10],
         ],
         puzzle: {
           cube: true,
           flag: 'd4_siphon',
-          reward: { openDoors: [[2, 4]], say: 'The alcove door opens.' },
+          reward: { openDoors: [[2, 4]] },
         },
         script: {
           onEvent(game, name, data) {
@@ -3818,7 +3796,7 @@ export function installDungeonsA() {
           ['chest', 27, 8, { charm: 'gullsTally' }],
           ['keese', 6, 2],
           ['keese', 9, 8],
-          ['keese', 26, 3],
+          ['bubble', 26, 3],
           ['zol', 6, 5],
         ],
         readable: [
@@ -3827,7 +3805,7 @@ export function installDungeonsA() {
         puzzle: {
           cube: true,
           flag: 'd4_gullRoost',
-          reward: { openDoors: [[27, 6]], say: 'The alcove door opens.' },
+          reward: { openDoors: [[27, 6]] },
         },
       },
       '0,6,2': {
@@ -3854,7 +3832,7 @@ export function installDungeonsA() {
         entities: [
           ['wheel', 12, 1, { needTurns: 40 }],
           ['chest', 12, 8, { charm: 'seawolfsTooth' }],
-          ['keese', 4, 3],
+          ['wizzrobe', 4, 3],
           ['gel', 6, 7],
         ],
         script: {
@@ -3929,7 +3907,7 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd4_spikeGallery',
-          reward: { openDoors: [[7, 0]], say: 'The shutter to the north grinds open.' },
+          reward: { openDoors: [[7, 0]] },
         },
       },
       '1,5,2': {
@@ -4003,7 +3981,7 @@ export function installDungeonsA() {
           switches: 'all',
           blocks: [[2, 3], [9, 7]],
           flag: 'd4_westTank',
-          reward: { say: 'A chest rises on the landing.' },
+          reward: {},
         },
         readable: [
           [11, 1, 'A plate on the landing: "Blocks won\'t move in deep water."'],
@@ -4043,7 +4021,7 @@ export function installDungeonsA() {
         puzzle: {
           switches: 'all',
           flag: 'd4_eastShutter',
-          reward: { openDoors: [[7, 10]], say: 'The south shutter grinds open.' },
+          reward: { openDoors: [[7, 10]] },
         },
         readable: [
           [2, 2, 'Carved over the well: "Wind lowers the water one level. This well needs two."'],

@@ -155,7 +155,16 @@ for (const c of CLAIMS) {
     const items = await import('/src/game/items.js');
     const p = g.player;
     const log = [];
-    const read = () => { let n = 0; while (g.dialogue.active && n++ < 20) g.dialogue.close(); };
+    // A box that ends in a choice is answered Yes (S247: the sailor asks before
+    // the first round), the way Dialogue.update answers it on A.
+    const read = () => {
+      let n = 0;
+      while (g.dialogue.active && n++ < 20) {
+        const c = g.dialogue.choices;
+        g.dialogue.close();
+        if (c && c.onPick) c.onPick(0);
+      }
+    };
     const stand = (tx, ty, sea) => {
       g.tide.setLevel(sea, { instant: true });
       const ox = p.cx - p.x, oy = p.cy - p.y;

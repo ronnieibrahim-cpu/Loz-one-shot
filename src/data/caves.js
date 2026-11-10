@@ -63,7 +63,7 @@ export function installCaves() {
           // worth the walk back.
           ['chest', 7, 2, {
             big: true, item: 'sword', level: 2, needEssences: 4,
-            needText: 'The blade will not come out of the stone.\nFour Essences, says the stone.',
+            needText: 'The blade won\'t come out of the stone! Carved below it: "Four Essences."',
           }],
         ],
         readable: [[6, 3, 'Cut into the bluff: "Come back with four Essences, and this blade is yours."']],

@@ -197,15 +197,15 @@ export function openCharmCases(progress) {
   const n = (p.essences || []).length;
   if (n >= CHARM_LOW_ESSENCES && !p.charmOpen.low) {
     p.charmOpen.low = true;
-    return 'A second case has cut itself into your kit — for the low\nwater, when the floor of the sea is a road.';
+    return 'A second charm case has opened! It wakes at LOW tide.';
   }
   if (n >= CHARM_HIGH_ESSENCES && !p.charmOpen.high) {
     p.charmOpen.high = true;
-    return 'A third case, for the high water. Bone keeps better wet\nthan you would think.';
+    return 'A third charm case has opened! It wakes at HIGH tide.';
   }
   if (n >= CHARM_CASE_ESSENCES && (p.charmCase || 1) < CHARM_CASE_MAX) {
     p.charmCase = CHARM_CASE_MAX;
-    return 'Every case takes two now. You have earned the room.';
+    return 'Every charm case holds two charms now!';
   }
   return null;
 }

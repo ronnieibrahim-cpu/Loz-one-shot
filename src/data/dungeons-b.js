@@ -153,7 +153,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['keese', 10, 3],
-          ['tektite', 4, 7],
+          ['moblin', 4, 7],
         ],
       },
       '0,2,6': {
@@ -173,7 +173,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['chest', 7, 2, { pickup: 'dungeonMap' }],
-          ['keese', 11, 7],
+          ['wisp', 11, 7],
         ],
       },
       '0,4,6': {
@@ -201,7 +201,6 @@ export function installDungeonsB() {
           flag: 'd5_bracken',
           reward: {
             spawn: [['pickup', 7, 8, { kind: 'key' }]],
-            say: 'Something drops out of the bracken.',
           },
         },
       },
@@ -242,7 +241,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd5_standingGrove',
-          reward: { reveal: true, say: 'The coral holds the plate down.\nA chest rises by the east wall.' },
+          reward: { reveal: true },
         },
         readable: [
           [2, 9, 'Scratched into the bark: "At HIGH tide the trees here vanish underwater. Everything in this shrine starts from that."'],
@@ -287,7 +286,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['pickup', 7, 4, { kind: 'heartPiece' }],
-          ['keese', 11, 8],
+          ['wisp', 11, 8],
         ],
       },
       '0,4,5': {
@@ -372,7 +371,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['jellyfish', 7, 4],
-          ['keese', 2, 1],
+          ['darknut', 2, 1],
         ],
         warps: [
           // Up into the Hollow Three. The cell is the only way in and the only
@@ -488,7 +487,6 @@ export function installDungeonsB() {
           flag: 'd5_bracken2',
           reward: {
             spawn: [['pickup', 7, 9, { kind: 'key' }]],
-            say: 'A key drops from the statue\'s plinth.',
           },
         },
       },
@@ -513,7 +511,7 @@ export function installDungeonsB() {
         warps: [{ x: 12, y: 9, to: { map: 'd5', floor: 1, rx: 3, ry: 4, px: 12 * 16, py: 8 * 16, dir: 'up' } }],
         entities: [
           ['barnacle', 7, 5],
-          ['crab', 11, 8],
+          ['darknut', 11, 8],
           ['keese', 3, 1],
         ],
       },
@@ -610,7 +608,7 @@ export function installDungeonsB() {
           snarl: [7, 8], cutFrom: [7, 7],
         },
         entities: [
-          ['tektite', 11, 2],
+          ['moblin', 11, 2],
           ['keese', 2, 7],
         ],
         readable: [
@@ -652,7 +650,6 @@ export function installDungeonsB() {
           flag: 'd5_rootford',
           reward: {
             spawn: [['pickup', 3, 2, { kind: 'key' }]],
-            say: 'Something rattles loose above the ford.',
           },
         },
         readable: [
@@ -701,7 +698,7 @@ export function installDungeonsB() {
         puzzle: {
           blocks: [[10, 2]],
           flag: 'd5_ferrypocket',
-          reward: { openDoors: [[7, 10]], say: 'The south door grinds open.' },
+          reward: { openDoors: [[7, 10]] },
         },
       },
       '0,0,5': {
@@ -756,7 +753,7 @@ export function installDungeonsB() {
         puzzle: {
           floor: true,
           flag: 'd5_knot',
-          reward: { say: 'A chest rises in the corner.' },
+          reward: {},
         },
       },
       '0,6,5': {
@@ -828,7 +825,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['chest', 10, 7, { charm: 'strandwalker' }],
-          ['tektite', 4, 8],
+          ['moblin', 4, 8],
           ['keese', 3, 15],
         ],
         readable: [
@@ -854,14 +851,14 @@ export function installDungeonsB() {
         entities: [
           ['urchin', 4, 5],
           ['tektite', 10, 2],
-          ['tektite', 10, 8],
+          ['moblin', 10, 8],
           ['jellyfish', 3, 3],
         ],
         puzzle: {
           enemies: true,
           flag: 'd5_rootcellar',
           // The Wrackbone since S200: the Lamplighter's Wick went to the lighthouse.
-          reward: { spawn: [['chest', 7, 5, { charm: 'wrackbone' }]], say: 'Something settles in the middle of the room.' },
+          reward: { spawn: [['chest', 7, 5, { charm: 'wrackbone' }]] },
         },
       },
       '0,5,6': {
@@ -900,7 +897,7 @@ export function installDungeonsB() {
         puzzle: {
           blocks: [[13, 5]],
           flag: 'd5_seedwarden',
-          reward: { spawn: [['chest', 4, 7, { charm: 'anemonesGift' }]], say: 'Something settles at the end of the hall.' },
+          reward: { spawn: [['chest', 4, 7, { charm: 'anemonesGift' }]] },
         },
       },
       '0,6,3': {
@@ -932,7 +929,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['chest', 4, 5, { charm: 'dunerunner' }],
-          ['tektite', 25, 4],
+          ['darknut', 25, 4],
           ['keese', 8, 7],
         ],
       },
@@ -967,7 +964,7 @@ export function installDungeonsB() {
         // the room the dungeon teaches itself in.
         entities: [
           ['keese', 13, 3],
-          ['tektite', 13, 7],
+          ['moblin', 13, 7],
         ],
         readable: [
           [2, 2, 'Cut low, where the water reaches it: "Throw while the trees are underwater. Stand on it once they\'re back."'],
@@ -1005,7 +1002,7 @@ export function installDungeonsB() {
         puzzle: {
           floor: true,
           flag: 'd5_bolewalk',
-          reward: { openDoors: [[7, 3]], say: 'The north shutter opens.' },
+          reward: { openDoors: [[7, 3]] },
         },
       },
       '0,2,2': {
@@ -1048,7 +1045,7 @@ export function installDungeonsB() {
         puzzle: {
           blocks: [[11, 2], [8, 4], [5, 7]],
           flag: 'd5_nave',
-          reward: { openDoors: [[2, 7]], say: 'The shutter in the west wall opens.' },
+          reward: { openDoors: [[2, 7]] },
         },
       },
       '0,1,2': {
@@ -1073,7 +1070,7 @@ export function installDungeonsB() {
           // the game refilled it after that, so a player who threw three
           // seeds wide was locked out of the Boss Key for good (S142).
           ['pickup', 3, 3, { kind: 'seeds5', life: 1e9 }],
-          ['keese', 3, 8],
+          ['wisp', 3, 8],
         ],
       },
       '0,3,3': {
@@ -1146,7 +1143,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd5_fordCrown',
-          reward: { reveal: true, say: 'Coral holds both notches down.\nA chest rises up the east passage.' },
+          reward: { reveal: true },
         },
       },
       '0,5,3': {
@@ -1172,7 +1169,6 @@ export function installDungeonsB() {
           flag: 'd5_thornvine',
           reward: {
             openDoors: [[7, 0]],
-            say: 'The thorns let go of the north arch.',
           },
         },
       },
@@ -1234,7 +1230,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd5_highBough',
-          reward: { reveal: true, say: 'Three stakes hold the notches down.\nSomething rises in the west hall.' },
+          reward: { reveal: true },
         },
         readable: [
           [33, 5, 'A shrine board, barely legible: "Too far for one throw. Build out to it!"'],
@@ -1321,7 +1317,7 @@ export function installDungeonsB() {
         warps: [{ x: 12, y: 9, to: { map: 'd5', floor: 0, rx: 3, ry: 4, px: 12 * 16, py: 8 * 16, dir: 'up' } }],
         beltRoom: { belts: 'run', cross: { from: [7, 9], to: [7, 1] } },
         entities: [
-          ['tektite', 4, 6],
+          ['moblin', 4, 6],
           ['keese', 10, 1],
         ],
       },
@@ -1360,7 +1356,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd5_beltBough',
-          reward: { reveal: true, say: 'The coral comes up on the plate.\nA chest rises on the bank.' },
+          reward: { reveal: true },
         },
       },
       '1,3,5': {
@@ -1384,7 +1380,7 @@ export function installDungeonsB() {
           '###############',
         ],
         entities: [
-          ['tektite', 3, 9],
+          ['wisp', 3, 9],
           ['keese', 11, 1],
         ],
       },
@@ -1615,7 +1611,6 @@ export function installDungeonsB() {
           flag: 'd6_landing',
           reward: {
             spawn: [['pickup', 7, 3, { kind: 'heart' }]],
-            say: 'Water drains out of a niche in the wall.',
           },
         },
       },
@@ -1662,7 +1657,7 @@ export function installDungeonsB() {
         puzzle: {
           enemies: true,
           flag: 'd6_bone',
-          reward: { spawn: [['pickup', 7, 8, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
+          reward: { spawn: [['pickup', 7, 8, { kind: 'key' }]] },
         },
       },
       '1,3,5': {
@@ -1693,7 +1688,6 @@ export function installDungeonsB() {
           flag: 'd6_hall',
           reward: {
             spawn: [['pickup', 7, 5, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
           },
         },
         readable: [
@@ -1750,7 +1744,7 @@ export function installDungeonsB() {
         puzzle: {
           blocks: [[7, 1]],
           flag: 'd6_drain',
-          reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
+          reward: { spawn: [['pickup', 7, 6, { kind: 'key' }]] },
         },
         readable: [
           [4, 2, 'Scratched on the urn: "Ice runs till something stops it. So does shallow water!"'],
@@ -1849,7 +1843,7 @@ export function installDungeonsB() {
         puzzle: {
           torches: 'all',
           flag: 'd6_kiln',
-          reward: { spawn: [['pickup', 7, 2, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
+          reward: { spawn: [['pickup', 7, 2, { kind: 'key' }]] },
         },
       },
       '1,3,3': {
@@ -1952,7 +1946,7 @@ export function installDungeonsB() {
         puzzle: {
           blocks: [[10, 2]],
           flag: 'd6_garden',
-          reward: { reveal: true, say: 'A chest rises in the corner.' },
+          reward: { reveal: true },
         },
         readable: [
           [4, 7, 'A gardener\'s plate, green with age: "Ice runs on till it meets a wall. Not every wall is stone."'],
@@ -2013,7 +2007,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd6_slack',
-          reward: { openDoors: [[14, 5]], say: 'The east shutter grinds open.' },
+          reward: { openDoors: [[14, 5]] },
         },
         readable: [
           [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan, empty line. We only ever fished it with the water in."'],
@@ -2068,7 +2062,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd6_weigh',
-          reward: { openDoors: [[0, 5]], say: 'The west shutter grinds open.' },
+          reward: { openDoors: [[0, 5]] },
         },
         readable: [
           [12, 8, 'A weigher\'s mark on the plinth: "Weigh what the Hold gives up. Then do it again, a floor higher."'],
@@ -2240,7 +2234,6 @@ export function installDungeonsB() {
           flag: 'd6_hauling',
           reward: {
             openDoors: [[7, 10]],
-            say: 'The south door grinds open.',
           },
         },
         readable: [
@@ -2277,7 +2270,7 @@ export function installDungeonsB() {
         puzzle: {
           enemies: true,
           flag: 'd6_stews',
-          reward: { spawn: [['chest', 7, 5, { charm: 'kelpBraid' }]], say: 'The pools go still.' },
+          reward: { spawn: [['chest', 7, 5, { charm: 'kelpBraid' }]] },
         },
         readable: [
           [7, 1, 'A fishwife\'s board: "They won\'t come out for a sword. They\'ll come out for a line!"'],
@@ -2417,7 +2410,7 @@ export function installDungeonsB() {
         puzzle: {
           blocks: [[6, 1], [8, 1]],
           flag: 'd6_gauge',
-          reward: { say: 'Something settles by the door.' },
+          reward: {},
         },
       },
       '0,5,3': {
@@ -2454,7 +2447,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd6_sounding',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Something falls onto the ice.' },
+          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]] },
         },
       },
       '0,7,2': {
@@ -2511,7 +2504,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd6_rime',
-          reward: { spawn: [['pickup', 7, 19, { kind: 'key' }]], say: 'Something falls onto the ice.' },
+          reward: { spawn: [['pickup', 7, 19, { kind: 'key' }]] },
         },
       },
       '0,5,2': {
@@ -2591,7 +2584,7 @@ export function installDungeonsB() {
         puzzle: {
           enemies: true,
           flag: 'd6_shade',
-          reward: { spawn: [['pickup', 7, 5, { kind: 'heart' }]], say: 'The shadows thin out.' },
+          reward: { spawn: [['pickup', 7, 5, { kind: 'heart' }]] },
         },
       },
       '2,2,4': {
@@ -2729,7 +2722,7 @@ export function installDungeonsB() {
         puzzle: {
           enemies: true,
           flag: 'd6_undertow',
-          reward: { openDoors: [[7, 0]], say: 'The north door grinds open.' },
+          reward: { openDoors: [[7, 0]] },
         },
       },
       '2,0,3': {
@@ -2813,7 +2806,6 @@ export function installDungeonsB() {
           flag: 'd6_tideshade',
           reward: {
             openDoors: [[7, 0]],
-            say: 'The shade unravels into water and is gone. Something gives above.',
           },
         },
       },
@@ -3192,7 +3184,7 @@ export function installDungeonsB() {
         puzzle: {
           switches: 'all',
           flag: 'd6_crossed',
-          reward: { reveal: true, say: 'Two weights in the Drowned King\'s scales.\nA chest rises on the far island.' },
+          reward: { reveal: true },
         },
         readable: [
           [7, 6, 'A king\'s inscription, the only signed one in the Keep: "You can\'t hold two seas at once. -Nereth"'],

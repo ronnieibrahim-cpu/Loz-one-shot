@@ -964,7 +964,7 @@ export class Game {
     const tr = transformFor(name, 'lift');
     if (!tr) return null;
     const def = getTileDef(name);
-    if (def.liftLevel && level < def.liftLevel) { this.say('It is too heavy.'); return null; }
+    if (def.liftLevel && level < def.liftLevel) { this.say('It\'s too heavy to lift!'); return null; }
     room.setTile(tx, ty, tr.to);
     if (tr.persist) this.persistTile(tx, ty, tr.to);
     const obj = new ThrownObject(tx * TILE, ty * TILE, {
@@ -1077,7 +1077,7 @@ export class Game {
     if (!have) {
       if (leaning && !this.infoOnce(boss ? INFO_BOSS_DOOR : INFO_KEY_DOOR)) return true;
       this.audio.sfx('deny');
-      this.say(boss ? 'A great lock seals this door.' : 'It is locked. You need a Small Key.');
+      this.say(boss ? 'It\'s locked tight! You need the Boss Key.' : 'It\'s locked! You need a Small Key.');
       return true;
     }
     if (!boss) useKey(this.progress, this.mapId);
@@ -2021,12 +2021,14 @@ export class Game {
     this.race = { id: def.id, t: def.frames, frames: def.frames, prize: def.prize,
       flag: def.flag, again: def.again, lose: def.lose, win: def.win };
     this.audio.sfx('confirm');
+    this.updateMusic();
   }
 
   finishRace() {
     const r = this.race;
     if (!r) return;
     this.race = null;
+    this.updateMusic();
     const first = !flag(this.progress, r.flag);
     setFlag(this.progress, r.flag);
     this.startDialogue(r.win);
@@ -2037,6 +2039,7 @@ export class Game {
   loseRace() {
     const r = this.race;
     this.race = null;
+    this.updateMusic();
     this.audio.sfx('deny');
     if (r && r.lose) this.startDialogue(r.lose);
   }
@@ -2068,7 +2071,7 @@ export class Game {
       this.dive = null;
       setFlag(this.progress, 'salvageDone');
       this.audio.jingle('secret');
-      this.say('That is all of Dov\'s cargo! Take it up to him.');
+      this.say('That\'s all of Dov\'s cargo! Take it up to him.');
     } else {
       this.audio.sfx('rupee');
     }
@@ -2089,7 +2092,7 @@ export class Game {
       this.addEntity(e);
     }
     this.audio.sfx('splash');
-    this.say('The cargo slips out of your arms and\nsinks back down. All of it, in one breath!');
+    this.say('The cargo slips out of your arms and sinks! Bring it all up in one breath.');
   }
 
   /** An errand's object found (S155): the same beat as presentTrade. */
@@ -2227,6 +2230,13 @@ export class Game {
 
   ask(text, options, onPick) { this.dialogue.show(text, { choices: options, onPick }); }
 
+  /** A named line that ends in a choice (S247): a mini-game's "want to play?". */
+  askDialogue(id, npc, options, onPick) {
+    const t = getText(id);
+    if (t == null) { console.warn('[dialogue] missing text:', id); onPick(0); return; }
+    this.ask(typeof t === 'function' ? t(this, npc) : t, options, onPick);
+  }
+
   /**
    * Is this charm working right now? The one question the rest of the engine
    * asks the scrimshaw system, and the successor to `hasRing`.
@@ -2321,8 +2331,12 @@ export class Game {
     // runs on the way into a room, so both lists are asked.
     const isMini = (e) => e._bossClass && !e.isBoss && !e.dead && !e.remove;
     const mini = !this.boss && (this.entities.some(isMini) || this.pendingAdd.some(isMini));
+    // A GAME HAS THE MINI-GAME THEME (S247), as both cartridges play
+    // MUS_MINIGAME for theirs: while a race's clock runs, or while someone
+    // in the room is running a game of their own (`gameOn`, the buoy keeper).
+    const playing = !!this.race || this.entities.some(e => e.gameOn && !e.remove);
     const track = this.boss ? (this.map.dungeon && this.map.dungeon.bossMusic || 'boss')
-      : mini ? 'miniboss' : want;
+      : mini ? 'miniboss' : playing ? 'minigame' : want;
     if (track) this.audio.play(track);
   }
 
@@ -2376,7 +2390,7 @@ export class Game {
       this.warpTo(spots[0].map, spots[0].floor, spots[0].rx, spots[0].ry, { x: spots[0].px, y: spots[0].py }, 'down', { banner: true });
       return;
     }
-    this.ask('Where shall the wind take you?', spots.map(s => s.name), (i) => {
+    this.ask('Where should the wind take you?', spots.map(s => s.name), (i) => {
       const s = spots[i];
       this.warpTo(s.map, s.floor, s.rx, s.ry, { x: s.px, y: s.py }, 'down', { banner: true });
     });

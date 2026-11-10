@@ -196,6 +196,9 @@ const TRACKS = {
   // engine in src/core/gbsound.js. Every other track is ours.
   title: { seasons: 'titlescreen' },
   fileSelect: { seasons: 'fileSelect' },
+  // The cartridges' mini-game theme (S247), for the shore race and the
+  // bell-buoy echo while one is running.
+  minigame: { seasons: 'minigame' },
   // The Holodrum overworld theme. S148 transcribed it by ear from the footage;
   // S151 replaced the transcription with the cartridge's own data, which the
   // human's soundtrack recording matches note for note.
