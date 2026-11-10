@@ -17879,7 +17879,7 @@ const rooms = {
       ['octorok', 6, 3],
       ['racer', 2, 3, {
         race: 'shore', sprite: 'npc_child', ask: 'raceAsk', busy: 'raceBusy',
-        go: 'raceGo', decline: 'raceNo', win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
+        go: 'raceGo', decline: 'raceNo', askBest: 'raceAskBest', record: 'raceRecord', win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
       }],
     ],
     buried: [[3, 4, 'rupee20']],
@@ -18052,7 +18052,8 @@ const rooms = {
         deals: [{ stage: 5, wants: 'eel', gives: 'lead', text: 'dovTrade' }],
         // His own errand, asked whenever the chain is not at his link (S155).
         errand: { need: 'salvageDone', prize: 'heartPiece', flag: 'diveDone', ask: 'diveAsk',
-          asked: 'diveAsked', thanks: 'diveThanks' },
+          asked: 'diveAsked', thanks: 'diveThanks',
+          confirm: 'diveConfirm', decline: 'diveNo' },
       }],
       ['crab', 6, 4],
       ['pickup', 2, 5, { kind: 'salvage', needFlag: 'diveAsked', hideFlag: 'salvageDone' }],
@@ -19543,6 +19544,7 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     charts: {},              // mapId -> true (Chartstone; replaced the Compass)
     beaten: {},              // mapId -> true (boss defeated)
     flags: {},               // arbitrary story/world flags
+    raceBest: {},            // race id -> best time in tenths of a second (S247)
     chests: {},              // "mapId:roomKey:index" -> true
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
@@ -19818,7 +19820,7 @@ function migrate(p) {
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'slain', 'charms', 'charmOpen',
-    'charmTold', 'chunks',
+    'charmTold', 'chunks', 'raceBest',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }
@@ -24061,6 +24063,267 @@ __exports["Player"] = Player;
 __exports["swordDamage"] = swordDamage;
 __exports["roomHasDryGround"] = roomHasDryGround;
 __exports["enemyHurtRect"] = enemyHurtRect;
+});
+
+/* ===== src/game/dialogue.js ===== */
+__define("game/dialogue.js", function (__exports, __require) {
+// Text boxes: typewriter output, paging, and yes/no choices.
+
+const { SCREEN_W, SCREEN_H, HUD_H, VIEW_H } = __require("core/screen.js");
+const { drawText, textWidth, paginate } = __require("gfx/font.js");
+const { sprites } = __require("gfx/art.js");
+const { TEXT_FRAMES_PER_CHAR, TEXT_BEEP_COOLDOWN } = __require("data/feel.js");
+
+const BOX_X = 4;
+const BOX_W = SCREEN_W - 8;
+const LINE_H = 9;
+const LINES = 3;
+const PAD = 5;
+const BOX_H = PAD * 2 + LINE_H * LINES - 1;
+
+// Named dialogue text, so NPCs in map data reference a script id rather than
+// carrying prose inline.
+const TEXTS = new Map();
+
+function registerTexts(obj) {
+  for (const [k, v] of Object.entries(obj)) TEXTS.set(k, v);
+}
+
+function getText(id) {
+  return TEXTS.get(id) || null;
+}
+
+class Dialogue {
+  constructor(game) {
+    this.game = game;
+    this.active = false;
+    this.pages = [];
+    this.page = 0;
+    this.chars = 0;
+    this.charT = 0;            // frames until the next character; see feel.js
+    this.beepCool = 0;
+    this.done = false;
+    this.onClose = null;
+    this.choices = null;       // { options:[...], index, onPick }
+    this.top = false;          // draw at the top if Link is standing low
+    this.queue = [];
+    this.holdFrames = 0;
+  }
+
+  /**
+   * Show text. Supports '\n' for hard breaks and splits into 3-line pages.
+   * opts: { onClose, choices:[..], onPick, top }
+   */
+  show(text, opts = {}) {
+    if (text == null || text === '') { if (opts.onClose) opts.onClose(); return; }
+    if (this.active) { this.queue.push([text, opts]); return; }
+    this.pages = paginate(String(text), BOX_W - PAD * 2 - 2, LINES);
+    this.page = 0;
+    this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
+    this.active = true;
+    this.done = false;
+    this.onClose = opts.onClose || null;
+    this.choices = opts.choices
+      ? { options: opts.choices, index: opts.defaultIndex || 0, onPick: opts.onPick || null }
+      : null;
+    const p = this.game.player;
+    // Where he is ON SCREEN, which is where the text box has to avoid being.
+    const cam = this.game.camera;
+    this.top = !!(p && p.y - (cam ? cam.y : 0) > VIEW_H - 60);
+    // A screen that is not the field says where its box goes: a number is
+    // the box's top, `bottom` the bottom of the screen (the map screen).
+    this.place = opts.y != null ? opts.y : opts.bottom ? 'bottom' : null;
+    this.holdFrames = 0;
+  }
+
+  /**
+   * Throw the whole thing away without finishing it.
+   *
+   * NOT `close()`. Closing a box is a box being READ: it fires `onClose`, which
+   * is how a giver hands over what it was talking about and how a cutscene
+   * steps to its next beat, and it pulls the next queued page up. A death is
+   * none of those things — nothing was read, and the callback belongs to a
+   * conversation that is over. `Game.respawn` calls this.
+   */
+  reset() {
+    this.active = false;
+    this.place = null;
+    this.choices = null;
+    this.onClose = null;
+    this.queue.length = 0;
+    this.pages = [];
+    this.page = 0;
+  }
+
+  close() {
+    this.active = false;
+    this.choices = null;
+    const cb = this.onClose;
+    this.onClose = null;
+    if (cb) cb();
+    if (this.queue.length) {
+      const [t, o] = this.queue.shift();
+      this.show(t, o);
+    }
+  }
+
+  get currentText() { return (this.pages[this.page] || []).join('\n'); }
+  get pageLen() { return this.currentText.length; }
+
+  update() {
+    if (!this.active) return;
+    const i = this.game.input;
+
+    if (this.beepCool > 0) this.beepCool--;
+    if (this.chars < this.pageLen) {
+      // Seasons' text: one character every TEXT_FRAMES_PER_CHAR frames, and A
+      // or B shows the rest of the current LINE at once — not the page.
+      const text = this.currentText;
+      if (i.pressed('a') || i.pressed('b')) {
+        const nl = text.indexOf('\n', this.chars);
+        this.chars = nl < 0 ? this.pageLen : nl + 1;
+        this.charT = TEXT_FRAMES_PER_CHAR;
+        this.blip(true);
+        return;
+      }
+      if (--this.charT > 0) return;
+      this.charT = TEXT_FRAMES_PER_CHAR;
+      const ch = text[this.chars];
+      this.chars++;
+      if (ch !== ' ' && ch !== '\n') this.blip(false);
+      return;
+    }
+
+    // Fully revealed: wait for A, unless a choice is pending.
+    if (this.choices && this.page >= this.pages.length - 1) {
+      if (i.pressed('up')) {
+        this.choices.index = (this.choices.index + this.choices.options.length - 1) % this.choices.options.length;
+        this.game.audio.sfx('cursor');
+      }
+      if (i.pressed('down')) {
+        this.choices.index = (this.choices.index + 1) % this.choices.options.length;
+        this.game.audio.sfx('cursor');
+      }
+      if (i.pressed('a')) {
+        const pick = this.choices.index;
+        const cb = this.choices.onPick;
+        this.game.audio.sfx('confirm');
+        this.choices = null;
+        this.active = false;
+        const after = this.onClose;
+        this.onClose = null;
+        if (cb) cb(pick);
+        if (after) after();
+        if (this.queue.length) { const [t, o] = this.queue.shift(); this.show(t, o); }
+      }
+      return;
+    }
+
+    if (i.pressed('a') || i.pressed('b')) {
+      if (this.page < this.pages.length - 1) {
+        this.page++;
+        this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
+        this.game.audio.sfx('textNext');
+      } else {
+        this.game.audio.sfx('textNext');
+        this.close();
+      }
+    }
+  }
+
+  /** A text blip, unless one sounded within TEXT_BEEP_COOLDOWN frames. */
+  blip(force) {
+    if (this.beepCool > 0 && !force) return;
+    this.beepCool = TEXT_BEEP_COOLDOWN;
+    this.game.audio.sfx('text', { vol: 0.4 });
+  }
+
+  draw(ctx) {
+    if (!this.active) return;
+    const extra = this.choices && this.page >= this.pages.length - 1
+      ? this.choices.options.length * LINE_H + 5 : 0;
+    const h = BOX_H + extra;
+    const y = typeof this.place === 'number' ? this.place
+      : this.place === 'bottom' || !this.top ? SCREEN_H - h - 5 : HUD_H + 4;
+    drawTextBox(ctx, BOX_X, y, BOX_W, h);
+
+    const shown = this.currentText.slice(0, Math.floor(this.chars));
+    const lines = shown.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      drawText(ctx, lines[i], BOX_X + PAD, y + PAD + i * LINE_H, TEXT_INK);
+    }
+
+    if (this.choices && this.chars >= this.pageLen) {
+      // Clear of a third line of text (S247): at -2 a full page's last line
+      // ran into the first choice.
+      const oy = y + PAD + LINES * LINE_H + 1;
+      this.choices.options.forEach((opt, i) => {
+        const ly = oy + i * LINE_H;
+        drawText(ctx, opt, BOX_X + PAD + 10, ly, TEXT_INK);
+        if (i === this.choices.index) {
+          drawText(ctx, '\x02', BOX_X + PAD + 2, ly, TEXT_INK);
+        }
+      });
+    } else if (this.chars >= this.pageLen) {
+      // blinking "more" arrow
+      if ((this.game.frame >> 3) % 2 === 0) {
+        drawText(ctx, '\x02', BOX_X + BOX_W - 11, y + h - 10, TEXT_ARROW);
+      }
+    }
+  }
+}
+
+// THE ORACLE TEXT BOX: white letters on a black box, the way Seasons, Ages
+// and Link's Awakening all set their speech. This game drew dark text on a
+// white card for its whole life, which reads as a different series.
+const TEXT_INK = '#f8f8f8';
+const TEXT_ARROW = '#f86848';
+
+/** The in-game speech box: black fill, one-pixel grey rim, clipped corners. */
+function drawTextBox(ctx, x, y, w, h) {
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#585858';
+  ctx.fillRect(x + 1, y, w - 2, 1);
+  ctx.fillRect(x + 1, y + h - 1, w - 2, 1);
+  ctx.fillRect(x, y + 1, 1, h - 2);
+  ctx.fillRect(x + w - 1, y + 1, 1, h - 2);
+}
+
+/** A Game Boy style text panel: light fill, dark border, rounded corners. */
+function drawBox(ctx, x, y, w, h) {
+  ctx.fillStyle = '#181c18';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#f8f8f0';
+  ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+  ctx.fillStyle = '#606860';
+  ctx.fillRect(x + 1, y + h - 2, w - 2, 1);
+  ctx.fillRect(x + w - 2, y + 1, 1, h - 2);
+  // knock out the corners
+  ctx.fillStyle = '#181c18';
+  ctx.fillRect(x, y, 1, 1);
+  ctx.fillRect(x + w - 1, y, 1, 1);
+  ctx.fillRect(x, y + h - 1, 1, 1);
+  ctx.fillRect(x + w - 1, y + h - 1, 1, 1);
+}
+
+/** A dark panel used by menus and the map screen. */
+function drawPanel(ctx, x, y, w, h) {
+  ctx.fillStyle = '#080c10';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#303c48';
+  ctx.fillRect(x, y, w, 1);
+  ctx.fillRect(x, y + h - 1, w, 1);
+  ctx.fillRect(x, y, 1, h);
+  ctx.fillRect(x + w - 1, y, 1, h);
+}
+__exports["TEXTS"] = TEXTS;
+__exports["registerTexts"] = registerTexts;
+__exports["getText"] = getText;
+__exports["Dialogue"] = Dialogue;
+__exports["drawTextBox"] = drawTextBox;
+__exports["drawBox"] = drawBox;
+__exports["drawPanel"] = drawPanel;
 });
 
 /* ===== src/data/errands.js ===== */
@@ -28846,6 +29109,7 @@ const { drawText } = __require("gfx/font.js");
 const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag, hasItem, reefseedBase } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
+const { getText } = __require("game/dialogue.js");
 const { ERRANDS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
 const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_HOVER_Z, FAIRY_ARM_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, SV_FLOAT_SPEED, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES } = __require("data/feel.js");
@@ -29448,6 +29712,17 @@ class NPC extends Entity {
     const needs = Array.isArray(e.need) ? e.need : [e.need];
     const have = needs.filter(n => flag(p, n)).length;
     if (have < needs.length) {
+      // `confirm` (S247): the first asking ends in Yes or No, as the
+      // cartridges ask before a dive. Yes sets `asked` as it always did; No
+      // says `decline`, sets nothing, and he asks again next time.
+      if (e.confirm && e.asked && !flag(p, e.asked)) {
+        const say = (id) => { const t = getText(id); return typeof t === 'function' ? t(game, this) : t; };
+        game.ask(`${say(e.ask)} ${say(e.confirm)}`, ['Yes', 'No'], (pick) => {
+          if (pick === 0) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
+          else if (e.decline) game.startDialogue(e.decline, this);
+        });
+        return true;
+      }
       game.startDialogue(have && e.partial ? e.partial : e.ask, this);
       // `asked`: a flag the asking sets, for an errand whose object is only
       // there once somebody has said so (the salvage dive's cargo).
@@ -29551,8 +29826,10 @@ class Racer extends NPC {
     this.raceDef = {
       id: o.race, frames: RACE_FRAMES[o.race] || 0, prize: o.prize || 'rupee20',
       again: o.again || 'rupee20', flag: o.flag || null, win: o.win || null, lose: o.lose || null,
+      record: o.record || null,
     };
     this.askText = o.ask || null;
+    this.askBestText = o.askBest || null;   // said instead once a best time exists (S247)
     this.busyText = o.busy || null;
     this.goText = o.go || null;
     this.declineText = o.decline || null;
@@ -29572,7 +29849,8 @@ class Racer extends NPC {
       game.startDialogue(this.goText, this);
       if (game.dialogue.active) game.dialogue.onClose = start; else start();
     };
-    game.askDialogue(this.askText, this, ['Yes', 'No'], (pick) => {
+    const best = game.progress.raceBest && game.progress.raceBest[this.raceDef.id];
+    game.askDialogue(best != null && this.askBestText ? this.askBestText : this.askText, this, ['Yes', 'No'], (pick) => {
       if (pick === 0) go();
       else if (this.declineText) game.startDialogue(this.declineText, this);
     });
@@ -31828,265 +32106,6 @@ __exports["hudLayout"] = hudLayout;
 __exports["drawHud"] = drawHud;
 __exports["drawItemExtra"] = drawItemExtra;
 __exports["drawAreaBanner"] = drawAreaBanner;
-});
-
-/* ===== src/game/dialogue.js ===== */
-__define("game/dialogue.js", function (__exports, __require) {
-// Text boxes: typewriter output, paging, and yes/no choices.
-
-const { SCREEN_W, SCREEN_H, HUD_H, VIEW_H } = __require("core/screen.js");
-const { drawText, textWidth, paginate } = __require("gfx/font.js");
-const { sprites } = __require("gfx/art.js");
-const { TEXT_FRAMES_PER_CHAR, TEXT_BEEP_COOLDOWN } = __require("data/feel.js");
-
-const BOX_X = 4;
-const BOX_W = SCREEN_W - 8;
-const LINE_H = 9;
-const LINES = 3;
-const PAD = 5;
-const BOX_H = PAD * 2 + LINE_H * LINES - 1;
-
-// Named dialogue text, so NPCs in map data reference a script id rather than
-// carrying prose inline.
-const TEXTS = new Map();
-
-function registerTexts(obj) {
-  for (const [k, v] of Object.entries(obj)) TEXTS.set(k, v);
-}
-
-function getText(id) {
-  return TEXTS.get(id) || null;
-}
-
-class Dialogue {
-  constructor(game) {
-    this.game = game;
-    this.active = false;
-    this.pages = [];
-    this.page = 0;
-    this.chars = 0;
-    this.charT = 0;            // frames until the next character; see feel.js
-    this.beepCool = 0;
-    this.done = false;
-    this.onClose = null;
-    this.choices = null;       // { options:[...], index, onPick }
-    this.top = false;          // draw at the top if Link is standing low
-    this.queue = [];
-    this.holdFrames = 0;
-  }
-
-  /**
-   * Show text. Supports '\n' for hard breaks and splits into 3-line pages.
-   * opts: { onClose, choices:[..], onPick, top }
-   */
-  show(text, opts = {}) {
-    if (text == null || text === '') { if (opts.onClose) opts.onClose(); return; }
-    if (this.active) { this.queue.push([text, opts]); return; }
-    this.pages = paginate(String(text), BOX_W - PAD * 2 - 2, LINES);
-    this.page = 0;
-    this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
-    this.active = true;
-    this.done = false;
-    this.onClose = opts.onClose || null;
-    this.choices = opts.choices
-      ? { options: opts.choices, index: opts.defaultIndex || 0, onPick: opts.onPick || null }
-      : null;
-    const p = this.game.player;
-    // Where he is ON SCREEN, which is where the text box has to avoid being.
-    const cam = this.game.camera;
-    this.top = !!(p && p.y - (cam ? cam.y : 0) > VIEW_H - 60);
-    // A screen that is not the field says where its box goes: a number is
-    // the box's top, `bottom` the bottom of the screen (the map screen).
-    this.place = opts.y != null ? opts.y : opts.bottom ? 'bottom' : null;
-    this.holdFrames = 0;
-  }
-
-  /**
-   * Throw the whole thing away without finishing it.
-   *
-   * NOT `close()`. Closing a box is a box being READ: it fires `onClose`, which
-   * is how a giver hands over what it was talking about and how a cutscene
-   * steps to its next beat, and it pulls the next queued page up. A death is
-   * none of those things — nothing was read, and the callback belongs to a
-   * conversation that is over. `Game.respawn` calls this.
-   */
-  reset() {
-    this.active = false;
-    this.place = null;
-    this.choices = null;
-    this.onClose = null;
-    this.queue.length = 0;
-    this.pages = [];
-    this.page = 0;
-  }
-
-  close() {
-    this.active = false;
-    this.choices = null;
-    const cb = this.onClose;
-    this.onClose = null;
-    if (cb) cb();
-    if (this.queue.length) {
-      const [t, o] = this.queue.shift();
-      this.show(t, o);
-    }
-  }
-
-  get currentText() { return (this.pages[this.page] || []).join('\n'); }
-  get pageLen() { return this.currentText.length; }
-
-  update() {
-    if (!this.active) return;
-    const i = this.game.input;
-
-    if (this.beepCool > 0) this.beepCool--;
-    if (this.chars < this.pageLen) {
-      // Seasons' text: one character every TEXT_FRAMES_PER_CHAR frames, and A
-      // or B shows the rest of the current LINE at once — not the page.
-      const text = this.currentText;
-      if (i.pressed('a') || i.pressed('b')) {
-        const nl = text.indexOf('\n', this.chars);
-        this.chars = nl < 0 ? this.pageLen : nl + 1;
-        this.charT = TEXT_FRAMES_PER_CHAR;
-        this.blip(true);
-        return;
-      }
-      if (--this.charT > 0) return;
-      this.charT = TEXT_FRAMES_PER_CHAR;
-      const ch = text[this.chars];
-      this.chars++;
-      if (ch !== ' ' && ch !== '\n') this.blip(false);
-      return;
-    }
-
-    // Fully revealed: wait for A, unless a choice is pending.
-    if (this.choices && this.page >= this.pages.length - 1) {
-      if (i.pressed('up')) {
-        this.choices.index = (this.choices.index + this.choices.options.length - 1) % this.choices.options.length;
-        this.game.audio.sfx('cursor');
-      }
-      if (i.pressed('down')) {
-        this.choices.index = (this.choices.index + 1) % this.choices.options.length;
-        this.game.audio.sfx('cursor');
-      }
-      if (i.pressed('a')) {
-        const pick = this.choices.index;
-        const cb = this.choices.onPick;
-        this.game.audio.sfx('confirm');
-        this.choices = null;
-        this.active = false;
-        const after = this.onClose;
-        this.onClose = null;
-        if (cb) cb(pick);
-        if (after) after();
-        if (this.queue.length) { const [t, o] = this.queue.shift(); this.show(t, o); }
-      }
-      return;
-    }
-
-    if (i.pressed('a') || i.pressed('b')) {
-      if (this.page < this.pages.length - 1) {
-        this.page++;
-        this.chars = 0; this.charT = TEXT_FRAMES_PER_CHAR;
-        this.game.audio.sfx('textNext');
-      } else {
-        this.game.audio.sfx('textNext');
-        this.close();
-      }
-    }
-  }
-
-  /** A text blip, unless one sounded within TEXT_BEEP_COOLDOWN frames. */
-  blip(force) {
-    if (this.beepCool > 0 && !force) return;
-    this.beepCool = TEXT_BEEP_COOLDOWN;
-    this.game.audio.sfx('text', { vol: 0.4 });
-  }
-
-  draw(ctx) {
-    if (!this.active) return;
-    const extra = this.choices && this.page >= this.pages.length - 1
-      ? this.choices.options.length * LINE_H + 2 : 0;
-    const h = BOX_H + extra;
-    const y = typeof this.place === 'number' ? this.place
-      : this.place === 'bottom' || !this.top ? SCREEN_H - h - 5 : HUD_H + 4;
-    drawTextBox(ctx, BOX_X, y, BOX_W, h);
-
-    const shown = this.currentText.slice(0, Math.floor(this.chars));
-    const lines = shown.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      drawText(ctx, lines[i], BOX_X + PAD, y + PAD + i * LINE_H, TEXT_INK);
-    }
-
-    if (this.choices && this.chars >= this.pageLen) {
-      const oy = y + PAD + LINES * LINE_H - 2;
-      this.choices.options.forEach((opt, i) => {
-        const ly = oy + i * LINE_H;
-        drawText(ctx, opt, BOX_X + PAD + 10, ly, TEXT_INK);
-        if (i === this.choices.index) {
-          drawText(ctx, '\x02', BOX_X + PAD + 2, ly, TEXT_INK);
-        }
-      });
-    } else if (this.chars >= this.pageLen) {
-      // blinking "more" arrow
-      if ((this.game.frame >> 3) % 2 === 0) {
-        drawText(ctx, '\x02', BOX_X + BOX_W - 11, y + h - 10, TEXT_ARROW);
-      }
-    }
-  }
-}
-
-// THE ORACLE TEXT BOX: white letters on a black box, the way Seasons, Ages
-// and Link's Awakening all set their speech. This game drew dark text on a
-// white card for its whole life, which reads as a different series.
-const TEXT_INK = '#f8f8f8';
-const TEXT_ARROW = '#f86848';
-
-/** The in-game speech box: black fill, one-pixel grey rim, clipped corners. */
-function drawTextBox(ctx, x, y, w, h) {
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = '#585858';
-  ctx.fillRect(x + 1, y, w - 2, 1);
-  ctx.fillRect(x + 1, y + h - 1, w - 2, 1);
-  ctx.fillRect(x, y + 1, 1, h - 2);
-  ctx.fillRect(x + w - 1, y + 1, 1, h - 2);
-}
-
-/** A Game Boy style text panel: light fill, dark border, rounded corners. */
-function drawBox(ctx, x, y, w, h) {
-  ctx.fillStyle = '#181c18';
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = '#f8f8f0';
-  ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-  ctx.fillStyle = '#606860';
-  ctx.fillRect(x + 1, y + h - 2, w - 2, 1);
-  ctx.fillRect(x + w - 2, y + 1, 1, h - 2);
-  // knock out the corners
-  ctx.fillStyle = '#181c18';
-  ctx.fillRect(x, y, 1, 1);
-  ctx.fillRect(x + w - 1, y, 1, 1);
-  ctx.fillRect(x, y + h - 1, 1, 1);
-  ctx.fillRect(x + w - 1, y + h - 1, 1, 1);
-}
-
-/** A dark panel used by menus and the map screen. */
-function drawPanel(ctx, x, y, w, h) {
-  ctx.fillStyle = '#080c10';
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = '#303c48';
-  ctx.fillRect(x, y, w, 1);
-  ctx.fillRect(x, y + h - 1, w, 1);
-  ctx.fillRect(x, y, 1, h);
-  ctx.fillRect(x + w - 1, y, 1, h);
-}
-__exports["TEXTS"] = TEXTS;
-__exports["registerTexts"] = registerTexts;
-__exports["getText"] = getText;
-__exports["Dialogue"] = Dialogue;
-__exports["drawTextBox"] = drawTextBox;
-__exports["drawBox"] = drawBox;
-__exports["drawPanel"] = drawPanel;
 });
 
 /* ===== src/data/trade.js ===== */
@@ -44444,7 +44463,7 @@ class Game {
 
   startRace(def) {
     this.race = { id: def.id, t: def.frames, frames: def.frames, prize: def.prize,
-      flag: def.flag, again: def.again, lose: def.lose, win: def.win };
+      flag: def.flag, again: def.again, lose: def.lose, win: def.win, record: def.record };
     this.audio.sfx('confirm');
     this.updateMusic();
   }
@@ -44456,7 +44475,15 @@ class Game {
     this.updateMusic();
     const first = !flag(this.progress, r.flag);
     setFlag(this.progress, r.flag);
-    this.startDialogue(r.win);
+    // THE BEST TIME (S247): the clock counts down, so the run took what it
+    // has used; tenths of a second, as the clock is drawn. A record is said
+    // aloud; a slower run gets the ordinary line.
+    const tenths = Math.floor((r.frames - Math.max(0, r.t)) * 10 / 60);
+    const best = this.progress.raceBest || (this.progress.raceBest = {});
+    const record = best[r.id] == null || tenths < best[r.id];
+    if (record) best[r.id] = tenths;
+    this.raceResult = { id: r.id, tenths, record };
+    this.startDialogue(record && r.record ? r.record : r.win);
     const pay = () => this.presentPrize(first ? r.prize : r.again);
     if (this.dialogue.active) this.dialogue.onClose = pay; else pay();
   }
@@ -70135,7 +70162,7 @@ function installDungeonsA() {
         ],
         entities: [
           ['pickup', 7, 5, { kind: 'blank' }],
-          ['keese', 3, 2],
+          ['octorok', 3, 2],
         ],
         readable: [
           [2, 9, 'Scratched deep: "The carver in Tidewatch wants bone, not gold."'],
@@ -70403,7 +70430,7 @@ function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 4, { charm: 'splitFang' }],
-          ['keese', 3, 2],
+          ['octorok', 3, 2],
           ['zol', 11, 8],
         ],
         puzzle: {
@@ -70989,12 +71016,20 @@ function installDungeonsA() {
       },
       '0,4,4': {
         name: 'Chartstone Alcove',
+        // THE BLOCK IN ITS CHANNEL (S247, PUZZLE-PASS kind A in the Spire).
+        // One block sits at the head of a walled channel along the north
+        // wall. A well (`3`, ankle-deep at LOW only) and then a drain (`4`, a
+        // hole at LOW, ankle-deep at MID) lie in its path, and the wall has
+        // one gap between them so Link can get behind it again with the well
+        // deep. Push it over the well at LOW, sound the conch, push it over
+        // the drain at MID. The chest below is on its own and is not in the
+        // way. `tools/check-blocks.mjs` searches it in the engine.
         map: [
           '###############',
           '#.............#',
-          '#.U.........U.#',
-          '#.............#',
-          '#.............#',
+          '#.U=======..U.#',
+          '#....3..4.=...#',
+          '#..===.===....#',
           '..............#',
           '#.............#',
           '#.............#',
@@ -71005,27 +71040,75 @@ function installDungeonsA() {
         entities: [
           ['chest', 7, 5, { pickup: 'chartstone' }],
           ['octorok', 10, 7],
+          ['switch', 9, 3],
+          ['block', 3, 3, { once: false }],
         ],
+        blockRoom: { pockets: [[9, 3]], seas: [0, 1] },
+        puzzle: {
+          switches: 'all',
+          blocks: [[9, 3]],
+          flag: 'd2_044_channel',
+          reward: {
+            spawn: [
+              ['pickup', 11, 6, { kind: 'rupee20' }],
+              ['pickup', 12, 6, { kind: 'rupee20' }],
+            ],
+          },
+        },
       },
       '0,3,3': {
         name: 'Cistern Cell',
+        // THE RIGHT PLATE FOR THE SEA (S247, PUZZLE-PASS kind H in the Spire;
+        // the Grotto's Sunken Hall taught it). Three pools stand abreast
+        // across the cell, a well (`3`, ankle-deep at LOW), a sluice (`1`, at
+        // MID) and a basin (`2`, at HIGH), each with its plate in the middle.
+        // At every sea exactly one plate is in wading water: a plate pressed
+        // there stays down; a plate pressed dry lets two keese loose and puts
+        // every plate back up. All three down is the reward.
+        // `tools/check-tideplates.mjs` proves it in the engine.
         map: [
           '###############',
           '#.............#',
           '#.............#',
-          '#....22222....#',
-          '#....22222....#',
-          '#....22222....#',
-          '#....22222....#',
-          '#....22222....#',
           '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.333.111.222.#',
+          '#.333.111.222.#',
+          '#.333.111.222.#',
           '#.............#',
           '#######D#######',
         ],
         entities: [
           ['chest', 2, 2, { charm: 'barnacleSkin' }],
-          ['jellyfish', 7, 5],
+          ['urchin', 7, 3],
+          ['switch', 3, 7],
+          ['switch', 7, 7],
+          ['switch', 11, 7],
         ],
+        tidePlates: { plates: [[3, 7, 0], [7, 7, 1], [11, 7, 2]], loose: [[5, 3], [9, 3]] },
+        script: {
+          onEvent(game, name, sw) {
+            const room = game.room;
+            if (name !== 'switch' || !sw || !sw.pressed || room._puzzleDone) return;
+            const tx = Math.floor(sw.cx / 16), ty = Math.floor(sw.cy / 16);
+            const f = room.flagsAt(tx, ty, game.tide);
+            if ((f & F.WATER) && !(f & F.DEEP)) { sw.hold = false; return; }
+            for (const e of game.entities) {
+              if (e !== sw && e.hold === false && e.spriteName && 'pressed' in e) { e.hold = true; e.pressed = false; }
+            }
+            game.applyReward({ spawn: room.def.tidePlates.loose.map(([x, y]) => ['keese', x, y]), sfx: 'deny' });
+          },
+        },
+        puzzle: {
+          flag: 'd2_033_plates',
+          condition: (g, r) => r.def.tidePlates.plates.every(([x, y]) =>
+            g.entities.some(e => 'pressed' in e && e.pressed && e.hold === false
+              && Math.floor(e.cx / 16) === x && Math.floor(e.cy / 16) === y)),
+          reward: {
+            spawn: [['pickup', 7, 4, { kind: 'fairy' }]],
+          },
+        },
       },
       '0,2,4': {
         name: 'Stair Coil',
@@ -73015,13 +73098,23 @@ function installDungeonsA() {
         entities: [
           ['pickup', 9, 4, { kind: 'heartPiece' }],
           ['wizzrobe', 4, 3],
-          ['keese', 12, 8],
+          ['stalfos', 12, 8],
         ],
       },
       '0,5,5': {
         name: 'Cliffside Cell',
         // S243: the stair in its corner comes from the Float Shaft (1,5,5).
         warps: [stair4(1, 1, P4(1, 5, 5, 13, 1, 'up'))],
+        // THE MIRROR STATUE (S247, PUZZLE-PASS kind F in the Cistern; the
+        // Shrine's Sunken Bracken taught it). The statue in the walled run
+        // along the bottom cannot be touched; every push of the block moves
+        // it a tile the OTHER way, and it will not step into water. Its plate
+        // is the west end of the run, past a gutter (`1`, dry at LOW, wading
+        // at MID) beside it, and the block's plate is west of anywhere the
+        // block stands when the statue gets there, so the block has to come
+        // back west, which drags the statue east, unless the gutter holds it:
+        // walk it home at LOW, bring the block back at MID.
+        // `tools/check-statues.mjs` proves it.
         map: [
           '#######.#######',
           '#/............#',
@@ -73029,16 +73122,31 @@ function installDungeonsA() {
           '#.............#',
           '#.............#',
           '...............',
-          '#....,,,,,....#',
-          '#....,,,,,....#',
-          '#.U.........U.#',
           '#.............#',
+          '#.#############',
+          '#.#.1....1....#',
+          '#.#############',
           '###############',
         ],
+        statueRoom: { from: [1, 5], seas: [0, 1] },
         entities: [
           ['chest', 7, 3, { charm: 'bosunsWhistle' }],
           ['stalfos', 11, 5],
+          ['statue', 10, 8, { sprite: 'o_statue_wood' }],
+          ['block', 4, 6, { once: false }],
+          ['switch', 3, 8],
+          ['switch', 3, 6],
         ],
+        puzzle: {
+          blocks: [[3, 8], [3, 6]],
+          flag: 'd4_cliffside_statue',
+          reward: {
+            spawn: [
+              ['pickup', 7, 6, { kind: 'rupee20' }],
+              ['pickup', 8, 6, { kind: 'rupee20' }],
+            ],
+          },
+        },
       },
       '1,5,5': {
         // THE FLOAT SHAFT (S243, docs/briefs/SIDE-VIEW.md stage 4): the
@@ -73695,7 +73803,7 @@ function installDungeonsA() {
           ['chest', 2, 2, { charm: 'saltEtched' }],
           ['tektite', 5, 13],
           ['wizzrobe', 10, 7],
-          ['keese', 4, 10],
+          ['stalfos', 4, 10],
         ],
         puzzle: {
           cube: true,
@@ -73737,8 +73845,8 @@ function installDungeonsA() {
         entities: [
           ['cube', 14, 7, { o: 3 }],
           ['chest', 27, 8, { charm: 'gullsTally' }],
-          ['keese', 6, 2],
-          ['keese', 9, 8],
+          ['wizzrobe', 6, 2],
+          ['stalfos', 9, 8],
           ['bubble', 26, 3],
           ['zol', 6, 5],
         ],
@@ -74784,7 +74892,7 @@ function installDungeonsB() {
           ['block', 9, 7, { once: false }],
           ['statue', 1, 2],
           ['switch', 10, 2],
-          ['tektite', 12, 5],
+          ['stalfos', 12, 5],
         ],
         puzzle: {
           blocks: [[10, 2]],
@@ -74839,7 +74947,7 @@ function installDungeonsB() {
         entities: [
           ['block', 7, 7, { once: false }],
           ['chest', 11, 8, { pickup: 'rupee100', needFlag: 'd5_knot' }],
-          ['keese', 10, 7],
+          ['stalfos', 10, 7],
         ],
         puzzle: {
           floor: true,
@@ -74917,7 +75025,7 @@ function installDungeonsB() {
         entities: [
           ['chest', 10, 7, { charm: 'strandwalker' }],
           ['moblin', 4, 8],
-          ['keese', 3, 15],
+          ['wisp', 3, 15],
         ],
         readable: [
           [12, 18, 'Cut into the shaft\'s foot: "Only the first stake is thrown from the bank."'],
@@ -74941,7 +75049,7 @@ function installDungeonsB() {
         ],
         entities: [
           ['urchin', 4, 5],
-          ['tektite', 10, 2],
+          ['stalfos', 10, 2],
           ['moblin', 10, 8],
           ['jellyfish', 3, 3],
         ],
@@ -74982,8 +75090,8 @@ function installDungeonsB() {
         entities: [
           ['block', 10, 6, { once: false }],
           ['switch', 13, 5],
-          ['tektite', 8, 2],
-          ['keese', 24, 8],
+          ['moblin', 8, 2],
+          ['stalfos', 24, 8],
         ],
         puzzle: {
           blocks: [[13, 5]],
@@ -75021,7 +75129,7 @@ function installDungeonsB() {
         entities: [
           ['chest', 4, 5, { charm: 'dunerunner' }],
           ['darknut', 25, 4],
-          ['keese', 8, 7],
+          ['wisp', 8, 7],
         ],
       },
 
@@ -78262,6 +78370,9 @@ __define("data/story.js", function (__exports, __require) {
 const { registerCutscenes } = __require("game/cutscene.js");
 const { registerTexts } = __require("game/dialogue.js");
 
+/** Tenths of a second as the race clock writes them: 134 -> "13.4". */
+function raceTimeText(tenths) { return `${Math.floor(tenths / 10)}.${tenths % 10}`; }
+
 const DIALOGUE = {
   // ---- Tidewatch Village -------------------------------------------------
   villager1: 'Ever since the Tide Bell broke, the sea comes and goes whenever it likes! Yesterday it ate the pier!',
@@ -78390,8 +78501,17 @@ const DIALOGUE = {
   // The townsfolk's errands (S155 side content). Each person says `...Ask`
   // until their thing comes home, then `...Thanks` as they pay for it.
   diveAsk: 'My cargo sank with my boat, into the deep pool behind it. Five casks! Bring all five up in one breath. Come up short and you\'ll drop the lot!',
+  diveConfirm: 'Will you dive for it?',
+  diveNo: 'No? Fair enough. It\'s a deep pool. Ask me again if you change your mind.',
   diveThanks: 'All five casks, and dry inside! I was saving this for the day they came back. Here!',
   raceAsk: 'Race you to Pip on the sandbar past the Fishing Stones! The sand path only shows at LOW tide. Want to race?',
+  // Once a best time is on record (S247): she names it before asking, and a
+  // faster run is announced in the winner's own time. Times are tenths.
+  raceAskBest: (game, npc) => {
+    const best = game.progress.raceBest[npc.raceDef.id];
+    return DIALOGUE.raceAsk.replace(' Want to race?', ` Time to beat: ${raceTimeText(best)} seconds! Want to race?`);
+  },
+  raceRecord: (game) => `New record! ${raceTimeText(game.raceResult.tenths)} seconds! Nobody beats the tide like that. Here, you earned it!`,
   raceGo: 'Ready... GO!',
   raceNo: 'No? I bet the tide beats you home, too!',
   raceBusy: 'Why are you still here? RUN!',
@@ -78688,6 +78808,7 @@ function installStory() {
   registerCutscenes(CUTSCENES);
   registerTexts(DIALOGUE);
 }
+__exports["raceTimeText"] = raceTimeText;
 __exports["DIALOGUE"] = DIALOGUE;
 __exports["installStory"] = installStory;
 __exports["STORY_CUTSCENES"] = CUTSCENES;
