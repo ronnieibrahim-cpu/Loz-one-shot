@@ -30,6 +30,7 @@ import { hasGlyph } from '../src/gfx/font.js';
 import { ITEMS } from '../src/game/items.js';
 import { CHARMS } from '../src/game/scrimshaw.js';
 import { TRADE_ITEMS } from '../src/data/trade.js';
+import { ERRANDS } from '../src/data/errands.js';
 import { wrapText, textWidth } from '../src/gfx/font.js';
 import { DESC_WRAP_W } from '../src/game/menu.js';
 
@@ -68,8 +69,16 @@ for (const m of MAPS.values()) {
     for (const e of def.entities || []) {
       if (!Array.isArray(e)) continue;
       const o = e[3];
-      if (o && typeof o === 'object') scan(o.text, `${m.id}/${key} ${e[0]}.text`);
+      if (o && typeof o === 'object') {
+        scan(o.text, `${m.id}/${key} ${e[0]}.text`);
+        // The other words an entity can put in a box (S247): a chest that
+        // will not open yet, a bell's or a wheel's own line.
+        scan(o.needText, `${m.id}/${key} ${e[0]}.needText`);
+        scan(o.say, `${m.id}/${key} ${e[0]}.say`);
+      }
     }
+    // What a solved puzzle says, where it still says anything (S247).
+    if (def.puzzle && def.puzzle.reward) scan(def.puzzle.reward.say, `${m.id}/${key} puzzle.reward.say`);
   }
 }
 for (const [k, v] of Object.entries(ITEMS || {})) {
@@ -81,6 +90,9 @@ for (const [k, v] of Object.entries(CHARMS || {})) {
   scan(v && v.desc, `charm ${k}.desc`);
 }
 for (const [k, v] of Object.entries(TRADE_ITEMS || {})) scan(v && v.name, `trade ${k}`);
+// What picking one up says (S247): the trade chain's and the errands' `got`.
+for (const [k, v] of Object.entries(TRADE_ITEMS || {})) scan(v && v.got, `trade ${k}.got`);
+for (const [k, v] of Object.entries(ERRANDS || {})) { scan(v && v.name, `errand ${k}`); scan(v && v.got, `errand ${k}.got`); }
 
 console.log(`check-text: ${scanned} strings, ${chars} characters, ${missing.size} without a glyph`);
 

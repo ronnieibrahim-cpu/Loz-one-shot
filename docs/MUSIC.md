@@ -7,7 +7,7 @@ not `g.boss`, so they keep the dungeon's own track. Tracks live in
 `src/data/audio.js`; `check-music`, `check-sfx` and `check-audio-render` guard
 them.
 
-FOUR ARE ORACLE OF SEASONS' OWN (S151, at the human's request, with the
+FOUR ARE ORACLE OF SEASONS' OWN, AND SINCE S247 THE MINI-GAME THEME TOO (S151, at the human's request, with the
 soundtrack recordings they sent to check against): `title` (the title screen;
 the soundtrack's "Title Screen" and "Main Menu" are its two halves),
 `fileSelect`, `overworld` (Holodrum; S148's transcription by ear is retired)
@@ -55,6 +55,7 @@ Re-read from the data at S199 (the music pass, rotation (e) pass 1).
 | Gullwind Eyrie | `eyrie` | own — new S199 (was `dungeon`) |
 | The Sunken Palace | `palace` | own — new S199 (was `dungeon`) |
 | Every miniboss while it lives | `miniboss` | own — new S199 (was the dungeon's own) |
+| The shore race and the bell-buoy echo, while one runs | `minigame` | Seasons' own (mus/minigame.s) — new S247 |
 | Bosses D1-D5 | `boss` | shared, as Seasons shares one |
 | Nereth | `finalBoss` | own |
 | Ending | `ending` | own |

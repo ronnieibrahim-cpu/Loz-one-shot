@@ -44,7 +44,7 @@ installData();
 // tool cannot see.
 // `ask`/`busy`/`win`/`lose` are a race's `racer` (S155); `noRod`/`turn`/
 // `sour`/`winAgain` and the `next` list the buoy sailor's (S201).
-const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'win', 'lose',
+const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'go', 'decline', 'win', 'lose',
   'noRod', 'turn', 'sour', 'winAgain'];
 const DEAL_ID_FIELDS = ['text', 'blocked', 'after'];
 

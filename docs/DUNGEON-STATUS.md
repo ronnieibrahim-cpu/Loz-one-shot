@@ -41,6 +41,17 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 after the dungeon before — see docs/GAME-PLAN.md "Dungeon keys". The six are
 played strictly in order; check-progression and check-playthrough prove it.
 
+## S247: THE ENEMY LADDER, AND PUZZLES THAT CHIME
+
+The whole-game audit (docs/AUDIT-S247.md). D4 and D5 were D1's keese and
+tektites and every darknut and wizzrobe arrived in D6; each dungeon from D2
+now places a kind no earlier one does (octorok; beetle and zol; wizzrobe and
+bubble; moblin, darknut and wisp), asserted by `tools/test.mjs`. The robot's
+damage per dungeon reads 12, 17, 26, 35, 32, 112 (was 12, 17, 30, 29, 29,
+109). A solved puzzle no longer opens a text box unless what it opened is in
+another room (The Sump keeps its line). Open: the D5 -> D6 jump, D2's thin
+puzzle count, and more of the ladder in rooms off the route.
+
 ## S212: THE SLATE SLOTS
 
 The Abyssal Keep's **Stairhead** (2,3,1), the last room before the King, is

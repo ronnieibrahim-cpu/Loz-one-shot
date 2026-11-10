@@ -690,7 +690,7 @@ export class Anchor extends Entity {
       game.tide.removeOverride(id);
       this.returnToHand(game);
       game.audio.sfx('deny');
-      game.say('There is nowhere to stand if it bites here.');
+      game.say('You\'d have nowhere to stand if it bit here!');
       return;
     }
 
@@ -1324,7 +1324,7 @@ export const ITEMS = {
       // make it — and whatever the sea puts out down there stays out until it
       // is carried in again. Recall above still works everywhere.
       if (game.room && game.room.def.damp) {
-        if (!game.dialogue.active) game.say('The brine hangs too thick in the air.\nThe shell will not strike here.');
+        if (!game.dialogue.active) game.say('The air is too damp down here! The shell won\'t strike.');
         game.audio.sfx('deny');
         return false;
       }

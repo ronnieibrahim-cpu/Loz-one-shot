@@ -2465,7 +2465,7 @@ const rooms = {
       ['octorok', 6, 3],
       ['racer', 2, 3, {
         race: 'shore', sprite: 'npc_child', ask: 'raceAsk', busy: 'raceBusy',
-        win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
+        go: 'raceGo', decline: 'raceNo', win: 'raceWin', lose: 'raceLose', prize: 'heartPiece', again: 'rupee20', flag: 'raceWon',
       }],
     ],
     buried: [[3, 4, 'rupee20']],
@@ -2725,7 +2725,7 @@ const rooms = {
       ['buoyKeeper', 8, 2, {
         sprite: 'npc_fisher', tunes: [[2, 4, 2], [1, 4, 3, 2], [3, 1, 5, 4, [1, 2, 3, 4, 5]]],
         prize: 'seedBag', again: 'rupee20', flag: 'buoysWon',
-        ask: 'buoyAsk', noRod: 'buoyNoRod', turn: 'buoyTurn', sour: 'buoySour',
+        ask: 'buoyAsk', decline: 'buoyNo', noRod: 'buoyNoRod', turn: 'buoyTurn', sour: 'buoySour',
         next: ['buoyNext1', 'buoyNext2'], win: 'buoyWin', winAgain: 'buoyWinAgain',
       }],
     ],

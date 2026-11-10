@@ -447,6 +447,22 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **Swapping one enemy for another on the route is a route change, and the
+  robot cannot fight three of them (S247).** It lost 26 quarter-hearts to one
+  spiked beetle (no shield, no flip), 18 to one bubble (nothing kills one)
+  and went from a full bar to one quarter-heart round one darknut in D5,
+  each in a room its route says `fight` in.
+  List the route's fight rooms first (`node tools/route-prefix.mjs 0`, then
+  grep ` fight ` by dungeon) and put those three kinds elsewhere. Every swap
+  in a room the route enters also re-phases every fight after it: Gloomtide
+  went from a win to a loss with nothing about him changed. `route-prefix`
+  with `PATCH='<i>=["wait",N]'` runs the route to any boss in about five
+  seconds, so sweep the entry wait four at a time instead of rerunning the
+  playthrough. A room the route never enters costs nothing.
+- **A checker that closes a text box with `dialogue.close()` skips a choice
+  (S247).** `close()` drops `choices` without picking. A box that ends in
+  Yes/No has to be answered: take `dialogue.choices` first, close, then call
+  its `onPick(0)`, as `Dialogue.update` does on A.
 - **How many entry frames win a boss is the measure of whether it is fair
   (S246).** One run's damage says little: Anemos cost the route 14 quarter-
   hearts at its chosen wait, an ordinary number, yet only 9 of 71 waits won

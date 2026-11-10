@@ -58,6 +58,10 @@ TRACKS = [
     # cartridge" at the human's word).
     ('getEssence', 'mus/getEssence.s', 'musGetEssence'),
     ('gameover', 'mus/gameover.s', 'musGameover'),
+    # The mini-game theme (S247, the human's choice): what both cartridges
+    # play while a game is running. Ours plays it for the shore race and the
+    # bell-buoy echo.
+    ('minigame', 'mus/minigame.s', 'musMinigame'),
 ]
 
 # THE SOUND EFFECTS (S163): every effect the game plays that one of the two

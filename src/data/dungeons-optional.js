@@ -128,7 +128,7 @@ export function installOptionalDungeons() {
         puzzle: {
           torches: 'all',
           flag: 'vault_sump',
-          reward: { openDoors: [[14, 5]], say: 'The brazier takes. Something grinds open to the east.' },
+          reward: { openDoors: [[14, 5]] },
         },
         kilnRoom: { target: [7, 5], from: [3, 5], dir: 'right', levels: [0] },
         readable: [
@@ -191,7 +191,7 @@ export function installOptionalDungeons() {
         puzzle: {
           torches: 'all',
           flag: 'vault_gallery',
-          reward: { openDoors: [[7, 0]], say: 'Both braziers burn. The way north opens.' },
+          reward: { openDoors: [[7, 0]] },
         },
         kilnRoom: { target: [9, 8], from: [9, 5], dir: 'down', levels: [0] },
       },
@@ -242,7 +242,6 @@ export function installOptionalDungeons() {
           flag: 'vault_wraith',
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
-            say: 'The salt settles. Something glints where it stood.',
           },
         },
       },
@@ -441,7 +440,6 @@ export function installOptionalDungeons() {
           flag: 'eyrie_harpy',
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
-            say: 'The wind drops. A feather of light settles on the floor.',
           },
         },
       },
@@ -887,7 +885,6 @@ export function installOptionalDungeons() {
           flag: 'palace_eel',
           reward: {
             spawn: [['pickup', 7, 6, { kind: 'heartPiece' }]],
-            say: 'The water goes still. Something glints where the eel went down.',
           },
         },
         // The stair out works once the eel is beaten: a fight is not left by

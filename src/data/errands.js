@@ -18,15 +18,15 @@
 export const ERRANDS = {
   ledger: {
     name: 'Shop Ledger', icon: 'i_e_ledger', flag: 'foundLedger',
-    got: 'The shopkeeper\'s ledger, fat with seawater.\nEvery page says somebody owes him.',
+    got: 'The shopkeeper\'s ledger, soaked through! Every page says somebody owes him.',
   },
   kite: {
     name: 'Kite', icon: 'i_e_kite', flag: 'foundKite',
-    got: 'A patched cloth kite, none the worse\nfor a night in a tree.',
+    got: 'A patched cloth kite! A night up a tree hasn\'t hurt it.',
   },
   bogwater: {
     name: 'Jar of Bog Water', icon: 'i_e_jar', flag: 'foundBogWater',
-    got: 'A jar left filling at the bog spring.\nThe water in it is the colour of tea.',
+    got: 'A jar left filling at the bog spring. The water\'s as brown as tea!',
   },
   // THE DARK LIGHTHOUSE (S200): the three parts of the lamp on the Drowned
   // Shore, which the sea took the night it went strange. The keeper there
@@ -34,14 +34,14 @@ export const ERRANDS = {
   // at a different sea, and the lamp is then lit with the Kilnshell.
   lens: {
     name: 'Great Lens', icon: 'i_e_lens', flag: 'foundLens',
-    got: 'The lighthouse lens, whole! The sea\nhas only polished it.',
+    got: 'The lighthouse lens, in one piece! The sea has only polished it.',
   },
   mirror: {
     name: 'Brass Reflector', icon: 'i_e_mirror', flag: 'foundMirror',
-    got: 'The lamp\'s reflector, cut out of the\nkelp. Still bright under the green.',
+    got: 'The lamp\'s brass reflector! It\'s still bright under all that kelp.',
   },
   oil: {
     name: 'Lamp Oil', icon: 'i_e_oil', flag: 'foundOil',
-    got: 'A stoppered flask of lamp oil. The\nhigh sea set it down in the salt.',
+    got: 'A corked flask of lamp oil! The HIGH tide left it here in the salt.',
   },
 };

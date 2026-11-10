@@ -325,11 +325,27 @@ FRAMES = {
 # Frames kept at the box's own size rather than cut to a 16x16 cell: the
 # darknut facing down holds its sword below it and facing up holds it above,
 # past the edge of the cell, as the sheet draws them (boxes 82-85, S152).
+#
+# S247: every other frame that was cut to a cell out of a bigger box joins
+# them, so no enemy is drawn with a piece missing. `name: box` or
+# `name: (box, flip)`. The engine draws each at the size it has and anchors it
+# so the body stays where the 16x16 cut had it (drawOffset in
+# src/data/enemies.js): the moblin's lowered spear below it (d1) and its
+# raised spear above it (u1, body in the bottom 16 rows), the stalfos's blade
+# out to the right of its body (s0/s1; the engine shifts a mirrored one left),
+# and the urchin's spike tips and legs, two rows past the cell at each end.
 TALL = {
     'darknut_down0': 82,
     'darknut_down1': 83,
     'darknut_up0': 84,
     'darknut_up1': 85,
+    'moblin_d1': 172,
+    'moblin_u1': 174,
+    'stalfos_s0': (316, True),     # blade left on the sheet; mirrored to face right
+    'stalfos_s1': 317,
+    'urchin_0': 292,
+    'urchin_1': 293,
+    'urchin_death': 295,
 }
 
 RECTS = {
@@ -508,9 +524,10 @@ def main():
         art[name] = seal_holes(pad_to_cell(rows))
         pals[name] = pal
 
-    for name, idx in TALL.items():
+    for name, spec in TALL.items():
+        idx, flip = spec if isinstance(spec, tuple) else (spec, False)
         x, y, w, h = boxes[idx]
-        rows, pal = quantise(px, x, y, w, h, bg)
+        rows, pal = quantise(px, x, y, w, h, bg, flip=flip)
         rows, pal = normalise_ramp(rows, pal)
         art[name] = seal_holes(rows)
         pals[name] = pal

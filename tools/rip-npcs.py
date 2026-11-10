@@ -34,7 +34,13 @@ FRAMES = {
     'npc_villager': 2,       # dark-haired townsman, front
     'npc_villager2': 12,     # townswoman in red, arms out, front
     'npc_fisher': 49,        # blue-clad man, front
-    'npc_child': 51,         # child, front
+    # TALL (S247): the child's feathered cap makes the sprite 16 x 28 and the
+    # woman's bow and hair make hers 16 x 23. The cell is anchored on the feet,
+    # so a 16-high window threw away the top 12 and 7 rows — a headless child
+    # and a Zelda with her hair sliced off. (idx, dx, dy, height): the window is
+    # cut at the sprite's own height and the engine draws it feet-down
+    # (NPC.drawOffset, sprite-manifest expectedSize).
+    'npc_child': (51, 0, 0, 28),         # child in a feathered cap, front
     'npc_elder': 17,         # bald elder, front
     'npc_shopkeeper': 20,    # fair-haired man in blue, front
     # A second, genuinely different coastal-worker pose: red kerchief, green
@@ -44,7 +50,7 @@ FRAMES = {
     # breaks a collision for (npc_fisher, shared by 3 named traders/villagers
     # as of S61) had no other unused extracted art left to spend.
     'npc_fisher2': 69,
-    'npc_zelda': 59,         # the woman with the red bow
+    'npc_zelda': (59, 0, 0, 23),         # the woman with the red bow
 }
 
 # FARORE IS CUT FROM THE CARTRIDGE (S168), not from the sheet. The sheet has
@@ -210,17 +216,17 @@ def main():
     cells = find_sprites(px, W, H, bg, size=16, y1=200)
     art, pals = {}, {}
     for name, spec in FRAMES.items():
-        idx, dx, dy = spec if isinstance(spec, tuple) else (spec, 0, 0)
+        idx, dx, dy, ht = (tuple(spec) + (16,))[:4] if isinstance(spec, tuple) and len(spec) == 3 else (spec if isinstance(spec, tuple) else (spec, 0, 0, 16))
         if idx >= len(cells):
             print('skip (no such cell):', name, idx)
             continue
         ox, oy = cells[idx]
         ox += dx
-        oy += dy
+        oy += dy - (ht - 16)
         # `own=True`: a 16-wide cell around a 13-wide townsperson has columns
         # to spare, and on this sheet they belong to whoever is standing beside
         # them — Farore arrived with two of a fence's posts, one either side.
-        rows, pal = quantise(px, ox, oy, 16, 16, bg, own=True)
+        rows, pal = quantise(px, ox, oy, 16, ht, bg, own=True)
         if rows is None:
             print('skip (empty):', name)
             continue

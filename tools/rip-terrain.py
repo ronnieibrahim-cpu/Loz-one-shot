@@ -445,7 +445,7 @@ PROPS = [
     # all. On that sheet the props are single 16x16 cells sitting on their own
     # ground, on a strict grid at phase (2, 8). `--props` found them; see
     # docs/HANDOFF.md for what else it found and what it could not.
-    ('rock', AG, 418, 936, (1, 2, 3), 'liftable boulder, beside the dirt clearing'),
+    ('rock', AG, 419, 936, (1, 2, 3), 'liftable boulder, beside the dirt clearing'),
 
     # ...and now that `flowers` is floral, the Ages shrub can finally be taken.
     # This is the sheet's own cuttable bush, and the reason it was left behind

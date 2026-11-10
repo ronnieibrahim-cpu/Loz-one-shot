@@ -1622,7 +1622,10 @@ export const ROUTE = [
   // S235 (the pose waits for the shutters; in on 15/28): swept 0-300 by 2
   // with the old options (best 3/28 at 126), then 0-200 by 4 over five option
   // sets: `breakContact` added wins at 49-60; by 1, 49 on 8/28. THIN.
-  ['wait', 49],
+  // S247 (the Sanctum's beetles and zols, and no text box after a puzzle,
+  // moved the clock): 49 loses. Swept 0-140 by 6 then 40-61 by 1 from
+  // Bogmaw's 16/28: 55, 56, 58 and 59 win on 6-8/28, 44 on 2. 56. THIN.
+  ['wait', 56],
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is

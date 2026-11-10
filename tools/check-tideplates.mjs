@@ -98,7 +98,10 @@ async function play(c, presses) {
         i, sea, down: plates.map((_, j) => !!plate(j) && plate(j).pressed),
         loosed: g.entities.filter(e => e.isEnemy && !e.dead && !e.remove).length - foes,
         done: !!g.room._puzzleDone,
-        fairy: g.entities.some(e => e.kind === 'fairy' || (e.pickup === 'fairy')),
+        // In the room, or already in Link's hands (S247): with no text box
+        // after the solve the world runs on, and he stands beside it.
+        fairy: g.entities.some(e => e.kind === 'fairy' || (e.pickup === 'fairy'))
+          || !!g.progress.secrets[`${g.mapId}:${g.room.key}:reward0`],
       });
       for (const e of g.entities) if (e.isEnemy) e.remove = true;
       step(1);

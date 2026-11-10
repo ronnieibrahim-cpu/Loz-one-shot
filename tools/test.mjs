@@ -1640,6 +1640,102 @@ const main = async () => {
   check('and not from across the room', desk.after === 1, JSON.stringify(desk));
   check('her desk is solid', desk.stood, JSON.stringify(desk));
 
+  console.log('\n--- the mini-games ask first, and have the mini-game theme (S247) ---');
+  // Both cartridges ask before a game starts and play MUS_MINIGAME while it
+  // runs. Ours used to start the clock the moment the racer was spoken to.
+  const games = await G(async () => {
+    const g = window.__game, H = window.__harness;
+    g.enterMap('overworld', 0, 3, 9, 48, 48, 'left', { instant: true });
+    H.step(2);
+    const racer = g.entities.find(e => e.raceDef);
+    const answer = (pick) => {
+      // The box's last page, then the choice, as Dialogue.update answers it.
+      const c = g.dialogue.choices; g.dialogue.close(); if (c && c.onPick) c.onPick(pick);
+    };
+    racer.interact(g, g.player);
+    const asked = !!(g.dialogue.active && g.dialogue.choices && g.dialogue.choices.options.join('/') === 'Yes/No');
+    answer(1);
+    const afterNo = { race: !!g.race, said: g.dialogue.active };
+    while (g.dialogue.active) g.dialogue.close();
+    const quiet = g.audio.trackName;
+    racer.interact(g, g.player);
+    answer(0);
+    const beforeGo = !!g.race;            // "Ready... GO!" is still up
+    while (g.dialogue.active) g.dialogue.close();
+    const running = { race: !!g.race, track: g.audio.trackName };
+    g.loseRace();
+    while (g.dialogue.active) g.dialogue.close();
+    const over = g.audio.trackName;
+    // The sailor's game: asked on the first round, and the theme while a tune
+    // is being played or rung back.
+    g.enterMap('overworld', 0, 15, 9, 72, 56, 'up', { instant: true });
+    H.step(2);
+    const items = await import('/src/game/progress.js');
+    items.giveItem(g.progress, 'rod', 1);
+    const keeper = g.entities.find(e => e.constructor.name === 'BuoyKeeper');
+    const bay = g.audio.trackName;
+    keeper.interact(g, g.player);
+    const kAsked = !!(g.dialogue.choices);
+    answer(1);
+    while (g.dialogue.active) g.dialogue.close();
+    const kNo = { state: keeper.state, track: g.audio.trackName };
+    keeper.interact(g, g.player);
+    answer(0);
+    const kYes = { state: keeper.state, track: g.audio.trackName };
+    return { asked, afterNo, quiet, beforeGo, running, over, bay, kAsked, kNo, kYes };
+  });
+  check('the racer asks Yes or No before anything starts', games.asked, JSON.stringify(games));
+  check('No starts no clock, and she says so', !games.afterNo.race && games.afterNo.said, JSON.stringify(games.afterNo));
+  check('Yes starts the clock only once her "GO!" is put away', !games.beforeGo && games.running.race, JSON.stringify(games));
+  check('the mini-game theme plays while the race runs, and the place\'s own comes back after',
+    games.running.track === 'minigame' && games.quiet !== 'minigame' && games.over === games.quiet, JSON.stringify(games));
+  check('the buoy sailor asks first too, and No leaves the bay as it was',
+    games.kAsked && games.kNo.state === 'idle' && games.kNo.track === games.bay, JSON.stringify(games.kNo));
+  check('Yes starts his tune under the mini-game theme', games.kYes.state !== 'idle' && games.kYes.track === 'minigame', JSON.stringify(games.kYes));
+
+  console.log('\n--- the dungeons\' enemies are a ladder (S247) ---');
+  // Seasons and Ages bring one or two new kinds of enemy into each dungeon.
+  // Ours had D4 and D5 on D1's keese and tektites, and every darknut and
+  // wizzrobe in the game arriving together in D6. Read from the room data:
+  // each dungeon after the first places a kind no earlier one does, and no
+  // dungeon is mostly one kind.
+  const ladder = await G(async () => {
+    const { MAPS } = await import('/src/world/maps.js');
+    const { Enemy, Boss } = await import('/src/game/enemy.js');
+    const { ENTITY_TYPES } = await import('/src/game/entity.js');
+    const g = window.__game;
+    const isEnemy = {};
+    // Built by the engine's own factory and asked what it is, never added to
+    // the room: an ordinary enemy, not a boss or a miniboss.
+    const kindOf = (name) => {
+      if (name in isEnemy) return isEnemy[name];
+      const f = ENTITY_TYPES.get(name);
+      let e = null;
+      try { e = f ? f(0, 0, {}, g) : null; } catch (err) { e = null; }
+      return (isEnemy[name] = !!e && e instanceof Enemy && !(e instanceof Boss));
+    };
+    const out = {};
+    for (const id of ['d1', 'd2', 'd3', 'd4', 'd5', 'd6']) {
+      const c = {};
+      for (const d of Object.values(MAPS.get(id).roomDefs)) for (const s of d.entities || []) {
+        if (Array.isArray(s) && typeof s[0] === 'string' && kindOf(s[0])) c[s[0]] = (c[s[0]] || 0) + 1;
+      }
+      out[id] = c;
+    }
+    return out;
+  });
+  {
+    const seen = new Set();
+    for (const id of ['d1', 'd2', 'd3', 'd4', 'd5', 'd6']) {
+      const c = ladder[id], n = Object.values(c).reduce((a, b) => a + b, 0);
+      const fresh = Object.keys(c).filter(k => !seen.has(k));
+      const [top, topN] = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+      if (id !== 'd1') check(`${id} places a kind of enemy no earlier dungeon has`, fresh.length > 0, JSON.stringify(c));
+      check(`${id} is not mostly one kind of enemy (${top} ${topN} of ${n})`, topN * 5 <= n * 2, JSON.stringify(c));
+      for (const k of Object.keys(c)) seen.add(k);
+    }
+  }
+
   console.log('\n--- art coverage ---');
   const missing = await G(() => [...window.__game.tiles.missing, ...window.__game.sprites.missing].sort());
   console.log(`  ${missing.length} unauthored art name(s)`);
