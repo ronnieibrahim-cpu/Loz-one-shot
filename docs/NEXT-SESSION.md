@@ -75,6 +75,28 @@ reviewed and merged here.
 - Pictures: docs/briefs/s247/puzzle-*.png, race-best-*.png, dive-ask.png,
   boss-contact-sheet.png.
 
+### Then: "act on all" again, and "the Octorok side sprites look janky"
+(the helpers hit their usage limit; done here)
+- THE OCTOROK: the sheet draws its side view facing LEFT and rip-enemies.py
+  took it as right (flip False), so it walked tail first and spat from its
+  back; now flipped. And two pixels of the sheet's white plate sat enclosed
+  between a tentacle and the body in octorok_s0 (sheet 932,309 and 933,310),
+  which made that frame four colours and slid its ramp a step: under enemyg /
+  enemyb every other step of the walk was a shade darker. rip-enemies.py
+  PINHOLES erases them. Pictures: docs/briefs/s247/octorok-walk-*.png.
+- THE GEL: gel_1 (eyes shut) has no black, so normalise_ramp put its red on
+  slot 3 and under `slime` every other frame was a near-black blob.
+  rip-enemies.py RAMP_LIKE maps it onto gel_0's slots. Scanned every enemy
+  for frames whose palettes disagree: the rest are real (bubble and wisp
+  cycle colours; leever_rise0 is sand; jellyfish hurt/death are poses).
+- D4's STATUE: rip-objects.py cuts `o_statue_cistern` (the armos $25 from
+  the Dancing Dragon tileset $3a), picked by `themed`; the Cliffside Cell's
+  `sprite:` option is gone. Pictures: statue-d4-*.png.
+- D2's CHANNEL WALL: tried the crypt's urns (`U`); check-ground refuses a
+  row of three props (it reads as a fence), and `#` was a flat slab, so the
+  `=` blocks stay. Seasons draws fixed and pushable blocks alike.
+- Wyverna over the north wall: still left (S153's camera question).
+
 ### Verified
 Whole table green; test.mjs 170 after the second part (159 after the first); check-rippers 45/45.
 check-playthrough 49/49, THE END, never died, low-water 5 (Wyverna).
