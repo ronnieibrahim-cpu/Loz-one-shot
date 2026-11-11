@@ -3162,7 +3162,7 @@ export function installDungeonsA() {
         entities: [
           ['chest', 7, 3, { charm: 'bosunsWhistle' }],
           ['stalfos', 11, 5],
-          ['statue', 10, 8, { sprite: 'o_statue_wood' }],
+          ['statue', 10, 8],
           ['block', 4, 6, { once: false }],
           ['switch', 3, 8],
           ['switch', 3, 6],

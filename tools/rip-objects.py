@@ -411,6 +411,10 @@ def build():
     # $93) — in the Ancient Ruins' own tileset and colours, the Shrine's kit.
     g, p = sets[0x3c].metatile(ARMOS_STATUE)
     put('o_statue_wood', g, p, f'metatile $25 (the armos statue), {TILESETS[0x3c]}')
+    # The Cistern's own (S247): the same armos in the Dancing Dragon Dungeon's
+    # tileset and colours, for D4's Cliffside Cell, which wore the Shrine's.
+    g, p = sets[0x3a].metatile(ARMOS_STATUE)
+    put('o_statue_cistern', g, p, f'metatile $25 (the armos statue), {TILESETS[0x3a]}')
     # The ice block (S209, the Keep's ice blocks): TILEINDEX_PUSHABLE_ICE_BLOCK
     # $2f, the one pushblock.s slides until it clinks, in the Sword & Shield
     # Maze's ice half — room $586's three, the Hold's own tileset.

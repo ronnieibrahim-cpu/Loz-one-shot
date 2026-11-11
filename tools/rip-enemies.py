@@ -118,8 +118,10 @@ FRAMES = {
     # Octorok — front and side. See HAND_ART for the back view the sheet lacks.
     'octorok_d0': (220, 0.5, 0.5, False),
     'octorok_d1': (221, 0.5, 0.5, False),
-    'octorok_s0': (222, 0.5, 0.5, False),
-    'octorok_s1': (223, 0.5, 0.5, False),
+    # The sheet draws the side view facing LEFT (S247): mirrored, as every
+    # other `_s` frame is, or the octorok walked tail first and spat behind it.
+    'octorok_s0': (222, 0.5, 0.5, True),
+    'octorok_s1': (223, 0.5, 0.5, True),
 
     # Sand Crab.
     'crab_0': (280, 0.5, 0.5, False),
@@ -403,6 +405,25 @@ HAND_ART = {
 HAND_PAL_OF = {'octorok_u0': 'octorok_d0', 'octorok_u1': 'octorok_d0'}
 
 
+# PINHOLES (S247): single pixels of the white mounting plate that the sprite's
+# own outline closes round, so strip_plates cannot reach them and they would
+# quantise as a fourth colour. Sheet coordinates. The octorok's first side
+# frame had two between a tentacle and its body: it pushed that frame's colours a step down the
+# ramp, so under the enemy palettes every other step of its walk was drawn a
+# shade darker than the one before. The cartridge's octorok has no white.
+PINHOLES = [(932, 309), (933, 310)]
+
+
+# RAMP_LIKE (S247): a frame whose colours must sit on the same slots as its
+# partner's. normalise_ramp slots a frame by how MANY colours it has, so a
+# frame with one colour fewer than its partner lands that colour a step
+# darker: the gel's second frame (its eyes shut, so no black) put its red
+# body on the outline slot, and under the shared slime palette every other
+# frame of its wobble was a near-black blob. Mapped colour by colour onto the
+# partner's palette instead.
+RAMP_LIKE = {'gel_1': 'gel_0'}
+
+
 def window(box, ax, ay):
     """The SIZExSIZE source rectangle to take from a box."""
     x, y, w, h = box
@@ -500,6 +521,9 @@ def main():
     boxes = find_boxes(px, W, H, bg)
     print(f'{len(boxes)} sprite boxes found in the True Colors half')
     print('erased', strip_plates(px, W, H, bg), 'white plate pixels')
+    for x, y in PINHOLES:
+        assert px[x, y] == WHITE, f'pinhole {x},{y} is not plate white'
+        px[x, y] = bg
 
     art, pals = {}, {}
     for name, (idx, ax, ay, flip) in FRAMES.items():
@@ -531,6 +555,15 @@ def main():
         rows, pal = normalise_ramp(rows, pal)
         art[name] = seal_holes(rows)
         pals[name] = pal
+
+    for name, ref in RAMP_LIKE.items():
+        want = pals[ref]
+        slot = {c: want.index(c) for c in reversed(want)}
+        old = pals[name]
+        assert all(c in slot for c in old), f'{name} has a colour {ref} lacks'
+        remap = {str(i): str(slot[c]) for i, c in enumerate(old)}
+        art[name] = [''.join(remap.get(ch, ch) for ch in r) for r in art[name]]
+        pals[name] = list(want)
 
     for name, src in HAND_ART.items():
         rows = [r.strip() for r in src.strip('\n').split('\n')]

@@ -25,8 +25,7 @@
 ## The task
 Ask the human what they want next. They were going to play it cold on an
 iPad with a Switch Pro Controller: ask for their notes first and work from
-them. Otherwise offer: a look at the D5 -> D6 jump as a person plays it; a
-statue of the Cistern's own for D4's Cliffside Cell (it wears the Shrine's);
+them. Otherwise offer: a look at the D5 -> D6 jump as a person plays it;
 Wyverna leaving the top of the screen (S153's camera question).
 - Pictures beside the original, sounds as files, ask before bigger changes.
 - Anything that changes a room on the route moves the clock for every fight

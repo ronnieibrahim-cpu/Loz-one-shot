@@ -46,6 +46,7 @@
 //   o_switch_up_palace: TILEINDEX_BUTTON $0c, Ages' Mermaid's Cave, the sunken past, floor keyed out
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
+//   o_statue_cistern: metatile $25 (the armos statue), the Dancing Dragon Dungeon
 //   o_iceblock: TILEINDEX_PUSHABLE_ICE_BLOCK $2f, the Sword & Shield Maze, ice half
 //   o_eyestatue: TILEINDEX_EYE_STATUE $ee, the Explorer's Crypt
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
@@ -756,6 +757,24 @@ export const OBJECT_ART = {
     3222223332222330
     3333333333333300` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_statue_cistern: { pal: 'o_statue_cistern', art: `
+    0033303333033301
+    0032232112322300
+    0003322332233330
+    0000323333230313
+    0003323333230313
+    3333333332233313
+    3111123222332313
+    3131323333223333
+    3111123222123113
+    3111123332223213
+    3131323333333113
+    3111123332223333
+    3111123222222313
+    3131323333333313
+    3222223332222330
+    3333333333333300` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_iceblock: { pal: 'o_iceblock', art: `
     2222222222222222
     2000000000000002
@@ -870,6 +889,7 @@ const OBJECT_PALETTES = {
   o_block_palace: ['#decee7', '#b54a9c', '#6b0052', '#000000'],
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
+  o_statue_cistern: ['#73bd00', '#d68c39', '#944a29', '#000000'],
   o_iceblock: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
   o_eyestatue: ['#ffff8c', '#cea518', '#635200', '#000000'],
 };
