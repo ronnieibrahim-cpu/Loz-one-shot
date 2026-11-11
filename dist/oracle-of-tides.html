@@ -24489,6 +24489,7 @@ __define("data/sprites-objects.js", function (__exports, __require) {
 //   o_switch_up_palace: TILEINDEX_BUTTON $0c, Ages' Mermaid's Cave, the sunken past, floor keyed out
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
+//   o_statue_cistern: metatile $25 (the armos statue), the Dancing Dragon Dungeon
 //   o_iceblock: TILEINDEX_PUSHABLE_ICE_BLOCK $2f, the Sword & Shield Maze, ice half
 //   o_eyestatue: TILEINDEX_EYE_STATUE $ee, the Explorer's Crypt
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
@@ -25199,6 +25200,24 @@ const OBJECT_ART = {
     3222223332222330
     3333333333333300` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_statue_cistern: { pal: 'o_statue_cistern', art: `
+    0033303333033301
+    0032232112322300
+    0003322332233330
+    0000323333230313
+    0003323333230313
+    3333333332233313
+    3111123222332313
+    3131323333223333
+    3111123222123113
+    3111123332223213
+    3131323333333113
+    3111123332223333
+    3111123222222313
+    3131323333333313
+    3222223332222330
+    3333333333333300` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_iceblock: { pal: 'o_iceblock', art: `
     2222222222222222
     2000000000000002
@@ -25313,6 +25332,7 @@ const OBJECT_PALETTES = {
   o_block_palace: ['#decee7', '#b54a9c', '#6b0052', '#000000'],
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
+  o_statue_cistern: ['#73bd00', '#d68c39', '#944a29', '#000000'],
   o_iceblock: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
   o_eyestatue: ['#ffff8c', '#cea518', '#635200', '#000000'],
 };
@@ -73132,7 +73152,7 @@ function installDungeonsA() {
         entities: [
           ['chest', 7, 3, { charm: 'bosunsWhistle' }],
           ['stalfos', 11, 5],
-          ['statue', 10, 8, { sprite: 'o_statue_wood' }],
+          ['statue', 10, 8],
           ['block', 4, 6, { once: false }],
           ['switch', 3, 8],
           ['switch', 3, 6],
@@ -84786,12 +84806,12 @@ const ENEMY_ART = {
     ................
     ................
     ................
-    ....30033.......
-    ...3303333......
-    ...3333333......
-    ...3333333......
-    ...3333333......
-    ....33333.......
+    ....10011.......
+    ...1101111......
+    ...1111111......
+    ...1111111......
+    ...1111111......
+    ....11111.......
     ................
     ................
     ................
@@ -85161,40 +85181,40 @@ const ENEMY_ART = {
     ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_s0: { pal: 'octorok_s0', art: `
-    ...333..3333....
-    ...32233111233..
-    .33033213312123.
-    .323031331211123
-    .313321111211123
-    .313121111221223
-    .313121331122223
-    .313121133122223
-    .313222113122223
-    .32333221112223.
-    .32333332233333.
-    .33333113331133.
-    ...332233333223.
-    ...3223333333223
-    ...333.......333
+    ....3333..333...
+    ..33100033113...
+    .31010330133333.
+    310001033033313.
+    310001000013303.
+    311011000010303.
+    311110033010303.
+    311110330010303.
+    311110300111303.
+    .31110001133313.
+    .33333113333313.
+    .33003330033333.
+    .311333331133...
+    3113333333113...
+    333.......333...
     ................` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_s1: { pal: 'octorok_s1', art: `
-    ......33333.....
-    .....33000133...
-    33..3103301013..
-    313330330100013.
-    303310000100013.
-    303010000110113.
-    303010330011113.
-    303010033011113.
-    303111003011113.
-    31333110001113..
-    31333331113333..
-    33333003130033..
-    ....3113331133..
-    ....311333113...
-    .....3133313....
-    ......33333.....` },
+    .....33333......
+    ...33100033.....
+    ..3101033013..33
+    .310001033033313
+    .310001000013303
+    .311011000010303
+    .311110033010303
+    .311110330010303
+    .311110300111303
+    ..31110001133313
+    ..33331113333313
+    ..33003130033333
+    ..3311333113....
+    ...311333113....
+    ....3133313.....
+    .....33333......` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_u0: { pal: 'octorok_u0', art: `
     ................
@@ -85715,7 +85735,7 @@ const ENEMY_ART_PALETTES = {
   darknut_up0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   darknut_up1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   gel_0: ['#ffffff', '#ff0829', '#ff0829', '#000000'],
-  gel_1: ['#ffffff', '#ffffff', '#ffffff', '#ff0829'],
+  gel_1: ['#ffffff', '#ff0829', '#ff0829', '#000000'],
   jellyfish_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_death: ['#ffffff', '#ffd68c', '#1984ff', '#000000'],
@@ -85735,7 +85755,7 @@ const ENEMY_ART_PALETTES = {
   moblin_u1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   octorok_d0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   octorok_d1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
-  octorok_s0: ['#ffffff', '#ffd68c', '#ff0829', '#000000'],
+  octorok_s0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   octorok_s1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   octorok_u0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   octorok_u1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
