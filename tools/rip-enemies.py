@@ -414,6 +414,16 @@ HAND_PAL_OF = {'octorok_u0': 'octorok_d0', 'octorok_u1': 'octorok_d0'}
 PINHOLES = [(932, 309), (933, 310)]
 
 
+# RAMP_LIKE (S247): a frame whose colours must sit on the same slots as its
+# partner's. normalise_ramp slots a frame by how MANY colours it has, so a
+# frame with one colour fewer than its partner lands that colour a step
+# darker: the gel's second frame (its eyes shut, so no black) put its red
+# body on the outline slot, and under the shared slime palette every other
+# frame of its wobble was a near-black blob. Mapped colour by colour onto the
+# partner's palette instead.
+RAMP_LIKE = {'gel_1': 'gel_0'}
+
+
 def window(box, ax, ay):
     """The SIZExSIZE source rectangle to take from a box."""
     x, y, w, h = box
@@ -545,6 +555,15 @@ def main():
         rows, pal = normalise_ramp(rows, pal)
         art[name] = seal_holes(rows)
         pals[name] = pal
+
+    for name, ref in RAMP_LIKE.items():
+        want = pals[ref]
+        slot = {c: want.index(c) for c in reversed(want)}
+        old = pals[name]
+        assert all(c in slot for c in old), f'{name} has a colour {ref} lacks'
+        remap = {str(i): str(slot[c]) for i, c in enumerate(old)}
+        art[name] = [''.join(remap.get(ch, ch) for ch in r) for r in art[name]]
+        pals[name] = list(want)
 
     for name, src in HAND_ART.items():
         rows = [r.strip() for r in src.strip('\n').split('\n')]
