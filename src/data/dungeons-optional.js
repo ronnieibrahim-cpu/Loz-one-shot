@@ -95,7 +95,7 @@ export function installOptionalDungeons() {
           { x: 7, y: 10, to: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 112, py: 32, dir: 'down' } },
         ],
         readable: [
-          [3, 5, 'Scratched in the salt: "Light it here, where the kiln keeps the air dry. Down below, it\'s too damp to catch."'],
+          [3, 5, 'Scratched in the salt: "Light it here, where the kiln keeps the air dry. Down below, it won\'t catch."'],
           [11, 5, 'Older: "Whatever the sea puts out stays out. Carry your fire, and mind the water."'],
         ],
       },

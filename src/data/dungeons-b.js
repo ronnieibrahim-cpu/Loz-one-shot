@@ -244,7 +244,7 @@ export function installDungeonsB() {
           reward: { reveal: true },
         },
         readable: [
-          [2, 9, 'Scratched into the bark: "At HIGH tide the trees here vanish underwater. Everything in this shrine starts from that."'],
+          [2, 9, 'Scratched into the bark: "At HIGH tide these trees go under. This whole shrine starts from there!"'],
         ],
       },
       '0,2,5': {
@@ -779,7 +779,7 @@ export function installDungeonsB() {
           ['pickup', 7, 8, { kind: 'seeds5', life: 1e9 }],
         ],
         readable: [
-          [7, 1, 'Carved round the rim of the pool: "Rest here,\nand take what grows back."'],
+          [7, 1, 'Carved round the rim of the pool: "Rest here, and take what grows back."'],
         ],
       },
       '0,7,4': {
@@ -1691,7 +1691,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [13, 4, 'A mooring plate, worn smooth: "The rings in this hall were for hauling. Hook your line on one, and it pulls you across."'],
+          [13, 4, 'A mooring plate, worn smooth: "Hook your line on a ring, and it hauls you across!"'],
         ],
       },
       '1,2,5': {
@@ -2372,7 +2372,7 @@ export function installDungeonsB() {
           ['keese', 12, 2],
         ],
         readable: [
-          [12, 8, 'Scratched in the frost: "Down here the sea\nonly ever sets things down."'],
+          [12, 8, 'Scratched in the frost: "Down here, the sea only ever sets things down."'],
         ],
       },
       '0,6,2': {
@@ -2879,7 +2879,7 @@ export function installDungeonsB() {
           },
         },
         readable: [
-          [6, 7, 'Cut above the drop:\n"Both arches are shut.\nOnly one of them is stone."'],
+          [6, 7, 'Cut above the drop: "Both arches are shut. Only one of them is stone."'],
         ],
         lensRoom: {
           pin: 1, reveals: 2, decide: [6, 6],
@@ -2995,7 +2995,7 @@ export function installDungeonsB() {
           ['keese', 10, 6],
         ],
         readable: [
-          [11, 6, 'A tide board: "The stone bar is in your way at LOW tide, and underwater at HIGH. This whole room turns on that."'],
+          [11, 6, 'A tide board: "At LOW tide the stone bar is a wall. At HIGH tide it\'s underwater!"'],
         ],
       },
       '2,4,3': {

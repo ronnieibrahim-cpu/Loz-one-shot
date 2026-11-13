@@ -420,7 +420,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 4, { text: 'Down: the Cliffs of Kell.\nUp: the Abyssal Keep.' }],
+      ['sign', 6, 4, { text: 'South: the Cliffs of Kell.\nNorth: the Abyssal Keep.' }],
     ],
   },
   '0,3,1': {
@@ -573,7 +573,7 @@ const rooms = {
       { x: 6, y: 2, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'REEF PALACE\nSunk up to its arches. Only the porch is left above water.' }],
+      ['sign', 2, 3, { text: 'REEF PALACE\nSunk to its arches. Only the porch is still dry!' }],
       ['siren', 6, 4],
     ],
   },
@@ -1038,7 +1038,7 @@ const rooms = {
     ],
     entities: [
       ['anglerfry', 4, 5],
-      ['sign', 4, 6, { text: 'The water here runs in a circle. Swimmers get carried round. Walk through instead!' }],
+      ['sign', 4, 6, { text: 'This water runs in a circle. It carries swimmers round and round. Walk through instead!' }],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -1651,7 +1651,7 @@ const rooms = {
       { x: 4, y: 1, to: { map: 'cave5', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 6, 3, { text: 'Someone has been digging here.\nThe bluff behind has a crack in it.' }],
+      ['sign', 6, 3, { text: 'Someone\'s been digging here. And the bluff behind has a crack in it!' }],
       // The village child's kite (S155 errand), up the tree east of the bluff.
       // Only a gust of the Squall Bellows brings it down.
       ['treeSnag', 7, 1, { drops: 'e_kite', hideFlag: 'foundKite' }],
@@ -1776,7 +1776,7 @@ const rooms = {
       '........TT',
     ],
     entities: [
-      ['sign', 4, 4, { text: 'North lies the reef.\nSouth, the dunes run down to the sea.' }],
+      ['sign', 4, 4, { text: 'North: the reef.\nSouth: the dunes, and the sea.' }],
     ],
   },
   '0,16,6': {
@@ -1845,7 +1845,7 @@ const rooms = {
       'g.og..goTT',
     ],
     entities: [
-      ['sign', 2, 2, { text: 'The causeway wades only at LOW tide.' }],
+      ['sign', 2, 2, { text: 'You can only wade the causeway at LOW tide.' }],
       ['zol', 4, 6],
     ],
   },
@@ -1912,7 +1912,7 @@ const rooms = {
       { x: 4, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 2, 6, { text: 'TIDEWATCH VILLAGE\nEast: the square, the shop, and the\nShallows beyond.' }],
+      ['sign', 2, 6, { text: 'TIDEWATCH VILLAGE\nEast: the square, the shop, and the Shallows.' }],
       ['giver', 8, 4, {
         ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
@@ -3021,7 +3021,7 @@ const rooms = {
       ['valve', 2, 5],
       ['valve', 7, 5],
       ['pickup', 4, 5, { kind: 'rupee100' }],
-      ['sign', 8, 1, { text: 'The pans are walled in with salt. HIGH tide washes over some of the walls, but not all of them.' }],
+      ['sign', 8, 1, { text: 'Salt walls ring the pans. HIGH tide washes over some of them, but not all!' }],
     ],
     script: {
       onEvent(game, name) {

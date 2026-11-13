@@ -339,7 +339,7 @@ export function installDungeonsA() {
           planks: [[6, 1], [5, 1], [4, 1], [3, 1]], seas: [1, 2, 0],
         },
         readable: [
-          [14, 4, 'Cut by the door: "The bridge stands while something keeps its weight on the plate."'],
+          [14, 4, 'Cut by the door: "The bridge stays up while something weighs down the plate."'],
         ],
       },
       '0,2,4': {
@@ -637,7 +637,7 @@ export function installDungeonsA() {
           { x: 13, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
         ],
         readable: [
-          [7, 6, 'Light both torches to open the door: one burns while its well is empty, one while its well is full.'],
+          [7, 6, 'Light both torches and the door opens. One burns with its well empty, one with its well full!'],
         ],
         puzzle: {
           condition: (g, r) => g.tide.levelAt(3, 2, r) === 0 && g.tide.levelAt(11, 2, r) === 2,
@@ -764,7 +764,7 @@ export function installDungeonsA() {
           ['gaugeTorch', 7, 4, { well: [7, 1], level: 2 }],
         ],
         readable: [
-          [12, 4, 'Light all three torches to open the door: the wells empty, the basin full.'],
+          [12, 4, 'Light all three torches and the door opens. The wells want to be empty, the basin full!'],
         ],
         puzzle: {
           condition: (g, r) => r.def.anchorGauges.marks.every(([x, y, l]) => g.tide.levelAt(x, y, r) === l),
@@ -925,7 +925,7 @@ export function installDungeonsA() {
           ['octorok', 12, 8],
         ],
         readable: [
-          [13, 1, 'Scratched into the shell: "The carver in Tidewatch\nwants bone, not gold."'],
+          [13, 1, 'Scratched into the shell: "The carver in Tidewatch wants bone, not gold."'],
         ],
         anchorGate: { from: [14, 5], to: [2, 5] },
       },
@@ -1267,7 +1267,7 @@ export function installDungeonsA() {
           ['urchin', 11, 2],
         ],
         readable: [
-          [12, 8, 'A pane of green glass in the wall. Through it, the room looks a little deeper in water than it really is.'],
+          [12, 8, 'Green glass in the wall. Through it, the water looks deeper than it really is.'],
         ],
       },
       '1,4,5': {
@@ -1309,8 +1309,8 @@ export function installDungeonsA() {
           },
         },
         readable: [
-          [2, 9, 'You can hear wings flapping, but the room is empty. The tide here won\'t change to show you what they are.'],
-          [12, 9, 'Scratched by the door: "Look through the glass to see what lives at the other tide. What you can see, your sword can hit."'],
+          [2, 9, 'Wings are flapping, but the room looks empty. And the tide here won\'t change to show them...'],
+          [12, 9, 'Scratched by the door: "Look through the glass at the other tide. If you can see it, you can hit it!"'],
         ],
       },
       '1,4,3': {
@@ -2778,7 +2778,7 @@ export function installDungeonsA() {
           reward: { reveal: true },
         },
         readable: [
-          [2, 1, 'Cut in the urn: "Too damp in here to strike a light. Whatever burns here was lit somewhere else."'],
+          [2, 1, 'Cut in the urn: "Too damp to strike a light in here. Bring your fire with you!"'],
         ],
       },
       '0,1,3': {
@@ -2977,7 +2977,7 @@ export function installDungeonsA() {
           { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 8, 'Chiselled deep: "Everything here was worked from the far bank. Nothing is meant to be reached by hand."'],
+          [2, 8, 'Chiselled deep: "Everything here was worked from the far bank. None of it is in reach of your hands!"'],
         ],
       },
       '0,3,6': {
@@ -3691,7 +3691,7 @@ export function installDungeonsA() {
           ['keese', 11, 8],
         ],
         readable: [
-          [2, 8, 'A plate over the spillway: "The cell below has one way in and one way to work it. They don\'t share a tide."'],
+          [2, 8, 'A plate over the spillway: "You get into the cell below at one tide, and work it at another."'],
         ],
       },
       '0,0,4': {
