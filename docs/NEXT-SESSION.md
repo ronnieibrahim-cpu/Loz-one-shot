@@ -97,6 +97,19 @@ reviewed and merged here.
   `=` blocks stay. Seasons draws fixed and pushable blocks alike.
 - Wyverna over the north wall: still left (S153's camera question).
 
+### Then: "what happened to the intro? It's just a black screen with text"
+- The shipwreck opening (S168, src/game/intro.js) played only at power-on,
+  before the logo, and the START that passes the card skipped it; a new game
+  then showed the `intro` cutscene's two lines on black. The `intro` scene
+  now plays the Opening itself (cutscene step `opening: { caption }`): the
+  ship, the storm, the white, the shore; the line about Thalassia goes up once
+  the sea has drawn back off Link (INTRO_ASHORE_AT), A puts it away, START
+  skips the whole thing; it ends on white and the beach fades in from white.
+  The title card "The Legend of Zelda / Oracle of Tides" on black is gone
+  (the logo has just said it). The robot's newgame taps START in a cutscene
+  as well as A. check-text reads the caption. Picture:
+  docs/briefs/s247/newgame-opening.png. Playthrough 49/49 unchanged.
+
 ### Verified
 Whole table green; test.mjs 170 after the second part (159 after the first); check-rippers 45/45.
 check-playthrough 49/49, THE END, never died, low-water 5 (Wyverna).
