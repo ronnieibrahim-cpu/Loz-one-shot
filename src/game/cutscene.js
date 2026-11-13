@@ -58,6 +58,7 @@
 //
 // Steps that need to wait return control until their condition clears.
 
+import { Opening, INTRO_ASHORE_AT } from './intro.js';
 import { SCREEN_W, SCREEN_H, HUD_H } from '../core/screen.js';
 import { drawTextCentered, wrapText } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
@@ -106,6 +107,11 @@ export function runCutscene(game, steps, data = {}) {
   let waitingDialogue = false;
   let lifted = null;
   let presenting = false;
+  // THE PICTURES (S247): a new game plays the shipwreck the title plays at
+  // power-on — the ship, the storm, Link on the shore — rather than two lines
+  // on black. START skips it, as START skips every scene; A puts away its
+  // caption and nothing else, as Seasons' own intro scenes take no A.
+  let opening = null;
 
   function begin(step) {
     if (step.music !== undefined) { if (step.music) game.audio.play(step.music); else game.audio.stop(); }
@@ -150,6 +156,7 @@ export function runCutscene(game, steps, data = {}) {
       game.enterMap(w.map || game.mapId, w.floor || 0, w.rx, w.ry, w.px, w.py, w.dir, { instant: true });
     }
     if (step.tide != null) game.tide.setLevel(step.tide);
+    if (step.opening) opening = { play: new Opening(game), caption: step.opening.caption || null };
     if (step.do) step.do(game, data);
     if (step.text) {
       caption = { text: step.text, t: Math.max(step.frames || 120, readFrames(step.text)) };
@@ -185,6 +192,7 @@ export function runCutscene(game, steps, data = {}) {
   }
 
   function stepDone(step) {
+    if (opening) return false;
     if (waitingDialogue) return false;
     if (presenting) { if (game.dialogue.active || game.itemShow) return false; presenting = false; }
     if (waiting > 0) return false;
@@ -228,6 +236,11 @@ export function runCutscene(game, steps, data = {}) {
       const i2 = game.input;
       if (caption && caption.t > 0 && (i2.pressed('a') || i2.pressed('b'))) caption.t = 0;
       if (shown && shown.t > 0 && (i2.pressed('a') || i2.pressed('b'))) shown.t = 0;
+      if (opening) {
+        if (opening.capT == null && opening.play.t >= INTRO_ASHORE_AT && opening.caption) opening.capT = 0;
+        if (opening.capT != null && (i2.pressed('a') || i2.pressed('b'))) opening.caption = null;
+        if (opening.play.update() || i2.pressed('start')) opening = null;
+      }
       if (i2.pressed('start')) {
         waiting = 0;
         if (shown) shown.t = 0;
@@ -268,6 +281,19 @@ export function runCutscene(game, steps, data = {}) {
     },
 
     draw(ctx) {
+      if (opening) {
+        opening.play.draw(ctx);
+        // The line goes up once the sea has drawn back off him, at the foot
+        // of the screen in the cutscene's own solid band.
+        if (opening.caption && opening.capT != null) {
+          const lines = wrapText(opening.caption, SCREEN_W - 20);
+          const h = lines.length * 10 + 8, y = SCREEN_H - h - 8;
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, y, SCREEN_W, h);
+          lines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, y + 4 + n * 10, '#f8f8e8'));
+        }
+        return;
+      }
       if (lifted) {
         const cam = game.camera || { x: 0, y: 0 };
         sprites.draw(ctx, lifted.art, Math.round(lifted.x - cam.x),

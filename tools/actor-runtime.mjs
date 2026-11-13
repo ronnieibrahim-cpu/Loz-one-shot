@@ -560,7 +560,8 @@ export async function installRuntime() {
         yield (f % 12 === 0) ? BIT.start : 0;
         continue;
       }
-      if (g.mode === 'cutscene') { yield (f % 8 === 0) ? BIT.a : 0; continue; }
+      // The opening's pictures take START alone (S247), as a player skips them.
+      if (g.mode === 'cutscene') { yield (f % 8 === 0) ? BIT.a : (f % 8 === 4) ? BIT.start : 0; continue; }
       if (g.dialogue.active) { yield (f % 6 === 0) ? BIT.a : 0; continue; }
       if (g.mode === 'play' && !g.fadeDir && !g.itemShow) { yield* dWait(8); return; }
       yield 0;

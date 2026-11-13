@@ -60,6 +60,7 @@ for (const [k, steps] of Object.entries(STORY_CUTSCENES)) {
   for (const st of steps || []) {
     scan(st.text, `cutscene ${k}.text`);
     scan(st.say, `cutscene ${k}.say`);
+    scan(st.opening && st.opening.caption, `cutscene ${k}.opening.caption`);
   }
 }
 for (const m of MAPS.values()) {

@@ -52,6 +52,9 @@ const P_SHORE = P_WHITE + INTRO_WHITE_FRAMES;
 const P_WIPE = P_SHORE + INTRO_SHORE_HIGH_FRAMES;
 const P_LOW = P_WIPE + TIDE_SWEEP_FRAMES;
 export const INTRO_FRAMES = P_LOW + INTRO_SHORE_LOW_FRAMES;
+/** When the tide has drawn back off Link on the shore (S247): the new game's
+ *  opening puts its one line of words up from here. */
+export const INTRO_ASHORE_AT = P_LOW;
 
 // The storm, as a Game Boy Color does it: the palettes rewritten in four steps
 // towards a dark sea-grey, never a shade laid over the scene.

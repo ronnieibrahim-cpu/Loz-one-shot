@@ -238,10 +238,16 @@ const CUTSCENES = {
   // The two cards are on black and the beach fades in after them (S221):
   // Seasons' own card is words on a plain screen, and a see-through band over
   // the beach is a thing the Game Boy cannot draw.
+  //
+  // S247 (the human: "it's just a black screen with text"): a new game plays
+  // the shipwreck the title plays at power-on (src/game/intro.js) — which a
+  // START at the card skipped, so most players never saw it — and its one
+  // line goes up over the shore. It ends on white, and the beach fades in
+  // from white, as the opening's own scenes do.
   intro: [
     { music: null, fade: 'black' },
-    { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
-    { text: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.', frames: 220 },
+    { opening: { caption: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.' } },
+    { do: (g) => { g.fadeWhite = true; g.blackOut(); } },
     { fade: 'in' },
     { flag: 'sawIntro' },
     { music: 'overworld' },

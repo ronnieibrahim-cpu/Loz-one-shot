@@ -34453,6 +34453,9 @@ const P_SHORE = P_WHITE + INTRO_WHITE_FRAMES;
 const P_WIPE = P_SHORE + INTRO_SHORE_HIGH_FRAMES;
 const P_LOW = P_WIPE + TIDE_SWEEP_FRAMES;
 const INTRO_FRAMES = P_LOW + INTRO_SHORE_LOW_FRAMES;
+/** When the tide has drawn back off Link on the shore (S247): the new game's
+ *  opening puts its one line of words up from here. */
+const INTRO_ASHORE_AT = P_LOW;
 
 // The storm, as a Game Boy Color does it: the palettes rewritten in four steps
 // towards a dark sea-grey, never a shade laid over the scene.
@@ -34602,6 +34605,7 @@ class Opening {
   }
 }
 __exports["INTRO_FRAMES"] = INTRO_FRAMES;
+__exports["INTRO_ASHORE_AT"] = INTRO_ASHORE_AT;
 __exports["Opening"] = Opening;
 });
 
@@ -42209,6 +42213,7 @@ __define("game/cutscene.js", function (__exports, __require) {
 //
 // Steps that need to wait return control until their condition clears.
 
+const { Opening, INTRO_ASHORE_AT } = __require("game/intro.js");
 const { SCREEN_W, SCREEN_H, HUD_H } = __require("core/screen.js");
 const { drawTextCentered, wrapText } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
@@ -42253,6 +42258,11 @@ function runCutscene(game, steps, data = {}) {
   let waitingDialogue = false;
   let lifted = null;
   let presenting = false;
+  // THE PICTURES (S247): a new game plays the shipwreck the title plays at
+  // power-on — the ship, the storm, Link on the shore — rather than two lines
+  // on black. START skips it, as START skips every scene; A puts away its
+  // caption and nothing else, as Seasons' own intro scenes take no A.
+  let opening = null;
 
   function begin(step) {
     if (step.music !== undefined) { if (step.music) game.audio.play(step.music); else game.audio.stop(); }
@@ -42297,6 +42307,7 @@ function runCutscene(game, steps, data = {}) {
       game.enterMap(w.map || game.mapId, w.floor || 0, w.rx, w.ry, w.px, w.py, w.dir, { instant: true });
     }
     if (step.tide != null) game.tide.setLevel(step.tide);
+    if (step.opening) opening = { play: new Opening(game), caption: step.opening.caption || null };
     if (step.do) step.do(game, data);
     if (step.text) {
       caption = { text: step.text, t: Math.max(step.frames || 120, readFrames(step.text)) };
@@ -42332,6 +42343,7 @@ function runCutscene(game, steps, data = {}) {
   }
 
   function stepDone(step) {
+    if (opening) return false;
     if (waitingDialogue) return false;
     if (presenting) { if (game.dialogue.active || game.itemShow) return false; presenting = false; }
     if (waiting > 0) return false;
@@ -42375,6 +42387,11 @@ function runCutscene(game, steps, data = {}) {
       const i2 = game.input;
       if (caption && caption.t > 0 && (i2.pressed('a') || i2.pressed('b'))) caption.t = 0;
       if (shown && shown.t > 0 && (i2.pressed('a') || i2.pressed('b'))) shown.t = 0;
+      if (opening) {
+        if (opening.capT == null && opening.play.t >= INTRO_ASHORE_AT && opening.caption) opening.capT = 0;
+        if (opening.capT != null && (i2.pressed('a') || i2.pressed('b'))) opening.caption = null;
+        if (opening.play.update() || i2.pressed('start')) opening = null;
+      }
       if (i2.pressed('start')) {
         waiting = 0;
         if (shown) shown.t = 0;
@@ -42415,6 +42432,19 @@ function runCutscene(game, steps, data = {}) {
     },
 
     draw(ctx) {
+      if (opening) {
+        opening.play.draw(ctx);
+        // The line goes up once the sea has drawn back off him, at the foot
+        // of the screen in the cutscene's own solid band.
+        if (opening.caption && opening.capT != null) {
+          const lines = wrapText(opening.caption, SCREEN_W - 20);
+          const h = lines.length * 10 + 8, y = SCREEN_H - h - 8;
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, y, SCREEN_W, h);
+          lines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, y + 4 + n * 10, '#f8f8e8'));
+        }
+        return;
+      }
       if (lifted) {
         const cam = game.camera || { x: 0, y: 0 };
         sprites.draw(ctx, lifted.art, Math.round(lifted.x - cam.x),
@@ -78608,10 +78638,16 @@ const CUTSCENES = {
   // The two cards are on black and the beach fades in after them (S221):
   // Seasons' own card is words on a plain screen, and a see-through band over
   // the beach is a thing the Game Boy cannot draw.
+  //
+  // S247 (the human: "it's just a black screen with text"): a new game plays
+  // the shipwreck the title plays at power-on (src/game/intro.js) — which a
+  // START at the card skipped, so most players never saw it — and its one
+  // line goes up over the shore. It ends on white, and the beach fades in
+  // from white, as the opening's own scenes do.
   intro: [
     { music: null, fade: 'black' },
-    { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
-    { text: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.', frames: 220 },
+    { opening: { caption: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.' } },
+    { do: (g) => { g.fadeWhite = true; g.blackOut(); } },
     { fade: 'in' },
     { flag: 'sawIntro' },
     { music: 'overworld' },
