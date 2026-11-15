@@ -447,6 +447,17 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **An entity that removes itself on its first update is still DRAWN under
+  a room's walk-in fade (S248).** Late shop stock first dropped itself in
+  ShopItem.update; entity updates do not run while the door's fade plays, so
+  the hidden stock stood on the shelf for those frames and the recorded
+  shop-door replay counted three extra entities. A "not here yet" condition
+  belongs in Game.spawnSpec (`needFlag`, `hideFlag`, now `stockAt`/`until`).
+- **A three-figure shop price is wider than its tile (S248).** Perched stock
+  writes its tag centred over the item; "150" spills four pixels each side
+  into its neighbour's tag ("80150"). Give it an empty slot on the side it
+  would touch, or keep the price under 100.
+
 - **Swapping one enemy for another on the route is a route change, and the
   robot cannot fight three of them (S247).** It lost 26 quarter-hearts to one
   spiked beetle (no shield, no flip), 18 to one bubble (nothing kills one)

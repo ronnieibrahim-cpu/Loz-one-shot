@@ -1,3 +1,78 @@
+## S248 — the audit, part two: signs, the opening's music, the overworld, the shop
+
+Branch claude/nifty-pasteur-xiauob, off main at 8d626a8. The write-up is
+docs/AUDIT-S247.md "Part two". Pictures and sounds: docs/briefs/s248/.
+
+### The human's choices this session (do not re-ask)
+- No iPad play notes yet.
+- The two reworded puzzle signs (D3 Two Weights, D4 Ebb Cell): "both are fine".
+- Opening music: B, the cartridges' opening theme (offered: silence; Seasons'
+  storm theme under the storm only). Ages has no separate intro: mus/intro1.s
+  is shared.
+- The Drowned Wood: "both" — a puzzle cave with a moved heart piece AND a
+  seed-throwing mini-game (offered: either, or leave it).
+- The shop: "late stock after 3 Essences" (offered: leave prices alone).
+
+### Built
+- SIGNS: 25 of 122 signs/carvings reworded (overworld.js, dungeons-a/b.js,
+  dungeons-optional.js); the Kell post says North/South. Scan:
+  `node` over MAPS roomDefs `entities` 'sign' and `readable` (a 12-line script;
+  tools/oneshot/shoot-signs.mjs photographs one read for real, every page).
+- OPENING MUSIC: audio.js `openingTheme: { seasons: 'intro1' }`; story.js
+  `intro` plays it and its `do` step calls `audio.fadeOut(TITLE_MUSIC_FADE_MASK,
+  'overworld')`. core/audio.js: `fadeOut(mask, then)` starts `then` when the
+  fade runs out; play(then) meanwhile is ignored; a sound that ends the fade
+  early starts `then` at once; stop() forgets it. check-music TAIL_ENDS lets
+  intro1's noise channel end while the others loop. test.mjs +3.
+- MARSH ENEMIES (off the route): 0,1,6 leever->moblin; 0,0,7 ->beetle; 0,0,8
+  ->beetle + moblin; 0,0,9 ->moblin. The pincer (defined, never placed) was
+  tried: it has no hole to hide in on open ground (invisible). Not placed.
+- SHOP: houseShop (overworld.js): bomb4, heart and the Bottled Tide at 7 carry
+  `until: 3`; from 3 Essences `bomb10` (40, objects.js PICKUPS + CAPACITY_FOR)
+  at 5, a Hagstone (150) at 7 and the Bottled Tide at 3. A three-figure tag is
+  wider than a tile, so the Hagstone needs its west neighbour empty.
+  `stockAt`/`until` are spawn conditions in Game.spawnSpec (Essences held).
+  shopkeeper2 announces it. test.mjs +4.
+- THE STAKE GAME (0,7,4 Drowned Ring): a Kelper `racer` with race 'pool',
+  `needItem: 'reefseed'`, `needSeeds: 3`, `need` line; three `stakeMark`s
+  (objects.js StakeMark, the o_buoy float) at 3,4 / 5,3 / 6,5, thrown onto
+  from 3,2 down / 7,3 left / 8,5 left. Won when every mark's tile is
+  coralPillar; Game.startRace calls `onRaceStart`, which puts the marks' water
+  back. RACE_POOL_FRAMES 1200 (guessed). Prize `blank`, again rupee20, flag
+  poolWon, best time in raceBest.pool. Lines poolNeed..poolLose (story.js);
+  check-dialogue knows `need`. test.mjs +5.
+- THE ROOT CELLAR (cave19, a Sonnet helper in a worktree, reviewed here):
+  bomb the crack at 0,8,4 Rootwater (3,3); a `blockRoom` (check-blocks 6):
+  push the block over the seafloor at LOW, then over the sinkhole at MID onto
+  the plate; pays the Piece of Heart that was the Hollow Den's (cave5 now
+  holds a rupee100). legends.js cave `$` = seaDrain. check-side and the guide
+  (tools/guide) follow it.
+- TOOLS: route-prefix.mjs `ROOMS=<map regex>` lists every room the run stands
+  in with rupees held/earned/spent on arrival; shoot-region.mjs keeps its
+  parked player alive (a HIGH stitch drew GAME OVER into later screens);
+  tools/oneshot/shoot-eval.mjs and eval-game.mjs run a snippet in the live
+  game and save the canvas / print the result; render-seasons-wav.mjs renders
+  any ripped script (RIP_ALL_MUSIC=1 python3 tools/rip-music.py first, then
+  `git checkout src/data/music-seasons.js`).
+- .gitignore: .claude/worktrees/ (a helper's worktree was committed once as a
+  bare pointer and taken out again).
+
+### Looked at and left
+- Overworld art at LOW/MID/HIGH: nothing wrong (a helper and here).
+- The economy: the robot arrives at D1-D6 with 21/39/95/125/182/239 Rupees
+  and never spends; the early prices stand.
+- Menus, quest page, map, save: still the cartridge's own (S167-S177);
+  docs/briefs/s248/menus-vs-seasons.png.
+- D5 -> D6: waits for the human to play it (do not change it unasked).
+
+### Verified
+Whole table green; test.mjs 182; replay 51; check-playthrough 49/49, THE
+END, never died (run before the cave merged and again after).
+
+### Next
+- AUDIT part two "Still open": the dunes and marsh are thin (one piece each);
+  D5 -> D6 needs the human's play.
+
 ## S247 — the audit: an enemy ladder, puzzles that chime, mini-games that ask
 
 Branch claude/oracles-third-installment-audit-dv9u55, off main at 1b12f14.
