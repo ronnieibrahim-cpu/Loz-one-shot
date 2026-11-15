@@ -121,3 +121,78 @@ bosses checked for cut-off art (none). Looked at and left, with reasons, in
 docs/NEXT-SESSION.md S247: the D5 -> D6 jump, the robot's narrow boss wins,
 Wyverna leaving the top of the screen. Still wants a person: the two
 reworded signs, and whether D6 reads as a finale.
+
+# Part two (S248)
+
+No iPad play notes yet, so the list in docs/prompts/NEXT-PROMPT.md was
+worked in order. Pictures and sounds are in docs/briefs/s248/.
+
+## 1. Signs and plaques
+
+**Found.** 34 roadside signs and 88 carvings (`readable`) in dungeons, caves
+and the optional dungeons; most already had the S202 voice. 25 were stiff,
+long or carried hand-placed line breaks the box re-wraps anyway; the
+Cliffs-of-Kell post said Up/Down where every other says North/South.
+
+**Changed.** All 25 reworded, every hint kept (tools/oneshot/shoot-signs.mjs
+photographs a sign read for real, every page). The two puzzle signs (the
+Two Weights, the Ebb Cell) were read cold by the human: "both are fine".
+
+## 2. A sound under the opening
+
+**Offered** three mock-ups (silence; MUS_INTRO_1, which Seasons and Ages
+share — there is no separate Ages intro; Seasons' storm theme under the
+storm). **The human chose the opening theme.** It plays from the calm sea,
+fades fast as the beach comes in, and the overworld's track starts when the
+fade runs out (`Audio.fadeOut(mask, then)`). check-music lets this one
+track's noise channel end while the others loop, as the cartridge wrote it.
+
+## 3. The overworld as a player walks it
+
+Regions are the screens' `music` key. Counted per region (pieces, charms,
+caves, errands, games; enemies by health x damage):
+
+| region (dungeon) | screens | to find | enemies |
+|---|---|---|---|
+| dunes (D1) | 18 | 1 piece, 1 charm cave | crab, leever, octorok, urchin |
+| reef (D2) | 36 | 1 piece, 4 charm caves, Palace | siren, octorokSea, jellyfish ... |
+| marsh (D3) | 12 | 1 piece, a trade | zol, keese, leever (weaker than the reef) |
+| Kell (D4) | 16 | 1 piece, 2 wheels, Eyrie, quarryman | tektite, beetle, moblin |
+| wood (D5) | 27 | 1 charm cave, 1 trade, nothing else | wisp, anglerfry, moblin |
+| abyss (D6) | 8 | 1 piece, lighthouse, charm | darknut, wizzrobe |
+| salt (Rod) | 21 | bottle, charm, the Vault | beetle, moblin, wisp |
+| south coast | 19 | 6 pieces, race, dive, buoys, blades | octorok, crab |
+
+**Changed.**
+- The marsh's enemies now climb past the reef's: five leevers (sand
+  creatures, in a bog) on screens the robot never walks became moblins and
+  spiked beetles. The pincer (built, never placed) was tried and left out:
+  Seasons gives it a hole to hide in, and on open mud it is invisible.
+- The Wood (the human: "both"): a Kelper's stake game at the Drowned Ring
+  (grow a stake on three floats in 20 s; blank charm, then rupees) and a
+  puzzle cave holding a Piece of Heart moved from the Hollow Den — see
+  NEXT-SESSION S248 for the cave.
+- Every screen stitched at LOW, MID and HIGH and looked at (a helper, then
+  here): nothing wrong on screen. shoot-region.mjs drowned its parked
+  player half way through a big HIGH stitch and drew GAME OVER into every
+  screen after; fixed.
+
+**Still open.** The dunes and the marsh are still thin (one piece each).
+
+## 4. The economy
+
+Read off the real run (`ROOMS=... route-prefix.mjs`, new): the robot
+arrives at D1-D6 with 21, 39, 95, 125, 182, 239 Rupees and spends none.
+The one-off buys (shield 30, Bottled Tide 40, a charm 80) are affordable by
+D4; after that nothing new was for sale. **Changed** (the human: "late
+stock after 3 Essences"): bombs ten at a time (40) and a Hagstone (150).
+
+## 5. Menus and HUD
+
+The item, treasure and quest pages, the save screen and both map screens
+set beside Seasons' own (assets/footage/frames): every one was cut from the
+cartridge's graphics (S167-S177) and still matches. Nothing changed.
+
+## 6. D5 -> D6
+
+Not changed, as the brief says: it waits for the human to play it.

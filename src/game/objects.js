@@ -1101,12 +1101,8 @@ export class ShopItem extends Entity {
     // Shop stock (S215), drawn still and priced above, as Seasons stands it.
     this.perched = !!o.perched;
     this.depth = -3;
-    // LATE STOCK (S248, the human: "late stock after 3 Essences"). `stockAt`
-    // puts a piece on the shelf only once that many Essences are held, and
-    // `until` takes one off then, so a slot can change what it sells. Both
-    // are read on the first frame: nothing earns an Essence inside the shop.
-    this.stockAt = o.stockAt || 0;
-    this.until = o.until || 0;
+    // LATE STOCK (S248): `stockAt`/`until` (Essences held) are spawn
+    // conditions, read by Game.spawnSpec as the room is built.
   }
 
   get displayName() {
@@ -1176,8 +1172,6 @@ export class ShopItem extends Entity {
     if (!this._checked) {
       this._checked = true;
       if (this.saveKey && game.progress.secrets[this.saveKey]) this.sold = true;
-      const held = (game.progress.essences || []).length;
-      if (held < this.stockAt || (this.until && held >= this.until)) this.remove = true;
     }
   }
 

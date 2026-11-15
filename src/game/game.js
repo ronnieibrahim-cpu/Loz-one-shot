@@ -526,6 +526,11 @@ export class Game {
       if (this.progress.secrets[saveKey] && (type === 'pickup' || type === 'essence')) return;
       if (o.needFlag && !flag(this.progress, o.needFlag)) return;
       if (o.hideFlag && flag(this.progress, o.hideFlag)) return;
+      // Shop stock by Essences held (S248): `stockAt` from that many on,
+      // `until` before that many. Decided as the room is built, so stock that
+      // is not on sale is never drawn, not even under the walk-in fade.
+      const held = (this.progress.essences || []).length;
+      if ((o.stockAt && held < o.stockAt) || (o.until && held >= o.until)) return;
       // An ice chunk the save has moved is spawned where the save says it is
       // (spawnRecordedChunks), not here (S189).
       if (type === 'icechunk' && !chunkAtHome(this, o.id)) return;
