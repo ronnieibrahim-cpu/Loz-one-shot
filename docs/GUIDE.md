@@ -2069,10 +2069,12 @@ Numbered in the order this walkthrough passes them.
     in the cliff at the top of the Wind Shelf (`overworld/0,1,2`, on the
     Cliffs of Kell) at (3,1). Its mouth is only above the water at **LOW
     tide**: sound the sea down, wade the channel and walk in.
-19. **Heart Piece 19** — `cave5/0,0,0`, Hollow Den, tile (4,2). Bluff Hollow
-    (`overworld/0,3,6`, just north-west of the village) has a short cliff face
-    in its treeline with a crack in it at (4,1): **bomb it** and a cave mouth
-    opens. Needs **bombs** and nothing else.
+19. **Heart Piece 19** — `cave19/0,0,0`, the Root Cellar, tile (6,2) (S248;
+    it used to lie in the Hollow Den). Rootwater (`overworld/0,8,4`, in the
+    Drowned Wood) has a short rock face with a crack at (3,3): **bomb it**.
+    Inside, a block sits at the west end of a walled channel. At **LOW** push
+    it east over the dry seafloor; sound the sea to **MID** and push it on over
+    the flooded sinkhole onto the plate. The piece appears.
 20. **Heart Piece 20** — `d6/1,5,3`, The Slack Water, buried at (7,5). **Dredge
     Line**, cast from (7,7) facing up at **MID**.
 21. **Heart Piece 21** — `d6/2,2,3`, The Sunken Bar, buried at (5,2). **Dredge
@@ -2303,7 +2305,8 @@ hit.
 | `cave6/0,0,0` Slackwater Cave | `overworld/0,1,2` (3,1) — a sea cave, open at **LOW tide** only | **Heart Piece 18** |
 | `lighthouse` The Lighthouse | `overworld/0,0,0` (1,4)-(2,4), the tower's door | The keeper; the lamp up the stair (the dark lighthouse) |
 | `cave18/0,0,0` Lightkeeper's Cove | `overworld/0,0,1` (8,0) — cliff until the lighthouse is lit | Chests with the **Lamplighter's Wick** and 100 rupees |
-| `cave5/0,0,0` Hollow Den | `overworld/0,3,6` (4,1) — a cracked wall; **bomb it** | **Heart Piece 19** |
+| `cave5/0,0,0` Hollow Den | `overworld/0,3,6` (4,1) — a cracked wall; **bomb it** | 100 rupees (its piece moved to the Root Cellar, S248) |
+| `cave19/0,0,0` Root Cellar | `overworld/0,8,4` (3,3) — a cracked wall; **bomb it** | A block puzzle (LOW, then MID): **Heart Piece 19** |
 
 The Salt Pan Vault and the Palace Porch are the one-room ruins of what used to be
 two more dungeons. Each kept the item its dungeon used to hand over. The notices
