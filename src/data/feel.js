@@ -2881,6 +2881,13 @@ export const GB_RENDER_SLICE_GAP_MS = 12;
  *  screen scroll and a text box. */
 export const RACE_SHORE_FRAMES = 600;
 
+/** frames — the Kelper's stake game's clock in the Drowned Ring (S248): grow a
+ *  coral stake on each of three floats from the pool's rim. guessed: the
+ *  fastest round is about eight seconds (three stands round the rim, the last
+ *  bud's two-second bloom), and a seed that lands short costs a throw and a
+ *  walk back, so 20 seconds leaves room for one miss and not three. */
+export const RACE_POOL_FRAMES = 1200;
+
 // --- the bell-buoy echo (S201 side content) --------------------------------
 
 /** f — between two notes of the sailor's tune. guessed; slow enough to see

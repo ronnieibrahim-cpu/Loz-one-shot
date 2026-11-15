@@ -43,9 +43,10 @@ installData();
 // `src/game/objects.js`; a field added there and not here is a reference this
 // tool cannot see.
 // `ask`/`busy`/`win`/`lose` are a race's `racer` (S155); `noRod`/`turn`/
-// `sour`/`winAgain` and the `next` list the buoy sailor's (S201).
+// `sour`/`winAgain` and the `next` list the buoy sailor's (S201); `need` a racer's
+// "come back with" line (S248, the stake game).
 const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'go', 'decline', 'win', 'lose',
-  'noRod', 'turn', 'sour', 'winAgain', 'askBest', 'record'];
+  'noRod', 'turn', 'sour', 'winAgain', 'askBest', 'record', 'need'];
 const DEAL_ID_FIELDS = ['text', 'blocked', 'after'];
 
 const referenced = new Map();   // id -> [where, ...]

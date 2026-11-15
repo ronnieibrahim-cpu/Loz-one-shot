@@ -3078,6 +3078,17 @@ const rooms = {
     ],
     entities: [
       ['anglerfry', 5, 4], ['keese', 4, 1],
+      // THE KELPER'S STAKE GAME (S248, the human's choice): grow a coral
+      // stake on all three floats before the clock runs out. Each float is
+      // two tiles out from one stand on the pool's rim — (3,2) facing down,
+      // (7,3) facing left, (8,5) facing left — which test.mjs throws from in
+      // the real engine. First win: a blank charm; after that, rupees.
+      ['racer', 6, 1, {
+        ...FOLK.kelper, race: 'pool', needItem: 'reefseed', needSeeds: 3, need: 'poolNeed',
+        ask: 'poolAsk', askBest: 'poolAskBest', busy: 'poolBusy', go: 'poolGo', decline: 'poolNo',
+        record: 'poolRecord', win: 'poolWin', lose: 'poolLose', prize: 'blank', again: 'rupee20', flag: 'poolWon',
+      }],
+      ['stakeMark', 3, 4, { race: 'pool' }], ['stakeMark', 5, 3, { race: 'pool' }], ['stakeMark', 6, 5, { race: 'pool' }],
     ],
   },
   '0,7,5': {

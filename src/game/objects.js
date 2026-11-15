@@ -25,7 +25,7 @@ import {
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
-  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
+  CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, RACE_POOL_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
   LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES,
   FLOAT_SPEED, FLOAT_FOOT_DY, SV_FLOAT_SPEED, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES,
   BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
@@ -737,7 +737,7 @@ defineEntity('npc', (x, y, o) => new NPC(x, y, o));
 //   ['raceGoal', 5, 5, { race: 'shore', dialogue: 'raceGoalWait', sprite: ... }]
 // --------------------------------------------------------------------------
 
-const RACE_FRAMES = { shore: RACE_SHORE_FRAMES };
+const RACE_FRAMES = { shore: RACE_SHORE_FRAMES, pool: RACE_POOL_FRAMES };
 
 export class Racer extends NPC {
   constructor(x, y, o = {}) {
@@ -752,6 +752,12 @@ export class Racer extends NPC {
     this.busyText = o.busy || null;
     this.goText = o.go || null;
     this.declineText = o.decline || null;
+    // A game that wants a tool asks for it first (S248, the stake game):
+    // without `needItem`, or with fewer than `needSeeds` Reefseeds, the racer
+    // says `need` and nothing starts.
+    this.needItem = o.needItem || null;
+    this.needSeeds = o.needSeeds || 0;
+    this.needText = o.need || null;
   }
 
   interact(game, player) {
@@ -760,6 +766,11 @@ export class Racer extends NPC {
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
     if (game.race) { if (this.busyText) game.startDialogue(this.busyText, this); return; }
+    const p = game.progress;
+    if ((this.needItem && !hasItem(p, this.needItem)) || (this.needSeeds && (p.reefseeds || 0) < this.needSeeds)) {
+      if (this.needText) game.startDialogue(this.needText, this);
+      return;
+    }
     // ASKED FIRST (S247), as the cartridges' games are: Yes starts the clock
     // when the racer's "GO!" is put away, No costs nothing.
     const go = () => {
@@ -793,6 +804,60 @@ export class RaceGoal extends NPC {
   }
 }
 defineEntity('raceGoal', (x, y, o) => new RaceGoal(x, y, o));
+
+// THE KELPER'S STAKE GAME (S248, the human: "a seed-throwing game" for the
+// Drowned Wood). A race with no finish line: its `racer` starts the clock,
+// and it is won the frame every `stakeMark` of that race in the room has a
+// coral stake grown on its tile. A mark is a float moored on open water; a
+// Reefseed thrown onto it grows through it (a mark is not solid and has no
+// `interact`, so `Reefseed.canPlant` lets the stake root there). The start of
+// a round puts every mark's water back, so a stake left from the last round
+// counts for nothing.
+//
+//   ['stakeMark', 3, 4, { race: 'pool' }]
+export class StakeMark extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 4, w: 12, h: 11 };
+    this.harmless = true;
+    this.shadow = false;
+    this.perched = true;           // moored on open water: no ground asked of it
+    this.raceId = o.race || null;
+    this.t = 0;
+    this.home = null;
+  }
+
+  get tx() { return Math.floor(this.cx / TILE); }
+  get ty() { return Math.floor(this.cy / TILE); }
+
+  /** A stake stands on this float's tile. */
+  staked(game) { return game.room && game.room.baseName(this.tx, this.ty) === 'coralPillar'; }
+
+  /** A new round: the water that was here comes back. */
+  onRaceStart(game, id) {
+    if (id !== this.raceId || !this.home) return;
+    if (this.staked(game)) game.room.setTile(this.tx, this.ty, this.home);
+  }
+
+  update(game) {
+    this.t++;
+    if (!this.home && game.room) this.home = game.room.baseName(this.tx, this.ty);
+    const r = game.race;
+    if (!r || r.id !== this.raceId) return;
+    const marks = game.entities.filter(e => e instanceof StakeMark && e.raceId === this.raceId && !e.remove);
+    if (marks[0] === this && marks.every(m => m.staked(game))) game.finishRace();
+  }
+
+  spriteName() { return Math.floor(this.t / BUOY_BOB_FRAMES) % 2 ? 'o_buoy1' : 'o_buoy0'; }
+
+  draw(ctx, game, ox, oy) {
+    if (this.staked(game)) return;     // the stake has grown up through it
+    this.pal = 'o_buoy';
+    super.draw(ctx, game, ox, oy);
+  }
+}
+defineEntity('stakeMark', (x, y, o) => new StakeMark(x, y, o));
 
 // --------------------------------------------------------------------------
 // The bell-buoy echo (S201 side content): a sailor plays a tune on the buoys

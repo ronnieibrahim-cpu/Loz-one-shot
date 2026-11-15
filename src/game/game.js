@@ -2020,6 +2020,7 @@ export class Game {
   startRace(def) {
     this.race = { id: def.id, t: def.frames, frames: def.frames, prize: def.prize,
       flag: def.flag, again: def.again, lose: def.lose, win: def.win, record: def.record };
+    for (const e of this.entities) if (e.onRaceStart) e.onRaceStart(this, def.id);
     this.audio.sfx('confirm');
     this.updateMusic();
   }

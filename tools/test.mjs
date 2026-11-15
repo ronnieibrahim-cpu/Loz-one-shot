@@ -1742,6 +1742,59 @@ const main = async () => {
   check('ten bombs for 40 and the Hagstone for 150 are paid for and given', stock.bombs === 10 && stock.rupees === 10 && stock.hag, JSON.stringify(stock));
   check('a Hagstone bought stays sold', !stock.again.includes('hagstone'), JSON.stringify(stock));
 
+  console.log('\n--- the Kelper\'s stake game in the Drowned Ring (S248) ---');
+  const pool = await G(async () => {
+    const g = window.__game, H = window.__harness;
+    const { Reefseed } = await import('/src/game/items.js');
+    const prog = await import('/src/game/progress.js');
+    g.newGame(0, 'LINK', 20260806); g.cutscene = null; g.mode = 'play'; g.audio.stop();
+    const answer = (pick) => { const c = g.dialogue.choices; g.dialogue.close(); if (c && c.onPick) c.onPick(pick); };
+    const drain = () => { let n = 0; while (g.dialogue.active && n++ < 20) g.dialogue.close(); };
+    const enter = (tx, ty, dir) => { g.enterMap('overworld', 0, 7, 4, tx * 16, ty * 16, dir, { instant: true }); g.tide.setLevel(0, { instant: true }); H.step(2);
+      for (const e of g.entities) if (e.isEnemy) e.remove = true; H.step(1); };
+    enter(6, 2, 'up');
+    const kelper = () => g.entities.find(e => e.raceDef && e.raceDef.id === 'pool');
+    kelper().interact(g, g.player);
+    const noSeeds = { asked: !!g.dialogue.choices, race: !!g.race };
+    drain();
+    prog.giveItem(g.progress, 'reefseed', 1);
+    const seeds0 = g.progress.reefseeds;
+    const blanks0 = g.progress.blanks || 0;
+    kelper().interact(g, g.player);
+    const asked = !!(g.dialogue.choices);
+    answer(0); drain();
+    const started = { race: !!g.race, track: g.audio.trackName };
+    // Throw as the B button does (items.js Reefseed use): from the three stands.
+    const throwFrom = (tx, ty, dir) => {
+      g.player.x = tx * 16; g.player.y = ty * 16; g.player.fx = g.player.x * 256; g.player.fy = g.player.y * 256; g.player.dir = dir;
+      if (g.player.setPos) g.player.setPos(tx * 16, ty * 16);
+      const p = g.player, v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
+      prog.addReefseeds(g.progress, -1);
+      g.addEntity(new Reefseed(p.cx - 8 + v[0] * 6, p.cy - 8 + v[1] * 6, { dir }));
+      H.step(40);
+    };
+    throwFrom(3, 2, 'down'); throwFrom(7, 3, 'left');
+    const midway = !!g.race;
+    throwFrom(8, 5, 'left');
+    H.step(200);
+    const won = { race: !!g.race, flag: !!prog.flag(g.progress, 'poolWon'), best: g.progress.raceBest && g.progress.raceBest.pool };
+    drain(); H.step(60); drain();
+    const blanks1 = g.progress.blanks || 0;
+    // A second round: the floats' water comes back, and the clock beats you.
+    kelper().interact(g, g.player); answer(0); drain();
+    const marks = g.entities.filter(e => e.constructor.name === 'StakeMark');
+    const reset = marks.every(m => !m.staked(g));
+    H.step(1250);
+    const lost = { race: !!g.race, said: g.dialogue.active };
+    drain();
+    return { noSeeds, asked, started, midway, won, seeds: seeds0, blanks0, blanks1, reset, lost, track: g.audio.trackName };
+  });
+  check('without Reefseeds the Kelper only says to bring some', !pool.noSeeds.asked && !pool.noSeeds.race, JSON.stringify(pool));
+  check('with them she asks, and Yes starts her clock under the mini-game theme', pool.asked && pool.started.race && pool.started.track === 'minigame', JSON.stringify(pool));
+  check('stakes thrown from the three stands on the rim win it, and only once all three stand', pool.midway && !pool.won.race && pool.won.flag && pool.won.best > 0, JSON.stringify(pool));
+  check('the first win pays a blank charm', pool.blanks1 === pool.blanks0 + 1, JSON.stringify(pool));
+  check('a new round puts the floats\' water back, and the clock can beat you', pool.reset && !pool.lost.race && pool.lost.said, JSON.stringify(pool));
+
   console.log('\n--- the shore race remembers a best time; Dov asks before the dive (S247) ---');
   const memory = await G(async () => {
     const g = window.__game, H = window.__harness;

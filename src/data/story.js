@@ -178,6 +178,19 @@ export const DIALOGUE = {
   buoyNext2: 'Last one! It ends with the whole bay ringing at once.',
   buoyWin: 'That\'s the old tune, every note! Have my spare seed bag. It holds twice as many.',
   buoyWinAgain: 'Still in tune. Here, for your trouble.',
+  // The Kelper's stake game in the Drowned Ring (S248).
+  poolNeed: 'See my floats? Plant a stake on every one before I count to twenty! ...Come back with three Reefseeds.',
+  poolAsk: 'A stake on all three floats before I count to twenty! Throw from the bank. Want to try?',
+  poolAskBest: (game) => {
+    const best = game.progress.raceBest && game.progress.raceBest.pool;
+    return DIALOGUE.poolAsk.replace(' Want to try?', ` Time to beat: ${raceTimeText(best)} seconds! Want to try?`);
+  },
+  poolGo: 'Ready... THROW!',
+  poolNo: 'Suit yourself. The floats aren\'t going anywhere!',
+  poolBusy: 'Don\'t look at me! Look at the floats!',
+  poolWin: 'All three! The wood\'s never had a better gardener. Here!',
+  poolRecord: (game) => `All three in ${raceTimeText(game.raceResult.tenths)} seconds! A new record! Here!`,
+  poolLose: 'Time! The floats win this one. Try again?',
   raceGoalWait: 'This is the finish! Talk to my friend on South Bluff to start the race.',
   ledgerAsk: 'The wind blew my ledger out the window! Every debt on the coast is in it. Try the South Sands.',
   ledgerThanks: 'My ledger! Wet, but I can still read it. Here. Now I owe you, and that\'s written down too!',
