@@ -140,6 +140,21 @@ if (process.env.SAYS) await page.evaluate(() => {
   window.__says = [];
   g.say = (t, o) => { const tr = window.__rp._trace || []; window.__says.push(`step ${tr.length ? tr[tr.length - 1].step + 1 : 0} f${g.frame} ${g.mapId} ${g.room && g.room.key} ${String(t).replace(/\n/g, ' ')}`); return orig(t, o); };
 });
+// ROOMS=<map|regex> lists every room of the maps it names the run stands in, with the step
+// and frame it first arrived (S248: which overworld screens the route walks).
+if (process.env.ROOMS) await page.evaluate(() => {
+  const g = window.__game, orig = g.update.bind(g), seen = window.__rooms = new Map();
+  let last = null, earned = 0, spent = 0;
+  g.update = (...args) => {
+    const r = orig(...args);
+    const now = g.progress && g.progress.rupees;
+    if (last != null && now != null) { if (now > last) earned += now - last; else spent += last - now; }
+    last = now;
+    const k = g.mapId + ' ' + (g.room && g.room.key);
+    if (!seen.has(k)) { const tr = window.__rp._trace || []; seen.set(k, `step ${tr.length ? tr[tr.length - 1].step + 1 : 0} f${g.frame} rupees ${now} earned ${earned} spent ${spent}`); }
+    return r;
+  };
+});
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE.slice(0, end));
 let r; let err = null;
 for (let i = 0; i < 4000; i++) {
@@ -152,6 +167,7 @@ const hits = await page.evaluate(() => window.__hits);
 if (process.env.FRAMES) for (const x of await page.evaluate(() => window.__frames)) console.log(x);
 if (process.env.BOSSSTART) for (const x of await page.evaluate(() => window.__starts)) console.log('START', x);
 if (process.env.CHESTSIDES) for (const x of await page.evaluate(() => window.__sides)) console.log('SIDE', x);
+if (process.env.ROOMS) for (const [k, v] of await page.evaluate(() => [...window.__rooms])) if (new RegExp('^(' + process.env.ROOMS + ') ').test(k)) console.log('ROOM', k, v);
 if (process.env.SAYS) for (const x of await page.evaluate(() => window.__says)) if (x.includes(process.env.SAYS)) console.log('SAY', x);
 if (process.env.TIDEHOOK) for (const x of await page.evaluate(() => window.__tides)) console.log('TIDE', x); if (process.env.HITS) for (const h of hits) if (h.includes(process.env.HITS)) console.log('HIT', h);
 const st = await page.evaluate(() => { const g = window.__game; return { ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + (e.pressed ? '*' : '') + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' '), flags: Object.keys(g.progress.flags).filter(k => k.startsWith(g.mapId)).join(','), map: g.mapId, room: g.room && g.room.key, x: g.player.x, y: g.player.y, tide: g.tide.level, mode: g.mode, progress: g.progress }; });

@@ -1609,7 +1609,7 @@ const rooms = {
       '###....###',
     ],
     entities: [
-      ['leever', 5, 4], ['sign', 1, 4, { text: 'North: boulders, and the cliffs beyond.' }],
+      ['moblin', 5, 4], ['sign', 1, 4, { text: 'North: boulders, and the cliffs beyond.' }],
     ],
   },
   '0,2,6': {
@@ -1811,7 +1811,7 @@ const rooms = {
       '***1....gg',
     ],
     entities: [
-      ['leever', 4, 2],
+      ['beetle', 4, 2],
     ],
   },
   '0,1,7': {
@@ -2065,7 +2065,7 @@ const rooms = {
       '***1.....g',
     ],
     entities: [
-      ['leever', 8, 3], ['leever', 4, 6],
+      ['beetle', 8, 3], ['moblin', 4, 6],
     ],
   },
   '0,1,8': {
@@ -2369,7 +2369,7 @@ const rooms = {
     ],
     anchorGate: { from: [1, 6], to: [8, 6] },
     entities: [
-      ['leever', 5, 2],
+      ['moblin', 5, 2],
     ],
     script: {
       onEnter(game) {

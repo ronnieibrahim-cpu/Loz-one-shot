@@ -49,6 +49,10 @@ const png = await page.evaluate(async ([x0, y0, x1, y1, tide, scale]) => {
   o.fillStyle = '#000'; o.fillRect(0, 0, out.width, out.height);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     try {
+      // A big stitch at HIGH drowned the parked player part way through and
+      // drew the GAME OVER screen into every screen after it (S248): he is
+      // put back whole and in play before each one.
+      g.progress.hearts = g.progress.maxHearts; g.mode = 'play';
       g.enterMap('overworld', 0, x, y, -64, -64, 'down', { instant: true });
       if (g.room.key !== `0,${x},${y}`) continue;
       g.tide.setLevel(tide, { instant: true });
