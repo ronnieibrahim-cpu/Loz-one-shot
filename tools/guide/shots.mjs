@@ -389,7 +389,7 @@ for (const [map, keys] of Object.entries(DUNGEON_ROOMS)) for (const k of keys) {
   const [f, rx, ry] = k.split(',').map(Number);
   STATIC_SHOTS.push({ id: `${map}map-${f}-${rx}-${ry}`, room: [map, f, rx, ry], tide: 1 });
 }
-for (const c of ['cave1', 'cave2', 'cave3', 'cave4', 'cave5', 'cave6', 'caveShipwright']) STATIC_SHOTS.push({ id: `${c}-room`, room: [c, 0, 0, 0], tide: 1 });
+for (const c of ['cave1', 'cave2', 'cave3', 'cave4', 'cave5', 'cave6', 'cave19', 'caveShipwright']) STATIC_SHOTS.push({ id: `${c}-room`, room: [c, 0, 0, 0], tide: 1 });
 STATIC_SHOTS.push({ id: 'cave2-low', room: ['cave2', 0, 0, 0], tide: 0 });
 // The optional dungeons' Pieces of Heart (S160, S161), for the heart list.
 STATIC_SHOTS.push({ id: 'opt-vault-pan', room: ['vault', 0, 1, 0], tide: 1 });

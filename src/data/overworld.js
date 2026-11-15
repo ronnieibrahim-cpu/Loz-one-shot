@@ -3267,12 +3267,15 @@ const rooms = {
     map: [
       'TTg....gTT',
       'TT.f...gTT',
-      'ggTTTT..gg',
-      'ggTTTT.Ggg',
+      'gg##TT..gg',
+      'gg#ZTT.Ggg',
       'gg..TT..gg',
       'g...TTf.gg',
       'TTg...g.TT',
       'TTgg...gTT',
+    ],
+    warps: [
+      { x: 3, y: 3, to: { map: 'cave19', floor: 0, rx: 0, ry: 0, px: 80, py: 96 } },
     ],
     entities: [
       ['moblin', 6, 1],

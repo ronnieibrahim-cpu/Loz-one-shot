@@ -627,7 +627,7 @@ FIGURES.push(
   hp('kite', 'ow-t1-3-6', 7, 1, [lbl('the kite: blow it down', [7, 2.2], 's')]),
   hp('dive', 'ow-t1-11-9', 2, 2, [lbl('Dov', [2, 3.2], 's')]),
   hp('ledger', 'ow-t1-5-9', 8, 2, [lbl('the ledger', [8, 3.2], 's')]),
-  hp('slackcave', 'cave6-room', 4, 4), hp('hollowden', 'cave5-room', 4, 2),
+  hp('slackcave', 'cave6-room', 4, 4), hp('hollowden', 'cave19-room', 6, 2),
   hp('race', 'ow-t1-3-9', 1, 3, [lbl('the kid who races you', [1.6, 4.2], 'nw')]),
   hp('d1den', 'd1map-t1-53', 20, 6), hp('d1gauges', 'd1map-t1-43', 3, 8),
   hp('d2glass', 'd2map-1-4-5', 7, 5), hp('d2whelk', 'd2map-1-5-4', 7, 5),
