@@ -202,7 +202,7 @@ export const DIALOGUE = {
   keeperLight: 'The lamp\'s ready. Take a flame up the stairs. That shell of yours burns, doesn\'t it?',
   keeperAfter: 'Look at her shine! When the beam crosses the cliff south of here, you can see an old cove. It\'s all yours.',
   lampLit: 'The lamp lights! Its beam sweeps out over the Drowned Shore and away to sea.',
-  shopkeeper2: 'Buy something or stand somewhere else. Either\'s fine by me!',
+  shopkeeper2: 'New stock! Bombs by the ten, and a Hagstone off a wreck. Hearts? Pick them out of the grass!',
 
   // ---- second states -----------------------------------------------------
   //

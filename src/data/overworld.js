@@ -3759,10 +3759,18 @@ function installHouses() {
           // The stock stands behind the counter, bought across it (Player
           // .tryContextAction reaches one tile further through a counter).
           ['shopItem', 4, 2, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
-          ['shopItem', 5, 2, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true }],
-          ['shopItem', 6, 2, { pickup: 'heart', price: 10, name: 'Heart', perched: true }],
-          ['shopItem', 7, 2, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true }],
+          ['shopItem', 5, 2, { pickup: 'bomb4', price: 20, name: 'Bombs', perched: true, until: 3 }],
+          ['shopItem', 6, 2, { pickup: 'heart', price: 10, name: 'Heart', perched: true, until: 3 }],
+          ['shopItem', 7, 2, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true, until: 3 }],
           ['shopItem', 8, 2, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm', perched: true }],
+          // LATE STOCK (S248, the human: "late stock after 3 Essences"): the
+          // bombs come ten at a time and a second, dearer charm goes on the
+          // shelf. Its three-figure tag is wider than a tile, so it stands
+          // with a free tile to its west and the single hearts make way for
+          // it; the Bottled Tide moves to the west end.
+          ['shopItem', 5, 2, { pickup: 'bomb10', price: 40, name: '10 Bombs', perched: true, stockAt: 3 }],
+          ['shopItem', 7, 2, { charm: 'hagstone', price: 150, once: true, perched: true, stockAt: 3 }],
+          ['shopItem', 3, 2, { pickup: 'bottle', price: 40, name: 'Bottled Tide', perched: true, stockAt: 3 }],
         ],
         // Out of the shop's door and back onto the yard in front of it. The
         // shop moved east when the village became two screens — its door is

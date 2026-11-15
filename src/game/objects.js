@@ -94,6 +94,8 @@ export const PICKUPS = {
   // S155: it is now the cartridge's own DROP, `p_bomb` (tools/rip-treasures.py,
   // item drop 4), which is what Seasons draws on the floor.
   bomb4: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('gotAmmo'); } },
+  // The shop's late stack (S248): ten at once, sold from three Essences on.
+  bomb10: { sprite: 'p_bomb', pal: null, get(g) { addBombs(g.progress, 10); g.audio.sfx('gotAmmo'); } },
   // THE QUARRYMAN'S BAG (S195): a bigger bomb bag, handed over in a cave in
   // the Cliffs of Kell. Not an inventory item — it raises the count the bombs
   // already in `progress.items` can reach, and fills it.
@@ -1010,6 +1012,7 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 // reads it too: nothing drops what Link has nowhere to put.
 export const CAPACITY_FOR = {
   bomb4: { field: 'maxBombs', deny: 'but you\'ve got nothing to carry them in! Come back with a bag.' },
+  bomb10: { field: 'maxBombs', deny: 'but you\'ve got nothing to carry them in! Come back with a bag.' },
   bottle: { field: 'maxBottles', deny: 'but you\'ve got nowhere to put it! Come back with a bottle.' },
 };
 
@@ -1033,6 +1036,12 @@ export class ShopItem extends Entity {
     // Shop stock (S215), drawn still and priced above, as Seasons stands it.
     this.perched = !!o.perched;
     this.depth = -3;
+    // LATE STOCK (S248, the human: "late stock after 3 Essences"). `stockAt`
+    // puts a piece on the shelf only once that many Essences are held, and
+    // `until` takes one off then, so a slot can change what it sells. Both
+    // are read on the first frame: nothing earns an Essence inside the shop.
+    this.stockAt = o.stockAt || 0;
+    this.until = o.until || 0;
   }
 
   get displayName() {
@@ -1102,6 +1111,8 @@ export class ShopItem extends Entity {
     if (!this._checked) {
       this._checked = true;
       if (this.saveKey && game.progress.secrets[this.saveKey]) this.sold = true;
+      const held = (game.progress.essences || []).length;
+      if (held < this.stockAt || (this.until && held >= this.until)) this.remove = true;
     }
   }
 

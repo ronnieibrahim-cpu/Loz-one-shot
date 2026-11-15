@@ -1718,6 +1718,30 @@ const main = async () => {
   check('the overworld\'s own track starts once the fade has run out, at full volume',
     openTune.later === 'overworld' && openTune.vol === 7, JSON.stringify(openTune));
 
+  console.log('\n--- the shop gets late stock at three Essences (S248) ---');
+  const stock = await G(async () => {
+    const g = window.__game, H = window.__harness;
+    const shelf = () => g.entities.filter(e => e.constructor.name === 'ShopItem' && !e.remove)
+      .filter(e => !e.sold).map(e => e.pickup || e.charm || e.item).sort().join(',');
+    g.newGame(0, 'LINK', 20260806);
+    g.cutscene = null; g.mode = 'play'; g.audio.stop();
+    const visit = () => { g.enterMap('houseShop', 0, 0, 0, 72, 88, 'up', { instant: true }); H.step(3); return shelf(); };
+    const early = visit();
+    g.progress.essences = [0, 1, 2];
+    const late = visit();
+    g.progress.maxBombs = 30; g.progress.bombs = 0; g.progress.rupees = 200;
+    const bombs = g.entities.find(e => e.pickup === 'bomb10' && !e.remove);
+    const answer = (pick) => { const c = g.dialogue.choices; g.dialogue.close(); if (c && c.onPick) c.onPick(pick); };
+    bombs.interact(g); answer(0); while (g.dialogue.active) g.dialogue.close();
+    const stone = g.entities.find(e => e.charm === 'hagstone' && !e.remove);
+    stone.interact(g); answer(0); while (g.dialogue.active) g.dialogue.close();
+    return { early, late, bombs: g.progress.bombs, rupees: g.progress.rupees, hag: !!g.progress.charms.hagstone, again: visit() };
+  });
+  check('before three Essences the shop sells four bombs and no Hagstone', stock.early === 'ballastHeart,bomb4,bottle,heart,shield', JSON.stringify(stock));
+  check('from three Essences it sells ten bombs and a Hagstone, in the hearts\' place', stock.late === 'ballastHeart,bomb10,bottle,hagstone,shield', JSON.stringify(stock));
+  check('ten bombs for 40 and the Hagstone for 150 are paid for and given', stock.bombs === 10 && stock.rupees === 10 && stock.hag, JSON.stringify(stock));
+  check('a Hagstone bought stays sold', !stock.again.includes('hagstone'), JSON.stringify(stock));
+
   console.log('\n--- the shore race remembers a best time; Dov asks before the dive (S247) ---');
   const memory = await G(async () => {
     const g = window.__game, H = window.__harness;
