@@ -269,7 +269,9 @@ export function installCaves() {
           '#####C####',
         ],
         entities: [
-          ['pickup', 4, 2, { kind: 'heartPiece' }],
+          // Its Piece of Heart moved to the Root Cellar (cave19, S248); a
+          // rupee keeps the bomb worth carrying.
+          ['pickup', 4, 2, { kind: 'rupee100' }],
         ],
         warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 3, ry: 6, px: 64, py: 32, dir: 'down' } }],
       },
@@ -668,6 +670,52 @@ export function installCaves() {
           ['chest', 6, 3, { rupees: 100 }],
         ],
         warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 0, ry: 1, px: 128, py: 16, dir: 'down' } }],
+      },
+    },
+  });
+  // THE ROOT CELLAR (S248): a bomb-cracked bluff in the Drowned Wood's Rootwater
+  // (0,8,4). One block waits at the west end of a walled channel (one gap in its roof, to get back behind the block) with a
+  // seafloor patch (`4`, walkable at LOW only) and then a sinkhole (`$`, a pit
+  // at LOW, wadeable at MID) in its way. Push it over the seafloor and past at
+  // LOW, sound the conch, push it over the sinkhole at MID onto the plate. The
+  // Piece of Heart is the one that lay in the Hollow Den, moved, not added
+  // (check-hearts.mjs). tools/check-blocks.mjs searches it in the engine.
+  registerMap({
+    id: 'cave19',
+    kind: 'cave',
+    name: 'Root Cellar',
+    w: 1, h: 1, floors: 1,
+    legend: 'cave',
+    music: 'cave',
+    scroll: false,
+    rooms: {
+      '0,0,0': {
+        name: 'Root Cellar',
+        map: [
+          '##########',
+          '##########',
+          '#........#',
+          '#.##.#####',
+          '#..4..$..#',
+          '#.#####.##',
+          '#........#',
+          '#####C####',
+        ],
+        entities: [
+          ['switch', 8, 4],
+          ['block', 2, 4, { once: false }],
+        ],
+        readable: [[3, 1, 'Root-scratched: "Over the seafloor at LOW, over the sinkhole at MID!"']],
+        blockRoom: { pockets: [[8, 4]], seas: [0, 1], door: [5, 6] },
+        puzzle: {
+          switches: 'all',
+          blocks: [[8, 4]],
+          flag: 'cave19_cellar',
+          reward: {
+            spawn: [['pickup', 6, 2, { kind: 'heartPiece' }]],
+          },
+        },
+        warps: [{ x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 4, px: 48, py: 64, dir: 'down' } }],
       },
     },
   });

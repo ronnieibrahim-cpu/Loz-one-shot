@@ -38,13 +38,13 @@ import { D4_RUN } from './playthroughs/d4-run.mjs';
 
 const SCENARIOS = [
   {
-    name: 'Hollow Den: a bomb opens the cracked wall and the Piece of Heart is inside',
-    setup: setup({ items: { sword: 1, bombs: 1 }, equipA: 'sword', equipB: 'bombs',
+    name: 'Hollow Den: a bomb opens the cracked wall and a hundred rupees are inside (its Piece of Heart moved to the Root Cellar)',
+    setup: setup({ items: { sword: 1, bombs: 1 }, equipA: 'sword', equipB: 'bombs', rupees: 0,
       enter: ['overworld', 0, 3, 6, 64, 64, 'up'] }),
     steps: [['goto', 4, 2, 400], ['hold', ['up'], 6], ['use', 'bombs', 1, 10],
       ['goto', 4, 4, 200], ['wait', 120], ['goto', 4, 2, 300], ['hold', ['up'], 60],
       ['wait', 60], ['goto', 4, 3, 400], ['hold', ['up'], 30], ['wait', 200]],
-    expect: `g.mapId === 'cave5' && g.progress.heartPieces === 1 || ('in ' + g.mapId + ', pieces ' + g.progress.heartPieces)`,
+    expect: `g.mapId === 'cave5' && g.progress.rupees >= 100 && g.progress.heartPieces === 0 || ('in ' + g.mapId + ', rupees ' + g.progress.rupees + ', pieces ' + g.progress.heartPieces)`,
   },
   {
     name: 'Hollow Den: without a bomb the crack is a wall',
