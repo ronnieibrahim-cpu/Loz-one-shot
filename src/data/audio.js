@@ -196,6 +196,11 @@ const TRACKS = {
   // engine in src/core/gbsound.js. Every other track is ours.
   title: { seasons: 'titlescreen' },
   fileSelect: { seasons: 'fileSelect' },
+  // THE OPENING'S THEME (S248, the human's choice of three): both
+  // cartridges' MUS_INTRO_1 (mus/intro1.s, shared by Seasons and Ages), under
+  // the new game's shipwreck from the calm sea on. A one-shot; it fades as
+  // the beach comes in.
+  openingTheme: { seasons: 'intro1' },
   // The cartridges' mini-game theme (S247), for the shore race and the
   // bell-buoy echo while one is running.
   minigame: { seasons: 'minigame' },

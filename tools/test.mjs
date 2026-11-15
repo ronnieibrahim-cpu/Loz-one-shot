@@ -1693,6 +1693,31 @@ const main = async () => {
     games.kAsked && games.kNo.state === 'idle' && games.kNo.track === games.bay, JSON.stringify(games.kNo));
   check('Yes starts his tune under the mini-game theme', games.kYes.state !== 'idle' && games.kYes.track === 'minigame', JSON.stringify(games.kYes));
 
+  console.log('\n--- the opening plays the cartridges\' opening theme, and fades into the overworld\'s (S248) ---');
+  const openTune = await G(async () => {
+    const g = window.__game, H = window.__harness;
+    g.newGame(0, 'LINK', 20260806);
+    g.audio.stop();
+    g.startCutscene('intro');
+    H.step(30);
+    const during = g.audio.trackName;
+    // A puts the caption away once it is up; nothing else is pressed.
+    let f = 0, afterEnd = null, fadingAtEnd = null;
+    for (; f < 4000 && g.cutscene; f++) {
+      g.input._raw.a = (f % 20) < 2;
+      H.step(1);
+    }
+    g.input._raw.a = false;
+    afterEnd = g.audio.trackName; fadingAtEnd = g.audio.fading;
+    H.step(120);
+    return { during, afterEnd, fadingAtEnd, later: g.audio.trackName, vol: g.audio.volume, ended: !g.cutscene };
+  });
+  check('the opening plays the cartridges\' opening theme', openTune.during === 'openingTheme', JSON.stringify(openTune));
+  check('it is still fading out when the beach is handed over, not cut off',
+    openTune.ended && openTune.afterEnd === 'openingTheme' && openTune.fadingAtEnd, JSON.stringify(openTune));
+  check('the overworld\'s own track starts once the fade has run out, at full volume',
+    openTune.later === 'overworld' && openTune.vol === 7, JSON.stringify(openTune));
+
   console.log('\n--- the shore race remembers a best time; Dov asks before the dive (S247) ---');
   const memory = await G(async () => {
     const g = window.__game, H = window.__harness;

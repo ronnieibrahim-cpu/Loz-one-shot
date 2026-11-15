@@ -386,6 +386,7 @@ export class Audio {
     this._fadeDir = 0;
     this._fadeMask = 0;
     this._fadeCount = 0;
+    this._fadeThen = null;
   }
 
   /** Must be called from a user gesture (browser autoplay policy) for real
@@ -459,7 +460,11 @@ export class Audio {
    * @setVolumeAndEnd), music or effect alike — which is why a fade can come to
    * nothing. `tickFade` runs it, once a game frame.
    */
-  fadeOut(mask) {
+  fadeOut(mask, then = null) {
+    // `then` (S248): the track to start once the fade has run out, and asking
+    // for it meanwhile does not cut the fade short (the opening's theme fading
+    // into the overworld's). If a sound ends the fade early, it starts then.
+    this._fadeThen = then;
     this._fadeMask = mask;
     this._fadeCount = 0;
     this._fadeDir = 1;
@@ -473,11 +478,22 @@ export class Audio {
     if (this._vol > 0) { this._setVol(this._vol - 1); return; }
     this._fadeDir = 0;
     this._fadeCount = 0;
+    const then = this._fadeThen;
+    this._fadeThen = null;
     this.stop();
+    if (then) this.play(then);
   }
 
   /** A sound started: the fade is over and the volume is whole again. */
   _soundStarted() {
+    if (this._fadeDir && this._fadeThen) {
+      const then = this._fadeThen;
+      this._fadeThen = null;
+      this._fadeDir = 0;
+      if (this._vol !== 7) this._setVol(7);
+      this.play(then);
+      return;
+    }
     this._fadeDir = 0;
     if (this._vol !== 7) this._setVol(7);
   }
@@ -493,6 +509,7 @@ export class Audio {
   play(name, { restart = false } = {}) {
     if (!this.ok) { this._pendingTrack = name; return; }
     if (this.trackName === name && !restart) return;
+    if (this._fadeDir && this._fadeThen === name) return;   // it starts when the fade ends
     const t = this.tracks.get(name);
     this.trackName = name;
     this._soundStarted();
@@ -508,6 +525,7 @@ export class Audio {
     // Before the sound is unlocked too: a track asked for and then stopped
     // must not start when the first button press unlocks the sound.
     if (this._pendingTrack) this._pendingTrack = null;
+    this._fadeThen = null;
     this.trackName = null;
     this._releaseAll();
   }

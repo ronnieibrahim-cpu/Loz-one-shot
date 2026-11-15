@@ -61,6 +61,7 @@ const NOISE_TOKENS = new Set(['x', 's', 'h', 'H', 'c']);
 const MELODIC_CHANNELS = ['p1', 'p2', 'wav'];
 
 const problems = [];
+const TAIL_ENDS = new Set(['intro1']);
 
 function tokens(s) {
   return s ? s.trim().split(/\s+/) : [];
@@ -112,7 +113,12 @@ function checkScript(name, tr, key) {
   // fanfares, the secret chime). Anything else must loop.
   const jingle = Object.keys(tr.ch).every((k) => Number.isFinite(channelFrames(tr, Number(k))));
   const loop = loopOf(tr);
-  if (!jingle && !loop) problems.push(`${name}: no loop found on every channel`);
+  // MUS_INTRO_1 (S248, the opening's theme) is neither: its noise channel
+  // runs out while the other three loop a closing phrase, as the cartridge
+  // wrote it. The game fades it out at the beach, so it is let through, and
+  // only for a channel that ends rather than one that loops wrongly.
+  const tail = TAIL_ENDS.has(key) && Object.keys(tr.ch).some((k) => Number.isFinite(channelFrames(tr, Number(k))));
+  if (!jingle && !loop && !tail) problems.push(`${name}: no loop found on every channel`);
   if (loop) {
     // Every channel's own loop must be the same length.
     const lens = [];

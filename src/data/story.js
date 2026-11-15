@@ -19,6 +19,7 @@
 
 import { registerCutscenes } from '../game/cutscene.js';
 import { registerTexts } from '../game/dialogue.js';
+import { TITLE_MUSIC_FADE_MASK } from './feel.js';
 
 /** Tenths of a second as the race clock writes them: 134 -> "13.4". */
 export function raceTimeText(tenths) { return `${Math.floor(tenths / 10)}.${tenths % 10}`; }
@@ -245,9 +246,12 @@ const CUTSCENES = {
   // line goes up over the shore. It ends on white, and the beach fades in
   // from white, as the opening's own scenes do.
   intro: [
-    { music: null, fade: 'black' },
+    // The cartridges' opening theme under the wreck (S248), faded out fast
+    // as the beach comes in, as Seasons fades its intro music; the
+    // overworld's own track starts when the fade has run out.
+    { music: 'openingTheme', fade: 'black' },
     { opening: { caption: 'Link washes up on the coast of Thalassia, where the sea can\'t decide where it belongs.' } },
-    { do: (g) => { g.fadeWhite = true; g.blackOut(); } },
+    { do: (g) => { g.fadeWhite = true; g.blackOut(); g.audio.fadeOut(TITLE_MUSIC_FADE_MASK, 'overworld'); } },
     { fade: 'in' },
     { flag: 'sawIntro' },
     { music: 'overworld' },
