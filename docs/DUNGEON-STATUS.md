@@ -251,6 +251,11 @@ every phase (31/36 waits win); fire breath and keese from the start (19/36).
 Clips: the human was shown both fights before and after. Damage and health
 untouched (S150).
 
+**S249: PASS 1 OF (g) CLOSED.** Nothing left in the S203 list: both bosses
+were levelled at S246; D5 -> D6 was asked again and the human has not played
+it, so it stays as it is until they do. The rest of S249 was side content on
+the overworld (NEXT-SESSION S249), not dungeons.
+
 ## S179: MEASURED AGAINST SEASONS AND AGES — AND THE PLAN TO GROW D3-D6
 
 The human asked for the dungeons' complexity to be reassessed against both

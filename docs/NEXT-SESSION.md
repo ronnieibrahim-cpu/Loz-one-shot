@@ -1,3 +1,61 @@
+## S249 — rotation (g) dungeons pass 1 finished; the dunes' and marsh's side content
+
+Branch claude/oracle-tides-rotation-dungeons-8804ec, off main at 6a7fe60.
+Pictures: docs/briefs/s249/.
+
+### The human's choices this session (do not re-ask)
+- No iPad play notes yet.
+- D5 -> D6: "haven't played it" — nothing changed; still waits for their play.
+- Bosses: NOT re-proposed. S246 already levelled both by pattern on the
+  human's pick (Anemos holds his fire while he feeds; Wyverna floods from her
+  first phase; DUNGEON-STATUS "S246"). The S249 prompt was stale on this.
+- The dunes: the SAND DOLLAR HUNT (offered: a tide cave; a Bellows
+  come-back-later secret).
+- The marsh: the SINKING STEPS mini-game (offered: a sunken chest walk with
+  the Cleats; the witch's bog lilies).
+- Hearts from: the two village errands (the ledger now pays 100 Rupees, the
+  kite a blank charm). Total stays 28 pieces, cap 16.
+
+### Built
+- SAND DOLLARS: PICKUPS.sandDollar (objects.js), `lowOnly` — not drawn or
+  taken unless `tideAt` is LOW; each placement names its own `flag`
+  (`sandDollar1..5`, SAND_DOLLAR_FLAGS). Placed off the route: Dune Head
+  0,10,6 (5,5), North Dunes 0,11,6 (6,5), Leever Bowl 0,13,7 (5,4; two `5`
+  cells there became `4` seafloor, a sandbank), Channel Dunes 0,14,7 (3,4;
+  one `5` -> `4`), World's Edge 0,16,9 (7,2). The beachcomber (walk 'oldman')
+  is INSIDE Sandpiper Cottage (houseSandpiper 8,3): an errand whose `need` is
+  the five flags, `partial` counts them (story.js sandDollar*). Drawn sprite
+  p_sanddollar (sprites-errands.js; no sheet has one).
+- SINKING STEPS: Reedbank 0,2,6 (off the route, a dead end), legend
+  `bogSteps` (marsh + digits 5-8 -> tide tiles sinkStone [LOW], sinkPillar
+  [LOW, MID], sinkRaft [MID, HIGH; a pit at LOW], sinkGap [pit at LOW, deep
+  above]), mud islet at 5,4. Par 3 (solver in the session; check-side plays
+  the solution): LOW short stones to the tall one, MID, rafts to the islet,
+  HIGH, LOW, short stone to the bank. objects.js StepKeeper: asks at LOW only,
+  counts tide changes, fails (unhurt, back to `start`) on a fall, a swim or a
+  drowned stone, or an Anchor/Bottled Tide override in the room; the far bank
+  always poles you back (no strand). Prize heartPiece, again rupee20, flag
+  stepsWon. Art (a Sonnet helper, drawn: neither cartridge has stepping
+  stones or rafts as tiles): tiles-stepstones.js stepStoneLow, stepStoneTall,
+  stepStoneTallWet (over the deep water's frames, S249 here), stepRaft (over
+  them too). Lines steps* (story.js).
+- Game.presentPrize says a prize's `line` when it has one (a blank charm).
+- TOOLS: actor-runtime `['steps', maxF]` starts a round; `loot` skips
+  `lowOnly` pickups; check-hearts and check-guide count a stepKeeper prize;
+  check-dialogue knows drain/splash/trick/over/fetch; check-side +9 (four
+  sand dollar, five steps) and the ledger/kite expectations changed.
+- Guide: GUIDE.md Heart Pieces 11 and 17 and the errand list;
+  tools/guide/guide.html (ids hp-kite/hp-ledger kept, pictures replaced).
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died. The route is
+unchanged frame for frame (Anemos 9/24 as on main) once both new things were
+off it — see HANDOFF S249 for why they had to be.
+
+### Next
+- Rotation (h) fairness: the thinnest fight to 11/13 (STATE.md).
+- D5 -> D6 still waits for the human's play.
+
 ## S248 — the audit, part two: signs, the opening's music, the overworld, the shop
 
 Branch claude/nifty-pasteur-xiauob, off main at 8d626a8. The write-up is

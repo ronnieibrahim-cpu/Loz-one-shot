@@ -19,11 +19,11 @@ the area whose turn it is and nothing else; its stub is in QUEUE.md.
   h fairness  — the thinnest fight to 11/13 (next: the Brinehulk, 10/13).
   i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
-Rotation position: (g) dungeons, pass 1, HALF DONE (S249 resumes it): S203 compared the six
-  (DUNGEON-STATUS "S203"), gave Anemos a fairy and reworded the two signs;
-  Anemos's fight and Wyverna's ease are still open. (f) pass 1 done S200-S201
-  (the dark lighthouse, the bell-buoy echo). (a)-(c) pass 1 done S146, (d)
-  S147, (e) S199 (nine new tracks; docs/MUSIC.md).
+Rotation position: (h) fairness, pass 1 (S250 resumes it). (g) pass 1 DONE
+  S249: S203 compared the six, S246 levelled Anemos and Wyverna by pattern,
+  S249 asked about D5->D6 (unplayed, unchanged) and gave the dunes and marsh
+  side content (sand dollars, sinking steps). (f) pass 1 done S200-S201, (a)-(c)
+  S146, (d) S147, (e) S199.
 
 RETIRED ROTATION: 1 wide-rooms MET S111 | 2 art-provenance S9/S74 |
   3 boss-art S75 | 4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89 |
@@ -58,3 +58,4 @@ S147 | objective | Link now moves at Oracle of Seasons' own speed, measured fram
 S203 | objective | Redrew the last three blocky corners of the map: the dark shore round the lighthouse, the Salt Pans' edges and the strips beside Tidewatch, and made the pools in the dark shore and the Pans dry to their own ground instead of squares of beach. Then compared the six dungeons for the first time: they grow steadily, but the second dungeon's boss is the hardest fight in the game and the fourth's the gentlest. A fairy now waits outside the second boss's door, and two puzzle signs say which tide to use.
 S247 | detour | The human asked for one audit of the whole game. Tougher monsters now step down the dungeons instead of all arriving in the last one, a solved puzzle chimes instead of opening a text box, the race and the buoy game ask before they start and have the Oracle mini-game tune, and the shop, locks and carver talk like everyone else. docs/AUDIT-S247.md.
 S248 | objective | The audit's second half (the human's objective since S247). Signs reworded, the cartridges' opening theme under the shipwreck, tougher marsh enemies, the Drowned Wood's first mini-game (grow stakes on floats against the clock) and a puzzle cave holding a moved Piece of Heart, and late stock in the shop at three Essences. docs/AUDIT-S247.md part two.
+S249 | objective | Finished the dungeon comparison: both lopsided bosses had already been evened out, and the jump into the last dungeon waits for the human's own play. Then the dunes got a sand dollar hunt (five shells that only show at low tide, for an old beachcomber in Sandpiper Row) and the marsh a stepping-stone game (a pool you can only cross by changing the tide three times), each paying a Piece of Heart moved from two village errands.
