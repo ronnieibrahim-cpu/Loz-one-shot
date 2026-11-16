@@ -755,7 +755,17 @@ export function installBosses() {
     // `tools/check-playthrough.mjs` is what found it — `essences: [6]` in the
     // trace at `d6/1,4,2` — and nothing else in the repo could, because no
     // model in the verification table fights anything.
-    init(e) { e._open = 0; miniInit(e); },
+    // ASLEEP UNTIL LINK IS ON ITS ISLAND (S250, the human's choice). Since
+    // it walks round the mooring post instead of shivering against it, the
+    // colossus spent Link's two rope crossings walking to the lip of its
+    // island and stood on the landing when he arrived, a pit at his back and
+    // the conch still to sound. The room says where its island starts
+    // (`wakeFrom`, a tile column); until Link's middle is past it, it is a
+    // salt statue, and it wakes with a slam.
+    init(e, g, o) {
+      e._open = 0; miniInit(e);
+      if (o && o.wakeFrom != null && e._wakeX === undefined) e._wakeX = o.wakeFrom * 16;
+    },
     onDie: miniDie,
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
@@ -764,17 +774,19 @@ export function installBosses() {
     phases: [
       // Walks you down and pounds the floor.
       { above: 0.62, ai(e, g) {
+        if (brinehulkAsleep(e, g)) return;
         runPending(e, g); closeTick(e, g);
         const rage = brinehulkCrust(e, g);
-        chase(e, g, { speed: 0.4 * rage });
+        chase(e, g, { speed: 0.4 * rage, detour: true });
         if (timer(e, 'pound', 175)) brinehulkPound(e, g, 8, 1.2);
       } },
       // Hurls salt boulders at range and charges when you line up.
       { above: 0.32, ai(e, g) {
+        if (brinehulkAsleep(e, g)) return;
         runPending(e, g); closeTick(e, g);
         const rage = brinehulkCrust(e, g);
         charge(e, g, { speed: 1.7 * rage, tell: 22, range: 110, shake: true, tol: 13,
-          idle: (e2, g2) => chase(e2, g2, { speed: 0.45 * rage }) });
+          idle: (e2, g2) => chase(e2, g2, { speed: 0.45 * rage, detour: true }) });
         if (timer(e, 'hurl', 140)) {
           windUp(e, g, 20, (e2, g2) => spread(e2, g2, 3, 40,
             { sprite: 'shot_rock', pal: 'marble', speed: 1.6, damage: 3 }));
@@ -783,14 +795,25 @@ export function installBosses() {
       } },
       // Cracked apart: pounds constantly and throws a wider ring each time.
       { above: 0.00, ai(e, g) {
+        if (brinehulkAsleep(e, g)) return;
         runPending(e, g); closeTick(e, g);
         const rage = brinehulkCrust(e, g);
-        chase(e, g, { speed: 0.55 * rage });
+        chase(e, g, { speed: 0.55 * rage, detour: true });
         if (timer(e, 'pound', 110)) brinehulkPound(e, g, 12, 1.4);
         if (timer(e, 'dry', 320)) forceTide(e, g, LOW);
       } },
     ],
   });
+
+  function brinehulkAsleep(e, g) {
+    if (e._wakeX == null) return false;
+    const p = g.player;
+    if (!p || p.cx < e._wakeX || p.falling > 0) return true;
+    e._wakeX = null;
+    g.shake(SHAKE_BOSS_SLAM_FRAMES);
+    g.audio.sfx('explode');
+    return false;
+  }
 
   // The tide hook: brine eats salt. Flooded, the crust is soft the whole time
   // but the golem moves at half again its speed; dried out, it is armoured.

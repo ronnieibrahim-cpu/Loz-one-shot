@@ -1849,7 +1849,19 @@ export class Player extends Entity {
       this.x = ox; this.y = oy;
     }
     if (this.falling === 0) {
-      const safe = findSafeTile(game, this) || this.lastSafe;
+      // BACK WHERE HE STOOD (S250, the human's choice). The nearest floor to
+      // the HOLE can be a nook the same hole walls off — the Crossed Shafts'
+      // plate nooks, and a dozen more pockets a scan found — and set down in
+      // one, every step out is another fall, for good. Seasons cannot do this
+      // (link.s respawns at wLinkLocalRespawn, where he came into the room);
+      // ours searches from the last floor he stood on instead, so he comes
+      // back up on the spot he fell from, which he could walk to by
+      // definition. The hole's own neighbourhood is only the fallback.
+      const ox = this.x, oy = this.y;
+      this.x = this.lastSafe.x; this.y = this.lastSafe.y;
+      const back = findSafeTile(game, this);
+      this.x = ox; this.y = oy;
+      const safe = back || findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;

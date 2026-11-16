@@ -329,7 +329,11 @@ export function installDungeonsA() {
         entities: [
           ['tektite', 11, 3, { drops: 'good' }],
           ['crab', 3, 5, { drops: 'good' }],
-          ['block', 3, 7],
+          // `once: false` (S250): the puzzle pushes it the length of its lane.
+          // It was a one-push block, so it stopped a tile on, and the chest
+          // was only ever reached by falling into the hole beside it, which
+          // used to set Link down on the far side.
+          ['block', 3, 7, { once: false }],
           ['switch', 10, 7],
           // In the far corner, opened from below (S224: front only).
           ['chest', 1, 1, { pickup: 'rupee100' }],

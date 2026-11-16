@@ -251,7 +251,22 @@ if (BUILT.length) {
     // Walk the planks to the target, face the chest beside it, open it.
     const chest = (c.def.entities || []).find(e => e[0] === 'chest');
     const face = chest[1] < k.target[0] ? 'left' : chest[1] > k.target[0] ? 'right' : chest[2] < k.target[1] ? 'up' : 'down';
-    plan.push(['wait', N * (k.planks.length + 2)], ['goto', k.target[0], k.target[1], 1500], ['wait', 10], ['hold', [face], 20], ['tap', 'a', 40], ['dialogue', 300]);
+    // To the near end of the bridge, then WALKED across as a person would
+    // (S250). The route walker plans on the room as built, without the laid
+    // planks, so it cut across the hole beside them — and while a fall set
+    // Link down on the nearest floor, that was the far side: the "solution"
+    // had been crossing by falling in. A fall now puts him back where he
+    // stood. The last step to the target is walked the same way.
+    const [p0, p1] = k.planks, near = [2 * p0[0] - (p1 ? p1[0] : p0[0]), 2 * p0[1] - (p1 ? p1[1] : p0[1])];
+    const pl = k.planks[k.planks.length - 1], pk = k.planks[k.planks.length - 2] || pl;
+    const far = [2 * pl[0] - pk[0], 2 * pl[1] - pk[1]];
+    const way = (a, b) => b[0] < a[0] ? 'left' : b[0] > a[0] ? 'right' : b[1] < a[1] ? 'up' : 'down';
+    const span = (a, b) => (Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1])) * 16 + 8;
+    plan.push(['wait', N * (k.planks.length + 2)], ['goto', near[0], near[1], 1500],
+      ['hold', [way(near, far)], span(near, far)]);
+    if (far[1] !== k.target[1]) plan.push(['hold', [far[1] < k.target[1] ? 'down' : 'up'], Math.abs(far[1] - k.target[1]) * 16 + 10]);
+    if (far[0] !== k.target[0]) plan.push(['hold', [far[0] < k.target[0] ? 'right' : 'left'], Math.abs(far[0] - k.target[0]) * 16 + 40]);
+    plan.push(['wait', 10], ['hold', [face], 20], ['tap', 'a', 40], ['dialogue', 300]);
     const setup = { seed: 20261026, items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', maxHearts: 24, hearts: 24, tide: 0,
       enter: [c.mapId, f, rx, ry, k.from[0] * 16, k.from[1] * 16, 'up'] };
     const r = await page.evaluate(async ([setup, plan, k, chest, N]) => {

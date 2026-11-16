@@ -23912,7 +23912,19 @@ class Player extends Entity {
       this.x = ox; this.y = oy;
     }
     if (this.falling === 0) {
-      const safe = findSafeTile(game, this) || this.lastSafe;
+      // BACK WHERE HE STOOD (S250, the human's choice). The nearest floor to
+      // the HOLE can be a nook the same hole walls off — the Crossed Shafts'
+      // plate nooks, and a dozen more pockets a scan found — and set down in
+      // one, every step out is another fall, for good. Seasons cannot do this
+      // (link.s respawns at wLinkLocalRespawn, where he came into the room);
+      // ours searches from the last floor he stood on instead, so he comes
+      // back up on the spot he fell from, which he could walk to by
+      // definition. The hole's own neighbourhood is only the fallback.
+      const ox = this.x, oy = this.y;
+      this.x = this.lastSafe.x; this.y = this.lastSafe.y;
+      const back = findSafeTile(game, this);
+      this.x = ox; this.y = oy;
+      const safe = back || findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
@@ -41110,7 +41122,7 @@ class Enemy extends Entity {
     // On foot it splashes in the shallows; a swimmer is drawn in its water.
     this.wades = !this.flying && this.terrain !== 'water';
     if (spec.z) this.z = spec.z;
-    if (spec.init) spec.init(this, null);
+    if (spec.init) spec.init(this, null, opts);
   }
 
   spriteName() {
@@ -41504,7 +41516,7 @@ class Enemy extends Entity {
 function defineEnemy(name, spec) {
   defineEntity(name, (x, y, opts, game) => {
     const e = new Enemy(x, y, spec, opts);
-    if (spec.init) spec.init(e, game);
+    if (spec.init) spec.init(e, game, opts || {});
     return e;
   });
   return spec;
@@ -42038,6 +42050,21 @@ function chase(e, g, o = {}) {
   const secondary = xMajor ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
   if (!gridLocked(e)) {
     e.dir = primary;
+    // GO ROUND, `{ detour: true }` (S250, the human's choice; the Brinehulk
+    // only). Blocked on its main axis, the plain chase steps along the other
+    // one toward the player — and once level with him that step changes
+    // sign every frame, so a chaser jammed on a post shivered a pixel up and
+    // down in place for its whole fight. A detour picks a side and keeps it
+    // until the way it wants to go is clear, and tries the other side if
+    // that one is shut too.
+    if (o.detour) {
+      if (moveDir(e, g, primary, speed)) { e.dir = primary; e._detour = null; return; }
+      const side = (e._detour && e._detourFor === primary) ? e._detour : secondary;
+      if (moveDir(e, g, side, speed)) { e.dir = side; e._detour = side; e._detourFor = primary; return; }
+      const opp = OPPOSITE[side];
+      if (moveDir(e, g, opp, speed)) { e.dir = opp; e._detour = opp; e._detourFor = primary; return; }
+      e.dir = primary; e._detour = null; return;
+    }
     if (!moveDir(e, g, primary, speed)) {
       e.dir = secondary;
       if (!moveDir(e, g, secondary, speed)) e.dir = primary;
@@ -69859,7 +69886,17 @@ function installBosses() {
     // `tools/check-playthrough.mjs` is what found it — `essences: [6]` in the
     // trace at `d6/1,4,2` — and nothing else in the repo could, because no
     // model in the verification table fights anything.
-    init(e) { e._open = 0; miniInit(e); },
+    // ASLEEP UNTIL LINK IS ON ITS ISLAND (S250, the human's choice). Since
+    // it walks round the mooring post instead of shivering against it, the
+    // colossus spent Link's two rope crossings walking to the lip of its
+    // island and stood on the landing when he arrived, a pit at his back and
+    // the conch still to sound. The room says where its island starts
+    // (`wakeFrom`, a tile column); until Link's middle is past it, it is a
+    // salt statue, and it wakes with a slam.
+    init(e, g, o) {
+      e._open = 0; miniInit(e);
+      if (o && o.wakeFrom != null && e._wakeX === undefined) e._wakeX = o.wakeFrom * 16;
+    },
     onDie: miniDie,
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
@@ -69868,17 +69905,19 @@ function installBosses() {
     phases: [
       // Walks you down and pounds the floor.
       { above: 0.62, ai(e, g) {
+        if (brinehulkAsleep(e, g)) return;
         runPending(e, g); closeTick(e, g);
         const rage = brinehulkCrust(e, g);
-        chase(e, g, { speed: 0.4 * rage });
+        chase(e, g, { speed: 0.4 * rage, detour: true });
         if (timer(e, 'pound', 175)) brinehulkPound(e, g, 8, 1.2);
       } },
       // Hurls salt boulders at range and charges when you line up.
       { above: 0.32, ai(e, g) {
+        if (brinehulkAsleep(e, g)) return;
         runPending(e, g); closeTick(e, g);
         const rage = brinehulkCrust(e, g);
         charge(e, g, { speed: 1.7 * rage, tell: 22, range: 110, shake: true, tol: 13,
-          idle: (e2, g2) => chase(e2, g2, { speed: 0.45 * rage }) });
+          idle: (e2, g2) => chase(e2, g2, { speed: 0.45 * rage, detour: true }) });
         if (timer(e, 'hurl', 140)) {
           windUp(e, g, 20, (e2, g2) => spread(e2, g2, 3, 40,
             { sprite: 'shot_rock', pal: 'marble', speed: 1.6, damage: 3 }));
@@ -69887,14 +69926,25 @@ function installBosses() {
       } },
       // Cracked apart: pounds constantly and throws a wider ring each time.
       { above: 0.00, ai(e, g) {
+        if (brinehulkAsleep(e, g)) return;
         runPending(e, g); closeTick(e, g);
         const rage = brinehulkCrust(e, g);
-        chase(e, g, { speed: 0.55 * rage });
+        chase(e, g, { speed: 0.55 * rage, detour: true });
         if (timer(e, 'pound', 110)) brinehulkPound(e, g, 12, 1.4);
         if (timer(e, 'dry', 320)) forceTide(e, g, LOW);
       } },
     ],
   });
+
+  function brinehulkAsleep(e, g) {
+    if (e._wakeX == null) return false;
+    const p = g.player;
+    if (!p || p.cx < e._wakeX || p.falling > 0) return true;
+    e._wakeX = null;
+    g.shake(SHAKE_BOSS_SLAM_FRAMES);
+    g.audio.sfx('explode');
+    return false;
+  }
 
   // The tide hook: brine eats salt. Flooded, the crust is soft the whole time
   // but the golem moves at half again its speed; dried out, it is armoured.
@@ -70903,7 +70953,11 @@ function installDungeonsA() {
         entities: [
           ['tektite', 11, 3, { drops: 'good' }],
           ['crab', 3, 5, { drops: 'good' }],
-          ['block', 3, 7],
+          // `once: false` (S250): the puzzle pushes it the length of its lane.
+          // It was a one-push block, so it stopped a tile on, and the chest
+          // was only ever reached by falling into the hole beside it, which
+          // used to set Link down on the far side.
+          ['block', 3, 7, { once: false }],
           ['switch', 10, 7],
           // In the far corner, opened from below (S224: front only).
           ['chest', 1, 1, { pickup: 'rupee100' }],
@@ -77967,7 +78021,8 @@ function installDungeonsB() {
           ['pickup', 20, 2, { kind: 'fairy', life: 1e9 }],
           // Brine dissolves salt: the Brinehulk is ARMOURED AT LOW and comes
           // apart at HIGH — and LOW is the only sea the shelf lets you cross on.
-          ['brinehulk', 25, 5],
+          // `wakeFrom`: asleep until Link stands on its island (S250).
+          ['brinehulk', 25, 5, { wakeFrom: 19 }],
           ['beamos', 14, 2],
           ['keese', 21, 6],
         ],

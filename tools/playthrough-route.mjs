@@ -3837,8 +3837,11 @@ export const ROUTE = [
   // S235 (bosses hold their pose once the shutters are down): the fight
   // cost 33 of 42 and left the run on 2. Swept a wait here 0-300 by 3: 294
   // wins on a full bar (159 on 37/44); both run to THE END. 294.
-  ['wait', 294],
-  ['boss', 12000, 'brinehulk', { openRetreat: true, diagRetreat: true, reachSwing: true }],
+  // S250 (the colossus walks round the mooring post and sleeps until Link is
+  // on its island; falls come back where he stood; `pitFence: 12`): swept
+  // 0-300 by 12, won 22 of 26 (was about 2 in 100). 96 wins on a full bar.
+  ['wait', 96],
+  ['boss', 12000, 'brinehulk', { openRetreat: true, diagRetreat: true, reachSwing: true, pitFence: 12 }],
   ['wait', 240],
 
   // K6's far plate (S190): at HIGH the far shaft (27,3) is flooded, and the

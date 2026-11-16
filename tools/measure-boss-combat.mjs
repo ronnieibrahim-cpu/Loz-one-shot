@@ -189,11 +189,18 @@ const MINIS = {
   // S142, the Keep at Oracle size with the far island widened: step 1364
   // (`tide` up, on the landing) f209346: `305,95 hp 46/48 tide 2`.
   // S144: step 1532 (`equip`) f222672, `305,95 hp 45/48 tide 2`.
-  brinehulk: { dungeon: 'd6', room: '2,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 45,
+  brinehulk: { dungeon: 'd6', room: '2,4,2', flag: 'd6_brinehulk', tide: HIGH,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                charms: { mid: 'coilrope', high: 'gillcarve' },
-               at: [305, 95], facing: 'right', maxQh: 48, settle: 8, frame: 222672 },
+               // S250: re-read off the S249 trace. Step 2262 (`tide` up, on
+               // the landing) f299121, `304,95 hp 42/44 tide 2`; then the
+               // route's `equip` and its swept `wait 294`, and the route's
+               // own three options (S147/S150/S164), which this row lacked —
+               // without them the rig read 2 of 13.
+               // S250: `pitFence: 12`, as the route carries it now.
+               opts: { openRetreat: true, diagRetreat: true, reachSwing: true, pitFence: 12 },
+               at: [304, 95], facing: 'right', qh: 42, maxQh: 44, settle: 294 + 78, frame: 299121 },
 };
 
 // THE FIGHT THE ROUTE ACTUALLY PLAYS.
@@ -370,6 +377,19 @@ const breakPinFlag = args.includes('--break-pin');
 // for its push through the adds on a fresh invuln window (S145).
 const clearAddsFlag = args.includes('--clear-adds');
 const pushThroughFlag = args.includes('--push-through');
+// And for `dBoss`'s pit fence (S250); `--pit-fence=N` stops N px short.
+const pitFenceArg = args.find(a => a === '--pit-fence' || a.startsWith('--pit-fence='));
+const pitFenceFlag = pitFenceArg ? (pitFenceArg.includes('=') ? Number(pitFenceArg.split('=')[1]) : true) : false;
+// FILM THE FIGHT (S250): `--film=DIR` writes the game's own canvas as a PNG
+// every `--film-every=N` frames (default 4) from the moment the actor engages,
+// plus `track.json` (frame, player, boss, tide, hearts per shot), so a loss
+// can be watched rather than read off a damage log, and cut into a clip with
+// ffmpeg as film-steps' are. It changes nothing the fight does: the pump
+// stride is the only thing it touches, and a pump is frame-exact.
+const filmArg = args.find(a => a.startsWith('--film='));
+const FILM = filmArg ? filmArg.slice('--film='.length) : null;
+const filmEveryArg = args.find(a => a.startsWith('--film-every='));
+const FILM_EVERY = filmEveryArg ? Number(filmEveryArg.slice('--film-every='.length)) : 4;
 const budgetArg = args.find(a => a.startsWith('--budget='));
 const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 18000;
 
@@ -426,6 +446,7 @@ if (openRetreatFlag) bossOpts = { ...(bossOpts || {}), openRetreat: true };
 if (breakPinFlag) bossOpts = { ...(bossOpts || {}), breakPin: true };
 if (clearAddsFlag) bossOpts = { ...(bossOpts || {}), clearAdds: true };
 if (pushThroughFlag) bossOpts = { ...(bossOpts || {}), pushThrough: true };
+if (pitFenceFlag) bossOpts = { ...(bossOpts || {}), pitFence: pitFenceFlag };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -577,9 +598,13 @@ let lastHp = null, lastQh = null;
 let rosterAtStart = null, startedAt = null;
 let peakFoes = 0, died = false;
 const timeline = [];
-while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
+const STRIDE = FILM ? FILM_EVERY : 20;
+const filmTrack = [];
+let filmN = 0;
+if (FILM) { const { mkdir } = await import('node:fs/promises'); await mkdir(FILM, { recursive: true }); }
+while (!done && guard++ < Math.ceil(BUDGET / STRIDE) + 400 * (20 / STRIDE)) {
   let r;
-  try { r = await page.evaluate(n => window.__rp.pump(n), 20); }
+  try { r = await page.evaluate(n => window.__rp.pump(n), STRIDE); }
   catch (e) { err = String(e.message || e).replace(/^page\.evaluate: /, '').split('\n')[0]; break; }
   done = r.done;
   if (r.error) { err = String(r.error); break; }
@@ -632,6 +657,20 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
       px: g.player ? Math.round(g.player.cx) : null, py: g.player ? Math.round(g.player.cy) : null,
     };
   }, [dungeonId, MINI, mini ? mini.flag : null]);
+  if (FILM && rosterAtStart !== null) {
+    const shot = await page.evaluate((name) => {
+      const g = window.__game;
+      const src = g.screen.canvas || document.querySelector('canvas');
+      const b = g.entities.find(e => e.type === name && !e.dead && !e.remove) || g.boss;
+      return { url: src.toDataURL('image/png'), f: g.frame, tide: g.tide.level,
+        p: g.player ? [Math.round(g.player.cx), Math.round(g.player.cy)] : null,
+        b: b ? [Math.round(b.cx), Math.round(b.cy), b.hp, !!b.weakOpen] : null,
+        qh: g.progress.hearts };
+    }, MINI || fight.boss);
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile(join(FILM, String(filmN++).padStart(5, '0') + '.png'), Buffer.from(shot.url.split(',')[1], 'base64'));
+    delete shot.url; filmTrack.push(shot);
+  }
   if (rosterAtStart === null && m.frame >= (route && route.frame ? route.frame : 0) + SETTLE) {
     rosterAtStart = m.foes; startedAt = [m.px, m.py, m.frame, m.qh];
   }
@@ -675,6 +714,11 @@ console.log('timeline (boss.hp / player quarter-hearts, on change):');
 for (const t of timeline) console.log(`  f=${t.frame}  boss.hp=${t.hp}  dead=${t.dead}  player.qh=${t.qh}`);
 if (err) console.log(`\ndid not finish: ${err}`);
 
+if (FILM) {
+  const { writeFile } = await import('node:fs/promises');
+  await writeFile(join(FILM, 'track.json'), JSON.stringify(filmTrack));
+  console.log(`filmed ${filmN} frames to ${FILM}`);
+}
 const dmgLog = await page.evaluate(() => window.__dmgLog);
 console.log('\ndamage taken by the player, in order:');
 for (const d of dmgLog) console.log('  ' + JSON.stringify(d));

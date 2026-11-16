@@ -916,6 +916,36 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S250 — the Brinehulk, rotation (h) fairness pass 1
+
+- The rig's Brinehulk row was stale (S144 health, no route options): 2/13.
+  Re-read off the S249 trace (304,95 42/44, settle 372) with the route's
+  openRetreat/diagRetreat/reachSwing: 7/13. The real run won only because
+  its wait (294) was hand-picked out of ~100 (S235).
+- THE LOSSES, READ: most "contact" damage with no source was PIT FALLS on
+  the island's west lip (dBoss's fence never had dFight's S151 pit rule),
+  walked in and knocked in by shards; and a fall into the hole in front of
+  a plate nook (23,2 / 15,2) set Link down IN the nook (findSafeTile from
+  the hole), sealed by that hole: every step out another fall, shockwaves
+  until dead. A scan found ~a dozen such pockets in the dungeons.
+- And the colossus never walked: blocked by the mooring post (20,6), chase
+  stepped along its other axis toward Link and, once level, flipped sign
+  every frame — shivering a pixel in place for most of the fight.
+- THE HUMAN CHOSE (do not re-ask): a fall puts Link back where he stood
+  (Seasons' own rule, back to the room entry, was offered and declined — in
+  a 2x1 room it sends him back across both crossings); the colossus walks
+  round the post (`chase(..., { detour: true })`, Brinehulk only); and it
+  sleeps until Link is on its island (`wakeFrom: 19`), because walking, it
+  camped the landing through both crossings.
+- ROBOT: `pitFence: N` (dBoss, opt-in): stop N px short of a pit. 13 seeds
+  at 4..16: 4, 7, 7, 10, 11, 10, 9; 12 kept. clearAdds changes nothing
+  (beetles are not cheap); breakPin/breakContact do not help.
+- RESULT: rig 11/13 (left 5..40). Real stream, route wait 0..300 by 12:
+  22/26 (was ~2/100). Route wait 96, full bar after the fight.
+- EXPOSED: check-bridges' Tide Gallery play-through had always crossed by
+  falling in (the block was one-push and stopped a tile on); the block is
+  `once: false` now and the plan walks the planks.
+
 ## Settled at S147 — Seasons' timing, measured
 
 - ONE FOOTAGE FILE, TEN MEASUREMENTS. Walk 1.5 px/f (steps 1,2); a diagonal
