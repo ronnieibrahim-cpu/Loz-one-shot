@@ -134,6 +134,27 @@ export const ERRAND_ART = {
     ................
     ................
     ................` },
+  // A SAND DOLLAR (S249), for the sand-dollar errand: a flat round sea biscuit,
+  // pale face, a five-petal star on it, the rim a shade darker. Lies low in its
+  // cell like the other pickups. Neither cartridge has one (checked: Seasons'
+  // and Ages' treasure sheets hold no shell) so it is drawn to their register.
+  p_sanddollar: { pal: 'p_sanddollar', art: `
+    ................
+    ................
+    ................
+    ......33333.....
+    .....3111113....
+    ....310000013...
+    ...31000200013..
+    ..3102202022013.
+    ..3100022200013.
+    ..3100002000013.
+    ..3100020200023.
+    ..3100200020023.
+    ...31020002023..
+    ....310000023...
+    .....3111223....
+    ......33333.....` },
   // A BELL BUOY (S201), moored in Sunken Cove for the bell-buoy echo. No
   // Oracle game has one; drawn to sit beside the extracted sea creatures. A
   // red-and-white float, a cage on top and the bell inside it. Two pictures,
@@ -192,6 +213,8 @@ const ERRAND_PALETTES = {
   i_e_oil: ['#f8f0a0', '#d89820', '#805010', '#000000'],
   // A white band, a red float, the rust-dark bell; ringing, the bell is gold.
   o_buoy: ['#f8f8f0', '#e04838', '#784028', '#000000'],
+  // Bleached cream face, the sand-grey rim, the star's brown slits.
+  p_sanddollar: ['#fff4d0', '#d8c490', '#8a6c40', '#000000'],
   o_buoyLit: ['#f8f8f0', '#e04838', '#f8c838', '#000000'],
 };
 
