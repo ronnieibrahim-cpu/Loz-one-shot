@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A damage log's "contact from nothing" is usually a pit (S250).** The
+  Brinehulk's losses read as eleven unexplained 4-point body touches; they
+  were falls (PIT_DAMAGE, source null). And a respawn rule can make a pit a
+  trap: setting Link on the floor nearest the HOLE put him in nooks the hole
+  walls off. Falls now come back where he stood; check-holes proves it at
+  every hole. A checker had been passing by falling in (check-bridges), and
+  so may a robot route: if a fall rule changes, read its plans.
+- **A rig row goes stale silently (S250).** measure-boss-combat's Brinehulk
+  row had the S144 health and none of the route's options, and read 2/13
+  while the route won. Re-read a row off the current trace before trusting
+  a number from it.
+- **A chaser blocked on its main axis can shiver in place (S250).** Level
+  with the player, the side-step changes sign every frame. `detour: true`
+  keeps a side; it is opt-in because every chaser's fight would re-roll.
+
 - **ANY entity placed on a screen the route enters re-phases every enemy
   after it, even one nobody touches (S249).** `Entity` takes `nextId++`
   (src/game/entity.js) and enemies derive their walk phase from it

@@ -169,7 +169,7 @@ export class Enemy extends Entity {
     // On foot it splashes in the shallows; a swimmer is drawn in its water.
     this.wades = !this.flying && this.terrain !== 'water';
     if (spec.z) this.z = spec.z;
-    if (spec.init) spec.init(this, null);
+    if (spec.init) spec.init(this, null, opts);
   }
 
   spriteName() {
@@ -563,7 +563,7 @@ export class Enemy extends Entity {
 export function defineEnemy(name, spec) {
   defineEntity(name, (x, y, opts, game) => {
     const e = new Enemy(x, y, spec, opts);
-    if (spec.init) spec.init(e, game);
+    if (spec.init) spec.init(e, game, opts || {});
     return e;
   });
   return spec;
@@ -1097,6 +1097,21 @@ export function chase(e, g, o = {}) {
   const secondary = xMajor ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
   if (!gridLocked(e)) {
     e.dir = primary;
+    // GO ROUND, `{ detour: true }` (S250, the human's choice; the Brinehulk
+    // only). Blocked on its main axis, the plain chase steps along the other
+    // one toward the player — and once level with him that step changes
+    // sign every frame, so a chaser jammed on a post shivered a pixel up and
+    // down in place for its whole fight. A detour picks a side and keeps it
+    // until the way it wants to go is clear, and tries the other side if
+    // that one is shut too.
+    if (o.detour) {
+      if (moveDir(e, g, primary, speed)) { e.dir = primary; e._detour = null; return; }
+      const side = (e._detour && e._detourFor === primary) ? e._detour : secondary;
+      if (moveDir(e, g, side, speed)) { e.dir = side; e._detour = side; e._detourFor = primary; return; }
+      const opp = OPPOSITE[side];
+      if (moveDir(e, g, opp, speed)) { e.dir = opp; e._detour = opp; e._detourFor = primary; return; }
+      e.dir = primary; e._detour = null; return;
+    }
     if (!moveDir(e, g, primary, speed)) {
       e.dir = secondary;
       if (!moveDir(e, g, secondary, speed)) e.dir = primary;

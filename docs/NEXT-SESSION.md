@@ -1,3 +1,59 @@
+## S250 — rotation (h) fairness pass 1: the Brinehulk
+
+Branch claude/oracle-tides-brinehulk-fairness-b4pran, off main at cc2c44e.
+Clips: docs/briefs/s250/ (the nook trap in the fight; the trap now vs fixed;
+the colossus jammed vs walking).
+
+### The human's choices this session (do not re-ask)
+- No iPad play notes (they said so; do not ask this session's way again
+  unless the rotation reaches (i)).
+- PIT FALLS: Link comes back where he stood (offered: Seasons' rule, back to
+  where he entered the room — declined for 2x1 rooms; leave it).
+- THE COLOSSUS WALKS ROUND THE POST (offered: leave it jammed).
+- IT SLEEPS UNTIL LINK IS ON ITS ISLAND (offered: awake all along, which
+  camped the landing; or back to jammed).
+
+### Found
+- The rig row was stale: 2/13 as committed; 7/13 re-read off the S249 trace
+  (304,95, 42/44, settle 294+78) with the route's options. The real run only
+  won at the hand-picked wait 294 (S235 swept ~100 waits for 2 winners).
+- Losses: pit falls on the island's west lip (dBoss's fence had no pit rule;
+  shards knock him in too); and the plate nooks (15,1 and 23,1): a fall into
+  the hole in front of one set Link down inside it (findSafeTile from the
+  hole), sealed by that hole — trapped till dead. A scan found ~a dozen such
+  pockets in d1/d2/d4/d5/d6/palace/vault/cave19.
+- The colossus shivered in place against the mooring post at 20,6: chase's
+  side-step toward Link changed sign each frame once level.
+
+### Built
+- player.js updateFalling (pit branch): findSafeTile searched from
+  `lastSafe` first (where he last stood), the hole as fallback.
+- enemy.js chase `{ detour: true }`: keep a side while the main axis is
+  blocked. defineBoss/Enemy pass spawn opts to `spec.init` (third arg).
+- bosses.js Brinehulk: three chase calls `detour: true`; `brinehulkAsleep`
+  (spawn opt `wakeFrom`, a tile column; wakes with a slam and SHAKE when
+  Link's cx passes it and he is not falling). dungeons-b.js 2,4,2:
+  `['brinehulk', 25, 5, { wakeFrom: 19 }]`.
+- actor-runtime dBoss `pitFence: N` (opt-in): fence N px short of a pit.
+  Route: Brinehulk `pitFence: 12`, wait 294 -> 96.
+- measure-boss-combat: Brinehulk row re-read, carries the route options;
+  `--pit-fence[=N]`; `--film=DIR [--film-every=N]` writes the canvas and
+  track.json while a fight runs (changes nothing it measures).
+- d1 Tide Gallery block `once: false` (the puzzle pushes it 7 tiles; it was
+  one-push, and the chest was only reachable by falling in). check-bridges
+  walks the planks (`hold`) instead of the route walker, which cut across
+  the hole. check-holes +1: every hole beside floor, at every sea, puts Link
+  back on the tile he stepped from (2873 steps; red on the old rule).
+
+### Verified
+Rig 11/13 (left 5..40). Real stream, waits 0..300 by 12: 22/26. Whole table
+green; check-playthrough 49/49, THE END, never died (low-water 5).
+
+### Next
+- (i) play pass: ask for notes; none, go round to (a) pass 2.
+- (h) pass 2: every other rig row is probably as stale as this one was —
+  re-read each off the trace before ranking the fights.
+
 ## S249 — rotation (g) dungeons pass 1 finished; the dunes' and marsh's side content
 
 Branch claude/oracle-tides-rotation-dungeons-8804ec, off main at 6a7fe60.

@@ -3164,7 +3164,8 @@ export function installDungeonsB() {
           ['pickup', 20, 2, { kind: 'fairy', life: 1e9 }],
           // Brine dissolves salt: the Brinehulk is ARMOURED AT LOW and comes
           // apart at HIGH — and LOW is the only sea the shelf lets you cross on.
-          ['brinehulk', 25, 5],
+          // `wakeFrom`: asleep until Link stands on its island (S250).
+          ['brinehulk', 25, 5, { wakeFrom: 19 }],
           ['beamos', 14, 2],
           ['keese', 21, 6],
         ],

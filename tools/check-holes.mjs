@@ -243,6 +243,62 @@ check('left to themselves, enemies ringed by holes never walk into one',
   r.walk.n === 2 && r.walk.alive === 2 && r.walk.falling === 0, R(r.walk));
 check('a dropped rupee that comes down on a hole goes down it', r.drop.gone && r.drop.sawHole && !r.drop.upGone, R(r.drop));
 check('a key lying over a hole does not', r.drop.key, R(r.drop));
+// LINK COMES BACK WHERE HE STOOD (S250). A fall used to set him down on the
+// floor nearest the HOLE, and where a nook sits beside a hole that is the
+// nook: the Crossed Shafts' plate nooks, walled in by the hole in front of
+// them, kept him for good, every step out another fall. Every hole in every
+// dungeon, cave and house that has floor beside it, at each sea: Link
+// stepping in from each side is set down on the tile he stepped from.
+const back = await page.evaluate(async () => {
+  const g = window.__game;
+  const { MAPS } = await import('/src/world/maps.js');
+  const { F } = await import('/src/world/tileset.js');
+  const E = await import('/src/game/entity.js');
+  g.mode = 'play'; g.cutscene = null;
+  const bad = []; let n = 0;
+  for (const [mid, m] of MAPS) {
+    if (mid === 'overworld') continue;
+    for (const key of Object.keys(m.roomDefs || {})) {
+      const [f, rx, ry] = key.split(',').map(Number);
+      try { g.enterMap(mid, f, rx, ry, 72, 72, 'up', { instant: true }); } catch (e) { continue; }
+      const p = g.player; let r = g.room;
+      if (!r || r.key !== key) continue;
+      for (const e of g.entities) if (e.isEnemy) e.remove = true;
+      for (let t = 0; t < 3; t++) {
+        g.tide.clearOverrides(); g.tide.setLevel(t, { instant: true });
+        for (let y = 0; y < r.th; y++) for (let x = 0; x < r.tw; x++) {
+          if (!(r.flagsAt(x, y, g.tide) & F.PIT) || (r.flagsAt(x, y, g.tide) & F.DROP)) continue;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const from = E.standAt(g, p, x + dx, y + dy);
+            if (!from) continue;
+            n++;
+            p.lastSafe.x = from.x; p.lastSafe.y = from.y;
+            p.x = x * 16 + 8 - (p.hb.x + p.hb.w / 2); p.y = y * 16 + 8 - (p.hb.y + p.hb.h - 2);
+            p.fx = p.x * 256; p.fy = p.y * 256;
+            p.falling = 0; p.fallDrop = false; p.beginFall(g);
+            if (!(p.falling > 0)) { n--; continue; }   // a float stands over it
+            const hp = g.progress.hearts = g.progress.maxHearts;
+            for (let i = 0; i < 200 && p.falling > 0; i++) p.updateFalling(g);
+            // A hole with a landing beneath takes him down a floor: not this.
+            if (g.room !== r || g.mapId !== mid) {
+              g.enterMap(mid, f, rx, ry, 72, 72, 'up', { instant: true });
+              for (const e of g.entities) if (e.isEnemy) e.remove = true;
+              g.tide.clearOverrides(); g.tide.setLevel(t, { instant: true });
+              r = g.room; n--; continue;
+            }
+            const at = E.groundTile(g, p);
+            if (at.tx !== x + dx || at.ty !== y + dy) bad.push(`${mid} ${key} sea ${t}: into ${x},${y} from ${x + dx},${y + dy}, set down at ${at.tx},${at.ty}`);
+            p.hurtTime = 0; p.invuln = 0;
+          }
+        }
+      }
+    }
+  }
+  return { n, bad };
+});
+check(`a fall puts Link back on the tile he stepped in from, every hole beside floor (${back.n} steps)`,
+  back.n > 100 && back.bad.length === 0, back.bad.slice(0, 5).join('; '));
+
 check('no page errors', errors.length === 0, errors[0]);
 function F_PULL() { return 60; }
 console.log(`\n=== ${pass} passed, ${fail.length} failed ===`);

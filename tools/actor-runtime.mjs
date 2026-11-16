@@ -1707,6 +1707,7 @@ export async function installRuntime() {
     sword();                                 // up front, for the reason dFight gives
     bossDiagRetreat = !!(opts && opts.diagRetreat);
     const reachSwing = !!(opts && opts.reachSwing);
+    const pitFence = (opts && opts.pitFence) || false;
     const waitInvuln = !!(opts && opts.waitInvuln);
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
@@ -1754,6 +1755,23 @@ export async function installRuntime() {
       if (q.x > (g.room ? g.room.pw : 160) - 16 - EDGE) m &= ~BIT.right;
       if (q.y < EDGE) m &= ~BIT.up;
       if (q.y > (g.room ? g.room.ph : 144) - 16 - EDGE) m &= ~BIT.down;
+      // NOR INTO A PIT — `['boss', N, type, { pitFence: true }]` (S250). The
+      // fence `dFight` has carried since S151, which this verb never got: on
+      // the Brinehulk's island the retreat backed Link over the west lip into
+      // the pit eleven times in one lost fight, and every one of those falls
+      // read in the damage log as a body touch from nothing. Opt-in per
+      // fight, because a fence re-rolls every fight that ever stood near a
+      // hole (HANDOFF, S145). A number is how far short of the lip to stop:
+      // four pixels keeps Link from walking in, and a shard's knockback
+      // still threw him in from there; twelve keeps him out of its reach
+      // (S250: 13 seeds at 4..16 read 4, 7, 7, 10, 11, 10, 9 of 13).
+      if (pitFence && !q.jumping && !(q.z > 0)) {
+        const PM = typeof pitFence === 'number' ? pitFence : 4;
+        for (const [bit, ddx, ddy] of [[BIT.left, -PM, 0], [BIT.right, PM, 0], [BIT.up, 0, -PM], [BIT.down, 0, PM]]) {
+          if (!(m & bit)) continue;
+          if (ent.groundFlags(g, { x: q.x + ddx, y: q.y + ddy, hb: q.hb }) & F.PIT) m &= ~bit;
+        }
+      }
       return m;
     };
     // Gohmaraq's hb (26x20 inside a 32x32 sprite) is close enough to the whole
