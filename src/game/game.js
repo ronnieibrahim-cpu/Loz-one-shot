@@ -2012,6 +2012,8 @@ export class Game {
     if (spec.worth) {
       this.audio.jingle('itemGet');
       this.say(`You got ${spec.worth} Rupees!`);
+    } else if (spec.line && !this.dialogue.active) {
+      this.say(spec.line);
     }
   }
 

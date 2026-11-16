@@ -19,6 +19,7 @@
 
 import { registerCutscenes } from '../game/cutscene.js';
 import { registerTexts } from '../game/dialogue.js';
+import { SAND_DOLLAR_FLAGS } from './errands.js';
 import { TITLE_MUSIC_FADE_MASK } from './feel.js';
 
 /** Tenths of a second as the race clock writes them: 134 -> "13.4". */
@@ -191,11 +192,28 @@ export const DIALOGUE = {
   poolWin: 'All three! The wood\'s never had a better gardener. Here!',
   poolRecord: (game) => `All three in ${raceTimeText(game.raceResult.tenths)} seconds! A new record! Here!`,
   poolLose: 'Time! The floats win this one. Try again?',
+  // The bog-keeper's sinking steps in Reedbank (S249).
+  stepsAsk: 'My sinking steps! Short stones stand only at LOW tide. Tall ones stand at LOW and MID. The rafts float at MID and HIGH. Cross to the far bank in three conch calls or fewer! Want to try?',
+  stepsDrain: 'Come back at LOW tide, when the pool is drained. Every round starts dry!',
+  stepsGo: 'Off you go! I\'m counting every call.',
+  stepsNo: 'No? The bog will wait. It always does.',
+  stepsBusy: 'Don\'t look at me! Watch your feet!',
+  stepsSplash: 'Splash! Out you come. Talk to me to try again.',
+  stepsTrick: 'No tricks in my pool! Just your feet and the conch.',
+  stepsWin: 'Across in three calls! You read the bog like a heron. Here, I fished this out of the pool years ago.',
+  stepsWinAgain: 'Across again, and quick about it! Here, for your trouble.',
+  stepsOver: (game, npc) => `You made it, but that took ${npc.calls} calls. It can be done in ${npc.par}! I'll pole you back.`,
+  stepsFetch: 'Stranded? Hold on, I\'ll pole you back across.',
+  // The beachcomber's sand dollars (S249), Sandpiper Row.
+  sandDollarAsk: 'Sand dollars! The sea only leaves them out at LOW tide, on the wet sand of the dunes. There are five out there. Bring me all five and I\'ll trade you something rare!',
+  sandDollarPartial: (game) => `${SAND_DOLLAR_FLAGS.filter(f => game.progress.flags[f]).length} of five! The rest are out on the dunes. Look where the sea goes out at LOW tide.`,
+  sandDollarThanks: 'All five, and not one chipped! I\'ve hunted the last of those for years. Here, I dug this up in the dunes. It\'s yours!',
+  beachcomber: 'Every LOW tide the sea leaves something new on the sand. That\'s why I never leave!',
   raceGoalWait: 'This is the finish! Talk to my friend on South Bluff to start the race.',
   ledgerAsk: 'The wind blew my ledger out the window! Every debt on the coast is in it. Try the South Sands.',
-  ledgerThanks: 'My ledger! Wet, but I can still read it. Here. Now I owe you, and that\'s written down too!',
+  ledgerThanks: 'My ledger! Wet, but I can still read it. Here, a hundred Rupees. Now I owe you, and that\'s written down too!',
   kiteAsk: 'My kite\'s stuck up a tree in the hollow past the bluff! It\'s too high to reach. You\'d need a big gust of wind.',
-  kiteThanks: 'My kite! I found this under the doorstep after the flood. You have it!',
+  kiteThanks: 'My kite! I found this bone under the doorstep after the flood. The carver might like it. You have it!',
   bogwaterAsk: 'My husband left a jar filling at the spring up at Bog Head, and forgot it! Nets last twice as long tanned in bog water.',
   bogwaterThanks: 'That\'s the colour! Tea-brown. The nets go in tonight. Here, take this for the walk!',
   // THE DARK LIGHTHOUSE (S200). The keeper asks for the lamp's three parts

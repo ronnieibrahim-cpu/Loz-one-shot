@@ -16,7 +16,7 @@ import {
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import { getText } from './dialogue.js';
-import { ERRANDS } from '../data/errands.js';
+import { ERRANDS, SAND_DOLLAR_FLAGS } from '../data/errands.js';
 import { FLOAT_DIRS } from './float-path.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN,
@@ -281,6 +281,26 @@ PICKUPS.salvage = {
   get(g, e) { g.salvage(e); },
 };
 
+// THE DUNES' SAND DOLLARS (S249, the human's pick for the dunes). Five lie
+// on sand the sea only uncovers at LOW tide, one to a screen; at MID and
+// HIGH they are under the water and neither drawn nor taken (`lowOnly`).
+// Each sets its own flag (`flag` on the placement), so the Beachcomber in
+// Sandpiper Row reads the five flags as an errand's list and pays for all of
+// them at once.
+export { SAND_DOLLAR_FLAGS };
+export function sandDollarCount(p) { return SAND_DOLLAR_FLAGS.filter(f => flag(p, f)).length; }
+PICKUPS.sandDollar = {
+  sprite: 'p_sanddollar', pal: null, persistent: true, lowOnly: true,
+  get(g, e) {
+    if (e && e.flagName) setFlag(g.progress, e.flagName);
+    const n = sandDollarCount(g.progress);
+    g.audio.sfx(n >= SAND_DOLLAR_FLAGS.length ? 'key' : 'rupee');
+    g.say(n >= SAND_DOLLAR_FLAGS.length
+      ? 'A sand dollar! That\'s all five. The beachcomber in Sandpiper Row will want these.'
+      : `A sand dollar! You have ${n} of ${SAND_DOLLAR_FLAGS.length}.`);
+  },
+};
+
 /** What this pickup is carrying, or the kind's face value if nothing set it. */
 function worthOf(e, base) {
   return (e && e.worth != null) ? e.worth : base;
@@ -319,12 +339,17 @@ export class Pickup extends Entity {
     // A fairy that is simply placed starts at its hover (FAIRY_HOVER_Z).
     if (spec.float && !this.pop) { this.z = FAIRY_HOVER_Z; this.zs = -FAIRY_HOVER_Z << 8; }
     this.saveKey = o.saveKey || null;
+    this.flagName = o.flag || null;
     this.depth = -2;
   }
+
+  /** Under the sea right now: a `lowOnly` treasure is there only at LOW. */
+  submerged(game) { return !!this.spec.lowOnly && tideAt(game, this) !== 0; }
 
   update(game) {
     this.frame++;
     if (this.attached) return;
+    if (this.submerged(game)) return;
     if (this.settle > 0) {
       this.zs += this.vz;
       this.vz += PICKUP_GRAVITY;
@@ -406,6 +431,7 @@ export class Pickup extends Entity {
   }
 
   draw(ctx, game, ox, oy) {
+    if (this.submerged(game)) return;
     // Blink out as the timer runs down.
     if (this.life !== Infinity && this.life < PICKUP_BLINK_FRAMES && (this.life >> 1) % 2 === 0) return;
     // No bob: a Seasons treasure waiting on the floor sits dead still
@@ -1036,6 +1062,157 @@ export class BuoyKeeper extends NPC {
   }
 }
 defineEntity('buoyKeeper', (x, y, o) => new BuoyKeeper(x, y, o));
+
+// --------------------------------------------------------------------------
+// THE SINKING STEPS (S249, the human's pick for the marsh): a bog-keeper's
+// sinkhole pool in Reedbank. Short stones stand dry only at LOW, tall stones
+// at LOW and MID, rafts float at MID and HIGH (at LOW they lie at the bottom
+// of the drained pit), and the gaps are a pit at LOW and deep water above —
+// the room's own tide tiles (legend `bogSteps`). The conch is the only way
+// across, and every call of it is counted: the far bank within `par` calls
+// wins. A round starts at LOW, the pool drained. Falling or swimming ends it
+// (the keeper fishes Link out, unhurt, back to `start`); so does an Anchor
+// or a Bottled Tide in the pool (`tide.overrides` in this room). Reaching the
+// far bank at any time, in a round or not, the keeper poles him back, so the
+// bank can never strand him. Run state lives on the keeper: leaving the
+// screen drops a round, and only the first win is saved (`flag`).
+//
+//   ['stepKeeper', 0, 6, { start: [1, 4], goal: [7, 2, 7, 6], par: 3,
+//     prize: 'heartPiece', again: 'rupee20', flag: 'stepsWon', ... }]
+// --------------------------------------------------------------------------
+export class StepKeeper extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.start = o.start || [1, 4];
+    this.goal = o.goal || [7, 2, 7, 6];
+    this.par = o.par || 3;
+    this.prize = o.prize || 'rupee20';
+    this.again = o.again || 'rupee20';
+    this.winFlag = o.flag || null;
+    this.text = {
+      ask: o.ask, drain: o.drain, go: o.go, splash: o.splash, trick: o.trick,
+      win: o.win, winAgain: o.winAgain, over: o.over, fetch: o.fetch, decline: o.decline, busy: o.busy,
+    };
+    this.state = 'idle';   // idle | play
+    this.calls = 0;
+    this.lastLevel = null;
+    this.ferry = false;    // putting him back on the near bank once a box closes
+  }
+
+  get gameOn() { return this.state === 'play'; }
+
+  say(game, id, then) {
+    game.startDialogue(id, this);
+    if (!then) return;
+    if (game.dialogue.active) game.dialogue.onClose = then; else then();
+  }
+
+  tricked(game) {
+    return game.tide.overrides.some(v => v.mapId === game.mapId && v.roomKey === (game.room && game.room.key));
+  }
+
+  interact(game, player) {
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    if (this.state === 'play') { this.say(game, this.text.busy); return; }
+    if (game.tide.level !== 0) { this.say(game, this.text.drain); return; }
+    if (this.tricked(game)) { this.say(game, this.text.trick); return; }
+    game.askDialogue(this.text.ask, this, ['Yes', 'No'], (pick) => {
+      if (pick !== 0) { if (this.text.decline) this.say(game, this.text.decline); return; }
+      this.say(game, this.text.go, () => this.begin(game));
+    });
+  }
+
+  begin(game) {
+    this.state = 'play';
+    this.calls = 0;
+    this.standAt = null;
+    this.lastLevel = game.tide.level;
+    game.updateMusic();
+  }
+
+  end(game) {
+    this.state = 'idle';
+    game.updateMusic();
+  }
+
+  /** Back on the near bank, standing, dry and unhurt. */
+  putBack(game) {
+    const p = game.player;
+    if (!p) return;
+    p.falling = 0; p.fallDrop = false; p.washing = 0;
+    p.inDeep = false; p.underwater = false; p.sinkT = 0; p.sinkInto = false;
+    p.x = this.start[0] * TILE + 8 - (p.hb.x + p.hb.w / 2);
+    p.y = this.start[1] * TILE + 8 - (p.hb.y + p.hb.h - 2);
+    p.lastSafe = { x: p.x, y: p.y };
+    p.dir = 'right';
+  }
+
+  onGoal(game) {
+    const p = game.player;
+    if (!p) return false;
+    const tx = Math.floor(p.cx / TILE), ty = Math.floor((p.y + p.hb.y + p.hb.h - 2) / TILE);
+    const [x0, y0, x1, y1] = this.goal;
+    return tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1;
+  }
+
+  update(game) {
+    super.update(game);
+    const p = game.player;
+    if (!p) return;
+    // In before the engine: the sea rising under him happens while the conch
+    // still has the screen, and the wash would carry him off (hurt) before a
+    // box could open. He is fished out the frame he goes in; the keeper's
+    // line waits for the screen.
+    // The sea rising under him is answered by Player.reconcileWithTide, which
+    // lifts him to the nearest dry tile with no splash to see; so the keeper
+    // looks at the tile he stood on before the call, under the new sea.
+    let sunk = false;
+    if (this.state === 'play' && game.tide.level !== this.lastLevel) {
+      this.calls++; this.lastLevel = game.tide.level;
+      const at = this.standAt;
+      const def = at && game.room ? game.room.tile(at[0], at[1], game.tide) : null;
+      sunk = !!def && !!(def.flags & (F.DEEP | F.PIT));
+    }
+    if (this.state === 'play' && !game.tide.busy) {
+      this.standAt = [Math.floor(p.cx / TILE), Math.floor((p.y + p.hb.y + p.hb.h - 2) / TILE)];
+    }
+    if (this.state === 'play' && (sunk || p.falling > 0 || p.washing > 0 || p.inDeep || p.underwater)) {
+      this.end(game);
+      game.audio.sfx('splash');
+      this.putBack(game);
+      this.owed = this.text.splash;
+    }
+    if (game.dialogue.active || game.mode !== 'play') return;
+    if (this.owed) { const t = this.owed; this.owed = null; this.say(game, t); return; }
+    if (this.state === 'play') {
+      if (this.tricked(game)) {
+        this.end(game);
+        this.say(game, this.text.trick, () => this.putBack(game));
+        return;
+      }
+    }
+    if (!this.onGoal(game)) return;
+    if (this.state !== 'play') { this.say(game, this.text.fetch, () => this.putBack(game)); return; }
+    this.end(game);
+    if (this.calls > this.par) {
+      game.audio.sfx('deny');
+      game.startDialogue(this.text.over, this);
+      const back = () => this.putBack(game);
+      if (game.dialogue.active) game.dialogue.onClose = back; else back();
+      return;
+    }
+    const first = !(this.winFlag && flag(game.progress, this.winFlag));
+    if (this.winFlag) setFlag(game.progress, this.winFlag);
+    this.say(game, first ? this.text.win : this.text.winAgain, () => {
+      this.putBack(game);
+      game.presentPrize(first ? this.prize : this.again);
+    });
+  }
+}
+defineEntity('stepKeeper', (x, y, o) => new StepKeeper(x, y, o));
 
 export class Sign extends Entity {
   constructor(x, y, o = {}) {

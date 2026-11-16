@@ -354,27 +354,27 @@ const SCENARIOS = [
     expect: `g.progress.flags.lighthouseLit && g.mapId === 'cave18' && g.progress.charms.lamplighter || ('lit ' + !!g.progress.flags.lighthouseLit + ', in ' + g.mapId + ', wick ' + !!(g.progress.charms && g.progress.charms.lamplighter))`,
   },
   {
-    name: 'The ledger: found on the South Sands, carried to the shop, paid for with a Piece of Heart',
+    name: 'The ledger: found on the South Sands, carried to the shop, paid for with a hundred Rupees',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 5, 9, 64, 32, 'right'] }),
     steps: [['goto', 8, 2, 400], ['wait', 90], ['travel', 5, 8, 3000], ['wait', 30], ['travel', 5, 7, 3000], ['wait', 30],
       ['goto', 2, 5, 600], ['hold', ['up'], 40], ['wait', 60], ['errand', 'ledgerDone', 1500], ['wait', 60]],
-    expect: `g.progress.flags.foundLedger && g.progress.flags.ledgerDone && g.progress.heartPieces === 1 || ('ledger ' + !!g.progress.flags.foundLedger + ', pieces ' + g.progress.heartPieces)`,
+    expect: `g.progress.flags.foundLedger && g.progress.flags.ledgerDone && g.progress.heartPieces === 0 && g.progress.rupees >= 100 || ('ledger ' + !!g.progress.flags.foundLedger + ', pieces ' + g.progress.heartPieces + ', rupees ' + g.progress.rupees)`,
   },
   {
     name: 'The ledger: the shopkeeper pays nothing until it is home',
-    setup: setup({ items: { sword: 1 }, equipA: 'sword', enter: ['houseShop', 0, 0, 0, 72, 81, 'up'] }),
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', rupees: 0, enter: ['houseShop', 0, 0, 0, 72, 81, 'up'] }),
     steps: [['errand', 'ledgerDone', 600]],
     expectError: /never landed/,
-    expect: `g.progress.heartPieces === 0 || 'paid without the ledger'`,
+    expect: `g.progress.heartPieces === 0 && g.progress.rupees === 0 || 'paid without the ledger'`,
   },
   {
-    name: 'The kite: blown out of the tree with the Bellows, carried home, paid for with a Piece of Heart',
+    name: 'The kite: blown out of the tree with the Bellows, carried home, paid for with a blank charm',
     setup: setup({ items: { sword: 1, bellows: 1 }, equipA: 'sword', equipB: 'bellows',
       enter: ['overworld', 0, 3, 6, 112, 64, 'up'] }),
     steps: [['goto', 7, 2, 400], ['hold', ['up'], 6], ['wait', 5], ['hold', ['b'], 80], ['wait', 200],
       ['travel', 3, 7, 3000], ['wait', 30], ['travel', 4, 7, 3000], ['wait', 30],
       ['goto', 2, 5, 600], ['hold', ['up'], 40], ['wait', 60], ['errand', 'kiteDone', 1500], ['wait', 60]],
-    expect: `g.progress.flags.foundKite && g.progress.flags.kiteDone && g.progress.heartPieces === 1 || ('kite ' + !!g.progress.flags.foundKite + ', pieces ' + g.progress.heartPieces + ' in ' + g.mapId)`,
+    expect: `g.progress.flags.foundKite && g.progress.flags.kiteDone && g.progress.heartPieces === 0 && g.progress.blanks === 1 || ('kite ' + !!g.progress.flags.foundKite + ', pieces ' + g.progress.heartPieces + ', blanks ' + g.progress.blanks + ' in ' + g.mapId)`,
   },
   {
     name: 'The kite: a sword does not bring it down',
@@ -408,6 +408,78 @@ const SCENARIOS = [
     expectError: /never landed/,
     expect: `g.progress.rupees === 0 || 'paid without the jar'`,
   },
+  // THE DUNES' SAND DOLLARS (S249): five on sand only LOW uncovers; the
+  // beachcomber in Sandpiper Row pays a Piece of Heart for all five.
+  {
+    name: 'Sand dollars: the fifth taken at LOW on World\'s Edge',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0,
+      flags: ['sandDollar1', 'sandDollar2', 'sandDollar3', 'sandDollar4'], enter: ['overworld', 0, 16, 9, 112, 48, 'up'] }),
+    steps: [['goto', 7, 2, 400], ['wait', 30], ['dialogue', 300]],
+    expect: `g.progress.flags.sandDollar5 || 'the fifth was not taken'`,
+  },
+  {
+    name: 'Sand dollars: all five paid for with a Piece of Heart in Sandpiper Cottage',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0,
+      flags: ['sandDollar1', 'sandDollar2', 'sandDollar3', 'sandDollar4', 'sandDollar5'], enter: ['houseSandpiper', 0, 0, 0, 72, 96, 'up'] }),
+    steps: [['goto', 8, 4, 600], ['hold', ['up'], 6], ['errand', 'sandDollarsDone', 1500], ['wait', 60]],
+    expect: `g.progress.flags.sandDollarsDone && g.progress.heartPieces === 1 || ('pieces ' + g.progress.heartPieces)`,
+  },
+  {
+    name: 'Sand dollars: at MID the fifth is under the sea and cannot be taken',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 1, enter: ['overworld', 0, 16, 9, 112, 48, 'up'] }),
+    steps: [['goto', 7, 2, 400], ['wait', 60]],
+    expect: `!g.progress.flags.sandDollar5 || 'taken under the sea'`,
+  },
+  {
+    name: 'Sand dollars: the beachcomber pays nothing for four',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0,
+      flags: ['sandDollar1', 'sandDollar2', 'sandDollar3', 'sandDollar4'], enter: ['houseSandpiper', 0, 0, 0, 72, 96, 'up'] }),
+    steps: [['goto', 8, 4, 400], ['hold', ['up'], 6], ['errand', 'sandDollarsDone', 600]],
+    expectError: /never landed/,
+    expect: `g.progress.heartPieces === 0 || 'paid for four'`,
+  },
+  // THE MARSH'S SINKING STEPS (S249): Reedbank's pool, crossed in the
+  // fewest conch calls (three) for a Piece of Heart.
+  ...(() => {
+    const at = ['overworld', 0, 2, 6, 20, 64, 'right'];
+    const cross = [['goto', 1, 3, 200], ['goto', 2, 3, 200], ['goto', 3, 3, 200], ['tide', 1, 140, 600],
+      ['goto', 4, 3, 200], ['goto', 5, 3, 200], ['goto', 5, 4, 200], ['tide', 2, 140, 600], ['tide', 0, 140, 600],
+      ['goto', 6, 4, 200], ['goto', 7, 4, 200], ['wait', 30], ['dialogue', 600], ['wait', 60], ['dialogue', 600], ['wait', 30]];
+    const home = 'Math.floor(g.player.cx / 16) === 1';
+    return [
+      {
+        name: 'The sinking steps: across in three calls, a Piece of Heart, poled back home',
+        setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0, enter: at }),
+        steps: [['steps', 600], ...cross],
+        expect: `g.progress.flags.stepsWon && g.progress.heartPieces === 1 && ${home} || ('won ' + !!g.progress.flags.stepsWon + ', pieces ' + g.progress.heartPieces + ', x ' + g.player.cx)`,
+      },
+      {
+        name: 'The sinking steps: won again, it pays rupees',
+        setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0, rupees: 0, flags: ['stepsWon'], enter: at }),
+        steps: [['steps', 600], ...cross],
+        expect: `g.progress.rupees === 20 && g.progress.heartPieces === 0 || ('rupees ' + g.progress.rupees + ', pieces ' + g.progress.heartPieces)`,
+      },
+      {
+        name: 'The sinking steps: six calls is over par, no prize, poled back',
+        setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0, enter: at }),
+        steps: [['steps', 600], ['tide', 1, 140, 600], ['tide', 2, 140, 600], ['tide', 0, 140, 600], ...cross],
+        expect: `!g.progress.flags.stepsWon && g.progress.heartPieces === 0 && ${home} || ('won ' + !!g.progress.flags.stepsWon + ', x ' + g.player.cx)`,
+      },
+      {
+        name: 'The sinking steps: calling MID on a short stone drops you in, unhurt, back at the start',
+        setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 0, enter: at }),
+        steps: [['steps', 600], ['goto', 1, 3, 200], ['goto', 2, 3, 200], ['tide', 1, 140, 600], ['wait', 30], ['dialogue', 600], ['wait', 30]],
+        expect: `!g.progress.flags.stepsWon && ${home} && g.progress.hearts === g.progress.maxHearts && !g.entities.some(e => e.gameOn) || ('x ' + g.player.cx + ', hp ' + g.progress.hearts + '/' + g.progress.maxHearts)`,
+      },
+      {
+        name: 'The sinking steps: no round starts unless the pool is drained (LOW)',
+        setup: setup({ items: { sword: 1, conch: 1 }, equipA: 'sword', equipB: 'conch', tide: 1, enter: at }),
+        steps: [['steps', 400]],
+        expectError: /no round started|never/,
+        expect: `!g.entities.some(e => e.gameOn) || 'a round started at MID'`,
+      },
+    ];
+  })(),
   {
     name: 'The race: at LOW the sand path gets you to Pip inside the clock, for a Piece of Heart',
     setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, 3, 9, 48, 48, 'left'] }),

@@ -32,6 +32,7 @@
 
 import { registerMap } from '../world/maps.js';
 import { FARORE_SWAY_HOLD } from './feel.js';
+import { SAND_DOLLAR_FLAGS } from './errands.js';
 
 export const OVERWORLD_W = 17;
 export const OVERWORLD_H = 10;
@@ -1614,19 +1615,33 @@ const rooms = {
   },
   '0,2,6': {
     name: 'Reedbank',
-    legend: 'marsh', music: 'marsh',
+    legend: 'bogSteps', music: 'marsh',
+    // THE SINKING STEPS (S249, the human's pick for the marsh): the
+    // bog-keeper's sinkhole pool. 5 short stones (LOW), 6 tall stones (LOW,
+    // MID), 7 rafts (MID, HIGH), 8 the pool (a pit at LOW, deep above); the
+    // mud islet at 5,4 stands at every sea. No sea crosses it alone and the
+    // fewest conch calls across are three: LOW over the short stones to a
+    // tall one, call MID, rafts to the islet, call HIGH and LOW there, short
+    // stones to the far bank (StepKeeper; check-side plays it). The keeper
+    // poles you back from the far bank, in a round or not.
     map: [
       'TTTTTTTTTT',
       'TTTTTTTTTT',
-      'ggg.g!!gTT',
-      'g.!~==~gTT',
-      'gg!~==!gTT',
-      'gf.!!!.gTT',
-      'gg.f.g##TT',
+      'gg55878gTT',
+      'gg56778gTT',
+      'gg868.5gTT',
+      'gf58875gTT',
+      'gg55888gTT',
       '########TT',
     ],
     entities: [
-      ['zol', 1, 4], ['keese', 3, 2],
+      ['stepKeeper', 0, 2, {
+        walk: 'hunter', start: [1, 4], goal: [7, 2, 7, 6], par: 3,
+        prize: 'heartPiece', again: 'rupee20', flag: 'stepsWon',
+        ask: 'stepsAsk', drain: 'stepsDrain', go: 'stepsGo', decline: 'stepsNo', busy: 'stepsBusy',
+        splash: 'stepsSplash', trick: 'stepsTrick', win: 'stepsWin', winAgain: 'stepsWinAgain',
+        over: 'stepsOver', fetch: 'stepsFetch',
+      }],
     ],
   },
   // ---- coast -------------------------------------------------------------
@@ -1725,6 +1740,8 @@ const rooms = {
       'TT...ggggg',
     ],
     entities: [
+      // A sand dollar (S249): only out of the sea at LOW tide.
+      ['pickup', 5, 5, { kind: 'sandDollar', flag: 'sandDollar1' }],
       ['crab', 4, 3],
     ],
   },
@@ -1742,6 +1759,8 @@ const rooms = {
       'gggg...111',
     ],
     entities: [
+      // A sand dollar (S249): only out of the sea at LOW tide.
+      ['pickup', 6, 5, { kind: 'sandDollar', flag: 'sandDollar2' }],
       ['leever', 4, 3], ['crab', 6, 4],
     ],
   },
@@ -2759,6 +2778,9 @@ const rooms = {
       snarl: [5, 6], cutFrom: [5, 5],
     },
     entities: [
+      // A sand dollar (S249): only out of the sea at LOW tide. The fifth is
+      // here, a beach off the robot's route, not on the Tidepools it crosses.
+      ['pickup', 7, 2, { kind: 'sandDollar', flag: 'sandDollar5' }],
       ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
     ],
     // THE LIGHTHOUSE REFLECTOR (S200) is caught in the snarl at 5,6, which
@@ -3507,12 +3529,14 @@ const rooms = {
       '...gggg...',
       '..TT......',
       '..TT...555',
-      '5555555555',
+      '5555445555',
       '555555....',
       'TT.oTT..TT',
       'TTOOTTOOTT',
     ],
     entities: [
+      // A sand dollar (S249): only out of the sea at LOW tide.
+      ['pickup', 5, 4, { kind: 'sandDollar', flag: 'sandDollar3' }],
       ['leever', 4, 3, { phase: 0 }],
     ],
   },
@@ -3685,12 +3709,14 @@ const rooms = {
       '.gg.......',
       'gg......TT',
       '555.....TT',
-      '5555555...',
+      '5554555...',
       '..55555555',
       'TT.gTT..TT',
       'TTOOTT..TT',
     ],
     entities: [
+      // A sand dollar (S249): only out of the sea at LOW tide.
+      ['pickup', 3, 4, { kind: 'sandDollar', flag: 'sandDollar4' }],
       ['crab', 4, 4],
     ],
   },
@@ -3767,9 +3793,10 @@ function installHouses() {
         ],
         entities: [
           // His errand (S155): the ledger, lost on the South Sands, for a
-          // Piece of Heart. He talks shop again once it is home.
+          // hundred Rupees (S249: its Piece of Heart went to the dunes' sand
+          // dollars). He talks shop again once it is home.
           ['npc', 2, 4, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3,
-            errand: { need: 'foundLedger', prize: 'heartPiece', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
+            errand: { need: 'foundLedger', prize: 'rupee100', flag: 'ledgerDone', ask: 'ledgerAsk', thanks: 'ledgerThanks' } }],
           // The stock stands behind the counter, bought across it (Player
           // .tryContextAction reaches one tile further through a counter).
           ['shopItem', 4, 2, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield', perched: true }],
@@ -3934,10 +3961,11 @@ function installHouses() {
     // a hundred rupees. The only errand that pays in rupees.
     ['npc', 4, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3,
       errand: { need: 'foundBogWater', prize: 'rupee100', flag: 'bogwaterDone', ask: 'bogwaterAsk', thanks: 'bogwaterThanks' } }],
-    // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a Piece of
-    // Heart found under the doorstep in the flood.
+    // The child's errand (S155): the kite, up a tree in Bluff Hollow, for a
+    // blank charm found under the doorstep in the flood (S249: its Piece of
+    // Heart went to the marsh's sinking steps).
     ['npc', 6, 4, { walk: 'boy', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2,
-      errand: { need: 'foundKite', prize: 'heartPiece', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
+      errand: { need: 'foundKite', prize: 'blank', flag: 'kiteDone', ask: 'kiteAsk', thanks: 'kiteThanks' } }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 }, [
     // Seasons' room $80: two beds, a wardrobe, a rug and a table.
@@ -4036,6 +4064,13 @@ function installHouses() {
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
     ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
+    // The beachcomber (S249): the five sand dollars of the dunes, shown only
+    // at LOW tide, for a Piece of Heart (moved from the shop's ledger
+    // errand). Indoors, because the robot's route walks the Row outside and
+    // every entity it meets moves every enemy after it (HANDOFF S249).
+    ['npc', 8, 3, { walk: 'oldman', dialogue: 'beachcomber',
+      errand: { need: SAND_DOLLAR_FLAGS, prize: 'heartPiece', flag: 'sandDollarsDone',
+        ask: 'sandDollarAsk', partial: 'sandDollarPartial', thanks: 'sandDollarThanks' } }],
   ], { rx: 12, ry: 8, px: 32, py: 88 }, [
     // Seasons' room $a4: a wall of dressers and wardrobes, a table on a rug
     // with its purple seat ($08) at the east end.

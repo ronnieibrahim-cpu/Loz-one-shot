@@ -80,6 +80,15 @@ export function installLegends() {
                              // `cliffSandTop`'s tiledef comment
   }, 'base');
 
+  // ---- bogSteps: the marsh with the sinking steps' pool (S249, Reedbank).
+  // Digits stay tide tiles: these four are the pool's own.
+  registerLegend('bogSteps', {
+    '5': 'sinkStone',    // short stone: dry only at LOW
+    '6': 'sinkPillar',   // tall stone: dry at LOW and MID
+    '7': 'sinkRaft',     // raft: a pit at LOW, afloat at MID and HIGH
+    '8': 'sinkGap',      // the pool: a pit at LOW, deep water above
+  }, 'marsh');
+
   // ---- dunes: the sandbar flats ------------------------------------------
   registerLegend('dunes', {
     'g': 'sandRipple', 'G': 'sand', 'f': 'sand', 'v': 'sandDeep',
