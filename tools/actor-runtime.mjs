@@ -607,8 +607,10 @@ export async function installRuntime() {
       // for the rest of the run. So the two are told apart: something present
       // but not yet grabbable is waited on; nothing present at all is the only
       // case that gives up.
+      // A sand dollar (S249) is side content the route does not play: the
+      // sweep leaves it lying, as a player walking past may.
       const pending = g.entities.filter(e => e.isDrop && !e.dead && !e.remove && !e.__skip
-        && e.life > 30 && near(e));
+        && !(e.spec && e.spec.lowOnly) && e.life > 30 && near(e));
       if (!pending.length) return;
       const drops = pending.filter(e => e.grabDelay <= 0);
       if (!drops.length) { yield 0; spent++; continue; }
@@ -3477,6 +3479,19 @@ export async function installRuntime() {
   }
 
   /**
+   * START THE SINKING STEPS (S249): talk to the bog-keeper in this room,
+   * answering Yes, until a round is on. The crossing is ordinary directives.
+   */
+  function* dSteps(maxF) {
+    const g = window.__game;
+    const holder = g.entities.find(e => !e.remove && e.par != null && 'calls' in e);
+    if (!holder) throw new Error(`steps: no bog-keeper in ${g.mapId} ${g.room && g.room.key}`);
+    yield* dTalkTo(holder, () => holder.gameOn, 'steps', 'the bog-keeper', maxF);
+    yield* dDialogueClear(300);
+    if (!holder.gameOn) throw new Error('steps: no round started');
+  }
+
+  /**
    * TURN A DUNGEON KEY (S154): stand on (tx, ty) and lean `dir` into the
    * keyhole until its flag says it has opened, as a player does.
    */
@@ -3585,6 +3600,7 @@ export async function installRuntime() {
       else if (kind === 'beat') yield* dBeat(a[0], a[1]);
       else if (kind === 'errand') yield* dErrand(a[0], a[1]);
       else if (kind === 'race') yield* dRace(a[0]);
+      else if (kind === 'steps') yield* dSteps(a[0]);
       else if (kind === 'errandAsk') yield* dErrandAsk(a[0], a[1]);
       else if (kind === 'keyhole') yield* dKeyhole(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'ending') yield* dEnding(a[0]);

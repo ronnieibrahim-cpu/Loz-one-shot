@@ -45,3 +45,9 @@ export const ERRANDS = {
     got: 'A corked flask of lamp oil! The HIGH tide left it here in the salt.',
   },
 };
+
+// The dunes' five sand dollars (S249): one flag each, set by the sand dollar
+// lying at that place (PICKUPS.sandDollar); the beachcomber's errand needs all
+// five. Here, with the errands, so the room data can name them without
+// importing the engine.
+export const SAND_DOLLAR_FLAGS = ['sandDollar1', 'sandDollar2', 'sandDollar3', 'sandDollar4', 'sandDollar5'];

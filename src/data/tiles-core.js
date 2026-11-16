@@ -10,6 +10,7 @@ import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } 
 import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, HORON_GROUND } from './tiles-terrain.js';
 import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
+import { STEPSTONE_ART, STEPSTONE_PALETTES } from './tiles-stepstones.js';
 import { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } from './tiles-maku.js';
 import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, BELT_ANIM_RATE } from './feel.js';
 
@@ -1332,7 +1333,7 @@ const HAND_ART = {
 // The dungeon themes, by the suffix every one of their tiles carries.
 const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss', 'Eyrie', 'AbyssIce'];
 
-const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
+const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART, ...STEPSTONE_ART };
 
 
 // The houses' tiledefs (S215). `layered` names the pieces cut as two layers.
@@ -1861,6 +1862,7 @@ function installDungeonPortals() {
 /** Tiledefs for every cell of every block variant, plus the block registry. */
 function installTownBlocks() {
   registerPalettes(TOWN_PALETTES);
+  registerPalettes(STEPSTONE_PALETTES);
   // The oak's two halves. Index 2 of the canopy is unused (it has three
   // colours), so it repeats the dark green rather than leaving a hole.
   //
@@ -2455,6 +2457,33 @@ export function installCoreTiles() {
       art: ART.owHole, pal: 'pit', flags: F.PIT, underArt: 'sand', family: 'chasm',
     },
     seaDrain: { tide: ['sinkhole', 'waterS', 'waterD'] },
+
+    // --- The Mire Pool's footing (S249) -------------------------------------
+    // A sinkhole in the marsh that drains to a pit at LOW and fills with deep
+    // water at MID and HIGH, with three kinds of footing in it. All plain
+    // floor a player stands on; the pool's room data lays the pits or the
+    // water round them (art: tiles-stepstones.js, hand-drawn).
+    //   stepStoneLow   a flat wet slab on the mud — seen at LOW, among pits
+    //   stepStoneTall  a stone post, taller in silhouette — LOW and MID
+    //   stepRaft       logs on deep water, rippling with it — MID and HIGH
+    stepStoneLow: { art: ART.stepStoneLow, pal: 'stonedk', underArt: 'mud' },
+    stepStoneTall: { art: ART.stepStoneTall, pal: 'stonedk', underArt: 'mud' },
+    stepStoneTallWet: {
+      art: ART.stepStoneTallWet0, pal: 'stepStoneWet',
+      anim: ['stepStoneTallWet0', 'stepStoneTallWet1', 'stepStoneTallWet2', 'stepStoneTallWet3'], animRate: 13,
+    },
+    stepRaft: {
+      art: ART.stepRaft0, pal: 'stepRaft',
+      anim: ['stepRaft0', 'stepRaft1', 'stepRaft2', 'stepRaft3'], animRate: 13,
+    },
+    // THE SINKING STEPS (S249, Reedbank): a sinkhole pool that drains to a
+    // pit at LOW and fills deep above it. Short stones stand only at LOW,
+    // tall ones at LOW and MID; rafts lie at the bottom of the pit at LOW and
+    // float at MID and HIGH. No single sea crosses it (StepKeeper).
+    sinkStone: { tide: ['stepStoneLow', 'waterD', 'waterD'] },
+    sinkPillar: { tide: ['stepStoneTall', 'stepStoneTallWet', 'waterD'] },
+    sinkRaft: { tide: ['sinkhole', 'stepRaft', 'stepRaft'] },
+    sinkGap: { tide: ['sinkhole', 'waterD', 'waterD'] },
     // A race: wadeable at LOW, and a running current above it. Passability is
     // identical to `dWell` at every level, so a run of these can be dropped
     // into an authored room without changing where anything can go — the only

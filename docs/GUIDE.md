@@ -2043,12 +2043,15 @@ Numbered in the order this walkthrough passes them.
    the room.
 10. **Heart Piece 10** — `d3/1,2,1`, Vestry Roof, tile (4,4). North of Bogmaw
     Hall.
-11. **Heart Piece 11** — `houseHearth/0,0,0`, the village child's thanks for
-    their **Kite**, stuck up a tree in Bluff Hollow (`overworld/0,3,6`, the
-    tree at (7,1), just east of the cracked bluff). Stand under it facing up
-    and blow it down with the **Squall Bellows**, then take it to the child in
-    the house on the square's west side. (Kell Ledges, where a piece used to
-    be, has 20 rupees under its rock.)
+11. **Heart Piece 11** — the **sinking steps** (S249): the bog-keeper's pool
+    in Reedbank (`overworld/0,2,6`, the dead-end screen east of Bog Stair, in
+    the Marsh). Talk to him at **LOW tide**. Short stones stand only at LOW,
+    tall stones at LOW and MID, rafts float at MID and HIGH; cross to the far
+    bank in **three conch calls** or fewer. Walk the short stones from (2,3) to
+    the tall stone at (3,3) and sound **MID**; walk the rafts (4,3), (5,3) to
+    the mud islet at (5,4) and sound **HIGH**, then **LOW**; walk the short
+    stone at (6,4) onto the bank. Later wins pay 20 rupees. (The kite now pays
+    a blank charm.)
 12. **Heart Piece 12** — `d4/0,4,5`, Rung Gallery, tile (3,3). Inside a
     drown-wall box: **swim in at HIGH tide**.
 13. **Heart Piece 13** — `d4/0,4,1`, East Overlook, tile (2,6).
@@ -2061,10 +2064,13 @@ Numbered in the order this walkthrough passes them.
     rupees.)
 15. **Heart Piece 15** — `d5/0,1,5`, Drowned Cloister, tile (3,3).
 16. **Heart Piece 16** — `d5/0,5,5`, Bower Cell, tile (5,1).
-17. **Heart Piece 17** — `houseShop/0,0,0`, the shopkeeper's thanks for his
-    **Shop Ledger**, which blew away onto the South Sands (`overworld/0,5,9`,
-    tile (8,2), two screens south of the shop). Pick it up and bring it back.
-    No items needed. (Salt Terraces, where a piece used to be, has 20 rupees.)
+17. **Heart Piece 17** — the beachcomber's **five sand dollars** (S249), paid
+    in Sandpiper Cottage (`houseSandpiper`). They lie on sand the sea only
+    uncovers at **LOW tide**, and at MID and HIGH they are under the water:
+    Dune Head (`overworld/0,10,6`, tile (5,5)), North Dunes (`0,11,6`, (6,5)),
+    Leever Bowl (`0,13,7`, (5,4), on a sandbank in the channel), Channel Dunes
+    (`0,14,7`, (3,4)) and World's Edge (`0,16,9`, (7,2)). (The ledger now pays
+    a hundred rupees.)
 18. **Heart Piece 18** — `cave6/0,0,0`, Slackwater Cave, tile (4,4). A sea cave
     in the cliff at the top of the Wind Shelf (`overworld/0,1,2`, on the
     Cliffs of Kell) at (3,1). Its mouth is only above the water at **LOW
@@ -2144,11 +2150,18 @@ numbered in the heart list above); they are all optional.
 - **The Slackwater Cave** (Heart Piece 18). Up on the Cliffs of Kell, the Wind
   Shelf has a cave mouth in its top cliff that is under the sea except at **LOW
   tide**. Sound the sea down, wade the channel and walk in.
-- **The shopkeeper's ledger** (Heart Piece 17). He lost his ledger in a wind.
+- **The shopkeeper's ledger** (100 rupees). He lost his ledger in a wind.
   It is on the South Sands, two screens south of the shop. Bring it back.
-- **The child's kite** (Heart Piece 11). The child in the house on the square
+- **The child's kite** (a blank charm). The child in the house on the square
   lost a kite up a tree in Bluff Hollow, just east of the cracked cliff. Stand
   under it facing up and blow it down with the **Squall Bellows**.
+- **The beachcomber's sand dollars** (Heart Piece 17). The old man in
+  Sandpiper Cottage wants the five sand dollars of the dunes. They only show
+  at **LOW tide**, on wet sand by the dunes' pools and channels, and one on
+  the beach at World's Edge.
+- **The sinking steps** (Heart Piece 11; 20 rupees on later wins). The
+  bog-keeper in Reedbank, in the Marsh, dares you across his pool in three
+  conch calls. Each kind of stepping place stands at its own tides.
 - **The netmaker's bog water** (100 rupees). The child's mum, in the same house,
   wants the jar her husband left filling at Bog Head, in the Marsh.
 - **The tide-pool race** (Heart Piece 23; 20 rupees on later wins). The kid on

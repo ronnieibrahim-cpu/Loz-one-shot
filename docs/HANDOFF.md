@@ -447,6 +447,23 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **ANY entity placed on a screen the route enters re-phases every enemy
+  after it, even one nobody touches (S249).** `Entity` takes `nextId++`
+  (src/game/entity.js) and enemies derive their walk phase from it
+  (`hash32('phase', e.id, n)`, enemy.js). One sand dollar lying unseen on the
+  Tidepools, or one standing beachcomber in Sandpiper Row, each moved Anemos's
+  fight from 9/24 to 6/24 or 15/24 with the entry frame identical, and the
+  run died at D3. Put new side content in rooms the route never enters
+  (`ROOMS=overworld node tools/route-prefix.mjs 99999`), or inside a building
+  it never enters — both of S249's moved there and the run came back to the
+  frame. The robot's `loot` sweep also took the sand dollar (it collects any
+  pickup); it now skips `lowOnly` pickups.
+- **The rising sea lifts Link off a drowned tile with no splash (S249).**
+  `Player.reconcileWithTide` moves him to the nearest dry tile the frame the
+  conch's sweep ends, so `inDeep`/`washing` are never seen; to judge "he was
+  standing where the water came", remember the tile he stood on before the
+  call and read it under the new sea (StepKeeper.update).
+
 - **An entity that removes itself on its first update is still DRAWN under
   a room's walk-in fade (S248).** Late shop stock first dropped itself in
   ShopItem.update; entity updates do not run while the door's fade plays, so

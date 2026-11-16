@@ -46,7 +46,9 @@ installData();
 // `sour`/`winAgain` and the `next` list the buoy sailor's (S201); `need` a racer's
 // "come back with" line (S248, the stake game).
 const ID_FIELDS = ['dialogue', 'waiting', 'after', 'blocked', 'sceneAfter', 'ask', 'busy', 'go', 'decline', 'win', 'lose',
-  'noRod', 'turn', 'sour', 'winAgain', 'askBest', 'record', 'need'];
+  'noRod', 'turn', 'sour', 'winAgain', 'askBest', 'record', 'need',
+  // the bog-keeper's sinking steps (S249)
+  'drain', 'splash', 'trick', 'over', 'fetch'];
 const DEAL_ID_FIELDS = ['text', 'blocked', 'after'];
 
 const referenced = new Map();   // id -> [where, ...]
