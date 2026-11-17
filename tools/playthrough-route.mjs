@@ -1599,6 +1599,8 @@ export const ROUTE = [
   ['dialogue', 300],
   ['equip', 'conch', 'B', 400],
   ['tide', 0, 140, 600],
+  // S251: the fairy under the boss door (the human's choice), on a full bar.
+  ['loot', 600],
   ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
@@ -1625,7 +1627,11 @@ export const ROUTE = [
   // S247 (the Sanctum's beetles and zols, and no text box after a puzzle,
   // moved the clock): 49 loses. Swept 0-140 by 6 then 40-61 by 1 from
   // Bogmaw's 16/28: 55, 56, 58 and 59 win on 6-8/28, 44 on 2. 56. THIN.
-  ['wait', 56],
+  // S251 (a fairy under the door, the last phase gentler, `breakContact`
+  // off — on a full bar it walked Link away into the corners): swept 0-144
+  // by 12, 8 of 13 win (was 1 of 13 and the one hand-picked wait). 60, the
+  // most left (16/28).
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d3 1,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
@@ -1638,7 +1644,7 @@ export const ROUTE = [
   // S166: Seasons' 32-frame boss safety window — hold off while he is safe.
   // S167: `openRetreat` and `diagRetreat` both on (see the wait above) — the
   // S131 seed that openRetreat flipped is long gone.
-  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true, cornerSwing: true, breakContact: true }],
+  ['boss', 14000, null, { clearAdds: true, reachSwing: true, waitInvuln: true, openRetreat: true, diagRetreat: true, cornerSwing: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —

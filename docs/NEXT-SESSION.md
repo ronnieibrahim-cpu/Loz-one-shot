@@ -1,3 +1,50 @@
+## S251 — rotation (h) fairness pass 2: every fight re-read; Gloomtide
+
+Same branch, after S250's merge (365bf23). Clip:
+docs/briefs/s250/gloomtide-last-phase-now-vs-gentler.gif.
+
+### The human's choices this session (do not re-ask)
+- No play notes; "other bosses": re-check every fight, find the thinnest.
+- Gloomtide: the gentler last phase AND work on Bogmaw (robot first; any
+  change to Bogmaw's fight itself goes back to them).
+- A fairy under Gloomtide's door (offered: hearts in pots; no healing).
+
+### Found: the real run, 13 entry waits (0..144 by 12) per fight
+Clawcrab 11, Gohmaraq 9, Reefguard 9, Anemos 13, Bogmaw 11 (but it costs
+16 qh), Gloomtide 0 (the run lived at its one hand-picked wait), Ironknight
+6, Wyverna 13 (left 7/32), Thornvine 13, Rootmaw 1 (same: one hand-picked
+wait), Tideshade 13, Brinehulk 22/26 (S250), Nereth 13. The rig rows were
+stale everywhere (d3's: qh 24 vs the real 16, half the route's options).
+Method: tools/route-prefix.mjs with PATCH of the wait before the boss
+(INSERT one where there is none); a boss line in the trace is a win.
+
+### Built
+- bosses.js Gloomtide last phase: chase 0.72 -> 0.55, ink ring every 150 ->
+  240 frames. Damage and health unchanged.
+- dungeons-a.js d3 1,3,2 the Lock Gallery: a fairy at 7,2 under the boss
+  door (`life: 1e9`). Route: `['loot', 600]` before the walk to the door;
+  Gloomtide met on 28/28.
+- Route Gloomtide: `breakContact` off (on a full bar it walked Link into
+  the corners), wait 56 -> 60. Real run 8/13 (left 1..16); rig 4/13.
+- actor-runtime: `leaveTide: L` (sound the conch off a sea the boss wants,
+  from leaveRange away), `wallRetreat: px` (a back-off that would end
+  against something solid goes sideways), `breakPin: 'boss'` (the boss's
+  own touch opens the walk-to-the-middle window). All opt-in, none used by
+  the route: NEGATED for Gloomtide (8, 3, 1 of 13 against the 8 without).
+- measure-boss-combat: d3 rows re-read; `--opts=JSON` replaces a row's
+  options outright.
+- Bogmaw: breakContact 0/13, wallRetreat 4, openRetreat 10, both 4 — none
+  beat the route's own 11/13. Its cost is corner pins (three touches 34
+  frames apart at 14,145 or 13,9). Left as is; the fairy pays it back.
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died.
+
+### Next
+- ROOTMAW is now the thinnest: 1/13 on the real run (wait 138 alone wins;
+  arrival 32/40). Read its losses the same way.
+- Ironknight 6/13; Gloomtide 8/13 (margins 1-2 qh); Gohmaraq, Reefguard 9.
+
 ## S250 — rotation (h) fairness pass 1: the Brinehulk
 
 Branch claude/oracle-tides-brinehulk-fairness-b4pran, off main at cc2c44e.

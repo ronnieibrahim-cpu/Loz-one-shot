@@ -447,6 +447,11 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A boss the real run wins can be a 1-in-13 fight (S251).** Gloomtide and
+  Rootmaw were each alive at ONE swept entry wait. Sample every fight on
+  the real run (route-prefix, PATCH the wait before the boss 0..144 by 12)
+  before trusting "the playthrough beats it".
+
 - **A damage log's "contact from nothing" is usually a pit (S250).** The
   Brinehulk's losses read as eleven unexplained 4-point body touches; they
   were falls (PIT_DAMAGE, source null). And a respawn rule can make a pit a
