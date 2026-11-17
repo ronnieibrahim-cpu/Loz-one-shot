@@ -1046,6 +1046,19 @@ corner them or wait for the hop and meet them where they land. Clear the room fo
 at LOW those four squares have **no floor at all**, and at MID they are over your
 head. Locked door at (4,2); spend Small Key 1.
 
+**The Penstock** (`d4/0,1,6`), optional — west of Overflow Sluice, through a gap
+in its west wall at row 5. *"The cell waits on the wheel. What it lets out, the
+water must catch!"* A glassy **ice block** is shut in a stone cell in the
+south-east, and the cell's door is opened by a drowned **wheel** in the
+north-west corner. At **MID** swim up the dark column beside it to the stand at
+(5,1), face the wheel and hold the Bellows: the cone takes a level off its water,
+the wheel turns and the cell opens. Now the block. At **LOW** push it west out of
+the cell; it slides along the south wall until the first shallow well catches it
+(at 8,8). Sound the conch to **MID** — the wells are deep now and the block floats
+on them — stand south of it and push north: it slides up the column, floats over
+the row of sump pits and stops on the plate at the top. LOW and then MID, in that
+order; neither alone does it. Pays two `rupee20` drops. No key, no heart piece.
+
 **Drowned Stair** (`d4/0,2,5`), west — a chest with the **Chartstone**.
 
 **Rung Gallery** (`d4/0,4,5`), east — **Heart Piece 12** at (3,3), inside a

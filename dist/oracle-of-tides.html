@@ -74529,7 +74529,7 @@ function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#....11111....#',
-          '#....11111.....',
+          '.....11111.....',
           '#....11111....#',
           '#.............#',
           '#.U.........U.#',
@@ -74539,6 +74539,62 @@ function installDungeonsA() {
         entities: [
           ['chest', 7, 2, { pickup: 'dungeonMap' }],
           ['bubble', 11, 7],
+        ],
+      },
+      '0,1,6': {
+        name: 'The Penstock',
+        // Optional, west of the Overflow Sluice (S252, mocked in
+        // docs/briefs/s252/d4-mock/). THE ICE BLOCK with a wheel for a key:
+        // Seasons' sliding block shut in a stone cell (south-east) whose door
+        // a drowned Bellows wheel (north-west, behind two pits, the stand at
+        // the top of a sump column you swim up at MID) opens. Out of the cell
+        // at LOW the block slides west along the south wall and the first
+        // shallow well (`3`, wading at LOW) catches it at 8,8; sound the
+        // conch to MID and the wells float it, so a push north slides it up
+        // the column, over the sump pits (`0`, deep at MID) and onto the plate
+        // at the top. LOW then MID: LOW alone would drop it down the sump,
+        // MID alone would carry it past the well. `tools/check-iceblocks.mjs`
+        // proves the block, `tools/check-bellows.mjs` the wheel.
+        map: [
+          '###############',
+          '##3OO.#.......#',
+          '#####0#.....U.#',
+          '#####0#0000000#',
+          '#.............#',
+          '#.........U....',
+          '#.U.......#####',
+          '#.........#...#',
+          '#..333333.D...#',
+          '#.........#...#',
+          '###############',
+        ],
+        iceRoom: { from: [14, 5], seas: [0, 1], open: [[10, 8]] },
+        bellowsRoom: {
+          wheel: [2, 1], stand: [5, 1], face: 'left', at: 1, opens: [[10, 8]],
+        },
+        entities: [
+          ['iceblock', 12, 8],
+          ['switch', 8, 1],
+          ['wheel', 2, 1, { needTurns: 40 }],
+          ['tektite', 4, 5],
+        ],
+        puzzle: {
+          blocks: [[8, 1]],
+          flag: 'd4_penstock',
+          reward: {
+            spawn: [
+              ['pickup', 7, 6, { kind: 'rupee20' }],
+              ['pickup', 8, 6, { kind: 'rupee20' }],
+            ],
+          },
+        },
+        script: {
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[10, 8]] });
+          },
+        },
+        readable: [
+          [2, 6, 'Chiselled by the pit: "The cell waits on the wheel. What it lets out, the water must catch!"'],
         ],
       },
       '0,4,6': {

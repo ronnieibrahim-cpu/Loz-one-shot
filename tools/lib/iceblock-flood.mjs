@@ -41,6 +41,9 @@ export function makeIceModel(room, spec, opts = {}) {
   const W = room.tw, H = room.th, caps = opts.caps || { swim: true };
   const plates = spec.plates;
   const walls = new Set((spec.walls || []).map(([x, y]) => x + ',' + y));
+  // Doors some other puzzle in the room has opened by the time the block is
+  // pushed (the Penstock's cell, opened by a Bellows wheel): floor to both.
+  const opened = new Set((spec.open || []).map(([x, y]) => x + ',' + y));
   const sea = (s) => opts.fixedSea != null ? opts.fixedSea : s.sea;
   const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
   const occ = (b, x, y) => b.some(p => p && p[0] === x && p[1] === y);
@@ -49,7 +52,7 @@ export function makeIceModel(room, spec, opts = {}) {
   const WALK = [0, 1, 2].map(lv => {
     const a = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      a[y * W + x] = !walls.has(x + ',' + y)
+      a[y * W + x] = opened.has(x + ',' + y) ? 1 : !walls.has(x + ',' + y)
         && (!!(room.flagsAt(x, y, lv) & F.STAIRS) || tileWalkable(room, x, y, lv, caps, ROUTE_AVOID)) ? 1 : 0;
     }
     return a;
@@ -57,7 +60,7 @@ export function makeIceModel(room, spec, opts = {}) {
   const TAKE = [0, 1, 2].map(lv => {
     const a = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      a[y * W + x] = iceBlockInRing(room, x, y) && !walls.has(x + ',' + y)
+      a[y * W + x] = opened.has(x + ',' + y) ? 1 : iceBlockInRing(room, x, y) && !walls.has(x + ',' + y)
         && !tileSolid(room, x, y, lv, ICE_BLOCK_CAPS) ? 1 : 0;
     }
     return a;
