@@ -3453,7 +3453,7 @@ export function installDungeonsA() {
         cubeRoom: { from: [7, 9], seas: [0, 1, 2], bellows: true },
         entities: [
           ['cube', 3, 3, { o: 0 }],
-          ['bubble', 11, 1],
+          ['keese', 11, 1],
         ],
         puzzle: {
           cube: true,
@@ -3741,7 +3741,7 @@ export function installDungeonsA() {
           ['wheel', 13, 19, { needTurns: 40 }],
           ['jellyfish', 5, 5],
           ['jellyfish', 9, 4],
-          ['stalfos', 11, 12],
+          ['keese', 11, 12],
           ['tektite', 5, 15],
         ],
         readable: [
@@ -4162,7 +4162,7 @@ export function installDungeonsA() {
           ['float', 39, 6, { race: [42, 5], path: [['wait', 64], ['up', 96], ['wait', 64], ['down', 96], ['loop', 0]] }],
           ['stalfos', 10, 8],
           ['stalfos', 24, 8],
-          ['wizzrobe', 6, 6],
+          ['keese', 6, 6],
         ],
         readable: [
           [3, 7, 'A plate under the west wheel: "The west tank is below."'],

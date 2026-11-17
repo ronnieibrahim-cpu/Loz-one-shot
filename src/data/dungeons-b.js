@@ -479,7 +479,7 @@ export function installDungeonsB() {
           ['block', 9, 7, { once: false }],
           ['switch', 12, 2],
           ['switch', 11, 8],
-          ['moblin', 2, 8],
+          ['keese', 2, 8],
           ['keese', 12, 4],
         ],
         puzzle: {
@@ -512,7 +512,7 @@ export function installDungeonsB() {
         entities: [
           ['barnacle', 7, 5],
           ['darknut', 11, 8],
-          ['wisp', 3, 1],
+          ['keese', 3, 1],
         ],
       },
       '0,2,4': {
@@ -609,7 +609,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['moblin', 11, 2],
-          ['darknut', 2, 7],
+          ['keese', 2, 7],
         ],
         readable: [
           [2, 3, 'Knotted into a rope on the wall: "A stake is somewhere to stand. Even one you just grew!"'],
@@ -963,7 +963,7 @@ export function installDungeonsB() {
         // out rather than the pool. The near side is deliberately quiet: this is
         // the room the dungeon teaches itself in.
         entities: [
-          ['wisp', 13, 3],
+          ['keese', 13, 3],
           ['moblin', 13, 7],
         ],
         readable: [
@@ -1091,7 +1091,7 @@ export function installDungeonsB() {
         entities: [
           ['pickup', 7, 2, { kind: 'seeds5', life: 1e9 }],
           ['stalfos', 9, 3],
-          ['moblin', 11, 7],
+          ['keese', 11, 7],
         ],
       },
       '0,4,3': {

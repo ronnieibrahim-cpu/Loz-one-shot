@@ -20,8 +20,9 @@ the area whose turn it is and nothing else; its stub is in QUEUE.md.
                 every rig row off the trace, then the thinnest).
   i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
-Rotation position: (h) fairness pass 2 (S252: Rootmaw, 1/13 on the real
-  run). S251 re-read every fight on the real run; Gloomtide 0 -> 8/13 (a
+Rotation position: (h) fairness pass 2 still owed (Rootmaw, 1/13 on the
+  real run); S252 was the human's non-boss polish list instead (a detour by
+  their word: enemies, Ages' water, the Maku face, proposals). S251 re-read every fight on the real run; Gloomtide 0 -> 8/13 (a
   gentler last phase, a fairy under its door). (i) had no notes. (h) pass 1
   S250 the Brinehulk; (g) S249, (f) S200-S201, (a)-(c) S146, (d) S147, (e) S199.
 
@@ -57,3 +58,4 @@ S248 | objective | The audit's second half (the human's objective since S247). S
 S249 | objective | Finished the dungeon comparison: both lopsided bosses had already been evened out, and the jump into the last dungeon waits for the human's own play. Then the dunes got a sand dollar hunt (five shells that only show at low tide, for an old beachcomber in Sandpiper Row) and the marsh a stepping-stone game (a pool you can only cross by changing the tide three times), each paying a Piece of Heart moved from two village errands.
 S250 | objective | The salt colossus, the thinnest fight: its losses were Link falling into the pit at its island's edge, and a fall that set him down in a nook walled off by the same pit, trapped for good. Falls now come back where he stood (a dozen such traps gone game-wide); the colossus walks round the mooring post it used to shiver against, and sleeps until Link reaches its island. Practice 11 of 13, the real run 22 of 26 timings (was about 2 in 100).
 S251 | objective | Every boss fight re-measured on the real run: two were alive only because the test run happened to arrive at one lucky moment. Gloomtide's last phase is gentler and a fairy waits under its door: 0 -> 8 of 13. Rootmaw (1 of 13) is next.
+S252 | detour | The human's non-boss polish list. Half the bats the fourth and fifth dungeons can spare are tougher enemies now (more were tried and put back where they killed the test run mid-puzzle), an Octorok waits on the first dungeon's main path, pools use Ages' own calmer water, the wind's warp goes white like Seasons', and the Maku Tree talks with her own faces off the sheet. Music swaps, two new puzzle rooms and a recording were put to the human with clips and pictures and are still undecided. A play guide with saves at the fifth and sixth dungeons' doors waits for them.
