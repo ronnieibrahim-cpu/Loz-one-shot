@@ -131,6 +131,8 @@ export const REQUIRED_SPRITES = {
   npcs: [
     'npc_villager', 'npc_villager2', 'npc_fisher', 'npc_child', 'npc_elder',
     'npc_shopkeeper', 'npc_farore_0', 'npc_farore_1', 'npc_farore_book', 'npc_maku', 'maku_face', 'npc_zelda',
+    'maku_face_talk', 'maku_face_talk_b', 'maku_face_talk_g', 'maku_face_open', 'maku_face_open_b', 'maku_face_open_g',
+    'maku_face_happy', 'maku_face_happy_b', 'maku_face_happy_g',
     'npc_nereth',
     // Seasons' walking townsfolk (S214, rip-npcs.py WALKERS): two frames a
     // way, down, up and right, for the people in the credits' scenes.
@@ -241,7 +243,7 @@ export function expectedSize(name) {
   const miniSize = { mini_clawcrab: [44, 28], mini_ironknight: [34, 30], mini_thornvine: [30, 40], mini_reefguard: [32, 34], mini_bogmaw: [40, 30], mini_tideshade: [30, 34] }[name.split('@')[0].replace(/_\d+$/, '')];
   if (miniSize) return miniSize;  // S152: drawn around Seasons parts, at their own size
   if (name.startsWith('mini_')) return [24, 24];
-  if (name === 'maku_face') return [64, 48];  // the eyes, nose and leaf over the trunk
+  if (name.startsWith('maku_face')) return [64, 48];  // the eyes, nose and leaf over the trunk
   if (name === 'o_raft') return [16, 16];      // drawn twice, mirrored, to make 32
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];

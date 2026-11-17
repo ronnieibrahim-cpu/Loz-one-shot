@@ -1,30 +1,40 @@
-# Next session (S252) — the rotation: (h) fairness, pass 2 continued
+# Next session (S253) — the rotation: (h) fairness, pass 2 continued
 
 ## Read first
 - CLAUDE.md, all of it (the Ages rule: Oracle of Ages' code and assets are a
   reference for ALL work).
-- docs/NEXT-SESSION.md S250 and S249, docs/HANDOFF.md lessons (top ten,
-  especially S250's: "contact from nothing" is a pit; rig rows go stale).
-- docs/prompts/STATE.md (the rotation) and QUEUE.md stub (i).
+- docs/NEXT-SESSION.md S252 and S251, docs/HANDOFF.md lessons.
+- docs/prompts/STATE.md (the rotation) and QUEUE.md stub (h).
 
 ## Standing permission (the human, S231)
 - Oracle of Ages is a full reference for ALL work: read its code and rip its
   assets exactly as Seasons'. If Seasons has no answer, check Ages before
   drawing or guessing.
 
-## State (S251)
-- S251 re-read all 13 fights on the real run (NEXT-SESSION S251 has the
-  table and the method). Gloomtide 0 -> 8/13. No play notes (asked S251).
-- The human said KEEP / LEAVE (do not re-ask): everything in S240-S251's
-  lists. D5 -> D6: not played yet; change nothing unasked.
+## State (S252)
+- S252 was the human's non-boss polish list (NEXT-SESSION S252). Built:
+  fewer bats in D4/D5, a D1 main-path octorok, Ages' pool water and
+  waterfall tile, the wind warp white, the Maku Tree's talking face.
+- Built from the human's picks: the Mirror Cell (D2) and the Penstock (D4).
+- UNDECIDED (the human skipped it twice; do not build unasked): the music
+  swaps and the Tidewatch seam fix (the proposals page
+  https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB has every clip). A
+  non-TAS recording: "not now".
+- The human has a play guide for D5 -> D6 (docs/briefs/s252/PLAY-D5-TO-D6.md,
+  saves at both doors). Ask whether they played it; if notes come, they win
+  over everything below (rotation (i)).
+- The low-water mark is 2 at Gloomtide (D3) since S252's enemy swaps shifted
+  the run's RNG. Gloomtide is narrow on its own (S251, 8/13).
 - Sonnet helpers in worktrees for art and room data; every picture reviewed
-  here; never one touching tools/playthrough-route.mjs.
+  here; never one touching tools/playthrough-route.mjs. Bring a helper's
+  docs into the branch before the session ends (their branches are local).
 
 ## The task
 Rootmaw (D5's boss): 1/13 on the real run, alive at one hand-picked wait.
 Read its losses (route-prefix HITS=d5), then the robot's habits there;
 propose any change to the fight itself to the human with a clip beside the
-original. No damage or health changes. Then Ironknight (6/13) if time.
+original. No damage or health changes. Then Gloomtide's margin and
+Ironknight (6/13) if time.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;

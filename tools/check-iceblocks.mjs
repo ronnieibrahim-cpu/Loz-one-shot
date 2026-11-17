@@ -5,7 +5,7 @@
 // `iceBlockMeets`): a hole takes it down, wading water catches it, deep water
 // it floats over. Every room declaring
 //
-//   iceRoom: { from: [x, y], seas: [..] }
+//   iceRoom: { from: [x, y], seas: [..], open?: [[x, y]] }
 //
 // holds ice blocks (`['iceblock', x, y]`) and a puzzle whose `blocks` are its
 // plates. Proved by the model (tools/lib/iceblock-flood.mjs, the engine's own
@@ -72,6 +72,10 @@ if (MOCK) {
         continue;
       }
       const spec = {
+        // `iceRoom.open`: doors another puzzle in the room (a Bellows wheel)
+        // has opened before the block is pushed; the model counts them floor
+        // and the engine run opens them first.
+        open: def.iceRoom.open || [],
         blocks: ents.filter(e => e[0] === 'iceblock').map(e => [e[1], e[2]]),
         plates: ((def.puzzle && def.puzzle.blocks) || []).map(([x, y]) => ({ x, y })),
         // What stands in the room while it is being solved: a chest that waits
@@ -158,12 +162,13 @@ if (!MOCK && solutions.length) {
       enter: [c.mapId, f, rx, ry, c.k.from[0] * 16, c.k.from[1] * 16, c.k.from[0] === 0 ? 'right' : 'up'],
     };
     const want = best.steps[best.steps.length - 1].state.b.filter(Boolean);
-    const r = await page.evaluate(async ([setup, plan, flag, want, key]) => {
+    const r = await page.evaluate(async ([setup, plan, flag, want, key, open]) => {
       window.__rp.beginRecord(setup, plan);
       const g = window.__game;
       for (let i = 0; i < 4; i++) window.__rp.pump(1);
       for (const e of g.entities) if (e.isEnemy) e.remove = true;
       g.player.invuln = 1e6;
+      if (open.length) g.applyReward({ openDoors: open });
       let err = null;
       try { for (let n = 0; n < 600 && !window.__rp.pump(100).done; n++); } catch (e) { err = String(e && e.message || e); }
       const at = () => g.entities.filter(e => e.isIceBlock && !e.remove).map(e => [Math.round(e.x / 16), Math.round(e.y / 16)]);
@@ -185,7 +190,7 @@ if (!MOCK && solutions.length) {
       out.reloaded = want.every(([x, y]) => back.some(a => a[0] === x && a[1] === y)) && !!g.room._puzzleDone;
       out.back = back;
       return out;
-    }, [setup, plan, flag, want, [c.mapId, f, rx, ry]]);
+    }, [setup, plan, flag, want, [c.mapId, f, rx, ry], c.spec.open || []]);
     check(`${name}: played in the engine, the solution puts every ice block on its plate and pays out`,
       !r.err && r.paid && r.home, JSON.stringify(r));
     check(`${name}: walked back into after a load, it is still solved, blocks on the plates`, r.reloaded, JSON.stringify(r.back));

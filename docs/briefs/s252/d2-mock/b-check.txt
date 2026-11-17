@@ -1,0 +1,11 @@
+  ok   mock_painted 0,0,0 (painted): solvable walking in at LOW, MID and HIGH
+       from LOW (1 presses, 4 pushes): push up@7,9; push up@7,8; push up@7,7; push up@7,6; conch MID
+  ok   mock_painted 0,0,0 (painted): the fewest-press solution sounds the conch for 0/1
+  ok   mock_painted 0,0,0 (painted): not with the sea held at LOW
+  ok   mock_painted 0,0,0 (painted): not with the sea held at MID
+  ok   mock_painted 0,0,0 (painted): not with the sea held at HIGH
+  ok   mock_painted 0,0,0 (painted): not with the blocks never moved
+  ok   mock_painted 0,0,0 (painted): not if the sea got under a block
+  ok   mock_painted 0,0,0 (painted): no reachable state shuts Link in (2736 states)
+
+check-tidefloor: 8 passed, 0 failed

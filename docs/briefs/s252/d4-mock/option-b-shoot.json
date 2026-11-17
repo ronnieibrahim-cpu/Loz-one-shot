@@ -1,0 +1,307 @@
+{
+ "legend": "dungeonCistern",
+ "rooms": {
+  "weirwalk": [
+   "###############",
+   "#.....OOO#.OO3#",
+   "#33333OOO#0####",
+   "#.....OOO#0####",
+   "#.....OOO#....#",
+   "#.....OOO.....#",
+   "#44444OOO#....#",
+   "#.....OOO###D##",
+   "......OOO#....#",
+   "......OOO#....#",
+   "###############"
+  ]
+ },
+ "shots": [
+  {
+   "room": "weirwalk",
+   "tide": 0,
+   "out": "b-low.png",
+   "entities": [
+    [
+     "block",
+     3,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     3,
+     1
+    ],
+    [
+     "wheel",
+     13,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "chest",
+     12,
+     9,
+     {
+      "pickup": "rupee50"
+     }
+    ],
+    [
+     "keese",
+     11,
+     5
+    ]
+   ]
+  },
+  {
+   "room": "weirwalk",
+   "tide": 1,
+   "out": "b-mid.png",
+   "entities": [
+    [
+     "block",
+     3,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     3,
+     1
+    ],
+    [
+     "wheel",
+     13,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "chest",
+     12,
+     9,
+     {
+      "pickup": "rupee50"
+     }
+    ],
+    [
+     "keese",
+     11,
+     5
+    ]
+   ]
+  },
+  {
+   "room": "weirwalk",
+   "tide": 2,
+   "out": "b-high.png",
+   "entities": [
+    [
+     "block",
+     3,
+     7,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     3,
+     1
+    ],
+    [
+     "wheel",
+     13,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "chest",
+     12,
+     9,
+     {
+      "pickup": "rupee50"
+     }
+    ],
+    [
+     "keese",
+     11,
+     5
+    ]
+   ]
+  },
+  {
+   "room": "weirwalk",
+   "tide": 1,
+   "out": "b-mid-carried.png",
+   "entities": [
+    [
+     "block",
+     3,
+     3,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     3,
+     1
+    ],
+    [
+     "wheel",
+     13,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "chest",
+     12,
+     9,
+     {
+      "pickup": "rupee50"
+     }
+    ]
+   ]
+  },
+  {
+   "room": "weirwalk",
+   "tide": 0,
+   "out": "b-low-bridged.png",
+   "entities": [
+    [
+     "block",
+     3,
+     1,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     3,
+     1
+    ],
+    [
+     "wheel",
+     13,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "chest",
+     12,
+     9,
+     {
+      "pickup": "rupee50"
+     }
+    ]
+   ],
+   "tiles": [
+    [
+     6,
+     5,
+     "dBridgeGrottoH"
+    ],
+    [
+     7,
+     5,
+     "dBridgeGrottoH"
+    ],
+    [
+     8,
+     5,
+     "dBridgeGrottoH"
+    ]
+   ],
+   "link": {
+    "tx": 7,
+    "ty": 5,
+    "dir": "right"
+   }
+  },
+  {
+   "room": "weirwalk",
+   "tide": 1,
+   "out": "b-mid-cone.png",
+   "entities": [
+    [
+     "block",
+     3,
+     1,
+     {
+      "once": false
+     }
+    ],
+    [
+     "switch",
+     3,
+     1
+    ],
+    [
+     "wheel",
+     13,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "chest",
+     12,
+     9,
+     {
+      "pickup": "rupee50"
+     }
+    ]
+   ],
+   "tiles": [
+    [
+     6,
+     5,
+     "dBridgeGrottoH"
+    ],
+    [
+     7,
+     5,
+     "dBridgeGrottoH"
+    ],
+    [
+     8,
+     5,
+     "dBridgeGrottoH"
+    ]
+   ],
+   "link": {
+    "tx": 10,
+    "ty": 1,
+    "dir": "right",
+    "bellows": true
+   },
+   "overrides": [
+    {
+     "tx": 10,
+     "ty": 1,
+     "r": 3,
+     "delta": -1,
+     "shape": "cone",
+     "dx": 1,
+     "dy": 0
+    }
+   ]
+  }
+ ]
+}

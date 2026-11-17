@@ -1,3 +1,85 @@
+## S252 — non-boss polish pass 2: enemies, Ages' water, the Maku Tree's face, proposals
+
+Branch claude/oracle-tides-polish-uxh3wb, off main at 1e6c8d6. The proposals
+page the human chose from: https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB
+(pictures and clips also in docs/briefs/s252/).
+
+### The human's choices this session (do not re-ask)
+- BATS: "swap half" in the rooms the route walks (offered: add to empty side
+  rooms; leave). Every keese left in D4/D5 was already in a route room.
+- D1 OCTOROK on the main path: yes, the Drinking Floor's far bank. (D1 has
+  had two in side rooms since S247 — the S247 audit's "none" was stale.)
+- AGES' WATER: the pool water and the waterfall; NOT the fall-foot as surf.
+- THE WIND'S WARP goes to white.
+- Asked again later (skipping music): D2 THE MIRROR CELL and D4 THE PENSTOCK
+  (offered: the Painted Floor; the Weir Walk; neither). A non-TAS recording:
+  "not now".
+- MUSIC (the swaps and the Tidewatch seam fix) is UNDECIDED: the human
+  skipped that question twice. Clips are on the proposals page.
+
+### Built
+- Maku Tree (Sonnet helper, reviewed): rip-maku.py FACES — talk (panel 3,1),
+  open (6,1), happy (4,1, emitted, unused), each grass+bark+face sprites;
+  MakuTree.faceNow alternates talk/open every MAKU_TALK_FRAMES (8, guessed:
+  the disasm copies hold no Maku interaction script) while text types, open
+  while the box waits. docs/briefs/s252/maku/.
+- Ages' pool water (helper, reviewed): rip-terrain.py waterP0..3 from the
+  Ages strip row y=2903; waterS/waterSReef/dWaterS use it, 4 steps at 13 f;
+  the shore edge rebuilt over it. Ages' waterfall `waterfall`/`waterfallTop`
+  (y=2920 and y=2852 x179) added, placed nowhere yet (validate warns
+  unreachable). Old waterS0..2 picks still in the ripper, unused.
+  docs/briefs/s252/water/ (surf_* pictures show the declined surf).
+- Enemies (room data, same squares): D1 0,3,6 keese -> octorok. D4: 0,3,6
+  stalfos, 0,4,4 bubble, 0,3,3 stalfos, 0,5,2 wizzrobe + stalfos, 0,0,3
+  bubble (keese 17 -> 11). D5: 0,3,6 wisp, 1,3,4 darknut, 1,4,3 moblin, 1,4,2
+  wisp (keese 18 -> 14). TRIED AND PUT BACK (the run died or was knocked
+  down a shaft): D4 Cistern Gauge 0,2,2 bubble (took the sword mid-cube),
+  Ebb Cell 0,0,4 stalfos, Wind Loft 2,4,2 wizzrobe; D5 0,4,4 moblin, 0,3,4
+  wisp, 0,0,2 darknut, 0,1,3 wisp, 0,3,3 moblin (D5 cost 40 -> 7 hp and a
+  death). Lesson: a tough enemy in a room where the robot is busy with a
+  puzzle (cube, wheels, sowing) costs far more than in a plain room.
+- game.js startGaleWarp: `white: true`.
+- THE MIRROR CELL (helper, reviewed): d2 0,1,5 west of the Map Nook, a
+  `statueRoom` (LOW: three pushes walk the statue onto its plate; MID holds
+  it for the fourth). The Spire's own armos `o_statue_coral` ripped
+  (rip-objects.py, Explorer's Crypt metatile $25). Two rupee20.
+- THE PENSTOCK (helper, reviewed): d4 0,1,6 west of the Overflow Sluice, an
+  `iceRoom` behind a cell door a drowned wheel opens (the Bellows at MID);
+  LOW a well catches the block, MID it floats over the sumps to the plate.
+  Wears the Keep's ice block. check-iceblocks learned `iceRoom.open`: doors
+  another puzzle opened, floor to the model, opened first in the engine.
+- dungeon-strands baseline re-recorded: the statue's strip (13 cells) and
+  the Penstock's wheel tile (1) are sealed by design.
+- Replays re-recorded: d1-descent, d1-sluicegate, d5-overthrow,
+  tide-steps-split (the octorok, a wisp, the new water's pixels).
+- docs/briefs/s252/PLAY-D5-TO-D6.md: the human's play guide, with save codes
+  at the D5 and D6 doors cut from the robot's real run (route steps 1218 and
+  1851; title -> empty slot -> SELECT -> paste). Both verified to load.
+
+### Found (for the next round)
+- FEEL: stairs (STAIRS_FADE), doors (DOOR_FADE + reveal) and the chest's
+  36-frame text delay were ALREADY Seasons' (S150-S151); QUEUE (d) was stale.
+  Only the wind warp was black (now white) and cutscene fades.
+- MUSIC: every place has a track; shared are boss (D1-D5), cave (20), house
+  (5 interiors incl. Farore's Shrine and the lighthouse), overworld (home
+  coast). Loop joins measured (tools: render each, RMS round the loop point):
+  only `tidewatch` dips (pattern C ends on a rest in every channel; holding
+  it fixes it — a clip of the fix is on the page). The cartridges' place
+  themes render through RIP_ALL_MUSIC; the page pairs every place with the
+  closest one (D2-D6 and the Palace with the dungeon whose walls they wear).
+  check-sfx: every sound exists; 'fairy' unused is faithful (SND_NONE).
+- The low-water mark is now 2, at Gloomtide (D3, untouched): the new enemies
+  shift the run's RNG and Gloomtide was already the narrowest fight (S251).
+- D2 mocks (Mirror Cell 0,1,5 statue; Painted Floor 0,5,5 tide floor) and
+  D4 mocks (Penstock 0,1,6 ice block; Weir Walk 0,5,1 held bridge) are in
+  docs/briefs/s252/d2-mock and d4-mock (specs, renders, plain READMEs, the
+  checkers' --mock output); each proved by its checker's --mock. Option B of
+  D2 needs six legend letters; B of D4 needs Cistern-coloured planks ripped. The pictures are on the proposals page.
+
+### Verified
+Whole table green; check-playthrough 49/49, THE END, never died (low-water 2,
+Gloomtide); replay 51/51; test 182.
+
 ## S251 — rotation (h) fairness pass 2: every fight re-read; Gloomtide
 
 Same branch, after S250's merge (365bf23). Clip:

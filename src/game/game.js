@@ -2403,12 +2403,12 @@ export class Game {
       }
     }
     if (spots.length === 1) {
-      this.warpTo(spots[0].map, spots[0].floor, spots[0].rx, spots[0].ry, { x: spots[0].px, y: spots[0].py }, 'down', { banner: true });
+      this.warpTo(spots[0].map, spots[0].floor, spots[0].rx, spots[0].ry, { x: spots[0].px, y: spots[0].py }, 'down', { banner: true, white: true });
       return;
     }
     this.ask('Where should the wind take you?', spots.map(s => s.name), (i) => {
       const s = spots[i];
-      this.warpTo(s.map, s.floor, s.rx, s.ry, { x: s.px, y: s.py }, 'down', { banner: true });
+      this.warpTo(s.map, s.floor, s.rx, s.ry, { x: s.px, y: s.py }, 'down', { banner: true, white: true });
     });
   }
 

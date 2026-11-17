@@ -169,7 +169,7 @@ export function installDungeonsA() {
         entities: [
           ['crab', 3, 1, { drops: 'good' }],
           ['crab', 11, 9, { drops: 'good' }],
-          ['keese', 7, 2, { drops: 'good' }],
+          ['octorok', 7, 2, { drops: 'good' }],
         ],
         readable: [
           [13, 9, 'A rusted plate: "Lower the sea, and you can wade across."'],
@@ -961,7 +961,7 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          '#..........22..',
+          '...........22..',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
@@ -971,6 +971,53 @@ export function installDungeonsA() {
         entities: [
           ['chest', 6, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
+        ],
+      },
+      '0,1,5': {
+        name: 'Mirror Cell',
+        // THE MIRROR STATUE (S252, PUZZLE-PASS kind F in the Spire; the
+        // Cistern's Cliffside Cell is the same idea, the Shrine's Sunken
+        // Bracken taught it). The statue in the walled strip along the north
+        // wall cannot be touched; every push of the block moves it a tile the
+        // OTHER way, and it will not step into water. Its plate is the strip's
+        // middle, between two gutters (`1`, dry at LOW, wading at MID). Push
+        // the block east three times at LOW and the statue walks west onto
+        // its plate; sound the conch and the gutters hold it there while the
+        // fourth push puts the block on its own plate. Optional: it pays two
+        // 20-rupee drops and no key. The armos is the Explorer's Crypt's own
+        // (rip-objects.py, `o_statue_coral`). `tools/check-statues.mjs`.
+        map: [
+          '###############',
+          '#....1.1......#',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        statueRoom: { from: [13, 5], seas: [0, 1] },
+        entities: [
+          ['statue', 9, 1],
+          ['block', 5, 7, { once: false }],
+          ['switch', 6, 1],
+          ['switch', 9, 7],
+        ],
+        puzzle: {
+          blocks: [[9, 7], [6, 1]],
+          flag: 'd2_mirror_statue',
+          reward: {
+            spawn: [
+              ['pickup', 7, 3, { kind: 'rupee20' }],
+              ['pickup', 8, 3, { kind: 'rupee20' }],
+            ],
+          },
+        },
+        readable: [
+          [11, 3, 'Cut in the wall: "The one in the glass walks the other way. Let the tide hold its feet."'],
         ],
       },
       '0,4,5': {
@@ -3005,7 +3052,7 @@ export function installDungeonsA() {
           '#######.#######',
         ],
         entities: [
-          ['keese', 10, 3],
+          ['stalfos', 10, 3],
           ['tektite', 4, 7],
         ],
       },
@@ -3017,7 +3064,7 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#....11111....#',
-          '#....11111.....',
+          '.....11111.....',
           '#....11111....#',
           '#.............#',
           '#.U.........U.#',
@@ -3027,6 +3074,62 @@ export function installDungeonsA() {
         entities: [
           ['chest', 7, 2, { pickup: 'dungeonMap' }],
           ['bubble', 11, 7],
+        ],
+      },
+      '0,1,6': {
+        name: 'The Penstock',
+        // Optional, west of the Overflow Sluice (S252, mocked in
+        // docs/briefs/s252/d4-mock/). THE ICE BLOCK with a wheel for a key:
+        // Seasons' sliding block shut in a stone cell (south-east) whose door
+        // a drowned Bellows wheel (north-west, behind two pits, the stand at
+        // the top of a sump column you swim up at MID) opens. Out of the cell
+        // at LOW the block slides west along the south wall and the first
+        // shallow well (`3`, wading at LOW) catches it at 8,8; sound the
+        // conch to MID and the wells float it, so a push north slides it up
+        // the column, over the sump pits (`0`, deep at MID) and onto the plate
+        // at the top. LOW then MID: LOW alone would drop it down the sump,
+        // MID alone would carry it past the well. `tools/check-iceblocks.mjs`
+        // proves the block, `tools/check-bellows.mjs` the wheel.
+        map: [
+          '###############',
+          '##3OO.#.......#',
+          '#####0#.....U.#',
+          '#####0#0000000#',
+          '#.............#',
+          '#.........U....',
+          '#.U.......#####',
+          '#.........#...#',
+          '#..333333.D...#',
+          '#.........#...#',
+          '###############',
+        ],
+        iceRoom: { from: [14, 5], seas: [0, 1], open: [[10, 8]] },
+        bellowsRoom: {
+          wheel: [2, 1], stand: [5, 1], face: 'left', at: 1, opens: [[10, 8]],
+        },
+        entities: [
+          ['iceblock', 12, 8],
+          ['switch', 8, 1],
+          ['wheel', 2, 1, { needTurns: 40 }],
+          ['tektite', 4, 5],
+        ],
+        puzzle: {
+          blocks: [[8, 1]],
+          flag: 'd4_penstock',
+          reward: {
+            spawn: [
+              ['pickup', 7, 6, { kind: 'rupee20' }],
+              ['pickup', 8, 6, { kind: 'rupee20' }],
+            ],
+          },
+        },
+        script: {
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[10, 8]] });
+          },
+        },
+        readable: [
+          [2, 6, 'Chiselled by the pit: "The cell waits on the wheel. What it lets out, the water must catch!"'],
         ],
       },
       '0,4,6': {
@@ -3273,7 +3376,7 @@ export function installDungeonsA() {
           ['cube', 3, 2, { o: 0 }],
           ['jellyfish', 30, 6],
           ['urchin', 38, 3],
-          ['keese', 22, 2],
+          ['bubble', 22, 2],
         ],
         puzzle: {
           cube: true,
@@ -3500,7 +3603,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['wizzrobe', 5, 3],
-          ['keese', 11, 8],
+          ['stalfos', 11, 8],
         ],
       },
       '0,4,3': {
@@ -3599,8 +3702,8 @@ export function installDungeonsA() {
           '#######D#######',
         ],
         entities: [
-          ['keese', 3, 1],
-          ['keese', 11, 1],
+          ['wizzrobe', 3, 1],
+          ['stalfos', 11, 1],
           ['keese', 7, 5],
         ],
       },
@@ -3696,7 +3799,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['jellyfish', 7, 5],
-          ['keese', 11, 8],
+          ['bubble', 11, 8],
         ],
         readable: [
           [2, 8, 'A plate over the spillway: "You get into the cell below at one tide, and work it at another."'],

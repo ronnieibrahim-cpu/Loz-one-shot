@@ -3003,3 +3003,10 @@ export const SV_FLOAT_SPEED = 0x80;
  *  side-view passage: 0.5 px/f, half Link's walk, so a swimmer (SWIM_SPEED)
  *  can get out of its way and a walker can outpace it. guessed. */
 export const STRIDER_SPEED = 0x80;
+
+/** How long the Maku Tree holds each face while her box is typing, in frames
+ *  per picture (mouth open, then mouth shut, and round again). GUESSED: the
+ *  oracles-disasm copy in assets/ holds no Maku Tree interaction script or
+ *  animation table (only palettes and graphics headers), so the beat is a
+ *  plausible 8, not the cartridge's. */
+export const MAKU_TALK_FRAMES = 8;

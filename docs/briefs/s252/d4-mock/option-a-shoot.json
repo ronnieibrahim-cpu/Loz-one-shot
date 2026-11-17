@@ -1,0 +1,207 @@
+{
+ "legend": "dungeonCistern",
+ "rooms": {
+  "penstock": [
+   "###############",
+   "##3OO.#.......#",
+   "#####0#.....U.#",
+   "#####0#0000000#",
+   "#.............#",
+   "#.........U....",
+   "#.U.......#####",
+   "#.........#...#",
+   "#..333333.D...#",
+   "#.........#...#",
+   "###############"
+  ]
+ },
+ "shots": [
+  {
+   "room": "penstock",
+   "tide": 0,
+   "out": "a-low.png",
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     8,
+     1
+    ],
+    [
+     "wheel",
+     2,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "tektite",
+     4,
+     5
+    ]
+   ]
+  },
+  {
+   "room": "penstock",
+   "tide": 1,
+   "out": "a-mid.png",
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     8,
+     1
+    ],
+    [
+     "wheel",
+     2,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "tektite",
+     4,
+     5
+    ]
+   ]
+  },
+  {
+   "room": "penstock",
+   "tide": 2,
+   "out": "a-high.png",
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     8,
+     1
+    ],
+    [
+     "wheel",
+     2,
+     1,
+     {
+      "needTurns": 40
+     }
+    ],
+    [
+     "tektite",
+     4,
+     5
+    ]
+   ]
+  },
+  {
+   "room": "penstock",
+   "tide": 0,
+   "out": "a-low-caught.png",
+   "entities": [
+    [
+     "iceblock",
+     8,
+     8
+    ],
+    [
+     "switch",
+     8,
+     1
+    ],
+    [
+     "wheel",
+     2,
+     1,
+     {
+      "needTurns": 40
+     }
+    ]
+   ]
+  },
+  {
+   "room": "penstock",
+   "tide": 1,
+   "out": "a-mid-launch.png",
+   "entities": [
+    [
+     "iceblock",
+     8,
+     8
+    ],
+    [
+     "switch",
+     8,
+     1
+    ],
+    [
+     "wheel",
+     2,
+     1,
+     {
+      "needTurns": 40
+     }
+    ]
+   ],
+   "link": {
+    "tx": 8,
+    "ty": 9,
+    "dir": "up"
+   }
+  },
+  {
+   "room": "penstock",
+   "tide": 1,
+   "out": "a-mid-cone.png",
+   "entities": [
+    [
+     "iceblock",
+     12,
+     8
+    ],
+    [
+     "switch",
+     8,
+     1
+    ],
+    [
+     "wheel",
+     2,
+     1,
+     {
+      "needTurns": 40
+     }
+    ]
+   ],
+   "link": {
+    "tx": 5,
+    "ty": 1,
+    "dir": "left",
+    "bellows": true
+   },
+   "overrides": [
+    {
+     "tx": 5,
+     "ty": 1,
+     "r": 3,
+     "delta": -1,
+     "shape": "cone",
+     "dx": -1,
+     "dy": 0
+    }
+   ]
+  }
+ ]
+}

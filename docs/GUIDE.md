@@ -609,6 +609,18 @@ is less water for them to drift in.
 
 **Map Nook** (`d2/0,2,5`), west — the **Dungeon Map**.
 
+**Mirror Cell** (`d2/0,1,5`), west of the Map Nook (S252). **Optional**; it pays
+two `rupee20` and no key. THE MIRROR STATUE: the armos in the walled strip along
+the north wall cannot be touched, and every push you give the block it takes
+one step the *other* way — and it will not step into water. The strip has a
+plate in the middle with a gutter either side of it (dry at LOW, wading at MID),
+and a second plate sits on the floor at (9,7). At **LOW** push the block east
+three times from (4,7) and the statue walks west onto its plate; sound the
+conch to **MID** so the gutters fill and hold its feet; push the block the
+fourth time onto its own plate. Either sea alone fails: at LOW the fourth push
+drags the statue off, at MID it never gets past the first gutter. *"The one in
+the glass walks the other way. Let the tide hold its feet."* (`check-statues`.)
+
 **Torch Cell** (`d2/0,4,5`), east. Three torches, at (1,1), (8,1) and (4,6),
 and a `keese`. Light all three with the **Kilnshell** — set it down beside each
 in turn — and a Small Key drops. **Optional.** Nothing later in the dungeon
@@ -1045,6 +1057,19 @@ corner them or wait for the hop and meet them where they land. Clear the room fo
 **The Weir** (`d4/0,3,5`). The sump band, taught before it is ever load-bearing:
 at LOW those four squares have **no floor at all**, and at MID they are over your
 head. Locked door at (4,2); spend Small Key 1.
+
+**The Penstock** (`d4/0,1,6`), optional — west of Overflow Sluice, through a gap
+in its west wall at row 5. *"The cell waits on the wheel. What it lets out, the
+water must catch!"* A glassy **ice block** is shut in a stone cell in the
+south-east, and the cell's door is opened by a drowned **wheel** in the
+north-west corner. At **MID** swim up the dark column beside it to the stand at
+(5,1), face the wheel and hold the Bellows: the cone takes a level off its water,
+the wheel turns and the cell opens. Now the block. At **LOW** push it west out of
+the cell; it slides along the south wall until the first shallow well catches it
+(at 8,8). Sound the conch to **MID** — the wells are deep now and the block floats
+on them — stand south of it and push north: it slides up the column, floats over
+the row of sump pits and stops on the plate at the top. LOW and then MID, in that
+order; neither alone does it. Pays two `rupee20` drops. No key, no heart piece.
 
 **Drowned Stair** (`d4/0,2,5`), west — a chest with the **Chartstone**.
 

@@ -1,0 +1,13 @@
+  ok   mock_mirror 0,0,0 (mirror): has a statue and a plate for everything
+  ok   mock_mirror 0,0,0 (mirror): solvable walking in at LOW, MID and HIGH
+       from LOW (1 presses, 4 pushes): push right@4,7 b=[[6,7]] t=[[8,1]]; push right@5,7 b=[[7,7]] t=[[7,1]]; push right@6,7 b=[[8,7]] t=[[6,1]]; conch MID; push right@7,7 b=[[9,7]] t=[[6,1]]
+  ok   mock_mirror 0,0,0 (mirror): the fewest-press solution sounds the conch for 0/1
+  ok   mock_mirror 0,0,0 (mirror): it takes more pushes than there are blocks
+  ok   mock_mirror 0,0,0 (mirror): not with the sea held at LOW
+  ok   mock_mirror 0,0,0 (mirror): not with the sea held at MID
+  ok   mock_mirror 0,0,0 (mirror): not with the sea held at HIGH
+  ok   mock_mirror 0,0,0 (mirror): not if the statues never moved
+  ok   mock_mirror 0,0,0 (mirror): not if the statues walked into water
+  ok   mock_mirror 0,0,0 (mirror): no reachable state shuts Link in (8568 states)
+
+check-statues: 10 passed, 0 failed

@@ -152,7 +152,7 @@ export function installDungeonsB() {
           '#######.#######',
         ],
         entities: [
-          ['keese', 10, 3],
+          ['wisp', 10, 3],
           ['moblin', 4, 7],
         ],
       },
@@ -1318,7 +1318,7 @@ export function installDungeonsB() {
         beltRoom: { belts: 'run', cross: { from: [7, 9], to: [7, 1] } },
         entities: [
           ['moblin', 4, 6],
-          ['keese', 10, 1],
+          ['darknut', 10, 1],
         ],
       },
       '1,3,3': {
@@ -1415,7 +1415,7 @@ export function installDungeonsB() {
           // A seed sprig (S187): the Canopy's second half spends six seeds.
           ['pickup', 11, 5, { kind: 'seeds5', life: 1e9 }],
           ['tektite', 10, 4],
-          ['keese', 4, 2],
+          ['moblin', 4, 2],
         ],
       },
       '1,4,2': {
@@ -1452,7 +1452,7 @@ export function installDungeonsB() {
         beltRoom: { belts: 'run', cross: { from: [7, 9], to: [26, 5] } },
         entities: [
           ['pickup', 26, 6, { kind: 'seeds5', life: 1e9 }],
-          ['keese', 12, 3],
+          ['wisp', 12, 3],
           ['tektite', 20, 6],
           ['crab', 26, 8],
         ],

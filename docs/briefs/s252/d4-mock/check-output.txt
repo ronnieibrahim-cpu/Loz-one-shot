@@ -1,0 +1,66 @@
+== A: node tools/check-iceblocks.mjs --mock docs/briefs/s252/d4-mock/option-a-ice.json
+  ok   mock_penstock 0,0,0 (penstock): has an ice block and a plate for each
+  ok   mock_penstock 0,0,0 (penstock): solvable walking in at LOW, MID and HIGH
+       from LOW (1 presses, 2 pushes): push left@13,8 -> 8,8; conch MID; push up@8,9 -> 8,1
+  ok   mock_penstock 0,0,0 (penstock): the fewest-press solution sounds the conch for 0/1
+  ok   mock_penstock 0,0,0 (penstock): it takes more pushes than there are blocks
+  ok   mock_penstock 0,0,0 (penstock): not with the sea held at LOW
+  ok   mock_penstock 0,0,0 (penstock): not with the sea held at MID
+  ok   mock_penstock 0,0,0 (penstock): not with the sea held at HIGH
+  ok   mock_penstock 0,0,0 (penstock): not if the water never caught or took the block
+  ok   mock_penstock 0,0,0 (penstock): not if it moved one square a push
+  ok   mock_penstock 0,0,0 (penstock): no reachable state shuts Link in (297 states)
+
+check-iceblocks: 10 passed, 0 failed
+
+== A: node docs/briefs/s252/d4-mock/run-bellows-mock.mjs docs/briefs/s252/d4-mock/option-a-bellows.json
+  cone reach 3 tiles, mouth 3 tiles wide, hop clears 1 jumpable tile(s)
+  ok   at least one room declares a Bellows room
+  ok   no Bellows room comes before the Bellows
+  ok   every gust wheel is in a room that declares itself
+  ok   every gust wheel stands where its room says it does
+  ok   mock_d4_0 0,0,0 (penstock): no hand reaches the wheel
+  ok   mock_d4_0 0,0,0 (penstock): the wheel is drowned at MID
+  ok   mock_d4_0 0,0,0 (penstock): and the cone takes the water off it
+  ok   mock_d4_0 0,0,0 (penstock): no sea level frees the wheel where you can stand
+  ok   mock_d4_0 0,0,0 (penstock): the stand is reachable at MID
+  ok   mock_d4_0 0,0,0 (penstock): the Bellows open there
+  ok   mock_d4_0 0,0,0 (penstock): the cone reaches the wheel from it
+  ok   mock_d4_0 0,0,0 (penstock): the stand is only reachable while the wheel is drowned
+  ok   mock_d4_0 0,0,0 (penstock): the door at 10,8 is shut
+  ok   mock_d4_0 0,0,0 (penstock): the door at 10,8 separates the room
+       2,1 is dWaterD at MID and dWaterS inside the cone; pumped from 5,1 facing left
+
+=== 14 passed, 0 failed ===
+
+== B: node tools/check-bridges.mjs --mock docs/briefs/s252/d4-mock/option-b-bridge.json
+check-bridges: 1 bridge room(s) (mock)
+  ok   mock_weirwalk 0,0,0 (weirwalk): every plank spans a hole while the bridge is up
+  ok   mock_weirwalk 0,0,0 (weirwalk): walking in at every sea, the bridge's far side can be reached
+  ok   mock_weirwalk 0,0,0 (weirwalk): not with the blocks never moved (Link and the sea alone)
+  ok   mock_weirwalk 0,0,0 (weirwalk): not at any one sea held
+       mock_weirwalk 0,0,0 (weirwalk): from LOW, 3 presses and 6 pushes: MID up up up up HIGH LOW up up
+  ok   mock_weirwalk 0,0,0 (weirwalk): the fewest-press solution sounds MID, HIGH, LOW
+  ok   mock_weirwalk 0,0,0 (weirwalk): no reachable state shuts Link in (149 states)
+
+=== 6 passed, 0 failed ===
+
+== B: node docs/briefs/s252/d4-mock/run-bellows-mock.mjs docs/briefs/s252/d4-mock/option-b-bellows.json
+  cone reach 3 tiles, mouth 3 tiles wide, hop clears 1 jumpable tile(s)
+  ok   at least one room declares a Bellows room
+  ok   no Bellows room comes before the Bellows
+  ok   every gust wheel is in a room that declares itself
+  ok   every gust wheel stands where its room says it does
+  ok   mock_d4_0 0,0,0 (weirwalk): no hand reaches the wheel
+  ok   mock_d4_0 0,0,0 (weirwalk): the wheel is drowned at MID
+  ok   mock_d4_0 0,0,0 (weirwalk): and the cone takes the water off it
+  ok   mock_d4_0 0,0,0 (weirwalk): no sea level frees the wheel where you can stand
+  ok   mock_d4_0 0,0,0 (weirwalk): the stand is reachable at MID
+  ok   mock_d4_0 0,0,0 (weirwalk): the Bellows open there
+  ok   mock_d4_0 0,0,0 (weirwalk): the cone reaches the wheel from it
+  ok   mock_d4_0 0,0,0 (weirwalk): the stand is only reachable while the wheel is drowned
+  ok   mock_d4_0 0,0,0 (weirwalk): the door at 12,7 is shut
+  ok   mock_d4_0 0,0,0 (weirwalk): the door at 12,7 separates the room
+       13,1 is dWaterD at MID and dWaterS inside the cone; pumped from 10,1 facing right
+
+=== 14 passed, 0 failed ===
