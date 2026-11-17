@@ -11,10 +11,11 @@ page the human chose from: https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB
   had two in side rooms since S247 — the S247 audit's "none" was stale.)
 - AGES' WATER: the pool water and the waterfall; NOT the fall-foot as surf.
 - THE WIND'S WARP goes to white.
-- The human DECLINED to answer the second batch (music swaps and the
-  Tidewatch seam, D2 and D4 puzzle rooms, a non-TAS recording). Nothing of
-  those was built. Do not treat them as declined designs either: they are
-  undecided, and the mock-ups and clips are kept for asking again.
+- Asked again later (skipping music): D2 THE MIRROR CELL and D4 THE PENSTOCK
+  (offered: the Painted Floor; the Weir Walk; neither). A non-TAS recording:
+  "not now".
+- MUSIC (the swaps and the Tidewatch seam fix) is UNDECIDED: the human
+  skipped that question twice. Clips are on the proposals page.
 
 ### Built
 - Maku Tree (Sonnet helper, reviewed): rip-maku.py FACES — talk (panel 3,1),
@@ -38,6 +39,17 @@ page the human chose from: https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB
   death). Lesson: a tough enemy in a room where the robot is busy with a
   puzzle (cube, wheels, sowing) costs far more than in a plain room.
 - game.js startGaleWarp: `white: true`.
+- THE MIRROR CELL (helper, reviewed): d2 0,1,5 west of the Map Nook, a
+  `statueRoom` (LOW: three pushes walk the statue onto its plate; MID holds
+  it for the fourth). The Spire's own armos `o_statue_coral` ripped
+  (rip-objects.py, Explorer's Crypt metatile $25). Two rupee20.
+- THE PENSTOCK (helper, reviewed): d4 0,1,6 west of the Overflow Sluice, an
+  `iceRoom` behind a cell door a drowned wheel opens (the Bellows at MID);
+  LOW a well catches the block, MID it floats over the sumps to the plate.
+  Wears the Keep's ice block. check-iceblocks learned `iceRoom.open`: doors
+  another puzzle opened, floor to the model, opened first in the engine.
+- dungeon-strands baseline re-recorded: the statue's strip (13 cells) and
+  the Penstock's wheel tile (1) are sealed by design.
 - Replays re-recorded: d1-descent, d1-sluicegate, d5-overthrow,
   tide-steps-split (the octorok, a wisp, the new water's pixels).
 - docs/briefs/s252/PLAY-D5-TO-D6.md: the human's play guide, with save codes

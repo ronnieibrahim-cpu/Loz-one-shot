@@ -15,12 +15,11 @@
 - S252 was the human's non-boss polish list (NEXT-SESSION S252). Built:
   fewer bats in D4/D5, a D1 main-path octorok, Ages' pool water and
   waterfall tile, the wind warp white, the Maku Tree's talking face.
-- UNDECIDED, ask once at the start if the human is around (do not build
-  unasked): the music swaps and the Tidewatch seam fix (the proposals page
-  https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB has every clip), the D2
-  and D4 puzzle rooms (docs/briefs/s252/d2-mock, d4-mock), a non-TAS Seasons
-  or Ages recording for (d) feel pass 2. They declined to answer that batch
-  in S252; that is not a no.
+- Built from the human's picks: the Mirror Cell (D2) and the Penstock (D4).
+- UNDECIDED (the human skipped it twice; do not build unasked): the music
+  swaps and the Tidewatch seam fix (the proposals page
+  https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB has every clip). A
+  non-TAS recording: "not now".
 - The human has a play guide for D5 -> D6 (docs/briefs/s252/PLAY-D5-TO-D6.md,
   saves at both doors). Ask whether they played it; if notes come, they win
   over everything below (rotation (i)).
