@@ -609,6 +609,18 @@ is less water for them to drift in.
 
 **Map Nook** (`d2/0,2,5`), west — the **Dungeon Map**.
 
+**Mirror Cell** (`d2/0,1,5`), west of the Map Nook (S252). **Optional**; it pays
+two `rupee20` and no key. THE MIRROR STATUE: the armos in the walled strip along
+the north wall cannot be touched, and every push you give the block it takes
+one step the *other* way — and it will not step into water. The strip has a
+plate in the middle with a gutter either side of it (dry at LOW, wading at MID),
+and a second plate sits on the floor at (9,7). At **LOW** push the block east
+three times from (4,7) and the statue walks west onto its plate; sound the
+conch to **MID** so the gutters fill and hold its feet; push the block the
+fourth time onto its own plate. Either sea alone fails: at LOW the fourth push
+drags the statue off, at MID it never gets past the first gutter. *"The one in
+the glass walks the other way. Let the tide hold its feet."* (`check-statues`.)
+
 **Torch Cell** (`d2/0,4,5`), east. Three torches, at (1,1), (8,1) and (4,6),
 and a `keese`. Light all three with the **Kilnshell** — set it down beside each
 in turn — and a Small Key drops. **Optional.** Nothing later in the dungeon

@@ -24600,6 +24600,7 @@ __define("data/sprites-objects.js", function (__exports, __require) {
 //   o_switch_down_palace: TILEINDEX_PRESSED_BUTTON $0d, the same
 //   o_statue_wood: metatile $25 (the armos statue), the Ancient Ruins
 //   o_statue_cistern: metatile $25 (the armos statue), the Dancing Dragon Dungeon
+//   o_statue_coral: metatile $25 (the armos statue), the Explorer's Crypt
 //   o_iceblock: TILEINDEX_PUSHABLE_ICE_BLOCK $2f, the Sword & Shield Maze, ice half
 //   o_eyestatue: TILEINDEX_EYE_STATUE $ee, the Explorer's Crypt
 //   o_block, o_switch_up, o_switch_down: the grotto ones, for a room outside the nine dungeons
@@ -25328,6 +25329,24 @@ const OBJECT_ART = {
     3222223332222330
     3333333333333300` },
   // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
+  o_statue_coral: { pal: 'o_statue_coral', art: `
+    0033303333033301
+    0032232112322300
+    0003322332233330
+    0000323333230313
+    0003323333230313
+    3333333332233313
+    3111123222332313
+    3131323333223333
+    3111123222123113
+    3111123332223213
+    3131323333333113
+    3111123332223333
+    3111123222222313
+    3131323333333313
+    3222223332222330
+    3333333333333300` },
+  // extracted — pulled straight off the source graphics named in this file's own header, by this ripper.
   o_iceblock: { pal: 'o_iceblock', art: `
     2222222222222222
     2000000000000002
@@ -25443,6 +25462,7 @@ const OBJECT_PALETTES = {
   o_switch_palace: ['#94b5ad', '#5a7384', '#214a42', '#000000'],
   o_statue_wood: ['#c6b518', '#ffce00', '#ad3100', '#000000'],
   o_statue_cistern: ['#73bd00', '#d68c39', '#944a29', '#000000'],
+  o_statue_coral: ['#736384', '#6b84de', '#214aa5', '#000000'],
   o_iceblock: ['#9cefff', '#7394b5', '#4a5a84', '#000000'],
   o_eyestatue: ['#ffff8c', '#cea518', '#635200', '#000000'],
 };
@@ -72473,7 +72493,7 @@ function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          '#..........22..',
+          '...........22..',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
@@ -72483,6 +72503,53 @@ function installDungeonsA() {
         entities: [
           ['chest', 6, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
+        ],
+      },
+      '0,1,5': {
+        name: 'Mirror Cell',
+        // THE MIRROR STATUE (S252, PUZZLE-PASS kind F in the Spire; the
+        // Cistern's Cliffside Cell is the same idea, the Shrine's Sunken
+        // Bracken taught it). The statue in the walled strip along the north
+        // wall cannot be touched; every push of the block moves it a tile the
+        // OTHER way, and it will not step into water. Its plate is the strip's
+        // middle, between two gutters (`1`, dry at LOW, wading at MID). Push
+        // the block east three times at LOW and the statue walks west onto
+        // its plate; sound the conch and the gutters hold it there while the
+        // fourth push puts the block on its own plate. Optional: it pays two
+        // 20-rupee drops and no key. The armos is the Explorer's Crypt's own
+        // (rip-objects.py, `o_statue_coral`). `tools/check-statues.mjs`.
+        map: [
+          '###############',
+          '#....1.1......#',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        statueRoom: { from: [13, 5], seas: [0, 1] },
+        entities: [
+          ['statue', 9, 1],
+          ['block', 5, 7, { once: false }],
+          ['switch', 6, 1],
+          ['switch', 9, 7],
+        ],
+        puzzle: {
+          blocks: [[9, 7], [6, 1]],
+          flag: 'd2_mirror_statue',
+          reward: {
+            spawn: [
+              ['pickup', 7, 3, { kind: 'rupee20' }],
+              ['pickup', 8, 3, { kind: 'rupee20' }],
+            ],
+          },
+        },
+        readable: [
+          [11, 3, 'Cut in the wall: "The one in the glass walks the other way. Let the tide hold its feet."'],
         ],
       },
       '0,4,5': {
