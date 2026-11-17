@@ -169,7 +169,7 @@ export function installDungeonsA() {
         entities: [
           ['crab', 3, 1, { drops: 'good' }],
           ['crab', 11, 9, { drops: 'good' }],
-          ['keese', 7, 2, { drops: 'good' }],
+          ['octorok', 7, 2, { drops: 'good' }],
         ],
         readable: [
           [13, 9, 'A rusted plate: "Lower the sea, and you can wade across."'],
@@ -3005,7 +3005,7 @@ export function installDungeonsA() {
           '#######.#######',
         ],
         entities: [
-          ['keese', 10, 3],
+          ['stalfos', 10, 3],
           ['tektite', 4, 7],
         ],
       },
@@ -3273,7 +3273,7 @@ export function installDungeonsA() {
           ['cube', 3, 2, { o: 0 }],
           ['jellyfish', 30, 6],
           ['urchin', 38, 3],
-          ['keese', 22, 2],
+          ['bubble', 22, 2],
         ],
         puzzle: {
           cube: true,
@@ -3453,7 +3453,7 @@ export function installDungeonsA() {
         cubeRoom: { from: [7, 9], seas: [0, 1, 2], bellows: true },
         entities: [
           ['cube', 3, 3, { o: 0 }],
-          ['keese', 11, 1],
+          ['bubble', 11, 1],
         ],
         puzzle: {
           cube: true,
@@ -3500,7 +3500,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['wizzrobe', 5, 3],
-          ['keese', 11, 8],
+          ['stalfos', 11, 8],
         ],
       },
       '0,4,3': {
@@ -3599,8 +3599,8 @@ export function installDungeonsA() {
           '#######D#######',
         ],
         entities: [
-          ['keese', 3, 1],
-          ['keese', 11, 1],
+          ['wizzrobe', 3, 1],
+          ['stalfos', 11, 1],
           ['keese', 7, 5],
         ],
       },
@@ -3696,7 +3696,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['jellyfish', 7, 5],
-          ['keese', 11, 8],
+          ['bubble', 11, 8],
         ],
         readable: [
           [2, 8, 'A plate over the spillway: "You get into the cell below at one tide, and work it at another."'],
@@ -3741,7 +3741,7 @@ export function installDungeonsA() {
           ['wheel', 13, 19, { needTurns: 40 }],
           ['jellyfish', 5, 5],
           ['jellyfish', 9, 4],
-          ['keese', 11, 12],
+          ['stalfos', 11, 12],
           ['tektite', 5, 15],
         ],
         readable: [
@@ -4162,7 +4162,7 @@ export function installDungeonsA() {
           ['float', 39, 6, { race: [42, 5], path: [['wait', 64], ['up', 96], ['wait', 64], ['down', 96], ['loop', 0]] }],
           ['stalfos', 10, 8],
           ['stalfos', 24, 8],
-          ['keese', 6, 6],
+          ['wizzrobe', 6, 6],
         ],
         readable: [
           [3, 7, 'A plate under the west wheel: "The west tank is below."'],
