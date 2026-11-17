@@ -20,11 +20,10 @@ the area whose turn it is and nothing else; its stub is in QUEUE.md.
                 every rig row off the trace, then the thinnest).
   i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
-Rotation position: (i) play pass, pass 1 (S251: ask for notes; none, go
-  round to (a) pass 2). (h) pass 1 DONE S250: the Brinehulk 11/13 rig, 22/26
-  real (falls come back where Link stood; the colossus walks round the post
-  and sleeps until he is on its island). (g) pass 1 DONE S249, (f) S200-S201,
-  (a)-(c) S146, (d) S147, (e) S199.
+Rotation position: (h) fairness pass 2 (S252: Rootmaw, 1/13 on the real
+  run). S251 re-read every fight on the real run; Gloomtide 0 -> 8/13 (a
+  gentler last phase, a fairy under its door). (i) had no notes. (h) pass 1
+  S250 the Brinehulk; (g) S249, (f) S200-S201, (a)-(c) S146, (d) S147, (e) S199.
 
 RETIRED ROTATION: 1 wide-rooms MET S111 | 2 art-provenance S9/S74 |
   3 boss-art S75 | 4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89 |
@@ -38,7 +37,6 @@ FILE ALLOWLIST for (e) music: src/data/audio.js, src/core/audio.js,
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S133 | objective | Measured the last fight in the game properly for the first time, and it is a coin flip. The practice rig now sets Nereth up the way the real run arrives at him — in his own doorway, on the 28 of 48 hearts the run carries, and wearing the charm the run is wearing, which no boss measurement in this project had ever done. Five tries: three wins, and every win finishes within two hearts of death. The real run does beat him, but it beats him the way these do — barely. Nothing was changed about the fight; that is a session's work, not the tail of one.
 S134 | objective | Gave the last fight in the game a margin. Nereth used to be a coin flip — three wins in five and never more than two hearts left — because the run climbed his stair on four hearts short of half a bar with nothing anywhere behind it to drink. There is a fairy in the antechamber at the foot of that stair now, on the far side of his own locked door, so it cannot be had until the Boss Key is spent and it is impossible to waste. He is beaten five times in five now, with six hearts standing in the real run. Found on the way that his fight costs the same no matter how much health you walk in on, which is why the answer was a fairy and not a change to the fight.
 S135 | objective | Measured all six boss fights the way the game is really played, for the first time. Four of them were being practised in the middle of an empty room on health nobody ever carries, and the difference is not small: the fourth boss, which the practice rig has called an easy win for the whole life of the project, is met on barely half a heart bar and is won three times in five. Found that the bar itself was recorded wrong for two of the six, including the last fight in the game — the King is met on a completely full bar, not four quarter-hearts short of one, so last session's fairy is doing everything a fairy can. Nothing about any fight was changed; this was the reading, and three of the six now read worse than they were being reported.
 S136 | objective | Measured the six lesser bosses the same way, and two of the readings turn over completely. The thing guarding the second key in the game has been reported as killing you every single time; met the way it is really met, it loses five times in five. The shadow in the last dungeon was being reported as free and actually costs three hearts, and it is the last fight in the game you take with nothing on your charm case. And the salt colossus had never been measured at all — the old practice setup could not land a single blow on it in any attempt — which is why nobody had noticed it is the hardest fight in the game to practise. Nothing about any of them was changed.
@@ -58,3 +56,4 @@ S247 | detour | The human asked for one audit of the whole game. Tougher monster
 S248 | objective | The audit's second half (the human's objective since S247). Signs reworded, the cartridges' opening theme under the shipwreck, tougher marsh enemies, the Drowned Wood's first mini-game (grow stakes on floats against the clock) and a puzzle cave holding a moved Piece of Heart, and late stock in the shop at three Essences. docs/AUDIT-S247.md part two.
 S249 | objective | Finished the dungeon comparison: both lopsided bosses had already been evened out, and the jump into the last dungeon waits for the human's own play. Then the dunes got a sand dollar hunt (five shells that only show at low tide, for an old beachcomber in Sandpiper Row) and the marsh a stepping-stone game (a pool you can only cross by changing the tide three times), each paying a Piece of Heart moved from two village errands.
 S250 | objective | The salt colossus, the thinnest fight: its losses were Link falling into the pit at its island's edge, and a fall that set him down in a nook walled off by the same pit, trapped for good. Falls now come back where he stood (a dozen such traps gone game-wide); the colossus walks round the mooring post it used to shiver against, and sleeps until Link reaches its island. Practice 11 of 13, the real run 22 of 26 timings (was about 2 in 100).
+S251 | objective | Every boss fight re-measured on the real run: two were alive only because the test run happened to arrive at one lucky moment. Gloomtide's last phase is gentler and a fairy waits under its door: 0 -> 8 of 13. Rootmaw (1 of 13) is next.

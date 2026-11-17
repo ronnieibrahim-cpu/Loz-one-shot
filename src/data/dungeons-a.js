@@ -2353,6 +2353,10 @@ export function installDungeonsA() {
           ['switch', 2, 5, { hold: false }],
           ['crab', 9, 7],
           ['urchin', 10, 3],
+          // S251 (the human's choice): a fairy under Gloomtide's door, as
+          // Anemos's and Nereth's have. A dozen rooms from Bogmaw with
+          // nothing that heals, the run met the boss on 16 of 28.
+          ['pickup', 7, 2, { kind: 'fairy', life: 1e9 }],
         ],
         puzzle: {
           switches: 'all',

@@ -1708,6 +1708,28 @@ export async function installRuntime() {
     bossDiagRetreat = !!(opts && opts.diagRetreat);
     const reachSwing = !!(opts && opts.reachSwing);
     const pitFence = (opts && opts.pitFence) || false;
+    const leaveTide = opts && opts.leaveTide != null ? opts.leaveTide : null;
+    const LEAVE_RANGE = (opts && opts.leaveRange) || 56;
+    // NOT INTO THE WALL — `['boss', N, type, { wallRetreat: px }]` (S251). The
+    // back-off after a swing walks straight away from the boss; with a wall
+    // that close behind him Link stops against it and the boss, however slow,
+    // walks into him. Gloomtide does that twice at the boss door in every
+    // seed, eight quarter-hearts before the fight has started. With this on,
+    // a back-off that would end against something solid within `px` goes
+    // sideways instead, toward the middle of the room.
+    const wallRetreat = (opts && opts.wallRetreat) || 0;
+    const bossRetreat = (along, perp) => {
+      const m = retreatMask(along, perp);
+      const q = g.player;
+      if (!wallRetreat || !q || !g.room) return m;
+      const ux = ((along & BIT.right) ? 1 : 0) - ((along & BIT.left) ? 1 : 0);
+      const uy = ((along & BIT.down) ? 1 : 0) - ((along & BIT.up) ? 1 : 0);
+      if (ent.canOccupy(g, q, q.x + ux * wallRetreat, q.y + uy * wallRetreat, q.caps)) return m;
+      const side = ux !== 0
+        ? (q.cy < g.room.ph / 2 ? BIT.down : BIT.up)
+        : (q.cx < g.room.pw / 2 ? BIT.right : BIT.left);
+      return side;
+    };
     const waitInvuln = !!(opts && opts.waitInvuln);
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
@@ -1866,7 +1888,7 @@ export async function installRuntime() {
     // BREAK A PIN BY A SUMMON — `['boss', N, type, { breakPin: true }]`. The
     // contact-chain guard above, for a touch that came from something other
     // than the boss. See the guard itself, below.
-    const breakPin = !!(opts && opts.breakPin);
+    const breakPin = (opts && opts.breakPin) || false;
     // PUSH THROUGH ON INVULN — `['boss', N, type, { pushThrough: true }]`.
     // See the banked-invuln approach below.
     const pushThrough = !!(opts && opts.pushThrough);
@@ -1978,6 +2000,22 @@ export async function installRuntime() {
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
+      // LEAVE A SEA THE BOSS WANTS — `['boss', N, type, { leaveTide: L }]`
+      // (S251). Gloomtide drags the sanctum to MID on a timer, and at MID its
+      // last phase chases at 0.9 px/f against Link's 1.0: a person sounds the
+      // conch straight back off it. Only from LEAVE_RANGE away, because the
+      // conch freezes Link for its own length and a press beside the boss is
+      // a free touch.
+      if (leaveTide != null && g.tide.level === leaveTide && !g.tide.busy && p.conchTime === 0
+        && Math.abs(b.cx - p.cx) + Math.abs(b.cy - p.cy) >= LEAVE_RANGE) {
+        const cb = slotBit('conch');
+        if (cb) {
+          yield cb; f++;
+          yield 0; f++;
+          while (f < budget && (p.frozen > 0 || g.tide.busy)) { yield 0; f++; }
+          continue;
+        }
+      }
       if (b.charging) {
         if (chargeSide === 0) {
           const vert = b.dir === 'up' || b.dir === 'down';
@@ -2159,7 +2197,10 @@ export async function installRuntime() {
        * was measured on the one fight that names it and on nothing else.
        */
       if (breakPin && g.progress && g.progress.hearts < lastHearts) {
-        const pin = g.entities.find(e => e.isEnemy && e !== b && !e.dead && !e.dying
+        // `breakPin: 'boss'` (S251): the boss's own touch counts too. Gloomtide
+        // is slow enough at LOW to walk past, and pinned Link in the corners
+        // of its hall a touch every invuln window.
+        const pin = g.entities.find(e => e.isEnemy && (e !== b || breakPin === 'boss') && !e.dead && !e.dying
           && !e.hidden && !e.remove && nearContact(p, e));
         if (pin) { breakUntil = f + PLAYER_INVULN; pinnedBy = pin; }
       }
@@ -2185,7 +2226,7 @@ export async function installRuntime() {
           yield fence(m); f++;
           continue;
         }
-        yield safe(retreatMask(backAlong, backPerp), true); f++;
+        yield safe(bossRetreat(backAlong, backPerp), true); f++;
         continue;
       }
 
@@ -2214,7 +2255,7 @@ export async function installRuntime() {
        * does, and it is the only move available — there is nothing to hit.
        */
       if (b.hidden || b.invuln > 900) {
-        yield safe(retreatMask(backAlong, backPerp), true); f++;
+        yield safe(bossRetreat(backAlong, backPerp), true); f++;
         continue;
       }
 
@@ -2324,7 +2365,7 @@ export async function installRuntime() {
           const axisX2 = Math.abs(dx2) > Math.abs(dy2);
           const backAlong2 = axisX2 ? (dx2 > 0 ? BIT.left : BIT.right) : (dy2 > 0 ? BIT.up : BIT.down);
           const backPerp2 = axisX2 ? (dy2 > 0 ? BIT.up : BIT.down) : (dx2 > 0 ? BIT.left : BIT.right);
-          yield safe(retreatMask(backAlong2, backPerp2), true); f++;
+          yield safe(bossRetreat(backAlong2, backPerp2), true); f++;
           continue;
         }
         // WAIT OUT ITS WINDOW (S166, opt-in `waitInvuln`). A Seasons boss is
@@ -2338,7 +2379,7 @@ export async function installRuntime() {
             const ax3 = Math.abs(gx) > Math.abs(gy);
             const along3 = ax3 ? (gx > 0 ? BIT.left : BIT.right) : (gy > 0 ? BIT.up : BIT.down);
             const perp3 = ax3 ? (gy > 0 ? BIT.up : BIT.down) : (gx > 0 ? BIT.left : BIT.right);
-            yield safe(Math.abs(gx) + Math.abs(gy) < NEAR + 18 ? retreatMask(along3, perp3) : 0, true); f++;
+            yield safe(Math.abs(gx) + Math.abs(gy) < NEAR + 18 ? bossRetreat(along3, perp3) : 0, true); f++;
             continue;
           }
         }
@@ -2466,7 +2507,7 @@ export async function installRuntime() {
           const perpNow = !openRetreat ? backPerp : (axisX
             ? (p.cy < (g.room ? g.room.ph : 144) / 2 ? BIT.down : BIT.up)
             : (p.cx < (g.room ? g.room.pw : 160) / 2 ? BIT.right : BIT.left));
-          yield safe(retreatMask(backAlong, perpNow), true); f++;
+          yield safe(bossRetreat(backAlong, perpNow), true); f++;
         }
         continue;
       }
@@ -2524,7 +2565,7 @@ export async function installRuntime() {
           continue;
         }
       }
-      if (adx + ady < 72) { yield safe(retreatMask(backAlong, backPerp), true); f++; continue; }
+      if (adx + ady < 72) { yield safe(bossRetreat(backAlong, backPerp), true); f++; continue; }
       const room = g.room;
       const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
       if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {

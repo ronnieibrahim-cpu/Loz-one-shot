@@ -86,7 +86,9 @@ const FIGHTS = {
   // from a win to a death. That is the same verdict the real run gave at S131,
   // arrived at in one fight's frames instead of the whole run's, which is what
   // this harness was rebuilt for.
-  d3: { boss: 'gloomtide', tide: LOW, opts: { clearAdds: true },
+  // S251: the route's own options now (they had grown since S144).
+  d3: { boss: 'gloomtide', tide: LOW, opts: { clearAdds: true, reachSwing: true, waitInvuln: true,
+        openRetreat: true, diagRetreat: true, cornerSwing: true },
         items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
   // sword 1, not 2: at D4 the player holds three Essences and the L2 blade's
   // cave wants four (`needEssences: 4`, src/data/caves.js). S113 caught the
@@ -283,7 +285,11 @@ const ROUTE_ARENA = {
   // quarter-hearts fewer, all of them the Eel Hall crab, crossed twice. The
   // route kills it on the way in now: the `wait` at step 593 ends f83797,
   // `111,160 hp 24/28`.
-  d3: { at: [111, 160], facing: 'up', qh: 24, maxQh: 28, settle: 165, frame: 83632 },
+  // S251: re-read off the S250 trace. Step 828 (`hold up` through the boss
+  // door) then the route's `wait 56`, which ends f109008 at `111,135 hp
+  // 16/28` — eight fewer than S144, all of them Bogmaw's.
+  // S251: with the fairy under the door the run walks in on its full bar.
+  d3: { at: [111, 150], facing: 'up', qh: 28, maxQh: 28, settle: 60, frame: 108993 },
   // d4 0,3,1, trace step 776 (`hold up` through the door) at f85158:
   // `63,99 hp 17/32 tide 0 foes 1 [wyverna]`. SEVENTEEN OF THIRTY-TWO — the
   // route meets the fourth boss on barely half a bar, and this file has been
@@ -441,6 +447,10 @@ const SETTLE = settleArg ? Number(settleArg.slice('--settle='.length))
   : route ? route.settle : 30;
 
 let bossOpts = fight.opts || null;
+// `--opts=JSON` (S251) replaces the row's options outright, so a sweep can
+// take one away as well as add one; the flags below still add on top.
+const optsArg = args.find(a => a.startsWith('--opts='));
+if (optsArg) bossOpts = JSON.parse(optsArg.slice('--opts='.length));
 if (breakContactFlag) bossOpts = { ...(bossOpts || {}), breakContact: true };
 if (openRetreatFlag) bossOpts = { ...(bossOpts || {}), openRetreat: true };
 if (breakPinFlag) bossOpts = { ...(bossOpts || {}), breakPin: true };

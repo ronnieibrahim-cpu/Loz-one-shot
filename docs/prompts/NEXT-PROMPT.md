@@ -1,4 +1,4 @@
-# Next session (S251) — the rotation: (i) play pass, pass 1
+# Next session (S252) — the rotation: (h) fairness, pass 2 continued
 
 ## Read first
 - CLAUDE.md, all of it (the Ages rule: Oracle of Ages' code and assets are a
@@ -12,20 +12,19 @@
   assets exactly as Seasons'. If Seasons has no answer, check Ages before
   drawing or guessing.
 
-## State (S250)
-- Rotation (h) fairness pass 1 is DONE: the Brinehulk 11/13 rig, 22/26 real.
-  Falls into a pit come back where Link stood (game-wide); the colossus
-  walks round the mooring post and sleeps until Link is on its island.
-- The human said KEEP / LEAVE (do not re-ask): everything in S240-S250's
+## State (S251)
+- S251 re-read all 13 fights on the real run (NEXT-SESSION S251 has the
+  table and the method). Gloomtide 0 -> 8/13. No play notes (asked S251).
+- The human said KEEP / LEAVE (do not re-ask): everything in S240-S251's
   lists. D5 -> D6: not played yet; change nothing unasked.
-- The human asked for the cheaper model for self-contained jobs: Sonnet
-  helpers in worktrees for art and room data, every picture reviewed here,
-  never one touching tools/playthrough-route.mjs. Nothing under
-  .claude/worktrees/ goes into git.
+- Sonnet helpers in worktrees for art and room data; every picture reviewed
+  here; never one touching tools/playthrough-route.mjs.
 
 ## The task
-Rotation (i): ask the human for play notes first. With notes, fix them in
-order. With none, go round to (a) enemies, pass 2 (QUEUE.md stub).
+Rootmaw (D5's boss): 1/13 on the real run, alive at one hand-picked wait.
+Read its losses (route-prefix HITS=d5), then the robot's habits there;
+propose any change to the fight itself to the human with a clip beside the
+original. No damage or health changes. Then Ironknight (6/13) if time.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;
