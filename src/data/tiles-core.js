@@ -2195,8 +2195,8 @@ export function installCoreTiles() {
   // comment on `waterS` below for why only shallow water carries the rim.
   const rimTile = (suffix) => ({
     art: ART['waterRim' + suffix + '0'], pal: 'water',
-    anim: ['waterRim' + suffix + '0', 'waterRim' + suffix + '1', 'waterRim' + suffix + '2', 'waterRim' + suffix + '1'],
-    animRate: 11,
+    anim: ['waterRim' + suffix + '0', 'waterRim' + suffix + '1', 'waterRim' + suffix + '2', 'waterRim' + suffix + '3'],
+    animRate: 13,
   });
 
   const TILE_DEFS = {
@@ -2319,12 +2319,12 @@ export function installCoreTiles() {
     // the hard edge it replaced. A coast is land -> shallow -> deep in this
     // game already; the land/water join is always against `waterS`.
     waterS: {
-      art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water',
-      anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11,
+      art: ART.waterP0, pal: 'water', flags: F.WATER, family: 'water',
+      anim: ['waterP0', 'waterP1', 'waterP2', 'waterP3'], animRate: 13,
       edgeAgainst: 'shore', edgeArt: WATER_RIM_ART,
     },
     waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
-    waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    waterSReef: { art: ART.waterP0, pal: 'reef', flags: F.WATER, anim: ['waterP0', 'waterP1', 'waterP2', 'waterP3'], animRate: 13 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
     waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 16 },
     // THE OPEN SEA. Thalassia is an archipelago and had no coastline: the whole
@@ -2345,6 +2345,13 @@ export function installCoreTiles() {
     // can reach, use `waterD` and let the Flippers mean something.
     openSea: { art: ART.seaD0, pal: 'deep', flags: F.DEEP | F.SOLID, family: 'water', anim: ['seaD0', 'seaD1', 'seaD2', 'seaD3'], animRate: 13 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
+
+    // ORACLE OF AGES' WATERFALL (S252 comparison; rip-terrain.py's fall*
+    // picks). Nothing in the shipped world places one yet. Falling water is
+    // not walked on, so both are solid; `waterfallTop` is the piece under a
+    // dark cliff lip, `waterfall` the body, which tiles down any height.
+    waterfall: { art: ART.fallBody0, pal: 'water', flags: F.SOLID, anim: ['fallBody0', 'fallBody1', 'fallBody2', 'fallBody3'], animRate: 8 },
+    waterfallTop: { art: ART.fallCap0, pal: 'water', flags: F.SOLID, anim: ['fallCap0', 'fallCap1', 'fallCap2', 'fallCap3'], animRate: 8 },
 
     // --- riptides ---------------------------------------------------------
     // Deep water that moves. `push` is px/f and is applied to anything
@@ -3562,7 +3569,7 @@ export function installCoreTiles() {
     postSand: { art: ART.owStakes, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
     digSpot: { art: ART.owSoil, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
-    dWaterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    dWaterS: { art: ART.waterP0, pal: 'water', flags: F.WATER, anim: ['waterP0', 'waterP1', 'waterP2', 'waterP3'], animRate: 13 },
     dWaterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD3'], animRate: 13 },
 
     // Dungeon tide tiles: the same three-state trick indoors.

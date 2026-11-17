@@ -244,6 +244,33 @@ PICKS = [
     ('currentE1',   AG,  107, 2903, 'current running right, frame 2 of 4'),
     ('currentE2',   AG,  124, 2903, 'current running right, frame 3 of 4'),
     ('currentE3',   AG,  141, 2903, 'current running right, frame 4 of 4'),
+    # ORACLE OF AGES' OWN POOL WATER AND WATERFALL, S252 (a comparison for the
+    # human; see docs/briefs/s252/water/). The same loose-tile strip, same
+    # four-frame rows, read by the swatch on each row's end:
+    #   y=2903, lavender swatch: shallow pool water. Pale dashes on a plain
+    #     field, TWO colours (dashes on 0, water on 1, the slots `waterD0`
+    #     uses), all four of the source's own frames. Sparse on a regular
+    #     grid, which is the very thing the old note on `waterS0` was avoiding;
+    #     the point of S252 is to look at it on screen.
+    #   y=2920, yellow swatch: a waterfall's body. Falling water, three
+    #     colours (cream foam on 0, water on 1, dark blue streaks on 2), a
+    #     period of eight rows so it tiles down any height. Four frames.
+    #   x=179 y=2852, brown swatch: the waterfall's top where it leaves a
+    #     dark cliff lip (black on the cliff side lands on the darkest slot).
+    # Nothing in the shipped game draws a waterfall yet; these are installed
+    # as `waterfall` / `waterfallTop` so a room can use them.
+    ('waterP0',     AG,    1, 2903, 'shallow pool water, frame 1 of 4'),
+    ('waterP1',     AG,   18, 2903, 'shallow pool water, frame 2 of 4'),
+    ('waterP2',     AG,   35, 2903, 'shallow pool water, frame 3 of 4'),
+    ('waterP3',     AG,   52, 2903, 'shallow pool water, frame 4 of 4'),
+    ('fallBody0',   AG,    1, 2920, 'waterfall body, frame 1 of 4'),
+    ('fallBody1',   AG,   18, 2920, 'waterfall body, frame 2 of 4'),
+    ('fallBody2',   AG,   35, 2920, 'waterfall body, frame 3 of 4'),
+    ('fallBody3',   AG,   52, 2920, 'waterfall body, frame 4 of 4'),
+    ('fallCap0',    AG,  179, 2852, 'waterfall top under a dark lip, frame 1 of 4'),
+    ('fallCap1',    AG,  196, 2852, 'waterfall top under a dark lip, frame 2 of 4'),
+    ('fallCap2',    AG,  213, 2852, 'waterfall top under a dark lip, frame 3 of 4'),
+    ('fallCap3',    AG,  230, 2852, 'waterfall top under a dark lip, frame 4 of 4'),
 ]
 
 # Explicit dropped-colour overrides for specific PICKS, keyed by name — see
@@ -397,26 +424,29 @@ def _apply_rim_col(grid, col, frame, force_row=None):
             grid[i] = ''.join(chars)
 
 
+RIM_PHASE = (0, 1, 2, 1)  # teeth crawl back and forth, as they did on the 3-frame water
+
+
 def build_water_rim(by_name):
-    frames = [by_name['waterS%d' % f][5] for f in range(3)]
-    _, _, sheet0, x0, y0, _ = by_name['waterS0']
+    frames = [by_name['waterP%d' % f][5] for f in range(4)]
+    _, _, sheet0, x0, y0, _ = by_name['waterP0']
     out = []
     for suffix, (axis, idx) in _RIM_EDGE.items():
-        for f in range(3):
+        for f in range(4):
             grid = list(frames[f])
-            (_apply_rim_row if axis == 'row' else _apply_rim_col)(grid, idx, f)
+            (_apply_rim_row if axis == 'row' else _apply_rim_col)(grid, idx, RIM_PHASE[f])
             out.append(('waterRim%s%d' % (suffix, f),
-                        'water rim, %s edge, frame %d — derived from waterS%d, see the note above'
+                        'water rim, %s edge, frame %d — derived from waterP%d, see the note above'
                         % (suffix, f, f), sheet0, x0, y0, grid))
     for suffix, (ed1, ed2) in _RIM_CORNER.items():
         ax1, i1 = _RIM_EDGE[ed1]
         ax2, i2 = _RIM_EDGE[ed2]
-        for f in range(3):
+        for f in range(4):
             grid = list(frames[f])
-            (_apply_rim_row if ax1 == 'row' else _apply_rim_col)(grid, i1, f, i2)
-            (_apply_rim_row if ax2 == 'row' else _apply_rim_col)(grid, i2, f, i1)
+            (_apply_rim_row if ax1 == 'row' else _apply_rim_col)(grid, i1, RIM_PHASE[f], i2)
+            (_apply_rim_row if ax2 == 'row' else _apply_rim_col)(grid, i2, RIM_PHASE[f], i1)
             out.append(('waterRim%s%d' % (suffix, f),
-                        'water rim, %s outer corner, frame %d — derived from waterS%d, see the note above'
+                        'water rim, %s outer corner, frame %d — derived from waterP%d, see the note above'
                         % (suffix, f, f), sheet0, x0, y0, grid))
     return out
 
@@ -1365,7 +1395,7 @@ def main():
         pals.append((newname, dict(pals)[srcname]))
         by_name[newname] = arts[-1]
 
-    water_keep = dict(pals)['waterS0']
+    water_keep = dict(pals)['fallBody0']
     for name, note, sheet, x, y, grid in build_water_rim(by_name):
         arts.append((name, note, sheet, x, y, grid))
         pals.append((name, water_keep))
@@ -1571,7 +1601,7 @@ def main():
     ncells = sum(b[1] * b[2] for b in TOWN) + sum(b[1] * b[2] for b in SP_TOWN)
     print('emitted %d terrain tiles (%d ground, %d shoreline rim, %d props) and '
           '%d town blocks (%d cells, %d palettes) -> %s'
-          % (len(arts), len(PICKS) + len(TRANSFORMS), 24, len(PROPS), len(TOWN) + len(SP_TOWN), ncells,
+          % (len(arts), len(PICKS) + len(TRANSFORMS), 32, len(PROPS), len(TOWN) + len(SP_TOWN), ncells,
              len(TOWN_PALETTES), OUT))
     for name, n in dropped:
         print('  note: %s had %d colours on the sheet, merged down to 4' % (name, n))
