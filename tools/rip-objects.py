@@ -415,6 +415,10 @@ def build():
     # tileset and colours, for D4's Cliffside Cell, which wore the Shrine's.
     g, p = sets[0x3a].metatile(ARMOS_STATUE)
     put('o_statue_cistern', g, p, f'metatile $25 (the armos statue), {TILESETS[0x3a]}')
+    # The Spire's own (S252): the same armos in the Explorer's Crypt's tileset
+    # and colours, for the Coral Spire's Mirror Cell.
+    g, p = sets[0x3e].metatile(ARMOS_STATUE)
+    put('o_statue_coral', g, p, f'metatile $25 (the armos statue), {TILESETS[0x3e]}')
     # The ice block (S209, the Keep's ice blocks): TILEINDEX_PUSHABLE_ICE_BLOCK
     # $2f, the one pushblock.s slides until it clinks, in the Sword & Shield
     # Maze's ice half — room $586's three, the Hold's own tileset.

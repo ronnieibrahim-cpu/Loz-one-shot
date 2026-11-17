@@ -961,7 +961,7 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          '#..........22..',
+          '...........22..',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
@@ -971,6 +971,53 @@ export function installDungeonsA() {
         entities: [
           ['chest', 6, 5, { pickup: 'dungeonMap' }],
           ['urchin', 10, 3],
+        ],
+      },
+      '0,1,5': {
+        name: 'Mirror Cell',
+        // THE MIRROR STATUE (S252, PUZZLE-PASS kind F in the Spire; the
+        // Cistern's Cliffside Cell is the same idea, the Shrine's Sunken
+        // Bracken taught it). The statue in the walled strip along the north
+        // wall cannot be touched; every push of the block moves it a tile the
+        // OTHER way, and it will not step into water. Its plate is the strip's
+        // middle, between two gutters (`1`, dry at LOW, wading at MID). Push
+        // the block east three times at LOW and the statue walks west onto
+        // its plate; sound the conch and the gutters hold it there while the
+        // fourth push puts the block on its own plate. Optional: it pays two
+        // 20-rupee drops and no key. The armos is the Explorer's Crypt's own
+        // (rip-objects.py, `o_statue_coral`). `tools/check-statues.mjs`.
+        map: [
+          '###############',
+          '#....1.1......#',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
+        ],
+        statueRoom: { from: [13, 5], seas: [0, 1] },
+        entities: [
+          ['statue', 9, 1],
+          ['block', 5, 7, { once: false }],
+          ['switch', 6, 1],
+          ['switch', 9, 7],
+        ],
+        puzzle: {
+          blocks: [[9, 7], [6, 1]],
+          flag: 'd2_mirror_statue',
+          reward: {
+            spawn: [
+              ['pickup', 7, 3, { kind: 'rupee20' }],
+              ['pickup', 8, 3, { kind: 'rupee20' }],
+            ],
+          },
+        },
+        readable: [
+          [11, 3, 'Cut in the wall: "The one in the glass walks the other way. Let the tide hold its feet."'],
         ],
       },
       '0,4,5': {
