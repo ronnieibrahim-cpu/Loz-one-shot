@@ -28,7 +28,7 @@ import {
   CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, RACE_POOL_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES,
   LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES,
   FLOAT_SPEED, FLOAT_FOOT_DY, SV_FLOAT_SPEED, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES,
-  BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES,
+  BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES, MAKU_TALK_FRAMES,
 } from '../data/feel.js';
 import { OBJECT_THEMES, TORCH_FLAME_COUNT } from '../data/sprites-objects.js';
 import { EYEBALL_LOOK } from '../data/sprites-effects.js';
@@ -1618,7 +1618,22 @@ export class MakuTree extends Trader {
    */
   draw(ctx, game, ox, oy) {
     if (!this.face) return super.draw(ctx, game, ox, oy);
-    sprites.draw(ctx, this.face, ox + this.faceAt[0], oy + this.faceAt[1], {});
+    const fx = ox + this.faceAt[0], fy = oy + this.faceAt[1];
+    const name = this.faceNow(game);
+    if (name === this.face) { sprites.draw(ctx, name, fx, fy, {}); return; }
+    // An expression is grass, bark, face, drawn over the grove (see rip-maku.py).
+    for (const part of ['_g', '_b', '']) sprites.draw(ctx, name + part, fx, fy, {});
+  }
+
+  /** Which face she wears now: rest with no box open; while her box types,
+   *  mouth open and mouth shut by turns; eyes open while it waits for a button. */
+  faceNow(game) {
+    const d = game.dialogue;
+    if (!d || !d.active) return this.face;
+    if (d.chars < d.pageLen) {
+      return Math.floor(game.frame / MAKU_TALK_FRAMES) % 2 === 0 ? this.face + '_talk' : this.face + '_open';
+    }
+    return this.face + '_open';
   }
 
   /** Is the second beat owed right now? */
