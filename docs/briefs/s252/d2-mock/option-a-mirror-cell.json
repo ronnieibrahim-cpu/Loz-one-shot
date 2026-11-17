@@ -1,0 +1,39 @@
+{
+  "legend": "dungeonCoral",
+  "rooms": {
+    "mirror": [
+      "###############",
+      "#....1.1......#",
+      "###############",
+      "#.............#",
+      "#.U.........U.#",
+      "#..............",
+      "#.............#",
+      "#.............#",
+      "#.U.........U.#",
+      "#.............#",
+      "###############"
+    ]
+  },
+  "claims": {
+    "mirror": {
+      "from": [13, 5],
+      "seas": [0, 1],
+      "blocks": [[5, 7]],
+      "statues": [[9, 1]],
+      "plates": [{ "x": 9, "y": 7 }, { "x": 6, "y": 1 }]
+    }
+  },
+  "shots": [
+    { "room": "mirror", "tide": 0, "out": "a1-start-low.png", "link": { "tx": 13, "ty": 5, "dir": "left" },
+      "entities": [["statue", 9, 1, { "sprite": "o_statue_wood" }], ["block", 5, 7, { "once": false }], ["switch", 6, 1], ["switch", 9, 7]] },
+    { "room": "mirror", "tide": 1, "out": "a2-start-mid.png", "link": { "tx": 13, "ty": 5, "dir": "left" },
+      "entities": [["statue", 9, 1, { "sprite": "o_statue_wood" }], ["block", 5, 7, { "once": false }], ["switch", 6, 1], ["switch", 9, 7]] },
+    { "room": "mirror", "tide": 0, "out": "a3-after-three-pushes-low.png", "link": { "tx": 7, "ty": 7, "dir": "right" },
+      "entities": [["statue", 6, 1, { "sprite": "o_statue_wood" }], ["block", 8, 7, { "once": false }], ["switch", 6, 1], ["switch", 9, 7]] },
+    { "room": "mirror", "tide": 1, "out": "a4-solved-mid.png", "link": { "tx": 8, "ty": 7, "dir": "right" },
+      "entities": [["statue", 6, 1, { "sprite": "o_statue_wood" }], ["block", 9, 7, { "once": false }], ["switch", 6, 1], ["switch", 9, 7]] },
+    { "room": "mirror", "tide": 2, "out": "a5-start-high.png", "link": { "tx": 13, "ty": 5, "dir": "left" },
+      "entities": [["statue", 9, 1, { "sprite": "o_statue_wood" }], ["block", 5, 7, { "once": false }], ["switch", 6, 1], ["switch", 9, 7]] }
+  ]
+}

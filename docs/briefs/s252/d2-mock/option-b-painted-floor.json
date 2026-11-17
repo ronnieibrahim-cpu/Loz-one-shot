@@ -1,0 +1,42 @@
+{
+  "legend": "dungeonCoral",
+  "rooms": {
+    "painted": [
+      "###############",
+      "#.............#",
+      "#.U.........U.#",
+      "#.............#",
+      "#.....cdc.....#",
+      "..............#",
+      "#.............#",
+      "#.............#",
+      "#.U.........U.#",
+      "#.............#",
+      "###############"
+    ]
+  },
+  "claims": {
+    "painted": {
+      "from": [1, 5],
+      "seas": [0, 1],
+      "blocks": [[7, 8]]
+    }
+  },
+  "shots": [
+    { "room": "painted", "tide": 0, "out": "b1-start-low.png", "link": { "tx": 1, "ty": 5, "dir": "right" },
+      "entities": [["block", 7, 8, { "once": false }]] },
+    { "room": "painted", "tide": 1, "out": "b2-start-mid.png", "link": { "tx": 1, "ty": 5, "dir": "right" },
+      "entities": [["block", 7, 8, { "once": false }]] },
+    { "room": "painted", "tide": 0, "out": "b3-block-on-blue-low.png", "link": { "tx": 7, "ty": 5, "dir": "up" },
+      "entities": [["block", 7, 4, { "once": false }]] },
+    { "room": "painted", "tide": 1, "out": "b4-block-on-blue-mid.png", "link": { "tx": 7, "ty": 6, "dir": "up" },
+      "entities": [["block", 7, 4, { "once": false }]],
+      "tiles": [[6, 4, "dTileBlueLow"], [8, 4, "dTileBlueLow"]] },
+    { "room": "painted", "tide": 0, "out": "b5-solved-low.png", "link": { "tx": 7, "ty": 6, "dir": "up" },
+      "entities": [["block", 7, 4, { "once": false }]],
+      "tiles": [[6, 4, "dTileBlueLow"], [8, 4, "dTileBlueLow"]] },
+    { "room": "painted", "tide": 0, "out": "b6-wrong-press-low.png", "link": { "tx": 1, "ty": 5, "dir": "right" },
+      "entities": [["block", 7, 8, { "once": false }]],
+      "tiles": [[6, 4, "dTileBlueLow"], [7, 4, "dTileRedLow"], [8, 4, "dTileBlueLow"]] }
+  ]
+}
