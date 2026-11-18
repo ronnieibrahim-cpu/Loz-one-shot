@@ -62,6 +62,11 @@ TRACKS = [
     # play while a game is running. Ours plays it for the shore race and the
     # bell-buoy echo.
     ('minigame', 'mus/minigame.s', 'musMinigame'),
+    # Seasons' indoor theme and the Maku Tree's own (S253, the human's
+    # choice): the houses, Farore's Shrine, the lighthouse and the shop play
+    # `indoors` as Horon's houses and shops do; her grove plays `makuTree`.
+    ('indoors', 'mus/indoors.s', 'musIndoors'),
+    ('makuTree', 'mus/makuTree.s', 'musMakuTree'),
 ]
 
 # THE SOUND EFFECTS (S163): every effect the game plays that one of the two

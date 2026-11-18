@@ -5,6 +5,7 @@
 // stands far below it.
 //
 //   node tools/film-bosses.mjs [outDir] [every]
+//   END=1662 PATCH='1660=[...]' node tools/film-bosses.mjs out 3   one fight
 //
 // Plays the playthrough route from a new game to the end (the same run
 // `check-playthrough.mjs` proves, same seed, same RNG history), and while a
@@ -30,6 +31,15 @@ const OUT = resolve(process.argv[2] || join(ROOT, 'tools', 'shots', 'boss-film')
 const EVERY = Number(process.argv[3] || 3);
 const { installRuntime } = await import(ROOT + '/tools/actor-runtime.mjs');
 const { ROUTE, SEED } = await import(ROOT + '/tools/playthrough-route.mjs');
+// PATCH='<index>=<json directive>[;...]' as in route-prefix.mjs (S253: one
+// fight filmed before and after a change to how the run fights it), and
+// END=<index> stops the run before that directive, so one fight costs only
+// the run up to it.
+if (process.env.PATCH) for (const part of process.env.PATCH.split(';')) {
+  const k = part.indexOf('=');
+  ROUTE[Number(part.slice(0, k))] = JSON.parse(part.slice(k + 1));
+}
+if (process.env.END) ROUTE.length = Number(process.env.END);
 mkdirSync(OUT, { recursive: true });
 
 const server = createServer(async (req, res) => {
@@ -47,7 +57,7 @@ page.on('pageerror', e => console.log('PAGEERROR', e.message));
 await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`);
 await page.waitForFunction(() => !!window.__game && !!window.__harness);
 await page.evaluate(installRuntime);
-await page.evaluate(async (every) => {
+await page.evaluate(async ([every, only]) => {
   const { bossRig } = await import('/src/game/enemy.js');
   const { HUD_H, SCREEN_H } = await import('/src/core/screen.js');
   const g = window.__game, orig = g.update.bind(g);
@@ -57,7 +67,8 @@ await page.evaluate(async (every) => {
   g.update = (...args) => {
     const r = orig(...args);
     if (g.mode === 'title' || !g.room) return r;
-    const bs = bossesHere();
+    // ONLY=<map/room> films the fights in that room alone.
+    const bs = only && !`${g.mapId}/${g.room.key}`.includes(only) ? [] : bossesHere();
     if (bs.length) {
       const key = `${g.mapId}/${g.room.key}`;
       if (!cur || cur.key !== key) {
@@ -91,7 +102,7 @@ await page.evaluate(async (every) => {
     }
     return r;
   };
-}, EVERY);
+}, [EVERY, process.env.ONLY || '']);
 
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE);
 const dirs = new Map();

@@ -45,7 +45,7 @@ import { defineBoss } from '../game/enemy.js';
 import {
   wander, chase, patrol, bounceDiag, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
-  driftWithTide,
+  driftWithTide, flee,
 } from '../game/enemy.js';
 import { spawnEntity, moveEntity, tideAt } from '../game/entity.js';
 import { flag, setFlag } from '../game/progress.js';
@@ -54,6 +54,7 @@ import { flag, setFlag } from '../game/progress.js';
 // door described the shake of everything in the game EXCEPT the bosses.
 import {
   ANEMOS_LASH_MIN_RANGE,
+  GLOOMTIDE_RECOIL_FRAMES, GLOOMTIDE_RECOIL_SPEED,
   NERETH_OPENING_DELAY, NERETH_OPEN_FRAMES, NERETH_FINAL_OPEN_FRAMES,
   SHAKE_MEDIUM_FRAMES,
   SHAKE_RUMBLE_FRAMES,
@@ -442,12 +443,15 @@ export function installBosses() {
       if (i === 1) summon(g, e, 'gel', 2);
       if (i === 2) { summon(g, e, 'zol', 2); g.shake(SHAKE_BOSS_SLAM_FRAMES); }
     },
+    // A bite that lands sends it back for a moment (S253 draft): see
+    // GLOOMTIDE_RECOIL_FRAMES. Damage unchanged.
+    onTouchLink(e, g, p) { if (!(p.invuln > 0)) e._recoil = GLOOMTIDE_RECOIL_FRAMES; },
     phases: [
       // Wallows toward you and spits bog water.
       { above: 0.62, ai(e, g) {
         runPending(e, g);
         const cur = gloomCurrent(e, g);
-        chase(e, g, { speed: 0.42 * cur });
+        if (!gloomRecoil(e, g)) chase(e, g, { speed: 0.42 * cur });
         if (timer(e, 'spit', 120)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 45,
             { sprite: 'shot_ink', pal: 'shadow', speed: 1.5, damage: 1 }));
@@ -460,7 +464,7 @@ export function installBosses() {
         submerge(e, g, {
           down: 70, up: 130,
           whileUp(e2, g2) {
-            chase(e2, g2, { speed: 0.5 * cur });
+            if (!gloomRecoil(e2, g2)) chase(e2, g2, { speed: 0.5 * cur });
             if (every(e2, 96)) {
               windUp(e2, g2, 16, (e3, g3) => {
                 spread(e3, g3, 5, 60, { sprite: 'shot_ink', pal: 'shadow', speed: 1.6, damage: 1 });
@@ -481,7 +485,7 @@ export function installBosses() {
       { above: 0.00, ai(e, g) {
         runPending(e, g);
         const cur = gloomCurrent(e, g);
-        chase(e, g, { speed: 0.55 * cur });
+        if (!gloomRecoil(e, g)) chase(e, g, { speed: 0.55 * cur });
         if (timer(e, 'burst', 240)) {
           windUp(e, g, 14, (e2, g2) => shootRing(e2, g2, 8,
             { sprite: 'shot_ink', pal: 'shadow', speed: 1.4, damage: 3 }));
@@ -490,6 +494,13 @@ export function installBosses() {
       } },
     ],
   });
+
+  function gloomRecoil(e, g) {
+    if (!(e._recoil > 0)) return false;
+    e._recoil--;
+    flee(e, g, { speed: GLOOMTIDE_RECOIL_SPEED });
+    return true;
+  }
 
   // The tide hook: the sanctum's current only runs at MID. Riding it makes the
   // mass fast and drags it along; off MID it is a sack of water.

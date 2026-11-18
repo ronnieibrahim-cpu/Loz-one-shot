@@ -1629,7 +1629,11 @@ export class MakuTree extends Trader {
    *  mouth open and mouth shut by turns; eyes open while it waits for a button. */
   faceNow(game) {
     const d = game.dialogue;
+    // SHE SMILES (S253, the human's choice): while Link holds up a gift she
+    // has given him, and on a "Hoo hoo!" page once its words are all out.
+    if (game.itemShow) return this.face + '_happy';
     if (!d || !d.active) return this.face;
+    if (d.chars >= d.pageLen && /^Hoo hoo!/.test(d.currentText)) return this.face + '_happy';
     if (d.chars < d.pageLen) {
       return Math.floor(game.frame / MAKU_TALK_FRAMES) % 2 === 0 ? this.face + '_talk' : this.face + '_open';
     }

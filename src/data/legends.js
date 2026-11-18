@@ -112,6 +112,10 @@ export function installLegends() {
   // tiles between two grounds. A hundred and ninety-one such cells across the
   // cliffs.
   registerLegend('cliffs', {
+    // Ages' waterfall (S253, the human's spots): F its top under the water
+    // it falls from, I its body. Tidal: plain cliff at LOW, when the pool
+    // above has gone, and running at MID and HIGH. Solid at every sea.
+    'F': 'fallTopDk', 'I': 'fallDk',
     'g': 'rockFloor', 'G': 'rockFloorDk', 'f': 'rockFloor',
     '.': 'rockFloorDk', ',': 'rockFloorDk',
     'T': 'treeDead', 'b': 'bush', 'o': 'rock',
@@ -154,6 +158,7 @@ export function installLegends() {
 
   // ---- abyss: the deepest water, endgame region -------------------------
   registerLegend('abyss', {
+    'F': 'fallTopAbyss', 'I': 'fallAbyss',   // Ages' waterfall, as in `cliffs`
     'g': 'rockFloorDk', 'G': 'rockFloorRust', 'f': 'rockFloorDk',
     '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',

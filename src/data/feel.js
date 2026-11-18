@@ -3010,3 +3010,12 @@ export const STRIDER_SPEED = 0x80;
  *  animation table (only palettes and graphics headers), so the beat is a
  *  plausible 8, not the cartridge's. */
 export const MAKU_TALK_FRAMES = 8;
+
+/** GLOOMTIDE DRAWS BACK AFTER A BITE (S253, a draft put to the human).
+ *  Frames it backs away from Link after its body hurts him, and its speed
+ *  doing it, px/frame. On the real run every lost fight began with it pinning
+ *  Link to the wall by the door and biting four times 34 frames apart; this
+ *  gives him room to step out instead. guessed: about the 32-frame boss
+ *  safety window (BOSS_INVULN_FRAMES) plus a little, at its phase-3 chase. */
+export const GLOOMTIDE_RECOIL_FRAMES = 40;
+export const GLOOMTIDE_RECOIL_SPEED = 0.55;

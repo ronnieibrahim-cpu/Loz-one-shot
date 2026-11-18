@@ -2855,7 +2855,10 @@ export const ROUTE = [
   // later): 0-48 and 84 win on 11/40, 66-72 and 174-234 on 1-2. 24.
   // S235 (the pose waits for the shutters): swept 0-300 by 2; 130-140 win
   // on 17/40 (was 14). 138.
-  ['wait', 138],
+  // S253 (Gloomtide draws back, urchins in D4/D5 puzzle rooms; the run now
+  // arrives on 21 of 40, not 31): with the diagonal options, 0..144 win on
+  // 9 of 14; 96 and 108 win on 9 qh, 84 on 2, 120-132 lose. 96.
+  ['wait', 96],
 
   // ---------------------------------------------------------------- d5 0,3,1
   // ROOTMAW, THE DROWNED WOOD, and the fifth Essence, which stands at 7,4 in
@@ -2867,7 +2870,13 @@ export const ROUTE = [
   // Rig, 13 seeds from this door: 8 wins without it, 13 with.
   // S166 (Seasons' 32-frame boss safety window): reach swing + hold off
   // while he is safe; wins at 60, 90, 180 and 240.
-  ['boss', 24000, null, { pushThrough: true, reachSwing: true, waitInvuln: true }],
+  // S253: on the real run that was 1 in 13 entry waits (0..144 by 12); every
+  // loss was the last phase walking Link into the SW corner by the door and
+  // spitting spears into him there. Backing off diagonally, retreating while
+  // he is open and swinging out of a corner (the D1-D3 bosses' options) wins
+  // 13 in 13, left 3..20 quarter-hearts; pushThrough no longer matters (same
+  // 13 with or without it, to the frame). The fight itself is unchanged.
+  ['boss', 24000, null, { pushThrough: true, reachSwing: true, waitInvuln: true, diagRetreat: true, openRetreat: true, cornerSwing: true }],
   ['wait', 240],
   ['goto', 7, 4, 900],
   ['dialogue', 900],
