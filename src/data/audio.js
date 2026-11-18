@@ -246,11 +246,12 @@ const TRACKS = {
         wav: 'D3 .  A3 .  F#3 .  A3 .  D3 .  A3 .  F#3 .  A3 .  G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .',
         noi: '.  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .',
       },
-      // Home: G, A, and a long D the loop breathes out on.
+      // Home: G, A, and a long D held into the loop's first note (S253: the
+      // last row used to rest in every channel, the one seam in the game).
       C: {
-        p1: 'B4 -  D5 -  G5 -  F#5 -  E5 -  -  -  C#5 -  -  .  D5 -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
-        p2: 'G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .  F#4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .',
-        wav: 'G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .  D3 .  A3 .  F#3 .  A3 .  D3 -  -  -  -  -  -  .',
+        p1: 'B4 -  D5 -  G5 -  F#5 -  E5 -  -  -  C#5 -  -  .  D5 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        p2: 'G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  .  F#4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -',
+        wav: 'G2 .  D3 .  B2 .  D3 .  A2 .  E3 .  C#3 .  E3 .  D3 .  A3 .  F#3 .  A3 .  D3 -  -  -  -  -  -  -',
         noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
       },
     },
@@ -820,34 +821,9 @@ const TRACKS = {
     order: ['A', 'A', 'B', 'C'],
   },
 
-  // Village shop: F major, short and bouncy, no kick — just hats and snare.
-  shop: {
-    bpm: 124, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.5, vol: 0.15, decay: 0.16 }, p2: { duty: 0.25, vol: 0.09, decay: 0.2 }, wav: { vol: 0.2, decay: 0.1 }, noi: { vol: 0.08 } },
-    patterns: {
-      A: {
-        p1: 'F5 .  A5 .  C6 .  A5 .  G5 .  Bb5 .  A5 -  -  .  F5 .  A5 .  D6 .  C6 .  Bb5 -  -  .  A5 -  -  .',
-        p2: 'C5 .  .  .  F5 .  .  .  Bb4 .  .  .  C5 .  .  .  A4 .  .  .  F5 .  .  .  G4 .  .  .  C5 .  .  .',
-        wav: 'F2 -  -  -  F2 -  -  -  Bb1 -  -  -  Bb1 -  -  -  D2 -  -  -  D2 -  -  -  C2 -  -  -  C2 -  -  -',
-        noi: '.  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h  .  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h',
-      },
-      B: {
-        p1: 'C6 .  Bb5 .  A5 .  G5 .  F5 .  G5 .  A5 -  -  .  Bb5 .  A5 .  G5 .  F5 .  E5 -  -  -  -  -  -  .',
-        p2: 'A4 .  G4 .  F4 .  E4 .  D4 .  E4 .  F4 .  .  .  G4 .  F4 .  E4 .  D4 .  C4 -  -  -  -  -  -  .',
-        wav: 'A1 -  -  -  A1 -  -  -  D2 -  -  -  D2 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
-        noi: '.  .  h  h  s  .  h  .  .  .  h  h  s  .  h  .  .  .  h  h  s  .  h  .  .  .  s  .  s  h  h  h',
-      },
-      // Bridge: same brushed hats-and-snare kit as A and B, no kick added,
-      // a quieter turn before the counter jumps back in.
-      C: {
-        p1: 'Bb4 .  D5 .  F5 -  -  .  E5 .  D5 .  C5 .  Bb4 .  A4 .  C5 .  F5 -  -  .  E5 .  D5 .  C5 -  -  .',
-        p2: 'D4  .  .  .  F4 .  .  .  G4 .  .  .  A4 .  .  .  F4 .  .  .  A4 .  .  .  G4 .  .  .  E4 .  .  .',
-        wav: 'Bb1 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -  C2 -  -  -  -  -  -  -',
-        noi: '.   .  h  .  s  .  h  .  .  .  h  .  s  .  h  h  .  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h',
-      },
-    },
-    order: ['A', 'B', 'A', 'C'],
-  },
+  // Village shop (S253, the human's choice): Seasons' indoor theme, which
+  // Horon's shops play. Our old shop tune is in git history.
+  shop: { seasons: 'indoors' },
 
   // Ending: C major. A and B are the triumphant half, C and D let it settle.
   ending: {
@@ -1061,75 +1037,14 @@ const TRACKS = {
     order: ['A', 'A', 'B'],
   },
 
-  // THE MAKU TREE (S199): its grove has its own tune, as Seasons' does. G
-  // major, 76 bpm, the wave channel a harp — every chord rolled — and the
-  // second pulse the lead returning, softer, a beat and a half later.
-  maku: {
-    bpm: 76, rowsPerBeat: 4, loop: true,
-    cfg: {
-      p1: { duty: 0.25, vol: 0.12, decay: 0.3, vibrato: {} },
-      p2: { duty: 0.125, vol: 0.07, decay: 0.4, echo: { of: 'p1', rows: 6, volMul: 0.4 } },
-      wav: { vol: 0.16, decay: 0.3 },
-      noi: { vol: 0.03 },
-    },
-    patterns: {
-      A: {
-        p1: 'B4 -  -  -  -  -  -  -  D5 -  -  -  C5 -  B4 -  A4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  .',
-        wav: 'G1+B1+D2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  C2+E2+G2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -',
-        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
-      },
-      B: {
-        p1: 'E5 -  -  -  D5 -  -  -  B4 -  -  -  D5 -  -  -  C5 -  -  -  B4 -  -  -  A4 -  -  -  -  -  -  .',
-        wav: 'E2+G2+B2 -  -  -  -  -  -  -  B1+D2+F#2 -  -  -  -  -  -  -  C2+E2+G2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -',
-        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
-      },
-      C: {
-        p1: 'G5 -  -  -  F#5 -  -  -  E5 -  -  -  D5 -  -  -  B4 -  -  -  C5 -  -  -  D5 -  -  -  -  -  -  .',
-        wav: 'E2+G2+B2 -  -  -  -  -  -  -  A1+C2+E2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
-        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
-      },
-      D: {
-        p1: 'B4 -  -  -  A4 -  -  -  G4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
-        wav: 'C2+E2+G2 -  -  -  -  -  -  -  D2+F#2+A2 -  -  -  -  -  -  -  G1+B1+D2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
-        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
-      },
-    },
-    order: ['A', 'B', 'C', 'D'],
-  },
+  // THE MAKU TREE (S253, the human's choice): Seasons' own Maku Tree theme
+  // (mus/makuTree.s). Ours (S199) is in git history.
+  maku: { seasons: 'makuTree' },
 
-  // INDOORS (S199): every house, and Farore's shrine. Seasons' houses share
-  // one quiet tune of their own; this is ours. C major, 96 bpm, the two
-  // pulses in thirds like two people humming, hats only.
-  house: {
-    bpm: 96, rowsPerBeat: 4, loop: true,
-    cfg: {
-      p1: { duty: 0.25, vol: 0.11, decay: 0.2 },
-      p2: { duty: 0.125, vol: 0.07, decay: 0.24 },
-      wav: { vol: 0.16, decay: 0.12 },
-      noi: { vol: 0.04 },
-    },
-    patterns: {
-      A: {
-        p1: 'E5 .  G5 .  C6 -  -  .  B5 .  G5 .  A5 -  -  .  G5 .  E5 .  F5 .  D5 .  E5 -  -  -  -  -  -  .',
-        p2: 'C5 .  E5 .  G5 -  -  .  G5 .  E5 .  F5 -  -  .  E5 .  C5 .  D5 .  B4 .  C5 -  -  -  -  -  -  .',
-        wav: 'C2 -  -  -  C2 -  -  -  G1 -  -  -  F2 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
-        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .',
-      },
-      B: {
-        p1: 'A5 .  G5 .  F5 .  E5 .  D5 .  E5 .  F5 -  -  .  G5 .  F5 .  E5 .  D5 .  C5 -  -  -  -  -  -  .',
-        p2: 'F5 .  E5 .  D5 .  C5 .  B4 .  C5 .  D5 -  -  .  E5 .  D5 .  C5 .  B4 .  G4 -  -  -  -  -  -  .',
-        wav: 'F2 -  -  -  C2 -  -  -  D2 -  -  -  G1 -  -  -  C2 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
-        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .',
-      },
-      C: {
-        p1: 'C5 -  -  -  D5 -  -  -  E5 -  -  -  G5 -  -  -  F5 -  -  -  E5 -  -  -  D5 -  -  -  -  -  -  .',
-        p2: 'A4 -  -  -  B4 -  -  -  C5 -  -  -  E5 -  -  -  D5 -  -  -  C5 -  -  -  B4 -  -  -  -  -  -  .',
-        wav: 'A1 -  -  -  -  -  -  -  F1 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  G1 -  -  -  G1 -  -  -',
-        noi: '.  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  h  .  .  .  .  .  h  .  h  .',
-      },
-    },
-    order: ['A', 'B', 'A', 'C'],
-  },
+  // INDOORS (S253, the human's choice): every house, Farore's Shrine and the
+  // lighthouse play Seasons' indoor theme (mus/indoors.s), as Horon's houses
+  // do. Ours (S199) is in git history.
+  house: { seasons: 'indoors' },
 
   // THE DUNES round Sandpiper Row (S199). D mixolydian in a lazy 6/8 (three
   // rows a beat, six a bar, 84 dotted-quarter beats a minute): the second

@@ -461,6 +461,11 @@ would have been churn.
 
 ## The Keep's mooring ring reads as a block, and its silt ring reads better dry
 
+**DECIDED S253: the post stays.** Searched both cartridges: no ring or cleat
+exists. Offered Ages' bollard (Ancient Tomb $10), a ring in stone (Ages
+underwater $8a) and Seasons' pilings ($b9), each in a Keep room
+(docs/briefs/s253/art/); the human kept the post.
+
 Two findings from P8/D6, and they are the small change left in an otherwise good
 result. The Abyssal Keep is the second dungeon running whose mechanic is legible
 in a still frame — `tools/shots/room-d6_1_2_3-tide1-px80.png` and `-tide2-` are
@@ -819,6 +824,11 @@ poses — including the second walk frames that would let a townsperson stride
 rather than merely turn.
 
 ## The cliff family — the survey is done, the decision is not
+
+**DECIDED S253: keep ours.** Ages' pieces were mocked by the autotile rule
+below on four real screens (docs/briefs/s253/cliffs/) and the human kept the
+current cliff. Note for any later look: Ages' cliff cells sit at grid phase
+(2, 2) — top lip 402,242, face 402,258, foot 402,274 — not (2, 8).
 
 PT step 5's big item, and a session spent the expensive half of it: **finding
 the art.** What follows is the survey, so the session that does the cliffs

@@ -185,9 +185,9 @@ const rooms = {
     map: [
       '**********',
       '*1111111#*',
-      '1g..oo5#1*',
-      'gg.ggg5#J*',
-      'gg..oo5#J#',
+      '1g..oo5F1*',
+      'gg.ggg5IJ*',
+      'gg..oo5IJ#',
       'gg..gg59g#',
       '#ggggg5g##',
       '###gg15###',
@@ -839,7 +839,7 @@ const rooms = {
     map: [
       '***gggg###',
       '*11gggggg#',
-      '*####...gg',
+      '*F###...gg',
       '*1JJg9..gg',
       '*####...gg',
       '*g###___gg',
@@ -931,7 +931,7 @@ const rooms = {
     map: [
       '###gggg###',
       '#g11111gg#',
-      'gg19######',
+      'gg19F#####',
       'gg..9gJJ1#',
       'gg199#####',
       'ggg11gggg#',

@@ -1,3 +1,77 @@
+## S253 — rotation (h) fairness pass 2 continued, the music the human picked, loose ends
+
+Branch claude/oracle-tides-continue-odpb1p, off main at 56dc209. The choices
+page: https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB (version 2; every clip
+and picture is also in docs/briefs/s253/).
+
+### The human's choices this session (do not re-ask)
+- No play notes yet (PLAY-D5-TO-D6.md still unplayed).
+- MUSIC: the Tidewatch seam fix YES; cartridge themes for the HOUSES (+ Farore's
+  Shrine, the lighthouse, and the shop: "indoor theme", asked separately) and
+  the MAKU GROVE only. Caves, bosses + credits and dungeons keep ours.
+- GLOOMTIDE: keep the draw-back after a bite (offered with a clip).
+- MOORING POST: keep the post (offered: Ages' bollard, Ages' ring in stone,
+  Seasons' pilings — no sheet has a true ring or cleat).
+- CLIFFS: keep ours (offered: Ages' autotiled lips/faces/ends, mocked on four
+  screens, docs/briefs/s253/cliffs/).
+- PENSTOCK ICE: keep the Keep's block (neither cartridge has another ice
+  block; recolours in the Cistern's palettes were offered).
+- WATERFALL: all three spots (Rustfall 0,3,0; Cliff Face 0,3,3; Cistern Path
+  0,0,3).
+- MAKU SMILE: at her gifts and on her "Hoo hoo!" lines.
+- BATS in D4/D5 puzzle rooms: URCHINS (offered: fewer; leave).
+
+### Built
+- Rootmaw (fight unchanged): the route's boss options gain diagRetreat,
+  openRetreat, cornerSwing. Read on the real run, 13 entry waits: was 1/13
+  (every loss the last phase pinning Link in the SW corner by the door);
+  with them 13/13 at the old arrival (31 qh). pushThrough no longer matters.
+  After this session's other changes the run arrives on 21 qh and it reads
+  9/14; wait 138 -> 96. Clips docs/briefs/s253/bosses/rootmaw-*.
+- Gloomtide: onTouchLink sets e._recoil = GLOOMTIDE_RECOIL_FRAMES (40,
+  guessed) and every phase's chase becomes a flee at GLOOMTIDE_RECOIL_SPEED
+  (0.55) while it lasts. Damage and health unchanged. Real run 11/13 (left
+  1..21, route's own wait on 2) -> 13/13 (left 5..22, route's wait on 12).
+  Robot alternatives tried first and no better: walking out to the side
+  before the fight (7/13), and S251's set.
+- Ironknight: NOT unfair — all 7 of its 13 "losses" end with Link on a full
+  bar (the knight charges end to end of its 2x1 hall and the robot trails a
+  row off its line); wins leave 16..32. Options tried: diag set 0/13,
+  pushThrough+breakContact 6/13. Left alone; a robot fix is optional.
+- Music: rip-music.py TRACKS += indoors, makuTree; audio.js shop/house ->
+  { seasons: 'indoors' }, maku -> { seasons: 'makuTree' } (ours in git
+  history). tidewatch pattern C's last row holds instead of resting (RMS
+  round the 24 s loop flat). check-sfx's channel test plays 'tidewatch' (the
+  indoor theme has no noise channel). audio-render baseline re-recorded.
+  Clips docs/briefs/s253/music/.
+- Waterfalls: tiles fallTopDk/fallDk/fallTopAbyss/fallAbyss (tide: cliff at
+  LOW, the fall at MID and HIGH — the water above them drains at LOW), legend
+  F/I in `cliffs` and `abyss`. Solid for solid: no path changed.
+  docs/briefs/s253/built/waterfalls.png.
+- Maku smile: MakuTree.faceNow returns face+'_happy' while game.itemShow
+  (a gift held up) and on a fully typed page starting "Hoo hoo!".
+  docs/briefs/s253/built/maku-smile.png.
+- Urchins: the lone keese in the 17 puzzle rooms (D4: Spike Basin, Weir,
+  Squall Loft, Drowned Sill, Cistern Gauge, Long Race, Ebb Cell, Intake, Wind
+  Loft; D5: Standing Grove, Sunken Bracken x2, Knotted Pool, First Stake, Bole
+  Walk, Sunken Nave, Long Ford, Shrine Ford), same squares. D4 keese 11 -> 2,
+  D5 14 -> 5. None hits the run.
+- film-bosses.mjs: PATCH, END and ONLY (film one fight before/after a route
+  change without the whole run).
+
+### Found
+- Helper branches (local, not merged): the cliff mock found Ages' cliff cells
+  at grid phase (2,2), not (2,8) as ART-BACKLOG said; the ice-recolour ripper
+  commit (o_iceblock_cistern_grey/_blue) was NOT taken.
+- The Maku text box sits over her face only if Link stands low in the grove;
+  where the route stands him it does not.
+
+### Next
+- Rootmaw reads 9/14 now only because the run arrives poorer (D5 costs 19 qh
+  on this RNG: Shrine Ford crabs, the S252 darknut and wisp). At 31 it is
+  13/13. Either make D5's approach cheaper or leave.
+- Gohmaraq and Reefguard (9/13 each) not yet read.
+
 ## S252 — non-boss polish pass 2: enemies, Ages' water, the Maku Tree's face, proposals
 
 Branch claude/oracle-tides-polish-uxh3wb, off main at 1e6c8d6. The proposals

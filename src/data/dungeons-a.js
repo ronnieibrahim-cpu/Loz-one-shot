@@ -3156,7 +3156,7 @@ export function installDungeonsA() {
           ['chest', 7, 5, { pickup: 'key' }],
           ['stalfos', 1, 1],
           ['tektite', 12, 5],
-          ['keese', 10, 9],
+          ['urchin', 10, 9],
         ],
         readable: [
           [1, 9, 'Scratched in the basin wall: "Spikes can\'t reach a swimmer."'],
@@ -3186,7 +3186,7 @@ export function installDungeonsA() {
         entities: [
           ['float', 7, 2, { race: [10, 9], path: [['wait', 64], ['left', 160], ['wait', 64], ['right', 160], ['loop', 0]] }],
           ['tektite', 7, 7],
-          ['keese', 3, 6],
+          ['urchin', 3, 6],
         ],
         readable: [
           [2, 8, 'Cut into the weir: "The float only moves while its channel runs. At LOW tide, it stops."'],
@@ -3481,7 +3481,7 @@ export function installDungeonsA() {
         },
         entities: [
           ['wheel', 1, 1, { needTurns: 30 }],
-          ['keese', 11, 8],
+          ['urchin', 11, 8],
         ],
         readable: [
           [6, 7, 'A plate on the loft: "The wheel turns in the wind, but not underwater. Blow the water off it!"'],
@@ -3518,7 +3518,7 @@ export function installDungeonsA() {
         entities: [
           ['wheel', 13, 9, { needTurns: 40 }],
           ['tektite', 4, 7],
-          ['keese', 11, 3],
+          ['urchin', 11, 3],
         ],
         readable: [
           [3, 2, 'Scratched under the sill: "The sea only covers this wheel some of the time."'],
@@ -3556,7 +3556,7 @@ export function installDungeonsA() {
         cubeRoom: { from: [7, 9], seas: [0, 1, 2], bellows: true },
         entities: [
           ['cube', 3, 3, { o: 0 }],
-          ['keese', 11, 1],
+          ['urchin', 11, 1],
         ],
         puzzle: {
           cube: true,
@@ -3638,7 +3638,7 @@ export function installDungeonsA() {
           ['float', 3, 3, { race: [7, 6], path: [['wait', 32], ['right', 224], ['wait', 32], ['left', 224], ['loop', 0]] }],
           ['pickup', 7, 1, { kind: 'key' }],
           ['stalfos', 1, 7],
-          ['keese', 2, 8],
+          ['urchin', 2, 8],
         ],
         readable: [
           [1, 9, 'A plate by the race: "If the float won\'t stop, the wind can stop it."'],
@@ -3844,7 +3844,7 @@ export function installDungeonsA() {
           ['wheel', 13, 19, { needTurns: 40 }],
           ['jellyfish', 5, 5],
           ['jellyfish', 9, 4],
-          ['keese', 11, 12],
+          ['urchin', 11, 12],
           ['tektite', 5, 15],
         ],
         readable: [
@@ -4068,7 +4068,7 @@ export function installDungeonsA() {
         warps: [stair4(9, 8, P4(0, 5, 3, 24, 7, 'down'))],
         spikeRoom: { from: [9, 7], target: [7, 2], sea: 2 },
         entities: [
-          ['keese', 11, 2],
+          ['urchin', 11, 2],
         ],
         readable: [
           [2, 8, 'A plate by the stair: "The sea below fills these tanks. Your conch can\'t be heard up here."'],
@@ -4265,7 +4265,7 @@ export function installDungeonsA() {
           ['float', 39, 6, { race: [42, 5], path: [['wait', 64], ['up', 96], ['wait', 64], ['down', 96], ['loop', 0]] }],
           ['stalfos', 10, 8],
           ['stalfos', 24, 8],
-          ['keese', 6, 6],
+          ['urchin', 6, 6],
         ],
         readable: [
           [3, 7, 'A plate under the west wheel: "The west tank is below."'],

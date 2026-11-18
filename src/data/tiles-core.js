@@ -2405,7 +2405,13 @@ export function installCoreTiles() {
     reefFlat: { tide: ['rockFloor', 'waterSReef', 'waterDReef'] },
     reefDeep: { tide: ['waterSReef', 'waterDReef', 'waterDReef'] },
     tideRock: { tide: ['rockFloor', 'rockFloor', 'waterS'] },     // stepping stone
-    drownWall: { tide: ['cliff', 'cliff', 'waterD'] },            // swim over it at high
+    drownWall: { tide: ['cliff', 'cliff', 'waterD'] },
+    // Ages' waterfall where the sea feeds it (S253): the cliff it pours down
+    // at LOW, when the water above has drained, and the fall at MID and HIGH.
+    fallTopDk: { tide: ['cliffDk', 'waterfallTop', 'waterfallTop'] },
+    fallDk: { tide: ['cliffDk', 'waterfall', 'waterfall'] },
+    fallTopAbyss: { tide: ['cliffAbyss', 'waterfallTop', 'waterfallTop'] },
+    fallAbyss: { tide: ['cliffAbyss', 'waterfall', 'waterfall'] },            // swim over it at high
     // A sea cave's mouth (S155 side content): open at LOW, and at MID and HIGH
     // the sea stands in it — a swimmer can float into the notch, and there is
     // no way in until the water goes. Never solid at a higher level than a

@@ -236,7 +236,7 @@ export function installDungeonsB() {
           ['switch', 7, 5, { stake: true }],
           ['chest', 12, 3, { pickup: 'key', needFlag: 'd5_standingGrove' }],
           ['tektite', 11, 9],
-          ['keese', 3, 1],
+          ['urchin', 3, 1],
         ],
         puzzle: {
           switches: 'all',
@@ -479,8 +479,8 @@ export function installDungeonsB() {
           ['block', 9, 7, { once: false }],
           ['switch', 12, 2],
           ['switch', 11, 8],
-          ['keese', 2, 8],
-          ['keese', 12, 4],
+          ['urchin', 2, 8],
+          ['urchin', 12, 4],
         ],
         puzzle: {
           blocks: [[12, 2], [11, 8]],
@@ -609,7 +609,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['moblin', 11, 2],
-          ['keese', 2, 7],
+          ['urchin', 2, 7],
         ],
         readable: [
           [2, 3, 'Knotted into a rope on the wall: "A stake is somewhere to stand. Even one you just grew!"'],
@@ -963,7 +963,7 @@ export function installDungeonsB() {
         // out rather than the pool. The near side is deliberately quiet: this is
         // the room the dungeon teaches itself in.
         entities: [
-          ['keese', 13, 3],
+          ['urchin', 13, 3],
           ['moblin', 13, 7],
         ],
         readable: [
@@ -997,7 +997,7 @@ export function installDungeonsB() {
           ['block', 3, 8, { once: false }],
           ['block', 11, 8, { once: false }],
           ['tektite', 12, 4],
-          ['keese', 2, 9],
+          ['urchin', 2, 9],
         ],
         puzzle: {
           floor: true,
@@ -1040,7 +1040,7 @@ export function installDungeonsB() {
           // corridor at 1,8 and open from the side), and leaves the cell's
           // way west clear.
           ['chest', 1, 1, { pickup: 'key' }],
-          ['keese', 10, 8],
+          ['urchin', 10, 8],
         ],
         puzzle: {
           blocks: [[11, 2], [8, 4], [5, 7]],
@@ -1137,7 +1137,7 @@ export function installDungeonsB() {
           ['switch', 1, 7, { stake: true }],
           ['switch', 5, 7, { stake: true }],
           ['chest', 13, 2, { pickup: 'key', needFlag: 'd5_fordCrown' }],
-          ['keese', 10, 2],
+          ['urchin', 10, 2],
           ['tektite', 2, 2],
         ],
         puzzle: {
@@ -1224,7 +1224,7 @@ export function installDungeonsB() {
           ['switch', 35, 2, { stake: true }],
           ['switch', 40, 2, { stake: true }],
           ['chest', 12, 4, { pickup: 'bossKey', needFlag: 'd5_highBough' }],
-          ['keese', 26, 7],
+          ['urchin', 26, 7],
           ['tektite', 8, 6],
         ],
         puzzle: {
