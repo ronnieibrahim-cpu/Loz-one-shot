@@ -1,3 +1,30 @@
+## S254 — fairness pass 2: Gohmaraq and Reefguard read; nothing changed
+
+Same branch, after S253's merge (abff0e7). "Continue iterating", no new picks.
+
+### Found (13 entry waits each on the real run)
+- REEFGUARD (D2 miniboss, wait 31): 10/13, wins 0..49 on 15-20 qh, losses at
+  55-67 only. The route sits mid-band. Fair; left.
+- GOHMARAQ (D1 boss, wait 244, 16 qh bar): 8/13 (172-208 on 5, 244 on 12,
+  256 on 4, 280/292 on 2-3; losses 220, 232, 268, 304, 316, all deaths).
+  Losses: Link against the TOP WALL (y 8) with Gohmaraq patrolling the same
+  row (y 6) — the robot backs off along the wall while swinging and the
+  patrol catches it every stop (three 4-qh touches in 80 frames); or slow
+  attrition by spit plus the phase-3 crabs. A robot habit: a person steps
+  off its row.
+- Robot options, all WORSE: openRetreat+cornerSwing 3, +waitInvuln 3,
+  wallRetreat 4 4, breakPin boss+clearAdds 4.
+- A fight draft (Gloomtide's draw-back after a touch) was tried and REVERTED,
+  never shown: in every phase 4/13 (a boss that backs away is harder to
+  catch; the cancelled charge also skipped its open window); charge phase
+  only (opening its shell as the charge ends) changed nothing to the
+  quarter-heart — no loss is a charge touch.
+- Next, if anyone: a robot option that retreats PERPENDICULAR to a
+  patrolling boss's axis (off its row) instead of along it.
+- D5's approach to Rootmaw (40 -> 21 qh on S253's run): spread over seven
+  rooms, 2-6 qh each (1,4,2 the most: a shot and two crab touches). No one
+  room to fix.
+
 ## S253 — rotation (h) fairness pass 2 continued, the music the human picked, loose ends
 
 Branch claude/oracle-tides-continue-odpb1p, off main at 56dc209. The choices

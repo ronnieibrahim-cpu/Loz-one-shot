@@ -29,11 +29,12 @@
   here; never one touching tools/playthrough-route.mjs.
 
 ## The task
-1. Gohmaraq (D1) and Reefguard (D2), 9/13 each on the real run: read the
-   losses (route-prefix HITS=, PATCH the wait before the boss), then the
-   robot's options; any change to a fight goes to the human with a clip.
-2. D5's approach: why the run now reaches Rootmaw 10 qh poorer; fix it in the
-   route if the route is at fault, propose to the human if a room is.
+1. S254 read Gohmaraq (8/13) and Reefguard (10/13, fair) and D5's approach
+   (spread thin, nothing to fix). Gohmaraq's losses are a robot habit
+   (backing off along the wall in the boss's patrol row): an opt-in robot
+   option that retreats off a patroller's axis is the one idea left.
+2. Otherwise the rotation moves on: (i) if the human sends play notes, or
+   ask them which area next.
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;
