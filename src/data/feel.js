@@ -2001,6 +2001,10 @@ export const RIPTIDE_ANIM_RATE = 4;
  *  derived: oracles-disasm data/ages/animationData.s, animationDataWhirlpool2
  *  (the Ages sea's whirlpool, TILEINDEX_WHIRLPOOL $e9), `.db $06` per frame. */
 export const WHIRLPOOL_ANIM_RATE = 6;
+/** f — how long the Shrine's snarl, Ages' seaweed, holds each of its four
+ *  frames (S255). derived: oracles-disasm data/ages/animationData.s,
+ *  animationDataSeaweed, `.db $0f` per frame. */
+export const SEAWEED_ANIM_RATE = 15;
 
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
@@ -2305,6 +2309,10 @@ export const LANTERN_RADIUS = 96;
  *  twinkle (TWINKLE_HOLDS, 35 frames) once in each. guessed; slow enough to
  *  read as a glint rather than a blinking marker. */
 export const WRECK_GLIMMER_PERIOD = 90;
+/** f — how often each of a wet silt cache's two glints twinkles (S255, the
+ *  human's pick: the silt reads where the Dredge Line works). guessed: the
+ *  Wrecker's Eye's period, the two glints half of it apart. */
+export const SILT_GLINT_PERIOD = 90;
 
 /** essences before the scrimshander cuts you the LOW case. derived from the
  *  eight-dungeon spine, not guessed: two, four and six spread the three

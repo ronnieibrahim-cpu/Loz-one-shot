@@ -32,7 +32,7 @@
 
 import { registerMap } from '../world/maps.js';
 import { FARORE_SWAY_HOLD } from './feel.js';
-import { SAND_DOLLAR_FLAGS } from './errands.js';
+import { SAND_DOLLAR_FLAGS, LETTER_DONE_FLAGS } from './errands.js';
 
 export const OVERWORLD_W = 17;
 export const OVERWORLD_H = 10;
@@ -166,6 +166,8 @@ const rooms = {
       '###1111###',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 8, 1, { kind: 'letterBottle', flag: 'letter4' }],
       ['wizzrobe', 4, 4],
       ['sign', 1, 5, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
     ],
@@ -1311,6 +1313,8 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 6, 1, { kind: 'letterBottle', flag: 'letter2' }],
       ['urchin', 3, 3], ['urchin', 6, 3], ['jellyfish', 4, 4],
     ],
   },
@@ -1759,6 +1763,8 @@ const rooms = {
       'gggg...111',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 9, 3, { kind: 'letterBottle', flag: 'letter1' }],
       // A sand dollar (S249): only out of the sea at LOW tide.
       ['pickup', 6, 5, { kind: 'sandDollar', flag: 'sandDollar2' }],
       ['leever', 4, 3], ['crab', 6, 4],
@@ -1959,7 +1965,9 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 8, 3, { walk: 'lad', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
+      ['npc', 8, 3, { walk: 'lad', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2,
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter1', quiet: true, prize: 'rupee20', flag: 'letter1Done', thanks: 'letterThanks1', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ],
   },
   '0,9,7': {
@@ -2823,6 +2831,8 @@ const rooms = {
       '######..##',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 4, 1, { kind: 'letterBottle', flag: 'letter3' }],
       ['leever', 5, 5, { phase: 0 }],
     ],
   },
@@ -2949,7 +2959,9 @@ const rooms = {
       ['scrimshander', 3, 6, {}],
       ['npc', 6, 6, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4,
         // The Peat Key, once the second Essence is in (S154).
-        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' } }],
+        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' },
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter2', quiet: true, prize: 'rupee20', flag: 'letter2Done', thanks: 'letterThanks2', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ],
   },
   '0,6,8': {
@@ -3187,7 +3199,9 @@ const rooms = {
     entities: [
       ['npc', 5, 4, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3,
         // The Cistern Key, once the third Essence is in (S154).
-        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' } }],
+        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' },
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter3', quiet: true, prize: 'rupee20', flag: 'letter3Done', thanks: 'letterThanks3', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ],
   },
   '0,7,9': {
@@ -4062,7 +4076,9 @@ function installHouses() {
   });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
-    ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
+    ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2,
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter4', quiet: true, prize: 'rupee20', flag: 'letter4Done', thanks: 'letterThanks4', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
     // The beachcomber (S249): the five sand dollars of the dunes, shown only
     // at LOW tide, for a Piece of Heart (moved from the shop's ledger

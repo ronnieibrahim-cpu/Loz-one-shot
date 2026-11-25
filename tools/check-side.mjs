@@ -408,6 +408,52 @@ const SCENARIOS = [
     expectError: /never landed/,
     expect: `g.progress.rupees === 0 || 'paid without the jar'`,
   },
+  // LETTERS IN BOTTLES (S255): four bottles on sand only LOW uncovers, each
+  // for somebody in Tidewatch or Sandpiper Row, who pays 20 Rupees; whoever
+  // gets the last of the four pays a blank charm instead.
+  ...[['letter1', 11, 6, 128, 32, 9, 3, 'North Dunes'], ['letter2', 12, 4, 112, 16, 6, 1, 'Anemone Field'],
+    ['letter3', 6, 0, 64, 32, 4, 1, 'Brine Flats'], ['letter4', 2, 0, 128, 32, 8, 1, 'the Black Causeway']]
+    .map(([f, rx, ry, px, py, tx, ty, where]) => ({
+      name: `Letters: the bottle on ${where} taken at LOW`,
+      setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 0, enter: ['overworld', 0, rx, ry, px, py, 'up'] }),
+      steps: [['goto', tx, ty, 400], ['wait', 30], ['dialogue', 300]],
+      expect: `g.progress.flags.${f} || 'the bottle was not taken'`,
+    })),
+  {
+    name: 'Letters: at MID the Black Causeway\'s bottle is under the sea and cannot be taken',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', tide: 1, enter: ['overworld', 0, 2, 0, 128, 32, 'up'] }),
+    steps: [['goto', 8, 2, 400], ['hold', ['up'], 30], ['wait', 60]],
+    expect: `!g.progress.flags.letter4 || 'taken under the sea'`,
+  },
+  {
+    name: 'Letters: the boy in Village East reads his and pays 20 Rupees',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', rupees: 0, flags: ['letter1'],
+      enter: ['overworld', 0, 5, 7, 72, 72, 'up'] }),
+    steps: [['errand', 'letter1Done', 1500], ['wait', 60]],
+    expect: `g.progress.rupees === 20 && !g.progress.blanks || ('rupees ' + g.progress.rupees + ' blanks ' + g.progress.blanks)`,
+  },
+  {
+    name: 'Letters: without his letter the boy says his own lines',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', rupees: 0, enter: ['overworld', 0, 5, 7, 72, 72, 'up'] }),
+    steps: [['errand', 'letter1Done', 600]],
+    expectError: /never landed/,
+    expect: `g.progress.rupees === 0 || 'paid without a letter'`,
+  },
+  ...[['letter2', 6, 7, 'the villager in Tidewatch Square', 'keyD3'], ['letter3', 7, 8, 'the Salter by the well', 'keyD4']]
+    .map(([f, rx, ry, who, beat]) => ({
+      name: `Letters: ${who} reads the letter and pays 20 Rupees`,
+      setup: setup({ items: { sword: 1 }, equipA: 'sword', rupees: 0, flags: [f, beat],
+        enter: ['overworld', 0, rx, ry, 72, 72, 'up'] }),
+      steps: [['errand', f + 'Done', 1500], ['wait', 60]],
+      expect: `g.progress.rupees === 20 || ('rupees ' + g.progress.rupees)`,
+    })),
+  {
+    name: 'Letters: the last of the four, in Sandpiper Cottage, pays a blank charm',
+    setup: setup({ items: { sword: 1 }, equipA: 'sword', rupees: 0,
+      flags: ['letter4', 'letter1Done', 'letter2Done', 'letter3Done'], enter: ['houseSandpiper', 0, 0, 0, 72, 96, 'up'] }),
+    steps: [['errand', 'letter4Done', 1500], ['wait', 60]],
+    expect: `g.progress.blanks === 1 && g.progress.rupees === 0 || ('blanks ' + g.progress.blanks + ' rupees ' + g.progress.rupees)`,
+  },
   // THE DUNES' SAND DOLLARS (S249): five on sand only LOW uncovers; the
   // beachcomber in Sandpiper Row pays a Piece of Heart for all five.
   {

@@ -51,3 +51,16 @@ export const ERRANDS = {
 // five. Here, with the errands, so the room data can name them without
 // importing the engine.
 export const SAND_DOLLAR_FLAGS = ['sandDollar1', 'sandDollar2', 'sandDollar3', 'sandDollar4', 'sandDollar5'];
+
+// LETTERS IN BOTTLES (S255, the human's pick). Four sealed bottles the sea
+// leaves out at LOW tide, one on each of four beaches, each addressed to
+// somebody in Tidewatch or Sandpiper Row (PICKUPS.letterBottle). Handing one
+// over is its reader's errand; whoever gets the last of the four pays a blank
+// charm instead of rupees (NPC.errandTalk `last`).
+export const LETTERS = {
+  letter1: { to: 'the little boy in Village East', done: 'letter1Done' },
+  letter2: { to: 'the villager in Tidewatch Square', done: 'letter2Done' },
+  letter3: { to: 'the Salter by the well', done: 'letter3Done' },
+  letter4: { to: 'the old man in Sandpiper Cottage', done: 'letter4Done' },
+};
+export const LETTER_DONE_FLAGS = Object.values(LETTERS).map(l => l.done);

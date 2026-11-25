@@ -1,3 +1,51 @@
+## S255 — the shield (a play note), readability, Letters in Bottles
+
+Same branch (claude/oracle-tides-continue-odpb1p), after S254's merge. The
+human: "fix them all"; one play note (the shield). Choices page version 3:
+https://claude.ai/artifact/JA1mFbHYpS1vSfzU5JXiTB; pictures in docs/briefs/s255/.
+
+### The human's choices this session (do not re-ask)
+- SHIELD (play note): "a sound and change to animations while holding it,
+  not just having it float in front of my sprite." Built as Seasons does it.
+- SILT: D (pale rings + twinkles). SNARL: B (Ages' seaweed in green).
+- SIDE CONTENT: Letters in Bottles only (offered: the Beacon Run on the dark
+  shore; the Gull Count on the Kell cliffs — not wanted now).
+- Still blocked: the dungeon comparison (needs their D5 -> D6 play) and feel
+  pass 2 (needs an ordinary, non-TAS Seasons/Ages recording).
+
+### Built
+- SHIELD: Seasons' getLinkWalkingAnimation (code/specialObjectAnimationsAnd
+  Damage.s): var34 = c*4 added to the walk's frames $54/$80 (+direction): c=5
+  shield (L1) equipped, 6 L2+, 7 held out L1, 8 held out L2+. rip-link.py
+  cartridge() cuts link_shwalk1/2_* and link_shup1/2_* (up/down/side, two
+  steps). Player.spriteName: held out -> link_shup (ahead of the push pose);
+  equipped on A or B -> link_shwalk (not while pushing or holding the sword);
+  the `link_shield_*` overlay and its hand-drawn art are gone. SND_SHIELD
+  (`shieldUp`, rip-music SFX 'shield') plays on the frame it goes up
+  (parentItemCode_shield state 0). docs/briefs/s255/shield-before-after.png.
+- SNARL (D5 `dSnarl` only; dSnarlCoral and dSnarlAbyss are still bushes — not
+  shown to the human): Ages' seaweed, tileset $5f metatile $c5, four steps
+  (rip-dungeon-themes.py kelp0..3, keyed off #426be7), pal 'tree', animRate
+  SEAWEED_ANIM_RATE 15 (derived: Ages animationDataSeaweed `.db $0f`).
+- SILT: dSiltWet in palette `siltwet` (rings white); Game.drawSiltGlints:
+  two of Seasons' twinkles (orange, its own palette 3 — the blue one vanished
+  on water) on every wet `dSilt` cell, SILT_GLINT_PERIOD 90, out of step.
+  docs/briefs/s255/built/silt-glint.gif.
+- LETTERS IN BOTTLES: PICKUPS.letterBottle (lowOnly, `i_bottle`), four on
+  screens the route never walks: North Dunes 0,11,6 (9,3), Anemone Field
+  0,12,4 (6,1), Brine Flats 0,6,0 (4,1), Black Causeway 0,2,0 (8,1). Readers:
+  the Village East boy, the Tidewatch Square villager, the Wellside Salter, the
+  Sandpiper Cottage elder (whose lost neighbour wrote). NPC errand `quiet`
+  (no asking before the letter) and `last: { flags, prize }` (the last of the
+  four pays a blank charm, the others 20 Rupees). errands.js LETTERS,
+  LETTER_DONE_FLAGS; story.js letterThanks1-4. check-side: 10 scenarios.
+- film-bosses.mjs: PATCH/END/ONLY (S253). Tried and removed this session: a
+  robot `offRow` retreat for Gohmaraq (5/13, worse than 8).
+
+### Found
+- Readability was mostly already done: currents (S146), tide gauge (S245),
+  the Lens (closed S245). Left: dSnarlCoral/dSnarlAbyss still bushes.
+
 ## S254 — fairness pass 2: Gohmaraq and Reefguard read; nothing changed
 
 Same branch, after S253's merge (abff0e7). "Continue iterating", no new picks.

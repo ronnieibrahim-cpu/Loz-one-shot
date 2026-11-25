@@ -808,6 +808,13 @@ PICKS = [
     # THE REEFSEED PILLAR AT MID (S241): Ages' coral sprig, keyed off its sea
     # floor's blue (KEY_BY_COLOUR) so it stands on whatever ground it grew on.
     meta('coralSprig', 0x86, 'the coral sprig, the Ages sea floor (tileset $5f)', 'seaFloor'),
+    # THE SHRINE'S SNARL (S255, the human's pick B): Ages' sea-floor seaweed,
+    # metatile $c5, its four animation steps, keyed off the sea floor's blue
+    # so it stands in our own water; the tile draws it in the Shrine's greens.
+    meta('kelp0', 0xc5, 'seaweed, step 1 of 4, the Ages sea floor (tileset $5f)', 'whirl0'),
+    meta('kelp1', 0xc5, 'seaweed, step 2 of 4, the Ages sea floor (tileset $5f)', 'whirl1'),
+    meta('kelp2', 0xc5, 'seaweed, step 3 of 4, the Ages sea floor (tileset $5f)', 'whirl2'),
+    meta('kelp3', 0xc5, 'seaweed, step 4 of 4, the Ages sea floor (tileset $5f)', 'whirl3'),
     meta('uWhirl0', 0xe9, 'the whirlpool, step 1 of 4, the Ages sea floor', 'whirl0'),
     meta('uWhirl1', 0xe9, 'the whirlpool, step 2 of 4, the Ages sea floor', 'whirl1'),
     meta('uWhirl2', 0xe9, 'the whirlpool, step 3 of 4, the Ages sea floor', 'whirl2'),
@@ -1141,10 +1148,12 @@ KEY_BACKGROUND = {'hPot', 'hStatue', 'nPot', 'nStatue', 'uPot', 'urn', 'gPot', '
 # emitted as 1-3 so tiles-core.js can lay it into each place's own palette.
 KEY_COLOURS = {(0xff, 0xff, 0x73), (0xa5, 0xff, 0x21), (0x29, 0xad, 0x00)}
 KEY_BY_COLOUR = {'owBoulder', 'owRubble', 'owSoil', 'owHole', 'owStakes',
-                 'owLedgeS', 'owLedgeE', 'owLedgeW', 'owLedgeN', 'coralSprig'}
+                 'owLedgeS', 'owLedgeE', 'owLedgeW', 'owLedgeN', 'coralSprig',
+                 'kelp0', 'kelp1', 'kelp2', 'kelp3'}
 # A pick keyed by colours of its own rather than Seasons' sand and grass:
 # the Ages sea floor's light blue round the coral sprig (S241).
-KEY_COLOURS_OF = {'coralSprig': {(0x5a, 0xad, 0xef)}}
+KEY_COLOURS_OF = {'coralSprig': {(0x5a, 0xad, 0xef)},
+                  **{'kelp%d' % k: {(0x42, 0x6b, 0xe7)} for k in range(4)}}
 
 
 def lum(c):

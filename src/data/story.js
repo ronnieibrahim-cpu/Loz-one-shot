@@ -208,6 +208,12 @@ export const DIALOGUE = {
   sandDollarAsk: 'Sand dollars! The sea only leaves them out at LOW tide, on the wet sand of the dunes. There are five out there. Bring me all five and I\'ll trade you something rare!',
   sandDollarPartial: (game) => `${SAND_DOLLAR_FLAGS.filter(f => game.progress.flags[f]).length} of five! The rest are out on the dunes. Look where the sea goes out at LOW tide.`,
   sandDollarThanks: 'All five, and not one chipped! I\'ve hunted the last of those for years. Here, I dug this up in the dunes. It\'s yours!',
+  // LETTERS IN BOTTLES (S255): each reader's thanks; whoever has the last
+  // of the four pays a blank charm instead (errands.js LETTERS).
+  letterThanks1: 'A letter? For ME? ...It\'s from a girl out on the reef! She hears the bell under the sea too! I KNEW I wasn\'t hearing things. Here, you can have this!',
+  letterThanks2: 'This is my sister\'s hand! She\'s been stuck out on the reef since the sea took the pier. She says she\'s fine and eating far too much fish. Thank you! Take this for your trouble.',
+  letterThanks3: 'From the pans, is it? The elders want me home before the next big tide. Hmph. I\'ll go when the salt\'s dry. Here, for carrying it.',
+  letterThanks4: 'This hand... it\'s my neighbour\'s! The sea carried him clear out to the dark shore, and he\'s mending a boat to come home! Oh, thank you, thank you. Here, take this.',
   beachcomber: 'Every LOW tide the sea leaves something new on the sand. That\'s why I never leave!',
   raceGoalWait: 'This is the finish! Talk to my friend on South Bluff to start the race.',
   ledgerAsk: 'The wind blew my ledger out the window! Every debt on the coast is in it. Try the South Sands.',

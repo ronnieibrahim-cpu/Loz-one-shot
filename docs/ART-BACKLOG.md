@@ -461,7 +461,8 @@ would have been churn.
 
 ## The Keep's mooring ring reads as a block, and its silt ring reads better dry
 
-**DECIDED S253: the post stays.** Searched both cartridges: no ring or cleat
+**S255: the silt is DONE (the human's pick D):** pale rings under the
+sea and two of Seasons' twinkles on every wet cache. **DECIDED S253: the post stays.** Searched both cartridges: no ring or cleat
 exists. Offered Ages' bollard (Ancient Tomb $10), a ring in stone (Ages
 underwater $8a) and Seasons' pilings ($b9), each in a Keep room
 (docs/briefs/s253/art/); the human kept the post.
@@ -512,7 +513,8 @@ anything in D6: **when a tide state has to be readable, spend a tile on it, not
 a shade.** The palette has nowhere near enough room to say four things in blue,
 and every attempt to make it costs a session and lands on the backlog.
 
-One job the Shrine did leave: **`dSnarl` is the extracted bush in the dark-oak
+**S255: D5's `dSnarl` is Ages' seaweed now (the human's pick); the Spire's
+and the Keep's snarls are still the bush.** One job the Shrine did leave: **`dSnarl` is the extracted bush in the dark-oak
 palette**, which reads correctly as "cut this" and identically to every bush in
 the game that a BOMB also opens. A snarl is sword-only by construction — `cut`
 is its only transform — so the sprite is telling the player something false about
