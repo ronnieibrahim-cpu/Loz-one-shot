@@ -281,6 +281,19 @@ def cartridge():
         layout, png, off, _ = gfx[int(row[1][1:], 16) + 1]
         art[f'link_swim2d_{k}'] = _place(png + '.png', int(off[1:], 16) // 16,
                                          _oam(so, lay[int(layout[1:], 16)]), 16, (8, 8))
+    # THE SHIELD (S255, the human's play note). Seasons draws Link's whole
+    # body differently with a shield: getLinkWalkingAnimation adds var34 =
+    # c*4 to the walk's two frames ($54 and $80, + direction): c=5 walking
+    # with the Wooden Shield equipped (it on his arm), 6 with a bigger one,
+    # 7 holding the Wooden Shield out, 8 holding a bigger one out.
+    for name, c in (('link_shwalk1_', 5), ('link_shwalk2_', 6),
+                    ('link_shup1_', 7), ('link_shup2_', 8)):
+        for step, base in ((0, 0x54), (1, 0x80)):
+            for d in (0, 1, 2):
+                layout, png, off, _ = gfx[base + c * 4 + d]
+                art[name + ('side' if d == 1 else DIRS[d]) + '_%d' % step] = _place(
+                    png + '.png', int(off[1:], 16) // 16,
+                    _oam(so, lay[int(layout[1:], 16)]), 16, (8, 8))
     ia = _lines('itemAnimations.s')
     io = _lines('itemOamData.s')
     ptrs = [r[0] for r in _list(ia, 'item05OamDataPointers', '.dw')]
@@ -337,7 +350,9 @@ def emit(path):
     lines.append('//')
     lines.append('// The swing\'s two bodies (link_swing0_*, link_swing1_*) and the sword\'s')
     lines.append('// eight pictures (fx_sword_*, 32x32 with the sword object\'s position at')
-    lines.append('// 16,16) are cut from Oracle of Seasons\' own graphics and tables instead,')
+    lines.append('// 16,16), and the shield bodies (link_shwalk1/2_*, link_shup1/2_*: walking')
+    lines.append('// with a shield equipped and holding it out, S255) are cut from Oracle of')
+    lines.append('// Seasons\' own graphics and tables instead,')
     lines.append('// copied from Stewmath\'s oracles-disasm (github.com/Stewmath/oracles-disasm,')
     lines.append('// commit 21c924a) into assets/link/oracles-disasm/seasons/. Credit: the')
     lines.append('// oracles-disasm project and its contributors.')

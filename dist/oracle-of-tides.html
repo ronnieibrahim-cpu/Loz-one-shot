@@ -1246,6 +1246,15 @@ const SEASONS_MUSIC = {
       [4,0],[2,13],[0,80,1],[2,0],[1,3],[2,11],[3,0,1],[0,84,10],[7],
     ],
   },
+  // sfx/shield.s
+  shield: {
+    ch: { 2: 0, 7: 16 },
+    prio: { 2: 1, 7: 1 },
+    events: [
+      [4,0],[2,0],[8,0],[3,0,0],[0,72,1],[2,15],[8,0],[3,0,1],[0,12,1],[2,14],[8,0],[3,0,1],[0,72,1],[2,0],[0,72,2],[7],
+      [10,16],[0,38,1],[10,112],[0,36,1],[10,0],[0,54,1],[7],
+    ],
+  },
   // sfx/clink2.s
   clink2: {
     ch: { 2: 0 },
@@ -3523,6 +3532,10 @@ const RIPTIDE_ANIM_RATE = 4;
  *  derived: oracles-disasm data/ages/animationData.s, animationDataWhirlpool2
  *  (the Ages sea's whirlpool, TILEINDEX_WHIRLPOOL $e9), `.db $06` per frame. */
 const WHIRLPOOL_ANIM_RATE = 6;
+/** f — how long the Shrine's snarl, Ages' seaweed, holds each of its four
+ *  frames (S255). derived: oracles-disasm data/ages/animationData.s,
+ *  animationDataSeaweed, `.db $0f` per frame. */
+const SEAWEED_ANIM_RATE = 15;
 
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
@@ -3827,6 +3840,10 @@ const LANTERN_RADIUS = 96;
  *  twinkle (TWINKLE_HOLDS, 35 frames) once in each. guessed; slow enough to
  *  read as a glint rather than a blinking marker. */
 const WRECK_GLIMMER_PERIOD = 90;
+/** f — how often each of a wet silt cache's two glints twinkles (S255, the
+ *  human's pick: the silt reads where the Dredge Line works). guessed: the
+ *  Wrecker's Eye's period, the two glints half of it apart. */
+const SILT_GLINT_PERIOD = 90;
 
 /** essences before the scrimshander cuts you the LOW case. derived from the
  *  eight-dungeon spine, not guessed: two, four and six spread the three
@@ -4842,6 +4859,7 @@ __exports["KEY_FALL_FRAMES"] = KEY_FALL_FRAMES;
 __exports["LIGHTHOUSE_TURN_FRAMES"] = LIGHTHOUSE_TURN_FRAMES;
 __exports["RIPTIDE_ANIM_RATE"] = RIPTIDE_ANIM_RATE;
 __exports["WHIRLPOOL_ANIM_RATE"] = WHIRLPOOL_ANIM_RATE;
+__exports["SEAWEED_ANIM_RATE"] = SEAWEED_ANIM_RATE;
 __exports["SINK_ENTER_FRAMES"] = SINK_ENTER_FRAMES;
 __exports["CLEATS_BREATH_FRAMES"] = CLEATS_BREATH_FRAMES;
 __exports["CLEATS_BREATH_WARN_FRAMES"] = CLEATS_BREATH_WARN_FRAMES;
@@ -4907,6 +4925,7 @@ __exports["CARVE_PRICE"] = CARVE_PRICE;
 __exports["BOSUN_FACTOR"] = BOSUN_FACTOR;
 __exports["LANTERN_RADIUS"] = LANTERN_RADIUS;
 __exports["WRECK_GLIMMER_PERIOD"] = WRECK_GLIMMER_PERIOD;
+__exports["SILT_GLINT_PERIOD"] = SILT_GLINT_PERIOD;
 __exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
 __exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
 __exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
@@ -7254,6 +7273,9 @@ const PALETTES = {
   sand:    ['#f8e8b0', '#e0c078', '#a88048', '#584028'],
   sandwet: ['#d8c898', '#b09860', '#786040', '#382c20'],
   water:   ['#b0e8f8', '#58b0e0', '#2868b8', '#10305c'],
+  // The Keep's silt under the sea (S255, the human's pick D): the rings in
+  // the water's palest colour, so the cache reads where the Dredge Line works.
+  siltwet: ['#b0e8f8', '#58b0e0', '#f8f8f8', '#f8f8f8'],
   deep:    ['#5898d8', '#2c60b0', '#183c80', '#08142c'],
   reef:    ['#a8e8d0', '#48b098', '#207060', '#0c2c28'],
   stone:   ['#e0e0d0', '#a0a898', '#606860', '#242c28'],
@@ -15589,8 +15611,23 @@ const ERRANDS = {
 // five. Here, with the errands, so the room data can name them without
 // importing the engine.
 const SAND_DOLLAR_FLAGS = ['sandDollar1', 'sandDollar2', 'sandDollar3', 'sandDollar4', 'sandDollar5'];
+
+// LETTERS IN BOTTLES (S255, the human's pick). Four sealed bottles the sea
+// leaves out at LOW tide, one on each of four beaches, each addressed to
+// somebody in Tidewatch or Sandpiper Row (PICKUPS.letterBottle). Handing one
+// over is its reader's errand; whoever gets the last of the four pays a blank
+// charm instead of rupees (NPC.errandTalk `last`).
+const LETTERS = {
+  letter1: { to: 'the little boy in Village East', done: 'letter1Done' },
+  letter2: { to: 'the villager in Tidewatch Square', done: 'letter2Done' },
+  letter3: { to: 'the Salter by the well', done: 'letter3Done' },
+  letter4: { to: 'the old man in Sandpiper Cottage', done: 'letter4Done' },
+};
+const LETTER_DONE_FLAGS = Object.values(LETTERS).map(l => l.done);
 __exports["ERRANDS"] = ERRANDS;
 __exports["SAND_DOLLAR_FLAGS"] = SAND_DOLLAR_FLAGS;
+__exports["LETTERS"] = LETTERS;
+__exports["LETTER_DONE_FLAGS"] = LETTER_DONE_FLAGS;
 });
 
 /* ===== src/data/overworld.js ===== */
@@ -15629,7 +15666,7 @@ __define("data/overworld.js", function (__exports, __require) {
 
 const { registerMap } = __require("world/maps.js");
 const { FARORE_SWAY_HOLD } = __require("data/feel.js");
-const { SAND_DOLLAR_FLAGS } = __require("data/errands.js");
+const { SAND_DOLLAR_FLAGS, LETTER_DONE_FLAGS } = __require("data/errands.js");
 
 const OVERWORLD_W = 17;
 const OVERWORLD_H = 10;
@@ -15763,6 +15800,8 @@ const rooms = {
       '###1111###',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 8, 1, { kind: 'letterBottle', flag: 'letter4' }],
       ['wizzrobe', 4, 4],
       ['sign', 1, 5, { text: 'THE BLACK CAUSEWAY\nNo conch works here. Bring your own sea, in a bottle!' }],
     ],
@@ -16908,6 +16947,8 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 6, 1, { kind: 'letterBottle', flag: 'letter2' }],
       ['urchin', 3, 3], ['urchin', 6, 3], ['jellyfish', 4, 4],
     ],
   },
@@ -17356,6 +17397,8 @@ const rooms = {
       'gggg...111',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 9, 3, { kind: 'letterBottle', flag: 'letter1' }],
       // A sand dollar (S249): only out of the sea at LOW tide.
       ['pickup', 6, 5, { kind: 'sandDollar', flag: 'sandDollar2' }],
       ['leever', 4, 3], ['crab', 6, 4],
@@ -17556,7 +17599,9 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 8, 3, { walk: 'lad', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
+      ['npc', 8, 3, { walk: 'lad', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2,
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter1', quiet: true, prize: 'rupee20', flag: 'letter1Done', thanks: 'letterThanks1', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ],
   },
   '0,9,7': {
@@ -18420,6 +18465,8 @@ const rooms = {
       '######..##',
     ],
     entities: [
+      // A letter in a bottle (S255), out on the sand at LOW tide only.
+      ['pickup', 4, 1, { kind: 'letterBottle', flag: 'letter3' }],
       ['leever', 5, 5, { phase: 0 }],
     ],
   },
@@ -18546,7 +18593,9 @@ const rooms = {
       ['scrimshander', 3, 6, {}],
       ['npc', 6, 6, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4,
         // The Peat Key, once the second Essence is in (S154).
-        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' } }],
+        beat: { scene: 'peatKey', need: 2, flag: 'keyD3' },
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter2', quiet: true, prize: 'rupee20', flag: 'letter2Done', thanks: 'letterThanks2', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ],
   },
   '0,6,8': {
@@ -18784,7 +18833,9 @@ const rooms = {
     entities: [
       ['npc', 5, 4, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3,
         // The Cistern Key, once the third Essence is in (S154).
-        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' } }],
+        beat: { scene: 'cisternKey', need: 3, flag: 'keyD4' },
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter3', quiet: true, prize: 'rupee20', flag: 'letter3Done', thanks: 'letterThanks3', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ],
   },
   '0,7,9': {
@@ -19659,7 +19710,9 @@ function installHouses() {
   });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'house', [
-    ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
+    ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2,
+          // LETTERS IN BOTTLES (S255): theirs, from the sea.
+          errand: { need: 'letter4', quiet: true, prize: 'rupee20', flag: 'letter4Done', thanks: 'letterThanks4', last: { flags: LETTER_DONE_FLAGS, prize: 'blank' } } }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
     // The beachcomber (S249): the five sand dollars of the dunes, shown only
     // at LOW tide, for a Piece of Heart (moved from the shop's ledger
@@ -22610,6 +22663,10 @@ class Player extends Entity {
       if (itemLevel(game.progress, id) <= 0) continue;
       def.use(game, this, itemLevel(game.progress, id));
     }
+    // The shield going up sounds once, on the frame it is raised (Seasons'
+    // parentItemCode_shield state 0: SND_SHIELD), not while it is held.
+    if (this.shielding && !this._shieldWas) game.audio.sfx('shieldUp');
+    this._shieldWas = this.shielding;
     // Sword hold: keeping the button down after the swing keeps the blade out
     // (see updateSwordHold) and, past a threshold, charges a spin.
     const slot = this.swordSlot(game);
@@ -24136,6 +24193,16 @@ class Player extends Entity {
 
   // ------------------------------------------------------------------ draw
 
+  /** Which shield picture set his body wears: 1 for the Wooden Shield, 2
+   *  for a bigger one, 0 when no shield is on A or B (Seasons draws the shield
+   *  only while it is equipped: getLinkWalkingAnimation @standingAnimation). */
+  shieldShown(game) {
+    const p = game && game.progress;
+    if (!p || (p.equipA !== 'shield' && p.equipB !== 'shield')) return 0;
+    const lv = itemLevel(p, 'shield');
+    return lv <= 0 ? 0 : lv === 1 ? 1 : 2;
+  }
+
   spriteName(game) {
     const side = this.dir === 'left' || this.dir === 'right';
     this.flipX = this.dir === 'left';
@@ -24195,12 +24262,20 @@ class Player extends Entity {
       return (this.bladePhase() === 0 ? 'link_swing0_' : 'link_swing1_') + key;
     }
     if (this.carrying) return 'link_carry_' + key;
+    const moving = this._lastDx || this._lastDy;
+    const step = moving ? (Math.floor(this.animT / 7) % 2) : 0;
+    // THE SHIELD IS PART OF HIS BODY (S255, the human's play note; Seasons'
+    // getLinkWalkingAnimation): held out, he walks in the shield-up frames
+    // (c=7, or 8 for a bigger shield), ahead of the push pose; with one only
+    // equipped he carries it on his arm in his ordinary walk (c=5/6), unless
+    // he is pushing.
+    const shLv = this.shieldShown(game);
+    if (this.shielding && shLv) return 'link_shup' + shLv + '_' + key + '_' + step;
     // Holding the sword he walks in his own frames, never the push pose:
     // getLinkWalkingAnimation skips it while turning is disabled.
     if (this.againstWall && !this.holding) return 'link_push_' + key;
-    const moving = this._lastDx || this._lastDy;
-    if (!moving) return 'link_walk_' + key + '_0';
-    return 'link_walk_' + key + '_' + (Math.floor(this.animT / 7) % 2);
+    if (shLv && !this.holding) return 'link_shwalk' + shLv + '_' + key + '_' + step;
+    return 'link_walk_' + key + '_' + step;
   }
 
   draw(ctx, game, ox, oy) {
@@ -24249,11 +24324,6 @@ class Player extends Entity {
     // drawn over his feet.
     sprites.draw(ctx, name, ox + this.x + ax, dy + ay, { pal, flipX: this.flipX });
 
-    if (this.shielding) {
-      const side = this.dir === 'left' || this.dir === 'right';
-      const key = side ? 'side' : this.dir;
-      sprites.draw(ctx, 'link_shield_' + key, ox + this.x, dy, { pal: 'ui', flipX: this.flipX });
-    }
     // THE SPLASH AT HIS FEET in shallow water: Seasons' own
     // (_drawObjectTerrainEffects @walkingInPuddle), a picture every
     // PUDDLE_HOLD frames of the one counter, so every wader's is in step. A
@@ -29350,7 +29420,7 @@ const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, a
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
 const { getText } = __require("game/dialogue.js");
-const { ERRANDS, SAND_DOLLAR_FLAGS } = __require("data/errands.js");
+const { ERRANDS, SAND_DOLLAR_FLAGS, LETTERS } = __require("data/errands.js");
 const { FLOAT_DIRS } = __require("game/float-path.js");
 const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN, PICKUP_BLINK_FRAMES, BLOCK_SLIDE_SPEED, FAIRY_LEG_SPEEDS, FAIRY_LEG_MIN, FAIRY_LEG_SPAN, FAIRY_HOVER_Z, FAIRY_ARM_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, TOWNSFOLK_WALK_FRAME_FRAMES, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES, RACE_SHORE_FRAMES, RACE_POOL_FRAMES, TORCH_FLAME_FRAMES, TORCH_BURN_FRAMES, KEY_FALL_FRAMES, LIGHTHOUSE_TURN_FRAMES, CUBE_CRACK_FRAMES, CUBE_GUST_FRAMES, CUBE_DRIFT_SPEED, CUBE_RETURN_FRAMES, FLOAT_SPEED, FLOAT_FOOT_DY, SV_FLOAT_SPEED, BOMB_CAPACITY_BAG, ICE_BLOCK_SPEED, CHUNK_BOB_FRAMES, BUOY_NOTE_FRAMES, BUOY_LIT_FRAMES, BUOY_LEAD_IN_FRAMES, BUOY_BOB_FRAMES, MAKU_TALK_FRAMES } = __require("data/feel.js");
 const { OBJECT_THEMES, TORCH_FLAME_COUNT } = __require("data/sprites-objects.js");
@@ -29621,6 +29691,20 @@ PICKUPS.sandDollar = {
     g.say(n >= SAND_DOLLAR_FLAGS.length
       ? 'A sand dollar! That\'s all five. The beachcomber in Sandpiper Row will want these.'
       : `A sand dollar! You have ${n} of ${SAND_DOLLAR_FLAGS.length}.`);
+  },
+};
+
+// LETTERS IN BOTTLES (S255): a bottle the sea leaves on the sand at LOW tide
+// only (`lowOnly`, as the sand dollars), naming who it is for. Its flag is on
+// the placement; the reader's errand needs it (src/data/errands.js LETTERS).
+PICKUPS.letterBottle = {
+  sprite: 'i_bottle', pal: null, persistent: true, lowOnly: true,
+  get(g, e) {
+    const l = e && e.flagName && LETTERS[e.flagName];
+    if (e && e.flagName) setFlag(g.progress, e.flagName);
+    g.audio.sfx('key');
+    g.say(l ? `A bottle with a letter sealed inside! It's addressed to ${l.to}.`
+      : 'A bottle with a letter sealed inside!');
   },
 };
 
@@ -29979,6 +30063,9 @@ class NPC extends Entity {
     // every flag in it, and `partial` is said once some but not all are in.
     const needs = Array.isArray(e.need) ? e.need : [e.need];
     const have = needs.filter(n => flag(p, n)).length;
+    // `quiet` (S255, the letters): somebody who does not know a thing is
+    // coming says their ordinary lines until it is in their hand.
+    if (have < needs.length && e.quiet) return false;
     if (have < needs.length) {
       // `confirm` (S247): the first asking ends in Yes or No, as the
       // cartridges ask before a dive. Yes sets `asked` as it always did; No
@@ -29997,7 +30084,13 @@ class NPC extends Entity {
       if (e.asked && !flag(p, e.asked)) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
       return true;
     }
-    const pay = () => { setFlag(p, e.flag); game.presentPrize(e.prize); };
+    // `last` (S255): `{ flags, prize }` — when this hand-over completes every
+    // flag in `flags` (this one's included), `prize` is paid instead.
+    const pay = () => {
+      setFlag(p, e.flag);
+      const last = e.last && e.last.flags.every(f => flag(p, f));
+      game.presentPrize(last ? e.last.prize : e.prize);
+    };
     game.startDialogue(e.thanks, this);
     if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
     return true;
@@ -43096,7 +43189,7 @@ function forcedPad(dir) {
 }
 
 const INFO_BOSS_DOOR = 0x02, INFO_KEY_DOOR = 0x04, INFO_CRACKED_BLOCK = 0x10, INFO_ROCK = 0x20;
-const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, BOSS_DOOR_OPEN_DELAY_FRAMES, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, STAIRS_FADE, DOOR_FADE, MENU_FADE_OPEN, DOOR_REVEAL_BLANK, DOOR_REVEAL_STEPS, DOOR_REVEAL_STEP_PX, DOOR_REVEAL_FROM, CHEST_ITEM_RISE, CHEST_TEXT_DELAY, CHEST_ITEM_DELAY, SHAKE_OFFSETS, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_DIVISOR, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, BOSS_ENTRY_WALK_FRAMES, ITEM_PRESENT_FRAMES, ITEM_HOLD_RISE, ITEM_HOLD_ONE_HAND_X, ESSENCE_FREEZE_FRAMES, DEATH_SPIN_STEP, DEATH_SPIN_LAPS, DEATH_COLLAPSE_FRAMES, DEATH_MUSIC_FADE_MASK, GAMEOVER_FADE_IN_FRAMES, GAMEOVER_PICK_FRAMES, THE_END_HOLD_FRAMES, CREDITS_FADE, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, KEYHOLE_OPEN_FRAMES, DOOR_SLIDE_FRAMES, KEY_DOOR_HEIGHTS, BOSS_DOOR_OPEN_DELAY_FRAMES, LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, SILT_GLINT_PERIOD, TWINKLE_HOLDS, COILBONE_INVULN_FRAMES, BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES, LIFT_STRENGTH } = __require("data/feel.js");
 
 // The door reveal's blank field is the HUD's own parchment, as Seasons
 // fills it with its status bar's cream (footage 3676-3681).
@@ -46251,6 +46344,7 @@ class Game {
 
     room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
+    this.drawSiltGlints(ctx, ox, oy);
     if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
@@ -46284,12 +46378,32 @@ class Game {
     }
   }
 
+  /**
+   * SILT THE SEA IS COVERING GLINTS (S255, the human's pick): two of Seasons'
+   * twinkles, out of step, on every wet silt cache, so it is the wet cache,
+   * where the Dredge Line works, that catches the eye, not the dry one. A
+   * pure function of `frame` and the cell, like every glimmer here.
+   */
+  drawSiltGlints(ctx, ox, oy) {
+    const room = this.room;
+    if (!room || !this.mapId || this.mapId[0] !== 'd') return;
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
+        if (room.baseName(tx, ty) !== 'dSilt') continue;
+        if (room.tile(tx, ty, this.tide).name !== 'dSiltWet') continue;
+        const x = ox + tx * TILE, y = oy + ty * TILE, k = tx * 7 + ty * 13;
+        this.glimmerAt(ctx, x + 5, y + 4, k, SILT_GLINT_PERIOD);
+        this.glimmerAt(ctx, x + 11, y + 11, k + Math.floor(SILT_GLINT_PERIOD / 18), SILT_GLINT_PERIOD);
+      }
+    }
+  }
+
   // Seasons' own twinkle (INTERAC_SPARKLE, S220), played through once every
   // WRECK_GLIMMER_PERIOD frames; it was a hand-drawn cross faded in and out,
   // which the Game Boy cannot draw. Drawn straight off the frame counter, not
   // spawned, so it adds nothing to the effect count.
-  glimmerAt(ctx, cx, cy, phase) {
-    let t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
+  glimmerAt(ctx, cx, cy, phase, period = WRECK_GLIMMER_PERIOD) {
+    let t = (this.frame + phase * 9) % period;
     for (let i = 0; i < TWINKLE_HOLDS.length; i++) {
       if (t < TWINKLE_HOLDS[i]) {
         sprites.draw(ctx, 'fx_twinkle' + i, cx - 16, cy - 16);
@@ -56095,6 +56209,82 @@ const DUNGEON_THEME_ART = {
     .....332223.....
     .....233332.....`,
 
+  // seaweed, step 1 of 4, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $c5
+  kelp0: `
+    ....1...1....1..
+    ..1....11...1...
+    ..1...11..1.1..1
+    .1..1.111..11...
+    .11...111..211..
+    .211...211.1211.
+    .1211..211..2211
+    ..211..112..2211
+    ..211..121..2111
+    ..112.112...111.
+    .1122.122..112..
+    .1121.122.1122..
+    .122..111.11221.
+    .222......12222.
+    .222.....112222.
+    .121..1....1221.`,
+
+  // seaweed, step 2 of 4, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $c5
+  kelp1: `
+    ..1.1...........
+    ...1...1.....1..
+    .1.1.1..1.1..1.1
+    ...11...11..1...
+    ..112..112..11..
+    .1121.1121..211.
+    1122..122...1211
+    1122..112....211
+    1112...11....211
+    .111...211...112
+    ..211..221..1122
+    ..22111221..1121
+    .12211122...122.
+    .22221......222.
+    .22221...1..222.
+    .1221.1.....121.`,
+
+  // seaweed, step 3 of 4, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $c5
+  kelp2: `
+    ....1.......1...
+    ...1...1.....1..
+    ...1.1..1.1..1.1
+    .1..1..11....11.
+    ...11.112...112.
+    ..112.121..1121.
+    .1121.12..1122..
+    .112..11..1122..
+    .111..211.1112..
+    .211..221..111..
+    .2211.222...211.
+    .1211.222...2211
+    ..221.121..12211
+    ..222......22221
+    ..222....1.22221
+    ..121.1....1221.`,
+
+  // seaweed, step 4 of 4, the Ages sea floor (tileset $5f) — Ages tileset $5f (the sea floor), metatile $c5
+  kelp3: `
+    ...1............
+    ..1.....1....1..
+    ..1.1..1.....1.1
+    .11...11..1...1.
+    .211..211....11.
+    .1211.1211..112.
+    ..2211.211.1121.
+    ..2211.111.112..
+    ..2111112..111..
+    ..111.122..211..
+    .112..1221.2211.
+    1122..1221.1211.
+    11221..221..221.
+    12222.......222.
+    12222....1..222.
+    .1221.1.....121.`,
+
   // the whirlpool, step 1 of 4, the Ages sea floor — Ages tileset $5f (the sea floor), metatile $e9
   uWhirl0: `
     1111222222221111
@@ -61013,6 +61203,10 @@ const DUNGEON_THEME_PALETTES = {
   svCisLamp7: ['#8c2100', '#000000', '#000000', '#000000'],
   svCisLamp8: ['#ef6300', '#8c2100', '#000000', '#000000'],
   coralSprig: ['#9c63a5', '#9c63a5', '#734273', '#210018'],
+  kelp0: ['#314aad', '#314aad', '#000031', '#000031'],
+  kelp1: ['#314aad', '#314aad', '#000031', '#000031'],
+  kelp2: ['#314aad', '#314aad', '#000031', '#000031'],
+  kelp3: ['#314aad', '#314aad', '#000031', '#000031'],
   uWhirl0: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl1: ['#5aadef', '#426be7', '#314aad', '#314aad'],
   uWhirl2: ['#5aadef', '#426be7', '#314aad', '#314aad'],
@@ -63753,7 +63947,7 @@ const { registerPalettes, PALETTES } = __require("gfx/palettes.js");
 const { DUNGEON_THEME_ART, installDungeonThemePalettes } = __require("data/tiles-dungeon-themes.js");
 const { STEPSTONE_ART, STEPSTONE_PALETTES } = __require("data/tiles-stepstones.js");
 const { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } = __require("data/tiles-maku.js");
-const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, BELT_ANIM_RATE } = __require("data/feel.js");
+const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, SEAWEED_ANIM_RATE, BELT_ANIM_RATE } = __require("data/feel.js");
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -67358,7 +67552,12 @@ function installCoreTiles() {
     // finds nothing, so there is no second answer. The one place a blade comes
     // out beside a snarl is a coral pillar, and a pillar is dry ground at LOW
     // and at LOW only.
-    dSnarl: { art: ART.bush, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dWaterD' },
+    // THE SHRINE'S SNARL (S255, the human's pick): Ages' sea-floor seaweed
+    // ($c5, tools/rip-dungeon-themes.py), its four steps at Ages' own rate,
+    // in green — it used to be the bush, which says "a bomb opens this" and
+    // a snarl opens to the sword alone.
+    dSnarl: { art: ART.kelp0, pal: 'tree', flags: F.SOLID, underArt: 'dWaterD',
+      anim: ['kelp0', 'kelp1', 'kelp2', 'kelp3'], animRate: SEAWEED_ANIM_RATE },
 
     // --- the Abyssal Keep -------------------------------------------------
     //
@@ -67442,7 +67641,7 @@ function installCoreTiles() {
     // is on it and gives up nothing at all while the sea is off it, and that
     // is the one thing in this game that wants the water UP.
     dSiltDry: { art: ART.siltFloor, pal: 'stonedk' },
-    dSiltWet: { art: ART.siltFloor, pal: 'water', flags: F.WATER },
+    dSiltWet: { art: ART.siltFloor, pal: 'siltwet', flags: F.WATER },
     dSilt: { tide: ['dSiltDry', 'dSiltWet', 'dSiltWet'] },
 
     // A lintel of the Keep's own stone, standing across a shaft, that the sea
@@ -80347,6 +80546,12 @@ const DIALOGUE = {
   sandDollarAsk: 'Sand dollars! The sea only leaves them out at LOW tide, on the wet sand of the dunes. There are five out there. Bring me all five and I\'ll trade you something rare!',
   sandDollarPartial: (game) => `${SAND_DOLLAR_FLAGS.filter(f => game.progress.flags[f]).length} of five! The rest are out on the dunes. Look where the sea goes out at LOW tide.`,
   sandDollarThanks: 'All five, and not one chipped! I\'ve hunted the last of those for years. Here, I dug this up in the dunes. It\'s yours!',
+  // LETTERS IN BOTTLES (S255): each reader's thanks; whoever has the last
+  // of the four pays a blank charm instead (errands.js LETTERS).
+  letterThanks1: 'A letter? For ME? ...It\'s from a girl out on the reef! She hears the bell under the sea too! I KNEW I wasn\'t hearing things. Here, you can have this!',
+  letterThanks2: 'This is my sister\'s hand! She\'s been stuck out on the reef since the sea took the pier. She says she\'s fine and eating far too much fish. Thank you! Take this for your trouble.',
+  letterThanks3: 'From the pans, is it? The elders want me home before the next big tide. Hmph. I\'ll go when the salt\'s dry. Here, for carrying it.',
+  letterThanks4: 'This hand... it\'s my neighbour\'s! The sea carried him clear out to the dark shore, and he\'s mending a boat to come home! Oh, thank you, thank you. Here, take this.',
   beachcomber: 'Every LOW tide the sea leaves something new on the sand. That\'s why I never leave!',
   raceGoalWait: 'This is the finish! Talk to my friend on South Bluff to start the race.',
   ledgerAsk: 'The wind blew my ledger out the window! Every debt on the coast is in it. Try the South Sands.',
@@ -80784,6 +80989,9 @@ const SFX = {
   // The raised shield shoving an ordinary enemy off (S227,
   // COLLISIONEFFECT_SHIELD_BUMP*: LINKDMG_10/14 play SND_BOMB_LAND).
   shieldBump: { seasons: 'bombLand' },
+  // The shield raised (S255): SND_SHIELD, played on the press as
+  // parentItemCode_shield's state 0 does.
+  shieldUp: { seasons: 'shield' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
   hop: { seasons: 'enemyJump' },
 
@@ -82322,62 +82530,6 @@ const LINK_ART = {
     ..33....33......
     ................`,
 
-  // ---- shield overlay: mostly transparent, drawn on top of Link ----------
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  link_shield_down: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    .....333333.....
-    .....301103.....
-    .....301103.....
-    .....330033.....
-    ......3333......
-    ................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  link_shield_up: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    .....333333.....
-    .....322223.....
-    .....322223.....
-    .....332233.....
-    ......3333......
-    ................
-    ................
-    ................`,
-  // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
-  link_shield_side: `
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ................
-    ..........333...
-    .........30103..
-    .........30103..
-    .........30103..
-    .........33033..
-    ..........333...
-    ................
-    ................`,
-
   // ---- falling down a pit: shrinking -------------------------------------
   // drawn — hand-authored source; no sheet in assets/sheets/ has this art, and where sprites-hud.js, sprites-gear.js or sprites-player.js later supply the same name, that file's own art wins at runtime (src/data/index.js's install order).
   link_fall_0: `
@@ -82837,7 +82989,9 @@ __define("data/sprites-player.js", function (__exports, __require) {
 //
 // The swing's two bodies (link_swing0_*, link_swing1_*) and the sword's
 // eight pictures (fx_sword_*, 32x32 with the sword object's position at
-// 16,16) are cut from Oracle of Seasons' own graphics and tables instead,
+// 16,16), and the shield bodies (link_shwalk1/2_*, link_shup1/2_*: walking
+// with a shield equipped and holding it out, S255) are cut from Oracle of
+// Seasons' own graphics and tables instead,
 // copied from Stewmath's oracles-disasm (github.com/Stewmath/oracles-disasm,
 // commit 21c924a) into assets/link/oracles-disasm/seasons/. Credit: the
 // oracles-disasm project and its contributors.
@@ -83495,6 +83649,438 @@ const PLAYER_ART = {
     ..330033330033..
     ..331133333333..
     ...3333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup1_down_0: `
+    ................
+    .....33333......
+    ....3100113.....
+    ...3313311133...
+    ..303300001303..
+    ..303033330303..
+    ..303333333303..
+    ..311333333113..
+    .333333303003...
+    .3003003030313..
+    .3010103003313..
+    .3033303330013..
+    .301110303003...
+    .30111031133....
+    ..30003333333...
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup1_down_1: `
+    ................
+    ......33333.....
+    .....3110013....
+    ...3311133133...
+    ..303100003303..
+    ..303033330303..
+    ..303333333303..
+    .3333333333113..
+    .300300303003...
+    .3010103030133..
+    .30333030013133.
+    .30111033333113.
+    .30111030001303.
+    .3300033133333..
+    ..333333300133..
+    ...3333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup1_side_0: `
+    ................
+    ......33333.....
+    .....31110133...
+    ....3110013003..
+    ...3113113001333
+    ..31130330013333
+    ..31130131333303
+    ...3130033030303
+    ....330030030133
+    .....31033333313
+    .....33311130313
+    ....311331130313
+    ...3111133333313
+    ...333333333.313
+    ....3000033...33
+    ...3333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup1_side_1: `
+    ................
+    ................
+    .....333333.....
+    ...3311100133.3.
+    ..3111001130033.
+    ..3111311300133.
+    ..31130330013333
+    ...3130131333303
+    ...3130033030303
+    ....330030030133
+    .....33033333313
+    ...3311311130313
+    ..30311131130313
+    ..30331133333313
+    ..3003330003.313
+    .333333333333.33`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup1_up_0: `
+    ........333..333
+    ......3330333303
+    .....33333300003
+    ....330000331103
+    ...3303333033103
+    ..30331001330303
+    ..30311101130303
+    ..30313101130303
+    ..31331111131313
+    ..3313111133313.
+    ..313311131333..
+    ..330311310133..
+    ...3103300113...
+    ...3311111333...
+    ...33333330033..
+    ....333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup1_up_1: `
+    ................
+    ........333..333
+    ......3333333303
+    ....330000330003
+    ...3303333033103
+    ..30331001330303
+    ..30311011130303
+    ..30311013130303
+    ..31311111331303
+    ..33331111333313
+    ..3131311133313.
+    ..331013113133..
+    ...3110033013...
+    ...3331111133...
+    ..33003333333...
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup2_down_0: `
+    ................
+    .....33333......
+    ....3100113.....
+    ...3313311133...
+    ..303300001303..
+    ..303033330303..
+    33303333333303..
+    30333333033113..
+    3000000003003...
+    30103301030313..
+    30100001033313..
+    30100001030033..
+    3010000103003...
+    300111100333....
+    .300000033333...
+    ..3333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup2_down_1: `
+    ................
+    ......33333.....
+    .....3110013....
+    ...3311133133...
+    ..303100003303..
+    33303033330303..
+    30333333033303..
+    30000000033113..
+    3010330103003...
+    30100001030133..
+    301000010313133.
+    301000010333113.
+    300111100311303.
+    .3000000333333..
+    .3333333300133..
+    ..33333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup2_side_0: `
+    ................
+    ......33333.....
+    .....31110133...
+    ....3110013003..
+    ...3113113001333
+    ..31130330013333
+    ..31130131333303
+    ...3130033030303
+    ....330030030133
+    .....31033333313
+    .....33311130313
+    ....311331130313
+    ...3111133333313
+    ...333333333.313
+    ....3000033...33
+    ...3333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup2_side_1: `
+    ................
+    ................
+    .....333333.....
+    ...3311100133.3.
+    ..3111001130033.
+    ..3111311300133.
+    ..31130330013333
+    ...3130131333303
+    ...3130033030303
+    ....330030030133
+    .....33033333313
+    ...3311311130313
+    ..30311131130313
+    ..30331133333313
+    ..3003330003.313
+    .333333333333.33`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup2_up_0: `
+    ........333..333
+    ......3330333303
+    .....33333300003
+    ....330000331103
+    ...3303333033103
+    ..30331001330303
+    ..30311101130303
+    ..30313101130303
+    ..31331111131313
+    ..3313111133313.
+    ..313311131333..
+    ..330311310133..
+    ...3103300113...
+    ...3311111333...
+    ...33333330033..
+    ....333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shup2_up_1: `
+    ................
+    ........333..333
+    ......3333333303
+    ....330000330003
+    ...3303333033103
+    ..30331001330303
+    ..30311011130303
+    ..30311013130303
+    ..31311111331303
+    ..33331111333313
+    ..3131311133313.
+    ..331013113133..
+    ...3110033013...
+    ...3331111133...
+    ..33003333333...
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk1_down_0: `
+    .....33333......
+    ....3100113.....
+    ...3313311133...
+    ..303300001303..
+    ..303033330303..
+    ..303333333303..
+    .3311333333113..
+    3033003003003...
+    3033103003013...
+    30313100001313..
+    30303333333313..
+    30303111130013..
+    3033100003003...
+    .33333311133....
+    ..33100333333...
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk1_down_1: `
+    ......33333.....
+    .....3110013....
+    ...3311133133...
+    ..303100003303..
+    ..303033330303..
+    ..303333333303..
+    ..311333333113..
+    3333003003003...
+    3003103003013...
+    31003100001313..
+    311033333333103.
+    311030311113303.
+    31103030000133..
+    .310331113333...
+    ..333333300133..
+    ....333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk1_side_0: `
+    .....33333......
+    ....31110133....
+    ...3110013003...
+    ..3113113001333.
+    .3113033001333..
+    .31130131333....
+    ..313003303033..
+    ...33003003003..
+    3333333000013...
+    300300311113....
+    301010333333....
+    303330300313....
+    301110300303....
+    301110333313....
+    .30003000333....
+    ..33333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk1_side_1: `
+    ................
+    ....333333......
+    ..3311100133.3..
+    .3111001130033..
+    .3111311300133..
+    .311303300133...
+    ..3130131333....
+    ..313003303033..
+    .3333333003003..
+    .300300300013...
+    .30101033333....
+    .3033303003.....
+    .3011103003.....
+    .30111033333....
+    ..30003300003...
+    ..33333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk1_up_0: `
+    ......333.......
+    .....33333......
+    .....300003.....
+    ...3303333033...
+    ..303310013303..
+    ..30311001130333
+    ..30313101130303
+    ..31331101131303
+    ...3331111333303
+    ...3131113131303
+    ..30131131131303
+    ..30313311013303
+    ...3100000113303
+    ...331111133333.
+    ...33333330033..
+    ....333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk1_up_1: `
+    .......333......
+    ......33333.....
+    .....300003.....
+    ...3303333033...
+    ..303310013303..
+    ..303110011303..
+    ..3031101313033.
+    ..31311011331303
+    ...3331111333013
+    ..31313111313013
+    ..31311311313013
+    ..33101133133013
+    ...3110000033013
+    ...333111113303.
+    ..330033333333..
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk2_down_0: `
+    .....33333......
+    ....3100113.....
+    ...3313311133...
+    ..303300001303..
+    ..303033330303..
+    ..303333333303..
+    .3311333333113..
+    3033003003003...
+    3033103003013...
+    30313100001313..
+    30303333333313..
+    30303111130013..
+    3033100003003...
+    .33333311133....
+    ..33100333333...
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk2_down_1: `
+    ......33333.....
+    .....3110013....
+    ...3311133133...
+    ..303100003303..
+    ..303033330303..
+    ..303333333303..
+    ..311333333113..
+    3333003003003...
+    3003103003013...
+    31003100001313..
+    311033333333103.
+    311030311113303.
+    31103030000133..
+    .310331113333...
+    ..333333300133..
+    ....333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk2_side_0: `
+    .....33333......
+    ....31110133....
+    ...3110013003...
+    ..3113113001333.
+    .3113033001333..
+    .33330131333....
+    ..303333330333..
+    ..300000000303..
+    ..30103301033...
+    ..3010000103....
+    ..3010000103....
+    ..3010000103....
+    ..3001111003....
+    ...30000003.....
+    ....3333333.....
+    ...333333333....`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk2_side_1: `
+    ................
+    ....333333......
+    ..3311100133.3..
+    .3111001130033..
+    .3111311300133..
+    .333303333333...
+    .30333333033....
+    .3000000003033..
+    .3010330103003..
+    .301000010313...
+    .30100001033....
+    .3010000103.....
+    .3001111003.....
+    ..3000000333....
+    ...3333330003...
+    .333333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk2_up_0: `
+    ......333.......
+    .....33333......
+    .....300003.....
+    ...3303333033...
+    ..303310013303..
+    ..30311001130333
+    ..30313101130303
+    ..31331101131303
+    ...3331111333303
+    ...3131113131303
+    ..30131131131303
+    ..30313311013303
+    ...3100000113303
+    ...331111133333.
+    ...33333330033..
+    ....333333333...`,
+  // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
+  link_shwalk2_up_1: `
+    .......333......
+    ......33333.....
+    .....300003.....
+    ...3303333033...
+    ..303310013303..
+    ..303110011303..
+    ..3031101313033.
+    ..31311011331303
+    ...3331111333013
+    ..31313111313013
+    ..31311311313013
+    ..33101133133013
+    ...3110000033013
+    ...333111113303.
+    ..330033333333..
+    ...333333333....`,
   // extracted — cut from the cartridge's own graphics by this file's cartridge() (see the header).
   link_swim2d_0: `
     ................

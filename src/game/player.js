@@ -449,6 +449,10 @@ export class Player extends Entity {
       if (itemLevel(game.progress, id) <= 0) continue;
       def.use(game, this, itemLevel(game.progress, id));
     }
+    // The shield going up sounds once, on the frame it is raised (Seasons'
+    // parentItemCode_shield state 0: SND_SHIELD), not while it is held.
+    if (this.shielding && !this._shieldWas) game.audio.sfx('shieldUp');
+    this._shieldWas = this.shielding;
     // Sword hold: keeping the button down after the swing keeps the blade out
     // (see updateSwordHold) and, past a threshold, charges a spin.
     const slot = this.swordSlot(game);
@@ -1975,6 +1979,16 @@ export class Player extends Entity {
 
   // ------------------------------------------------------------------ draw
 
+  /** Which shield picture set his body wears: 1 for the Wooden Shield, 2
+   *  for a bigger one, 0 when no shield is on A or B (Seasons draws the shield
+   *  only while it is equipped: getLinkWalkingAnimation @standingAnimation). */
+  shieldShown(game) {
+    const p = game && game.progress;
+    if (!p || (p.equipA !== 'shield' && p.equipB !== 'shield')) return 0;
+    const lv = itemLevel(p, 'shield');
+    return lv <= 0 ? 0 : lv === 1 ? 1 : 2;
+  }
+
   spriteName(game) {
     const side = this.dir === 'left' || this.dir === 'right';
     this.flipX = this.dir === 'left';
@@ -2034,12 +2048,20 @@ export class Player extends Entity {
       return (this.bladePhase() === 0 ? 'link_swing0_' : 'link_swing1_') + key;
     }
     if (this.carrying) return 'link_carry_' + key;
+    const moving = this._lastDx || this._lastDy;
+    const step = moving ? (Math.floor(this.animT / 7) % 2) : 0;
+    // THE SHIELD IS PART OF HIS BODY (S255, the human's play note; Seasons'
+    // getLinkWalkingAnimation): held out, he walks in the shield-up frames
+    // (c=7, or 8 for a bigger shield), ahead of the push pose; with one only
+    // equipped he carries it on his arm in his ordinary walk (c=5/6), unless
+    // he is pushing.
+    const shLv = this.shieldShown(game);
+    if (this.shielding && shLv) return 'link_shup' + shLv + '_' + key + '_' + step;
     // Holding the sword he walks in his own frames, never the push pose:
     // getLinkWalkingAnimation skips it while turning is disabled.
     if (this.againstWall && !this.holding) return 'link_push_' + key;
-    const moving = this._lastDx || this._lastDy;
-    if (!moving) return 'link_walk_' + key + '_0';
-    return 'link_walk_' + key + '_' + (Math.floor(this.animT / 7) % 2);
+    if (shLv && !this.holding) return 'link_shwalk' + shLv + '_' + key + '_' + step;
+    return 'link_walk_' + key + '_' + step;
   }
 
   draw(ctx, game, ox, oy) {
@@ -2088,11 +2110,6 @@ export class Player extends Entity {
     // drawn over his feet.
     sprites.draw(ctx, name, ox + this.x + ax, dy + ay, { pal, flipX: this.flipX });
 
-    if (this.shielding) {
-      const side = this.dir === 'left' || this.dir === 'right';
-      const key = side ? 'side' : this.dir;
-      sprites.draw(ctx, 'link_shield_' + key, ox + this.x, dy, { pal: 'ui', flipX: this.flipX });
-    }
     // THE SPLASH AT HIS FEET in shallow water: Seasons' own
     // (_drawObjectTerrainEffects @walkingInPuddle), a picture every
     // PUDDLE_HOLD frames of the one counter, so every wader's is in step. A

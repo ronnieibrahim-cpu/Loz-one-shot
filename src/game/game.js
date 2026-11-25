@@ -93,7 +93,7 @@ import {
   LENS_FLICKER_L1, LENS_FLICKER_L2, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
-  WRECK_GLIMMER_PERIOD, TWINKLE_HOLDS,
+  WRECK_GLIMMER_PERIOD, SILT_GLINT_PERIOD, TWINKLE_HOLDS,
   COILBONE_INVULN_FRAMES,
   BRIDGE_PLANK_FRAMES, RUPEE_ROLL_FRAMES, HEART_FILL_FRAMES,
   LIFT_STRENGTH,
@@ -3252,6 +3252,7 @@ export class Game {
 
     room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
+    this.drawSiltGlints(ctx, ox, oy);
     if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
@@ -3285,12 +3286,32 @@ export class Game {
     }
   }
 
+  /**
+   * SILT THE SEA IS COVERING GLINTS (S255, the human's pick): two of Seasons'
+   * twinkles, out of step, on every wet silt cache, so it is the wet cache,
+   * where the Dredge Line works, that catches the eye, not the dry one. A
+   * pure function of `frame` and the cell, like every glimmer here.
+   */
+  drawSiltGlints(ctx, ox, oy) {
+    const room = this.room;
+    if (!room || !this.mapId || this.mapId[0] !== 'd') return;
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
+        if (room.baseName(tx, ty) !== 'dSilt') continue;
+        if (room.tile(tx, ty, this.tide).name !== 'dSiltWet') continue;
+        const x = ox + tx * TILE, y = oy + ty * TILE, k = tx * 7 + ty * 13;
+        this.glimmerAt(ctx, x + 5, y + 4, k, SILT_GLINT_PERIOD);
+        this.glimmerAt(ctx, x + 11, y + 11, k + Math.floor(SILT_GLINT_PERIOD / 18), SILT_GLINT_PERIOD);
+      }
+    }
+  }
+
   // Seasons' own twinkle (INTERAC_SPARKLE, S220), played through once every
   // WRECK_GLIMMER_PERIOD frames; it was a hand-drawn cross faded in and out,
   // which the Game Boy cannot draw. Drawn straight off the frame counter, not
   // spawned, so it adds nothing to the effect count.
-  glimmerAt(ctx, cx, cy, phase) {
-    let t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
+  glimmerAt(ctx, cx, cy, phase, period = WRECK_GLIMMER_PERIOD) {
+    let t = (this.frame + phase * 9) % period;
     for (let i = 0; i < TWINKLE_HOLDS.length; i++) {
       if (t < TWINKLE_HOLDS[i]) {
         sprites.draw(ctx, 'fx_twinkle' + i, cx - 16, cy - 16);

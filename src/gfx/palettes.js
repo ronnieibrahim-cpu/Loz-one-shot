@@ -25,6 +25,9 @@ export const PALETTES = {
   sand:    ['#f8e8b0', '#e0c078', '#a88048', '#584028'],
   sandwet: ['#d8c898', '#b09860', '#786040', '#382c20'],
   water:   ['#b0e8f8', '#58b0e0', '#2868b8', '#10305c'],
+  // The Keep's silt under the sea (S255, the human's pick D): the rings in
+  // the water's palest colour, so the cache reads where the Dredge Line works.
+  siltwet: ['#b0e8f8', '#58b0e0', '#f8f8f8', '#f8f8f8'],
   deep:    ['#5898d8', '#2c60b0', '#183c80', '#08142c'],
   reef:    ['#a8e8d0', '#48b098', '#207060', '#0c2c28'],
   stone:   ['#e0e0d0', '#a0a898', '#606860', '#242c28'],

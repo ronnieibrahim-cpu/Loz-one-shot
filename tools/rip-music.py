@@ -83,6 +83,8 @@ SFX = [
     ('linkFall', 'ROM_SEASONS'), ('explosion', 'ROM_SEASONS'), ('lightTorch', 'ROM_SEASONS'),
     ('damageEnemy', 'ROM_SEASONS'), ('killEnemy', 'ROM_SEASONS'), ('bossDamage', 'ROM_SEASONS'),
     ('bossDead', 'ROM_SEASONS'), ('beam', 'ROM_SEASONS'), ('clink', 'ROM_SEASONS'),
+    # The shield going up (S255): parentItemCode_shield state 0, SND_SHIELD.
+    ('shield', 'ROM_SEASONS'),
     # The sword poking a bombable wall (S172): commonCode2.s @bombableWallClink.
     ('clink2', 'ROM_SEASONS'),
     ('enemyJump', 'ROM_SEASONS'), ('rupee', 'ROM_SEASONS'), ('gainHeart', 'ROM_SEASONS'),

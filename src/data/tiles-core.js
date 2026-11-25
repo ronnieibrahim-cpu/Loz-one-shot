@@ -12,7 +12,7 @@ import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { STEPSTONE_ART, STEPSTONE_PALETTES } from './tiles-stepstones.js';
 import { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } from './tiles-maku.js';
-import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, BELT_ANIM_RATE } from './feel.js';
+import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE, WHIRLPOOL_ANIM_RATE, SEAWEED_ANIM_RATE, BELT_ANIM_RATE } from './feel.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -3617,7 +3617,12 @@ export function installCoreTiles() {
     // finds nothing, so there is no second answer. The one place a blade comes
     // out beside a snarl is a coral pillar, and a pillar is dry ground at LOW
     // and at LOW only.
-    dSnarl: { art: ART.bush, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dWaterD' },
+    // THE SHRINE'S SNARL (S255, the human's pick): Ages' sea-floor seaweed
+    // ($c5, tools/rip-dungeon-themes.py), its four steps at Ages' own rate,
+    // in green — it used to be the bush, which says "a bomb opens this" and
+    // a snarl opens to the sword alone.
+    dSnarl: { art: ART.kelp0, pal: 'tree', flags: F.SOLID, underArt: 'dWaterD',
+      anim: ['kelp0', 'kelp1', 'kelp2', 'kelp3'], animRate: SEAWEED_ANIM_RATE },
 
     // --- the Abyssal Keep -------------------------------------------------
     //
@@ -3701,7 +3706,7 @@ export function installCoreTiles() {
     // is on it and gives up nothing at all while the sea is off it, and that
     // is the one thing in this game that wants the water UP.
     dSiltDry: { art: ART.siltFloor, pal: 'stonedk' },
-    dSiltWet: { art: ART.siltFloor, pal: 'water', flags: F.WATER },
+    dSiltWet: { art: ART.siltFloor, pal: 'siltwet', flags: F.WATER },
     dSilt: { tide: ['dSiltDry', 'dSiltWet', 'dSiltWet'] },
 
     // A lintel of the Keep's own stone, standing across a shaft, that the sea

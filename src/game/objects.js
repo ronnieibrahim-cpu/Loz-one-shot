@@ -16,7 +16,7 @@ import {
 import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import { getText } from './dialogue.js';
-import { ERRANDS, SAND_DOLLAR_FLAGS } from '../data/errands.js';
+import { ERRANDS, SAND_DOLLAR_FLAGS, LETTERS } from '../data/errands.js';
 import { FLOAT_DIRS } from './float-path.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_BOUNCE_MIN,
@@ -298,6 +298,20 @@ PICKUPS.sandDollar = {
     g.say(n >= SAND_DOLLAR_FLAGS.length
       ? 'A sand dollar! That\'s all five. The beachcomber in Sandpiper Row will want these.'
       : `A sand dollar! You have ${n} of ${SAND_DOLLAR_FLAGS.length}.`);
+  },
+};
+
+// LETTERS IN BOTTLES (S255): a bottle the sea leaves on the sand at LOW tide
+// only (`lowOnly`, as the sand dollars), naming who it is for. Its flag is on
+// the placement; the reader's errand needs it (src/data/errands.js LETTERS).
+PICKUPS.letterBottle = {
+  sprite: 'i_bottle', pal: null, persistent: true, lowOnly: true,
+  get(g, e) {
+    const l = e && e.flagName && LETTERS[e.flagName];
+    if (e && e.flagName) setFlag(g.progress, e.flagName);
+    g.audio.sfx('key');
+    g.say(l ? `A bottle with a letter sealed inside! It's addressed to ${l.to}.`
+      : 'A bottle with a letter sealed inside!');
   },
 };
 
@@ -656,6 +670,9 @@ export class NPC extends Entity {
     // every flag in it, and `partial` is said once some but not all are in.
     const needs = Array.isArray(e.need) ? e.need : [e.need];
     const have = needs.filter(n => flag(p, n)).length;
+    // `quiet` (S255, the letters): somebody who does not know a thing is
+    // coming says their ordinary lines until it is in their hand.
+    if (have < needs.length && e.quiet) return false;
     if (have < needs.length) {
       // `confirm` (S247): the first asking ends in Yes or No, as the
       // cartridges ask before a dive. Yes sets `asked` as it always did; No
@@ -674,7 +691,13 @@ export class NPC extends Entity {
       if (e.asked && !flag(p, e.asked)) { setFlag(p, e.asked); game.spawnFlagged(e.asked); }
       return true;
     }
-    const pay = () => { setFlag(p, e.flag); game.presentPrize(e.prize); };
+    // `last` (S255): `{ flags, prize }` — when this hand-over completes every
+    // flag in `flags` (this one's included), `prize` is paid instead.
+    const pay = () => {
+      setFlag(p, e.flag);
+      const last = e.last && e.last.flags.every(f => flag(p, f));
+      game.presentPrize(last ? e.last.prize : e.prize);
+    };
     game.startDialogue(e.thanks, this);
     if (game.dialogue.active) game.dialogue.onClose = pay; else pay();
     return true;

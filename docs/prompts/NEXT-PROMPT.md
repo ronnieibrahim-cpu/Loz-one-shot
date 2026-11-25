@@ -29,12 +29,13 @@
   here; never one touching tools/playthrough-route.mjs.
 
 ## The task
-1. S254 read Gohmaraq (8/13) and Reefguard (10/13, fair) and D5's approach
-   (spread thin, nothing to fix). Gohmaraq's losses are a robot habit
-   (backing off along the wall in the boss's patrol row): an opt-in robot
-   option that retreats off a patroller's axis is the one idea left.
-2. Otherwise the rotation moves on: (i) if the human sends play notes, or
-   ask them which area next.
+1. Play notes first if the human has any (the D5 -> D6 guide is still
+   unplayed). S255 fixed their shield note.
+2. Left open by S255: the Spire's and the Keep's snarls are still bushes
+   (offer D5's seaweed look for them, with pictures); the Beacon Run and the
+   Gull Count were offered and not wanted now. Gohmaraq's robot (8/13) has
+   no idea left that helps (offRow tried, 5/13).
+3. Blocked: the dungeon comparison (their play), feel pass 2 (a recording).
 
 ## Done means
 - Whole table green; check-playthrough 49/49 or more, THE END, never died;
