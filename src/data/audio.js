@@ -136,6 +136,9 @@ const SFX = {
   // The raised shield shoving an ordinary enemy off (S227,
   // COLLISIONEFFECT_SHIELD_BUMP*: LINKDMG_10/14 play SND_BOMB_LAND).
   shieldBump: { seasons: 'bombLand' },
+  // The shield raised (S255): SND_SHIELD, played on the press as
+  // parentItemCode_shield's state 0 does.
+  shieldUp: { seasons: 'shield' },
   charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
   hop: { seasons: 'enemyJump' },
 

@@ -19,7 +19,8 @@ export const REQUIRED_SPRITES = {
     'link_push_down', 'link_push_up', 'link_push_side',
     'link_hurt_down', 'link_hurt_up', 'link_hurt_side',
     'link_conch_down', 'link_conch_up', 'link_conch_side',
-    'link_shield_down', 'link_shield_up', 'link_shield_side',
+    ...['link_shwalk1_', 'link_shwalk2_', 'link_shup1_', 'link_shup2_'].flatMap(b =>
+      ['down', 'up', 'side'].flatMap(d => [b + d + '_0', b + d + '_1'])),
     // link_dig_* are extracted Link frames that nothing draws any more — the
     // Shovel is gone and the Dredge Line searches the floor instead. They stay
     // required because they are SOURCE-GAME art already cut from the sheet,
